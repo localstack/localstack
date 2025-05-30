@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[yml]": {
-    "recorded-date": "29-05-2025, 18:20:46",
+    "recorded-date": "30-05-2025, 19:11:21",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -11,7 +11,11 @@
         }
       },
       "describe-change-set-1-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -46,7 +50,11 @@
         }
       },
       "describe-change-set-1": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -81,6 +89,11 @@
         }
       },
       "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -105,7 +118,11 @@
         }
       },
       "describe-change-set-2-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -179,7 +196,11 @@
         }
       },
       "describe-change-set-2": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -238,6 +259,11 @@
         }
       },
       "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -436,6 +462,11 @@
         ]
       },
       "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "CreationTime": "datetime",
         "DeletionTime": "datetime",
         "DisableRollback": false,
@@ -453,7 +484,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[json]": {
-    "recorded-date": "29-05-2025, 18:22:18",
+    "recorded-date": "30-05-2025, 19:12:51",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -464,7 +495,11 @@
         }
       },
       "describe-change-set-1-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -499,7 +534,11 @@
         }
       },
       "describe-change-set-1": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -534,6 +573,11 @@
         }
       },
       "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -558,7 +602,11 @@
         }
       },
       "describe-change-set-2-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -632,7 +680,11 @@
         }
       },
       "describe-change-set-2": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -691,6 +743,11 @@
         }
       },
       "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -889,6 +946,11 @@
         ]
       },
       "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "CreationTime": "datetime",
         "DeletionTime": "datetime",
         "DisableRollback": false,
@@ -906,7 +968,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[json]": {
-    "recorded-date": "29-05-2025, 18:53:46",
+    "recorded-date": "30-05-2025, 19:15:53",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -917,7 +979,11 @@
         }
       },
       "describe-change-set-1-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -952,7 +1018,11 @@
         }
       },
       "describe-change-set-1": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -987,6 +1057,11 @@
         }
       },
       "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -1011,7 +1086,11 @@
         }
       },
       "describe-change-set-2-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -1070,7 +1149,11 @@
         }
       },
       "describe-change-set-2": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -1119,6 +1202,11 @@
         }
       },
       "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -1281,6 +1369,11 @@
         ]
       },
       "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "CreationTime": "datetime",
         "DeletionTime": "datetime",
         "DisableRollback": false,
@@ -1304,7 +1397,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[yml]": {
-    "recorded-date": "29-05-2025, 18:52:15",
+    "recorded-date": "30-05-2025, 19:14:21",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -1315,7 +1408,11 @@
         }
       },
       "describe-change-set-1-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -1350,7 +1447,11 @@
         }
       },
       "describe-change-set-1": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -1385,6 +1486,11 @@
         }
       },
       "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -1409,7 +1515,11 @@
         }
       },
       "describe-change-set-2-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -1468,7 +1578,11 @@
         }
       },
       "describe-change-set-2": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -1517,6 +1631,11 @@
         }
       },
       "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -1679,6 +1798,11 @@
         ]
       },
       "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "CreationTime": "datetime",
         "DeletionTime": "datetime",
         "DisableRollback": false,
@@ -1691,6 +1815,1493 @@
           {
             "OutputKey": "TopicRef",
             "OutputValue": "arn:<partition>:sns:<region>:111111111111:topic-name-1"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "DELETE_COMPLETE",
+        "Tags": []
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_serverless_fn_transform": {
+    "recorded-date": "30-05-2025, 19:17:58",
+    "recorded-content": {
+      "create-change-set-1": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1-prop-values": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "DisplayName": "display-value-1",
+                  "TopicName": "topic-name-1"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "create-change-set-2": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2-prop-values": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Role": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Handler": "index.handler",
+                  "Runtime": "nodejs18.x",
+                  "Code": {
+                    "ZipFile": "exports.handler = async (event) => {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Hello from SAM inline function!' })\n  };\n};"
+                  },
+                  "Tags": [
+                    {
+                      "Value": "SAM",
+                      "Key": "lambda:createdBy"
+                    }
+                  ]
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "HelloWorldFunction",
+              "ResourceType": "AWS::Lambda::Function",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "FunctionName": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Action": "lambda:InvokeFunction",
+                  "SourceArn": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Principal": "apigateway.amazonaws.com"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
+              "ResourceType": "AWS::Lambda::Permission",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "ManagedPolicyArns": [
+                    "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+                  ],
+                  "AssumeRolePolicyDocument": {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                      {
+                        "Action": [
+                          "sts:AssumeRole"
+                        ],
+                        "Effect": "Allow",
+                        "Principal": {
+                          "Service": [
+                            "lambda.amazonaws.com"
+                          ]
+                        }
+                      }
+                    ]
+                  },
+                  "Tags": [
+                    {
+                      "Value": "SAM",
+                      "Key": "lambda:createdBy"
+                    }
+                  ]
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "HelloWorldFunctionRole",
+              "ResourceType": "AWS::IAM::Role",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Body": {
+                    "paths": {
+                      "/<resource:6>": {
+                        "get": {
+                          "responses": {},
+                          "x-amazon-apigateway-integration": {
+                            "httpMethod": "POST",
+                            "type": "aws_proxy",
+                            "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/{{changeSet:KNOWN_AFTER_APPLY}}/invocations"
+                          }
+                        }
+                      }
+                    },
+                    "swagger": "2.0",
+                    "info": {
+                      "title": "<stack-name:1>",
+                      "version": "1.0"
+                    }
+                  }
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "ServerlessRestApi",
+              "ResourceType": "AWS::ApiGateway::RestApi",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "RestApiId": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
+                  "StageName": "Stage"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
+              "ResourceType": "AWS::ApiGateway::Deployment",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "RestApiId": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "DeploymentId": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "StageName": "Prod"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "ServerlessRestApiProdStage",
+              "ResourceType": "AWS::ApiGateway::Stage",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "DisplayName": "display-value-1",
+                  "TopicName": "topic-name-1"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "HelloWorldFunction",
+              "ResourceType": "AWS::Lambda::Function",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
+              "ResourceType": "AWS::Lambda::Permission",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "HelloWorldFunctionRole",
+              "ResourceType": "AWS::IAM::Role",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "ServerlessRestApi",
+              "ResourceType": "AWS::ApiGateway::RestApi",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
+              "ResourceType": "AWS::ApiGateway::Deployment",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "ServerlessRestApiProdStage",
+              "ResourceType": "AWS::ApiGateway::Stage",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "UPDATE_COMPLETE",
+        "Tags": []
+      },
+      "per-resource-events": {
+        "HelloWorldFunction": [
+          {
+            "EventId": "HelloWorldFunction-CREATE_COMPLETE-date",
+            "LogicalResourceId": "HelloWorldFunction",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1",
+            "ResourceProperties": {
+              "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+              "Runtime": "nodejs18.x",
+              "Handler": "index.handler",
+              "Code": {
+                "ZipFile": "exports.handler = async (event) => {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Hello from SAM inline function!' })\n  };\n};"
+              },
+              "Tags": [
+                {
+                  "Value": "SAM",
+                  "Key": "lambda:createdBy"
+                }
+              ]
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "HelloWorldFunction-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "HelloWorldFunction",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1",
+            "ResourceProperties": {
+              "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+              "Runtime": "nodejs18.x",
+              "Handler": "index.handler",
+              "Code": {
+                "ZipFile": "exports.handler = async (event) => {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Hello from SAM inline function!' })\n  };\n};"
+              },
+              "Tags": [
+                {
+                  "Value": "SAM",
+                  "Key": "lambda:createdBy"
+                }
+              ]
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "HelloWorldFunction-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "HelloWorldFunction",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+              "Runtime": "nodejs18.x",
+              "Handler": "index.handler",
+              "Code": {
+                "ZipFile": "exports.handler = async (event) => {\n  return {\n    statusCode: 200,\n    body: JSON.stringify({ message: 'Hello from SAM inline function!' })\n  };\n};"
+              },
+              "Tags": [
+                {
+                  "Value": "SAM",
+                  "Key": "lambda:createdBy"
+                }
+              ]
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::Lambda::Function",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "HelloWorldFunctionApiEventPermissionProd": [
+          {
+            "EventId": "HelloWorldFunctionApiEventPermissionProd-CREATE_COMPLETE-date",
+            "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunctionApiEventPermissionProd-He3072PnKtRX",
+            "ResourceProperties": {
+              "FunctionName": "<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1",
+              "Action": "lambda:InvokeFunction",
+              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:yn2f9dmisl/*/GET/<resource:6>",
+              "Principal": "apigateway.amazonaws.com"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "HelloWorldFunctionApiEventPermissionProd-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunctionApiEventPermissionProd-He3072PnKtRX",
+            "ResourceProperties": {
+              "FunctionName": "<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1",
+              "Action": "lambda:InvokeFunction",
+              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:yn2f9dmisl/*/GET/<resource:6>",
+              "Principal": "apigateway.amazonaws.com"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "HelloWorldFunctionApiEventPermissionProd-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "FunctionName": "<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1",
+              "Action": "lambda:InvokeFunction",
+              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:yn2f9dmisl/*/GET/<resource:6>",
+              "Principal": "apigateway.amazonaws.com"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::Lambda::Permission",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "HelloWorldFunctionRole": [
+          {
+            "EventId": "HelloWorldFunctionRole-CREATE_COMPLETE-date",
+            "LogicalResourceId": "HelloWorldFunctionRole",
+            "PhysicalResourceId": "<resource:5>",
+            "ResourceProperties": {
+              "ManagedPolicyArns": [
+                "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ],
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": [
+                      "sts:AssumeRole"
+                    ],
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "Tags": [
+                {
+                  "Value": "SAM",
+                  "Key": "lambda:createdBy"
+                }
+              ]
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "HelloWorldFunctionRole-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "HelloWorldFunctionRole",
+            "PhysicalResourceId": "<resource:5>",
+            "ResourceProperties": {
+              "ManagedPolicyArns": [
+                "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ],
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": [
+                      "sts:AssumeRole"
+                    ],
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "Tags": [
+                {
+                  "Value": "SAM",
+                  "Key": "lambda:createdBy"
+                }
+              ]
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "HelloWorldFunctionRole-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "HelloWorldFunctionRole",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "ManagedPolicyArns": [
+                "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
+              ],
+              "AssumeRolePolicyDocument": {
+                "Version": "2012-10-17",
+                "Statement": [
+                  {
+                    "Action": [
+                      "sts:AssumeRole"
+                    ],
+                    "Effect": "Allow",
+                    "Principal": {
+                      "Service": [
+                        "lambda.amazonaws.com"
+                      ]
+                    }
+                  }
+                ]
+              },
+              "Tags": [
+                {
+                  "Value": "SAM",
+                  "Key": "lambda:createdBy"
+                }
+              ]
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::IAM::Role",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ServerlessRestApi": [
+          {
+            "EventId": "ServerlessRestApi-CREATE_COMPLETE-date",
+            "LogicalResourceId": "ServerlessRestApi",
+            "PhysicalResourceId": "yn2f9dmisl",
+            "ResourceProperties": {
+              "Body": {
+                "paths": {
+                  "/<resource:6>": {
+                    "get": {
+                      "responses": {},
+                      "x-amazon-apigateway-integration": {
+                        "httpMethod": "POST",
+                        "type": "aws_proxy",
+                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1/invocations"
+                      }
+                    }
+                  }
+                },
+                "swagger": "2.0",
+                "info": {
+                  "title": "<stack-name:1>",
+                  "version": "1.0"
+                }
+              }
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::RestApi",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "ServerlessRestApi-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "ServerlessRestApi",
+            "PhysicalResourceId": "yn2f9dmisl",
+            "ResourceProperties": {
+              "Body": {
+                "paths": {
+                  "/<resource:6>": {
+                    "get": {
+                      "responses": {},
+                      "x-amazon-apigateway-integration": {
+                        "httpMethod": "POST",
+                        "type": "aws_proxy",
+                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1/invocations"
+                      }
+                    }
+                  }
+                },
+                "swagger": "2.0",
+                "info": {
+                  "title": "<stack-name:1>",
+                  "version": "1.0"
+                }
+              }
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::ApiGateway::RestApi",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "ServerlessRestApi-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "ServerlessRestApi",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "Body": {
+                "paths": {
+                  "/<resource:6>": {
+                    "get": {
+                      "responses": {},
+                      "x-amazon-apigateway-integration": {
+                        "httpMethod": "POST",
+                        "type": "aws_proxy",
+                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-rHxmhaPeJGt1/invocations"
+                      }
+                    }
+                  }
+                },
+                "swagger": "2.0",
+                "info": {
+                  "title": "<stack-name:1>",
+                  "version": "1.0"
+                }
+              }
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::ApiGateway::RestApi",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ServerlessRestApiDeployment47fc2d5f9d": [
+          {
+            "EventId": "ServerlessRestApiDeployment47fc2d5f9d-CREATE_COMPLETE-date",
+            "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
+            "PhysicalResourceId": "p4f5gj",
+            "ResourceProperties": {
+              "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
+              "StageName": "Stage",
+              "RestApiId": "yn2f9dmisl"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Deployment",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "ServerlessRestApiDeployment47fc2d5f9d-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
+            "PhysicalResourceId": "p4f5gj",
+            "ResourceProperties": {
+              "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
+              "StageName": "Stage",
+              "RestApiId": "yn2f9dmisl"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::ApiGateway::Deployment",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "ServerlessRestApiDeployment47fc2d5f9d-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
+              "StageName": "Stage",
+              "RestApiId": "yn2f9dmisl"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::ApiGateway::Deployment",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ServerlessRestApiProdStage": [
+          {
+            "EventId": "ServerlessRestApiProdStage-CREATE_COMPLETE-date",
+            "LogicalResourceId": "ServerlessRestApiProdStage",
+            "PhysicalResourceId": "Prod",
+            "ResourceProperties": {
+              "DeploymentId": "p4f5gj",
+              "StageName": "Prod",
+              "RestApiId": "yn2f9dmisl"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::ApiGateway::Stage",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "ServerlessRestApiProdStage-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "ServerlessRestApiProdStage",
+            "PhysicalResourceId": "Prod",
+            "ResourceProperties": {
+              "DeploymentId": "p4f5gj",
+              "StageName": "Prod",
+              "RestApiId": "yn2f9dmisl"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::ApiGateway::Stage",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "ServerlessRestApiProdStage-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "ServerlessRestApiProdStage",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "DeploymentId": "p4f5gj",
+              "StageName": "Prod",
+              "RestApiId": "yn2f9dmisl"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::ApiGateway::Stage",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Topic1": [
+          {
+            "EventId": "Topic1-bc7f9092-e33e-4b75-9ab9-0b05a1eca865",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-53c44796-6014-4724-bf4e-398b5792343b",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceProperties": {
+              "DisplayName": "display-value-1",
+              "TopicName": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceProperties": {
+              "DisplayName": "display-value-1",
+              "TopicName": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "DisplayName": "display-value-1",
+              "TopicName": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "<stack-name:1>": [
+          {
+            "EventId": "<uuid:1>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:2>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:3>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:4>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:5>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:6>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ]
+      },
+      "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "CreationTime": "datetime",
+        "DeletionTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "DELETE_COMPLETE",
+        "Tags": []
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_macro_fn_transform": {
+    "recorded-date": "30-05-2025, 19:19:36",
+    "recorded-content": {
+      "create-change-set-1": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1-prop-values": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "DisplayName": "display-value-1",
+                  "TopicName": "topic-name-1"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "create-change-set-2": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2-prop-values": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{Substitution}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "DisplayName": "display-value-1",
+                  "TopicName": "topic-name-1"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "Substitution",
+            "ParameterValue": "SubstitutionDefault"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "Topic1",
+              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SNS::Topic",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "Substitution",
+            "ParameterValue": "SubstitutionDefault"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "Substitution",
+            "ParameterValue": "SubstitutionDefault"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "UPDATE_COMPLETE",
+        "Tags": []
+      },
+      "per-resource-events": {
+        "Parameter": [
+          {
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "CFN-Parameter-RKPmUsCVodiF",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "CFN-Parameter-RKPmUsCVodiF",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Topic1": [
+          {
+            "EventId": "Topic1-d999817d-18b1-45e2-b4f2-ff6a275ad13f",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-ad6d008a-83b5-44f0-b20a-6f5106380a58",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceProperties": {
+              "DisplayName": "display-value-1",
+              "TopicName": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "ResourceProperties": {
+              "DisplayName": "display-value-1",
+              "TopicName": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Topic1",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "DisplayName": "display-value-1",
+              "TopicName": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "<stack-name:1>": [
+          {
+            "EventId": "<uuid:1>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:2>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:3>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:4>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:5>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "<uuid:6>",
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceStatusReason": "User Initiated",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ]
+      },
+      "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
+        "CreationTime": "datetime",
+        "DeletionTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "Substitution",
+            "ParameterValue": "SubstitutionDefault"
           }
         ],
         "RollbackConfiguration": {},
