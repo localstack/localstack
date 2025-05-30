@@ -143,6 +143,8 @@ def apply_patches():
         if "documentationVersion" not in result:
             result["documentationVersion"] = getattr(self, "documentation_version", None)
 
+        # TODO: add canarySettings
+
         return result
 
     # TODO remove this patch when the behavior is implemented in moto

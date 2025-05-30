@@ -413,7 +413,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_validation": {
-    "recorded-date": "30-05-2025, 16:55:48",
+    "recorded-date": "30-05-2025, 19:06:19",
     "recorded-content": {
       "create-canary-deployment-no-stage": {
         "Error": {
@@ -421,6 +421,17 @@
           "Message": "Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is null"
         },
         "message": "Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is null",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-canary-deployment-empty-stage": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is "
+        },
+        "message": "Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is ",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

@@ -361,6 +361,19 @@ class TestStageCrudCanary:
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.create_deployment(
                 restApiId=api_id,
+                stageName="",
+                canarySettings={
+                    "percentTraffic": 50,
+                    "stageVariableOverrides": {
+                        "testVar": "canary",
+                    },
+                },
+            )
+        snapshot.match("create-canary-deployment-empty-stage", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_deployment(
+                restApiId=api_id,
                 stageName="non-existing",
                 canarySettings={
                     "percentTraffic": 50,

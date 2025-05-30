@@ -9,7 +9,7 @@
     "last_validated_date": "2025-05-30T19:03:13+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_validation": {
-    "last_validated_date": "2025-05-30T16:55:48+00:00"
+    "last_validated_date": "2025-05-30T19:06:19+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_with_stage": {
     "last_validated_date": "2025-05-30T16:54:10+00:00"

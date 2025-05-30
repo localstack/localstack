@@ -985,6 +985,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     # TODO: add createdDate / lastUpdatedDate in Stage operations below!
     @handler("CreateStage", expand=False)
     def create_stage(self, context: RequestContext, request: CreateStageRequest) -> Stage:
+        # TODO: we need to internalize Stages and Deployments in LocalStack, we have a lot of split logic
+
         call_moto(context)
         moto_api = get_moto_rest_api(context, rest_api_id=request["restApiId"])
         stage = moto_api.stages.get(request["stageName"])
@@ -993,6 +995,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         if not hasattr(stage, "documentation_version"):
             stage.documentation_version = request.get("documentationVersion")
+        # TODO: add canary_settings
+        # TODO: add createdData, lastUpdatedData
 
         # make sure we update the stage_name on the deployment entity in moto
         deployment = moto_api.deployments.get(request["deploymentId"])
@@ -1042,10 +1046,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations = copy.deepcopy(patch_operations) or []
         for patch_operation in patch_operations:
             patch_path = patch_operation["path"]
+            patch_op = patch_operation["op"]
 
             # special case: handle updates (op=remove) for wildcard method settings
             patch_path_stripped = patch_path.strip("/")
-            if patch_path_stripped == "*/*" and patch_operation["op"] == "remove":
+            if patch_path_stripped == "*/*" and patch_op == "remove":
                 if not moto_stage.method_settings.pop(patch_path_stripped, None):
                     raise BadRequestException(
                         "Cannot remove method setting */* because there is no method setting for this method "
@@ -1057,6 +1062,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             path_valid = patch_path in STAGE_UPDATE_PATHS or any(
                 re.match(regex, patch_path) for regex in path_regexes
             )
+            if patch_path.startswith("/canarySetting"):
+                path_valid = is_canary_settings_update_patch_valid(op=patch_op, path=patch_path)
+
             if not path_valid:
                 valid_paths = f"[{', '.join(STAGE_UPDATE_PATHS)}]"
                 # note: weird formatting in AWS - required for snapshot testing
@@ -2834,6 +2842,27 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     }
     result["_links"]["%s:delete" % model_type] = {"href": self_link}
     return result
+
+
+def is_canary_settings_update_patch_valid(op: str, path: str) -> bool:
+    # TODO: return False to get default error message
+    path_regexes = (
+        r"\/canarySettings\/percentTraffic",
+        r"\/canarySettings\/deploymentId",
+        r"\/canarySettings\/stageVariableOverrides",
+        r"\/canarySettings\/stageVariableOverrides\/.+",
+        r"\/canarySettings\/useStageCache",
+    )
+    if path == "/canarySettings" and op != "remove":
+        raise
+    elif op not in ("replace", "copy"):
+        raise
+
+    elif path not in any(re.match(regex, path) for regex in path_regexes):
+        # we're explicitly returning False here to make the intent clearer
+        return False
+
+    return True
 
 
 DEFAULT_EMPTY_MODEL = Model(

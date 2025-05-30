@@ -1,5 +1,6 @@
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.apigateway import (
+    BadRequestException,
     CacheClusterSize,
     CreateStageRequest,
     Deployment,
@@ -121,13 +122,24 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         tracing_enabled: NullableBoolean = None,
         **kwargs,
     ) -> Deployment:
+        moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        if canary_settings:
+            if not stage_name:
+                error_stage = stage_name if stage_name is not None else "null"
+                raise BadRequestException(
+                    f"Invalid deployment content specified.Non null and non empty stageName must be provided for canary deployment. Provided value is {error_stage}"
+                )
+            if stage_name not in moto_rest_api.stages:
+                raise BadRequestException(
+                    "Invalid deployment content specified.Stage non-existing must already be created before making a canary release deployment"
+                )
+
         # TODO: if the REST API does not contain any method, we should raise an exception
         deployment: Deployment = call_moto(context)
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/updating-api.html
         # TODO: the deployment is not accessible until it is linked to a stage
         # you can combine a stage or later update the deployment with a stage id
         store = get_apigateway_store(context=context)
-        moto_rest_api = get_moto_rest_api(context, rest_api_id)
         rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)
         frozen_deployment = freeze_rest_api(
             account_id=context.account_id,
