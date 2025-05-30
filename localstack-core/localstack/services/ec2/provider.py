@@ -116,7 +116,12 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
         backend = get_ec2_backend(context.account_id, context.region)
         zone_names = describe_availability_zones_request.get("ZoneNames")
         zone_ids = describe_availability_zones_request.get("ZoneIds")
-        if zone_names or zone_ids:
+        filters = {}
+        if zone_names:
+            filters["zone-name"] = zone_names
+        if zone_ids:
+            filters["zone-id"] = zone_ids
+        if filters:
             filtered_zones = backend.describe_availability_zones(
                 zone_names=zone_names, zone_ids=zone_ids
             )
