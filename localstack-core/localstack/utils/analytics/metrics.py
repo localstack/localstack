@@ -24,7 +24,7 @@ class MetricRegistryKey:
 
 
 @dataclass(frozen=True)
-class CounterSnapshot:
+class CounterPayload:
     """An immutable snapshot of a counter metric at the time of collection."""
 
     namespace: str
@@ -34,7 +34,6 @@ class CounterSnapshot:
     labels: Optional[dict[str, Union[str, float]]] = None
 
     def as_dict(self) -> dict[str, Any]:
-        """Convert to dictionary format expected by analytics backend."""
         result = {
             "namespace": self.namespace,
             "name": self.name,
@@ -52,20 +51,23 @@ class CounterSnapshot:
 
 
 @dataclass
-class MetricsCollection:
-    """Container for collected metric snapshots."""
+class MetricPayload:
+    """
+    Stores all metric payloads collected during the execution of the LocalStack emulator.
+    Currently, supports only counter-type metrics, but designed to accommodate other types in the future.
+    """
 
-    _snapshots: list[CounterSnapshot]  # support for other metric types may be added in the future.
+    _payload: list[CounterPayload]  # support for other metric types may be added in the future.
 
     @property
-    def snapshots(self) -> list[CounterSnapshot]:
-        return self._snapshots
+    def payload(self) -> list[CounterPayload]:
+        return self._payload
 
-    def __init__(self, snapshots: list[CounterSnapshot]):
-        self._snapshots = snapshots
+    def __init__(self, payload: list[CounterPayload]):
+        self._payload = payload
 
     def as_dict(self) -> dict[str, list[dict[str, Any]]]:
-        return {"metrics": [snapshot.as_dict() for snapshot in self._snapshots]}
+        return {"metrics": [payload.as_dict() for payload in self._payload]}
 
 
 class MetricRegistry:
@@ -117,17 +119,17 @@ class MetricRegistry:
 
         self._registry[registry_unique_key] = metric
 
-    def collect(self) -> MetricsCollection:
+    def collect(self) -> MetricPayload:
         """
         Collects all registered metrics.
         """
-        metric_snapshots = [
+        payload = [
             metric
             for metric_instance in self._registry.values()
             for metric in metric_instance.collect()
         ]
 
-        return MetricsCollection(snapshots=metric_snapshots)
+        return MetricPayload(payload=payload)
 
 
 class Metric(ABC):
@@ -160,7 +162,7 @@ class Metric(ABC):
     @abstractmethod
     def collect(
         self,
-    ) -> list[CounterSnapshot]:  # support for other metric types may be added in the future.
+    ) -> list[CounterPayload]:  # support for other metric types may be added in the future.
         """
         Collects and returns metric data. Subclasses must implement this to return collected metric data.
         """
@@ -220,7 +222,7 @@ class CounterMetric(Metric, BaseCounter):
         self._type = "counter"
         MetricRegistry().register(self)
 
-    def collect(self) -> list[CounterSnapshot]:
+    def collect(self) -> list[CounterPayload]:
         """Collects the metric unless events are disabled."""
         if config.DISABLE_EVENTS:
             return list()
@@ -230,7 +232,7 @@ class CounterMetric(Metric, BaseCounter):
             return list()
 
         return [
-            CounterSnapshot(
+            CounterPayload(
                 namespace=self._namespace, name=self.name, value=self._count, type=self._type
             )
         ]
@@ -283,42 +285,11 @@ class LabeledCounterMetric(Metric):
 
         return self._counters_by_label_values[_label_values]
 
-    def _as_list(self) -> list[dict[str, Union[str, int]]]:
-        num_labels = len(self._labels)
-
-        static_key_label_value = [f"label_{i + 1}_value" for i in range(num_labels)]
-        static_key_label = [f"label_{i + 1}" for i in range(num_labels)]
-
-        collected_metrics = []
-
-        for label_values, counter in self._counters_by_label_values.items():
-            if counter.count == 0:
-                continue  # Skip items with a count of 0, as they should not be sent to the analytics backend.
-
-            if len(label_values) != num_labels:
-                raise ValueError(
-                    f"Label count mismatch: expected {num_labels} labels {self._labels}, "
-                    f"but got {len(label_values)} values {label_values}."
-                )
-
-            collected_metrics.append(
-                {
-                    "namespace": self._namespace,
-                    "name": self.name,
-                    "value": counter.count,
-                    "type": self._type,
-                    **dict(zip(static_key_label_value, label_values)),
-                    **dict(zip(static_key_label, self._labels)),
-                }
-            )
-
-        return collected_metrics
-
-    def collect(self) -> list[CounterSnapshot]:
+    def collect(self) -> list[CounterPayload]:
         if config.DISABLE_EVENTS:
             return list()
 
-        metric_snapshots = []
+        payload = []
         num_labels = len(self._labels)
 
         for label_values, counter in self._counters_by_label_values.items():
@@ -337,17 +308,17 @@ class LabeledCounterMetric(Metric):
                 for label_name, label_value in zip(self._labels, label_values)
             }
 
-            snapshot = CounterSnapshot(
-                namespace=self._namespace,
-                name=self.name,
-                value=counter.count,
-                type=self._type,
-                labels=labels_dict,
+            payload.append(
+                CounterPayload(
+                    namespace=self._namespace,
+                    name=self.name,
+                    value=counter.count,
+                    type=self._type,
+                    labels=labels_dict,
+                )
             )
-            metric_snapshots.append(snapshot)
 
-        return metric_snapshots
-        # return self._as_list()
+        return payload
 
 
 class Counter:
@@ -387,7 +358,7 @@ def publish_metrics() -> None:
         return
 
     collected_metrics = MetricRegistry().collect()
-    if not collected_metrics.snapshots:  # Skip publishing if no metrics remain after filtering
+    if not collected_metrics.payload:  # Skip publishing if no metrics remain after filtering
         return
 
     metadata = EventMetadata(
