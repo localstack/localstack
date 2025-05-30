@@ -263,6 +263,18 @@ class TestStageCrudCanary:
         )
         snapshot.match("create-stage-2", create_stage_2)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_stage(
+                restApiId=api_id,
+                stageName="dev3",
+                deploymentId=deployment_id,
+                description="dev stage",
+                canarySettings={
+                    "deploymentId": "deploy",
+                },
+            )
+        snapshot.match("bad-canary-deployment-id", e.value.response)
+
     @markers.aws.validated
     def test_create_canary_deployment_by_stage_update(
         self, create_api_for_deployment, aws_client, create_rest_apigw, snapshot
@@ -328,17 +340,6 @@ class TestStageCrudCanary:
             ],
         )
         snapshot.match("update-stage-with-percent", update_stage)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.apigateway.update_stage(
-                restApiId=api_id,
-                stageName=stage_name,
-                patchOperations=[
-                    {"op": "replace", "path": "/canarySettings/deploymentId", "value": "deploy"}
-                ],
-            )
-
-        snapshot.match("wrong-deployment-id", e.value.response)
 
     @markers.aws.validated
     def test_create_canary_deployment_validation(
@@ -423,6 +424,16 @@ class TestStageCrudCanary:
                 ],
             )
         snapshot.match("update-stage-canary-settings-bad-path", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_stage(
+                restApiId=api_id,
+                stageName=stage_name,
+                patchOperations=[
+                    {"op": "replace", "path": "/canarySettings", "value": "test"},
+                ],
+            )
+        snapshot.match("update-stage-canary-settings-bad-path-2", e.value.response)
 
         with pytest.raises(ClientError) as e:
             aws_client.apigateway.update_stage(

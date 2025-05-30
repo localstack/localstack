@@ -200,7 +200,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment": {
-    "recorded-date": "30-05-2025, 16:54:51",
+    "recorded-date": "30-05-2025, 19:27:57",
     "recorded-content": {
       "create-deployment": {
         "createdDate": "datetime",
@@ -295,11 +295,22 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
         }
+      },
+      "bad-canary-deployment-id": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Deployment id does not exist"
+        },
+        "message": "Deployment id does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
       }
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_create_canary_deployment_by_stage_update": {
-    "recorded-date": "30-05-2025, 19:03:13",
+    "recorded-date": "30-05-2025, 19:26:29",
     "recorded-content": {
       "create-deployment": {
         "createdDate": "datetime",
@@ -398,17 +409,6 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      },
-      "wrong-deployment-id": {
-        "Error": {
-          "Code": "BadRequestException",
-          "Message": "Deployment id does not exist"
-        },
-        "message": "Deployment id does not exist",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
       }
     }
   },
@@ -451,7 +451,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_canary.py::TestStageCrudCanary::test_update_stage_canary_deployment_validation": {
-    "recorded-date": "30-05-2025, 19:00:50",
+    "recorded-date": "30-05-2025, 20:02:51",
     "recorded-content": {
       "update-stage-canary-settings-remove-overrides": {
         "Error": {
@@ -470,6 +470,17 @@
           "Message": "Cannot remove method setting canarySettings/badPath because there is no method setting for this method "
         },
         "message": "Cannot remove method setting canarySettings/badPath because there is no method setting for this method ",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-stage-canary-settings-bad-path-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid method setting path: /canarySettings. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]"
+        },
+        "message": "Invalid method setting path: /canarySettings. Must be one of: [/deploymentId, /description, /cacheClusterEnabled, /cacheClusterSize, /clientCertificateId, /accessLogSettings, /accessLogSettings/destinationArn, /accessLogSettings/format, /{resourcePath}/{httpMethod}/metrics/enabled, /{resourcePath}/{httpMethod}/logging/dataTrace, /{resourcePath}/{httpMethod}/logging/loglevel, /{resourcePath}/{httpMethod}/throttling/burstLimit/{resourcePath}/{httpMethod}/throttling/rateLimit/{resourcePath}/{httpMethod}/caching/ttlInSeconds, /{resourcePath}/{httpMethod}/caching/enabled, /{resourcePath}/{httpMethod}/caching/dataEncrypted, /{resourcePath}/{httpMethod}/caching/requireAuthorizationForCacheControl, /{resourcePath}/{httpMethod}/caching/unauthorizedCacheControlHeaderStrategy, /*/*/metrics/enabled, /*/*/logging/dataTrace, /*/*/logging/loglevel, /*/*/throttling/burstLimit /*/*/throttling/rateLimit /*/*/caching/ttlInSeconds, /*/*/caching/enabled, /*/*/caching/dataEncrypted, /*/*/caching/requireAuthorizationForCacheControl, /*/*/caching/unauthorizedCacheControlHeaderStrategy, /variables/{variable_name}, /tracingEnabled]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

@@ -995,7 +995,25 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         if not hasattr(stage, "documentation_version"):
             stage.documentation_version = request.get("documentationVersion")
-        # TODO: add canary_settings
+
+        if not hasattr(stage, "canary_settings"):
+            # TODO: validate canarySettings
+            if canary_settings := request.get("canarySettings"):
+                if (
+                    deployment_id := canary_settings.get("deploymentId")
+                ) and deployment_id not in moto_api.deployments:
+                    raise BadRequestException("Deployment id does not exist")
+
+                default_settings = {
+                    "deploymentId": stage.deployment_id,
+                    "percentTraffic": 0.0,
+                    "useStageCache": False,
+                }
+                default_settings.update(canary_settings)
+                stage.canary_settings = default_settings
+            else:
+                stage.canary_settings = None
+
         # TODO: add createdData, lastUpdatedData
 
         # make sure we update the stage_name on the deployment entity in moto
@@ -1081,6 +1099,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             # TODO: check if there are other boolean, maybe add a global step in _patch_api_gateway_entity
             if patch_path == "/tracingEnabled" and (value := patch_operation.get("value")):
                 patch_operation["value"] = value and value.lower() == "true" or False
+
+            elif patch_path in ("/canarySettings/deploymentId", "/deploymentId"):
+                if not moto_rest_api.deployments.get(patch_operation.get("value")):
+                    raise BadRequestException("Deployment id does not exist")
 
         _patch_api_gateway_entity(moto_stage, patch_operations)
         moto_stage.apply_operations(patch_operations)
@@ -2845,21 +2867,27 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
 
 
 def is_canary_settings_update_patch_valid(op: str, path: str) -> bool:
-    # TODO: return False to get default error message
     path_regexes = (
         r"\/canarySettings\/percentTraffic",
         r"\/canarySettings\/deploymentId",
-        r"\/canarySettings\/stageVariableOverrides",
         r"\/canarySettings\/stageVariableOverrides\/.+",
         r"\/canarySettings\/useStageCache",
     )
     if path == "/canarySettings" and op != "remove":
-        raise
-    elif op not in ("replace", "copy"):
-        raise
+        return False
 
-    elif path not in any(re.match(regex, path) for regex in path_regexes):
-        # we're explicitly returning False here to make the intent clearer
+    matches_path = any(re.match(regex, path) for regex in path_regexes)
+
+    if op not in ("replace", "copy"):
+        if matches_path:
+            raise BadRequestException(f"Invalid {op} operation with path: {path}")
+
+        raise BadRequestException(
+            f"Cannot {op} method setting {path.lstrip('/')} because there is no method setting for this method "
+        )
+
+    # stageVariableOverrides is a bit special as it's nested, it doesn't return the same error message
+    if not matches_path and path != "/canarySettings/stageVariableOverrides":
         return False
 
     return True
