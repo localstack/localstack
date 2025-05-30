@@ -41,6 +41,7 @@ classifiers = [
 version_file = "localstack-core/localstack/version.py"
 # pypi does not support local versions:
 # https://setuptools-scm.readthedocs.io/en/latest/usage/#default-versioning-scheme
+version_scheme = "release-branch-semver"
 local_scheme = "no-local-version"
 
 [project.urls]
