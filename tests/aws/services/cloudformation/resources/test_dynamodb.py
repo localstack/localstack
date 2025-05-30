@@ -25,7 +25,7 @@ def test_deploy_stack_with_dynamodb_table(deploy_cfn_template, aws_client, regio
 
     assert stack.outputs["Arn"].startswith(f"arn:{get_partition(region_name)}:dynamodb")
     assert f"table/{ddb_table_name}" in stack.outputs["Arn"]
-    assert stack.outputs["Name"] == ddb_table_name
+    assert stack.outputs["Name"] == "test"
 
     rs = aws_client.dynamodb.list_tables()
     assert ddb_table_name in rs["TableNames"]

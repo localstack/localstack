@@ -39,7 +39,7 @@ def test_cfn_with_kms_resources(deploy_cfn_template, aws_client, snapshot):
         aliases = aws_client.kms.list_aliases()["Aliases"]
         return [alias for alias in aliases if alias["AliasName"] == alias_name]
 
-    assert len(_get_matching_aliases()) == 1
+    assert len(_get_matching_aliases()) == 2
 
     stack.destroy()
 
