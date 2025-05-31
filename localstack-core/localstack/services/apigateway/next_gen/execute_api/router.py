@@ -5,6 +5,7 @@ from rolo import Request, Router
 from rolo.routing.handler import Handler
 from werkzeug.routing import Rule
 
+from localstack.aws.api.apigateway import Stage
 from localstack.constants import APPLICATION_JSON, AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
 from localstack.deprecations import deprecated_endpoint
 from localstack.http import Response
@@ -14,6 +15,8 @@ from localstack.services.stores import AccountRegionBundle
 
 from .context import RestApiInvocationContext
 from .gateway import RestApiGateway
+from .helpers import should_divert_to_canary
+from .moto_helpers import get_stage_configuration
 
 LOG = logging.getLogger(__name__)
 
@@ -88,10 +91,38 @@ class ApiGatewayEndpoint:
             # TODO: find proper error when trying to hit an API with no deployment/stage linked
             return
 
+        stage_configuration = self.fetch_stage_configuration(
+            account_id=frozen_deployment.account_id,
+            region=frozen_deployment.region,
+            api_id=api_id,
+            stage_name=stage,
+        )
+        if canary_settings := stage_configuration.get("canarySettings"):
+            if should_divert_to_canary(canary_settings["percentTraffic"]):
+                deployment_id = canary_settings["deploymentId"]
+                frozen_deployment = self._global_store.internal_deployments[api_id][deployment_id]
+                context.is_canary = True
+
         context.deployment = frozen_deployment
         context.api_id = api_id
         context.stage = stage
+        context.stage_configuration = stage_configuration
         context.deployment_id = deployment_id
+
+    @staticmethod
+    def fetch_stage_configuration(
+        account_id: str, region: str, api_id: str, stage_name: str
+    ) -> Stage:
+        # this will be migrated once we move away from Moto, so we won't need the helper anymore and the logic will
+        # be implemented here
+        stage_variables = get_stage_configuration(
+            account_id=account_id,
+            region=region,
+            api_id=api_id,
+            stage_name=stage_name,
+        )
+
+        return stage_variables
 
     @staticmethod
     def create_response(request: Request) -> Response:
