@@ -5,8 +5,14 @@ import dns
 import pytest
 
 from localstack import config
+from localstack.aws.spec import iterate_service_operations
 from localstack.dns.models import AliasTarget, RecordType, SOARecord, TargetRecord
-from localstack.dns.server import DnsServer, add_resolv_entry, get_fallback_dns_server
+from localstack.dns.server import (
+    HOST_PREFIXES_NO_SUBDOMAIN,
+    DnsServer,
+    add_resolv_entry,
+    get_fallback_dns_server,
+)
 from localstack.utils.net import get_free_udp_port
 from localstack.utils.sync import retry
 
@@ -460,3 +466,19 @@ class TestDnsUtils:
 
         assert "nameserver 127.0.0.1" not in new_contents.splitlines()
         assert "nameserver 127.0.0.11" in new_contents.splitlines()
+
+    def test_host_prefix_no_subdomain(
+        self,
+    ):
+        """This tests help to detect any potential future new host prefix domains added to the botocore specs.
+        If this test fails:
+        1) Add the new entry to `HOST_PREFIXES_NO_SUBDOMAIN` to reflect any changes
+        2) IMPORTANT: Add a public DNS entry for the given host prefix!
+        """
+        unique_prefixes = set()
+        for service_model, operation in iterate_service_operations():
+            if operation.endpoint and operation.endpoint.get("hostPrefix"):
+                unique_prefixes.add(operation.endpoint["hostPrefix"])
+
+        non_dot_unique_prefixes = [prefix for prefix in unique_prefixes if not prefix.endswith(".")]
+        assert set(HOST_PREFIXES_NO_SUBDOMAIN) == set(non_dot_unique_prefixes)

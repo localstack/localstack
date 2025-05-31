@@ -149,14 +149,26 @@ def test_resolve_localstack_host(
 
     container_ip = running_container.ip_address()
 
+    # domain
     stdout, _ = dns_query_from_container(name=LOCALHOST_HOSTNAME, ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
 
+    # domain with known hostPrefix (see test_host_prefix_no_subdomain)
+    stdout, _ = dns_query_from_container(name=f"data-{LOCALHOST_HOSTNAME}", ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    # subdomain
     stdout, _ = dns_query_from_container(name=f"foo.{LOCALHOST_HOSTNAME}", ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
 
+    # domain
     stdout, _ = dns_query_from_container(name=localstack_host, ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
 
+    # domain with known hostPrefix (see test_host_prefix_no_subdomain)
+    stdout, _ = dns_query_from_container(name=f"data-{localstack_host}", ip_address=container_ip)
+    assert container_ip in stdout.decode().splitlines()
+
+    # subdomain
     stdout, _ = dns_query_from_container(name=f"foo.{localstack_host}", ip_address=container_ip)
     assert container_ip in stdout.decode().splitlines()
