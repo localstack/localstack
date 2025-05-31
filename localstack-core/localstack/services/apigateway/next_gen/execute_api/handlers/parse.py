@@ -171,8 +171,10 @@ class InvocationRequestParser(RestApiGatewayHandler):
             requestTime=timestamp(time=now, format=REQUEST_TIME_DATE_FORMAT),
             requestTimeEpoch=int(now.timestamp() * 1000),
             stage=context.stage,
-            isCanaryRequest=context.is_canary,
         )
+        if context.is_canary is not None:
+            context_variables["isCanaryRequest"] = context.is_canary
+
         return context_variables
 
     @staticmethod

@@ -102,6 +102,8 @@ class ApiGatewayEndpoint:
                 deployment_id = canary_settings["deploymentId"]
                 frozen_deployment = self._global_store.internal_deployments[api_id][deployment_id]
                 context.is_canary = True
+            else:
+                context.is_canary = False
 
         context.deployment = frozen_deployment
         context.api_id = api_id
