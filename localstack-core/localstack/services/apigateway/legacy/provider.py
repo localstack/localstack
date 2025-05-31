@@ -622,7 +622,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 param = param.replace("~1", "/")
                 if op == "remove":
                     integration_response.response_templates.pop(param)
-                elif op == "add":
+                elif op in ("add", "replace"):
                     integration_response.response_templates[param] = value
 
             elif "/contentHandling" in path and op == "replace":
