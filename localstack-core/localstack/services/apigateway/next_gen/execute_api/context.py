@@ -98,7 +98,7 @@ class RestApiInvocationContext(RequestContext):
     """The Stage variables, also used in parameters mapping and mapping templates"""
     stage_configuration: Optional[Stage]
     """The Stage configuration, containing canary deployment settings"""
-    is_canary: bool = False
+    is_canary: Optional[bool]
     """If the current call was directed to a canary deployment"""
     context_variables: Optional[ContextVariables]
     """The $context used in data models, authorizers, mapping templates, and CloudWatch access logging"""
@@ -131,6 +131,7 @@ class RestApiInvocationContext(RequestContext):
         self.integration = None
         self.stage_variables = None
         self.stage_configuration = None
+        self.is_canary = None
         self.context_variables = None
         self.logging_context_variables = None
         self.integration_request = None
