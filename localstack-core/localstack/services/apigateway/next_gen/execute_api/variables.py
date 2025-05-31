@@ -112,7 +112,7 @@ class ContextVariables(TypedDict, total=False):
     httpMethod: str
     """The HTTP method used"""
     identity: Optional[ContextVarsIdentity]
-    isCanaryRequest: Optional[bool | str]  # TODO: verify type
+    isCanaryRequest: Optional[bool]
     """Indicates if the request was directed to the canary"""
     path: str
     """The request path."""

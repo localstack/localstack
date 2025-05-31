@@ -20,6 +20,7 @@ from localstack.services.apigateway.next_gen.execute_api.helpers import (
     freeze_rest_api,
     parse_trace_id,
 )
+from localstack.services.apigateway.next_gen.execute_api.moto_helpers import get_stage_configuration
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 TEST_API_ID = "testapi"
@@ -64,6 +65,12 @@ def get_invocation_context():
         context.stage = TEST_API_STAGE
         context.account_id = TEST_AWS_ACCOUNT_ID
         context.region = TEST_AWS_REGION_NAME
+        context.stage_configuration = get_stage_configuration(
+            account_id=TEST_AWS_ACCOUNT_ID,
+            region=TEST_AWS_REGION_NAME,
+            api_id=TEST_API_ID,
+            stage_name=TEST_API_STAGE,
+        )
         return context
 
     return _create_context
@@ -72,7 +79,9 @@ def get_invocation_context():
 @pytest.fixture
 def parse_handler_chain() -> RestApiGatewayHandlerChain:
     """Returns a dummy chain for testing."""
-    return RestApiGatewayHandlerChain(request_handlers=[InvocationRequestParser()])
+    chain = RestApiGatewayHandlerChain(request_handlers=[InvocationRequestParser()])
+    chain.raise_on_error = True
+    return chain
 
 
 class TestParsingHandler:

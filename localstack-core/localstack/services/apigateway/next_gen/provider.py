@@ -216,6 +216,9 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
                     "useStageCache": False,
                 }
                 default_canary_settings.update(canary_settings)
+                default_canary_settings["percentTraffic"] = float(
+                    default_canary_settings["percentTraffic"]
+                )
                 moto_stage_copy.canary_settings = default_canary_settings
 
         moto_rest_api.stages[stage_name] = moto_stage_copy
@@ -291,7 +294,6 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
 
         if stage_name:
             moto_stage = moto_rest_api.stages[stage_name]
-            store.active_deployments.setdefault(router_api_id, {})[stage_name] = deployment_id
             if canary_settings:
                 moto_stage = current_stage
                 moto_rest_api.stages[stage_name] = current_stage
@@ -304,6 +306,7 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
                 default_settings.update(canary_settings)
                 moto_stage.canary_settings = default_settings
             else:
+                store.active_deployments.setdefault(router_api_id, {})[stage_name] = deployment_id
                 moto_stage.canary_settings = None
 
             if variables:
