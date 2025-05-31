@@ -5,7 +5,7 @@ from rolo import Request
 from rolo.gateway import RequestContext
 from werkzeug.datastructures import Headers
 
-from localstack.aws.api.apigateway import Integration, Method, Resource
+from localstack.aws.api.apigateway import Integration, Method, Resource, Stage
 from localstack.services.apigateway.models import RestApiDeployment
 
 from .variables import ContextVariableOverrides, ContextVariables, LoggingContextVariables
@@ -79,7 +79,7 @@ class RestApiInvocationContext(RequestContext):
     api_id: Optional[str]
     """The REST API identifier of the invoked API"""
     stage: Optional[str]
-    """The REST API stage linked to this invocation"""
+    """The REST API stage name linked to this invocation"""
     base_path: Optional[str]
     """The REST API base path mapped to the stage of this invocation"""
     deployment_id: Optional[str]
@@ -96,6 +96,10 @@ class RestApiInvocationContext(RequestContext):
     """The method of the resource the invocation matched"""
     stage_variables: Optional[dict[str, str]]
     """The Stage variables, also used in parameters mapping and mapping templates"""
+    stage_configuration: Optional[Stage]
+    """The Stage configuration, containing canary deployment settings"""
+    is_canary: bool = False
+    """If the current call was directed to a canary deployment"""
     context_variables: Optional[ContextVariables]
     """The $context used in data models, authorizers, mapping templates, and CloudWatch access logging"""
     context_variable_overrides: Optional[ContextVariableOverrides]
@@ -126,6 +130,7 @@ class RestApiInvocationContext(RequestContext):
         self.resource_method = None
         self.integration = None
         self.stage_variables = None
+        self.stage_configuration = None
         self.context_variables = None
         self.logging_context_variables = None
         self.integration_request = None

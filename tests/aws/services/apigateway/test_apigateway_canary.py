@@ -589,7 +589,6 @@ class TestStageCrudCanary:
         snapshot.match("update-stage-with-copy-2", update_stage_2)
 
 
-@pytest.mark.skip(reason="Not yet implemented")
 class TestCanaryDeployments:
     @markers.aws.validated
     def test_invoking_canary_deployment(self, aws_client, create_api_for_deployment, snapshot):
