@@ -1,3 +1,4 @@
+import datetime
 import json
 import logging
 
@@ -34,6 +35,10 @@ def apply_patches():
 
         if (cacheClusterSize or cacheClusterEnabled) and not self.cache_cluster_status:
             self.cache_cluster_status = "AVAILABLE"
+
+        now = datetime.datetime.now(tz=datetime.UTC)
+        self.created_date = now
+        self.last_updated_date = now
 
     apigateway_models_Stage_init_orig = apigateway_models.Stage.__init__
     apigateway_models.Stage.__init__ = apigateway_models_Stage_init
@@ -143,7 +148,26 @@ def apply_patches():
         if "documentationVersion" not in result:
             result["documentationVersion"] = getattr(self, "documentation_version", None)
 
+        if "canarySettings" not in result:
+            result["canarySettings"] = getattr(self, "canary_settings", None)
+
+        if "createdDate" not in result:
+            created_date = getattr(self, "created_date", None)
+            if created_date:
+                created_date = int(created_date.timestamp())
+            result["createdDate"] = created_date
+
+        if "lastUpdatedDate" not in result:
+            last_updated_date = getattr(self, "last_updated_date", None)
+            if last_updated_date:
+                last_updated_date = int(last_updated_date.timestamp())
+            result["lastUpdatedDate"] = last_updated_date
+
         return result
+
+    @patch(apigateway_models.Stage._str2bool, pass_target=False)
+    def apigateway_models_stage_str_to_bool(self, v: bool | str) -> bool:
+        return str_to_bool(v)
 
     # TODO remove this patch when the behavior is implemented in moto
     @patch(apigateway_models.APIGatewayBackend.create_rest_api)
