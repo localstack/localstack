@@ -677,7 +677,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def visit_node_intrinsic_function_fn_split(
         self, node_intrinsic_function: NodeIntrinsicFunction
-    ):
+    ) -> PreprocEntityDelta:
         # TODO: add further support for schema validation
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         arguments_before = arguments_delta.before
