@@ -234,6 +234,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
 
         extra_resource_properties = {}
+        event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
         if resource_provider is not None:
             # TODO: stack events
             try:
@@ -248,14 +249,16 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 stack = self._change_set.stack
-                stack_status = stack.status
-                if stack_status == StackStatus.CREATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
-                elif stack_status == StackStatus.UPDATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                match stack.status:
+                    case StackStatus.CREATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                    case StackStatus.UPDATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                    case StackStatus.DELETE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.DELETE_FAILED, reason=reason)
+                    case _:
+                        raise NotImplementedError(f"Unexpected stack status: {stack.status}")
                 return
-        else:
-            event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         self.resources.setdefault(logical_resource_id, {"Properties": {}})
         match event.status:
@@ -298,15 +301,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
                 # TODO: duplication
                 stack = self._change_set.stack
-                stack_status = stack.status
-                if stack_status == StackStatus.CREATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
-                elif stack_status == StackStatus.UPDATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
-                else:
-                    raise NotImplementedError(f"Unhandled stack status: '{stack.status}'")
-            case any:
-                raise NotImplementedError(f"Event status '{any}' not handled")
+                match stack.status:
+                    case StackStatus.CREATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                    case StackStatus.UPDATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                    case StackStatus.DELETE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.DELETE_FAILED, reason=reason)
+                    case _:
+                        raise NotImplementedError(f"Unhandled stack status: '{stack.status}'")
+            case other:
+                raise NotImplementedError(f"Event status '{other}' not handled")
 
     def create_resource_provider_payload(
         self,
