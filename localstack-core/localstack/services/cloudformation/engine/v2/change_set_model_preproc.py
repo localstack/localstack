@@ -168,6 +168,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_resource in node_template.resources.resources:
             if node_resource.name == resource_name:
+                self.visit(node_resource)
                 return node_resource
         raise RuntimeError(f"No resource '{resource_name}' was found")
 
@@ -177,6 +178,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
+                self.visit(node_property)
                 return node_property
         return None
 
