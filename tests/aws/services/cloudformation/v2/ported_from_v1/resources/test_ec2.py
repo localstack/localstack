@@ -63,10 +63,9 @@ def test_simple_route_table_creation(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("VpcId", "vpc-id"))
     snapshot.add_transformer(snapshot.transform.key_value("RouteTableId", "vpc-id"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # with pytest.raises(ec2.exceptions.ClientError):
-    #     ec2.describe_route_tables(RouteTableIds=[route_table_id])
+    stack.destroy()
+    with pytest.raises(ec2.exceptions.ClientError):
+        ec2.describe_route_tables(RouteTableIds=[route_table_id])
 
 
 @pytest.mark.skip(reason="CFNV2:Other")
@@ -197,27 +196,26 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("attachment", attachment_description["TransitGatewayAttachments"][0])
     snapshot.match("gateway", gateway_description["TransitGateways"][0])
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # descriptions = aws_client.ec2.describe_transit_gateways(
-    #     TransitGatewayIds=[stack.outputs["TransitGateway"]]
-    # )
-    # if is_aws_cloud():
-    #     # aws changes the state to deleted
-    #     descriptions = descriptions["TransitGateways"][0]
-    #     assert descriptions["State"] == "deleted"
-    # else:
-    #     # moto directly deletes the transit gateway
-    #     transit_gateways_ids = [
-    #         tgateway["TransitGatewayId"] for tgateway in descriptions["TransitGateways"]
-    #     ]
-    #     assert stack.outputs["TransitGateway"] not in transit_gateways_ids
+    descriptions = aws_client.ec2.describe_transit_gateways(
+        TransitGatewayIds=[stack.outputs["TransitGateway"]]
+    )
+    if is_aws_cloud():
+        # aws changes the state to deleted
+        descriptions = descriptions["TransitGateways"][0]
+        assert descriptions["State"] == "deleted"
+    else:
+        # moto directly deletes the transit gateway
+        transit_gateways_ids = [
+            tgateway["TransitGatewayId"] for tgateway in descriptions["TransitGateways"]
+        ]
+        assert stack.outputs["TransitGateway"] not in transit_gateways_ids
 
-    # attachment_description = aws_client.ec2.describe_transit_gateway_attachments(
-    #     TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
-    # )["TransitGatewayAttachments"]
-    # assert attachment_description[0]["State"] == "deleted"
+    attachment_description = aws_client.ec2.describe_transit_gateway_attachments(
+        TransitGatewayAttachmentIds=[stack.outputs["Attachment"]]
+    )["TransitGatewayAttachments"]
+    assert attachment_description[0]["State"] == "deleted"
 
 
 @markers.aws.validated
@@ -246,11 +244,10 @@ def test_vpc_with_route_table(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("RouteTableId"))
     snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # with pytest.raises(aws_client.ec2.exceptions.ClientError):
-    #     aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
+    with pytest.raises(aws_client.ec2.exceptions.ClientError):
+        aws_client.ec2.describe_route_tables(RouteTableIds=[route_id])
 
 
 @pytest.mark.skip(reason="update doesn't change value for instancetype")

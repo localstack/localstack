@@ -36,7 +36,7 @@ def test_cfn_event_api_destination_resource(deploy_cfn_template, region_name, aw
         ]
         assert len(api_destinations) == expected_len
 
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../../../templates/events_apidestination.yml"
         ),
@@ -46,9 +46,8 @@ def test_cfn_event_api_destination_resource(deploy_cfn_template, region_name, aw
     )
     _assert(1)
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # _assert(0)
+    stack.destroy()
+    _assert(0)
 
 
 @pytest.mark.skip(reason="CFNV2:Other")
@@ -198,16 +197,15 @@ def test_cfn_event_bus_resource(deploy_cfn_template, aws_client):
         connections = [con for con in rs["Connections"] if con["Name"] == "my-test-conn"]
         assert len(connections) == expected_len
 
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../../../templates/template31.yaml"
         )
     )
     _assert(1)
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # _assert(0)
+    stack.destroy()
+    _assert(0)
 
 
 @markers.aws.validated

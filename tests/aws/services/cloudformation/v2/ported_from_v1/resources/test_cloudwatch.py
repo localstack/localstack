@@ -92,14 +92,13 @@ def test_composite_alarm_creation(aws_client, deploy_cfn_template, snapshot):
     response = aws_client.cloudwatch.describe_alarms(AlarmNames=[metric_alarm_name])
     snapshot.match("metric_alarm", response["MetricAlarms"])
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # response = aws_client.cloudwatch.describe_alarms(
-    #     AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
-    # )
-    # assert not response["CompositeAlarms"]
-    # response = aws_client.cloudwatch.describe_alarms(AlarmNames=[metric_alarm_name])
-    # assert not response["MetricAlarms"]
+    stack.destroy()
+    response = aws_client.cloudwatch.describe_alarms(
+        AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
+    )
+    assert not response["CompositeAlarms"]
+    response = aws_client.cloudwatch.describe_alarms(AlarmNames=[metric_alarm_name])
+    assert not response["MetricAlarms"]
 
 
 @markers.aws.validated
@@ -114,7 +113,6 @@ def test_alarm_ext_statistic(aws_client, deploy_cfn_template, snapshot):
     response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
     snapshot.match("simple_alarm", response["MetricAlarms"])
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
-    # assert not response["MetricAlarms"]
+    stack.destroy()
+    response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+    assert not response["MetricAlarms"]
