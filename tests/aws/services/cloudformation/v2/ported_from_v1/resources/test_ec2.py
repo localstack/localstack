@@ -37,10 +37,9 @@ def test_simple_route_table_creation_without_vpc(deploy_cfn_template, aws_client
     snapshot.add_transformer(snapshot.transform.key_value("VpcId", "vpc-id"))
     snapshot.add_transformer(snapshot.transform.key_value("RouteTableId", "vpc-id"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # with pytest.raises(ec2.exceptions.ClientError):
-    #     ec2.describe_route_tables(RouteTableIds=[route_table_id])
+    stack.destroy()
+    with pytest.raises(ec2.exceptions.ClientError):
+        ec2.describe_route_tables(RouteTableIds=[route_table_id])
 
 
 @markers.aws.validated
