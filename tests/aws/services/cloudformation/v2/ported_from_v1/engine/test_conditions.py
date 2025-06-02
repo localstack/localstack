@@ -427,7 +427,6 @@ class TestCloudFormationConditions:
         else:
             assert stack.outputs["Result"] == "false"
 
-    @pytest.mark.skip(reason="CFNV2:Fn::Select")
     @markers.aws.validated
     def test_conditional_with_select(self, deploy_cfn_template, aws_client):
         stack = deploy_cfn_template(
