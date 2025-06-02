@@ -20,10 +20,18 @@ from localstack.aws.api.dynamodb import (
     TableName,
     Update,
 )
+from localstack.aws.api.dynamodbstreams import (
+    ResourceNotFoundException as DynamoDBStreamsResourceNotFoundException,
+)
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Response
-from localstack.utils.aws.arns import dynamodb_table_arn, get_partition
+from localstack.utils.aws.arns import (
+    dynamodb_stream_arn,
+    dynamodb_table_arn,
+    get_partition,
+    parse_arn,
+)
 from localstack.utils.json import canonical_json
 from localstack.utils.testutil import list_all_resources
 
@@ -348,3 +356,32 @@ def modify_ddblocal_arns(chain, context: RequestContext, response: Response):
 
     # update x-amz-crc32 header required by some clients
     response.headers["x-amz-crc32"] = crc32(response.data) & 0xFFFFFFFF
+
+
+def change_region_in_ddb_stream_arn(arn: str, region: str) -> str:
+    """
+    Modify the ARN or a DynamoDB Stream by changing its region.
+    We need this logic when dealing with global tables, as we create a stream only in the originating region, and we
+    need to modify the ARN to mimic the stream of the replica regions.
+    """
+    arn_data = parse_arn(arn)
+    if arn_data["region"] == region:
+        return arn
+
+    if arn_data["service"] != "dynamodb":
+        raise Exception(f"{arn} is not a DynamoDB Streams ARN")
+
+    # Note: a DynamoDB Streams ARN has the following pattern:
+    #   arn:aws:dynamodb:<region>:<account>:table/<table_name>/stream/<latest_stream_label>
+    resource_splits = arn_data["resource"].split("/")
+    if len(resource_splits) != 4:
+        raise DynamoDBStreamsResourceNotFoundException(
+            f"The format of the '{arn}' ARN is not valid"
+        )
+
+    return dynamodb_stream_arn(
+        table_name=resource_splits[1],
+        latest_stream_label=resource_splits[-1],
+        account_id=arn_data["account"],
+        region_name=region,
+    )
