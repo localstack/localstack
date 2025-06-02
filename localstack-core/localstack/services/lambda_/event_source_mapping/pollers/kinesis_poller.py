@@ -37,6 +37,7 @@ class KinesisPoller(StreamPoller):
         invoke_identity_arn: str | None = None,
         kinesis_namespace: bool = False,
         esm_uuid: str | None = None,
+        shards: dict[str, str] | None = None,
     ):
         super().__init__(
             source_arn,
@@ -45,6 +46,7 @@ class KinesisPoller(StreamPoller):
             processor,
             esm_uuid=esm_uuid,
             partner_resource_arn=partner_resource_arn,
+            shards=shards,
         )
         self.invoke_identity_arn = invoke_identity_arn
         self.kinesis_namespace = kinesis_namespace

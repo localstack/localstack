@@ -11,7 +11,7 @@ from moto.ec2.utils import (
     random_vpc_id,
 )
 
-from localstack.constants import TAG_KEY_CUSTOM_ID
+from localstack.constants import AWS_REGION_US_EAST_1, TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.patches import SecurityGroupIdentifier, VpcIdentifier
 from localstack.testing.pytest import markers
 from localstack.utils.id_generator import localstack_id_manager
@@ -974,3 +974,59 @@ def test_raise_create_volume_without_size(snapshot, aws_client):
     with pytest.raises(ClientError) as e:
         aws_client.ec2.create_volume(AvailabilityZone="eu-central-1a")
     snapshot.match("request-missing-size", e.value.response)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filter_with_zone_names(snapshot, aws_client_factory):
+    snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
+
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
+    availability_zones = ec2_client.describe_availability_zones(ZoneNames=["us-east-1a"])
+    snapshot.match("availability_zones", availability_zones)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filter_with_zone_ids(snapshot, aws_client_factory):
+    snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
+
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
+    availability_zones = ec2_client.describe_availability_zones(ZoneIds=["use1-az1"])
+    snapshot.match("availability_zones", availability_zones)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filters(snapshot, aws_client_factory):
+    snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
+
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
+    availability_zones = ec2_client.describe_availability_zones(
+        Filters=[{"Name": "zone-name", "Values": ["us-east-1a"]}]
+    )
+    snapshot.match("availability_zones", availability_zones)

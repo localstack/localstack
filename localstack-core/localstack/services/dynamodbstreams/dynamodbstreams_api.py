@@ -5,8 +5,10 @@ from typing import TYPE_CHECKING, Dict
 from bson.json_util import dumps
 
 from localstack import config
+from localstack.aws.api import RequestContext
 from localstack.aws.api.dynamodbstreams import StreamStatus, StreamViewType, TableName
 from localstack.aws.connect import connect_to
+from localstack.services.dynamodb.v2.provider import DynamoDBProvider
 from localstack.services.dynamodbstreams.models import DynamoDbStreamsStore, dynamodbstreams_stores
 from localstack.utils.aws import arns, resources
 from localstack.utils.common import now_utc
@@ -211,3 +213,23 @@ def get_shard_id(stream: Dict, kinesis_shard_id: str) -> str:
         stream["shards_id_map"][kinesis_shard_id] = ddb_stream_shard_id
 
     return ddb_stream_shard_id
+
+
+def get_original_region(
+    context: RequestContext, stream_arn: str | None = None, table_name: str | None = None
+) -> str:
+    """
+    In DDB Global tables, we forward all the requests to the original region, instead of really replicating the data.
+    Since each table has a separate stream associated, we need to have a similar forwarding logic for DDB Streams.
+    To determine the original region, we need the table name, that can be either provided here or determined from the
+    ARN of the stream.
+    """
+    if not stream_arn and not table_name:
+        LOG.debug(
+            "No Stream ARN or table name provided. Returning region '%s' from the request",
+            context.region,
+        )
+        return context.region
+
+    table_name = table_name or table_name_from_stream_arn(stream_arn)
+    return DynamoDBProvider.get_global_table_region(context=context, table_name=table_name)
