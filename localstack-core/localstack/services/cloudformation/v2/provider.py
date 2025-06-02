@@ -483,5 +483,6 @@ class CloudformationProviderV2(CloudformationProvider):
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
+                stack.set_stack_status(StackStatus.DELETE_FAILED)
 
         start_worker_thread(_run)
