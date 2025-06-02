@@ -516,9 +516,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     template_variable_value = sub_parameters[template_variable_name]
                 else:
                     try:
-                        resource_delta = self._resolve_reference(logical_id=template_variable_name)
+                        reference_delta = self._resolve_reference(logical_id=template_variable_name)
                         template_variable_value = (
-                            resource_delta.before if select_before else resource_delta.after
+                            reference_delta.before if select_before else reference_delta.after
                         )
                     except RuntimeError:
                         raise RuntimeError(
