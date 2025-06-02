@@ -459,6 +459,13 @@ class CloudformationProviderV2(CloudformationProvider):
             # aws will silently ignore invalid stack names - we should do the same
             return
 
+        # shortcut for stacks which have no deployed resources i.e. where a change set was
+        # created, but never executed
+        if stack.status == StackStatus.REVIEW_IN_PROGRESS and not stack.resolved_resources:
+            stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+            stack.deletion_time = datetime.now(tz=timezone.utc)
+            return
+
         # create a dummy change set
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
         change_set.populate_update_graph(
