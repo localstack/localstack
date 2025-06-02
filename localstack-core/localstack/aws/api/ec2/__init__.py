@@ -3342,6 +3342,14 @@ class SnapshotLocationEnum(StrEnum):
     local = "local"
 
 
+class SnapshotReturnCodes(StrEnum):
+    success = "success"
+    skipped = "skipped"
+    missing_permissions = "missing-permissions"
+    internal_error = "internal-error"
+    client_error = "client-error"
+
+
 class SnapshotState(StrEnum):
     pending = "pending"
     completed = "completed"
@@ -3903,6 +3911,12 @@ class VpnState(StrEnum):
 
 class VpnStaticRouteSource(StrEnum):
     Static = "Static"
+
+
+class VpnTunnelProvisioningStatus(StrEnum):
+    available = "available"
+    pending = "pending"
+    failed = "failed"
 
 
 class WeekDay(StrEnum):
@@ -4536,6 +4550,18 @@ class ActiveInstance(TypedDict, total=False):
 
 
 ActiveInstanceSet = List[ActiveInstance]
+
+
+class ActiveVpnTunnelStatus(TypedDict, total=False):
+    Phase1EncryptionAlgorithm: Optional[String]
+    Phase2EncryptionAlgorithm: Optional[String]
+    Phase1IntegrityAlgorithm: Optional[String]
+    Phase2IntegrityAlgorithm: Optional[String]
+    Phase1DHGroup: Optional[Integer]
+    Phase2DHGroup: Optional[Integer]
+    IkeVersion: Optional[String]
+    ProvisioningStatus: Optional[VpnTunnelProvisioningStatus]
+    ProvisioningStatusReason: Optional[String]
 
 
 class AddIpamOperatingRegion(TypedDict, total=False):
@@ -10236,6 +10262,7 @@ class CreateVpnConnectionRequest(ServiceRequest):
     VpnGatewayId: Optional[VpnGatewayId]
     TransitGatewayId: Optional[TransitGatewayId]
     TagSpecifications: Optional[TagSpecificationList]
+    PreSharedKeyStorage: Optional[String]
     DryRun: Optional[Boolean]
     Options: Optional[VpnConnectionOptionsSpecification]
 
@@ -10364,6 +10391,7 @@ class VpnConnection(TypedDict, total=False):
     Routes: Optional[VpnStaticRouteList]
     Tags: Optional[TagList]
     VgwTelemetry: Optional[VgwTelemetryList]
+    PreSharedKeyArn: Optional[String]
     VpnConnectionId: Optional[String]
     State: Optional[VpnState]
     CustomerGatewayConfiguration: Optional[customerGatewayConfiguration]
@@ -10968,6 +10996,14 @@ class DeleteSnapshotRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class DeleteSnapshotReturnCode(TypedDict, total=False):
+    SnapshotId: Optional[SnapshotId]
+    ReturnCode: Optional[SnapshotReturnCodes]
+
+
+DeleteSnapshotResultSet = List[DeleteSnapshotReturnCode]
+
+
 class DeleteSpotDatafeedSubscriptionRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -11300,11 +11336,13 @@ class DeprovisionPublicIpv4PoolCidrResult(TypedDict, total=False):
 
 class DeregisterImageRequest(ServiceRequest):
     ImageId: ImageId
+    DeleteAssociatedSnapshots: Optional[Boolean]
     DryRun: Optional[Boolean]
 
 
 class DeregisterImageResult(TypedDict, total=False):
-    pass
+    Return: Optional[Boolean]
+    DeleteSnapshotResults: Optional[DeleteSnapshotResultSet]
 
 
 InstanceTagKeySet = List[String]
@@ -16904,6 +16942,16 @@ class ExportVerifiedAccessInstanceClientConfigurationResult(TypedDict, total=Fal
     OpenVpnConfigurations: Optional[VerifiedAccessInstanceOpenVpnClientConfigurationList]
 
 
+class GetActiveVpnTunnelStatusRequest(ServiceRequest):
+    VpnConnectionId: VpnConnectionId
+    VpnTunnelOutsideIpAddress: String
+    DryRun: Optional[Boolean]
+
+
+class GetActiveVpnTunnelStatusResult(TypedDict, total=False):
+    ActiveVpnTunnelStatus: Optional[ActiveVpnTunnelStatus]
+
+
 class GetAllowedImagesSettingsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -17930,6 +17978,7 @@ class GetVpnConnectionDeviceSampleConfigurationRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnConnectionDeviceTypeId: VpnConnectionDeviceTypeId
     InternetKeyExchangeVersion: Optional[String]
+    SampleType: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -19487,6 +19536,7 @@ class ModifyVpnTunnelOptionsRequest(ServiceRequest):
     TunnelOptions: ModifyVpnTunnelOptionsSpecification
     DryRun: Optional[Boolean]
     SkipTunnelReplacement: Optional[Boolean]
+    PreSharedKeyStorage: Optional[String]
 
 
 class ModifyVpnTunnelOptionsResult(TypedDict, total=False):
@@ -23506,7 +23556,12 @@ class Ec2Api:
 
     @handler("DeregisterImage")
     def deregister_image(
-        self, context: RequestContext, image_id: ImageId, dry_run: Boolean | None = None, **kwargs
+        self,
+        context: RequestContext,
+        image_id: ImageId,
+        delete_associated_snapshots: Boolean | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
     ) -> DeregisterImageResult:
         raise NotImplementedError
 
@@ -26315,6 +26370,17 @@ class Ec2Api:
     ) -> ExportVerifiedAccessInstanceClientConfigurationResult:
         raise NotImplementedError
 
+    @handler("GetActiveVpnTunnelStatus")
+    def get_active_vpn_tunnel_status(
+        self,
+        context: RequestContext,
+        vpn_connection_id: VpnConnectionId,
+        vpn_tunnel_outside_ip_address: String,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> GetActiveVpnTunnelStatusResult:
+        raise NotImplementedError
+
     @handler("GetAllowedImagesSettings")
     def get_allowed_images_settings(
         self, context: RequestContext, dry_run: Boolean | None = None, **kwargs
@@ -26918,6 +26984,7 @@ class Ec2Api:
         vpn_connection_id: VpnConnectionId,
         vpn_connection_device_type_id: VpnConnectionDeviceTypeId,
         internet_key_exchange_version: String | None = None,
+        sample_type: String | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> GetVpnConnectionDeviceSampleConfigurationResult:
@@ -28036,6 +28103,7 @@ class Ec2Api:
         tunnel_options: ModifyVpnTunnelOptionsSpecification,
         dry_run: Boolean | None = None,
         skip_tunnel_replacement: Boolean | None = None,
+        pre_shared_key_storage: String | None = None,
         **kwargs,
     ) -> ModifyVpnTunnelOptionsResult:
         raise NotImplementedError
