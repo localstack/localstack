@@ -70,7 +70,7 @@ def test_simple_route_table_creation(deploy_cfn_template, aws_client, snapshot):
     #     ec2.describe_route_tables(RouteTableIds=[route_table_id])
 
 
-@pytest.mark.skip(reason="CFNV2:Fn::Select, CFNV2:Fn::GatAZs")
+@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_vpc_creates_default_sg(deploy_cfn_template, aws_client):
     result = deploy_cfn_template(
@@ -164,7 +164,6 @@ def test_dhcp_options(aws_client, deploy_cfn_template, snapshot):
     snapshot.match("description", response["DhcpOptions"][0])
 
 
-@pytest.mark.skip(reason="CFNV2:Fn::Select, CFNV2:Fn::GatAZs")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

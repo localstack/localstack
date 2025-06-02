@@ -716,8 +716,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         arguments_after = arguments_delta.after
 
         def _compute_fn_get_a_zs(region) -> Any:
-            if not isinstance(region, str) or not region:
+            if not isinstance(region, str):
                 raise RuntimeError(f"Invalid region value for Fn::GetAZs: '{region}'")
+
+            if not region:
+                region = self._change_set.region_name
 
             account_id = self._change_set.account_id
             ec2_client = connect_to(aws_access_key_id=account_id, region_name=region).ec2
