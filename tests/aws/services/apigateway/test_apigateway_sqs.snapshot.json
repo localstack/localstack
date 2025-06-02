@@ -62,5 +62,62 @@
         }
       ]
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_sqs.py::test_sqs_amz_json_protocol": {
+    "recorded-date": "20-05-2025, 15:07:32",
+    "recorded-content": {
+      "sqs-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": {
+            "context": {
+              "resourceId": "<resource-id:1>",
+              "resourcePath": "/sqs",
+              "httpMethod": "POST",
+              "extendedRequestId": "<extended-request-id:1>",
+              "requestTime": "<request-time:1>",
+              "path": "/testing/sqs",
+              "accountId": "111111111111",
+              "protocol": "HTTP/1.1",
+              "requestOverride": "",
+              "stage": "testing",
+              "domainPrefix": "<api-id:1>",
+              "requestTimeEpoch": "request-time-epoch",
+              "requestId": "<uuid:2>",
+              "identity": "",
+              "domainName": "<domain-name:1>",
+              "deploymentId": "<deployment-id:1>",
+              "responseOverride": "",
+              "apiId": "<api-id:1>"
+            },
+            "identity": {
+              "cognitoIdentityPoolId": "",
+              "accountId": "",
+              "cognitoIdentityId": "",
+              "caller": "",
+              "sourceIp": "<source-ip:1>",
+              "principalOrgId": "",
+              "accessKey": "",
+              "cognitoAuthenticationType": "",
+              "cognitoAuthenticationProvider": "",
+              "userArn": "",
+              "userAgent": "python/requests/tests",
+              "user": ""
+            },
+            "requestOverride": {
+              "path": "",
+              "header": "",
+              "querystring": ""
+            },
+            "responseOverride": {
+              "header": ""
+            },
+            "authorizer_keys": {}
+          }
+        }
+      ]
+    }
   }
 }
