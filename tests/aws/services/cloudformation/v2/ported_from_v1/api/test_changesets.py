@@ -112,7 +112,6 @@ class TestUpdates:
 
         res.destroy()
 
-    @pytest.mark.skip(reason="CFNV2:Destroy")
     @markers.aws.validated
     # TODO: the error response is incorrect, however the test is otherwise validated and raises
     #  an error because the SSM parameter has been deleted (removed from the stack).

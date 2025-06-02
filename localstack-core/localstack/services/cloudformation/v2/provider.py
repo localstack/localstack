@@ -458,5 +458,28 @@ class CloudformationProviderV2(CloudformationProvider):
             # aws will silently ignore invalid stack names - we should do the same
             return
 
-        # TODO: actually delete
-        stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+        # create a dummy change set
+        change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
+        change_set.populate_update_graph(
+            before_template=stack.template,
+            after_template=None,
+            before_parameters=stack.resolved_parameters,
+            after_parameters=None,
+        )
+
+        change_set_executor = ChangeSetModelExecutor(change_set)
+
+        def _run(*args):
+            try:
+                stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
+                change_set_executor.execute()
+                stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+            except Exception as e:
+                LOG.warning(
+                    "Failed to delete stack '%s': %s",
+                    stack.stack_name,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+
+        start_worker_thread(_run)
