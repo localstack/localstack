@@ -1,4 +1,5 @@
 import logging
+from datetime import timezone, datetime
 from typing import Any
 
 from localstack.aws.api import RequestContext, handler
@@ -448,6 +449,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
                 change_set_executor.execute()
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+                stack.deletion_time = datetime.now(tz=timezone.utc)
             except Exception as e:
                 LOG.warning(
                     "Failed to delete stack '%s': %s",
