@@ -150,3 +150,44 @@ def test_sns_topic_with_attributes(infrastructure_setup, aws_client, snapshot):
             TopicArn=outputs["TopicArn"],
         )
         snapshot.match("topic-archive-policy", response["Attributes"]["ArchivePolicy"])
+
+
+@markers.aws.validated
+def test_sns_subscription_region(
+    snapshot,
+    deploy_cfn_template,
+    aws_client,
+    sqs_queue,
+    aws_client_factory,
+    region_name,
+    secondary_region_name,
+    cleanups,
+):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.regex(secondary_region_name, "<region2>"))
+    topic_name = f"topic-{short_uid()}"
+    # we create a topic in a secondary region, different from the stack
+    sns_client = aws_client_factory(region_name=secondary_region_name).sns
+    topic_arn = sns_client.create_topic(Name=topic_name)["TopicArn"]
+    cleanups.append(lambda: sns_client.delete_topic(TopicArn=topic_arn))
+
+    queue_url = sqs_queue
+    queue_arn = aws_client.sqs.get_queue_attributes(
+        QueueUrl=queue_url, AttributeNames=["QueueArn"]
+    )["Attributes"]["QueueArn"]
+
+    # we want to deploy the Stack in a different region than the Topic, to see how CloudFormation properly does the
+    # `Subscribe` call in the `Region` parameter of the Subscription resource
+    stack = deploy_cfn_template(
+        parameters={
+            "TopicArn": topic_arn,
+            "QueueArn": queue_arn,
+            "TopicRegion": secondary_region_name,
+        },
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_subscription_cross_region.yml"
+        ),
+    )
+    sub_arn = stack.outputs["SubscriptionArn"]
+    subscription = sns_client.get_subscription_attributes(SubscriptionArn=sub_arn)
+    snapshot.match("subscription-1", subscription)

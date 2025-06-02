@@ -168,7 +168,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_resource in node_template.resources.resources:
             if node_resource.name == resource_name:
-                self.visit(node_resource)
                 return node_resource
         raise RuntimeError(f"No resource '{resource_name}' was found")
 
@@ -178,7 +177,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
-                self.visit(node_property)
                 return node_property
         return None
 
@@ -191,9 +189,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # process the resource if this wasn't processed already. Ideally, values should only
         # be accessible through delta objects, to ensure computation is always complete at
         # every level.
-        _ = self._get_node_resource_for(
+        node_resource = self._get_node_resource_for(
             resource_name=resource_logical_id, node_template=self._node_template
         )
+        self.visit(node_resource)
+
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
             raise RuntimeError(
@@ -527,12 +527,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     template_variable_value = sub_parameters[template_variable_name]
                 else:
                     try:
-                        resource_delta = self._resolve_reference(logical_id=template_variable_name)
+                        reference_delta = self._resolve_reference(logical_id=template_variable_name)
                         template_variable_value = (
-                            resource_delta.before if select_before else resource_delta.after
+                            reference_delta.before if select_before else reference_delta.after
                         )
-                        if isinstance(template_variable_value, PreprocResource):
-                            template_variable_value = template_variable_value.logical_id
                     except RuntimeError:
                         raise RuntimeError(
                             f"Undefined variable name in Fn::Sub string template '{template_variable_name}'"

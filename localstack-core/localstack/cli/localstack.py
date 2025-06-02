@@ -472,6 +472,13 @@ def _print_service_table(services: Dict[str, str]) -> None:
     is_flag=True,
     default=False,
 )
+@click.option(
+    "--stack",
+    "-s",
+    type=str,
+    help="Use a specific stack with optional version. Examples: [localstack:4.5, snowflake]",
+    required=False,
+)
 @publish_invocation
 def cmd_start(
     docker: bool,
@@ -483,6 +490,7 @@ def cmd_start(
     publish: Tuple = (),
     volume: Tuple = (),
     host_dns: bool = False,
+    stack: str = None,
 ) -> None:
     """
     Start the LocalStack runtime.
@@ -495,6 +503,18 @@ def cmd_start(
         raise CLIError("Please specify either --docker or --host")
     if host and detached:
         raise CLIError("Cannot start detached in host mode")
+
+    if stack:
+        # Validate allowed stacks
+        stack_name = stack.split(":")[0]
+        allowed_stacks = ("localstack", "localstack-pro", "snowflake")
+        if stack_name.lower() not in allowed_stacks:
+            raise CLIError(f"Invalid stack '{stack_name}'. Allowed stacks: {allowed_stacks}.")
+
+        # Set IMAGE_NAME, defaulting to :latest if no version specified
+        if ":" not in stack:
+            stack = f"{stack}:latest"
+        os.environ["IMAGE_NAME"] = f"localstack/{stack}"
 
     if not no_banner:
         print_banner()

@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
+from localstack.config import is_env_true
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -1601,7 +1602,14 @@ class TestSQSEventSourceMapping:
             20,
             100,
             1_000,
-            10_000,
+            pytest.param(
+                10_000,
+                id="10000",
+                marks=pytest.mark.skipif(
+                    condition=not is_env_true("TEST_PERFORMANCE"),
+                    reason="Too resource intensive to be randomly allocated to a runner.",
+                ),
+            ),
         ],
     )
     @markers.aws.only_localstack
