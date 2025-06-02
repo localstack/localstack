@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import re
 from typing import Any, Final, Generic, Optional, TypeVar
 
 from localstack.services.cloudformation.engine.v2.change_set_model import (
@@ -254,20 +255,20 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return condition_delta
         raise RuntimeError(f"No condition '{logical_id}' was found.")
 
-    def _resolve_pseudo_parameter(self, pseudo_parameter_name: str) -> PreprocEntityDelta:
+    def _resolve_pseudo_parameter(self, pseudo_parameter_name: str) -> Any:
         match pseudo_parameter_name:
             case "AWS::Partition":
-                after = get_partition(self._change_set.region_name)
+                return get_partition(self._change_set.region_name)
             case "AWS::AccountId":
-                after = self._change_set.stack.account_id
+                return self._change_set.stack.account_id
             case "AWS::Region":
-                after = self._change_set.stack.region_name
+                return self._change_set.stack.region_name
             case "AWS::StackName":
-                after = self._change_set.stack.stack_name
+                return self._change_set.stack.stack_name
             case "AWS::StackId":
-                after = self._change_set.stack.stack_id
+                return self._change_set.stack.stack_id
             case "AWS::URLSuffix":
-                after = _AWS_URL_SUFFIX
+                return _AWS_URL_SUFFIX
             case "AWS::NoValue":
                 # TODO: add support for NoValue, None cannot be used to communicate a Null value in preproc classes.
                 raise NotImplementedError("The use of AWS:NoValue is currently unsupported")
@@ -277,14 +278,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 )
             case _:
                 raise RuntimeError(f"Unknown pseudo parameter value '{pseudo_parameter_name}'")
-        return PreprocEntityDelta(before=after, after=after)
 
     def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
         if logical_id in _PSEUDO_PARAMETERS:
-            pseudo_parameter_delta = self._resolve_pseudo_parameter(
+            pseudo_parameter_value = self._resolve_pseudo_parameter(
                 pseudo_parameter_name=logical_id
             )
-            return pseudo_parameter_delta
+            # Pseudo parameters are constants within the lifecycle of a template.
+            return PreprocEntityDelta(before=pseudo_parameter_value, after=pseudo_parameter_value)
 
         node_parameter = self._get_node_parameter_if_exists(parameter_name=logical_id)
         if isinstance(node_parameter, NodeParameter):
@@ -475,6 +476,73 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         else:
             after = None
         # Implicit change type computation.
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_sub(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_sub(args: str | list[Any], select_before: bool = False) -> str:
+            # TODO: add further schema validation.
+            string_template: str
+            sub_parameters: dict
+            if isinstance(args, str):
+                string_template = args
+                sub_parameters = dict()
+            elif (
+                isinstance(args, list)
+                and len(args) == 2
+                and isinstance(args[0], str)
+                and isinstance(args[1], dict)
+            ):
+                string_template = args[0]
+                sub_parameters = args[1]
+            else:
+                raise RuntimeError(
+                    "Invalid arguments shape for Fn::Sub, expected a String "
+                    f"or a Tuple of String and Map but got '{args}'"
+                )
+            sub_string = string_template
+            template_variable_names = re.findall("\\${([^}]+)}", string_template)
+            for template_variable_name in template_variable_names:
+                if template_variable_name in _PSEUDO_PARAMETERS:
+                    template_variable_value = self._resolve_pseudo_parameter(
+                        pseudo_parameter_name=template_variable_name
+                    )
+                elif template_variable_name in sub_parameters:
+                    template_variable_value = sub_parameters[template_variable_name]
+                else:
+                    try:
+                        reference_delta = self._resolve_reference(logical_id=template_variable_name)
+                        template_variable_value = (
+                            reference_delta.before if select_before else reference_delta.after
+                        )
+                    except RuntimeError:
+                        raise RuntimeError(
+                            f"Undefined variable name in Fn::Sub string template '{template_variable_name}'"
+                        )
+                sub_string = sub_string.replace(
+                    f"${{{template_variable_name}}}", template_variable_value
+                )
+            return sub_string
+
+        before = None
+        if (
+            isinstance(arguments_before, str)
+            or isinstance(arguments_before, list)
+            and len(arguments_before) == 2
+        ):
+            before = _compute_sub(args=arguments_before, select_before=True)
+        after = None
+        if (
+            isinstance(arguments_after, str)
+            or isinstance(arguments_after, list)
+            and len(arguments_after) == 2
+        ):
+            after = _compute_sub(args=arguments_after)
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_join(
