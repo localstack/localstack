@@ -3139,6 +3139,7 @@ class PutBucketOwnershipControlsRequest(ServiceRequest):
     ContentMD5: Optional[ContentMD5]
     ExpectedBucketOwner: Optional[AccountId]
     OwnershipControls: OwnershipControls
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
 
 
 class PutBucketPolicyRequest(ServiceRequest):
@@ -4695,6 +4696,7 @@ class S3Api:
         ownership_controls: OwnershipControls,
         content_md5: ContentMD5 | None = None,
         expected_bucket_owner: AccountId | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

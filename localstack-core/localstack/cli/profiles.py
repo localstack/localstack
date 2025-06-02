@@ -31,7 +31,7 @@ def set_and_remove_profile_from_sys_argv():
               not passed to the localstack CLI. This allows the profile option
               to be set at any point on the command line.
     """
-    parser = argparse.ArgumentParser()
+    parser = argparse.ArgumentParser(add_help=False)
     parser.add_argument("--profile")
     namespace, sys.argv = parser.parse_known_args(sys.argv)
     profile = namespace.profile

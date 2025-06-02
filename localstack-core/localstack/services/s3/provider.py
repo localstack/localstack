@@ -3815,8 +3815,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         bucket: BucketName,
         ownership_controls: OwnershipControls,
-        content_md5: ContentMD5 = None,
-        expected_bucket_owner: AccountId = None,
+        content_md5: ContentMD5 | None = None,
+        expected_bucket_owner: AccountId | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
         **kwargs,
     ) -> None:
         # TODO: this currently only mock the operation, but its actual effect is not emulated

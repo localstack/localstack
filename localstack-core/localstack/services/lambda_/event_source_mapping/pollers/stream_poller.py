@@ -46,6 +46,7 @@ LOG = logging.getLogger(__name__)
 #   https://docs.aws.amazon.com/streams/latest/dev/kinesis-using-sdk-java-resharding.html
 class StreamPoller(Poller):
     # Mapping of shard id => shard iterator
+    # TODO: This mapping approach needs to be re-worked to instead store last processed sequence number.
     shards: dict[str, str]
     # Iterator for round-robin polling from different shards because a batch cannot contain events from different shards
     # This is a workaround for not handling shards in parallel.
@@ -70,11 +71,12 @@ class StreamPoller(Poller):
         processor: EventProcessor | None = None,
         partner_resource_arn: str | None = None,
         esm_uuid: str | None = None,
+        shards: dict[str, str] | None = None,
     ):
         super().__init__(source_arn, source_parameters, source_client, processor)
         self.partner_resource_arn = partner_resource_arn
         self.esm_uuid = esm_uuid
-        self.shards = {}
+        self.shards = shards if shards is not None else {}
         self.iterator_over_shards = None
 
         self._is_shutdown = threading.Event()
@@ -189,6 +191,10 @@ class StreamPoller(Poller):
             # If the next shard iterator is None, we can assume the shard is closed or
             # has expired on the DynamoDB Local server, hence we should re-initialize.
             self.shards = self.initialize_shards()
+        else:
+            # We should always be storing the next_shard_iterator value, otherwise we risk an iterator expiring
+            # and all records being re-processed.
+            self.shards[shard_id] = next_shard_iterator
 
         # We cannot reliably back-off when no records found since an iterator
         # may have to move multiple times until records are returned.
@@ -196,7 +202,6 @@ class StreamPoller(Poller):
         # However, we still need to check if batcher should be triggered due to time-based batching.
         should_flush = self.shard_batcher[shard_id].add(records)
         if not should_flush:
-            self.shards[shard_id] = next_shard_iterator
             return
 
         # Retrieve and drain all events in batcher
@@ -206,9 +211,9 @@ class StreamPoller(Poller):
             # This could potentially lead to data loss if forward_events_to_target raises an exception after a flush
             # which would otherwise be solved with checkpointing.
             # TODO: Implement checkpointing, leasing, etc. from https://docs.aws.amazon.com/streams/latest/dev/kcl-concepts.html
-            self.forward_events_to_target(shard_id, next_shard_iterator, batch)
+            self.forward_events_to_target(shard_id, batch)
 
-    def forward_events_to_target(self, shard_id, next_shard_iterator, records):
+    def forward_events_to_target(self, shard_id, records):
         polled_events = self.transform_into_events(records, shard_id)
         abort_condition = None
         # TODO: implement format detection behavior (e.g., for JSON body):
@@ -230,9 +235,8 @@ class StreamPoller(Poller):
         # TODO: implement MaximumBatchingWindowInSeconds flush condition (before or after filter?)
         # Don't trigger upon empty events
         if len(matching_events_post_filter) == 0:
-            # Update shard iterator if no records match the filter
-            self.shards[shard_id] = next_shard_iterator
             return
+
         events = self.add_source_metadata(matching_events_post_filter)
         LOG.debug("Polled %d events from %s in shard %s", len(events), self.source_arn, shard_id)
         #  -> This could be tested by setting a high retry number, using a long pipe execution, and a relatively
@@ -349,8 +353,6 @@ class StreamPoller(Poller):
                 partner_resource_arn=self.partner_resource_arn,
             )
             self.send_events_to_dlq(shard_id, events, context=failure_context)
-        # Update shard iterator if the execution failed but the events are sent to a DLQ
-        self.shards[shard_id] = next_shard_iterator
 
     def get_records(self, shard_iterator: str) -> dict:
         """Returns a GetRecordsOutput from the GetRecords endpoint of streaming services such as Kinesis or DynamoDB"""

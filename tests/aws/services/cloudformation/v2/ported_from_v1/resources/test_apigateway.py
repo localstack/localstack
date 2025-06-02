@@ -115,7 +115,7 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     assert mappings[0] == "(none)"
 
 
-@pytest.mark.skip(reason="No support for AWS::Serverless transform")
+@pytest.mark.skip(reason="CFNV2:AWS::Serverless")
 @markers.aws.validated
 def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
     api_name = f"rest-api-{short_uid()}"
@@ -227,7 +227,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
     # assert not apis
 
 
-@pytest.mark.skip(reason="NotFoundException Invalid Method identifier specified")
+@pytest.mark.skip(reason="CFNV2:Other NotFoundException Invalid Method identifier specified")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -416,7 +416,9 @@ def test_account(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="ApiDeployment creation fails due to the REST API not having a method set")
+@pytest.mark.skip(
+    reason="CFNV2:Other ApiDeployment creation fails due to the REST API not having a method set"
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..tags.'aws:cloudformation:logical-id'",
@@ -467,7 +469,9 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
     assert usage_plan["quota"]["limit"] == 7000
 
 
-@pytest.mark.skip(reason="ApiDeployment creation fails due to the REST API not having a method set")
+@pytest.mark.skip(
+    reason="CFNV2:Other ApiDeployment creation fails due to the REST API not having a method set"
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..createdDate", "$..description", "$..lastUpdatedDate", "$..tags"]
 )
@@ -553,7 +557,9 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
-@pytest.mark.skip(reason="No resource provider found for AWS::Serverless::Api")
+@pytest.mark.skip(
+    reason="CFNV2:AWS::Serverless no resource provider found for AWS::Serverless::Api"
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
