@@ -197,7 +197,6 @@ class TestIntrinsicFunctions:
 
         assert deployed.outputs["Address"] == "10.0.0.0/24"
 
-    @pytest.mark.skip(reason="CFNV2:Fn::GetAZs")
     @pytest.mark.parametrize(
         "region",
         [

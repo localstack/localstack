@@ -3,6 +3,10 @@ from __future__ import annotations
 import re
 from typing import Any, Final, Generic, Optional, TypeVar
 
+from botocore.exceptions import ClientError
+
+from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.transformers import (
     Transformer,
     execute_macro,
@@ -700,6 +704,44 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after = Nothing
         if not is_nothing(arguments_after):
             after = _compute_fn_split(arguments_after)
+
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_get_a_zs(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        # TODO: add further support for schema validation
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_fn_get_a_zs(region) -> Any:
+            if not isinstance(region, str) or not region:
+                raise RuntimeError(f"Invalid region value for Fn::GetAZs: '{region}'")
+
+            account_id = self._change_set.account_id
+            ec2_client = connect_to(aws_access_key_id=account_id, region_name=region).ec2
+            try:
+                get_availability_zones_result: DescribeAvailabilityZonesResult = (
+                    ec2_client.describe_availability_zones()
+                )
+            except ClientError:
+                raise RuntimeError(
+                    "Could not describe zones availability whilst evaluating Fn::GetAZs"
+                )
+            availability_zones: AvailabilityZoneList = get_availability_zones_result[
+                "AvailabilityZones"
+            ]
+            azs = [az["ZoneName"] for az in availability_zones]
+            return azs
+
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before = _compute_fn_get_a_zs(arguments_before)
+
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after = _compute_fn_get_a_zs(arguments_after)
 
         return PreprocEntityDelta(before=before, after=after)
 

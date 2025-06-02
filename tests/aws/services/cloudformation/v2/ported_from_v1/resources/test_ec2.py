@@ -109,7 +109,6 @@ def test_cfn_with_multiple_route_tables(deploy_cfn_template, aws_client):
     assert len(resp["RouteTables"]) == 4
 
 
-@pytest.mark.skip(reason="CFNV2:Fn::Select, CFNV2:Fn::GatAZs")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..PropagatingVgws", "$..Tags", "$..Tags..Key", "$..Tags..Value"]
