@@ -575,7 +575,7 @@ def test_delete_change_set_exception(snapshot, aws_client):
     snapshot.match("e2", e2.value.response)
 
 
-@pytest.mark.skip("CFNV2:Destroy")
+@pytest.mark.skip("CFNV2:Other")
 @markers.aws.validated
 def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
     """test the re-use of a changeset name with a re-used stack name"""
@@ -857,7 +857,7 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
-@pytest.mark.skip(reason="CFNV2:Destroy")
+@pytest.mark.skip(reason="CFNV2:Other delete change set not implemented yet")
 @markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""

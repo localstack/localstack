@@ -1,5 +1,5 @@
 import logging
-from datetime import timezone, datetime
+from datetime import datetime, timezone
 from typing import Any
 
 from localstack.aws.api import RequestContext, handler

@@ -6,6 +6,7 @@ from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from localstack.utils.sync import retry
 
 pytestmark = pytest.mark.skipif(
     condition=not is_v2_engine() and not is_aws_cloud(),
@@ -51,9 +52,8 @@ def test_cfn_with_kms_resources(deploy_cfn_template, aws_client, snapshot):
 
     assert len(_get_matching_aliases()) == 1
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # assert not _get_matching_aliases()
+    stack.destroy()
+    assert not _get_matching_aliases()
 
 
 @markers.aws.validated
@@ -66,13 +66,12 @@ def test_deploy_stack_with_kms(deploy_cfn_template, aws_client):
 
     assert "KeyId" in stack.outputs
 
-    # key_id = stack.outputs["KeyId"]
+    key_id = stack.outputs["KeyId"]
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # def assert_key_deleted():
-    #     resp = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
-    #     assert resp["KeyState"] == "PendingDeletion"
+    def assert_key_deleted():
+        resp = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"]
+        assert resp["KeyState"] == "PendingDeletion"
 
-    # retry(assert_key_deleted, retries=5, sleep=5)
+    retry(assert_key_deleted, retries=5, sleep=5)

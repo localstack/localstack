@@ -2,6 +2,7 @@ import json
 import os
 
 import aws_cdk as cdk
+import botocore.exceptions
 import pytest
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
@@ -42,7 +43,7 @@ def test_cfn_secretsmanager_gen_secret(deploy_cfn_template, aws_client, snapshot
 @markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..VersionIdsToStages"])
 def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client, snapshot):
     secret_name = f"secret-{short_uid()}"
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../../../templates/secretsmanager_secret.yml"
         ),
@@ -54,13 +55,12 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client, snaps
     snapshot.add_transformer(snapshot.transform.regex(rf"{secret_name}-\w+", "<secret-id>"))
     snapshot.add_transformer(snapshot.transform.key_value("Name"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # with pytest.raises(botocore.exceptions.ClientError) as ex:
-    #     aws_client.secretsmanager.describe_secret(SecretId=secret_name)
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        aws_client.secretsmanager.describe_secret(SecretId=secret_name)
 
-    # snapshot.match("exception", ex.value.response)
+    snapshot.match("exception", ex.value.response)
 
 
 @markers.aws.validated
