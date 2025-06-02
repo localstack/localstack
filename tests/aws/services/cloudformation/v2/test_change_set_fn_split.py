@@ -24,6 +24,7 @@ from localstack.utils.strings import long_uid
         "$..Parameters",
         "$..Replacement",
         "$..PolicyAction",
+        "$..StatusReason",
     ]
 )
 class TestChangeSetFnSplit:
@@ -101,7 +102,7 @@ class TestChangeSetFnSplit:
                 "Topic1": {
                     "Type": "AWS::SNS::Topic",
                     "Properties": {
-                        "DisplayName": {"Fn::Join": ["_", {"Fn::Split": ["-", "a-b-c:d"]}]}
+                        "DisplayName": {"Fn::Join": ["_", {"Fn::Split": ["-", "a-b--c::d"]}]}
                     },
                 }
             }
@@ -111,7 +112,7 @@ class TestChangeSetFnSplit:
                 "Topic1": {
                     "Type": "AWS::SNS::Topic",
                     "Properties": {
-                        "DisplayName": {"Fn::Join": ["_", {"Fn::Split": [":", "a-b-c:d"]}]}
+                        "DisplayName": {"Fn::Join": ["_", {"Fn::Split": [":", "a-b--c::d"]}]}
                     },
                 }
             }
@@ -179,6 +180,13 @@ class TestChangeSetFnSplit:
         }
         capture_update_process(snapshot, template_1, template_2)
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # Reason: AWS incorrectly does not list the second and third topic as
+            # needing modifying, however it needs to
+            "describe-change-set-2-prop-values..Changes",
+        ]
+    )
     @markers.aws.validated
     def test_fn_split_with_get_att(
         self,

@@ -675,6 +675,34 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_intrinsic_function_fn_split(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        # TODO: add further support for schema validation
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_fn_split(args: list[Any]) -> Any:
+            delimiter = args[0]
+            if not isinstance(delimiter, str) or not delimiter:
+                raise RuntimeError(f"Invalid delimiter value for Fn::Split: '{delimiter}'")
+            source_string = args[1]
+            if not isinstance(source_string, str):
+                raise RuntimeError(f"Invalid source string value for Fn::Split: '{source_string}'")
+            split_string = source_string.split(delimiter)
+            return split_string
+
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before = _compute_fn_split(arguments_before)
+
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after = _compute_fn_split(arguments_after)
+
+        return PreprocEntityDelta(before=before, after=after)
+
     def visit_node_intrinsic_function_fn_find_in_map(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:

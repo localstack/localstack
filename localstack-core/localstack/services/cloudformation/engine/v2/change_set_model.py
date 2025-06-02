@@ -424,6 +424,7 @@ FnFindInMapKey: Final[str] = "Fn::FindInMap"
 FnSubKey: Final[str] = "Fn::Sub"
 FnTransform: Final[str] = "Fn::Transform"
 FnSelect: Final[str] = "Fn::Select"
+FnSplit: Final[str] = "Fn::Split"
 INTRINSIC_FUNCTIONS: Final[set[str]] = {
     RefKey,
     FnIfKey,
@@ -435,6 +436,7 @@ INTRINSIC_FUNCTIONS: Final[set[str]] = {
     FnSubKey,
     FnTransform,
     FnSelect,
+    FnSplit,
 }
 
 

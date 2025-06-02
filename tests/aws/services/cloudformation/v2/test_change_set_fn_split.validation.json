@@ -3,7 +3,7 @@
     "last_validated_date": "2025-06-02T11:19:05+00:00"
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_delimiter": {
-    "last_validated_date": "2025-06-02T11:27:51+00:00"
+    "last_validated_date": "2025-06-02T12:30:32+00:00"
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_source_string_only": {
     "last_validated_date": "2025-06-02T11:22:03+00:00"

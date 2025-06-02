@@ -2075,7 +2075,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_delimiter": {
-    "recorded-date": "02-06-2025, 11:27:51",
+    "recorded-date": "02-06-2025, 12:30:32",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -2095,7 +2095,7 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "a_b_c:d"
+                  "DisplayName": "a_b__c::d"
                 }
               },
               "Details": [],
@@ -2188,12 +2188,12 @@
               "Action": "Modify",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "a-b-c_d"
+                  "DisplayName": "a-b--c__d"
                 }
               },
               "BeforeContext": {
                 "Properties": {
-                  "DisplayName": "a_b_c:d"
+                  "DisplayName": "a_b__c::d"
                 }
               },
               "Details": [
@@ -2201,10 +2201,10 @@
                   "ChangeSource": "DirectModification",
                   "Evaluation": "Static",
                   "Target": {
-                    "AfterValue": "a-b-c_d",
+                    "AfterValue": "a-b--c__d",
                     "Attribute": "Properties",
                     "AttributeChangeType": "Modify",
-                    "BeforeValue": "a_b_c:d",
+                    "BeforeValue": "a_b__c::d",
                     "Name": "DisplayName",
                     "Path": "/Properties/DisplayName",
                     "RequiresRecreation": "Never"
@@ -2307,7 +2307,7 @@
             "LogicalResourceId": "Topic1",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
             "ResourceProperties": {
-              "DisplayName": "a-b-c_d"
+              "DisplayName": "a-b--c__d"
             },
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
@@ -2320,7 +2320,7 @@
             "LogicalResourceId": "Topic1",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
             "ResourceProperties": {
-              "DisplayName": "a-b-c_d"
+              "DisplayName": "a-b--c__d"
             },
             "ResourceStatus": "UPDATE_IN_PROGRESS",
             "ResourceType": "AWS::SNS::Topic",
@@ -2333,7 +2333,7 @@
             "LogicalResourceId": "Topic1",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
             "ResourceProperties": {
-              "DisplayName": "a_b_c:d"
+              "DisplayName": "a_b__c::d"
             },
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SNS::Topic",
@@ -2346,7 +2346,7 @@
             "LogicalResourceId": "Topic1",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:4>",
             "ResourceProperties": {
-              "DisplayName": "a_b_c:d"
+              "DisplayName": "a_b__c::d"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
@@ -2360,7 +2360,7 @@
             "LogicalResourceId": "Topic1",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "DisplayName": "a_b_c:d"
+              "DisplayName": "a_b__c::d"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SNS::Topic",

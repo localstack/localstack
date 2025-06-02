@@ -304,6 +304,13 @@ class CloudformationProviderV2(CloudformationProvider):
     def _describe_change_set(
         self, change_set: ChangeSet, include_property_values: bool
     ) -> DescribeChangeSetOutput:
+        # TODO: The ChangeSetModelDescriber currently matches AWS behavior by listing
+        #       resource changes in the order they appear in the template. However, when
+        #       a resource change is triggered indirectly (e.g., via Ref or GetAtt), the
+        #       dependency's change appears first in the list.
+        #       Snapshot tests using the `capture_update_process` fixture rely on a
+        #       normalizer to account for this ordering. This should be removed in the
+        #       future by enforcing a consistently correct change ordering at the source.
         change_set_describer = ChangeSetModelDescriber(
             change_set=change_set, include_property_values=include_property_values
         )
