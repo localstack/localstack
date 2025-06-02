@@ -191,10 +191,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # process the resource if this wasn't processed already. Ideally, values should only
         # be accessible through delta objects, to ensure computation is always complete at
         # every level.
-        node_resource = self._get_node_resource_for(
+        _ = self._get_node_resource_for(
             resource_name=resource_logical_id, node_template=self._node_template
         )
-        self.visit(node_resource)
 
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
