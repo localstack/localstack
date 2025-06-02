@@ -193,6 +193,19 @@ class TestSNSTopicCrud:
         snapshot.match("topic-not-exists", e.value.response)
 
     @markers.aws.validated
+    def test_delete_topic_idempotency(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        response = aws_client.sns.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic", response)
+
+        with pytest.raises(ClientError):
+            aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+
+        delete_topic = aws_client.sns.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic-again", delete_topic)
+
+    @markers.aws.validated
     def test_create_duplicate_topic_with_more_tags(self, sns_create_topic, snapshot, aws_client):
         topic_name = "test-duplicated-topic-more-tags"
         sns_create_topic(Name=topic_name)
@@ -4270,7 +4283,7 @@ class TestSNSMultiAccounts:
         return secondary_aws_client.sqs
 
     @markers.aws.only_localstack
-    def test_cross_account_access(self, sns_primary_client, sns_secondary_client):
+    def test_cross_account_access(self, sns_primary_client, sns_secondary_client, sns_create_topic):
         # Cross-account access is supported for below operations.
         # This list is taken from ActionName param of the AddPermissions operation
         #
@@ -4284,7 +4297,8 @@ class TestSNSMultiAccounts:
         # - DeleteTopic
 
         topic_name = f"topic-{short_uid()}"
-        topic_arn = sns_primary_client.create_topic(Name=topic_name)["TopicArn"]
+        # sns_create_topic uses the primary client by default
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
 
         assert sns_secondary_client.set_topic_attributes(
             TopicArn=topic_arn, AttributeName="DisplayName", AttributeValue="xenon"
@@ -4325,6 +4339,7 @@ class TestSNSMultiAccounts:
     @markers.aws.only_localstack
     def test_cross_account_publish_to_sqs(
         self,
+        sns_create_topic,
         secondary_account_id,
         region_name,
         sns_primary_client,
@@ -4332,6 +4347,7 @@ class TestSNSMultiAccounts:
         sqs_primary_client,
         sqs_secondary_client,
         sqs_get_queue_arn,
+        cleanups,
     ):
         """
         This test validates that we can publish to SQS queues that are not in the default account, and that another
@@ -4342,18 +4358,20 @@ class TestSNSMultiAccounts:
         """
 
         topic_name = "sample_topic"
-        topic_1 = sns_primary_client.create_topic(Name=topic_name)
+        topic_1 = sns_create_topic(Name=topic_name)
         topic_1_arn = topic_1["TopicArn"]
 
         # create a queue with the primary AccountId
         queue_name = "sample_queue"
         queue_1 = sqs_primary_client.create_queue(QueueName=queue_name)
         queue_1_url = queue_1["QueueUrl"]
+        cleanups.append(lambda: sqs_primary_client.delete_queue(QueueUrl=queue_1_url))
         queue_1_arn = sqs_get_queue_arn(queue_1_url)
 
         # create a queue with the secondary AccountId
         queue_2 = sqs_secondary_client.create_queue(QueueName=queue_name)
         queue_2_url = queue_2["QueueUrl"]
+        cleanups.append(lambda: sqs_secondary_client.delete_queue(QueueUrl=queue_2_url))
         # test that we get the right queue URL at the same time, even if we use the primary client
         queue_2_arn = sqs_queue_arn(
             queue_2_url,
@@ -4365,6 +4383,7 @@ class TestSNSMultiAccounts:
         queue_name_2 = "sample_queue_two"
         queue_3 = sqs_secondary_client.create_queue(QueueName=queue_name_2)
         queue_3_url = queue_3["QueueUrl"]
+        cleanups.append(lambda: sqs_secondary_client.delete_queue(QueueUrl=queue_3_url))
         # test that we get the right queue URL at the same time, even if we use the primary client
         queue_3_arn = sqs_queue_arn(
             queue_3_url,
@@ -4425,6 +4444,127 @@ class TestSNSMultiAccounts:
         sns_secondary_client.publish(TopicArn=topic_1_arn, Message="TestMessageSecondary")
 
         get_messages_from_queues("TestMessageSecondary")
+
+
+class TestSNSMultiRegions:
+    @pytest.fixture
+    def sns_region1_client(self, aws_client):
+        return aws_client.sns
+
+    @pytest.fixture
+    def sns_region2_client(self, aws_client_factory, secondary_region_name):
+        return aws_client_factory(region_name=secondary_region_name).sns
+
+    @pytest.fixture
+    def sqs_region2_client(self, aws_client_factory, secondary_region_name):
+        return aws_client_factory(region_name=secondary_region_name).sqs
+
+    @markers.aws.validated
+    def test_cross_region_access(self, sns_region1_client, sns_region2_client, snapshot, cleanups):
+        # We do not have a list of supported Cross-region access for operations.
+        # This test is validating that Cross-account does not mean Cross-region most of the time
+
+        topic_name = f"topic-{short_uid()}"
+        topic_arn = sns_region1_client.create_topic(Name=topic_name)["TopicArn"]
+        cleanups.append(lambda: sns_region1_client.delete_topic(TopicArn=topic_arn))
+
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.set_topic_attributes(
+                TopicArn=topic_arn, AttributeName="DisplayName", AttributeValue="xenon"
+            )
+        snapshot.match("set-topic-attrs", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.get_topic_attributes(TopicArn=topic_arn)
+        snapshot.match("get-topic-attrs", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.publish(TopicArn=topic_arn, Message="hello world")
+        snapshot.match("cross-region-publish-forbidden", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.subscribe(
+                TopicArn=topic_arn, Protocol="email", Endpoint="devil@hell.com"
+            )
+        snapshot.match("cross-region-subscribe", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.list_subscriptions_by_topic(TopicArn=topic_arn)
+        snapshot.match("list-subs", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.delete_topic(TopicArn=topic_arn)
+        snapshot.match("delete-topic", e.value.response)
+
+    @markers.aws.validated
+    def test_cross_region_delivery_sqs(
+        self,
+        sns_region1_client,
+        sns_region2_client,
+        sqs_region2_client,
+        sns_create_topic,
+        sqs_create_queue,
+        sns_allow_topic_sqs_queue,
+        cleanups,
+        snapshot,
+    ):
+        topic_arn = sns_create_topic()["TopicArn"]
+
+        queue_url = sqs_create_queue()
+        response = sqs_region2_client.create_queue(QueueName=f"queue-{short_uid()}")
+        queue_url = response["QueueUrl"]
+        cleanups.append(lambda: sqs_region2_client.delete_queue(QueueUrl=queue_url))
+
+        queue_arn = sqs_region2_client.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )["Attributes"]["QueueArn"]
+
+        # allow topic to write to sqs queue
+        sqs_region2_client.set_queue_attributes(
+            QueueUrl=queue_url,
+            Attributes={
+                "Policy": json.dumps(
+                    {
+                        "Statement": [
+                            {
+                                "Effect": "Allow",
+                                "Principal": {"Service": "sns.amazonaws.com"},
+                                "Action": "sqs:SendMessage",
+                                "Resource": queue_arn,
+                                "Condition": {"ArnEquals": {"aws:SourceArn": topic_arn}},
+                            }
+                        ]
+                    }
+                )
+            },
+        )
+
+        # connect sns topic to sqs
+        with pytest.raises(ClientError) as e:
+            sns_region2_client.subscribe(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+        snapshot.match("subscribe-cross-region", e.value.response)
+
+        subscription = sns_region1_client.subscribe(
+            TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn
+        )
+        snapshot.match("subscribe-same-region", subscription)
+
+        message = "This is a test message"
+        # we already test that publishing from another region is forbidden with `test_topic_publish_another_region`
+        sns_region1_client.publish(
+            TopicArn=topic_arn,
+            Message=message,
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "99.12"}},
+        )
+
+        # assert that message is received
+        response = sqs_region2_client.receive_message(
+            QueueUrl=queue_url,
+            VisibilityTimeout=0,
+            MessageAttributeNames=["All"],
+            WaitTimeSeconds=4,
+        )
+        snapshot.match("messages", response)
 
 
 class TestSNSPublishDelivery:
