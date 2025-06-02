@@ -168,6 +168,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_resource in node_template.resources.resources:
             if node_resource.name == resource_name:
+                self.visit(node_resource)
                 return node_resource
         raise RuntimeError(f"No resource '{resource_name}' was found")
 
@@ -177,6 +178,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
+                self.visit(node_property)
                 return node_property
         return None
 
@@ -189,10 +191,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # process the resource if this wasn't processed already. Ideally, values should only
         # be accessible through delta objects, to ensure computation is always complete at
         # every level.
-        node_resource = self._get_node_resource_for(
+        _ = self._get_node_resource_for(
             resource_name=resource_logical_id, node_template=self._node_template
         )
-        self.visit(node_resource)
 
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
@@ -228,6 +229,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: another scenarios suggesting property lookups might be preferable.
         for mapping in mappings:
             if mapping.name == map_name:
+                self.visit(mapping)
                 return mapping
         # TODO
         raise RuntimeError()
@@ -237,6 +239,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: another scenarios suggesting property lookups might be preferable.
         for parameter in parameters:
             if parameter.name == parameter_name:
+                self.visit(parameter)
                 return parameter
         return None
 
@@ -245,6 +248,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: another scenarios suggesting property lookups might be preferable.
         for condition in conditions:
             if condition.name == condition_name:
+                self.visit(condition)
                 return condition
         return None
 
@@ -372,15 +376,19 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
         # TODO: validate the return value according to the spec.
-        before_argument_list = arguments_delta.before
-        after_argument_list = arguments_delta.after
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        before_argument: Optional[list[str]] = arguments_delta.before
+        if isinstance(before_argument, str):
+            before_argument = before_argument.split(".")
+        after_argument: Optional[list[str]] = arguments_delta.after
+        if isinstance(after_argument, str):
+            after_argument = after_argument.split(".")
 
         before = None
-        if before_argument_list:
-            before_logical_name_of_resource = before_argument_list[0]
-            before_attribute_name = before_argument_list[1]
+        if before_argument:
+            before_logical_name_of_resource = before_argument[0]
+            before_attribute_name = before_argument[1]
 
             before_node_resource = self._get_node_resource_for(
                 resource_name=before_logical_name_of_resource, node_template=self._node_template
@@ -401,9 +409,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 )
 
         after = None
-        if after_argument_list:
-            after_logical_name_of_resource = after_argument_list[0]
-            after_attribute_name = after_argument_list[1]
+        if after_argument:
+            after_logical_name_of_resource = after_argument[0]
+            after_attribute_name = after_argument[1]
             after_node_resource = self._get_node_resource_for(
                 resource_name=after_logical_name_of_resource, node_template=self._node_template
             )
@@ -452,10 +460,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
 
         # TODO: add support for this being created or removed.
-        before_outcome_delta = _compute_delta_for_if_statement(arguments_delta.before)
-        before = before_outcome_delta.before
-        after_outcome_delta = _compute_delta_for_if_statement(arguments_delta.after)
-        after = after_outcome_delta.after
+        before = None
+        if arguments_delta.before:
+            before_outcome_delta = _compute_delta_for_if_statement(arguments_delta.before)
+            before = before_outcome_delta.before
+        after = None
+        if arguments_delta.after:
+            after_outcome_delta = _compute_delta_for_if_statement(arguments_delta.after)
+            after = after_outcome_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_not(
@@ -558,7 +570,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             delimiter: str = str(args[0])
             values: list[Any] = args[1]
             if not isinstance(values, list):
-                raise RuntimeError("Invalid arguments list definition for Fn::Join")
+                raise RuntimeError(f"Invalid arguments list definition for Fn::Join: '{args}'")
             join_result = delimiter.join(map(str, values))
             return join_result
 

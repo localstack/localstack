@@ -1,0 +1,71 @@
+{
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::TestCfnLambdaDestinations::test_generic_destination_routing[sqs-sqs]": {
+    "last_validated_date": "2024-12-10T16:48:04+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
+    "last_validated_date": "2024-10-12T10:46:17+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
+    "last_validated_date": "2024-10-12T10:52:28+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_permissions": {
+    "last_validated_date": "2024-04-09T07:26:03+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
+    "last_validated_date": "2024-10-30T14:48:16+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::TestCfnLambdaIntegrations::test_lambda_dynamodb_event_filter": {
+    "last_validated_date": "2024-04-09T07:31:17+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_cfn_function_url": {
+    "last_validated_date": "2024-04-16T08:16:02+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_event_invoke_config": {
+    "last_validated_date": "2024-04-09T07:20:36+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_alias": {
+    "last_validated_date": "2025-05-07T15:39:26+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_cfn_dead_letter_config_async_invocation": {
+    "last_validated_date": "2024-04-09T07:39:50+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_cfn_run": {
+    "last_validated_date": "2024-04-09T07:22:32+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_code_signing_config": {
+    "last_validated_date": "2024-04-09T07:19:51+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_function_tags": {
+    "last_validated_date": "2024-10-01T12:52:51+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_layer_crud": {
+    "last_validated_date": "2024-12-20T18:23:31+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_logging_config": {
+    "last_validated_date": "2025-04-08T12:12:01+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_version": {
+    "last_validated_date": "2025-05-07T13:19:10+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_version_provisioned_concurrency": {
+    "last_validated_date": "2025-05-07T13:23:25+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_lambda_w_dynamodb_event_filter_update": {
+    "last_validated_date": "2024-12-11T09:03:52+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_multiple_lambda_permissions_for_singlefn": {
+    "last_validated_date": "2024-04-09T07:25:05+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_python_lambda_code_deployed_via_s3": {
+    "last_validated_date": "2024-04-09T07:38:32+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_update_lambda_function": {
+    "last_validated_date": "2024-11-07T03:16:40+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_update_lambda_function_name": {
+    "last_validated_date": "2024-11-07T03:10:48+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_lambda.py::test_update_lambda_permissions": {
+    "last_validated_date": "2024-04-09T07:23:41+00:00"
+  }
+}
