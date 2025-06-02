@@ -1,20 +1,83 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[json]": {
-    "last_validated_date": "2025-05-30T19:12:50+00:00"
+    "last_validated_date": "2025-06-02T17:38:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.39,
+      "call": 88.23,
+      "teardown": 0.87,
+      "total": 89.49
+    }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[yml]": {
-    "last_validated_date": "2025-05-30T19:11:21+00:00"
+    "last_validated_date": "2025-06-02T17:36:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.62,
+      "call": 88.13,
+      "teardown": 0.84,
+      "total": 89.59
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_fn_transform": {
+    "last_validated_date": "2025-06-02T18:07:37+00:00",
+    "durations_in_seconds": {
+      "setup": 10.82,
+      "call": 130.7,
+      "teardown": 5.79,
+      "total": 147.31
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_for_attribute_fn_transform": {
+    "last_validated_date": "2025-06-02T20:02:13+00:00",
+    "durations_in_seconds": {
+      "setup": 10.8,
+      "call": 37.67,
+      "teardown": 5.5,
+      "total": 53.97
+    }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[json]": {
-    "last_validated_date": "2025-05-30T19:15:52+00:00"
+    "last_validated_date": "2025-06-02T17:41:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.4,
+      "call": 90.2,
+      "teardown": 0.83,
+      "total": 91.43
+    }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[yml]": {
-    "last_validated_date": "2025-05-30T19:14:20+00:00"
+    "last_validated_date": "2025-06-02T17:39:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.37,
+      "call": 90.22,
+      "teardown": 0.81,
+      "total": 91.4
+    }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_macro_fn_transform": {
-    "last_validated_date": "2025-05-30T19:19:31+00:00"
+    "last_validated_date": "2025-06-02T17:44:59+00:00",
+    "durations_in_seconds": {
+      "setup": 10.52,
+      "call": 80.2,
+      "teardown": 5.08,
+      "total": 95.8
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_multiple_fn_transform_order": {
+    "last_validated_date": "2025-06-02T20:36:50+00:00",
+    "durations_in_seconds": {
+      "setup": 10.74,
+      "call": 39.63,
+      "teardown": 5.49,
+      "total": 55.86
+    }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_serverless_fn_transform": {
-    "last_validated_date": "2025-05-30T19:17:57+00:00"
+    "last_validated_date": "2025-06-02T17:43:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.35,
+      "call": 122.37,
+      "teardown": 0.63,
+      "total": 123.35
+    }
   }
 }
