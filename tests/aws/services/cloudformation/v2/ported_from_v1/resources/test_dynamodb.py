@@ -94,7 +94,6 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("list_tags_of_resource", list_tags)
 
 
-@pytest.mark.skip(reason="CFNV2:AWS::NoValue")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

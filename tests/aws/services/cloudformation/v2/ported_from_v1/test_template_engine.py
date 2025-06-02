@@ -277,7 +277,7 @@ class TestIntrinsicFunctions:
         assert stack.outputs["Threshold"] == threshold
         assert stack.outputs["Period"] == period
 
-    @pytest.mark.skip(reason="CFNV2:AWS::NoValue")
+    @pytest.mark.skip(reason="CFNV2:Fn::Join")
     @markers.aws.validated
     def test_join_no_value_construct(self, deploy_cfn_template, snapshot, aws_client):
         stack = deploy_cfn_template(

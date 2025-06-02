@@ -27,7 +27,6 @@ def test_sqs_queue_policy(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("Resource"))
 
 
-@pytest.mark.skip(reason="CFNV2:AWS::NoValue")
 @markers.aws.validated
 def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(
@@ -40,7 +39,6 @@ def test_sqs_fifo_queue_generates_valid_name(deploy_cfn_template):
     assert ".fifo" in result.outputs["FooQueueName"]
 
 
-@pytest.mark.skip(reason="CFNV2:AWS::NoValue")
 @markers.aws.validated
 def test_sqs_non_fifo_queue_generates_valid_name(deploy_cfn_template):
     result = deploy_cfn_template(

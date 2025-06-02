@@ -11,6 +11,7 @@ from localstack.services.cloudformation.engine.transformers import (
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
+    Maybe,
     NodeArray,
     NodeCondition,
     NodeDependsOn,
@@ -25,12 +26,14 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeProperty,
     NodeResource,
     NodeTemplate,
+    Nothing,
     Scope,
     TerminalValue,
     TerminalValueCreated,
     TerminalValueModified,
     TerminalValueRemoved,
     TerminalValueUnchanged,
+    is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
@@ -58,10 +61,10 @@ TAfter = TypeVar("TAfter")
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
-    before: Optional[TBefore]
-    after: Optional[TAfter]
+    before: Maybe[TBefore]
+    after: Maybe[TAfter]
 
-    def __init__(self, before: Optional[TBefore] = None, after: Optional[TAfter] = None):
+    def __init__(self, before: Maybe[TBefore] = Nothing, after: Maybe[TAfter] = Nothing):
         self.before = before
         self.after = after
 
@@ -200,7 +203,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         _ = self._get_node_resource_for(
             resource_name=resource_logical_id, node_template=self._node_template
         )
-
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
             raise RuntimeError(
@@ -237,26 +239,25 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if mapping.name == map_name:
                 self.visit(mapping)
                 return mapping
-        # TODO
-        raise RuntimeError()
+        raise RuntimeError(f"Undefined '{map_name}' mapping")
 
-    def _get_node_parameter_if_exists(self, parameter_name: str) -> Optional[NodeParameter]:
+    def _get_node_parameter_if_exists(self, parameter_name: str) -> Maybe[NodeParameter]:
         parameters: list[NodeParameter] = self._node_template.parameters.parameters
         # TODO: another scenarios suggesting property lookups might be preferable.
         for parameter in parameters:
             if parameter.name == parameter_name:
                 self.visit(parameter)
                 return parameter
-        return None
+        return Nothing
 
-    def _get_node_condition_if_exists(self, condition_name: str) -> Optional[NodeCondition]:
+    def _get_node_condition_if_exists(self, condition_name: str) -> Maybe[NodeCondition]:
         conditions: list[NodeCondition] = self._node_template.conditions.conditions
         # TODO: another scenarios suggesting property lookups might be preferable.
         for condition in conditions:
             if condition.name == condition_name:
                 self.visit(condition)
                 return condition
-        return None
+        return Nothing
 
     def _resolve_condition(self, logical_id: str) -> PreprocEntityDelta:
         node_condition = self._get_node_condition_if_exists(condition_name=logical_id)
@@ -280,14 +281,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             case "AWS::URLSuffix":
                 return _AWS_URL_SUFFIX
             case "AWS::NoValue":
-                # TODO: add support for NoValue, None cannot be used to communicate a Null value in preproc classes.
-                raise NotImplementedError("The use of AWS:NoValue is currently unsupported")
-            case "AWS::NotificationARNs":
-                raise NotImplementedError(
-                    "The use of AWS::NotificationARNs is currently unsupported"
-                )
+                return None
             case _:
-                raise RuntimeError(f"Unknown pseudo parameter value '{pseudo_parameter_name}'")
+                raise RuntimeError(f"The use of '{pseudo_parameter_name}' is currently unsupported")
 
     def _resolve_reference(self, logical_id: str) -> PreprocEntityDelta:
         if logical_id in _PSEUDO_PARAMETERS:
@@ -323,11 +319,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return mapping_value_delta
 
     def visit(self, change_set_entity: ChangeSetEntity) -> PreprocEntityDelta:
-        delta = self._processed.get(change_set_entity.scope)
-        if delta is not None:
+        scope = change_set_entity.scope
+        if scope in self._processed:
+            delta = self._processed[scope]
             return delta
         delta = super().visit(change_set_entity=change_set_entity)
-        self._processed[change_set_entity.scope] = delta
+        self._processed[scope] = delta
         return delta
 
     def visit_terminal_value_modified(
@@ -362,21 +359,17 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before_delta.before, after=after_delta.after)
 
     def visit_node_object(self, node_object: NodeObject) -> PreprocEntityDelta:
-        before = dict()
-        after = dict()
+        node_change_type = node_object.change_type
+        before = dict() if node_change_type != ChangeType.CREATED else Nothing
+        after = dict() if node_change_type != ChangeType.REMOVED else Nothing
         for name, change_set_entity in node_object.bindings.items():
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
-            match change_set_entity.change_type:
-                case ChangeType.MODIFIED:
-                    before[name] = delta.before
-                    after[name] = delta.after
-                case ChangeType.CREATED:
-                    after[name] = delta.after
-                case ChangeType.REMOVED:
-                    before[name] = delta.before
-                case ChangeType.UNCHANGED:
-                    before[name] = delta.before
-                    after[name] = delta.before
+            delta_before = delta.before
+            delta_after = delta.after
+            if not is_nothing(before) and not is_nothing(delta_before) and delta_before is not None:
+                before[name] = delta_before
+            if not is_nothing(after) and not is_nothing(delta_after) and delta_after is not None:
+                after[name] = delta_after
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_get_att(
@@ -384,14 +377,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     ) -> PreprocEntityDelta:
         # TODO: validate the return value according to the spec.
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_argument: Optional[list[str]] = arguments_delta.before
+        before_argument: Maybe[list[str]] = arguments_delta.before
         if isinstance(before_argument, str):
             before_argument = before_argument.split(".")
-        after_argument: Optional[list[str]] = arguments_delta.after
+        after_argument: Maybe[list[str]] = arguments_delta.after
         if isinstance(after_argument, str):
             after_argument = after_argument.split(".")
 
-        before = None
+        before = Nothing
         if before_argument:
             before_logical_name_of_resource = before_argument[0]
             before_attribute_name = before_argument[1]
@@ -414,7 +407,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     property_name=before_attribute_name,
                 )
 
-        after = None
+        after = Nothing
         if after_argument:
             after_logical_name_of_resource = after_argument[0]
             after_attribute_name = after_argument[1]
@@ -444,10 +437,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         before_values = arguments_delta.before
         after_values = arguments_delta.after
-        before = None
+        before = Nothing
         if before_values:
             before = before_values[0] == before_values[1]
-        after = None
+        after = Nothing
         if after_values:
             after = after_values[0] == after_values[1]
         return PreprocEntityDelta(before=before, after=after)
@@ -456,6 +449,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
 
         def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
             condition_name = args[0]
@@ -466,13 +461,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
 
         # TODO: add support for this being created or removed.
-        before = None
-        if arguments_delta.before:
-            before_outcome_delta = _compute_delta_for_if_statement(arguments_delta.before)
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before_outcome_delta = _compute_delta_for_if_statement(arguments_before)
             before = before_outcome_delta.before
-        after = None
-        if arguments_delta.after:
-            after_outcome_delta = _compute_delta_for_if_statement(arguments_delta.after)
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after_outcome_delta = _compute_delta_for_if_statement(arguments_after)
             after = after_outcome_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
@@ -482,17 +477,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         before_condition = arguments_delta.before
         after_condition = arguments_delta.after
-        if before_condition:
+        before = Nothing
+        if not is_nothing(before_condition):
             before_condition_outcome = before_condition[0]
             before = not before_condition_outcome
-        else:
-            before = None
-
-        if after_condition:
+        after = Nothing
+        if not is_nothing(after_condition):
             after_condition_outcome = after_condition[0]
             after = not after_condition_outcome
-        else:
-            after = None
         # Implicit change type computation.
         return PreprocEntityDelta(before=before, after=after)
 
@@ -560,11 +552,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: add tests to review the behaviour of CFN with changes to transformation
         #  function code and no changes to the template.
 
-        before = None
-        if arguments_before:
+        before = Nothing
+        if not is_nothing(arguments_before):
             before = self._compute_fn_transform(args=arguments_before)
-        after = None
-        if arguments_after:
+        after = Nothing
+        if not is_nothing(arguments_after):
             after = self._compute_fn_transform(args=arguments_after)
         return PreprocEntityDelta(before=before, after=after)
 
@@ -606,9 +598,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     template_variable_value = sub_parameters[template_variable_name]
                 else:
                     try:
-                        reference_delta = self._resolve_reference(logical_id=template_variable_name)
+                        resource_delta = self._resolve_reference(logical_id=template_variable_name)
                         template_variable_value = (
-                            reference_delta.before if select_before else reference_delta.after
+                            resource_delta.before if select_before else resource_delta.after
                         )
                         if isinstance(template_variable_value, PreprocResource):
                             template_variable_value = template_variable_value.logical_id
@@ -621,19 +613,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 )
             return sub_string
 
-        before = None
-        if (
-            isinstance(arguments_before, str)
-            or isinstance(arguments_before, list)
-            and len(arguments_before) == 2
-        ):
+        before = Nothing
+        if not is_nothing(arguments_before):
             before = _compute_sub(args=arguments_before, select_before=True)
-        after = None
-        if (
-            isinstance(arguments_after, str)
-            or isinstance(arguments_after, list)
-            and len(arguments_after) == 2
-        ):
+        after = Nothing
+        if not is_nothing(arguments_after):
             after = _compute_sub(args=arguments_after)
         return PreprocEntityDelta(before=before, after=after)
 
@@ -654,10 +638,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             join_result = delimiter.join(map(str, values))
             return join_result
 
-        before = None
+        before = Nothing
         if isinstance(arguments_before, list) and len(arguments_before) == 2:
             before = _compute_join(arguments_before)
-        after = None
+        after = Nothing
         if isinstance(arguments_after, list) and len(arguments_after) == 2:
             after = _compute_join(arguments_after)
         return PreprocEntityDelta(before=before, after=after)
@@ -669,16 +653,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         before_arguments = arguments_delta.before
         after_arguments = arguments_delta.after
+        before = Nothing
         if before_arguments:
             before_value_delta = self._resolve_mapping(*before_arguments)
             before = before_value_delta.before
-        else:
-            before = None
+        after = Nothing
         if after_arguments:
             after_value_delta = self._resolve_mapping(*after_arguments)
             after = after_value_delta.after
-        else:
-            after = None
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_mapping(self, node_mapping: NodeMapping) -> PreprocEntityDelta:
@@ -733,15 +715,15 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after_logical_id = arguments_delta.after
 
         # TODO: extend this to support references to other types.
-        before = None
-        if before_logical_id is not None:
+        before = Nothing
+        if not is_nothing(before_logical_id):
             before_delta = self._resolve_reference(logical_id=before_logical_id)
             before = before_delta.before
             if isinstance(before, PreprocResource):
                 before = before.physical_resource_id
 
-        after = None
-        if after_logical_id is not None:
+        after = Nothing
+        if not is_nothing(after_logical_id):
             after_delta = self._resolve_reference(logical_id=after_logical_id)
             after = after_delta.after
             if isinstance(after, PreprocResource):
@@ -750,14 +732,17 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_array(self, node_array: NodeArray) -> PreprocEntityDelta:
-        before = list()
-        after = list()
+        node_change_type = node_array.change_type
+        before = list() if node_change_type != ChangeType.CREATED else Nothing
+        after = list() if node_change_type != ChangeType.REMOVED else Nothing
         for change_set_entity in node_array.array:
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
-            if delta.before is not None:
-                before.append(delta.before)
-            if delta.after is not None:
-                after.append(delta.after)
+            delta_before = delta.before
+            delta_after = delta.after
+            if not is_nothing(before) and not is_nothing(delta_before):
+                before.append(delta_before)
+            if not is_nothing(after) and not is_nothing(delta_after):
+                after.append(delta_after)
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
@@ -766,29 +751,44 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_properties(
         self, node_properties: NodeProperties
     ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
-        before_bindings: dict[str, Any] = dict()
-        after_bindings: dict[str, Any] = dict()
+        node_change_type = node_properties.change_type
+        before_bindings = dict() if node_change_type != ChangeType.CREATED else Nothing
+        after_bindings = dict() if node_change_type != ChangeType.REMOVED else Nothing
         for node_property in node_properties.properties:
-            delta = self.visit(node_property)
             property_name = node_property.name
-            if node_property.change_type != ChangeType.CREATED:
-                before_bindings[property_name] = delta.before
-            if node_property.change_type != ChangeType.REMOVED:
-                after_bindings[property_name] = delta.after
-        before = PreprocProperties(properties=before_bindings)
-        after = PreprocProperties(properties=after_bindings)
+            delta = self.visit(node_property)
+            delta_before = delta.before
+            delta_after = delta.after
+            if (
+                not is_nothing(before_bindings)
+                and not is_nothing(delta_before)
+                and delta_before is not None
+            ):
+                before_bindings[property_name] = delta_before
+            if (
+                not is_nothing(after_bindings)
+                and not is_nothing(delta_after)
+                and delta_after is not None
+            ):
+                after_bindings[property_name] = delta_after
+        before = Nothing
+        if not is_nothing(before_bindings):
+            before = PreprocProperties(properties=before_bindings)
+        after = Nothing
+        if not is_nothing(after_bindings):
+            after = PreprocProperties(properties=after_bindings)
         return PreprocEntityDelta(before=before, after=after)
 
     def _resolve_resource_condition_reference(self, reference: TerminalValue) -> PreprocEntityDelta:
         reference_delta = self.visit(reference)
         before_reference = reference_delta.before
-        before = None
-        if before_reference is not None:
+        before = Nothing
+        if isinstance(before_reference, str):
             before_delta = self._resolve_condition(logical_id=before_reference)
             before = before_delta.before
-        after = None
+        after = Nothing
         after_reference = reference_delta.after
-        if after_reference is not None:
+        if isinstance(after_reference, str):
             after_delta = self._resolve_condition(logical_id=after_reference)
             after = after_delta.after
         return PreprocEntityDelta(before=before, after=after)
@@ -797,19 +797,19 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
         change_type = node_resource.change_type
-        condition_before = None
-        condition_after = None
-        if node_resource.condition_reference is not None:
+        condition_before = Nothing
+        condition_after = Nothing
+        if not is_nothing(node_resource.condition_reference):
             condition_delta = self._resolve_resource_condition_reference(
                 node_resource.condition_reference
             )
             condition_before = condition_delta.before
             condition_after = condition_delta.after
 
-        depends_on_before = None
-        depends_on_after = None
-        if node_resource.depends_on is not None:
-            depends_on_delta = self.visit_node_depends_on(node_resource.depends_on)
+        depends_on_before = Nothing
+        depends_on_after = Nothing
+        if not is_nothing(node_resource.depends_on):
+            depends_on_delta = self.visit(node_resource.depends_on)
             depends_on_before = depends_on_delta.before
             depends_on_after = depends_on_delta.after
 
@@ -818,9 +818,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             node_resource.properties
         )
 
-        before = None
-        after = None
-        if change_type != ChangeType.CREATED and condition_before is None or condition_before:
+        before = Nothing
+        after = Nothing
+        if change_type != ChangeType.CREATED and is_nothing(condition_before) or condition_before:
             logical_resource_id = node_resource.name
             before_physical_resource_id = self._before_resource_physical_id(
                 resource_logical_id=logical_resource_id
@@ -833,7 +833,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 properties=properties_delta.before,
                 depends_on=depends_on_before,
             )
-        if change_type != ChangeType.REMOVED and condition_after is None or condition_after:
+        if change_type != ChangeType.REMOVED and is_nothing(condition_after) or condition_after:
             logical_resource_id = node_resource.name
             try:
                 after_physical_resource_id = self._after_resource_physical_id(
@@ -857,8 +857,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         change_type = node_output.change_type
         value_delta = self.visit(node_output.value)
 
-        condition_delta = None
-        if node_output.condition_reference is not None:
+        condition_delta = Nothing
+        if not is_nothing(node_output.condition_reference):
             condition_delta = self._resolve_resource_condition_reference(
                 node_output.condition_reference
             )
@@ -869,11 +869,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             elif condition_before and not condition_after:
                 change_type = ChangeType.REMOVED
 
-        export_delta = None
-        if node_output.export is not None:
+        export_delta = Nothing
+        if not is_nothing(node_output.export):
             export_delta = self.visit(node_output.export)
 
-        before: Optional[PreprocOutput] = None
+        before: Maybe[PreprocOutput] = Nothing
         if change_type != ChangeType.CREATED:
             before = PreprocOutput(
                 name=node_output.name,
@@ -881,7 +881,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 export=export_delta.before if export_delta else None,
                 condition=condition_delta.before if condition_delta else None,
             )
-        after: Optional[PreprocOutput] = None
+        after: Maybe[PreprocOutput] = Nothing
         if change_type != ChangeType.REMOVED:
             after = PreprocOutput(
                 name=node_output.name,
@@ -900,8 +900,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             output_delta: PreprocEntityDelta[PreprocOutput, PreprocOutput] = self.visit(node_output)
             output_before = output_delta.before
             output_after = output_delta.after
-            if output_before:
+            if not is_nothing(output_before):
                 before.append(output_before)
-            if output_after:
+            if not is_nothing(output_after):
                 after.append(output_after)
         return PreprocEntityDelta(before=before, after=after)

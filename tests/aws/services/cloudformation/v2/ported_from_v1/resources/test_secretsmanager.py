@@ -63,7 +63,6 @@ def test_cfn_handle_secretsmanager_secret(deploy_cfn_template, aws_client, snaps
     # snapshot.match("exception", ex.value.response)
 
 
-@pytest.mark.skip(reason="CFNV2:AWS::NoValue")
 @markers.aws.validated
 @pytest.mark.parametrize("block_public_policy", ["true", "default"])
 def test_cfn_secret_policy(deploy_cfn_template, block_public_policy, aws_client, snapshot):

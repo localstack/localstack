@@ -16,7 +16,7 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestCdkInit:
-    @pytest.mark.skip(reason="CFNV2:Fn::Join on empty string args; CFNV2:AWS::NoValue unsupported")
+    @pytest.mark.skip(reason="CFNV2:Fn::Join on empty string args")
     @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
     @markers.aws.validated
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
