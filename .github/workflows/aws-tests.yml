@@ -739,7 +739,7 @@ jobs:
           retention-days: 30
 
   test-cfn-v2-engine:
-    name: Test CloudFront Engine v2
+    name: Test CloudFormation Engine v2
     if: ${{ !inputs.onlyAcceptanceTests }}
     runs-on: ubuntu-latest
     needs:

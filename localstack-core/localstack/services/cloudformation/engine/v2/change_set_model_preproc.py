@@ -200,6 +200,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         _ = self._get_node_resource_for(
             resource_name=resource_logical_id, node_template=self._node_template
         )
+
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
             raise RuntimeError(

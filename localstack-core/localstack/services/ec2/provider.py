@@ -117,11 +117,9 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
         zone_names = describe_availability_zones_request.get("ZoneNames")
         zone_ids = describe_availability_zones_request.get("ZoneIds")
         if zone_names or zone_ids:
-            filters = {
-                "zone-name": zone_names,
-                "zone-id": zone_ids,
-            }
-            filtered_zones = backend.describe_availability_zones(filters)
+            filtered_zones = backend.describe_availability_zones(
+                zone_names=zone_names, zone_ids=zone_ids
+            )
             availability_zones = [
                 AvailabilityZone(
                     State="available",
