@@ -240,7 +240,7 @@ class TestChangeSetFnTransform:
         create_macro,
     ):
         name1 = f"topic-name-1-{short_uid()}"
-        name2 = f"topic-name-2-{short_uid()}"
+        name2 = f"topic-name-2-{short_uid()}.fifo"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
 
         macro_function_path = os.path.join(
@@ -249,7 +249,7 @@ class TestChangeSetFnTransform:
         macro_name = "MakeFifo"
         create_macro(macro_name, macro_function_path)
 
-        template_2 = {
+        template_1 = {
             "Resources": {
                 "Topic1": {
                     "Type": "AWS::SNS::Topic",
@@ -258,9 +258,9 @@ class TestChangeSetFnTransform:
             }
         }
 
-        template_1 = {
+        template_2 = {
             "Resources": {
-                "Topic": {
+                "Topic1": {
                     "Type": "AWS::SNS::Topic",
                     "Properties": {"TopicName": name2, "Fn::Transform": macro_name},
                 }
@@ -268,7 +268,101 @@ class TestChangeSetFnTransform:
         }
         capture_update_process(snapshot, template_1, template_2)
 
-    # TODO:
-    # - Attribute with macro
-    # - Macro with parameters
-    # - Executing order of transformations
+    @markers.aws.validated
+    def test_embedded_macro_for_attribute_fn_transform(
+        self,
+        snapshot,
+        capture_update_process,
+        create_macro,
+    ):
+        name1 = f"parameter-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+        )
+        macro_name = "GenerateRandom"
+        create_macro(macro_name, macro_function_path)
+
+        template_1 = {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+
+        template_2 = {
+            "Parameters": {"Input": {"Type": "String"}},
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": {
+                            "Fn::Transform": {
+                                "Name": "GenerateRandom",
+                                "Parameters": {"Prefix": {"Ref": "Input"}},
+                            }
+                        },
+                    },
+                }
+            },
+        }
+
+        capture_update_process(snapshot, template_1, template_2, p2={"Input": "test"})
+
+    @markers.aws.validated
+    def test_multiple_fn_transform_order(
+        self,
+        snapshot,
+        capture_update_process,
+        create_macro,
+    ):
+        name1 = f"parameter-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+        )
+        macro_name = "ReplaceString"
+        create_macro(macro_name, macro_function_path)
+
+        template_1 = {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+
+        template_2 = {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Value": "<replace-this>",
+                        "Type": "String",
+                        "Fn::Transform": [
+                            {"Name": "ReplaceString", "Parameters": {"Input": "snippet-transform"}},
+                            {
+                                "Name": "ReplaceString",
+                                "Parameters": {"Input": "second-snippet-transform"},
+                            },
+                        ],
+                    },
+                }
+            },
+            "Transform": [
+                {"Name": "ReplaceString", "Parameters": {"Input": "global-transform"}},
+                {"Name": "ReplaceString", "Parameters": {"Input": "second-global-transform"}},
+            ],
+        }
+
+        capture_update_process(snapshot, template_1, template_2)
