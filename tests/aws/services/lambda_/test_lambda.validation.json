@@ -162,7 +162,7 @@
     "last_validated_date": "2024-04-08T16:57:45+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_lambda_with_context": {
-    "last_validated_date": "2022-09-09T18:19:33+00:00"
+    "last_validated_date": "2025-06-02T09:19:51+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_upload_lambda_from_s3": {
     "last_validated_date": "2024-04-08T16:58:25+00:00"
