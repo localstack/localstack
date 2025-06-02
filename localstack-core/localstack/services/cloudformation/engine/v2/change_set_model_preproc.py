@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import base64
 import re
 from typing import Any, Final, Generic, Optional, TypeVar
 
@@ -745,6 +746,33 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after = Nothing
         if not is_nothing(arguments_after):
             after = _compute_fn_get_a_zs(arguments_after)
+
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_base64(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        # TODO: add further support for schema validation
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_fn_base_64(string) -> Any:
+            if not isinstance(string, str):
+                raise RuntimeError(f"Invalid valueToEncode for Fn::Base64: '{string}'")
+
+            string_bytes = string.encode("ascii")
+            string_base64_bytes = base64.b64encode(string_bytes)
+            base64_string = string_base64_bytes.decode("ascii")
+            return base64_string
+
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before = _compute_fn_base_64(arguments_before)
+
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after = _compute_fn_base_64(arguments_after)
 
         return PreprocEntityDelta(before=before, after=after)
 

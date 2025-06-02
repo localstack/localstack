@@ -426,6 +426,7 @@ FnTransform: Final[str] = "Fn::Transform"
 FnSelect: Final[str] = "Fn::Select"
 FnSplit: Final[str] = "Fn::Split"
 FnGetAZs: Final[str] = "Fn::GetAZs"
+FnBase64: Final[str] = "Fn::Base64"
 INTRINSIC_FUNCTIONS: Final[set[str]] = {
     RefKey,
     FnIfKey,
@@ -439,6 +440,7 @@ INTRINSIC_FUNCTIONS: Final[set[str]] = {
     FnSelect,
     FnSplit,
     FnGetAZs,
+    FnBase64,
 }
 
 

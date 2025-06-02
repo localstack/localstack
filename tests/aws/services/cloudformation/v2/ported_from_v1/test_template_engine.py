@@ -109,7 +109,6 @@ class TestIntrinsicFunctions:
         bucket_names = [b["Name"] for b in buckets["Buckets"]]
         assert (bucket_name in bucket_names) == expected_bucket_created
 
-    @pytest.mark.skip(reason="CFNV2:Fn::Base64")
     @markers.aws.validated
     def test_base64_sub_and_getatt_functions(self, deploy_cfn_template):
         template_path = os.path.join(
