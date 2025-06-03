@@ -258,8 +258,31 @@ class NonLoggingHandler(DNSHandler):
             pass
 
 
+# List of unique non-subdomain prefixes (e.g., data-) from endpoint.hostPrefix in the botocore specs.
+# Subdomain-prefixes (e.g., api.) work properly unless DNS rebind protection blocks DNS resolution, but
+# these `-` dash-prefixes require special consideration.
+# IMPORTANT: Adding a new host prefix here requires deploying a public DNS entry to ensure proper DNS resolution for
+# such non-dot prefixed domains (e.g., data-localhost.localstack.cloud)
+# LIMITATION: As of 2025-05-26, only used prefixes are deployed to our public DNS, including `sync-` and `data-`
+HOST_PREFIXES_NO_SUBDOMAIN = [
+    "analytics-",
+    "control-storage-",
+    "data-",
+    "query-",
+    "runtime-",
+    "storage-",
+    "streaming-",
+    "sync-",
+    "tags-",
+    "workflows-",
+]
+HOST_PREFIX_NAME_PATTERNS = [
+    f"{host_prefix}{LOCALHOST_HOSTNAME}" for host_prefix in HOST_PREFIXES_NO_SUBDOMAIN
+]
+
 NAME_PATTERNS_POINTING_TO_LOCALSTACK = [
     f".*{LOCALHOST_HOSTNAME}",
+    *HOST_PREFIX_NAME_PATTERNS,
 ]
 
 
