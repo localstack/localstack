@@ -5,7 +5,8 @@ import logging
 import threading
 from abc import ABC, abstractmethod
 from collections import defaultdict
-from typing import Dict, List, Optional, Tuple, Union, overload
+from dataclasses import dataclass
+from typing import Any, Optional, Union, overload
 
 from localstack import config
 from localstack.runtime import hooks
@@ -14,6 +15,59 @@ from localstack.utils.analytics.events import Event, EventMetadata
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 
 LOG = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class MetricRegistryKey:
+    namespace: str
+    name: str
+
+
+@dataclass(frozen=True)
+class CounterPayload:
+    """An immutable snapshot of a counter metric at the time of collection."""
+
+    namespace: str
+    name: str
+    value: int
+    type: str
+    labels: Optional[dict[str, Union[str, float]]] = None
+
+    def as_dict(self) -> dict[str, Any]:
+        result = {
+            "namespace": self.namespace,
+            "name": self.name,
+            "value": self.value,
+            "type": self.type,
+        }
+
+        if self.labels:
+            # Convert labels to the expected format (label_1, label_1_value, etc.)
+            for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
+                result[f"label_{i}"] = label_name
+                result[f"label_{i}_value"] = label_value
+
+        return result
+
+
+@dataclass
+class MetricPayload:
+    """
+    Stores all metric payloads collected during the execution of the LocalStack emulator.
+    Currently, supports only counter-type metrics, but designed to accommodate other types in the future.
+    """
+
+    _payload: list[CounterPayload]  # support for other metric types may be added in the future.
+
+    @property
+    def payload(self) -> list[CounterPayload]:
+        return self._payload
+
+    def __init__(self, payload: list[CounterPayload]):
+        self._payload = payload
+
+    def as_dict(self) -> dict[str, list[dict[str, Any]]]:
+        return {"metrics": [payload.as_dict() for payload in self._payload]}
 
 
 class MetricRegistry:
@@ -39,7 +93,7 @@ class MetricRegistry:
             self._registry = dict()
 
     @property
-    def registry(self) -> Dict[str, "Metric"]:
+    def registry(self) -> dict[MetricRegistryKey, "Metric"]:
         return self._registry
 
     def register(self, metric: Metric) -> None:
@@ -54,22 +108,28 @@ class MetricRegistry:
         if not isinstance(metric, Metric):
             raise TypeError("Only subclasses of `Metric` can be registered.")
 
-        if metric.name in self._registry:
-            raise ValueError(f"Metric '{metric.name}' already exists.")
+        if not metric.namespace:
+            raise ValueError("Metric 'namespace' must be defined and non-empty.")
 
-        self._registry[metric.name] = metric
+        registry_unique_key = MetricRegistryKey(namespace=metric.namespace, name=metric.name)
+        if registry_unique_key in self._registry:
+            raise ValueError(
+                f"A metric named '{metric.name}' already exists in the '{metric.namespace}' namespace"
+            )
 
-    def collect(self) -> Dict[str, List[Dict[str, Union[str, int]]]]:
+        self._registry[registry_unique_key] = metric
+
+    def collect(self) -> MetricPayload:
         """
         Collects all registered metrics.
         """
-        return {
-            "metrics": [
-                metric
-                for metric_instance in self._registry.values()
-                for metric in metric_instance.collect()
-            ]
-        }
+        payload = [
+            metric
+            for metric_instance in self._registry.values()
+            for metric in metric_instance.collect()
+        ]
+
+        return MetricPayload(payload=payload)
 
 
 class Metric(ABC):
@@ -79,20 +139,30 @@ class Metric(ABC):
     Each subclass must implement the `collect()` method.
     """
 
+    _namespace: str
     _name: str
 
-    def __init__(self, name: str):
+    def __init__(self, namespace: str, name: str):
+        if not namespace or namespace.strip() == "":
+            raise ValueError("Namespace must be non-empty string.")
+        self._namespace = namespace
+
         if not name or name.strip() == "":
             raise ValueError("Metric name must be non-empty string.")
-
         self._name = name
+
+    @property
+    def namespace(self) -> str:
+        return self._namespace
 
     @property
     def name(self) -> str:
         return self._name
 
     @abstractmethod
-    def collect(self) -> List[Dict[str, Union[str, int]]]:
+    def collect(
+        self,
+    ) -> list[CounterPayload]:  # support for other metric types may be added in the future.
         """
         Collects and returns metric data. Subclasses must implement this to return collected metric data.
         """
@@ -143,18 +213,16 @@ class CounterMetric(Metric, BaseCounter):
     This class should not be instantiated directly, use the Counter class instead.
     """
 
-    _namespace: Optional[str]
     _type: str
 
-    def __init__(self, name: str, namespace: Optional[str] = ""):
-        Metric.__init__(self, name=name)
+    def __init__(self, namespace: str, name: str):
+        Metric.__init__(self, namespace=namespace, name=name)
         BaseCounter.__init__(self)
 
-        self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         MetricRegistry().register(self)
 
-    def collect(self) -> List[Dict[str, Union[str, int]]]:
+    def collect(self) -> list[CounterPayload]:
         """Collects the metric unless events are disabled."""
         if config.DISABLE_EVENTS:
             return list()
@@ -162,13 +230,11 @@ class CounterMetric(Metric, BaseCounter):
         if self._count == 0:
             # Return an empty list if the count is 0, as there are no metrics to send to the analytics backend.
             return list()
+
         return [
-            {
-                "namespace": self._namespace,
-                "name": self.name,
-                "value": self._count,
-                "type": self._type,
-            }
+            CounterPayload(
+                namespace=self._namespace, name=self.name, value=self._count, type=self._type
+            )
         ]
 
 
@@ -178,15 +244,14 @@ class LabeledCounterMetric(Metric):
     This class should not be instantiated directly, use the Counter class instead.
     """
 
-    _namespace: Optional[str]
     _type: str
     _unit: str
     _labels: list[str]
-    _label_values: Tuple[Optional[Union[str, float]], ...]
-    _counters_by_label_values: defaultdict[Tuple[Optional[Union[str, float]], ...], BaseCounter]
+    _label_values: tuple[Optional[Union[str, float]], ...]
+    _counters_by_label_values: defaultdict[tuple[Optional[Union[str, float]], ...], BaseCounter]
 
-    def __init__(self, name: str, labels: List[str], namespace: Optional[str] = ""):
-        super(LabeledCounterMetric, self).__init__(name=name)
+    def __init__(self, namespace: str, name: str, labels: list[str]):
+        super(LabeledCounterMetric, self).__init__(namespace=namespace, name=name)
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -197,7 +262,6 @@ class LabeledCounterMetric(Metric):
         if len(labels) > 8:
             raise ValueError("A maximum of 8 labels are allowed.")
 
-        self._namespace = namespace.strip() if namespace else ""
         self._type = "counter"
         self._labels = labels
         self._counters_by_label_values = defaultdict(BaseCounter)
@@ -221,13 +285,12 @@ class LabeledCounterMetric(Metric):
 
         return self._counters_by_label_values[_label_values]
 
-    def _as_list(self) -> List[Dict[str, Union[str, int]]]:
+    def collect(self) -> list[CounterPayload]:
+        if config.DISABLE_EVENTS:
+            return list()
+
+        payload = []
         num_labels = len(self._labels)
-
-        static_key_label_value = [f"label_{i + 1}_value" for i in range(num_labels)]
-        static_key_label = [f"label_{i + 1}" for i in range(num_labels)]
-
-        collected_metrics = []
 
         for label_values, counter in self._counters_by_label_values.items():
             if counter.count == 0:
@@ -239,23 +302,23 @@ class LabeledCounterMetric(Metric):
                     f"but got {len(label_values)} values {label_values}."
                 )
 
-            collected_metrics.append(
-                {
-                    "namespace": self._namespace,
-                    "name": self.name,
-                    "value": counter.count,
-                    "type": self._type,
-                    **dict(zip(static_key_label_value, label_values)),
-                    **dict(zip(static_key_label, self._labels)),
-                }
+            # Create labels dictionary
+            labels_dict = {
+                label_name: label_value
+                for label_name, label_value in zip(self._labels, label_values)
+            }
+
+            payload.append(
+                CounterPayload(
+                    namespace=self._namespace,
+                    name=self.name,
+                    value=counter.count,
+                    type=self._type,
+                    labels=labels_dict,
+                )
             )
 
-        return collected_metrics
-
-    def collect(self) -> List[Dict[str, Union[str, int]]]:
-        if config.DISABLE_EVENTS:
-            return list()
-        return self._as_list()
+        return payload
 
 
 class Counter:
@@ -268,17 +331,15 @@ class Counter:
     """
 
     @overload
-    def __new__(cls, name: str, namespace: Optional[str] = "") -> CounterMetric:
+    def __new__(cls, namespace: str, name: str) -> CounterMetric:
         return CounterMetric(namespace=namespace, name=name)
 
     @overload
-    def __new__(
-        cls, name: str, labels: List[str], namespace: Optional[str] = ""
-    ) -> LabeledCounterMetric:
+    def __new__(cls, namespace: str, name: str, labels: list[str]) -> LabeledCounterMetric:
         return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
 
     def __new__(
-        cls, name: str, namespace: Optional[str] = "", labels: Optional[List[str]] = None
+        cls, namespace: str, name: str, labels: Optional[list[str]] = None
     ) -> Union[CounterMetric, LabeledCounterMetric]:
         if labels is not None:
             return LabeledCounterMetric(namespace=namespace, name=name, labels=labels)
@@ -297,7 +358,7 @@ def publish_metrics() -> None:
         return
 
     collected_metrics = MetricRegistry().collect()
-    if not collected_metrics["metrics"]:  # Skip publishing if no metrics remain after filtering
+    if not collected_metrics.payload:  # Skip publishing if no metrics remain after filtering
         return
 
     metadata = EventMetadata(
@@ -307,4 +368,6 @@ def publish_metrics() -> None:
 
     if collected_metrics:
         publisher = AnalyticsClientPublisher()
-        publisher.publish([Event(name="ls_metrics", metadata=metadata, payload=collected_metrics)])
+        publisher.publish(
+            [Event(name="ls_metrics", metadata=metadata, payload=collected_metrics.as_dict())]
+        )
