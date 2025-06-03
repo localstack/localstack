@@ -133,6 +133,11 @@ class ChangeSetModelVisitor(abc.ABC):
     ):
         self.visit_children(node_intrinsic_function)
 
+    def visit_node_intrinsic_function_fn_base64(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        self.visit_children(node_intrinsic_function)
+
     def visit_node_intrinsic_function_fn_sub(self, node_intrinsic_function: NodeIntrinsicFunction):
         self.visit_children(node_intrinsic_function)
 
