@@ -1,7 +1,13 @@
 from moto.apigateway.models import APIGatewayBackend, apigateway_backends
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
-from localstack.aws.api.apigateway import ApiKey, ListOfUsagePlan, ListOfUsagePlanKey, Resource
+from localstack.aws.api.apigateway import (
+    ApiKey,
+    ListOfUsagePlan,
+    ListOfUsagePlanKey,
+    Resource,
+    Stage,
+)
 
 
 def get_resources_from_moto_rest_api(moto_rest_api: MotoRestAPI) -> dict[str, Resource]:
@@ -38,6 +44,13 @@ def get_stage_variables(
     moto_rest_api = apigateway_backend.get_rest_api(api_id)
     stage = moto_rest_api.stages[stage_name]
     return stage.variables
+
+
+def get_stage_configuration(account_id: str, region: str, api_id: str, stage_name: str) -> Stage:
+    apigateway_backend: APIGatewayBackend = apigateway_backends[account_id][region]
+    moto_rest_api = apigateway_backend.get_rest_api(api_id)
+    stage = moto_rest_api.stages[stage_name]
+    return stage.to_json()
 
 
 def get_usage_plans(account_id: str, region_name: str) -> ListOfUsagePlan:
