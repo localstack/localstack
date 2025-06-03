@@ -247,6 +247,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
+          DISABLE_EVENTS: 1
           TEST_PATH: "tests/unit"
           JUNIT_REPORTS_FILE: "pytest-junit-unit.xml"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} -o junit_suite_name=unit-tests"
@@ -365,6 +366,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_EVENTS: 1
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 4 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
           COVERAGE_FILE: "target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
@@ -427,6 +429,9 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # TODO: Unify environment variable configuration such that we accept `LOCALSTACK_`-prefixed variables
+          #  everywhere and not only within the Docker container as implemented in `bin/docker-entrypoint.sh`
+          LOCALSTACK_DISABLE_EVENTS: 1
           TEST_PATH: "tests/bootstrap"
           COVERAGE_FILE: ".coverage.bootstrap"
           JUNIT_REPORTS_FILE: "pytest-junit-bootstrap.xml"
@@ -544,6 +549,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
+          DISABLE_EVENTS: 1
           LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -m acceptance_test -o junit_suite_name='acceptance_test'"
           COVERAGE_FILE: "target/.coverage.acceptance-${{ env.PLATFORM }}"
@@ -625,6 +631,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
+          DISABLE_EVENTS: 1
           COVERAGE_FILE: ".coverage.cloudwatch_v1"
           TEST_PATH: "tests/aws/services/cloudwatch/"
           JUNIT_REPORTS_FILE: "pytest-junit-cloudwatch-v1.xml"
@@ -675,6 +682,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           COVERAGE_FILE: ".coverage.dynamodb_v2"
+          DISABLE_EVENTS: 1
           TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
           JUNIT_REPORTS_FILE: "pytest-junit-dynamodb-v2.xml"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=dynamodb_v2"
@@ -724,6 +732,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DEBUG: 1
+          DISABLE_EVENTS: 1
           COVERAGE_FILE: ".coverage.events_v1"
           TEST_PATH: "tests/aws/services/events/"
           JUNIT_REPORTS_FILE: "pytest-junit-events-v1.xml"
@@ -774,6 +783,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DISABLE_EVENTS: 1
           TEST_PATH: "tests/aws/services/cloudformation/v2"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
           PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
@@ -870,7 +880,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DISABLE_EVENTS: "1"
+          DISABLE_EVENTS: 1
           DEBUG: 1
           IMAGE_NAME: "localstack/localstack:latest"
         run: |

@@ -132,6 +132,7 @@ jobs:
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image-${{ matrix.arch }}.xml"
           TEST_PATH: "tests/aws/services/s3"
           DEBUG: 1
+          DISABLE_EVENTS: 1
         run: |
           mkdir target
           make docker-run-tests-s3-only
