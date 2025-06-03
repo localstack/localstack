@@ -470,6 +470,46 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             after = after_outcome_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_intrinsic_function_fn_and(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_fn_and(args: list[bool]):
+            result = all(args)
+            return result
+
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before = _compute_fn_and(arguments_before)
+
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after = _compute_fn_and(arguments_after)
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_or(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        def _compute_fn_and(args: list[bool]):
+            result = any(args)
+            return result
+
+        before = Nothing
+        if not is_nothing(arguments_before):
+            before = _compute_fn_and(arguments_before)
+
+        after = Nothing
+        if not is_nothing(arguments_after):
+            after = _compute_fn_and(arguments_after)
+        return PreprocEntityDelta(before=before, after=after)
+
     def visit_node_intrinsic_function_fn_not(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
@@ -897,6 +937,33 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             after = after_delta.after
             if isinstance(after, PreprocResource):
                 after = after.physical_resource_id
+
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_condition(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        before_condition_name = arguments_delta.before
+        after_condition_name = arguments_delta.after
+
+        def _delta_of_condition(name: str) -> PreprocEntityDelta:
+            node_condition = self._get_node_condition_if_exists(condition_name=name)
+            if is_nothing(node_condition):
+                raise RuntimeError(f"Undefined condition '{name}'")
+            delta = self.visit(node_condition)
+            return delta
+
+        # TODO: extend this to support references to other types.
+        before = Nothing
+        if not is_nothing(before_condition_name):
+            before_delta = _delta_of_condition(before_condition_name)
+            before = before_delta.before
+
+        after = Nothing
+        if not is_nothing(after_condition_name):
+            after_delta = _delta_of_condition(after_condition_name)
+            after = after_delta.after
 
         return PreprocEntityDelta(before=before, after=after)
 

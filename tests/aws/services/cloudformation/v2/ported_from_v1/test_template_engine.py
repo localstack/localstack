@@ -65,7 +65,6 @@ class TestTypes:
 
 
 class TestIntrinsicFunctions:
-    @pytest.mark.skip(reason="CFNV2:Fn::And CFNV2:Fn::Or")
     @pytest.mark.parametrize(
         ("intrinsic_fn", "parameter_1", "parameter_2", "expected_bucket_created"),
         [
