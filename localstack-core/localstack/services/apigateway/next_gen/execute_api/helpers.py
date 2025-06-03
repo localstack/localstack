@@ -1,5 +1,6 @@
 import copy
 import logging
+import random
 import re
 import time
 from secrets import token_hex
@@ -174,3 +175,9 @@ def mime_type_matches_binary_media_types(mime_type: str | None, binary_media_typ
             return True
 
     return False
+
+
+def should_divert_to_canary(percent_traffic: float) -> bool:
+    if int(percent_traffic) == 100:
+        return True
+    return percent_traffic > random.random() * 100

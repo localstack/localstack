@@ -286,7 +286,7 @@ jobs:
     runs-on: ubuntu-latest
     # only remove the image artifacts if the build was successful
     # (this allows a re-build of failed jobs until for the time of the retention period)
-    if: success()
+    if: always() && !failure() && !cancelled()
     needs: push
     steps:
       - uses: geekyeggo/delete-artifact@v5

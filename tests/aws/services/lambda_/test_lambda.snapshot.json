@@ -4580,5 +4580,29 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_host_prefix_api_operation": {
+    "recorded-date": "26-05-2025, 16:38:54",
+    "recorded-content": {
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "Payload": {
+          "host_prefix": {
+            "status": "success"
+          },
+          "host_prefix_localstack_domain": {
+            "status": "success"
+          },
+          "no_host_prefix": {
+            "status": "success"
+          }
+        },
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
