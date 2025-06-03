@@ -42,7 +42,6 @@ def test_nested_getatt_ref(deploy_cfn_template, aws_client, attribute_name, snap
     assert topic_arn in topic_arns
 
 
-# @pytest.mark.skip(reason="CFNV2:Ref describing references to not yet deployed SNS Topic appears to return the Name field instead")
 @markers.aws.validated
 def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     """
