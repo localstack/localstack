@@ -169,9 +169,6 @@ def test_container_configurator_deprecation_warning(container_factory, monkeypat
     # set non-prefixed well-known environment variable on the mocked OS env
     monkeypatch.setenv("SERVICES", "1")
 
-    # avoid test failure due to automatic picking up from the default Makefile configuration
-    monkeypatch.delenv("DISABLE_EVENTS", False)
-
     # config the container
     container: Container = container_factory()
     configure_container(container)
@@ -187,7 +184,7 @@ def test_container_configurator_no_deprecation_warning_on_prefix(
     # set non-prefixed well-known environment variable on the mocked OS env
     monkeypatch.setenv("LOCALSTACK_SERVICES", "1")
 
-    # avoid test failure due to automatic picking up from the default Makefile configuration
+    # delete non-prefixed analytic events variable, which gets picked up automatically from the default Makefile config
     monkeypatch.delenv("DISABLE_EVENTS", False)
 
     container: Container = container_factory()
@@ -202,6 +199,9 @@ def test_container_configurator_no_deprecation_warning_for_ci_env_var(
 ):
     # set the "CI" env var indicating that we are running in a CI environment
     monkeypatch.setenv("CI", "1")
+
+    # delete non-prefixed analytic events variable, which gets picked up automatically from the default Makefile config
+    monkeypatch.delenv("DISABLE_EVENTS", False)
 
     container: Container = container_factory()
     configure_container(container)
