@@ -377,62 +377,56 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 after[name] = delta_after
         return PreprocEntityDelta(before=before, after=after)
 
+    def _resolve_attribute(self, arguments: str | list[str], select_before: bool) -> str:
+        # TODO: add arguments validation.
+        arguments_list: list[str]
+        if isinstance(arguments, str):
+            arguments_list = arguments.split(".")
+        else:
+            arguments_list = arguments
+        logical_name_of_resource = arguments_list[0]
+        attribute_name = arguments_list[1]
+
+        node_resource = self._get_node_resource_for(
+            resource_name=logical_name_of_resource, node_template=self._node_template
+        )
+        node_property: Optional[NodeProperty] = self._get_node_property_for(
+            property_name=attribute_name, node_resource=node_resource
+        )
+        if node_property is not None:
+            # The property is statically defined in the template and its value can be computed.
+            property_delta = self.visit(node_property)
+            value = property_delta.before if select_before else property_delta.after
+        else:
+            # The property is not statically defined and must therefore be available in
+            # the properties deployed set.
+            if select_before:
+                value = self._before_deployed_property_value_of(
+                    resource_logical_id=logical_name_of_resource,
+                    property_name=attribute_name,
+                )
+            else:
+                value = self._after_deployed_property_value_of(
+                    resource_logical_id=logical_name_of_resource,
+                    property_name=attribute_name,
+                )
+        return value
+
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         # TODO: validate the return value according to the spec.
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_argument: Maybe[list[str]] = arguments_delta.before
-        if isinstance(before_argument, str):
-            before_argument = before_argument.split(".")
-        after_argument: Maybe[list[str]] = arguments_delta.after
-        if isinstance(after_argument, str):
-            after_argument = after_argument.split(".")
+        before_arguments: Maybe[str | list[str]] = arguments_delta.before
+        after_arguments: Maybe[str | list[str]] = arguments_delta.after
 
         before = Nothing
-        if before_argument:
-            before_logical_name_of_resource = before_argument[0]
-            before_attribute_name = before_argument[1]
-
-            before_node_resource = self._get_node_resource_for(
-                resource_name=before_logical_name_of_resource, node_template=self._node_template
-            )
-            before_node_property: Optional[NodeProperty] = self._get_node_property_for(
-                property_name=before_attribute_name, node_resource=before_node_resource
-            )
-            if before_node_property is not None:
-                # The property is statically defined in the template and its value can be computed.
-                before_property_delta = self.visit(before_node_property)
-                before = before_property_delta.before
-            else:
-                # The property is not statically defined and must therefore be available in
-                # the properties deployed set.
-                before = self._before_deployed_property_value_of(
-                    resource_logical_id=before_logical_name_of_resource,
-                    property_name=before_attribute_name,
-                )
+        if not is_nothing(before_arguments):
+            before = self._resolve_attribute(arguments=before_arguments, select_before=True)
 
         after = Nothing
-        if after_argument:
-            after_logical_name_of_resource = after_argument[0]
-            after_attribute_name = after_argument[1]
-            after_node_resource = self._get_node_resource_for(
-                resource_name=after_logical_name_of_resource, node_template=self._node_template
-            )
-            after_node_property = self._get_node_property_for(
-                property_name=after_attribute_name, node_resource=after_node_resource
-            )
-            if after_node_property is not None:
-                # The property is statically defined in the template and its value can be computed.
-                after_property_delta = self.visit(after_node_property)
-                after = after_property_delta.after
-            else:
-                # The property is not statically defined and must therefore be available in
-                # the properties deployed set.
-                after = self._after_deployed_property_value_of(
-                    resource_logical_id=after_logical_name_of_resource,
-                    property_name=after_attribute_name,
-                )
+        if not is_nothing(after_arguments):
+            after = self._resolve_attribute(arguments=after_arguments, select_before=False)
 
         return PreprocEntityDelta(before=before, after=after)
 
@@ -572,7 +566,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         arguments_before = arguments_delta.before
         arguments_after = arguments_delta.after
 
-        def _compute_sub(args: str | list[Any], select_before: bool = False) -> str:
+        def _compute_sub(args: str | list[Any], select_before: bool) -> str:
             # TODO: add further schema validation.
             string_template: str
             sub_parameters: dict
@@ -595,12 +589,28 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             sub_string = string_template
             template_variable_names = re.findall("\\${([^}]+)}", string_template)
             for template_variable_name in template_variable_names:
+                template_variable_value = Nothing
+
+                # Try to resolve the variable name as pseudo parameter.
                 if template_variable_name in _PSEUDO_PARAMETERS:
                     template_variable_value = self._resolve_pseudo_parameter(
                         pseudo_parameter_name=template_variable_name
                     )
+
+                # Try to resolve the variable name as an entry to the defined parameters.
                 elif template_variable_name in sub_parameters:
                     template_variable_value = sub_parameters[template_variable_name]
+
+                # Try to resolve the variable name are GetAtt.
+                elif "." in template_variable_name:
+                    try:
+                        template_variable_value = self._resolve_attribute(
+                            arguments=template_variable_name, select_before=select_before
+                        )
+                    except RuntimeError:
+                        pass
+
+                # Try to resolve the variable name are Ref.
                 else:
                     try:
                         resource_delta = self._resolve_reference(logical_id=template_variable_name)
@@ -608,22 +618,45 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                             resource_delta.before if select_before else resource_delta.after
                         )
                         if isinstance(template_variable_value, PreprocResource):
-                            template_variable_value = template_variable_value.logical_id
+                            template_variable_value = template_variable_value.physical_resource_id
                     except RuntimeError:
-                        raise RuntimeError(
-                            f"Undefined variable name in Fn::Sub string template '{template_variable_name}'"
-                        )
+                        pass
+
+                if is_nothing(template_variable_value):
+                    raise RuntimeError(
+                        f"Undefined variable name in Fn::Sub string template '{template_variable_name}'"
+                    )
+
+                if not isinstance(template_variable_value, str):
+                    template_variable_value = str(template_variable_value)
+
                 sub_string = sub_string.replace(
                     f"${{{template_variable_name}}}", template_variable_value
                 )
-            return sub_string
+
+            # FIXME: the following type reduction is ported from v1; however it appears as though such
+            #        reduction is not performed by the engine, and certainly not at this depth given the
+            #        lack of context. This section should be removed with Fn::Sub always retuning a string
+            #        and the resource providers reviewed.
+            account_id = self._change_set.account_id
+            is_another_account_id = sub_string.isdigit() and len(sub_string) == len(account_id)
+            if sub_string == account_id or is_another_account_id:
+                result = sub_string
+            elif sub_string.isdigit():
+                result = int(sub_string)
+            else:
+                try:
+                    result = float(sub_string)
+                except ValueError:
+                    result = sub_string
+            return result
 
         before = Nothing
         if not is_nothing(arguments_before):
             before = _compute_sub(args=arguments_before, select_before=True)
         after = Nothing
         if not is_nothing(arguments_after):
-            after = _compute_sub(args=arguments_after)
+            after = _compute_sub(args=arguments_after, select_before=False)
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_join(
@@ -640,7 +673,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             values: list[Any] = args[1]
             if not isinstance(values, list):
                 raise RuntimeError(f"Invalid arguments list definition for Fn::Join: '{args}'")
-            join_result = delimiter.join(map(str, values))
+            str_values: list[str] = list()
+            for value in values:
+                if value is None:
+                    continue
+                str_value = str(value)
+                str_values.append(str_value)
+            join_result = delimiter.join(str_values)
             return join_result
 
         before = Nothing

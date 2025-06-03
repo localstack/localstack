@@ -534,6 +534,13 @@ class ChangeSetModel:
         self._visited_scopes[scope] = node_intrinsic_function
         return node_intrinsic_function
 
+    def _resolve_intrinsic_function_fn_sub(self, arguments: ChangeSetEntity) -> ChangeType:
+        # TODO: This routine should instead export the implicit Ref and GetAtt calls within the first
+        #       string template parameter and compute the respective change set types. Currently,
+        #       changes referenced byu Fn::Sub templates are only picked up during preprocessing; not
+        #       at modelling.
+        return arguments.change_type
+
     def _resolve_intrinsic_function_fn_get_att(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: add support for nested intrinsic functions.
         # TODO: validate arguments structure and type.
