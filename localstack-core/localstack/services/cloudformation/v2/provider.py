@@ -176,10 +176,10 @@ class CloudformationProviderV2(CloudformationProvider):
             # on a CREATE an empty Stack should be generated if we didn't find an active one
             if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
                 stack = Stack(
-                    context.account_id,
-                    context.region,
-                    request,
-                    structured_template,
+                    account_id=context.account_id,
+                    region_name=context.region,
+                    request_payload=request,
+                    template=structured_template,
                     template_body=template_body,
                 )
                 state.stacks_v2[stack.stack_id] = stack
@@ -241,7 +241,7 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template = structured_template
 
         # create change set for the stack and apply changes
-        change_set = ChangeSet(stack, request)
+        change_set = ChangeSet(stack, request, template=after_template)
 
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.populate_update_graph(
@@ -310,6 +310,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = result.parameters
                 change_set.stack.resolved_outputs = result.outputs
+                # if the deployment succeeded, update the stack's template representation to that
+                # which was just deployed
+                change_set.stack.template = change_set.template
             except Exception as e:
                 LOG.error(
                     "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
