@@ -392,7 +392,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 previous_resource_properties = before_properties_value or {}
             case ChangeAction.Remove:
                 resource_properties = before_properties_value or {}
-                previous_resource_properties = None
+                # previous_resource_properties = None
+                # HACK: our providers use a mix of `desired_state` and `previous_state` so ensure the payload is present for both
+                previous_resource_properties = resource_properties
             case _:
                 raise NotImplementedError(f"Action '{action}' not handled")
 
