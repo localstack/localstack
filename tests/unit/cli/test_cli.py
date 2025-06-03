@@ -198,6 +198,8 @@ def test_validate_config_syntax_error(runner, monkeypatch, tmp_path):
     assert "Error" in result.output
 
 
+# TODO: temporarily skip to trigger other CI builds during CI analytics pollution investigation
+@pytest.mark.skip
 @pytest.mark.parametrize(
     "cli_input,expected_cmd,expected_params",
     [
