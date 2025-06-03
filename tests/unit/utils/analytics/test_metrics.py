@@ -137,11 +137,11 @@ def test_thread_safety():
 
 
 def test_max_labels_limit():
-    with pytest.raises(ValueError, match="A maximum of 8 labels are allowed."):
+    with pytest.raises(ValueError, match="Too many labels: counters allow a maximum of 6."):
         Counter(
             namespace="test_namespace",
             name="test_counter",
-            labels=["l1", "l2", "l3", "l4", "l5", "l6", "l7", "l8", "l9"],
+            labels=["l1", "l2", "l3", "l4", "l5", "l6", "l7"],
         )
 
 

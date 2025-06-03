@@ -259,8 +259,8 @@ class LabeledCounterMetric(Metric):
         if any(not label for label in labels):
             raise ValueError("Labels must be non-empty strings.")
 
-        if len(labels) > 8:
-            raise ValueError("A maximum of 8 labels are allowed.")
+        if len(labels) > 6:
+            raise ValueError("Too many labels: counters allow a maximum of 6.")
 
         self._type = "counter"
         self._labels = labels
