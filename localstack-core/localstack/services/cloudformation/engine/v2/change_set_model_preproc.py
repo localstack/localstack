@@ -954,7 +954,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             delta = self.visit(node_condition)
             return delta
 
-        # TODO: extend this to support references to other types.
         before = Nothing
         if not is_nothing(before_condition_name):
             before_delta = _delta_of_condition(before_condition_name)
