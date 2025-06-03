@@ -241,6 +241,7 @@ jobs:
           environment:
             TEST_PATH: "tests/unit"
             COVERAGE_ARGS: "-p"
+            DISABLE_EVENTS: 1
           command: |
             COVERAGE_FILE="target/coverage/.coverage.unit.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/unit-tests.xml -o junit_suite_name=unit-tests" \
@@ -294,6 +295,7 @@ jobs:
             PYTEST_ARGS: "${TINYBIRD_PYTEST_ARGS}--reruns 3 -m acceptance_test --junitxml=target/reports/acceptance-test-report-<< parameters.platform >>-${CIRCLE_NODE_INDEX}.xml -o junit_suite_name='acceptance_test'"
             LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC: 1
             DEBUG: 1
+            DISABLE_EVENTS: 1
           command: |
             make docker-run-tests
       - store_test_results:
@@ -415,6 +417,9 @@ jobs:
           environment:
             TEST_PATH: "tests/bootstrap"
             COVERAGE_ARGS: "-p"
+            # TODO: Unify environment variable configuration such that we accept `LOCALSTACK_`-prefixed variables
+            #  everywhere and not only within the Docker container as implemented in `bin/docker-entrypoint.sh`
+            LOCALSTACK_DISABLE_EVENTS: 1
           command: |
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}--junitxml=target/reports/bootstrap-tests.xml -o junit_suite_name=bootstrap-tests" make test-coverage
       - store_test_results:
@@ -450,6 +455,7 @@ jobs:
             PROVIDER_OVERRIDE_CLOUDWATCH: "v1"
             TEST_PATH: "tests/aws/services/cloudwatch/"
             COVERAGE_ARGS: "-p"
+            DISABLE_EVENTS: 1
           command: |
             COVERAGE_FILE="target/coverage/.coverage.cloudwatchV1.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/cloudwatch_v1.xml -o junit_suite_name='cloudwatch_v1'" \
@@ -481,6 +487,7 @@ jobs:
             PROVIDER_OVERRIDE_EVENTS: "v1"
             TEST_PATH: "tests/aws/services/events/"
             COVERAGE_ARGS: "-p"
+            DISABLE_EVENTS: 1
           command: |
             COVERAGE_FILE="target/coverage/.coverage.eventsV1.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/events_v1.xml -o junit_suite_name='events_v1'" \
@@ -511,6 +518,7 @@ jobs:
             PROVIDER_OVERRIDE_DYNAMODB: "v2"
             TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
             COVERAGE_ARGS: "-p"
+            DISABLE_EVENTS: 1
           command: |
             COVERAGE_FILE="target/coverage/.coverage.dynamodb_v2.${CIRCLE_NODE_INDEX}" \
             PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/dynamodb_v2.xml -o junit_suite_name='dynamodb_v2'" \
@@ -541,6 +549,7 @@ jobs:
             PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
             TEST_PATH: "tests/aws/services/cloudformation/v2"
             COVERAGE_ARGS: "-p"
+            DISABLE_EVENTS: 1
           # TODO: use docker-run-tests
           command: |
             COVERAGE_FILE="target/coverage/.coverage.cloudformation_v2.${CIRCLE_NODE_INDEX}" \
