@@ -725,14 +725,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             account_id = self._change_set.account_id
             ec2_client = connect_to(aws_access_key_id=account_id, region_name=region).ec2
             try:
-                get_availability_zones_result: DescribeAvailabilityZonesResult = (
+                describe_availability_zones_result: DescribeAvailabilityZonesResult = (
                     ec2_client.describe_availability_zones()
                 )
             except ClientError:
                 raise RuntimeError(
                     "Could not describe zones availability whilst evaluating Fn::GetAZs"
                 )
-            availability_zones: AvailabilityZoneList = get_availability_zones_result[
+            availability_zones: AvailabilityZoneList = describe_availability_zones_result[
                 "AvailabilityZones"
             ]
             azs = [az["ZoneName"] for az in availability_zones]
