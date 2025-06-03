@@ -46,6 +46,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
+from localstack.utils.run import to_str
+from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
 
 _AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
@@ -760,10 +762,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         def _compute_fn_base_64(string) -> Any:
             if not isinstance(string, str):
                 raise RuntimeError(f"Invalid valueToEncode for Fn::Base64: '{string}'")
-
-            string_bytes = string.encode("ascii")
-            string_base64_bytes = base64.b64encode(string_bytes)
-            base64_string = string_base64_bytes.decode("ascii")
+            # Ported from v1:
+            base64_string = to_str(base64.b64encode(to_bytes(string)))
             return base64_string
 
         before = Nothing
