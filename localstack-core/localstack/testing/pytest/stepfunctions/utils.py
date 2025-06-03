@@ -404,6 +404,7 @@ def create_state_machine_with_iam_role(
     definition: Definition,
     logging_configuration: Optional[LoggingConfiguration] = None,
     state_machine_name: Optional[str] = None,
+    state_machine_type: StateMachineType = StateMachineType.STANDARD,
 ):
     snf_role_arn = create_state_machine_iam_role(target_aws_client=target_aws_client)
     snapshot.add_transformer(RegexTransformer(snf_role_arn, "snf_role_arn"))
@@ -422,6 +423,7 @@ def create_state_machine_with_iam_role(
         "name": sm_name,
         "definition": definition,
         "roleArn": snf_role_arn,
+        "type": state_machine_type,
     }
     if logging_configuration is not None:
         create_arguments["loggingConfiguration"] = logging_configuration
@@ -507,6 +509,27 @@ def launch_and_record_mocked_execution(
     return execution_arn
 
 
+def launch_and_record_mocked_sync_execution(
+    target_aws_client,
+    sfn_snapshot,
+    state_machine_arn,
+    execution_input,
+    test_name,
+) -> LongArn:
+    stepfunctions_client = target_aws_client.stepfunctions
+
+    exec_resp = stepfunctions_client.start_sync_execution(
+        stateMachineArn=f"{state_machine_arn}#{test_name}",
+        input=execution_input,
+    )
+
+    sfn_snapshot.add_transformer(sfn_snapshot.transform.sfn_sm_sync_exec_arn(exec_resp, 0))
+
+    sfn_snapshot.match("start_execution_sync_response", exec_resp)
+
+    return exec_resp["executionArn"]
+
+
 def launch_and_record_logs(
     target_aws_client,
     state_machine_arn,
@@ -579,6 +602,7 @@ def create_and_record_mocked_execution(
     execution_input,
     state_machine_name,
     test_name,
+    state_machine_type: StateMachineType = StateMachineType.STANDARD,
 ) -> LongArn:
     state_machine_arn = create_state_machine_with_iam_role(
         target_aws_client,
@@ -587,10 +611,18 @@ def create_and_record_mocked_execution(
         sfn_snapshot,
         definition,
         state_machine_name=state_machine_name,
+        state_machine_type=state_machine_type,
     )
-    execution_arn = launch_and_record_mocked_execution(
-        target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
-    )
+    if state_machine_type == StateMachineType.EXPRESS:
+        execution_arn = launch_and_record_mocked_sync_execution(
+            target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
+        )
+        return execution_arn
+    else:
+        execution_arn = launch_and_record_mocked_execution(
+            target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
+        )
+        return execution_arn
     return execution_arn
 
 
