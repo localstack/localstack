@@ -102,7 +102,7 @@ def find_change_set_v2(
                     # TODO: check for active stacks
                     if (
                         stack_candidate.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
+                        and stack_candidate.status != StackStatus.DELETE_COMPLETE
                     ):
                         stack = stack_candidate
                         break
