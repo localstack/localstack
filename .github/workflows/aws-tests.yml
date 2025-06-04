@@ -24,12 +24,17 @@ on:
         type: boolean
         default: false
       randomize-aws-credentials:
-        description: "Randomize AWS credentials"
+        description: 'Randomize AWS credentials'
         default: false
         required: false
         type: boolean
       onlyAcceptanceTests:
-        description: "Run only acceptance tests"
+        description: 'Run only acceptance tests'
+        default: false
+        required: false
+        type: boolean
+      forceARMTests:
+        description: 'Run the ARM64 tests'
         default: false
         required: false
         type: boolean
@@ -72,6 +77,11 @@ on:
         type: boolean
       onlyAcceptanceTests:
         description: "Run only acceptance tests"
+        default: false
+        required: false
+        type: boolean
+      forceARMTests:
+        description: 'Run the ARM64 tests'
         default: false
         required: false
         type: boolean
