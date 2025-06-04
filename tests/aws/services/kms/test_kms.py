@@ -134,9 +134,6 @@ class TestKMS:
         assert response["KeyId"] == key_id
         assert f":{region_name}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
-        assert f":{region_name}:" in response["Arn"]
-        assert f":{account_id}:" in response["Arn"]
-        assert response["KeyId"] != "tst"
 
     @markers.aws.validated
     def test_tag_existing_key_and_untag(
