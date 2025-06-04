@@ -488,6 +488,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         after = Nothing
         if not is_nothing(arguments_after):
             after = _compute_fn_and(arguments_after)
+
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_or(

@@ -111,7 +111,6 @@ def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
     snapshot.match("validation_error", exc_info.value.response)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_client, snapshot):
     queue_name = f"q-{short_uid()}"

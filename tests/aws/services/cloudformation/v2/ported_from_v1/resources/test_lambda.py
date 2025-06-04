@@ -25,7 +25,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:ReferenceDotSyntax")
+@pytest.mark.skip(reason="CFNV2:Transform")
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     function_name = f"test-fn-{short_uid()}"
@@ -58,7 +58,7 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     retry(_assert_single_lambda_call, retries=30)
 
 
-@pytest.mark.skip(reason="CFNV2:ReferenceDotSyntax")
+@pytest.mark.skip(reason="CFNV2:Transform")
 @markers.snapshot.skip_snapshot_verify(
     [
         # TODO: Fix flaky ESM state mismatch upon update in LocalStack (expected Enabled, actual Disabled)
@@ -130,7 +130,6 @@ def test_update_lambda_function(s3_create_bucket, deploy_cfn_template, aws_clien
     assert response["Configuration"]["Environment"]["Variables"]["TEST"] == "UPDATED"
 
 
-# @pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_update_lambda_function_name(s3_create_bucket, deploy_cfn_template, aws_client):
     function_name_1 = f"lambda-{short_uid()}"
@@ -1293,13 +1292,12 @@ class TestCfnLambdaDestinations:
         wait_until(wait_for_logs)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_bucket):
     bucket_key = "handler.zip"
     zip_file = create_lambda_archive(
         load_file(
-            os.path.join(os.path.dirname(__file__), "../../lambda_/functions/lambda_echo.py")
+            os.path.join(os.path.dirname(__file__), "../../../../lambda_/functions/lambda_echo.py")
         ),
         get_content=True,
         runtime=Runtime.python3_12,
@@ -1343,7 +1341,7 @@ def test_lambda_cfn_dead_letter_config_async_invocation(
     zip_file = create_lambda_archive(
         load_file(
             os.path.join(
-                os.path.dirname(__file__), "../../lambda_/functions/lambda_handler_error.py"
+                os.path.dirname(__file__), "../../../../lambda_/functions/lambda_handler_error.py"
             )
         ),
         get_content=True,
