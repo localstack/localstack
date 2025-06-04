@@ -17,7 +17,6 @@ from localstack.config import (
     HostAndPort,
     default_ip,
     is_env_not_false,
-    is_env_true,
     load_environment,
 )
 from localstack.constants import VERSION
@@ -332,9 +331,6 @@ def get_preloaded_services() -> Set[str]:
 
     The result is cached, so it's safe to call. Clear the cache with get_preloaded_services.cache_clear().
     """
-    if not is_env_true("EAGER_SERVICE_LOADING"):
-        return set()
-
     services_env = os.environ.get("SERVICES", "").strip()
     services = []
 
@@ -348,7 +344,9 @@ def get_preloaded_services() -> Set[str]:
             services.append(service)
 
     if not services:
-        LOG.warning("No services set in SERVICES environment variable, skipping eager loading.")
+        from localstack.services.plugins import SERVICE_PLUGINS
+
+        services = SERVICE_PLUGINS.list_available()
 
     return resolve_apis(services)
 

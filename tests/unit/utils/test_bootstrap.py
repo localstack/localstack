@@ -37,11 +37,13 @@ class TestGetPreloadedServices:
         yield
         get_preloaded_services.cache_clear()
 
-    def test_empty_services_returns_no_services(self):
+    def test_returns_default_service_ports(self):
+        from localstack.services.plugins import SERVICE_PLUGINS
+
         with temporary_env({"EAGER_SERVICE_LOADING": "1"}):
             result = get_preloaded_services()
 
-        assert result == set()
+        assert result == set(SERVICE_PLUGINS.list_available())
 
     def test_with_service_subset(self):
         with temporary_env({"SERVICES": "s3,sns", "EAGER_SERVICE_LOADING": "1"}):

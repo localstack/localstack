@@ -22,7 +22,11 @@ def test_strict_service_loading(
             ContainerConfigurators.random_gateway_port,
             ContainerConfigurators.random_service_port_range(20),
             ContainerConfigurators.env_vars(
-                {"STRICT_SERVICE_LOADING": "1", "SERVICES": "s3,sqs,sns"}
+                {
+                    "STRICT_SERVICE_LOADING": "1",  # this is the default value
+                    "EAGER_SERVICE_LOADING": "0",  # this is the default value
+                    "SERVICES": "s3,sqs,sns",
+                }
             ),
         ]
     )
