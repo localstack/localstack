@@ -492,7 +492,7 @@ jobs:
 
 
   test-acceptance:
-    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }}"
+    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
     needs:
       - build
     strategy:
