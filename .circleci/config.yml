@@ -880,14 +880,6 @@ workflows:
           resource_class: medium
           requires:
             - docker-build-amd64
-      - push:
-          filters:
-            branches:
-              only: master
-          requires:
-            - acceptance-tests-amd64
-            - acceptance-tests-arm64
-            - unit-tests
   full-run:
     # this workflow only runs when only-acceptance-tests is not explicitly set (the default)
     # or when the pipeline is running on the master branch because of a Github event (webhook)
@@ -993,18 +985,4 @@ workflows:
             - integration-tests-amd64
             - integration-tests-arm64
             - collect-not-implemented
-            - unit-tests
-      - push:
-          filters:
-            branches:
-              only: master
-          requires:
-            - itest-cloudwatch-v1-provider
-            - itest-events-v1-provider
-            - itest-ddb-v2-provider
-            - itest-cfn-v2-engine-provider
-            - acceptance-tests-amd64
-            - acceptance-tests-arm64
-            - integration-tests-amd64
-            - integration-tests-arm64
             - unit-tests
