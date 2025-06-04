@@ -912,6 +912,20 @@ KINESIS_MOCK_MAXIMUM_HEAP_SIZE = (
 KINESIS_MOCK_INITIAL_HEAP_SIZE = (
     os.environ.get("KINESIS_MOCK_INITIAL_HEAP_SIZE", "").strip() or "256m"
 )
+# set the wait time of kubernetes for pod startup
+KUBERNETES_WAIT_FOR_POD_READY_TIMEOUT = (
+    os.environ.get("KUBERNETES_WAIT_FOR_POD_READY_TIMEOUT", "").strip() or "30"
+)
+
+# set the wait time for kubernetes deployment rollout
+KUBERNETES_WAIT_FOR_DEPLOYMENT_READY_TIMEOUT = (
+    os.environ.get("KUBERNETES_WAIT_FOR_DEPLOYMENT_READY_TIMEOUT", "").strip() or "30"
+)
+
+# set the wait time for kubernetes service to be ready
+KUBERNETES_WAIT_FOR_SERVICE_READY_TIMEOUT = (
+    os.environ.get("KUBERNETES_WAIT_FOR_SERVICE_READY_TIMEOUT", "").strip() or "30"
+)
 
 # randomly inject faults to DynamoDB
 DYNAMODB_ERROR_PROBABILITY = float(os.environ.get("DYNAMODB_ERROR_PROBABILITY", "").strip() or 0.0)
@@ -1309,6 +1323,9 @@ CONFIG_ENV_VARS = [
     "KINESIS_MOCK_LOG_LEVEL",
     "KINESIS_ON_DEMAND_STREAM_COUNT_LIMIT",
     "KINESIS_PERSISTENCE",
+    "KUBERNETES_WAIT_FOR_POD_READY_TIMEOUT",
+    "KUBERNETES_DEPLOYMENT_ROLLING_TIMEOUT",
+    "KUBERNETES_SERVICE_READY_TIMEOUT",
     "LAMBDA_DEBUG_MODE",
     "LAMBDA_DEBUG_MODE_CONFIG",
     "LAMBDA_DISABLE_AWS_ENDPOINT_URL",
