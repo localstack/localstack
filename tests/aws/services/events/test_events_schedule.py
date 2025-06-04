@@ -6,6 +6,7 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.testing.aws.eventbus_utils import trigger_scheduled_rule
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import TransformerUtility
 from localstack.utils.strings import short_uid
@@ -385,3 +386,39 @@ class TestScheduleCron:
             time_message = time_message.replace(second=0, microsecond=0)
 
         assert time_message == target_datetime
+
+    @markers.aws.validated
+    def tests_scheduled_rule_does_not_trigger_on_put_events(
+        self, sqs_as_events_target, events_put_rule, aws_client
+    ):
+        queue_url, queue_arn = sqs_as_events_target()
+
+        bus_name = "default"
+        rule_name = f"test-rule-{short_uid()}"
+        events_put_rule(
+            Name=rule_name, EventBusName=bus_name, ScheduleExpression="rate(10 minutes)"
+        )
+
+        target_id = f"target-{short_uid()}"
+        aws_client.events.put_targets(
+            Rule=rule_name,
+            EventBusName=bus_name,
+            Targets=[
+                {
+                    "Id": target_id,
+                    "Arn": queue_arn,
+                    "Input": json.dumps({"custom-value": "somecustominput"}),
+                },
+            ],
+        )
+        test_event = {
+            "Source": "core.update-account-command",
+            "DetailType": "core.update-account-command",
+            "Detail": json.dumps({"command": ["update-account"]}),
+        }
+        aws_client.events.put_events(Entries=[test_event])
+
+        messages = aws_client.sqs.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=10 if is_aws_cloud() else 3
+        )
+        assert not messages.get("Messages")
