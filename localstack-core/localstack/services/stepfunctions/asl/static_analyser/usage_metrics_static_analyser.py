@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Final
 
-import localstack.services.stepfunctions.usage as UsageMetrics
+import localstack.services.stepfunctions.analytics as UsageMetrics
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
 from localstack.services.stepfunctions.asl.component.common.query_language import (
     QueryLanguageMode,
