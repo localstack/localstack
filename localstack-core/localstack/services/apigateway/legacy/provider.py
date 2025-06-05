@@ -360,7 +360,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             fixed_patch_ops.append(patch_op)
 
-        _patch_api_gateway_entity(rest_api, fixed_patch_ops)
+        patch_api_gateway_entity(rest_api, fixed_patch_ops)
 
         # fix data types after patches have been applied
         endpoint_configs = rest_api.endpoint_configuration or {}
@@ -622,7 +622,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 param = param.replace("~1", "/")
                 if op == "remove":
                     integration_response.response_templates.pop(param)
-                elif op == "add":
+                elif op in ("add", "replace"):
                     integration_response.response_templates[param] = value
 
             elif "/contentHandling" in path and op == "replace":
@@ -684,7 +684,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
 
         # TODO: test with multiple patch operations which would not be compatible between each other
-        _patch_api_gateway_entity(moto_resource, patch_operations)
+        patch_api_gateway_entity(moto_resource, patch_operations)
 
         # after setting it, mutate the store
         if moto_resource.parent_id != current_parent_id:
@@ -914,7 +914,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 ]
 
         # TODO: test with multiple patch operations which would not be compatible between each other
-        _patch_api_gateway_entity(moto_method, applicable_patch_operations)
+        patch_api_gateway_entity(moto_method, applicable_patch_operations)
 
         # if we removed all values of those fields, set them to None so that they're not returned anymore
         if had_req_params and len(moto_method.request_parameters) == 0:
@@ -1074,7 +1074,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             if patch_path == "/tracingEnabled" and (value := patch_operation.get("value")):
                 patch_operation["value"] = value and value.lower() == "true" or False
 
-        _patch_api_gateway_entity(moto_stage, patch_operations)
+        patch_api_gateway_entity(moto_stage, patch_operations)
         moto_stage.apply_operations(patch_operations)
 
         response = moto_stage.to_json()
@@ -1464,7 +1464,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not result:
             raise NotFoundException(f"Documentation version not found: {documentation_version}")
 
-        _patch_api_gateway_entity(result, patch_operations)
+        patch_api_gateway_entity(result, patch_operations)
 
         return result
 
@@ -2011,7 +2011,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException("Invalid Integration identifier specified")
 
         integration = method.method_integration
-        _patch_api_gateway_entity(integration, patch_operations)
+        patch_api_gateway_entity(integration, patch_operations)
 
         # fix data types
         if integration.timeout_in_millis:
@@ -2617,7 +2617,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                                 f"Invalid null or empty value in {param_type}"
                             )
 
-        _patch_api_gateway_entity(patched_entity, patch_operations)
+        patch_api_gateway_entity(patched_entity, patch_operations)
 
         return patched_entity
 
@@ -2739,7 +2739,7 @@ def create_custom_context(
     return ctx
 
 
-def _patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
+def patch_api_gateway_entity(entity: Any, patch_operations: ListOfPatchOperation):
     patch_operations = patch_operations or []
 
     if isinstance(entity, dict):

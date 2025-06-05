@@ -543,7 +543,7 @@ class ChangeSetModel:
     def _resolve_intrinsic_function_fn_sub(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: This routine should instead export the implicit Ref and GetAtt calls within the first
         #       string template parameter and compute the respective change set types. Currently,
-        #       changes referenced byu Fn::Sub templates are only picked up during preprocessing; not
+        #       changes referenced by Fn::Sub templates are only picked up during preprocessing; not
         #       at modelling.
         return arguments.change_type
 

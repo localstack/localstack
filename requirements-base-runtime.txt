@@ -180,7 +180,7 @@ six==1.17.0
     #   rfc3339-validator
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.13.2
+typing-extensions==4.14.0
     # via
     #   localstack-twisted
     #   pyopenssl
