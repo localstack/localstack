@@ -4,8 +4,9 @@ from localstack import config
 from localstack.runtime import hooks
 from localstack.utils.analytics import get_session_id
 from localstack.utils.analytics.events import Event, EventMetadata
-from localstack.utils.analytics.metrics import MetricRegistry
 from localstack.utils.analytics.publisher import AnalyticsClientPublisher
+
+from .registry import MetricRegistry
 
 
 @hooks.on_infra_shutdown()
