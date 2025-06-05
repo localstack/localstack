@@ -1896,6 +1896,10 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         if configured_rules := list(event_bus.rules.values()):
             for rule in configured_rules:
+                if rule.schedule_expression:
+                    # we do not want to execute Scheduled Rules on PutEvents
+                    continue
+
                 self._process_rules(rule, region, account_id, event_formatted, trace_header)
         else:
             LOG.info(
