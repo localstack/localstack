@@ -1,83 +1,83 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[json]": {
-    "last_validated_date": "2025-06-02T17:38:17+00:00",
+    "last_validated_date": "2025-06-03T21:29:58+00:00",
     "durations_in_seconds": {
       "setup": 0.39,
-      "call": 88.23,
-      "teardown": 0.87,
-      "total": 89.49
+      "call": 29.05,
+      "teardown": 0.82,
+      "total": 30.26
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[yml]": {
-    "last_validated_date": "2025-06-02T17:36:48+00:00",
+    "last_validated_date": "2025-06-03T21:29:28+00:00",
     "durations_in_seconds": {
       "setup": 0.62,
-      "call": 88.13,
-      "teardown": 0.84,
-      "total": 89.59
+      "call": 26.34,
+      "teardown": 0.8,
+      "total": 27.76
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_fn_transform": {
-    "last_validated_date": "2025-06-02T18:07:37+00:00",
+    "last_validated_date": "2025-06-03T21:51:12+00:00",
     "durations_in_seconds": {
-      "setup": 10.82,
-      "call": 130.7,
-      "teardown": 5.79,
-      "total": 147.31
+      "setup": 10.68,
+      "call": 35.35,
+      "teardown": 5.52,
+      "total": 51.55
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_for_attribute_fn_transform": {
-    "last_validated_date": "2025-06-02T20:02:13+00:00",
+    "last_validated_date": "2025-06-03T21:34:07+00:00",
     "durations_in_seconds": {
-      "setup": 10.8,
-      "call": 37.67,
-      "teardown": 5.5,
-      "total": 53.97
+      "setup": 0.0,
+      "call": 36.99,
+      "teardown": 5.18,
+      "total": 42.17
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[json]": {
-    "last_validated_date": "2025-06-02T17:41:20+00:00",
+    "last_validated_date": "2025-06-03T21:30:48+00:00",
     "durations_in_seconds": {
-      "setup": 0.4,
-      "call": 90.2,
-      "teardown": 0.83,
-      "total": 91.43
+      "setup": 0.39,
+      "call": 23.99,
+      "teardown": 0.8,
+      "total": 25.18
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[yml]": {
-    "last_validated_date": "2025-06-02T17:39:48+00:00",
+    "last_validated_date": "2025-06-03T21:30:23+00:00",
     "durations_in_seconds": {
       "setup": 0.37,
-      "call": 90.22,
-      "teardown": 0.81,
-      "total": 91.4
+      "call": 24.02,
+      "teardown": 0.89,
+      "total": 25.28
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_macro_fn_transform": {
-    "last_validated_date": "2025-06-02T17:44:59+00:00",
+    "last_validated_date": "2025-06-03T21:42:32+00:00",
     "durations_in_seconds": {
-      "setup": 10.52,
-      "call": 80.2,
-      "teardown": 5.08,
-      "total": 95.8
+      "setup": 10.81,
+      "call": 37.62,
+      "teardown": 5.34,
+      "total": 53.77
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_multiple_fn_transform_order": {
-    "last_validated_date": "2025-06-02T20:36:50+00:00",
+    "last_validated_date": "2025-06-03T21:34:52+00:00",
     "durations_in_seconds": {
-      "setup": 10.74,
-      "call": 39.63,
-      "teardown": 5.49,
-      "total": 55.86
+      "setup": 0.0,
+      "call": 39.28,
+      "teardown": 5.61,
+      "total": 44.89
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_serverless_fn_transform": {
-    "last_validated_date": "2025-06-02T17:43:23+00:00",
+    "last_validated_date": "2025-06-03T21:32:10+00:00",
     "durations_in_seconds": {
       "setup": 0.35,
-      "call": 122.37,
-      "teardown": 0.63,
-      "total": 123.35
+      "call": 80.57,
+      "teardown": 0.71,
+      "total": 81.63
     }
   }
 }

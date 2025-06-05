@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[yml]": {
-    "recorded-date": "02-06-2025, 17:36:48",
+    "recorded-date": "03-06-2025, 21:29:28",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -24,13 +24,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "topic-name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -62,8 +63,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -128,55 +129,17 @@
         "Changes": [
           {
             "ResourceChange": {
-              "Action": "Modify",
-              "AfterContext": {
-                "Properties": {
-                  "DisplayName": "The stack name is <stack-name:1>",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "BeforeContext": {
-                "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "Details": [
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "AfterValue": "The stack name is <stack-name:1>",
-                    "Attribute": "Properties",
-                    "AttributeChangeType": "Modify",
-                    "BeforeValue": "display-value-1",
-                    "Name": "DisplayName",
-                    "Path": "/Properties/DisplayName",
-                    "RequiresRecreation": "Never"
-                  }
-                }
-              ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": [
-                "Properties"
-              ]
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "TopicName": "<resource:5>"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "name-2-bd1e2d36"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic2",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter2",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -206,34 +169,10 @@
         "Changes": [
           {
             "ResourceChange": {
-              "Action": "Modify",
-              "Details": [
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "Attribute": "Properties",
-                    "Name": "DisplayName",
-                    "RequiresRecreation": "Never"
-                  }
-                }
-              ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": [
-                "Properties"
-              ]
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic2",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter2",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -280,116 +219,97 @@
         "Tags": []
       },
       "per-resource-events": {
-        "Topic1": [
+        "Parameter": [
           {
-            "EventId": "Topic1-UPDATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-UPDATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           }
         ],
-        "Topic2": [
+        "Parameter2": [
           {
-            "EventId": "Topic2-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic2",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:5>",
+            "EventId": "Parameter2-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "name-2-bd1e2d36",
             "ResourceProperties": {
-              "TopicName": "<resource:5>"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-2-bd1e2d36"
             },
             "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic2-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic2",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:5>",
+            "EventId": "Parameter2-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter2",
+            "PhysicalResourceId": "name-2-bd1e2d36",
             "ResourceProperties": {
-              "TopicName": "<resource:5>"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-2-bd1e2d36"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic2-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic2",
+            "EventId": "Parameter2-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter2",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "TopicName": "<resource:5>"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-2-bd1e2d36"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -484,7 +404,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_fn_transform_include[json]": {
-    "recorded-date": "02-06-2025, 17:38:17",
+    "recorded-date": "03-06-2025, 21:29:58",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -508,13 +428,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "topic-name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -546,8 +467,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -615,14 +536,16 @@
               "Action": "Modify",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "The stack name is <stack-name:1>",
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "name-2-3e00e97a"
                 }
               },
               "BeforeContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "topic-name-1"
                 }
               },
               "Details": [
@@ -630,38 +553,24 @@
                   "ChangeSource": "DirectModification",
                   "Evaluation": "Static",
                   "Target": {
-                    "AfterValue": "The stack name is <stack-name:1>",
+                    "AfterValue": "name-2-3e00e97a",
                     "Attribute": "Properties",
                     "AttributeChangeType": "Modify",
-                    "BeforeValue": "display-value-1",
-                    "Name": "DisplayName",
-                    "Path": "/Properties/DisplayName",
-                    "RequiresRecreation": "Never"
+                    "BeforeValue": "topic-name-1",
+                    "Name": "Name",
+                    "Path": "/Properties/Name",
+                    "RequiresRecreation": "Always"
                   }
                 }
               ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "topic-name-1",
+              "PolicyAction": "ReplaceAndDelete",
+              "Replacement": "True",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
                 "Properties"
               ]
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Add",
-              "AfterContext": {
-                "Properties": {
-                  "TopicName": "<resource:5>"
-                }
-              },
-              "Details": [],
-              "LogicalResourceId": "Topic2",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": []
             },
             "Type": "Resource"
           }
@@ -697,28 +606,19 @@
                   "Evaluation": "Static",
                   "Target": {
                     "Attribute": "Properties",
-                    "Name": "DisplayName",
-                    "RequiresRecreation": "Never"
+                    "Name": "Name",
+                    "RequiresRecreation": "Always"
                   }
                 }
               ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "topic-name-1",
+              "PolicyAction": "ReplaceAndDelete",
+              "Replacement": "True",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
                 "Properties"
               ]
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Add",
-              "Details": [],
-              "LogicalResourceId": "Topic2",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": []
             },
             "Type": "Resource"
           }
@@ -764,116 +664,116 @@
         "Tags": []
       },
       "per-resource-events": {
-        "Topic1": [
+        "Parameter": [
           {
-            "EventId": "Topic1-UPDATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-5cbf35a2-4a92-4554-a111-1f96269d3814",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-06c1c753-8966-4dc1-9a39-cfbe492abedb",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-UPDATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-2-3e00e97a",
             "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-2-3e00e97a"
             },
             "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-UPDATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-UPDATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-2-3e00e97a",
             "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-2-3e00e97a"
             },
             "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-UPDATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-2-3e00e97a"
+            },
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceStatusReason": "Requested update requires the creation of a new physical resource; hence creating one.",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "Topic2": [
-          {
-            "EventId": "Topic2-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic2",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:5>",
-            "ResourceProperties": {
-              "TopicName": "<resource:5>"
-            },
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic2-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic2",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:5>",
-            "ResourceProperties": {
-              "TopicName": "<resource:5>"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic2-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic2",
-            "PhysicalResourceId": "",
-            "ResourceProperties": {
-              "TopicName": "<resource:5>"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -968,7 +868,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[json]": {
-    "recorded-date": "02-06-2025, 17:41:20",
+    "recorded-date": "03-06-2025, 21:30:48",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -992,13 +892,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "topic-name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -1030,8 +931,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -1093,48 +994,7 @@
         ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
-        "Changes": [
-          {
-            "ResourceChange": {
-              "Action": "Modify",
-              "AfterContext": {
-                "Properties": {
-                  "DisplayName": "The stack name is <stack-name:1>",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "BeforeContext": {
-                "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "Details": [
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "AfterValue": "The stack name is <stack-name:1>",
-                    "Attribute": "Properties",
-                    "AttributeChangeType": "Modify",
-                    "BeforeValue": "display-value-1",
-                    "Name": "DisplayName",
-                    "Path": "/Properties/DisplayName",
-                    "RequiresRecreation": "Never"
-                  }
-                }
-              ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": [
-                "Properties"
-              ]
-            },
-            "Type": "Resource"
-          }
-        ],
+        "Changes": [],
         "CreationTime": "datetime",
         "ExecutionStatus": "AVAILABLE",
         "IncludeNestedStacks": false,
@@ -1156,32 +1016,7 @@
         ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
-        "Changes": [
-          {
-            "ResourceChange": {
-              "Action": "Modify",
-              "Details": [
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "Attribute": "Properties",
-                    "Name": "DisplayName",
-                    "RequiresRecreation": "Never"
-                  }
-                }
-              ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": [
-                "Properties"
-              ]
-            },
-            "Type": "Resource"
-          }
-        ],
+        "Changes": [],
         "CreationTime": "datetime",
         "ExecutionStatus": "AVAILABLE",
         "IncludeNestedStacks": false,
@@ -1218,8 +1053,8 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "TopicRef",
-            "OutputValue": "arn:<partition>:sns:<region>:111111111111:topic-name-1"
+            "OutputKey": "ParameterRef",
+            "OutputValue": "topic-name-1"
           }
         ],
         "RollbackConfiguration": {},
@@ -1229,74 +1064,49 @@
         "Tags": []
       },
       "per-resource-events": {
-        "Topic1": [
+        "Parameter": [
           {
-            "EventId": "Topic1-UPDATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-UPDATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -1384,8 +1194,8 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "TopicRef",
-            "OutputValue": "arn:<partition>:sns:<region>:111111111111:topic-name-1"
+            "OutputKey": "ParameterRef",
+            "OutputValue": "topic-name-1"
           }
         ],
         "RollbackConfiguration": {},
@@ -1397,7 +1207,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[yml]": {
-    "recorded-date": "02-06-2025, 17:39:48",
+    "recorded-date": "03-06-2025, 21:30:23",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -1421,13 +1231,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "topic-name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -1459,8 +1270,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -1522,48 +1333,7 @@
         ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
-        "Changes": [
-          {
-            "ResourceChange": {
-              "Action": "Modify",
-              "AfterContext": {
-                "Properties": {
-                  "DisplayName": "The stack name is <stack-name:1>",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "BeforeContext": {
-                "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "Details": [
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "AfterValue": "The stack name is <stack-name:1>",
-                    "Attribute": "Properties",
-                    "AttributeChangeType": "Modify",
-                    "BeforeValue": "display-value-1",
-                    "Name": "DisplayName",
-                    "Path": "/Properties/DisplayName",
-                    "RequiresRecreation": "Never"
-                  }
-                }
-              ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": [
-                "Properties"
-              ]
-            },
-            "Type": "Resource"
-          }
-        ],
+        "Changes": [],
         "CreationTime": "datetime",
         "ExecutionStatus": "AVAILABLE",
         "IncludeNestedStacks": false,
@@ -1585,32 +1355,7 @@
         ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
-        "Changes": [
-          {
-            "ResourceChange": {
-              "Action": "Modify",
-              "Details": [
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "Attribute": "Properties",
-                    "Name": "DisplayName",
-                    "RequiresRecreation": "Never"
-                  }
-                }
-              ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "Replacement": "False",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": [
-                "Properties"
-              ]
-            },
-            "Type": "Resource"
-          }
-        ],
+        "Changes": [],
         "CreationTime": "datetime",
         "ExecutionStatus": "AVAILABLE",
         "IncludeNestedStacks": false,
@@ -1647,8 +1392,8 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "TopicRef",
-            "OutputValue": "arn:<partition>:sns:<region>:111111111111:topic-name-1"
+            "OutputKey": "ParameterRef",
+            "OutputValue": "topic-name-1"
           }
         ],
         "RollbackConfiguration": {},
@@ -1658,74 +1403,49 @@
         "Tags": []
       },
       "per-resource-events": {
-        "Topic1": [
+        "Parameter": [
           {
-            "EventId": "Topic1-UPDATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-UPDATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "The stack name is <stack-name:1>",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "topic-name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -1813,8 +1533,8 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "TopicRef",
-            "OutputValue": "arn:<partition>:sns:<region>:111111111111:topic-name-1"
+            "OutputKey": "ParameterRef",
+            "OutputValue": "topic-name-1"
           }
         ],
         "RollbackConfiguration": {},
@@ -1826,7 +1546,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_serverless_fn_transform": {
-    "recorded-date": "02-06-2025, 17:43:23",
+    "recorded-date": "03-06-2025, 21:32:10",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -1850,13 +1570,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "{Substitution}",
+                  "Type": "String",
+                  "Name": "topic-name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -1888,8 +1609,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -2037,12 +1758,31 @@
           },
           {
             "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "{Substitution}",
+                  "Type": "String",
+                  "Name": "topic-name-1"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "topic-name-1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
                   "Body": {
                     "paths": {
-                      "/<resource:6>": {
+                      "/<resource:5>": {
                         "get": {
                           "responses": {},
                           "x-amazon-apigateway-integration": {
@@ -2098,24 +1838,6 @@
               "Details": [],
               "LogicalResourceId": "ServerlessRestApiProdStage",
               "ResourceType": "AWS::ApiGateway::Stage",
-              "Scope": []
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Remove",
-              "BeforeContext": {
-                "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
-                }
-              },
-              "Details": [],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "PolicyAction": "Delete",
-              "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
             "Type": "Resource"
@@ -2175,6 +1897,18 @@
           },
           {
             "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "topic-name-1",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
               "Action": "Add",
               "Details": [],
               "LogicalResourceId": "ServerlessRestApi",
@@ -2199,18 +1933,6 @@
               "Details": [],
               "LogicalResourceId": "ServerlessRestApiProdStage",
               "ResourceType": "AWS::ApiGateway::Stage",
-              "Scope": []
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Remove",
-              "Details": [],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "PolicyAction": "Delete",
-              "ResourceType": "AWS::SNS::Topic",
               "Scope": []
             },
             "Type": "Resource"
@@ -2261,9 +1983,9 @@
           {
             "EventId": "HelloWorldFunction-CREATE_COMPLETE-date",
             "LogicalResourceId": "HelloWorldFunction",
-            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunction-3tFROESvgtFK",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunction-EdXB90Au1l86",
             "ResourceProperties": {
-              "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+              "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
               "Runtime": "nodejs18.x",
               "Handler": "index.handler",
               "Code": {
@@ -2285,9 +2007,9 @@
           {
             "EventId": "HelloWorldFunction-CREATE_IN_PROGRESS-date",
             "LogicalResourceId": "HelloWorldFunction",
-            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunction-3tFROESvgtFK",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunction-EdXB90Au1l86",
             "ResourceProperties": {
-              "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+              "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
               "Runtime": "nodejs18.x",
               "Handler": "index.handler",
               "Code": {
@@ -2312,7 +2034,7 @@
             "LogicalResourceId": "HelloWorldFunction",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "Role": "arn:<partition>:iam::111111111111:role/<resource:5>",
+              "Role": "arn:<partition>:iam::111111111111:role/<resource:4>",
               "Runtime": "nodejs18.x",
               "Handler": "index.handler",
               "Code": {
@@ -2336,11 +2058,11 @@
           {
             "EventId": "HelloWorldFunctionApiEventPermissionProd-CREATE_COMPLETE-date",
             "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
-            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunctionApiEventPermissionProd-5fBzi1JcOwIe",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunctionApiEventPermissionProd-xfMFMMYChbqn",
             "ResourceProperties": {
-              "FunctionName": "<stack-name:1>-HelloWorldFunction-3tFROESvgtFK",
+              "FunctionName": "<stack-name:1>-HelloWorldFunction-EdXB90Au1l86",
               "Action": "lambda:InvokeFunction",
-              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:g59lz4kkbg/*/GET/<resource:6>",
+              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:317w2e8pc3/*/GET/<resource:5>",
               "Principal": "apigateway.amazonaws.com"
             },
             "ResourceStatus": "CREATE_COMPLETE",
@@ -2352,11 +2074,11 @@
           {
             "EventId": "HelloWorldFunctionApiEventPermissionProd-CREATE_IN_PROGRESS-date",
             "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
-            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunctionApiEventPermissionProd-5fBzi1JcOwIe",
+            "PhysicalResourceId": "<stack-name:1>-HelloWorldFunctionApiEventPermissionProd-xfMFMMYChbqn",
             "ResourceProperties": {
-              "FunctionName": "<stack-name:1>-HelloWorldFunction-3tFROESvgtFK",
+              "FunctionName": "<stack-name:1>-HelloWorldFunction-EdXB90Au1l86",
               "Action": "lambda:InvokeFunction",
-              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:g59lz4kkbg/*/GET/<resource:6>",
+              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:317w2e8pc3/*/GET/<resource:5>",
               "Principal": "apigateway.amazonaws.com"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
@@ -2371,9 +2093,9 @@
             "LogicalResourceId": "HelloWorldFunctionApiEventPermissionProd",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "FunctionName": "<stack-name:1>-HelloWorldFunction-3tFROESvgtFK",
+              "FunctionName": "<stack-name:1>-HelloWorldFunction-EdXB90Au1l86",
               "Action": "lambda:InvokeFunction",
-              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:g59lz4kkbg/*/GET/<resource:6>",
+              "SourceArn": "arn:<partition>:execute-api:<region>:111111111111:317w2e8pc3/*/GET/<resource:5>",
               "Principal": "apigateway.amazonaws.com"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
@@ -2387,7 +2109,7 @@
           {
             "EventId": "HelloWorldFunctionRole-CREATE_COMPLETE-date",
             "LogicalResourceId": "HelloWorldFunctionRole",
-            "PhysicalResourceId": "<resource:5>",
+            "PhysicalResourceId": "<resource:4>",
             "ResourceProperties": {
               "ManagedPolicyArns": [
                 "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -2424,7 +2146,7 @@
           {
             "EventId": "HelloWorldFunctionRole-CREATE_IN_PROGRESS-date",
             "LogicalResourceId": "HelloWorldFunctionRole",
-            "PhysicalResourceId": "<resource:5>",
+            "PhysicalResourceId": "<resource:4>",
             "ResourceProperties": {
               "ManagedPolicyArns": [
                 "arn:<partition>:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole"
@@ -2497,21 +2219,89 @@
             "Timestamp": "timestamp"
           }
         ],
+        "Parameter": [
+          {
+            "EventId": "Parameter-af425eba-d8e2-4ad9-9ebc-153095f8161d",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-adcb9c2b-0276-4487-9df6-5f12bf586323",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}",
+              "Name": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "topic-name-1",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}",
+              "Name": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceStatusReason": "Resource creation Initiated",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}",
+              "Name": "topic-name-1"
+            },
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          }
+        ],
         "ServerlessRestApi": [
           {
             "EventId": "ServerlessRestApi-CREATE_COMPLETE-date",
             "LogicalResourceId": "ServerlessRestApi",
-            "PhysicalResourceId": "g59lz4kkbg",
+            "PhysicalResourceId": "317w2e8pc3",
             "ResourceProperties": {
               "Body": {
                 "paths": {
-                  "/<resource:6>": {
+                  "/<resource:5>": {
                     "get": {
                       "responses": {},
                       "x-amazon-apigateway-integration": {
                         "httpMethod": "POST",
                         "type": "aws_proxy",
-                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-3tFROESvgtFK/invocations"
+                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-EdXB90Au1l86/invocations"
                       }
                     }
                   }
@@ -2532,17 +2322,17 @@
           {
             "EventId": "ServerlessRestApi-CREATE_IN_PROGRESS-date",
             "LogicalResourceId": "ServerlessRestApi",
-            "PhysicalResourceId": "g59lz4kkbg",
+            "PhysicalResourceId": "317w2e8pc3",
             "ResourceProperties": {
               "Body": {
                 "paths": {
-                  "/<resource:6>": {
+                  "/<resource:5>": {
                     "get": {
                       "responses": {},
                       "x-amazon-apigateway-integration": {
                         "httpMethod": "POST",
                         "type": "aws_proxy",
-                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-3tFROESvgtFK/invocations"
+                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-EdXB90Au1l86/invocations"
                       }
                     }
                   }
@@ -2568,13 +2358,13 @@
             "ResourceProperties": {
               "Body": {
                 "paths": {
-                  "/<resource:6>": {
+                  "/<resource:5>": {
                     "get": {
                       "responses": {},
                       "x-amazon-apigateway-integration": {
                         "httpMethod": "POST",
                         "type": "aws_proxy",
-                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-3tFROESvgtFK/invocations"
+                        "uri": "arn:<partition>:apigateway:<region>:lambda:path/2015-03-31/functions/arn:<partition>:lambda:<region>:111111111111:function:<stack-name:1>-HelloWorldFunction-EdXB90Au1l86/invocations"
                       }
                     }
                   }
@@ -2597,11 +2387,11 @@
           {
             "EventId": "ServerlessRestApiDeployment47fc2d5f9d-CREATE_COMPLETE-date",
             "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
-            "PhysicalResourceId": "qcrqox",
+            "PhysicalResourceId": "5oj1e3",
             "ResourceProperties": {
               "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
               "StageName": "Stage",
-              "RestApiId": "g59lz4kkbg"
+              "RestApiId": "317w2e8pc3"
             },
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Deployment",
@@ -2612,11 +2402,11 @@
           {
             "EventId": "ServerlessRestApiDeployment47fc2d5f9d-CREATE_IN_PROGRESS-date",
             "LogicalResourceId": "ServerlessRestApiDeployment47fc2d5f9d",
-            "PhysicalResourceId": "qcrqox",
+            "PhysicalResourceId": "5oj1e3",
             "ResourceProperties": {
               "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
               "StageName": "Stage",
-              "RestApiId": "g59lz4kkbg"
+              "RestApiId": "317w2e8pc3"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
@@ -2632,7 +2422,7 @@
             "ResourceProperties": {
               "Description": "RestApi deployment id: 47fc2d5f9d21ad56f83937abe2779d0e26d7095e",
               "StageName": "Stage",
-              "RestApiId": "g59lz4kkbg"
+              "RestApiId": "317w2e8pc3"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::ApiGateway::Deployment",
@@ -2647,9 +2437,9 @@
             "LogicalResourceId": "ServerlessRestApiProdStage",
             "PhysicalResourceId": "Prod",
             "ResourceProperties": {
-              "DeploymentId": "qcrqox",
+              "DeploymentId": "5oj1e3",
               "StageName": "Prod",
-              "RestApiId": "g59lz4kkbg"
+              "RestApiId": "317w2e8pc3"
             },
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::ApiGateway::Stage",
@@ -2662,9 +2452,9 @@
             "LogicalResourceId": "ServerlessRestApiProdStage",
             "PhysicalResourceId": "Prod",
             "ResourceProperties": {
-              "DeploymentId": "qcrqox",
+              "DeploymentId": "5oj1e3",
               "StageName": "Prod",
-              "RestApiId": "g59lz4kkbg"
+              "RestApiId": "317w2e8pc3"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
@@ -2678,77 +2468,12 @@
             "LogicalResourceId": "ServerlessRestApiProdStage",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "DeploymentId": "qcrqox",
+              "DeploymentId": "5oj1e3",
               "StageName": "Prod",
-              "RestApiId": "g59lz4kkbg"
+              "RestApiId": "317w2e8pc3"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::ApiGateway::Stage",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "Topic1": [
-          {
-            "EventId": "Topic1-a79bb536-e5a8-4385-830c-0057881c0043",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceStatus": "DELETE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-e811be29-1d08-47d9-a9a3-7fd72bbf09eb",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceStatus": "DELETE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -2843,7 +2568,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_macro_fn_transform": {
-    "recorded-date": "02-06-2025, 17:44:59",
+    "recorded-date": "03-06-2025, 21:42:32",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -2867,13 +2592,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "original",
+                  "Type": "String",
+                  "Name": "name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -2905,8 +2631,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -2971,35 +2697,43 @@
         "Changes": [
           {
             "ResourceChange": {
-              "Action": "Add",
+              "Action": "Modify",
               "AfterContext": {
                 "Properties": {
                   "Value": "{Substitution}",
-                  "Type": "String"
+                  "Type": "String",
+                  "Name": "name-1"
                 }
               },
-              "Details": [],
-              "LogicalResourceId": "Parameter",
-              "ResourceType": "AWS::SSM::Parameter",
-              "Scope": []
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Remove",
               "BeforeContext": {
                 "Properties": {
-                  "DisplayName": "display-value-1",
-                  "TopicName": "topic-name-1"
+                  "Value": "original",
+                  "Type": "String",
+                  "Name": "name-1"
                 }
               },
-              "Details": [],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "PolicyAction": "Delete",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": []
+              "Details": [
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "AfterValue": "{Substitution}",
+                    "Attribute": "Properties",
+                    "AttributeChangeType": "Modify",
+                    "BeforeValue": "original",
+                    "Name": "Value",
+                    "Path": "/Properties/Value",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "name-1",
+              "Replacement": "False",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": [
+                "Properties"
+              ]
             },
             "Type": "Resource"
           }
@@ -3034,23 +2768,25 @@
         "Changes": [
           {
             "ResourceChange": {
-              "Action": "Add",
-              "Details": [],
+              "Action": "Modify",
+              "Details": [
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Value",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
               "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "name-1",
+              "Replacement": "False",
               "ResourceType": "AWS::SSM::Parameter",
-              "Scope": []
-            },
-            "Type": "Resource"
-          },
-          {
-            "ResourceChange": {
-              "Action": "Remove",
-              "Details": [],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "PolicyAction": "Delete",
-              "ResourceType": "AWS::SNS::Topic",
-              "Scope": []
+              "Scope": [
+                "Properties"
+              ]
             },
             "Type": "Resource"
           }
@@ -3110,12 +2846,43 @@
       "per-resource-events": {
         "Parameter": [
           {
+            "EventId": "Parameter-UPDATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-1",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}",
+              "Name": "name-1"
+            },
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "EventId": "Parameter-UPDATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-1",
+            "ResourceProperties": {
+              "Type": "String",
+              "Value": "{Substitution}",
+              "Name": "name-1"
+            },
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Timestamp": "timestamp"
+          },
+          {
             "EventId": "Parameter-CREATE_COMPLETE-date",
             "LogicalResourceId": "Parameter",
-            "PhysicalResourceId": "CFN-Parameter-lnSABVaxQdt8",
+            "PhysicalResourceId": "name-1",
             "ResourceProperties": {
               "Type": "String",
-              "Value": "{Substitution}"
+              "Value": "original",
+              "Name": "name-1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
@@ -3126,10 +2893,11 @@
           {
             "EventId": "Parameter-CREATE_IN_PROGRESS-date",
             "LogicalResourceId": "Parameter",
-            "PhysicalResourceId": "CFN-Parameter-lnSABVaxQdt8",
+            "PhysicalResourceId": "name-1",
             "ResourceProperties": {
               "Type": "String",
-              "Value": "{Substitution}"
+              "Value": "original",
+              "Name": "name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
@@ -3144,75 +2912,11 @@
             "PhysicalResourceId": "",
             "ResourceProperties": {
               "Type": "String",
-              "Value": "{Substitution}"
+              "Value": "original",
+              "Name": "name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          }
-        ],
-        "Topic1": [
-          {
-            "EventId": "Topic1-d7cdeb51-69c0-4cb2-a5dc-c64c81b220e6",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceStatus": "DELETE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-2dc6b6ab-bd65-47b5-ada9-d7252c9babda",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceStatus": "DELETE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "",
-            "ResourceProperties": {
-              "DisplayName": "display-value-1",
-              "TopicName": "topic-name-1"
-            },
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -3313,7 +3017,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_fn_transform": {
-    "recorded-date": "02-06-2025, 18:07:36",
+    "recorded-date": "03-06-2025, 21:51:11",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -3337,12 +3041,14 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "name-1"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -3374,8 +3080,8 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "Topic1",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
             "Type": "Resource"
@@ -3443,14 +3149,19 @@
               "Action": "Modify",
               "AfterContext": {
                 "Properties": {
-                  "FifoTopic": "true",
-                  "ContentBasedDeduplication": "true",
-                  "TopicName": "<resource:5>"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Tags": {
+                    "MacroAdded": "True"
+                  },
+                  "Name": "name-1"
                 }
               },
               "BeforeContext": {
                 "Properties": {
-                  "TopicName": "topic-name-1"
+                  "Value": "foo",
+                  "Type": "String",
+                  "Name": "name-1"
                 }
               },
               "Details": [
@@ -3458,45 +3169,21 @@
                   "ChangeSource": "DirectModification",
                   "Evaluation": "Static",
                   "Target": {
-                    "AfterValue": "true",
+                    "AfterValue": {
+                      "MacroAdded": "True"
+                    },
                     "Attribute": "Properties",
                     "AttributeChangeType": "Add",
-                    "Name": "FifoTopic",
-                    "Path": "/Properties/FifoTopic",
-                    "RequiresRecreation": "Always"
-                  }
-                },
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "AfterValue": "true",
-                    "Attribute": "Properties",
-                    "AttributeChangeType": "Add",
-                    "Name": "ContentBasedDeduplication",
-                    "Path": "/Properties/ContentBasedDeduplication",
+                    "Name": "Tags",
+                    "Path": "/Properties/Tags",
                     "RequiresRecreation": "Never"
-                  }
-                },
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "AfterValue": "<resource:5>",
-                    "Attribute": "Properties",
-                    "AttributeChangeType": "Modify",
-                    "BeforeValue": "topic-name-1",
-                    "Name": "TopicName",
-                    "Path": "/Properties/TopicName",
-                    "RequiresRecreation": "Always"
                   }
                 }
               ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "PolicyAction": "ReplaceAndDelete",
-              "Replacement": "True",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "name-1",
+              "Replacement": "False",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
                 "Properties"
               ]
@@ -3535,34 +3222,15 @@
                   "Evaluation": "Static",
                   "Target": {
                     "Attribute": "Properties",
-                    "Name": "FifoTopic",
-                    "RequiresRecreation": "Always"
-                  }
-                },
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "Attribute": "Properties",
-                    "Name": "ContentBasedDeduplication",
+                    "Name": "Tags",
                     "RequiresRecreation": "Never"
-                  }
-                },
-                {
-                  "ChangeSource": "DirectModification",
-                  "Evaluation": "Static",
-                  "Target": {
-                    "Attribute": "Properties",
-                    "Name": "TopicName",
-                    "RequiresRecreation": "Always"
                   }
                 }
               ],
-              "LogicalResourceId": "Topic1",
-              "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-              "PolicyAction": "ReplaceAndDelete",
-              "Replacement": "True",
-              "ResourceType": "AWS::SNS::Topic",
+              "LogicalResourceId": "Parameter",
+              "PhysicalResourceId": "name-1",
+              "Replacement": "False",
+              "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
                 "Properties"
               ]
@@ -3611,110 +3279,85 @@
         "Tags": []
       },
       "per-resource-events": {
-        "Topic1": [
+        "Parameter": [
           {
-            "EventId": "Topic1-4d2714dd-004a-47d7-b011-be0fa6fe8abb",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceStatus": "DELETE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-c481534a-a8c9-4ebb-9654-de44ab49fc4a",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceStatus": "DELETE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-UPDATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:5>",
+            "EventId": "Parameter-UPDATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-1",
             "ResourceProperties": {
-              "FifoTopic": "true",
-              "ContentBasedDeduplication": "true",
-              "TopicName": "<resource:5>"
+              "Type": "String",
+              "Value": "foo",
+              "Tags": {
+                "MacroAdded": "True"
+              },
+              "Name": "name-1"
             },
             "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-UPDATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<resource:5>",
+            "EventId": "Parameter-UPDATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-1",
             "ResourceProperties": {
-              "FifoTopic": "true",
-              "ContentBasedDeduplication": "true",
-              "TopicName": "<resource:5>"
+              "Type": "String",
+              "Value": "foo",
+              "Tags": {
+                "MacroAdded": "True"
+              },
+              "Name": "name-1"
             },
             "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-UPDATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_COMPLETE-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-1",
             "ResourceProperties": {
-              "FifoTopic": "true",
-              "ContentBasedDeduplication": "true",
-              "TopicName": "<resource:5>"
-            },
-            "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceStatusReason": "Requested update requires the creation of a new physical resource; hence creating one.",
-            "ResourceType": "AWS::SNS::Topic",
-            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-            "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
-          },
-          {
-            "EventId": "Topic1-CREATE_COMPLETE-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
-            "ResourceProperties": {
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-1"
             },
             "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
-            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-name-1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
+            "PhysicalResourceId": "name-1",
             "ResourceProperties": {
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceStatusReason": "Resource creation Initiated",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Topic1-CREATE_IN_PROGRESS-date",
-            "LogicalResourceId": "Topic1",
+            "EventId": "Parameter-CREATE_IN_PROGRESS-date",
+            "LogicalResourceId": "Parameter",
             "PhysicalResourceId": "",
             "ResourceProperties": {
-              "TopicName": "topic-name-1"
+              "Type": "String",
+              "Value": "foo",
+              "Name": "name-1"
             },
             "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
+            "ResourceType": "AWS::SSM::Parameter",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
             "Timestamp": "timestamp"
@@ -3809,7 +3452,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_for_attribute_fn_transform": {
-    "recorded-date": "02-06-2025, 20:02:13",
+    "recorded-date": "03-06-2025, 21:34:07",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -4258,7 +3901,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_multiple_fn_transform_order": {
-    "recorded-date": "02-06-2025, 20:36:50",
+    "recorded-date": "03-06-2025, 21:34:52",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
