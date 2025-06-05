@@ -19,7 +19,7 @@ pytestmark = pytest.mark.skipif(
 
 
 @pytest.mark.skip(
-    reason="CFNV2:Other resource name conflict with another test case resource in this suite"
+    reason="CFNV2:Destroy resource name conflict with another test case resource in this suite"
 )
 @markers.aws.validated
 def test_cfn_event_api_destination_resource(deploy_cfn_template, region_name, aws_client):
