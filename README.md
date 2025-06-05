@@ -93,7 +93,7 @@ Start LocalStack inside a Docker container by running:
   / /___/ /_/ / /__/ /_/ / /___/ / /_/ /_/ / /__/ ,<
  /_____/\____/\___/\__,_/_//____/\__/\__,_/\___/_/|_|
 
-- LocalStack CLI: 4.4.0
+- LocalStack CLI: 4.5.0
 - Profile: default
 - App: https://app.localstack.cloud
 
