@@ -16,6 +16,7 @@ def print_runtime_information(in_docker: bool = False):
     from localstack.utils.docker_utils import DOCKER_CLIENT
 
     print()
+    print()
     print(f"LocalStack version: {constants.VERSION}")
     if in_docker:
         try:
