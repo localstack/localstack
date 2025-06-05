@@ -55,8 +55,8 @@ class TestChangeSetFnTransform:
     def test_embedded_fn_transform_include(
         self, include_format, snapshot, capture_update_process, s3_bucket, aws_client, tmp_path
     ):
-        name1 = f"topic-name-1-{short_uid()}"
-        name2 = f"topic-name-2-{short_uid()}"
+        name1 = f"name-1-{short_uid()}"
+        name2 = f"name-2-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
 
         bucket = s3_bucket
@@ -64,14 +64,17 @@ class TestChangeSetFnTransform:
 
         if include_format == "json":
             template = (
-                '{"Topic2":{"Type":"AWS::SNS::Topic","Properties":{"TopicName": "%s"}}}' % name2
+                '{"Parameter": { "Type": "AWS::SSM::Parameter","Properties": {"Name": "%s", "Type": "String", "Value": "foo"}}}'
+                % name2
             )
         else:
             template = f"""
-            Topic2:
-                Type: AWS::SNS::Topic
+            Parameter2:
+                Type: AWS::SSM::Parameter
                 Properties:
-                    TopicName: {name2}
+                    Name: {name2}
+                    Type: String
+                    Value: foo
             """
 
         file.write_text(data=template)
@@ -83,20 +86,17 @@ class TestChangeSetFnTransform:
 
         template_1 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
                 },
             }
         }
         template_2 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {
-                        "TopicName": name1,
-                        "DisplayName": {"Fn::Sub": "The stack name is ${AWS::StackName}"},
-                    },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
                 },
                 "Fn::Transform": {
                     "Name": "AWS::Include",
@@ -111,20 +111,20 @@ class TestChangeSetFnTransform:
     def test_global_fn_transform_include(
         self, include_format, snapshot, capture_update_process, s3_bucket, aws_client, tmp_path
     ):
-        name1 = f"topic-name-1-{short_uid()}"
+        name1 = f"name-1-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
 
         bucket = s3_bucket
         file = tmp_path / "bucket_definition.yml"
 
         if include_format == "json":
-            template = '{"Outputs":{"TopicRef":{"Value":{"Ref":"Topic1"}}}} '
+            template = '{"Outputs":{"ParameterRef":{"Value":{"Ref":"Parameter"}}}} '
         else:
             template = """
             Outputs:
-                TopicRef:
+                ParameterRef:
                     Value:
-                        Ref: Topic1
+                        Ref: Parameter
             """
 
         file.write_text(data=template)
@@ -136,9 +136,9 @@ class TestChangeSetFnTransform:
 
         template_1 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
                 },
             }
         }
@@ -148,12 +148,9 @@ class TestChangeSetFnTransform:
                 "Parameters": {"Location": f"s3://{bucket}/template"},
             },
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {
-                        "TopicName": name1,
-                        "DisplayName": {"Fn::Sub": "The stack name is ${AWS::StackName}"},
-                    },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
                 },
             },
         }
@@ -163,15 +160,15 @@ class TestChangeSetFnTransform:
     def test_serverless_fn_transform(
         self, snapshot, capture_update_process, s3_bucket, aws_client, tmp_path
     ):
-        name1 = f"topic-name-1-{short_uid()}"
+        name1 = f"name-1-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
 
         template_1 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
-                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Value": "{Substitution}", "Type": "String", "Name": name1},
+                }
             }
         }
         template_2 = {
@@ -202,8 +199,8 @@ class TestChangeSetFnTransform:
         capture_update_process,
         create_macro,
     ):
-        name1 = f"topic-name-1-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
+        name1 = f"name-1-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "name-1"))
 
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
@@ -213,10 +210,10 @@ class TestChangeSetFnTransform:
 
         template_1 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1, "DisplayName": "display-value-1"},
-                },
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Value": "original", "Type": "String", "Name": name1},
+                }
             }
         }
 
@@ -225,7 +222,7 @@ class TestChangeSetFnTransform:
             "Resources": {
                 "Parameter": {
                     "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Value": "{Substitution}", "Type": "String"},
+                    "Properties": {"Value": "{Substitution}", "Type": "String", "Name": name1},
                 }
             },
             "Transform": {"Name": macro_name},
@@ -239,30 +236,34 @@ class TestChangeSetFnTransform:
         capture_update_process,
         create_macro,
     ):
-        name1 = f"topic-name-1-{short_uid()}"
-        name2 = f"topic-name-2-{short_uid()}.fifo"
-        snapshot.add_transformer(RegexTransformer(name1, "topic-name-1"))
+        name1 = f"name-1-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "name-1"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/add_standard_attributes.py"
+            os.path.dirname(__file__), "../../../templates/macros/add_standard_tags.py"
         )
-        macro_name = "MakeFifo"
+        macro_name = "AddTags"
         create_macro(macro_name, macro_function_path)
 
         template_1 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name1},
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
                 },
             }
         }
 
         template_2 = {
             "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"TopicName": name2, "Fn::Transform": macro_name},
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": "foo",
+                        "Fn::Transform": macro_name,
+                    },
                 }
             }
         }
