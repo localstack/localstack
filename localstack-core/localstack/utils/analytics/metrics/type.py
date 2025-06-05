@@ -1,56 +1,71 @@
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any, Union
 
 
 @dataclass(frozen=True)
 class MetricRegistryKey:
+    """A unique identifier for a metric, composed of namespace and name."""
+
     namespace: str
     name: str
 
 
 @dataclass(frozen=True)
 class CounterPayload:
-    """An immutable snapshot of a counter metric at the time of collection."""
+    """A data object storing the value of a Counter metric."""
 
     namespace: str
     name: str
     value: int
     type: str
-    schema_version: int
-    labels: Optional[dict[str, Union[str, float]]] = None
 
     def as_dict(self) -> dict[str, Any]:
-        result = {
+        return {
             "namespace": self.namespace,
             "name": self.name,
             "value": self.value,
             "type": self.type,
-            "schema_version": self.schema_version,
         }
 
-        if self.labels:
-            # Convert labels to the expected format (label_1, label_1_value, etc.)
-            for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
-                result[f"label_{i}"] = label_name
-                result[f"label_{i}_value"] = label_value
 
-        return result
+@dataclass(frozen=True)
+class LabeledCounterPayload:
+    """A data object storing the value of a LabeledCounter metric."""
+
+    namespace: str
+    name: str
+    value: int
+    type: str
+    labels: dict[str, Union[str, float]]
+
+    def as_dict(self) -> dict[str, Any]:
+        dict = {
+            "namespace": self.namespace,
+            "name": self.name,
+            "value": self.value,
+            "type": self.type,
+        }
+
+        for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
+            dict[f"label_{i}"] = label_name
+            dict[f"label_{i}_value"] = label_value
+
+        return dict
 
 
 @dataclass
 class MetricPayload:
     """
-    Stores all metric payloads collected during the execution of the LocalStack emulator.
-    Currently, supports only counter-type metrics, but designed to accommodate other types in the future.
+    A data object storing the value of all metrics collected during the execution of the application.
     """
 
-    _payload: list[CounterPayload]  # support for other metric types may be added in the future.
+    _payload: list[Union[CounterPayload, LabeledCounterPayload]]
 
     @property
-    def payload(self) -> list[CounterPayload]:
+    def payload(self) -> list[Union[CounterPayload, LabeledCounterPayload]]:
         return self._payload
 
-    def __init__(self, payload: list[CounterPayload]):
+    def __init__(self, payload: list[Union[CounterPayload, LabeledCounterPayload]]):
         self._payload = payload
 
     def as_dict(self) -> dict[str, list[dict[str, Any]]]:

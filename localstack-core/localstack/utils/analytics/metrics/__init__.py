@@ -1,15 +1,14 @@
 """LocalStack metrics instrumentation framework"""
 
-from .factory import Counter
-from .interfaces import CounterMetric, LabeledCounterMetric
+from .counter import Counter, LabeledCounter
 from .registry import MetricRegistry
-from .types import CounterPayload, MetricPayload
+from .type import CounterPayload, MetricPayload, MetricRegistryKey
 
 __all__ = [
     "Counter",
-    "CounterMetric",
-    "LabeledCounterMetric",
+    "LabeledCounter",
     "MetricRegistry",
     "CounterPayload",
     "MetricPayload",
+    "MetricRegistryKey",
 ]
