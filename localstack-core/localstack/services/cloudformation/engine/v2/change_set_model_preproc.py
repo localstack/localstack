@@ -603,7 +603,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 elif template_variable_name in sub_parameters:
                     template_variable_value = sub_parameters[template_variable_name]
 
-                # Try to resolve the variable name are GetAtt.
+                # Try to resolve the variable name as GetAtt.
                 elif "." in template_variable_name:
                     try:
                         template_variable_value = self._resolve_attribute(
@@ -612,7 +612,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     except RuntimeError:
                         pass
 
-                # Try to resolve the variable name are Ref.
+                # Try to resolve the variable name as Ref.
                 else:
                     try:
                         resource_delta = self._resolve_reference(logical_id=template_variable_name)
