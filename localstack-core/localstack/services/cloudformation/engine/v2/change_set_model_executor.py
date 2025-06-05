@@ -115,7 +115,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             node_resource = self._get_node_resource_for(
                 resource_name=depends_on_resource_logical_id, node_template=self._node_template
             )
-            self.visit_node_resource(node_resource)
+            self.visit(node_resource)
 
         return array_identifiers_delta
 
