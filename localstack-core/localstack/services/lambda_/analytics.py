@@ -1,12 +1,12 @@
 from enum import StrEnum
 
-from localstack.utils.analytics.metrics import Counter
+from localstack.utils.analytics.metrics import LabeledCounter
 
 NAMESPACE = "lambda"
 
-hotreload_counter = Counter(namespace=NAMESPACE, name="hotreload", labels=["operation"])
+hotreload_counter = LabeledCounter(namespace=NAMESPACE, name="hotreload", labels=["operation"])
 
-function_counter = Counter(
+function_counter = LabeledCounter(
     namespace=NAMESPACE,
     name="function",
     labels=[
@@ -38,7 +38,7 @@ class FunctionStatus(StrEnum):
     invocation_error = "invocation_error"
 
 
-esm_counter = Counter(namespace=NAMESPACE, name="esm", labels=["source", "status"])
+esm_counter = LabeledCounter(namespace=NAMESPACE, name="esm", labels=["source", "status"])
 
 
 class EsmExecutionStatus(StrEnum):
