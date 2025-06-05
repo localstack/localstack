@@ -3,14 +3,12 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Union
 
-from localstack.utils.analytics.metrics.counter import ThreadSafeCounter
-from localstack.utils.analytics.metrics.types import CounterPayload
+from .type import CounterPayload, LabeledCounterPayload
 
 
 class Metric(ABC):
     """
     Base class for all metrics (e.g., Counter, Gauge).
-
     Each subclass must implement the `collect()` method.
     """
 
@@ -35,55 +33,8 @@ class Metric(ABC):
         return self._name
 
     @abstractmethod
-    def collect(
-        self,
-    ) -> list[CounterPayload]:  # support for other metric types may be added in the future.
+    def collect(self) -> list[Union[CounterPayload, LabeledCounterPayload]]:
         """
         Collects and returns metric data. Subclasses must implement this to return collected metric data.
         """
-        pass
-
-
-class CounterMetric(ABC):
-    """
-    Abstract base class for counter metrics.
-    Defines the interface that all counter implementations must follow.
-    """
-
-    @abstractmethod
-    def increment(self, value: int = 1) -> None:
-        """Increment the counter by the specified value."""
-        pass
-
-    @abstractmethod
-    def reset(self) -> None:
-        """Reset the counter to zero."""
-        pass
-
-    @abstractmethod
-    def collect(self) -> list[CounterPayload]:
-        """Collect and return the current metric data."""
-        pass
-
-    @property
-    @abstractmethod
-    def count(self) -> int:
-        """Get the current count value."""
-        pass
-
-
-class LabeledCounterMetric(ABC):
-    """
-    Abstract base class for labeled counter metrics.
-    Defines the interface for counters that support labels.
-    """
-
-    @abstractmethod
-    def collect(self) -> list[CounterPayload]:
-        """Collect and return the current metric data."""
-        pass
-
-    @abstractmethod
-    def labels(self, **kwargs: Union[str, float, None]) -> ThreadSafeCounter:
-        """Get a counter instance for specific label values."""
         pass

@@ -3,8 +3,8 @@ from __future__ import annotations
 import logging
 import threading
 
-from .interfaces import Metric
-from .types import MetricPayload, MetricRegistryKey
+from .interface import Metric
+from .type import MetricPayload, MetricRegistryKey
 
 LOG = logging.getLogger(__name__)
 
@@ -37,12 +37,10 @@ class MetricRegistry:
 
     def register(self, metric: Metric) -> None:
         """
-        Registers a new metric.
+        Registers a metric instance.
 
-        :param metric: The metric instance to register.
-        :type metric: Metric
-        :raises TypeError: If the provided metric is not an instance of `Metric`.
-        :raises ValueError: If a metric with the same name already exists.
+        Raises a TypeError if the object is not a Metric,
+        or a ValueError if a metric with the same namespace and name is already registered
         """
         if not isinstance(metric, Metric):
             raise TypeError("Only subclasses of `Metric` can be registered.")
