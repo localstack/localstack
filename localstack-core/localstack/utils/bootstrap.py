@@ -17,7 +17,6 @@ from localstack.config import (
     HostAndPort,
     default_ip,
     is_env_not_false,
-    is_env_true,
     load_environment,
 )
 from localstack.constants import VERSION
@@ -333,12 +332,11 @@ def get_preloaded_services() -> Set[str]:
     The result is cached, so it's safe to call. Clear the cache with get_preloaded_services.cache_clear().
     """
     services_env = os.environ.get("SERVICES", "").strip()
-    services = None
+    services = []
 
-    if services_env and is_env_true("EAGER_SERVICE_LOADING"):
+    if services_env:
         # SERVICES and EAGER_SERVICE_LOADING are set
         # SERVICES env var might contain ports, but we do not support these anymore
-        services = []
         for service_port in re.split(r"\s*,\s*", services_env):
             # Only extract the service name, discard the port
             parts = re.split(r"[:=]", service_port)
@@ -351,19 +349,6 @@ def get_preloaded_services() -> Set[str]:
         services = SERVICE_PLUGINS.list_available()
 
     return resolve_apis(services)
-
-
-def should_eager_load_api(api: str) -> bool:
-    apis = get_preloaded_services()
-
-    if api in apis:
-        return True
-
-    for enabled_api in apis:
-        if api.startswith(f"{enabled_api}:"):
-            return True
-
-    return False
 
 
 def start_infra_locally():
