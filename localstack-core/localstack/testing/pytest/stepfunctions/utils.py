@@ -613,16 +613,34 @@ def create_and_record_mocked_execution(
         state_machine_name=state_machine_name,
         state_machine_type=state_machine_type,
     )
-    if state_machine_type == StateMachineType.EXPRESS:
-        execution_arn = launch_and_record_mocked_sync_execution(
-            target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
-        )
-        return execution_arn
-    else:
-        execution_arn = launch_and_record_mocked_execution(
-            target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
-        )
-        return execution_arn
+    execution_arn = launch_and_record_mocked_sync_execution(
+        target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
+    )
+    return execution_arn
+
+
+def create_and_record_mocked_sync_execution(
+    target_aws_client,
+    create_state_machine_iam_role,
+    create_state_machine,
+    sfn_snapshot,
+    definition,
+    execution_input,
+    state_machine_name,
+    test_name,
+) -> LongArn:
+    state_machine_arn = create_state_machine_with_iam_role(
+        target_aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        definition,
+        state_machine_name=state_machine_name,
+        state_machine_type=StateMachineType.EXPRESS,
+    )
+    execution_arn = launch_and_record_mocked_sync_execution(
+        target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
+    )
     return execution_arn
 
 
