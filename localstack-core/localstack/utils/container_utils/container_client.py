@@ -589,9 +589,20 @@ class DockerRunFlags:
     dns: Optional[List[str]]
 
 
+class RegistryResolverStrategy(Protocol):
+    def resolve(self, image_name: str) -> str: ...
+
+
+class HardCodedResolver:
+    def resolve(self, image_name: str) -> str:  # noqa
+        return image_name
+
+
 # TODO: remove Docker/Podman compatibility switches (in particular strip_wellknown_repo_prefixes=...)
 #  from the container client base interface and introduce derived Podman client implementations instead!
 class ContainerClient(metaclass=ABCMeta):
+    registry_resolver_strategy: RegistryResolverStrategy = HardCodedResolver()
+
     @abstractmethod
     def get_system_info(self) -> dict:
         """Returns the docker system-wide information as dictionary (``docker info``)."""
