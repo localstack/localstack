@@ -219,8 +219,8 @@ jobs:
 
       - name: Push ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           PLATFORM: ${{ env.PLATFORM_NAME_AMD64 }}
         run: |
           # Push to Docker Hub
@@ -235,8 +235,8 @@ jobs:
 
       - name: Push ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           PLATFORM: ${{ env.PLATFORM_NAME_ARM64 }}
         run: |
           # Push to Docker Hub
@@ -246,8 +246,8 @@ jobs:
 
       - name: Push Multi-Arch Manifest
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           # Push to Docker Hub
           ./bin/docker-helper.sh push-manifests
@@ -256,8 +256,8 @@ jobs:
 
       - name: Publish dev release
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
           if git describe --exact-match --tags >/dev/null 2>&1; then
             echo "not publishing a dev release as this is a tagged commit"
