@@ -1100,5 +1100,18 @@
         "status_code": 444
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_integrations.py::test_integration_mock_with_vtl_map_assignation": {
+    "recorded-date": "29-05-2025, 15:49:45",
+    "recorded-content": {
+      "response": {
+        "body": {
+          "value": "bar",
+          "value2": "putBar",
+          "value3": "nestedFoo"
+        },
+        "status_code": 200
+      }
+    }
   }
 }
