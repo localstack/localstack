@@ -5,7 +5,7 @@ from localstack_snapshot.snapshots.transformer import JsonpathTransformer, Regex
 import localstack.testing.config
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
-from localstack.aws.api.stepfunctions import HistoryEventType, StateMachineType
+from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (
@@ -14,6 +14,7 @@ from localstack.testing.pytest.stepfunctions.utils import (
     create_and_record_execution,
     create_and_record_express_sync_execution,
     create_and_record_mocked_execution,
+    create_and_record_mocked_sync_execution,
 )
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
@@ -289,7 +290,7 @@ class TestBaseScenarios:
             mock_config_file_path = mock_config_file(mock_config)
             monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
 
-            create_and_record_mocked_execution(
+            create_and_record_mocked_sync_execution(
                 target_aws_client=aws_client_no_sync_prefix,
                 create_state_machine_iam_role=create_state_machine_iam_role,
                 create_state_machine=create_state_machine,
@@ -298,7 +299,6 @@ class TestBaseScenarios:
                 execution_input=exec_input,
                 state_machine_name=state_machine_name,
                 test_name=test_name,
-                state_machine_type=StateMachineType.EXPRESS,
             )
 
     @markers.aws.validated
