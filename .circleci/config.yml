@@ -576,7 +576,7 @@ jobs:
               export GOARCH=arm64
 
               mkdir -p bin
-              go install github.com/localstack/lambda-runtime-init/cmd/localstack@test/lambda-rie-v2
+              go install github.com/localstack/lambda-runtime-init/cmd/localstack@81c8844
               BINARY_NAME="localstack"
 
               cp "$HOME/go/bin/$BINARY_NAME" bin/
