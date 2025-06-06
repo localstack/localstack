@@ -140,8 +140,7 @@ jobs:
             source .venv/bin/activate
             coverage report || true
             coverage html || true
-# TO-DO: enable job after workflow in CircleCI is disabled
-#            coveralls || true
+            coveralls || true
 
         - name: Create Coverage Diff (Code Coverage)
           # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
@@ -189,9 +188,7 @@ jobs:
     name: "Push images"
     runs-on: ubuntu-latest
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
-    # TO-DO: enable job after workflow in CircleCI is disabled
-    if: false
-    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
+    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
     needs:
       # all tests need to be successful for the image to be pushed
       - test
