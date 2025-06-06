@@ -10,6 +10,7 @@ from localstack.aws.api.cloudformation import (
     Parameter,
     StackDriftInformation,
     StackDriftStatus,
+    StackEvent,
     StackStatus,
     StackStatusReason,
 )
@@ -25,7 +26,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeTemplate,
 )
 from localstack.utils.aws import arns
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.time import timestamp_millis
 
 
 class ResolvedResource(TypedDict):
@@ -41,6 +43,7 @@ class Stack:
     status_reason: StackStatusReason | None
     stack_id: str
     creation_time: datetime
+    events: list[StackEvent]
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -84,11 +87,47 @@ class Stack:
         self.resolved_parameters = {}
         self.resolved_resources = {}
         self.resolved_outputs = {}
+        self.events = []
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
         if reason:
             self.status_reason = reason
+
+        self.add_stack_event(
+            self.stack_name, self.stack_id, status.value, status_reason=reason or ""
+        )
+
+    def add_stack_event(
+        self,
+        resource_id: str = None,
+        physical_res_id: str = None,
+        status: str = "",
+        status_reason: str = "",
+    ):
+        resource_id = resource_id or self.stack_name
+        physical_res_id = physical_res_id or self.stack_id
+        resource_type = (
+            self.template.get("Resources", {})
+            .get(resource_id, {})
+            .get("Type", "AWS::CloudFormation::Stack")
+        )
+
+        event: StackEvent = {
+            "EventId": long_uid(),
+            "Timestamp": timestamp_millis(),
+            "StackId": self.stack_id,
+            "StackName": self.stack_name,
+            "LogicalResourceId": resource_id,
+            "PhysicalResourceId": physical_res_id,
+            "ResourceStatus": status,
+            "ResourceType": resource_type,
+        }
+
+        if status_reason:
+            event["ResourceStatusReason"] = status_reason
+
+        self.events.insert(0, event)
 
     def describe_details(self) -> ApiStack:
         result = {

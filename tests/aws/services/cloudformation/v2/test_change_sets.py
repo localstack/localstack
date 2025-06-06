@@ -21,7 +21,6 @@ pytestmark = pytest.mark.skipif(
 )
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "per-resource-events..*",
         "delete-describe..*",
         #
         # Before/After Context

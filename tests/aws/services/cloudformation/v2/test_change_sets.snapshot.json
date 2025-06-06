@@ -95,7 +95,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
-    "recorded-date": "24-04-2025, 17:00:59",
+    "recorded-date": "06-06-2025, 20:18:07",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -325,7 +325,7 @@
       "per-resource-events": {
         "Foo": [
           {
-            "EventId": "Foo-8fa001c0-096c-4f9e-9aed-0c31f45ded09",
+            "EventId": "Foo-65626544-e7eb-430e-82b3-98d29f94c40b",
             "LogicalResourceId": "Foo",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-1",
             "ResourceStatus": "DELETE_COMPLETE",
@@ -335,7 +335,7 @@
             "Timestamp": "timestamp"
           },
           {
-            "EventId": "Foo-57ec24a9-92bd-4f31-8d36-972323072283",
+            "EventId": "Foo-f47a5373-5f8f-47fe-86bd-cc49e32ed73d",
             "LogicalResourceId": "Foo",
             "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:topic-1",
             "ResourceStatus": "DELETE_IN_PROGRESS",
