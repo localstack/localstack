@@ -1,5 +1,8 @@
 version: 2.1
 
+orbs:
+  go: circleci/go@3.0.2
+
 parameters:
   ubuntu-amd64-machine-image:
     type: string
@@ -554,6 +557,55 @@ jobs:
       - store_test_results:
           path: target/reports/
 
+  itest-lambda-custom-init:
+      executor: ubuntu-machine-amd64
+      working_directory: /tmp/workspace/repo
+      environment:
+        PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      steps:
+        - prepare-acceptance-tests
+        - attach_workspace:
+            at: /tmp/workspace
+        - go/install:
+            version: "1.21.0"
+        - run:
+            name: Build Go binary for Linux ARM64
+            command: |
+              source $BASH_ENV
+              export GOOS=linux
+              export GOARCH=arm64
+
+              mkdir -p bin
+              go install github.com/localstack/lambda-runtime-init/cmd/localstack@test/lambda-rie-v2
+              BINARY_NAME="localstack"
+
+              cp "$HOME/go/bin/$BINARY_NAME" bin/
+              FINAL_BINARY_PATH="$(pwd)/bin/$BINARY_NAME"
+              echo "export LAMBDA_INIT_BIN_PATH=${FINAL_BINARY_PATH}" >> $BASH_ENV
+              ls -la "${FINAL_BINARY_PATH}"
+        - prepare-testselection
+        - prepare-pytest-tinybird
+        - prepare-account-region-randomization
+        - run:
+            name: Test Lambda with custom init binary
+            environment:
+              TEST_PATH: "tests/aws/services/lambda_/"
+              COVERAGE_ARGS: "-p"
+            command: |
+              source $BASH_ENV
+              COVERAGE_FILE="target/coverage/.coverage.lambda_custom_init.${CIRCLE_NODE_INDEX}" \
+              PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_custom_init.xml -o junit_suite_name='lambda_custom_init'" \
+              LAMBDA_INIT_BIN_PATH="${LAMBDA_INIT_BIN_PATH}" \
+              make test-coverage
+        - persist_to_workspace:
+            root:
+              /tmp/workspace
+            paths:
+              - repo/target/coverage/
+        - store_test_results:
+            path: target/reports/
+
+
   #########################
   ## Parity Metrics Jobs ##
   #########################
@@ -926,6 +978,10 @@ workflows:
           requires:
             - preflight
             - test-selection
+      - itest-lambda-custom-init:
+          requires:
+            - preflight
+            - test-selection
       - unit-tests:
           requires:
             - preflight
@@ -988,6 +1044,7 @@ workflows:
             - itest-events-v1-provider
             - itest-ddb-v2-provider
             - itest-cfn-v2-engine-provider
+            - itest-lambda-custom-init
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1003,6 +1060,7 @@ workflows:
             - itest-events-v1-provider
             - itest-ddb-v2-provider
             - itest-cfn-v2-engine-provider
+            - itest-lambda-custom-init
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
