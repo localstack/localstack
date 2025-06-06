@@ -3228,7 +3228,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs16.x]": {
-    "recorded-date": "31-03-2025, 12:21:57",
+    "recorded-date": "05-06-2025, 23:12:34",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [

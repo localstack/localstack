@@ -114,6 +114,7 @@ TEST_LAMBDA_URL = os.path.join(THIS_FOLDER, "functions/lambda_url.js")
 TEST_LAMBDA_CACHE_NODEJS = os.path.join(THIS_FOLDER, "functions/lambda_cache.js")
 TEST_LAMBDA_CACHE_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_cache.py")
 TEST_LAMBDA_TIMEOUT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout.py")
+TEST_LAMBDA_TIMEOUT_INIT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout_init.py")
 TEST_LAMBDA_TIMEOUT_ENV_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_timeout_env.py")
 TEST_LAMBDA_SLEEP_ENVIRONMENT = os.path.join(THIS_FOLDER, "functions/lambda_sleep_environment.py")
 TEST_LAMBDA_INTROSPECT_PYTHON = os.path.join(THIS_FOLDER, "functions/lambda_introspect.py")
@@ -451,6 +452,11 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
             "$..Payload.paths._var_task_uid",
+            # requires /tmp ownership and permissions change when dropping privileges to non-root user
+            "$..Payload.paths._tmp_gid",
+            "$..Payload.paths._tmp_mode",
+            "$..Payload.paths._tmp_owner",
+            "$..Payload.paths._tmp_uid",
         ],
     )
     @markers.aws.validated
@@ -474,6 +480,11 @@ class TestLambdaBehavior:
             "$..Payload.paths._var_task_gid",
             "$..Payload.paths._var_task_owner",
             "$..Payload.paths._var_task_uid",
+            # requires /tmp ownership and permissions change when dropping privileges to non-root user
+            "$..Payload.paths._tmp_gid",
+            "$..Payload.paths._tmp_mode",
+            "$..Payload.paths._tmp_owner",
+            "$..Payload.paths._tmp_uid",
         ],
     )
     @markers.aws.validated
@@ -607,14 +618,17 @@ class TestLambdaBehavior:
     @markers.aws.validated
     def test_lambda_invoke_with_timeout(self, create_lambda_function, snapshot, aws_client):
         # Snapshot generation could be flaky against AWS with a small timeout margin (e.g., 1.02 instead of 1.00)
-        regex = re.compile(r".*\s(?P<uuid>[-a-z0-9]+) Task timed out after \d.\d+ seconds")
         snapshot.add_transformer(
-            KeyValueBasedTransformer(
-                lambda k, v: regex.search(v).group("uuid") if k == "errorMessage" else None,
-                "<timeout_error_msg>",
-                replace_reference=False,
-            )
+            snapshot.transform.regex(
+                r"Task timed out after (\d.\d+) seconds",
+                r"Task timed out after <duration> seconds",
+            ),
         )
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value("LogResult", reference_replacement=False)
+        )
+        snapshot.add_transformer(snapshot.transform.lambda_report_logs())
 
         func_name = f"test_lambda_{short_uid()}"
         create_result = create_lambda_function(
@@ -626,30 +640,13 @@ class TestLambdaBehavior:
         )
         snapshot.match("create-result", create_result)
 
-        result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"wait": 2}))
+        result = aws_client.lambda_.invoke(
+            FunctionName=func_name, Payload=json.dumps({"wait": 2}), LogType="Tail"
+        )
         snapshot.match("invoke-result", result)
 
-        log_group_name = f"/aws/lambda/{func_name}"
-
-        def _log_stream_available():
-            result = aws_client.logs.describe_log_streams(logGroupName=log_group_name)["logStreams"]
-            return len(result) > 0
-
-        wait_until(_log_stream_available, strategy="linear")
-
-        ls_result = aws_client.logs.describe_log_streams(logGroupName=log_group_name)
-        log_stream_name = ls_result["logStreams"][0]["logStreamName"]
-
-        def assert_events():
-            log_events = aws_client.logs.get_log_events(
-                logGroupName=log_group_name, logStreamName=log_stream_name
-            )["events"]
-
-            assert any("starting wait" in e["message"] for e in log_events)
-            # TODO: this part is a bit flaky, at least locally with old provider
-            assert not any("done waiting" in e["message"] for e in log_events)
-
-        retry(assert_events, retries=15)
+        logs = to_str(base64.b64decode(to_str(result["LogResult"])))
+        snapshot.match("log-events", logs.splitlines(keepends=True))
 
     @markers.aws.validated
     def test_lambda_invoke_no_timeout(self, create_lambda_function, snapshot, aws_client):
@@ -1812,9 +1809,6 @@ class TestLambdaFeatures:
 
 class TestLambdaErrors:
     @markers.aws.validated
-    # TODO it seems like the used lambda images have a newer version of the RIC than AWS in production
-    # remove this skip once they have caught up
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Payload.stackTrace"])
     def test_lambda_runtime_error(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that raises an exception during runtime startup."""
         snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<uuid>"))
@@ -1832,9 +1826,6 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
-    @pytest.mark.skipif(
-        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
-    )
     @markers.aws.validated
     def test_lambda_runtime_exit(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that exits during runtime startup."""
@@ -1853,9 +1844,6 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
-    @pytest.mark.skipif(
-        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
-    )
     @markers.aws.validated
     def test_lambda_runtime_exit_segfault(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that exits during runtime startup with a segmentation fault."""
@@ -1892,9 +1880,6 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
-    @pytest.mark.skipif(
-        not is_aws_cloud(), reason="Not yet supported. Need to report exit in Lambda init binary."
-    )
     @markers.aws.validated
     def test_lambda_handler_exit(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that exits in the handler."""
@@ -1913,9 +1898,6 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
-    @pytest.mark.skipif(
-        not is_aws_cloud(), reason="Not yet supported. Need to raise error in Lambda init binary."
-    )
     @markers.aws.validated
     def test_lambda_runtime_wrapper_not_found(self, aws_client, create_lambda_function, snapshot):
         """Test Lambda that points to a non-existing Lambda wrapper"""
