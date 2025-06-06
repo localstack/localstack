@@ -1040,15 +1040,15 @@ workflows:
             - docker-build-amd64
       - report:
           requires:
-            # - itest-cloudwatch-v1-provider
-            # - itest-events-v1-provider
-            # - itest-ddb-v2-provider
-            # - itest-cfn-v2-engine-provider
+            - itest-cloudwatch-v1-provider
+            - itest-events-v1-provider
+            - itest-ddb-v2-provider
+            - itest-cfn-v2-engine-provider
             - itest-lambda-custom-init
-            # - acceptance-tests-amd64
-            # - acceptance-tests-arm64
-            # - integration-tests-amd64
-            # - integration-tests-arm64
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - integration-tests-amd64
+            - integration-tests-arm64
             - collect-not-implemented
             - unit-tests
       - push:
@@ -1056,13 +1056,13 @@ workflows:
             branches:
               only: master
           requires:
-            # - itest-cloudwatch-v1-provider
-            # - itest-events-v1-provider
-            # - itest-ddb-v2-provider
-            # - itest-cfn-v2-engine-provider
+            - itest-cloudwatch-v1-provider
+            - itest-events-v1-provider
+            - itest-ddb-v2-provider
+            - itest-cfn-v2-engine-provider
             - itest-lambda-custom-init
-            # - acceptance-tests-amd64
-            # - acceptance-tests-arm64
-            # - integration-tests-amd64
-            # - integration-tests-arm64
+            - acceptance-tests-amd64
+            - acceptance-tests-arm64
+            - integration-tests-amd64
+            - integration-tests-arm64
             - unit-tests
