@@ -874,7 +874,6 @@ def test_integration_mock_with_vtl_map_assignation(create_rest_apigw, aws_client
         return _response
 
     response_data = retry(invoke_api, sleep=2, retries=10, url=invocation_url)
-    # assert response_data.headers["foo"] == "bar"
     snapshot.match(
         "response",
         {
