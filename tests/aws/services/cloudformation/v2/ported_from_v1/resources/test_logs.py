@@ -55,7 +55,6 @@ def test_cfn_handle_log_group_resource(deploy_cfn_template, aws_client, snapshot
     snapshot.match("describe_log_groups", response)
     snapshot.add_transformer(snapshot.transform.key_value("logGroupName"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
-    # response = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
-    # assert len(response["logGroups"]) == 0
+    stack.destroy()
+    response = aws_client.logs.describe_log_groups(logGroupNamePrefix=log_group_prefix)
+    assert len(response["logGroups"]) == 0

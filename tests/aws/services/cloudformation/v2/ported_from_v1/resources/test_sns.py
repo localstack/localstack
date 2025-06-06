@@ -102,13 +102,12 @@ def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
     topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
     assert len(topics) == 1
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # # assert topic resource removed
-    # rs = aws_client.sns.list_topics()
-    # topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
-    # assert not topics
+    # assert topic resource removed
+    rs = aws_client.sns.list_topics()
+    topics = [tp for tp in rs["Topics"] if tp["TopicArn"] == topic_arn]
+    assert not topics
 
 
 @markers.aws.validated

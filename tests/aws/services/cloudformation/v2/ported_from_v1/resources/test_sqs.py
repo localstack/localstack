@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
@@ -68,13 +69,12 @@ def test_cfn_handle_sqs_resource(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("queue", rs)
     snapshot.add_transformer(snapshot.transform.regex(queue_name, "<queue-name>"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # # clean up
-    # stack.destroy()
+    # clean up
+    stack.destroy()
 
-    # with pytest.raises(ClientError) as ctx:
-    #     aws_client.sqs.get_queue_url(QueueName=f"{queue_name}.fifo")
-    # snapshot.match("error", ctx.value.response)
+    with pytest.raises(ClientError) as ctx:
+        aws_client.sqs.get_queue_url(QueueName=f"{queue_name}.fifo")
+    snapshot.match("error", ctx.value.response)
 
 
 @markers.aws.validated

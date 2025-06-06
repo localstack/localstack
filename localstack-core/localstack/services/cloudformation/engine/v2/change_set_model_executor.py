@@ -89,10 +89,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         if array_identifiers_delta.after:
             depends_on_resource_logical_ids.update(array_identifiers_delta.after)
         for depends_on_resource_logical_id in depends_on_resource_logical_ids:
-            node_resource = self._get_node_resource_for(
-                resource_name=depends_on_resource_logical_id, node_template=self._node_template
-            )
-            self.visit_node_resource(node_resource)
+            for node_resource in self._node_template.resources.resources:
+                if node_resource.name == depends_on_resource_logical_id:
+                    self.visit(node_resource)
 
         return array_identifiers_delta
 
@@ -234,6 +233,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
 
         extra_resource_properties = {}
+        event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
         if resource_provider is not None:
             # TODO: stack events
             try:
@@ -248,14 +248,16 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 stack = self._change_set.stack
-                stack_status = stack.status
-                if stack_status == StackStatus.CREATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
-                elif stack_status == StackStatus.UPDATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                match stack.status:
+                    case StackStatus.CREATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                    case StackStatus.UPDATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                    case StackStatus.DELETE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.DELETE_FAILED, reason=reason)
+                    case _:
+                        raise NotImplementedError(f"Unexpected stack status: {stack.status}")
                 return
-        else:
-            event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
         self.resources.setdefault(logical_resource_id, {"Properties": {}})
         match event.status:
@@ -298,15 +300,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
                 # TODO: duplication
                 stack = self._change_set.stack
-                stack_status = stack.status
-                if stack_status == StackStatus.CREATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
-                elif stack_status == StackStatus.UPDATE_IN_PROGRESS:
-                    stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
-                else:
-                    raise NotImplementedError(f"Unhandled stack status: '{stack.status}'")
-            case any:
-                raise NotImplementedError(f"Event status '{any}' not handled")
+                match stack.status:
+                    case StackStatus.CREATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
+                    case StackStatus.UPDATE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                    case StackStatus.DELETE_IN_PROGRESS:
+                        stack.set_stack_status(StackStatus.DELETE_FAILED, reason=reason)
+                    case _:
+                        raise NotImplementedError(f"Unhandled stack status: '{stack.status}'")
+            case other:
+                raise NotImplementedError(f"Event status '{other}' not handled")
 
     def create_resource_provider_payload(
         self,
@@ -334,7 +338,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 previous_resource_properties = before_properties_value or {}
             case ChangeAction.Remove:
                 resource_properties = before_properties_value or {}
-                previous_resource_properties = None
+                # previous_resource_properties = None
+                # HACK: our providers use a mix of `desired_state` and `previous_state` so ensure the payload is present for both
+                previous_resource_properties = resource_properties
             case _:
                 raise NotImplementedError(f"Action '{action}' not handled")
 

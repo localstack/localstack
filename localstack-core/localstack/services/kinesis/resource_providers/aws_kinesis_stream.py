@@ -149,7 +149,7 @@ class KinesisStreamProvider(ResourceProvider[KinesisStreamProperties]):
             client.describe_stream(StreamARN=model["Arn"])
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
-                resource_model={},
+                resource_model=model,
             )
         except client.exceptions.ResourceNotFoundException:
             return ProgressEvent(

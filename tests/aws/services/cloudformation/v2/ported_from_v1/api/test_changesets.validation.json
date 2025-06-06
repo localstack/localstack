@@ -42,7 +42,13 @@
     "last_validated_date": "2025-04-01T16:40:03+00:00"
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_changesets.py::TestUpdates::test_deleting_resource": {
-    "last_validated_date": "2025-04-15T15:07:18+00:00"
+    "last_validated_date": "2025-06-02T10:29:46+00:00",
+    "durations_in_seconds": {
+      "setup": 1.06,
+      "call": 20.61,
+      "teardown": 4.46,
+      "total": 26.13
+    }
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_changesets.py::TestUpdates::test_simple_update_two_resources": {
     "last_validated_date": "2025-04-02T10:05:26+00:00"
