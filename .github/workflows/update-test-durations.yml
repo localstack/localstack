@@ -1,0 +1,63 @@
+name: Update test durations
+
+on:
+  schedule:
+    - cron: 0 4 * 1-12 MON
+  workflow_dispatch:
+    inputs:
+      publishMethod:
+        description: 'Select how to publish the workflow result'
+        type: choice
+        options:
+          - UPLOAD_ARTIFACT
+          - CREATE_PR
+        default: UPLOAD_ARTIFACT
+
+env:
+  # Take test durations only for this platform
+  PLATFORM: "amd64"
+
+jobs:
+  report:
+    name: "Download, merge and create PR with test durations"
+    runs-on: ubuntu-latest
+    steps:
+        - uses: actions/checkout@v4
+          with:
+            path: localstack
+
+        - name: Load test durations
+          uses: actions/download-artifact@v4
+          with:
+            pattern: pytest-split-durations-${{ env.PLATFORM }}-*
+            path: artifacts-test-durations
+            merge-multiple: true
+
+        - name: Merge test durations files
+          shell: bash
+          run: |
+            jq -s 'add | to_entries | sort_by(.key) | from_entries' artifacts-test-durations/.test_durations-${{ env.PLATFORM }}*  > localstack/.test_durations || echo "::warning::Test durations were not merged"
+
+        - name: Upload artifact with merged test durations
+          uses: actions/upload-artifact@v4
+          if: ${{ success() && inputs.publishMethod == 'UPLOAD_ARTIFACT' }}
+          with:
+            name: merged-test-durations
+            path: localstack/.test_durations
+            include-hidden-files: true
+            if-no-files-found: error
+
+        - name: Create PR
+          uses: peter-evans/create-pull-request@v7
+          if: ${{ success() && inputs.publishMethod != 'UPLOAD_ARTIFACT' }}
+          with:
+            title: "Update test durations"
+            body: "This PR includes an updated `.test_durations` file, generated using the latest test durations for the platform based on the master branch"
+            branch: "test-durations-auto-updates"
+            author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
+            committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
+            commit-message: "CI: update .test_durations to latest version"
+            path: localstack
+            add-paths: .test_durations
+            labels: "semver: patch, area: testing, area: ci"
+            token: ${{ secrets.GH_UPDATE_TEST_DURATIONS_TOKEN }}

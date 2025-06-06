@@ -373,12 +373,18 @@ jobs:
           DOCKER_SDK_DEFAULT_TIMEOUT_SECONDS: 300
         run: make docker-run-tests
 
+      # Test durations are fetched and merged automatically by a separate workflow.
+      # Files must have unique names to prevent overwrites when multiple artifacts are downloaded
+      - name: Rename test durations file
+        run: |
+          mv .test_durations .test_durations-${{ env.PLATFORM }}-${{ matrix.group }}
+
       - name: Archive Test Durations
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
           name: pytest-split-durations-${{ env.PLATFORM }}-${{ matrix.group }}
-          path: .test_durations
+          path: .test_durations-${{ env.PLATFORM }}-${{ matrix.group }}
           include-hidden-files: true
           retention-days: 5
 
