@@ -491,7 +491,7 @@ class TestIAMIntegrations:
         elif arn_type == "group":
             group_name = f"group-{short_uid()}"
             group = aws_client.iam.create_group(GroupName=group_name)["Group"]
-            cleanups.append(lambda _: aws_client.iam.delete_group(GroupName=group_name))
+            cleanups.append(lambda: aws_client.iam.delete_group(GroupName=group_name))
             aws_client.iam.attach_group_policy(GroupName=group_name, PolicyArn=policy_arn)
             arn = group["Arn"]
 
