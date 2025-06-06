@@ -256,8 +256,8 @@ jobs:
 
       - name: Publish dev release
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
           if git describe --exact-match --tags >/dev/null 2>&1; then
             echo "not publishing a dev release as this is a tagged commit"
