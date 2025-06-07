@@ -19,7 +19,7 @@ from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory
-from localstack.services.cloudformation import usage
+from localstack.services.cloudformation import analytics as usage
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
