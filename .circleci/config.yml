@@ -1,8 +1,5 @@
 version: 2.1
 
-orbs:
-  go: circleci/go@3.0.2
-
 parameters:
   ubuntu-amd64-machine-image:
     type: string
@@ -566,21 +563,13 @@ jobs:
         - prepare-acceptance-tests
         - attach_workspace:
             at: /tmp/workspace
-        - go/install:
-            version: "1.21.0"
         - run:
             name: Build Go binary for Linux ARM64
             command: |
-              source $BASH_ENV
-              export GOOS=linux
-              export GOARCH=arm64
-
+              curl -OL https://github.com/localstack/lambda-runtime-init/raw/refs/heads/test/lambda-rie-v2/build/aws-lambda-rie-arm64
               mkdir -p bin
-              go install github.com/localstack/lambda-runtime-init/cmd/localstack@81c8844
-              BINARY_NAME="localstack"
-
-              cp "$HOME/go/bin/$BINARY_NAME" bin/
-              FINAL_BINARY_PATH="$(pwd)/bin/$BINARY_NAME"
+              mv aws-lambda-rie-arm64 ./bin/aws-lambda-rie-arm64
+              FINAL_BINARY_PATH="$(pwd)/bin/aws-lambda-rie-arm64"
               echo "export LAMBDA_INIT_BIN_PATH=${FINAL_BINARY_PATH}" >> $BASH_ENV
               ls -la "${FINAL_BINARY_PATH}"
         - prepare-testselection
