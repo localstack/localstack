@@ -19,6 +19,9 @@ parameters:
   only-acceptance-tests:
     type: boolean
     default: false
+  run-lambda-init-only:
+    type: boolean
+    default: false
 
 executors:
   ubuntu-machine-amd64:
@@ -1052,3 +1055,17 @@ workflows:
             - integration-tests-amd64
             - integration-tests-arm64
             - unit-tests
+  test-lambda-init-only:
+    when: << pipeline.parameters.run-lambda-init-only >>
+    jobs:
+      - install
+      - preflight:
+          requires:
+            - install
+      - test-selection:
+          requires:
+            - install
+      - itest-lambda-custom-init:
+          requires:
+            - preflight
+            - test-selection
