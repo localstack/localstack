@@ -443,7 +443,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             logging_configuration=state_machine_logging_configuration
         )
 
-        # CreateStateMachine is an idempotent API. Subsequent requests won’t create a duplicate resource if it was
+        # CreateStateMachine is an idempotent API. Subsequent requests won't create a duplicate resource if it was
         # already created.
         idem_state_machine: Optional[StateMachineRevision] = self._idempotent_revision(
             context=context,
@@ -656,7 +656,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                     stateMachineAliasArn=state_machine_alias_arn, creationDate=alias.create_date
                 )
             else:
-                # CreateStateMachineAlias is an idempotent API. Idempotent requests won’t create duplicate resources.
+                # CreateStateMachineAlias is an idempotent API. Idempotent requests won't create duplicate resources.
                 raise ConflictException(
                     "Failed to create alias because an alias with the same name and a "
                     "different routing configuration already exists."
@@ -772,6 +772,33 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                     raise TaskDoesNotExist()
         raise InvalidToken("Invalid token")
 
+    @staticmethod
+    def _extract_base_arn(state_machine_arn: str) -> str:
+        """Extract the base ARN from a state machine ARN by removing any test case suffix."""
+        return state_machine_arn.split("#")[0]
+
+    @staticmethod
+    def _get_mock_test_case(
+        state_machine_arn: str, state_machine_name: str
+    ) -> Optional[MockTestCase]:
+        """Extract and load a mock test case from a state machine ARN if present."""
+        parts = state_machine_arn.split("#")
+        if len(parts) != 2:
+            return None
+
+        mock_test_case_name = parts[1]
+        mock_test_case = load_mock_test_case_for(
+            state_machine_name=state_machine_name, test_case_name=mock_test_case_name
+        )
+        if mock_test_case is None:
+            raise InvalidName(
+                f"Invalid mock test case name '{mock_test_case_name}' "
+                f"for state machine '{state_machine_name}'."
+                "Either the test case is not defined or the mock configuration file "
+                "could not be loaded. See logs for details."
+            )
+        return mock_test_case
+
     def start_execution(
         self,
         context: RequestContext,
@@ -783,21 +810,16 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> StartExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
 
-        state_machine_arn_parts = state_machine_arn.split("#")
-        state_machine_arn = state_machine_arn_parts[0]
-        mock_test_case_name = (
-            state_machine_arn_parts[1] if len(state_machine_arn_parts) == 2 else None
-        )
-
+        base_arn = self._extract_base_arn(state_machine_arn)
         store = self.get_store(context=context)
 
-        alias: Optional[Alias] = store.aliases.get(state_machine_arn)
+        alias: Optional[Alias] = store.aliases.get(base_arn)
         alias_sample_state_machine_version_arn = alias.sample() if alias is not None else None
         unsafe_state_machine: Optional[StateMachineInstance] = store.state_machines.get(
-            alias_sample_state_machine_version_arn or state_machine_arn
+            alias_sample_state_machine_version_arn or base_arn
         )
         if not unsafe_state_machine:
-            self._raise_state_machine_does_not_exist(state_machine_arn)
+            self._raise_state_machine_does_not_exist(base_arn)
 
         # Update event change parameters about the state machine and should not affect those about this execution.
         state_machine_clone = copy.deepcopy(unsafe_state_machine)
@@ -842,19 +864,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 configuration=state_machine_clone.cloud_watch_logging_configuration,
             )
 
-        mock_test_case: Optional[MockTestCase] = None
-        if mock_test_case_name is not None:
-            state_machine_name = state_machine_clone.name
-            mock_test_case = load_mock_test_case_for(
-                state_machine_name=state_machine_name, test_case_name=mock_test_case_name
-            )
-            if mock_test_case is None:
-                raise InvalidName(
-                    f"Invalid mock test case name '{mock_test_case_name}' "
-                    f"for state machine '{state_machine_name}'."
-                    "Either the test case is not defined or the mock configuration file "
-                    "could not be loaded. See logs for details."
-                )
+        mock_test_case = self._get_mock_test_case(state_machine_arn, state_machine_clone.name)
 
         execution = Execution(
             name=exec_name,
@@ -889,11 +899,13 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> StartSyncExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
+
+        base_arn = self._extract_base_arn(state_machine_arn)
         unsafe_state_machine: Optional[StateMachineInstance] = self.get_store(
             context
-        ).state_machines.get(state_machine_arn)
+        ).state_machines.get(base_arn)
         if not unsafe_state_machine:
-            self._raise_state_machine_does_not_exist(state_machine_arn)
+            self._raise_state_machine_does_not_exist(base_arn)
 
         if unsafe_state_machine.sm_type == StateMachineType.STANDARD:
             self._raise_state_machine_type_not_supported()
@@ -928,6 +940,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 configuration=state_machine_clone.cloud_watch_logging_configuration,
             )
 
+        mock_test_case = self._get_mock_test_case(state_machine_arn, state_machine_clone.name)
+
         execution = SyncExecution(
             name=exec_name,
             sm_type=state_machine_clone.sm_type,
@@ -941,6 +955,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_data,
             trace_header=trace_header,
             activity_store=self.get_store(context).activities,
+            mock_test_case=mock_test_case,
         )
         self.get_store(context).executions[exec_arn] = execution
 
