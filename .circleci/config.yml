@@ -567,6 +567,7 @@ jobs:
             name: Build Go binary for Linux ARM64
             command: |
               curl -OL https://github.com/localstack/lambda-runtime-init/raw/refs/heads/test/lambda-rie-v2/build/aws-lambda-rie-arm64
+              chmod +x aws-lambda-rie-arm64
               mkdir -p bin
               mv aws-lambda-rie-arm64 ./bin/aws-lambda-rie-arm64
               FINAL_BINARY_PATH="$(pwd)/bin/aws-lambda-rie-arm64"
