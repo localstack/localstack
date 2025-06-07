@@ -570,7 +570,6 @@ jobs:
               chmod +x aws-lambda-rie-arm64
               mkdir -p bin
               mv aws-lambda-rie-arm64 ./bin/aws-lambda-rie-arm64
-              ls -la "${FINAL_BINARY_PATH}"
         - prepare-testselection
         - prepare-pytest-tinybird
         - prepare-account-region-randomization
