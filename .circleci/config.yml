@@ -578,7 +578,7 @@ jobs:
             environment:
               TEST_PATH: "tests/aws/services/lambda_/"
               COVERAGE_ARGS: "-p"
-              LAMBDA_INIT_BIN_PATH: "/tmp/workspace/bin/aws-lambda-rie-arm64"
+              LAMBDA_INIT_BIN_PATH: "/tmp/workspace/repo/bin/aws-lambda-rie-arm64"
             command: |
               source $BASH_ENV
               COVERAGE_FILE="target/coverage/.coverage.lambda_custom_init.${CIRCLE_NODE_INDEX}" \
