@@ -557,7 +557,7 @@ jobs:
       - store_test_results:
           path: target/reports/
 
-  itest-lambda-custom-init:
+  itest-lambda-custom-init-amd64:
       executor: ubuntu-machine-amd64
       working_directory: /tmp/workspace/repo
       environment:
@@ -584,6 +584,47 @@ jobs:
               TEST_PATH: "tests/aws/services/lambda_/"
               COVERAGE_ARGS: "-p"
               LAMBDA_INIT_BIN_PATH: "/tmp/workspace/repo/bin/aws-lambda-rie-amd64"
+              DEBUG : "1"
+            command: |
+              COVERAGE_FILE="target/coverage/.coverage.lambda_custom_init.${CIRCLE_NODE_INDEX}" \
+              PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_custom_init.xml -o junit_suite_name='lambda_custom_init'" \
+              make docker-run-tests
+        - persist_to_workspace:
+            root:
+              /tmp/workspace
+            paths:
+              - repo/target/coverage/
+        - store_test_results:
+            path: target/reports/
+
+
+  itest-lambda-custom-init-arm64:
+      executor: ubuntu-machine-amd64
+      working_directory: /tmp/workspace/repo
+      environment:
+        PYTEST_LOGLEVEL: << pipeline.parameters.PYTEST_LOGLEVEL >>
+      steps:
+        - prepare-acceptance-tests
+        - attach_workspace:
+            at: /tmp/workspace
+        - run:
+            name: Retrieve Go binary for Linux ARM64
+            command: |
+              curl -OL https://github.com/localstack/lambda-runtime-init/raw/refs/heads/test/lambda-rie-v2/build/aws-lambda-rie-arm64
+              chmod +x aws-lambda-rie-arm64
+              mkdir -p bin
+              mv aws-lambda-rie-arm64 ./bin/aws-lambda-rie-arm64
+              ls -lah /tmp/workspace/repo/bin/aws-lambda-rie-arm64
+              file /tmp/workspace/repo/bin/*
+        - prepare-testselection
+        - prepare-pytest-tinybird
+        - prepare-account-region-randomization
+        - run:
+            name: Test Lambda with custom init binary
+            environment:
+              TEST_PATH: "tests/aws/services/lambda_/"
+              COVERAGE_ARGS: "-p"
+              LAMBDA_INIT_BIN_PATH: "/tmp/workspace/repo/bin/aws-lambda-rie-arm64"
               DEBUG : "1"
             command: |
               COVERAGE_FILE="target/coverage/.coverage.lambda_custom_init.${CIRCLE_NODE_INDEX}" \
@@ -970,7 +1011,11 @@ workflows:
           requires:
             - preflight
             - test-selection
-      - itest-lambda-custom-init:
+      - itest-lambda-custom-init-amd64:
+          requires:
+            - preflight
+            - test-selection
+      - itest-lambda-custom-init-arm64:
           requires:
             - preflight
             - test-selection
@@ -1036,7 +1081,6 @@ workflows:
             - itest-events-v1-provider
             - itest-ddb-v2-provider
             - itest-cfn-v2-engine-provider
-            - itest-lambda-custom-init
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1052,7 +1096,6 @@ workflows:
             - itest-events-v1-provider
             - itest-ddb-v2-provider
             - itest-cfn-v2-engine-provider
-            - itest-lambda-custom-init
             - acceptance-tests-amd64
             - acceptance-tests-arm64
             - integration-tests-amd64
@@ -1068,7 +1111,11 @@ workflows:
       - test-selection:
           requires:
             - install
-      - itest-lambda-custom-init:
+      - itest-lambda-custom-init-amd64:
+          requires:
+            - preflight
+            - test-selection
+      - itest-lambda-custom-init-arm64:
           requires:
             - preflight
             - test-selection
