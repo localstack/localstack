@@ -584,10 +584,11 @@ jobs:
               TEST_PATH: "tests/aws/services/lambda_/"
               COVERAGE_ARGS: "-p"
               LAMBDA_INIT_BIN_PATH: "/tmp/workspace/repo/bin/aws-lambda-rie-amd64"
+              DEBUG : "1"
             command: |
               COVERAGE_FILE="target/coverage/.coverage.lambda_custom_init.${CIRCLE_NODE_INDEX}" \
               PYTEST_ARGS="${TINYBIRD_PYTEST_ARGS}${TESTSELECTION_PYTEST_ARGS}--reruns 3 --junitxml=target/reports/lambda_custom_init.xml -o junit_suite_name='lambda_custom_init'" \
-              make test-coverage
+              make docker-run-tests
         - persist_to_workspace:
             root:
               /tmp/workspace
