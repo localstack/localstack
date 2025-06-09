@@ -442,15 +442,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         hosted_zones = [hz for hz in hosted_zones if domain_name.endswith(hz["Name"].strip("."))]
         zone_id = hosted_zones[0]["Id"].replace("/hostedzone/", "") if hosted_zones else zone_id
 
-        if routing_mode and routing_mode != RoutingMode.ROUTING_RULE_THEN_BASE_PATH_MAPPING:
-            # TODO implement Routing Modes and validate it's behavior
-            #  https://docs.aws.amazon.com/apigateway/latest/developerguide/set-routing-mode.html
-            # We are not changing the user provided value here as it could lead to issues with iac.
-            LOG.warning(
-                "Routing modes are not currently not supported by apigateway. "
-                "Your requests will be routed with default 'ROUTING_RULE_THEN_BASE_PATH_MAPPING' strategy."
-            )
-
         domain: DomainName = DomainName(
             domainName=domain_name,
             certificateName=certificate_name,
