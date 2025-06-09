@@ -1,3 +1,4 @@
+import copy
 import logging
 from typing import Any
 
@@ -14,14 +15,17 @@ from localstack.aws.api.cloudformation import (
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
+    DescribeStackResourcesOutput,
     DescribeStacksOutput,
     DisableRollback,
     ExecuteChangeSetOutput,
     ExecutionStatus,
     IncludePropertyValues,
     InvalidChangeSetStatusException,
+    LogicalResourceId,
     NextToken,
     Parameter,
+    PhysicalResourceId,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
@@ -60,6 +64,25 @@ def is_stack_arn(stack_name_or_id: str) -> bool:
 
 def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
+
+
+def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack:
+    if stack_name:
+        if is_stack_arn(stack_name):
+            return state.stacks_v2[stack_name]
+        else:
+            stack_candidates = []
+            for stack in state.stacks_v2.values():
+                if stack.stack_name == stack_name and stack.status != StackStatus.DELETE_COMPLETE:
+                    stack_candidates.append(stack)
+            if len(stack_candidates) == 0:
+                raise ValidationError(f"No stack with name {stack_name} found")
+            elif len(stack_candidates) > 1:
+                raise RuntimeError("Programing error, duplicate stacks found")
+            else:
+                return stack_candidates[0]
+    else:
+        raise NotImplementedError
 
 
 def find_change_set_v2(
@@ -364,27 +387,30 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DescribeStacksOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-        if stack_name:
-            if is_stack_arn(stack_name):
-                stack = state.stacks_v2[stack_name]
-            else:
-                stack_candidates = []
-                for stack in state.stacks_v2.values():
-                    if (
-                        stack.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
-                    ):
-                        stack_candidates.append(stack)
-                if len(stack_candidates) == 0:
-                    raise ValidationError(f"No stack with name {stack_name} found")
-                elif len(stack_candidates) > 1:
-                    raise RuntimeError("Programing error, duplicate stacks found")
-                else:
-                    stack = stack_candidates[0]
-        else:
-            raise NotImplementedError
-
+        stack = find_stack_v2(state, stack_name)
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
+
+    @handler("DescribeStackResources")
+    def describe_stack_resources(
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        logical_resource_id: LogicalResourceId = None,
+        physical_resource_id: PhysicalResourceId = None,
+        **kwargs,
+    ) -> DescribeStackResourcesOutput:
+        if physical_resource_id and stack_name:
+            raise ValidationError("Cannot specify both StackName and PhysicalResourceId")
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack = find_stack_v2(state, stack_name)
+        # TODO: filter stack by PhysicalResourceId!
+        statuses = []
+        for resource_id, resource_status in stack.resource_states.items():
+            if resource_id == logical_resource_id or logical_resource_id is None:
+                status = copy.deepcopy(resource_status)
+                status.setdefault("DriftInformation", {"StackResourceDriftStatus": "NOT_CHECKED"})
+                statuses.append(status)
+        return DescribeStackResourcesOutput(StackResources=statuses)
 
     @handler("DescribeStackEvents")
     def describe_stack_events(

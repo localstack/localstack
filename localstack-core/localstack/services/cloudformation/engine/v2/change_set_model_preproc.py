@@ -715,6 +715,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             delimiter: str = str(args[0])
             values: list[Any] = args[1]
             if not isinstance(values, list):
+                # shortcut if values is the empty string, for example:
+                # {"Fn::Join": ["", {"Ref": <parameter>}]}
+                # CDK bootstrap does this
+                if values == "":
+                    return ""
                 raise RuntimeError(f"Invalid arguments list definition for Fn::Join: '{args}'")
             str_values: list[str] = list()
             for value in values:

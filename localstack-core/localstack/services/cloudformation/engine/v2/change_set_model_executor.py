@@ -4,8 +4,13 @@ import uuid
 from dataclasses import dataclass
 from typing import Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, StackStatus
+from localstack.aws.api.cloudformation import (
+    ChangeAction,
+    ResourceStatus,
+    StackStatus,
+)
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
@@ -59,7 +64,25 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        delta = super().visit_node_parameter(node_parameter=node_parameter)
+        delta = super().visit_node_parameter(node_parameter)
+
+        # handle dynamic references, e.g. references to SSM parameters
+        # TODO: support more parameter types
+        parameter_type: str = node_parameter.type_.value
+        if parameter_type.startswith("AWS::SSM"):
+            if parameter_type in [
+                "AWS::SSM::Parameter::Value<String>",
+                "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+                "AWS::SSM::Parameter::Value<CommaDelimitedList>",
+            ]:
+                delta.after = resolve_ssm_parameter(
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                    stack_parameter_value=delta.after,
+                )
+            else:
+                raise Exception(f"Unsupported stack parameter type: {parameter_type}")
+
         self.resolved_parameters[node_parameter.name] = delta.after
         return delta
 
@@ -253,6 +276,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
                 elif stack_status == StackStatus.UPDATE_IN_PROGRESS:
                     stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                # update resource status
+                stack.set_resource_status(
+                    logical_resource_id=logical_resource_id,
+                    # TODO,
+                    physical_resource_id="",
+                    resource_type=resource_type,
+                    status=ResourceStatus.CREATE_FAILED
+                    if action == ChangeAction.Add
+                    else ResourceStatus.UPDATE_FAILED,
+                    resource_status_reason=reason,
+                )
                 return
         else:
             event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
@@ -290,6 +324,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     physical_resource_id = self._before_resource_physical_id(logical_resource_id)
                     self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
 
+                self._change_set.stack.set_resource_status(
+                    logical_resource_id=logical_resource_id,
+                    physical_resource_id=physical_resource_id,
+                    resource_type=resource_type,
+                    status=ResourceStatus.CREATE_COMPLETE
+                    if action == ChangeAction.Add
+                    else ResourceStatus.UPDATE_COMPLETE,
+                )
+
             case OperationStatus.FAILED:
                 reason = event.message
                 LOG.warning(
@@ -305,6 +348,16 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
                 else:
                     raise NotImplementedError(f"Unhandled stack status: '{stack.status}'")
+                stack.set_resource_status(
+                    logical_resource_id=logical_resource_id,
+                    # TODO
+                    physical_resource_id="",
+                    resource_type=resource_type,
+                    status=ResourceStatus.CREATE_FAILED
+                    if action == ChangeAction.Add
+                    else ResourceStatus.UPDATE_FAILED,
+                    resource_status_reason=reason,
+                )
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 
