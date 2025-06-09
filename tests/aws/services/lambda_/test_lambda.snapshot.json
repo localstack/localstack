@@ -3677,7 +3677,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "recorded-date": "03-06-2025, 19:20:04",
+    "recorded-date": "09-06-2025, 14:31:29",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,

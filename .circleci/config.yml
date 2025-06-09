@@ -573,6 +573,8 @@ jobs:
               chmod +x aws-lambda-rie-amd64
               mkdir -p bin
               mv aws-lambda-rie-amd64 ./bin/aws-lambda-rie-amd64
+              ls -lah /tmp/workspace/repo/bin/aws-lambda-rie-amd64
+              file /tmp/workspace/repo/bin/*
         - prepare-testselection
         - prepare-pytest-tinybird
         - prepare-account-region-randomization
