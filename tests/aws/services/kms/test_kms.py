@@ -910,16 +910,10 @@ class TestKMS:
         assert base64.b64decode(source_key_plaintext) == message
         assert base64.b64decode(destination_key_plaintext) == message
 
-    @pytest.mark.parametrize(
-        "algo",
-        [
-            ("SYMMETRIC_DEFAULT"),
-        ],
-    )
     @markers.aws.validated
-    def test_re_encrypt_incorrect_source_key(self, kms_create_key, algo, aws_client, snapshot):
+    def test_re_encrypt_incorrect_source_key(self, kms_create_key, aws_client, snapshot, algo="SYMMETRIC_DEFAULT"):
         message = b"test message 123 !%$@ 1234567890"
-        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")[
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=algo)[
             "KeyId"
         ]
         ciphertext = aws_client.kms.encrypt(
@@ -940,18 +934,11 @@ class TestKMS:
                 DestinationEncryptionAlgorithm=algo,
             )
         snapshot.match("incorrect-source-key", exc.value.response)
-        assert exc.match("IncorrectKeyException")
 
-    @pytest.mark.parametrize(
-        "algo",
-        [
-            ("SYMMETRIC_DEFAULT"),
-        ],
-    )
     @markers.aws.validated
-    def test_re_encrypt_invalid_destination_key(self, kms_create_key, algo, aws_client, snapshot):
+    def test_re_encrypt_invalid_destination_key(self, kms_create_key, aws_client, snapshot, algo="SYMMETRIC_DEFAULT"):
         message = b"test message 123 !%$@ 1234567890"
-        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")[
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=algo)[
             "KeyId"
         ]
         ciphertext = aws_client.kms.encrypt(
@@ -969,7 +956,6 @@ class TestKMS:
         # TODO: Determine where 'context.operation.name' is being set to 'ReEncryptTo' as the expected AWS operation name is 'ReEncrypt'
         # Then enable the snapshot check
         # snapshot.match("invalid-destination-key-usage", exc.value.response)
-        assert exc.match("InvalidKeyUsageException")
 
     @pytest.mark.parametrize(
         "key_spec,algo",

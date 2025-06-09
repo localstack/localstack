@@ -201,13 +201,16 @@
     "last_validated_date": "2024-04-11T15:54:20+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "last_validated_date": "2025-05-21T10:28:52+00:00"
+    "last_validated_date": "2025-06-09T12:53:00+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
-    "last_validated_date": "2025-05-21T10:28:50+00:00"
+    "last_validated_date": "2025-06-09T12:52:58+00:00"
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key[SYMMETRIC_DEFAULT]": {
-    "last_validated_date": "2025-05-21T12:31:51+00:00"
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key": {
+    "last_validated_date": "2025-06-09T12:53:24+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key": {
+    "last_validated_date": "2025-06-09T12:55:21+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key[SYMMETRIC_DEFAULT]": {
     "last_validated_date": "2025-05-21T10:29:13+00:00"

@@ -2240,7 +2240,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
-    "recorded-date": "21-05-2025, 10:28:51",
+    "recorded-date": "09-06-2025, 12:52:58",
     "recorded-content": {
       "test_re_encrypt": {
         "CiphertextBlob": "ciphertext-blob",
@@ -2256,7 +2256,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "21-05-2025, 10:28:52",
+    "recorded-date": "09-06-2025, 12:53:00",
     "recorded-content": {
       "test_re_encrypt": {
         "CiphertextBlob": "ciphertext-blob",
@@ -2271,8 +2271,8 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key[SYMMETRIC_DEFAULT]": {
-    "recorded-date": "21-05-2025, 10:29:13",
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key": {
+    "recorded-date": "09-06-2025, 12:55:22",
     "recorded-content": {
       "invalid-destination-key-usage": {
         "Error": {
@@ -2287,8 +2287,8 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key[SYMMETRIC_DEFAULT]": {
-    "recorded-date": "21-05-2025, 12:31:52",
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key": {
+    "recorded-date": "09-06-2025, 12:53:24",
     "recorded-content": {
       "incorrect-source-key": {
         "Error": {
