@@ -76,6 +76,7 @@ from localstack.aws.api.apigateway import (
     ResourceOwner,
     RestApi,
     RestApis,
+    RoutingMode,
     SecurityPolicy,
     Stage,
     Stages,
@@ -421,6 +422,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
         policy: String = None,
+        routing_mode: RoutingMode = None,
         **kwargs,
     ) -> DomainName:
         if not domain_name:
@@ -440,6 +442,15 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         hosted_zones = [hz for hz in hosted_zones if domain_name.endswith(hz["Name"].strip("."))]
         zone_id = hosted_zones[0]["Id"].replace("/hostedzone/", "") if hosted_zones else zone_id
 
+        if routing_mode and routing_mode != RoutingMode.ROUTING_RULE_THEN_BASE_PATH_MAPPING:
+            # TODO implement Routing Modes and validate it's behavior
+            #  https://docs.aws.amazon.com/apigateway/latest/developerguide/set-routing-mode.html
+            # We are not changing the user provided value here as it could lead to issues with iac.
+            LOG.warning(
+                "Routing modes are not currently not supported by apigateway. "
+                "Your requests will be routed with default 'ROUTING_RULE_THEN_BASE_PATH_MAPPING' strategy."
+            )
+
         domain: DomainName = DomainName(
             domainName=domain_name,
             certificateName=certificate_name,
@@ -451,6 +462,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             regionalCertificateArn=regional_certificate_arn,
             securityPolicy=SecurityPolicy.TLS_1_2,
             endpointConfiguration=endpoint_configuration,
+            routingMode=routing_mode,
         )
         store.domain_names[domain_name] = domain
         return domain
