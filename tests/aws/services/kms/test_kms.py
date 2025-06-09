@@ -945,7 +945,7 @@ class TestKMS:
             KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
         )["CiphertextBlob"]
         invalid_key_id = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="ECC_NIST_P256")["KeyId"]
-        with pytest.raises(ClientError) as exc:
+        with pytest.raises(ClientError):
             aws_client.kms.re_encrypt(
                 SourceKeyId=source_key_id,
                 DestinationKeyId=invalid_key_id,
