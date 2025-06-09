@@ -8,8 +8,10 @@ from localstack.aws.api.cloudformation import (
     ExecutionStatus,
     Output,
     Parameter,
+    ResourceStatus,
     StackDriftInformation,
     StackDriftStatus,
+    StackResource,
     StackStatus,
     StackStatusReason,
 )
@@ -46,6 +48,7 @@ class Stack:
     resolved_parameters: dict[str, str]
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: dict[str, str]
+    resource_states: dict[str, StackResource]
 
     def __init__(
         self,
@@ -84,11 +87,32 @@ class Stack:
         self.resolved_parameters = {}
         self.resolved_resources = {}
         self.resolved_outputs = {}
+        self.resource_states = {}
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
         if reason:
             self.status_reason = reason
+
+    def set_resource_status(
+        self,
+        *,
+        logical_resource_id: str,
+        physical_resource_id: str | None,
+        resource_type: str,
+        status: ResourceStatus,
+        resource_status_reason: str | None = None,
+    ):
+        self.resource_states[logical_resource_id] = StackResource(
+            StackName=self.stack_name,
+            StackId=self.stack_id,
+            LogicalResourceId=logical_resource_id,
+            PhysicalResourceId=physical_resource_id,
+            ResourceType=resource_type,
+            Timestamp=datetime.now(tz=timezone.utc),
+            ResourceStatus=status,
+            ResourceStatusReason=resource_status_reason,
+        )
 
     def describe_details(self) -> ApiStack:
         result = {
