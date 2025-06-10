@@ -29,11 +29,11 @@ aws-cdk-asset-awscli-v1==2.2.237
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==44.1.0
+aws-cdk-cloud-assembly-schema==44.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.200.0
+aws-cdk-lib==2.200.1
     # via localstack-core (pyproject.toml)
-aws-sam-translator==1.97.0
+aws-sam-translator==1.98.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -96,7 +96,7 @@ coverage==7.8.2
     # via localstack-core (pyproject.toml)
 crontab==1.0.4
     # via localstack-core
-cryptography==45.0.3
+cryptography==45.0.4
     # via
     #   joserfc
     #   localstack-core
@@ -248,7 +248,7 @@ openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-openapi-spec-validator==0.7.1
+openapi-spec-validator==0.7.2
     # via
     #   moto-ext
     #   openapi-core
@@ -361,7 +361,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 regex==2024.11.6
     # via cfn-lint
-requests==2.32.3
+requests==2.32.4
     # via
     #   docker
     #   jsonschema-path
