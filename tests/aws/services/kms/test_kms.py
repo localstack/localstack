@@ -912,7 +912,7 @@ class TestKMS:
 
     @markers.aws.validated
     def test_re_encrypt_incorrect_source_key(self, kms_create_key, aws_client, snapshot):
-        algo="SYMMETRIC_DEFAULT"
+        algo = "SYMMETRIC_DEFAULT"
         message = b"test message 123 !%$@ 1234567890"
         source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=algo)["KeyId"]
         ciphertext = aws_client.kms.encrypt(
@@ -936,7 +936,7 @@ class TestKMS:
 
     @markers.aws.validated
     def test_re_encrypt_invalid_destination_key(self, kms_create_key, aws_client):
-        algo="SYMMETRIC_DEFAULT"
+        algo = "SYMMETRIC_DEFAULT"
         message = b"test message 123 !%$@ 1234567890"
         source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=algo)["KeyId"]
         ciphertext = aws_client.kms.encrypt(
