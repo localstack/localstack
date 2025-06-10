@@ -400,7 +400,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 regex==2024.11.6
     # via cfn-lint
-requests==2.32.3
+requests==2.32.4
     # via
     #   coveralls
     #   docker

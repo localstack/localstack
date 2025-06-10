@@ -151,7 +151,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-requests==2.32.3
+requests==2.32.4
     # via
     #   docker
     #   jsonschema-path
