@@ -29,11 +29,11 @@ aws-cdk-asset-awscli-v1==2.2.237
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==44.1.0
+aws-cdk-cloud-assembly-schema==44.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.200.0
+aws-cdk-lib==2.200.1
     # via localstack-core
-aws-sam-translator==1.97.0
+aws-sam-translator==1.98.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -102,14 +102,14 @@ coveralls==4.0.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.4
     # via localstack-core
-cryptography==45.0.3
+cryptography==45.0.4
     # via
     #   joserfc
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.1.1
+cython==3.1.2
     # via localstack-core (pyproject.toml)
 decorator==5.2.1
     # via jsonpath-rw
@@ -272,7 +272,7 @@ openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-openapi-spec-validator==0.7.1
+openapi-spec-validator==0.7.2
     # via
     #   localstack-core (pyproject.toml)
     #   moto-ext
@@ -400,7 +400,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 regex==2024.11.6
     # via cfn-lint
-requests==2.32.3
+requests==2.32.4
     # via
     #   coveralls
     #   docker
@@ -433,7 +433,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.11.12
+ruff==0.11.13
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.0
     # via

@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.97.0
+aws-sam-translator==1.98.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -76,7 +76,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.4
     # via localstack-core (pyproject.toml)
-cryptography==45.0.3
+cryptography==45.0.4
     # via
     #   joserfc
     #   localstack-core
@@ -202,7 +202,7 @@ openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-openapi-spec-validator==0.7.1
+openapi-spec-validator==0.7.2
     # via
     #   moto-ext
     #   openapi-core
@@ -283,7 +283,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 regex==2024.11.6
     # via cfn-lint
-requests==2.32.3
+requests==2.32.4
     # via
     #   docker
     #   jsonschema-path
