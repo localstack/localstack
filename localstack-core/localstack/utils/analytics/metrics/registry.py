@@ -3,10 +3,30 @@ from __future__ import annotations
 import logging
 import threading
 from dataclasses import dataclass
+from typing import Any
 
-from .api import Metric, MetricPayload
+from .api import Metric, Payload
 
 LOG = logging.getLogger(__name__)
+
+
+@dataclass
+class MetricPayload:
+    """
+    A data object storing the value of all metrics collected during the execution of the application.
+    """
+
+    _payload: list[Payload]
+
+    @property
+    def payload(self) -> list[Payload]:
+        return self._payload
+
+    def __init__(self, payload: list[Payload]):
+        self._payload = payload
+
+    def as_dict(self) -> dict[str, list[dict[str, Any]]]:
+        return {"metrics": [payload.as_dict() for payload in self._payload]}
 
 
 @dataclass(frozen=True)
