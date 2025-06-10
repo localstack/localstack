@@ -13,6 +13,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
     AlgorithmSpec,
     AlreadyExistsException,
+    BackingKeyIdType,
     CancelKeyDeletionRequest,
     CancelKeyDeletionResponse,
     CiphertextType,
@@ -57,12 +58,14 @@ from localstack.aws.api.kms import (
     GrantTokenList,
     GrantTokenType,
     ImportKeyMaterialResponse,
+    ImportType,
     IncorrectKeyException,
     InvalidCiphertextException,
     InvalidGrantIdException,
     InvalidKeyUsageException,
     KeyAgreementAlgorithmSpec,
     KeyIdType,
+    KeyMaterialDescriptionType,
     KeySpec,
     KeyState,
     KeyUsageType,
@@ -1104,8 +1107,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType,
         import_token: CiphertextType,
         encrypted_key_material: CiphertextType,
-        valid_to: DateType = None,
-        expiration_model: ExpirationModelType = None,
+        valid_to: DateType | None = None,
+        expiration_model: ExpirationModelType | None = None,
+        import_type: ImportType | None = None,
+        key_material_description: KeyMaterialDescriptionType | None = None,
+        key_material_id: BackingKeyIdType | None = None,
         **kwargs,
     ) -> ImportKeyMaterialResponse:
         store = self._get_store(context.account_id, context.region)
@@ -1159,7 +1165,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ImportKeyMaterialResponse()
 
     def delete_imported_key_material(
-        self, context: RequestContext, key_id: KeyIdType, **kwargs
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        key_material_id: BackingKeyIdType | None = None,
+        **kwargs,
     ) -> None:
         key = self._get_kms_key(
             context.account_id,
