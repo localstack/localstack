@@ -2,11 +2,19 @@ from __future__ import annotations
 
 import logging
 import threading
+from dataclasses import dataclass
 
-from .interface import Metric
-from .type import MetricPayload, MetricRegistryKey
+from .api import Metric, MetricPayload
 
 LOG = logging.getLogger(__name__)
+
+
+@dataclass(frozen=True)
+class MetricRegistryKey:
+    """A unique identifier for a metric, composed of namespace and name."""
+
+    namespace: str
+    name: str
 
 
 class MetricRegistry:

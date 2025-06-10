@@ -1,9 +1,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import Union
+from typing import Any, Protocol
 
-from .type import CounterPayload, LabeledCounterPayload
+
+class Payload(Protocol):
+    def as_dict(self) -> dict[str, Any]: ...
 
 
 class Metric(ABC):
@@ -33,7 +35,7 @@ class Metric(ABC):
         return self._name
 
     @abstractmethod
-    def collect(self) -> list[Union[CounterPayload, LabeledCounterPayload]]:
+    def collect(self) -> list[Payload]:
         """
         Collects and returns metric data. Subclasses must implement this to return collected metric data.
         """

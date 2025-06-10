@@ -1,12 +1,55 @@
 import threading
 from collections import defaultdict
-from typing import Optional, Union
+from dataclasses import dataclass
+from typing import Any, Optional, Union
 
 from localstack import config
 
-from .interface import Metric
+from .api import Metric
 from .registry import MetricRegistry
-from .type import CounterPayload, LabeledCounterPayload
+
+
+@dataclass(frozen=True)
+class CounterPayload:
+    """A data object storing the value of a Counter metric."""
+
+    namespace: str
+    name: str
+    value: int
+    type: str
+
+    def as_dict(self) -> dict[str, Any]:
+        return {
+            "namespace": self.namespace,
+            "name": self.name,
+            "value": self.value,
+            "type": self.type,
+        }
+
+
+@dataclass(frozen=True)
+class LabeledCounterPayload:
+    """A data object storing the value of a LabeledCounter metric."""
+
+    namespace: str
+    name: str
+    value: int
+    type: str
+    labels: dict[str, Union[str, float]]
+
+    def as_dict(self) -> dict[str, Any]:
+        payload_dict = {
+            "namespace": self.namespace,
+            "name": self.name,
+            "value": self.value,
+            "type": self.type,
+        }
+
+        for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
+            payload_dict[f"label_{i}"] = label_name
+            payload_dict[f"label_{i}_value"] = label_value
+
+        return payload_dict
 
 
 class ThreadSafeCounter:
