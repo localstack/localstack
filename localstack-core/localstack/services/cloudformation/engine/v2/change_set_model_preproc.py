@@ -392,6 +392,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_resource = self._get_node_resource_for(
             resource_name=logical_name_of_resource, node_template=self._node_template
         )
+
         node_property: Optional[NodeProperty] = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )

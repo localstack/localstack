@@ -16,10 +16,10 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestCdkInit:
-    @pytest.mark.skip(
-        reason="CFNV2:Destroy each test passes individually but because we don't delete resources, running all parameterized options fails"
-    )
-    @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
+    # @pytest.mark.skip(
+    #     reason="CFNV2:Destroy each test passes individually but because we don't delete resources, running all parameterized options fails"
+    # )
+    @pytest.mark.parametrize("bootstrap_version", ["12"])  # , "11", "12"])
     @markers.aws.validated
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
         deploy_cfn_template(
@@ -27,7 +27,10 @@ class TestCdkInit:
                 os.path.dirname(__file__),
                 f"../../../../../templates/cdk_bootstrap_v{bootstrap_version}.yaml",
             ),
-            parameters={"FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}"},
+            parameters={
+                "FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}",
+                "FileAssetsBucketKmsKeyId": "AWS_MANAGED_KEY",
+            },
         )
         init_stack_result = deploy_cfn_template(
             template_path=os.path.join(

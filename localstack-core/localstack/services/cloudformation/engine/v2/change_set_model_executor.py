@@ -2,7 +2,7 @@ import copy
 import logging
 import uuid
 from dataclasses import dataclass
-from typing import Final, Optional
+from typing import Any, Final, Optional
 
 from localstack.aws.api.cloudformation import (
     ChangeAction,
@@ -12,10 +12,12 @@ from localstack.aws.api.cloudformation import (
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeType,
     NodeDependsOn,
     NodeOutput,
     NodeParameter,
     NodeResource,
+    NodeResources,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -51,12 +53,14 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     resources: Final[dict]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
+    teardown_op_list: Final[list]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
         self.resolved_parameters = dict()
+        self.teardown_op_list = list()
 
     # TODO: use a structured type for the return value
     def execute(self) -> ChangeSetModelExecutorResult:
@@ -64,6 +68,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return ChangeSetModelExecutorResult(
             resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
         )
+
+    def visit_node_resources(self, node_resources: NodeResources):
+        try:
+            super().visit_node_resources(node_resources)
+        finally:
+            for op, args, kwargs in self.teardown_op_list[::-1]:
+                op(*args, **kwargs)
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
         delta = super().visit_node_parameter(node_parameter)
@@ -184,7 +195,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
         if before != after:
             # There are changes for this resource.
-            self._execute_resource_change(name=node_resource.name, before=before, after=after)
+            self._execute_resource_change(
+                node_resource=node_resource, name=node_resource.name, before=before, after=after
+            )
         else:
             # There are no updates for this resource; iff the resource was previously
             # deployed, then the resolved details are copied in the current state for
@@ -214,7 +227,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return delta
 
     def _execute_resource_change(
-        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
+        self,
+        name: str,
+        node_resource: NodeResource,
+        before: Optional[PreprocResource],
+        after: Optional[PreprocResource],
     ) -> None:
         # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
@@ -226,13 +243,30 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties = self._merge_before_properties(name, before)
 
                 self._add_resource_event(ChangeAction.Modify, name, OperationStatus.IN_PROGRESS)
-                event = self._execute_resource_action(
-                    action=ChangeAction.Modify,
-                    logical_resource_id=name,
-                    resource_type=before.resource_type,
-                    before_properties=before_properties,
-                    after_properties=after.properties,
-                )
+                if self._resource_requires_replacement(node_resource):
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Add,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=None,
+                        after_properties=after.properties,
+                    )
+                    self.log_for_deletion(
+                        self._execute_resource_action,
+                        action=ChangeAction.Remove,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=before_properties,
+                        after_properties=None,
+                    )
+                else:
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=before_properties,
+                        after_properties=after.properties,
+                    )
                 self._add_resource_event(
                     ChangeAction.Modify,
                     name,
@@ -243,11 +277,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
             else:
+                raise NotImplementedError("Resources don't generally change type")
                 # XXX hacky, stick the previous resources' properties into the payload
                 before_properties = self._merge_before_properties(name, before)
                 # Register a Removed for the previous type.
-
-                event = self._execute_resource_action(
+                self.log_for_deletion(
+                    self._execute_resource_action,
                     action=ChangeAction.Remove,
                     logical_resource_id=name,
                     resource_type=before.resource_type,
@@ -323,6 +358,32 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 reason=event.message,
                 resource_type=after.resource_type,
             )
+
+    def _resource_requires_replacement(
+        self,
+        node_resource: NodeResource,
+    ) -> bool:
+        resource_provider_executor = ResourceProviderExecutor(
+            stack_name=self._change_set.stack.stack_name, stack_id=self._change_set.stack.stack_id
+        )
+        # TODO: the resource type possibly changed
+        if node_resource.type_.change_type != ChangeType.UNCHANGED:
+            raise NotImplementedError
+
+        resource_type = node_resource.type_.value
+        resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
+        schema = resource_provider.SCHEMA
+        requires_replacement_properties = schema.get("createOnlyProperties", [])
+
+        for property in node_resource.properties.properties:
+            if property.change_type == ChangeType.UNCHANGED:
+                continue
+            scope = property.scope
+            property_name = "/" + "/".join(scope.split("/")[3:]).replace("Properties", "properties")
+            if property_name in requires_replacement_properties:
+                return True
+
+        return False
 
     def _merge_before_properties(
         self, name: str, preproc_resource: PreprocResource
@@ -476,3 +537,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             },
         }
         return resource_provider_payload
+
+    def log_for_deletion(self, op: callable, *args: Any, **kwargs: Any):
+        self.teardown_op_list.append((op, args, kwargs))

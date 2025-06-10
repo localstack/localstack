@@ -154,6 +154,13 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str):
     return None
 
 
+# TODO: is this a duplicate of that from the api?
+class StackNotFoundException(ValidationError):
+    def __init__(self, stack_name: str):
+        super().__init__(f"Stack with id {stack_name} does not exist")
+
+
+# Do not use with V2
 def stack_not_found_error(stack_name: str):
     # FIXME
     raise ValidationError("Stack with id %s does not exist" % stack_name)

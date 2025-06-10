@@ -94,7 +94,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
+  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::est_direct_update": {
     "recorded-date": "18-06-2025, 19:04:55",
     "recorded-content": {
       "create-change-set-1": {

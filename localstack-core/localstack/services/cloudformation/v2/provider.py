@@ -55,6 +55,7 @@ from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
     ARN_STACK_REGEX,
     CloudformationProvider,
+    StackNotFoundException,
 )
 from localstack.services.cloudformation.stores import (
     CloudFormationStore,
@@ -74,7 +75,7 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
 
 
-def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack:
+def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
     if stack_name:
         if is_stack_arn(stack_name):
             return state.stacks_v2[stack_name]
@@ -84,7 +85,7 @@ def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack:
                 if stack.stack_name == stack_name and stack.status != StackStatus.DELETE_COMPLETE:
                     stack_candidates.append(stack)
             if len(stack_candidates) == 0:
-                raise ValidationError(f"No stack with name {stack_name} found")
+                return None
             elif len(stack_candidates) > 1:
                 raise RuntimeError("Programing error, duplicate stacks found")
             else:
@@ -96,36 +97,23 @@ def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack:
 def find_change_set_v2(
     state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
 ) -> ChangeSet | None:
-    change_set: ChangeSet | None = None
     if is_changeset_arn(change_set_name):
-        change_set = state.change_sets[change_set_name]
+        try:
+            return state.change_sets[change_set_name]
+        except KeyError:
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
     else:
         if stack_name is not None:
-            stack: Stack | None = None
-            if is_stack_arn(stack_name):
-                stack = state.stacks_v2[stack_name]
-            else:
-                for stack_candidate in state.stacks_v2.values():
-                    # TODO: check for active stacks
-                    if (
-                        stack_candidate.stack_name == stack_name
-                        and stack_candidate.status != StackStatus.DELETE_COMPLETE
-                    ):
-                        stack = stack_candidate
-                        break
-
+            stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise NotImplementedError(f"no stack found for change set {change_set_name}")
-
+                raise StackNotFoundException(stack_name)
             for change_set_id in stack.change_set_ids:
                 change_set_candidate = state.change_sets[change_set_id]
                 if change_set_candidate.change_set_name == change_set_name:
-                    change_set = change_set_candidate
-                    break
+                    return change_set_candidate
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         else:
             raise NotImplementedError
-
-    return change_set
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -304,6 +292,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id
         stack.change_set_id = change_set.change_set_id
+        stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
 
         return CreateChangeSetOutput(StackId=stack.stack_id, Id=change_set.change_set_id)
@@ -443,6 +432,8 @@ class CloudformationProviderV2(CloudformationProvider):
     ) -> DescribeStacksOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
+        if not stack:
+            raise StackNotFoundException(stack_name)
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
 
     @handler("DescribeStackResources")
@@ -458,6 +449,8 @@ class CloudformationProviderV2(CloudformationProvider):
             raise ValidationError("Cannot specify both StackName and PhysicalResourceId")
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
+        if not stack:
+            raise StackNotFoundException(stack_name)
         # TODO: filter stack by PhysicalResourceId!
         statuses = []
         for resource_id, resource_status in stack.resource_states.items():
@@ -491,26 +484,7 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> None:
         state = get_cloudformation_store(context.account_id, context.region)
-        if stack_name:
-            if is_stack_arn(stack_name):
-                stack = state.stacks_v2[stack_name]
-            else:
-                stack_candidates = []
-                for stack in state.stacks_v2.values():
-                    if (
-                        stack.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
-                    ):
-                        stack_candidates.append(stack)
-                if len(stack_candidates) == 0:
-                    raise ValidationError(f"No stack with name {stack_name} found")
-                elif len(stack_candidates) > 1:
-                    raise RuntimeError("Programing error, duplicate stacks found")
-                else:
-                    stack = stack_candidates[0]
-        else:
-            raise NotImplementedError
-
+        stack = find_stack_v2(state, stack_name)
         if not stack:
             # aws will silently ignore invalid stack names - we should do the same
             return
