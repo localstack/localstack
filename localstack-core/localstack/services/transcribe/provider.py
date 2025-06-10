@@ -5,7 +5,7 @@ import threading
 import wave
 from functools import cache
 from pathlib import Path
-from typing import Tuple
+from typing import Any, Tuple
 from zipfile import ZipFile
 
 from localstack import config
@@ -102,16 +102,16 @@ _DL_LOCK = threading.Lock()
 
 class TranscribeProvider(TranscribeApi):
     def get_transcription_job(
-        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs
+        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs: Any
     ) -> GetTranscriptionJobResponse:
         store = transcribe_stores[context.account_id][context.region]
 
         if job := store.transcription_jobs.get(transcription_job_name):
             # fetch output key and output bucket
             output_bucket, output_key = get_bucket_and_key_from_presign_url(
-                job["Transcript"]["TranscriptFileUri"]
+                job["Transcript"]["TranscriptFileUri"]  # type: ignore[index,arg-type]
             )
-            job["Transcript"]["TranscriptFileUri"] = connect_to().s3.generate_presigned_url(
+            job["Transcript"]["TranscriptFileUri"] = connect_to().s3.generate_presigned_url(  # type: ignore[index]
                 "get_object",
                 Params={"Bucket": output_bucket, "Key": output_key},
                 ExpiresIn=60 * 15,
@@ -128,13 +128,13 @@ class TranscribeProvider(TranscribeApi):
         # Install and configure vosk
         vosk_package.install()
 
-        from vosk import SetLogLevel  # noqa
+        from vosk import SetLogLevel  # type: ignore[import-not-found]  # noqa
 
         # Suppress Vosk logging
         SetLogLevel(-1)
 
     @handler("StartTranscriptionJob", expand=False)
-    def start_transcription_job(
+    def start_transcription_job(  # type: ignore[override]
         self,
         context: RequestContext,
         request: StartTranscriptionJobRequest,
@@ -157,7 +157,7 @@ class TranscribeProvider(TranscribeApi):
             )
 
         s3_path = request["Media"]["MediaFileUri"]
-        output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])
+        output_bucket = request.get("OutputBucketName", get_bucket_and_key_from_s3_uri(s3_path)[0])  # type: ignore[arg-type]
         output_key = request.get("OutputKey")
 
         if not output_key:
@@ -196,7 +196,7 @@ class TranscribeProvider(TranscribeApi):
         job_name_contains: TranscriptionJobName | None = None,
         next_token: NextToken | None = None,
         max_results: MaxResults | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> ListTranscriptionJobsResponse:
         store = transcribe_stores[context.account_id][context.region]
         summaries = []
@@ -216,7 +216,7 @@ class TranscribeProvider(TranscribeApi):
         return ListTranscriptionJobsResponse(TranscriptionJobSummaries=summaries)
 
     def delete_transcription_job(
-        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs
+        self, context: RequestContext, transcription_job_name: TranscriptionJobName, **kwargs: Any
     ) -> None:
         store = transcribe_stores[context.account_id][context.region]
 
@@ -277,7 +277,7 @@ class TranscribeProvider(TranscribeApi):
     # Threads
     #
 
-    def _run_transcription_job(self, args: Tuple[TranscribeStore, str]):
+    def _run_transcription_job(self, args: Tuple[TranscribeStore, str]) -> None:
         store, job_name = args
 
         job = store.transcription_jobs[job_name]
@@ -292,7 +292,7 @@ class TranscribeProvider(TranscribeApi):
             # Get file from S3
             file_path = new_tmp_file()
             s3_client = connect_to().s3
-            s3_path = job["Media"]["MediaFileUri"]
+            s3_path: str = job["Media"]["MediaFileUri"]  # type: ignore[index,assignment]
             bucket, _, key = s3_path.removeprefix("s3://").partition("/")
             s3_client.download_file(Bucket=bucket, Key=key, Filename=file_path)
 
@@ -303,7 +303,7 @@ class TranscribeProvider(TranscribeApi):
             LOG.debug("Determining media format")
             # TODO set correct failure_reason if ffprobe execution fails
             ffprobe_output = json.loads(
-                run(
+                run(  # type: ignore[arg-type]
                     f"{ffprobe_bin} -show_streams -show_format -print_format json -hide_banner -v error {file_path}"
                 )
             )
@@ -346,8 +346,8 @@ class TranscribeProvider(TranscribeApi):
                 raise RuntimeError()
 
             # Prepare transcriber
-            language_code = job["LanguageCode"]
-            model_name = LANGUAGE_MODELS[language_code]
+            language_code: str = job["LanguageCode"]  # type: ignore[assignment]
+            model_name = LANGUAGE_MODELS[language_code]  # type: ignore[index]
             self._setup_vosk()
             model_path = self.download_model(model_name)
             from vosk import KaldiRecognizer, Model  # noqa
@@ -397,7 +397,7 @@ class TranscribeProvider(TranscribeApi):
             }
 
             # Save to S3
-            output_s3_path = job["Transcript"]["TranscriptFileUri"]
+            output_s3_path: str = job["Transcript"]["TranscriptFileUri"]  # type: ignore[index,assignment]
             output_bucket, output_key = get_bucket_and_key_from_presign_url(output_s3_path)
             s3_client.put_object(Bucket=output_bucket, Key=output_key, Body=json.dumps(output))
 
