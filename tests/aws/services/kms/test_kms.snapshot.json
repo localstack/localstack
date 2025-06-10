@@ -2271,22 +2271,6 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key": {
-    "recorded-date": "09-06-2025, 12:55:22",
-    "recorded-content": {
-      "invalid-destination-key-usage": {
-        "Error": {
-          "Code": "InvalidKeyUsageException",
-          "Message": "<key-arn> key usage is SIGN_VERIFY which is not valid for ReEncryptTo."
-        },
-        "message": "<key-arn> key usage is SIGN_VERIFY which is not valid for ReEncryptTo.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key": {
     "recorded-date": "09-06-2025, 12:53:24",
     "recorded-content": {
