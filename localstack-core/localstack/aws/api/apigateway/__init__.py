@@ -159,6 +159,12 @@ class ResourceOwner(StrEnum):
     OTHER_ACCOUNTS = "OTHER_ACCOUNTS"
 
 
+class RoutingMode(StrEnum):
+    BASE_PATH_MAPPING_ONLY = "BASE_PATH_MAPPING_ONLY"
+    ROUTING_RULE_ONLY = "ROUTING_RULE_ONLY"
+    ROUTING_RULE_THEN_BASE_PATH_MAPPING = "ROUTING_RULE_THEN_BASE_PATH_MAPPING"
+
+
 class SecurityPolicy(StrEnum):
     TLS_1_0 = "TLS_1_0"
     TLS_1_2 = "TLS_1_2"
@@ -473,6 +479,7 @@ class CreateDomainNameRequest(ServiceRequest):
     mutualTlsAuthentication: Optional[MutualTlsAuthenticationInput]
     ownershipVerificationCertificateArn: Optional[String]
     policy: Optional[String]
+    routingMode: Optional[RoutingMode]
 
 
 class CreateModelRequest(ServiceRequest):
@@ -751,6 +758,7 @@ class DomainName(TypedDict, total=False):
     ownershipVerificationCertificateArn: Optional[String]
     managementPolicy: Optional[String]
     policy: Optional[String]
+    routingMode: Optional[RoutingMode]
 
 
 class DomainNameAccessAssociation(TypedDict, total=False):
@@ -1766,6 +1774,7 @@ class ApigatewayApi:
         mutual_tls_authentication: MutualTlsAuthenticationInput | None = None,
         ownership_verification_certificate_arn: String | None = None,
         policy: String | None = None,
+        routing_mode: RoutingMode | None = None,
         **kwargs,
     ) -> DomainName:
         raise NotImplementedError
