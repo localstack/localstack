@@ -26,6 +26,7 @@ from localstack.aws.api.kms import (
     DateType,
     DecryptResponse,
     DeleteAliasRequest,
+    DeleteImportedKeyMaterialResponse,
     DeriveSharedSecretResponse,
     DescribeKeyRequest,
     DescribeKeyResponse,
@@ -1170,7 +1171,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType,
         key_material_id: BackingKeyIdType | None = None,
         **kwargs,
-    ) -> None:
+    ) -> DeleteImportedKeyMaterialResponse:
+        # TODO add support for key_material_id
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1182,6 +1184,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Enabled"] = False
         key.metadata["KeyState"] = KeyState.PendingImport
         key.metadata.pop("ExpirationModel", None)
+
+        # TODO populate DeleteImportedKeyMaterialResponse
+        return DeleteImportedKeyMaterialResponse()
 
     @handler("CreateAlias", expand=False)
     def create_alias(self, context: RequestContext, request: CreateAliasRequest) -> None:
