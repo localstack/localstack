@@ -635,9 +635,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 integration_response.selection_pattern = patch_operation.get("value")
 
         response: IntegrationResponse = integration_response.to_json()
-        response["selectionPattern"] = (
-            integration_response.selection_pattern
-        )  # in case it's empty, we still want to pass it on as "", # TODO: add a test case for this
+        # in case it's empty, we still want to pass it on as ""
+        # TODO: add a test case for this
+        response["selectionPattern"] = integration_response.selection_pattern
 
         return response
 
