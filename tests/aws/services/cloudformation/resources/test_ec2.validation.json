@@ -26,6 +26,15 @@
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_transit_gateway_attachment": {
     "last_validated_date": "2025-04-08T10:51:02+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_update_keypair": {
+    "last_validated_date": "2025-06-11T15:54:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.23,
+      "call": 25.05,
+      "teardown": 4.51,
+      "total": 29.79
+    }
+  },
   "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_creates_default_sg": {
     "last_validated_date": "2024-04-01T11:21:54+00:00"
   },

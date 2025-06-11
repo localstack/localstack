@@ -1,3 +1,5 @@
+import copy
+import json
 import os
 
 import pytest
@@ -357,3 +359,46 @@ def test_keypair_create_import(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.regex(key_res["KeyFingerprint"], "<fingerprint>"))
 
     snapshot.match("outputs", outputs)
+
+
+@markers.aws.validated
+def test_update_keypair(snapshot, aws_client, deploy_cfn_template):
+    key_material = (
+        "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICfp1F7DhdWZdqkYAUGCzcBsLmJeu9izpIyGpmmg7eCz example"
+    )
+    t1 = {
+        "Parameters": {
+            "KeyName": {
+                "Type": "String",
+            },
+        },
+        "Resources": {
+            "KeyPair": {
+                "Type": "AWS::EC2::KeyPair",
+                "Properties": {"KeyName": {"Ref": "KeyName"}, "PublicKeyMaterial": key_material},
+            }
+        },
+        "Outputs": {
+            "KeyPairRef": {
+                "Value": {"Ref": "KeyPair"},
+            },
+        },
+    }
+    t2 = copy.deepcopy(t1)
+    t2["Resources"]["KeyPair"]["Properties"]["PublicKeyMaterial"] = key_material.replace(
+        "example", "test"
+    )
+
+    stack = deploy_cfn_template(template=json.dumps(t1), parameters={"KeyName": "test"})
+
+    response = aws_client.ec2.describe_key_pairs(KeyNames=["test"])
+    snapshot.match("before", response)
+
+    deploy_cfn_template(
+        template=json.dumps(t2),
+        is_update=True,
+        parameters={"KeyName": "test-2"},
+        stack_name=stack.stack_id,
+    )
+    response = aws_client.ec2.describe_key_pairs(KeyNames=["test-2"])
+    snapshot.match("after", response)

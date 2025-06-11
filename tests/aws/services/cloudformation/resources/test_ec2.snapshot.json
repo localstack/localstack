@@ -299,5 +299,42 @@
         "ImportedKeyPairName": "<imported-key-name>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_update_keypair": {
+    "recorded-date": "11-06-2025, 15:54:06",
+    "recorded-content": {
+      "before": {
+        "KeyPairs": [
+          {
+            "CreateTime": "datetime",
+            "KeyFingerprint": "K5Wsx+ktRRjHzQ3k5UG199tFOd2TlfKI6lPDlm/3ngs=",
+            "KeyName": "test",
+            "KeyPairId": "key-0481ac036b6d20598",
+            "KeyType": "ed25519",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "after": {
+        "KeyPairs": [
+          {
+            "CreateTime": "datetime",
+            "KeyFingerprint": "K5Wsx+ktRRjHzQ3k5UG199tFOd2TlfKI6lPDlm/3ngs=",
+            "KeyName": "test-2",
+            "KeyPairId": "key-0721c9a2742205251",
+            "KeyType": "ed25519",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
