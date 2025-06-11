@@ -3629,5 +3629,90 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_integration_response": {
+    "recorded-date": "11-06-2025, 08:25:24",
+    "recorded-content": {
+      "put-integration-response": {
+        "responseTemplates": {
+          "application/json": "\"created\""
+        },
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response": {
+        "responseTemplates": {
+          "application/json": "\"created\""
+        },
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-integration-response": {
+        "responseTemplates": {
+          "application/json": "\"created\""
+        },
+        "selectionPattern": "updated-pattern",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "overwrite-integration-response": {
+        "responseTemplates": {
+          "application/json": "overwrite"
+        },
+        "selectionPattern": "overwrite-pattern",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "integrationResponses": {
+            "200": {
+              "responseTemplates": {
+                "application/json": "overwrite"
+              },
+              "selectionPattern": "overwrite-pattern",
+              "statusCode": "200"
+            }
+          },
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-integration-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
   }
 }
