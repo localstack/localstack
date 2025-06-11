@@ -402,3 +402,7 @@ def test_update_keypair(snapshot, aws_client, deploy_cfn_template):
     )
     response = aws_client.ec2.describe_key_pairs(KeyNames=["test-2"])
     snapshot.match("after", response)
+
+    with pytest.raises(Exception):
+        # FIXME: add typing to exception + snapshot exception content
+        aws_client.ec2.describe_key_pairs(KeyNames=["test"])

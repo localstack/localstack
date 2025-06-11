@@ -145,4 +145,50 @@ class EC2KeyPairProvider(ResourceProvider[EC2KeyPairProperties]):
 
 
         """
-        raise NotImplementedError
+        # class EC2KeyPairProperties(TypedDict):
+        #     KeyName: Optional[str]
+        #     KeyFingerprint: Optional[str]
+        #     KeyFormat: Optional[str]
+        #     KeyPairId: Optional[str]
+        #     KeyType: Optional[str]
+        #     PublicKeyMaterial: Optional[str]
+        #     Tags: Optional[list[Tag]]
+
+        previous_model = request.previous_state
+        if "KeyName" not in previous_model:
+            raise ValueError("Property 'KeyName' is required")
+
+        # Delete old.
+        ec2 = request.aws_client_factory.ec2
+        ec2.delete_key_pair(KeyName=previous_model["KeyName"])
+        request.aws_client_factory.ssm.delete_parameter(
+            Name=f"/ec2/keypair/{previous_model['KeyPairId']}",
+        )
+
+        # Create the new.
+        current_model = request.desired_state
+        if public_key_material := current_model.get("PublicKeyMaterial"):
+            response = request.aws_client_factory.ec2.import_key_pair(
+                KeyName=current_model["KeyName"],
+                PublicKeyMaterial=public_key_material,
+            )
+        else:
+            create_params = util.select_attributes(
+                current_model, ["KeyName", "KeyType", "KeyFormat", "Tags"]
+            )
+            response = request.aws_client_factory.ec2.create_key_pair(**create_params)
+
+        current_model["KeyPairId"] = response["KeyPairId"]
+        current_model["KeyFingerprint"] = response["KeyFingerprint"]
+
+        request.aws_client_factory.ssm.put_parameter(
+            Name=f"/ec2/keypair/{current_model['KeyPairId']}",
+            Value=current_model["KeyName"],
+            Type="String",
+            Overwrite=True,
+        )
+
+        return ProgressEvent(
+            status=OperationStatus.SUCCESS,
+            resource_model=current_model,
+        )
