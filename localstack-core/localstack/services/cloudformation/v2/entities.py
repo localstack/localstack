@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import TypedDict
+from typing import Optional, TypedDict
 
 from localstack.aws.api.cloudformation import (
     ChangeSetStatus,
@@ -23,7 +23,6 @@ from localstack.services.cloudformation.engine.entities import (
     StackTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
-    ChangeSetModel,
     NodeTemplate,
 )
 from localstack.utils.aws import arns
@@ -151,7 +150,7 @@ class ChangeSet:
     change_set_name: str
     change_set_id: str
     change_set_type: ChangeSetType
-    update_graph: NodeTemplate | None
+    update_model: Optional[NodeTemplate]
     status: ChangeSetStatus
     execution_status: ExecutionStatus
     creation_time: datetime
@@ -166,7 +165,7 @@ class ChangeSet:
         self.template = template
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
         self.execution_status = ExecutionStatus.AVAILABLE
-        self.update_graph = None
+        self.update_model = None
         self.creation_time = datetime.now(tz=timezone.utc)
 
         self.change_set_name = request_payload["ChangeSetName"]
@@ -177,6 +176,9 @@ class ChangeSet:
             account_id=self.stack.account_id,
             region_name=self.stack.region_name,
         )
+
+    def set_update_model(self, update_model: NodeTemplate) -> None:
+        self.update_model = update_model
 
     def set_change_set_status(self, status: ChangeSetStatus):
         self.status = status
@@ -191,18 +193,3 @@ class ChangeSet:
     @property
     def region_name(self) -> str:
         return self.stack.region_name
-
-    def populate_update_graph(
-        self,
-        before_template: dict | None = None,
-        after_template: dict | None = None,
-        before_parameters: dict | None = None,
-        after_parameters: dict | None = None,
-    ) -> None:
-        change_set_model = ChangeSetModel(
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-        )
-        self.update_graph = change_set_model.get_update_model()

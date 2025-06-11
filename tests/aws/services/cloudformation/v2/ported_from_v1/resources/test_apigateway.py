@@ -115,7 +115,6 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     assert mappings[0] == "(none)"
 
 
-@pytest.mark.skip(reason="CFNV2:AWS::Serverless")
 @markers.aws.validated
 def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
     api_name = f"rest-api-{short_uid()}"
@@ -558,7 +557,7 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
 
 
 @pytest.mark.skip(
-    reason="CFNV2:AWS::Serverless no resource provider found for AWS::Serverless::Api"
+    reason="CFNV2:Other lambda function fails on creation due to invalid function name"
 )
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(

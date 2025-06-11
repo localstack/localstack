@@ -25,7 +25,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:Transform")
 @markers.aws.validated
 def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     function_name = f"test-fn-{short_uid()}"
@@ -58,7 +57,6 @@ def test_lambda_w_dynamodb_event_filter(deploy_cfn_template, aws_client):
     retry(_assert_single_lambda_call, retries=30)
 
 
-@pytest.mark.skip(reason="CFNV2:Transform")
 @markers.snapshot.skip_snapshot_verify(
     [
         # TODO: Fix flaky ESM state mismatch upon update in LocalStack (expected Enabled, actual Disabled)

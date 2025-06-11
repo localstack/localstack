@@ -7,6 +7,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeConditions,
     NodeDependsOn,
     NodeDivergence,
+    NodeGlobalTransform,
     NodeIntrinsicFunction,
     NodeMapping,
     NodeMappings,
@@ -20,6 +21,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeResource,
     NodeResources,
     NodeTemplate,
+    NodeTransform,
     TerminalValueCreated,
     TerminalValueModified,
     TerminalValueRemoved,
@@ -54,6 +56,12 @@ class ChangeSetModelVisitor(abc.ABC):
         # being evaluated, hence enforce the visiting of all the resources first.
         self.visit(node_template.resources)
         self.visit(node_template.outputs)
+
+    def visit_node_transform(self, node_transform: NodeTransform):
+        self.visit_children(node_transform)
+
+    def visit_node_global_transform(self, node_global_transform: NodeGlobalTransform):
+        self.visit_children(node_global_transform)
 
     def visit_node_outputs(self, node_outputs: NodeOutputs):
         self.visit_children(node_outputs)
