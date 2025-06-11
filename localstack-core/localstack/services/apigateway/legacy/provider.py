@@ -631,6 +631,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             elif "/contentHandling" in path and op == "replace":
                 integration_response.content_handling = patch_operation.get("value")
 
+            elif "/selectionPattern" in path and op == "replace":
+                integration_response.selection_pattern = patch_operation.get("value")
+
+        response: IntegrationResponse = integration_response.to_json()
+        # response["selectionPattern"] = integration_response.selection_pattern
+
+        return response
+
     def update_resource(
         self,
         context: RequestContext,

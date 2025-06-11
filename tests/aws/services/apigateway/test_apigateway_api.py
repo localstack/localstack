@@ -2638,7 +2638,7 @@ class TestApigatewayIntegration:
     @markers.aws.validated
     def test_lifecycle_integration_response(self, aws_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
-        apigw_client = aws_client.apigateway  # default client
+        apigw_client = aws_client.apigateway
         response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
         api_id = response["id"]
         root_resource_id = response["rootResourceId"]
