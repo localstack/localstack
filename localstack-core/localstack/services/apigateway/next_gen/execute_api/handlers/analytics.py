@@ -1,7 +1,7 @@
 import logging
 
 from localstack.http import Response
-from localstack.utils.analytics.metrics import LabeledCounterMetric
+from localstack.utils.analytics.metrics import LabeledCounter
 
 from ..api import RestApiGatewayHandler, RestApiGatewayHandlerChain
 from ..context import RestApiInvocationContext
@@ -10,9 +10,9 @@ LOG = logging.getLogger(__name__)
 
 
 class IntegrationUsageCounter(RestApiGatewayHandler):
-    counter: LabeledCounterMetric
+    counter: LabeledCounter
 
-    def __init__(self, counter: LabeledCounterMetric):
+    def __init__(self, counter: LabeledCounter):
         self.counter = counter
 
     def __call__(

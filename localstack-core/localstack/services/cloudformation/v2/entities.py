@@ -42,6 +42,7 @@ class Stack:
     status_reason: StackStatusReason | None
     stack_id: str
     creation_time: datetime
+    deletion_time: datetime | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -66,6 +67,7 @@ class Stack:
         self.status_reason = None
         self.change_set_ids = change_set_ids or []
         self.creation_time = datetime.now(tz=timezone.utc)
+        self.deletion_time = None
 
         self.stack_name = request_payload["StackName"]
         self.change_set_name = request_payload.get("ChangeSetName")
@@ -117,6 +119,7 @@ class Stack:
         result = {
             "ChangeSetId": self.change_set_id,
             "CreationTime": self.creation_time,
+            "DeletionTime": self.deletion_time,
             "StackId": self.stack_id,
             "StackName": self.stack_name,
             "StackStatus": self.status,

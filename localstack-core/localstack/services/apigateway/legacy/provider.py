@@ -76,6 +76,7 @@ from localstack.aws.api.apigateway import (
     ResourceOwner,
     RestApi,
     RestApis,
+    RoutingMode,
     SecurityPolicy,
     Stage,
     Stages,
@@ -421,6 +422,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
         policy: String = None,
+        routing_mode: RoutingMode = None,
         **kwargs,
     ) -> DomainName:
         if not domain_name:
@@ -451,6 +453,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             regionalCertificateArn=regional_certificate_arn,
             securityPolicy=SecurityPolicy.TLS_1_2,
             endpointConfiguration=endpoint_configuration,
+            routingMode=routing_mode,
         )
         store.domain_names[domain_name] = domain
         return domain
