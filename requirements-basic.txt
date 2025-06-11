@@ -6,7 +6,7 @@
 #
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.2
+cachetools==6.0.0
     # via localstack-core (pyproject.toml)
 certifi==2025.4.26
     # via requests
@@ -14,9 +14,9 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via localstack-core (pyproject.toml)
-cryptography==44.0.3
+cryptography==45.0.4
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -46,7 +46,7 @@ python-dotenv==1.1.0
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.2
     # via localstack-core (pyproject.toml)
-requests==2.32.3
+requests==2.32.4
     # via localstack-core (pyproject.toml)
 rich==14.0.0
     # via localstack-core (pyproject.toml)

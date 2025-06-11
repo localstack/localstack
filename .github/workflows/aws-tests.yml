@@ -24,12 +24,17 @@ on:
         type: boolean
         default: false
       randomize-aws-credentials:
-        description: "Randomize AWS credentials"
+        description: 'Randomize AWS credentials'
         default: false
         required: false
         type: boolean
       onlyAcceptanceTests:
-        description: "Run only acceptance tests"
+        description: 'Run only acceptance tests'
+        default: false
+        required: false
+        type: boolean
+      forceARMTests:
+        description: 'Run the ARM64 tests'
         default: false
         required: false
         type: boolean
@@ -72,6 +77,11 @@ on:
         type: boolean
       onlyAcceptanceTests:
         description: "Run only acceptance tests"
+        default: false
+        required: false
+        type: boolean
+      forceARMTests:
+        description: 'Run the ARM64 tests'
         default: false
         required: false
         type: boolean
@@ -198,7 +208,7 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Linting
         run: make lint
@@ -256,6 +266,34 @@ jobs:
             .coverage.unit
           retention-days: 30
 
+  publish-preflight-test-results:
+    name: Publish Preflight- & Unit-Test Results
+    needs: test-preflight
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-preflight
+
+      - name: Publish Preflight- & Unit-Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            test-results-preflight/*.xml
+          check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
+
+
   test-integration:
     name: "Integration Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }} - ${{ matrix.group }})"
     if: ${{ !inputs.onlyAcceptanceTests }}
@@ -284,6 +322,7 @@ jobs:
 
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
+        if: github.repository_owner == 'localstack'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -309,7 +348,7 @@ jobs:
             tests/aws/services/lambda_/functions/common
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -375,10 +414,10 @@ jobs:
           fetch-depth: 0
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -404,8 +443,52 @@ jobs:
             .coverage.bootstrap
           retention-days: 30
 
+  publish-test-results:
+    name: Publish Test Results
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - arm64
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - arch: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'arm64' || ''}}
+    needs:
+      - test-integration
+      - test-bootstrap
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Bootstrap Artifacts
+        uses: actions/download-artifact@v4
+        if: ${{ matrix.arch == 'amd64' }}
+        with:
+          pattern: test-results-bootstrap
+
+      - name: Download Integration Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-integration-${{ matrix.arch }}-*
+
+      - name: Publish Bootstrap and Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results (${{ matrix.arch }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Integration${{ matrix.arch == 'amd64' && ', Bootstrap' || ''}}"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
+
+
   test-acceptance:
-    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }}"
+    name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
     needs:
       - build
     strategy:
@@ -431,6 +514,7 @@ jobs:
 
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
+        if: github.repository_owner == 'localstack'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -449,7 +533,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 
@@ -479,6 +563,42 @@ jobs:
             target/.coverage.acceptance-${{ env.PLATFORM }}
           retention-days: 30
 
+  publish-acceptance-test-results:
+    name: Publish Acceptance Test Results
+    strategy:
+      matrix:
+        arch:
+          - amd64
+          - arm64
+        exclude:
+          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
+          - arch: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'arm64' || ''}}
+    needs:
+      - test-acceptance
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Acceptance Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-acceptance-${{ matrix.arch }}
+
+      - name: Publish Acceptance Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results (${{ matrix.arch }}${{ inputs.testAWSAccountId != '000000000000' && ', MA/MR' || ''}}) - Acceptance"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
+
   test-cloudwatch-v1:
     name: Test CloudWatch V1
     if: ${{ !inputs.onlyAcceptanceTests }}
@@ -496,7 +616,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Run Cloudwatch v1 Provider Tests
         timeout-minutes: 30
@@ -539,7 +659,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -588,7 +708,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -621,7 +741,7 @@ jobs:
           retention-days: 30
 
   test-cfn-v2-engine:
-    name: Test CloudFront Engine v2
+    name: Test CloudFormation Engine v2
     if: ${{ !inputs.onlyAcceptanceTests }}
     runs-on: ubuntu-latest
     needs:
@@ -639,7 +759,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare Local Test Environment
-        uses: localstack/localstack/.github/actions/setup-tests-env@master
+        uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
@@ -669,6 +789,52 @@ jobs:
             ${{ env.JUNIT_REPORTS_FILE }}
           retention-days: 30
 
+  publish-alternative-provider-test-results:
+    name: Publish Alternative Provider Test Results
+    needs:
+      - test-cfn-v2-engine
+      - test-events-v1
+      - test-ddb-v2
+      - test-cloudwatch-v1
+    runs-on: ubuntu-latest
+    permissions:
+      checks: write
+      pull-requests: write
+      contents: read
+      issues: read
+    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
+    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    steps:
+      - name: Download Cloudformation v2 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-cloudformation-v2
+
+      - name: Download EventBridge v1 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-events-v1
+
+      - name: Download DynamoDB v2 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-dynamodb-v2
+
+      - name: Download CloudWatch v1 Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          pattern: test-results-cloudwatch-v1
+
+      - name: Publish Bootstrap and Integration Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v2
+        if: success() || failure()
+        with:
+          files: |
+            **/pytest-junit-*.xml
+          check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Alternative Providers"
+          test_file_prefix: "-/opt/code/localstack/"
+          action_fail_on_inconclusive: true
+
   capture-not-implemented:
     name: "Capture Not Implemented"
     if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/master' }}
@@ -679,6 +845,7 @@ jobs:
     steps:
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
+        if: github.repository_owner == 'localstack'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -691,7 +858,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: "${{ env.PLATFORM }}"
 

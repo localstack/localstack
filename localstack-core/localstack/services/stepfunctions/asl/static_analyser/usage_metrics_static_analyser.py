@@ -3,7 +3,7 @@ from __future__ import annotations
 import logging
 from typing import Final
 
-import localstack.services.stepfunctions.usage as UsageMetrics
+from localstack.services.stepfunctions import analytics
 from localstack.services.stepfunctions.asl.antlr.runtime.ASLParser import ASLParser
 from localstack.services.stepfunctions.asl.component.common.query_language import (
     QueryLanguageMode,
@@ -40,7 +40,7 @@ class UsageMetricsStaticAnalyser(StaticAnalyser):
             uses_variables = analyser.uses_variables
 
             # Count.
-            UsageMetrics.language_features_counter.labels(
+            analytics.language_features_counter.labels(
                 query_language=language_used, uses_variables=uses_variables
             ).increment()
         except Exception as e:

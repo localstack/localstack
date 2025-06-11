@@ -9,18 +9,18 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.26.1
+awscrt==0.27.2
     # via localstack-core (pyproject.toml)
-boto3==1.38.13
+boto3==1.38.32
     # via localstack-core (pyproject.toml)
-botocore==1.38.13
+botocore==1.38.32
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
 build==1.2.2.post1
     # via localstack-core (pyproject.toml)
-cachetools==5.5.2
+cachetools==6.0.0
     # via localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core (pyproject.toml)
@@ -30,11 +30,11 @@ cffi==1.17.1
     # via cryptography
 charset-normalizer==3.4.2
     # via requests
-click==8.2.0
+click==8.2.1
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==44.0.3
+cryptography==45.0.4
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -79,7 +79,7 @@ jsonpatch==1.33
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.23.0
+jsonschema==4.24.0
     # via
     #   openapi-core
     #   openapi-schema-validator
@@ -110,7 +110,7 @@ openapi-schema-validator==0.6.3
     # via
     #   openapi-core
     #   openapi-spec-validator
-openapi-spec-validator==0.7.1
+openapi-spec-validator==0.7.2
     # via openapi-core
 packaging==25.0
     # via build
@@ -130,7 +130,7 @@ pycparser==2.22
     # via cffi
 pygments==2.19.1
     # via rich
-pyopenssl==25.0.0
+pyopenssl==25.1.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
@@ -151,7 +151,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-requests==2.32.3
+requests==2.32.4
     # via
     #   docker
     #   jsonschema-path
@@ -164,13 +164,13 @@ rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==14.0.0
     # via localstack-core (pyproject.toml)
-rolo==0.7.5
+rolo==0.7.6
     # via localstack-core (pyproject.toml)
-rpds-py==0.24.0
+rpds-py==0.25.1
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.12.0
+s3transfer==0.13.0
     # via boto3
 semver==3.0.4
     # via localstack-core (pyproject.toml)
@@ -180,7 +180,7 @@ six==1.17.0
     #   rfc3339-validator
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.13.2
+typing-extensions==4.14.0
     # via
     #   localstack-twisted
     #   pyopenssl

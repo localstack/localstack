@@ -377,10 +377,10 @@ class TestS3PresignedUrl:
 
     @staticmethod
     def _create_fake_context_from_path(path: str, method: str = "GET"):
-        fake_context = RequestContext()
-        fake_context.request = Request(
+        request = Request(
             method=method, path=path, query_string=urlparse(f"http://localhost{path}").query
         )
+        fake_context = RequestContext(request)
         return fake_context
 
     def test_is_presigned_url_request(self):

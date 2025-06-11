@@ -4,12 +4,19 @@ import uuid
 from dataclasses import dataclass
 from typing import Final, Optional
 
-from localstack.aws.api.cloudformation import ChangeAction, StackStatus
+from localstack.aws.api.cloudformation import (
+    ChangeAction,
+    ResourceStatus,
+    StackStatus,
+)
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    NodeDependsOn,
     NodeOutput,
     NodeParameter,
     NodeResource,
+    is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
@@ -38,18 +45,13 @@ class ChangeSetModelExecutorResult:
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
-    _change_set: Final[ChangeSet]
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
-        super().__init__(
-            node_template=change_set.update_graph,
-            before_resolved_resources=change_set.stack.resolved_resources,
-        )
-        self._change_set = change_set
+        super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
         self.resolved_parameters = dict()
@@ -62,7 +64,25 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        delta = super().visit_node_parameter(node_parameter=node_parameter)
+        delta = super().visit_node_parameter(node_parameter)
+
+        # handle dynamic references, e.g. references to SSM parameters
+        # TODO: support more parameter types
+        parameter_type: str = node_parameter.type_.value
+        if parameter_type.startswith("AWS::SSM"):
+            if parameter_type in [
+                "AWS::SSM::Parameter::Value<String>",
+                "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+                "AWS::SSM::Parameter::Value<CommaDelimitedList>",
+            ]:
+                delta.after = resolve_ssm_parameter(
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                    stack_parameter_value=delta.after,
+                )
+            else:
+                raise Exception(f"Unsupported stack parameter type: {parameter_type}")
+
         self.resolved_parameters[node_parameter.name] = delta.after
         return delta
 
@@ -82,6 +102,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             logical_resource_id=resource_logical_id, resolved_resources=after_resolved_resources
         )
 
+    def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:
+        array_identifiers_delta = super().visit_node_depends_on(node_depends_on=node_depends_on)
+
+        # Visit depends_on resources before returning.
+        depends_on_resource_logical_ids: set[str] = set()
+        if array_identifiers_delta.before:
+            depends_on_resource_logical_ids.update(array_identifiers_delta.before)
+        if array_identifiers_delta.after:
+            depends_on_resource_logical_ids.update(array_identifiers_delta.after)
+        for depends_on_resource_logical_id in depends_on_resource_logical_ids:
+            node_resource = self._get_node_resource_for(
+                resource_name=depends_on_resource_logical_id, node_template=self._node_template
+            )
+            self.visit_node_resource(node_resource)
+
+        return array_identifiers_delta
+
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
@@ -90,42 +127,46 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
         delta = super().visit_node_resource(node_resource=node_resource)
-        self._execute_on_resource_change(
-            name=node_resource.name, before=delta.before, after=delta.after
-        )
-        after_resource = delta.after
-        if after_resource is not None and delta.before != delta.after:
-            after_logical_id = after_resource.logical_id
-            after_physical_id: Optional[str] = self._after_resource_physical_id(
+        before = delta.before
+        after = delta.after
+
+        if before != after:
+            # There are changes for this resource.
+            self._execute_resource_change(name=node_resource.name, before=before, after=after)
+        else:
+            # There are no updates for this resource; iff the resource was previously
+            # deployed, then the resolved details are copied in the current state for
+            # references or other downstream operations.
+            if not is_nothing(before):
+                before_logical_id = delta.before.logical_id
+                before_resource = self._before_resolved_resources.get(before_logical_id, dict())
+                self.resources[before_logical_id] = before_resource
+
+        # Update the latest version of this resource for downstream references.
+        if not is_nothing(after):
+            after_logical_id = after.logical_id
+            after_physical_id: str = self._after_resource_physical_id(
                 resource_logical_id=after_logical_id
             )
-            if after_physical_id is None:
-                raise RuntimeError(
-                    f"No PhysicalResourceId was found for resource '{after_physical_id}' post-update."
-                )
-            after_resource.physical_resource_id = after_physical_id
+            after.physical_resource_id = after_physical_id
         return delta
 
     def visit_node_output(
         self, node_output: NodeOutput
     ) -> PreprocEntityDelta[PreprocOutput, PreprocOutput]:
         delta = super().visit_node_output(node_output=node_output)
-        if delta.after is None:
-            # handling deletion so the output does not really matter
-            # TODO: are there other situations?
+        after = delta.after
+        if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
-
         self.outputs[delta.after.name] = delta.after.value
         return delta
 
-    def _execute_on_resource_change(
+    def _execute_resource_change(
         self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
     ) -> None:
-        if before == after:
-            # unchanged: nothing to do.
-            return
+        # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
-        if before is not None and after is not None:
+        if not is_nothing(before) and not is_nothing(after):
             # Case: change on same type.
             if before.resource_type == after.resource_type:
                 # Register a Modified if changed.
@@ -160,7 +201,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     before_properties=None,
                     after_properties=after.properties,
                 )
-        elif before is not None:
+        elif not is_nothing(before):
             # Case: removal
             # XXX hacky, stick the previous resources' properties into the payload
             # XXX hacky, stick the previous resources' properties into the payload
@@ -173,7 +214,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=before_properties,
                 after_properties=None,
             )
-        elif after is not None:
+        elif not is_nothing(after):
             # Case: addition
             self._execute_resource_action(
                 action=ChangeAction.Add,
@@ -235,6 +276,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     stack.set_stack_status(StackStatus.CREATE_FAILED, reason=reason)
                 elif stack_status == StackStatus.UPDATE_IN_PROGRESS:
                     stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
+                # update resource status
+                stack.set_resource_status(
+                    logical_resource_id=logical_resource_id,
+                    # TODO,
+                    physical_resource_id="",
+                    resource_type=resource_type,
+                    status=ResourceStatus.CREATE_FAILED
+                    if action == ChangeAction.Add
+                    else ResourceStatus.UPDATE_FAILED,
+                    resource_status_reason=reason,
+                )
                 return
         else:
             event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
@@ -244,11 +296,43 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
                 # TODO: this is likely a duplicate of updating from extra_resource_properties
+
+                # TODO: add typing
+                # TODO: avoid the use of string literals for sampling from the object, use typed classes instead
+                # TODO: avoid sampling from resources and use tmp var reference
+                # TODO: add utils functions to abstract this logic away (resource.update(..))
+                # TODO: avoid the use of setdefault (debuggability/readability)
+                # TODO: review the use of merge
+
                 self.resources[logical_resource_id]["Properties"].update(event.resource_model)
                 self.resources[logical_resource_id].update(extra_resource_properties)
                 # XXX for legacy delete_stack compatibility
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
+
+                # TODO: review why the physical id is returned as None during updates
+                # TODO: abstract this in member function of resource classes instead
+                physical_resource_id = None
+                try:
+                    physical_resource_id = self._after_resource_physical_id(logical_resource_id)
+                except RuntimeError:
+                    # The physical id is missing or is set to None, which is invalid.
+                    pass
+                if physical_resource_id is None:
+                    # The physical resource id is None after an update that didn't rewrite the resource, the previous
+                    # resource id is therefore the current physical id of this resource.
+                    physical_resource_id = self._before_resource_physical_id(logical_resource_id)
+                    self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
+
+                self._change_set.stack.set_resource_status(
+                    logical_resource_id=logical_resource_id,
+                    physical_resource_id=physical_resource_id,
+                    resource_type=resource_type,
+                    status=ResourceStatus.CREATE_COMPLETE
+                    if action == ChangeAction.Add
+                    else ResourceStatus.UPDATE_COMPLETE,
+                )
+
             case OperationStatus.FAILED:
                 reason = event.message
                 LOG.warning(
@@ -264,6 +348,16 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     stack.set_stack_status(StackStatus.UPDATE_FAILED, reason=reason)
                 else:
                     raise NotImplementedError(f"Unhandled stack status: '{stack.status}'")
+                stack.set_resource_status(
+                    logical_resource_id=logical_resource_id,
+                    # TODO
+                    physical_resource_id="",
+                    resource_type=resource_type,
+                    status=ResourceStatus.CREATE_FAILED
+                    if action == ChangeAction.Add
+                    else ResourceStatus.UPDATE_FAILED,
+                    resource_status_reason=reason,
+                )
             case any:
                 raise NotImplementedError(f"Event status '{any}' not handled")
 

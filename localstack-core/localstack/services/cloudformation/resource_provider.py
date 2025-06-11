@@ -19,7 +19,7 @@ from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory
-from localstack.services.cloudformation import usage
+from localstack.services.cloudformation import analytics
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
@@ -581,7 +581,7 @@ class ResourceProviderExecutor:
         # 2. try to load community resource provider
         try:
             plugin = plugin_manager.load(resource_type)
-            usage.resources.labels(resource_type=resource_type, missing=False).increment()
+            analytics.resources.labels(resource_type=resource_type, missing=False).increment()
             return plugin.factory()
         except ValueError:
             # could not find a plugin for that name
@@ -600,7 +600,7 @@ class ResourceProviderExecutor:
             f'No resource provider found for "{resource_type}"',
         )
 
-        usage.resources.labels(resource_type=resource_type, missing=True).increment()
+        analytics.resources.labels(resource_type=resource_type, missing=True).increment()
 
         if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             # TODO: figure out a better way to handle non-implemented here?

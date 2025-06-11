@@ -50,6 +50,8 @@ from localstack.aws.api.ec2 import (
     DnsOptionsSpecification,
     DnsRecordIpType,
     Ec2Api,
+    GetSecurityGroupsForVpcRequest,
+    GetSecurityGroupsForVpcResult,
     InstanceType,
     IpAddressType,
     LaunchTemplate,
@@ -70,6 +72,7 @@ from localstack.aws.api.ec2 import (
     RevokeSecurityGroupEgressRequest,
     RevokeSecurityGroupEgressResult,
     RIProductDescription,
+    SecurityGroupForVpc,
     String,
     SubnetConfigurationsList,
     Tenancy,
@@ -114,11 +117,9 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
         zone_names = describe_availability_zones_request.get("ZoneNames")
         zone_ids = describe_availability_zones_request.get("ZoneIds")
         if zone_names or zone_ids:
-            filters = {
-                "zone-name": zone_names,
-                "zone-id": zone_ids,
-            }
-            filtered_zones = backend.describe_availability_zones(filters)
+            filtered_zones = backend.describe_availability_zones(
+                zone_names=zone_names, zone_ids=zone_ids
+            )
             availability_zones = [
                 AvailabilityZone(
                     State="available",
@@ -538,6 +539,30 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
             response = call_moto(context)
 
         return response
+
+    @handler("GetSecurityGroupsForVpc", expand=False)
+    def get_security_groups_for_vpc(
+        self,
+        context: RequestContext,
+        get_security_groups_for_vpc_request: GetSecurityGroupsForVpcRequest,
+    ) -> GetSecurityGroupsForVpcResult:
+        vpc_id = get_security_groups_for_vpc_request.get("VpcId")
+        backend = get_ec2_backend(context.account_id, context.region)
+        filters = {"vpc-id": [vpc_id]}
+        filtered_sgs = backend.describe_security_groups(filters=filters)
+
+        sgs = [
+            SecurityGroupForVpc(
+                Description=sg.description,
+                GroupId=sg.id,
+                GroupName=sg.name,
+                OwnerId=context.account_id,
+                PrimaryVpcId=sg.vpc_id,
+                Tags=[{"Key": tag.get("key"), "Value": tag.get("value")} for tag in sg.get_tags()],
+            )
+            for sg in filtered_sgs
+        ]
+        return GetSecurityGroupsForVpcResult(SecurityGroupForVpcs=sgs, NextToken=None)
 
 
 @patch(SubnetBackend.modify_subnet_attribute)

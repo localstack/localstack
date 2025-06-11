@@ -11,8 +11,20 @@
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_describe_vpn_gateways_filter_by_vpc": {
     "last_validated_date": "2024-06-07T01:11:12+00:00"
   },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_get_security_groups_for_vpc": {
+    "last_validated_date": "2025-05-19T13:54:09+00:00"
+  },
   "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_vcp_peering_difference_regions": {
     "last_validated_date": "2024-06-07T21:28:25+00:00"
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filter_with_zone_ids": {
+    "last_validated_date": "2025-05-28T09:17:24+00:00"
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filter_with_zone_names": {
+    "last_validated_date": "2025-05-28T09:16:53+00:00"
+  },
+  "tests/aws/services/ec2/test_ec2.py::test_describe_availability_zones_filters": {
+    "last_validated_date": "2025-05-28T09:17:56+00:00"
   },
   "tests/aws/services/ec2/test_ec2.py::test_raise_create_volume_without_size": {
     "last_validated_date": "2025-02-04T12:53:29+00:00"

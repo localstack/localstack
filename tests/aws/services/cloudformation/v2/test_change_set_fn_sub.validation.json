@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter": {
+    "last_validated_date": "2025-05-20T15:26:12+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter_literal": {
+    "last_validated_date": "2025-05-20T11:54:12+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter_ref": {
+    "last_validated_date": "2025-05-20T15:08:40+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_string_pseudo": {
+    "last_validated_date": "2025-05-20T09:54:49+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_delete_parameter_literal": {
+    "last_validated_date": "2025-05-20T12:05:00+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_delete_string_pseudo": {
+    "last_validated_date": "2025-05-20T11:29:16+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_parameter_literal": {
+    "last_validated_date": "2025-05-20T12:01:36+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_parameter_type": {
+    "last_validated_date": "2025-05-20T15:10:15+00:00"
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_string_pseudo": {
+    "last_validated_date": "2025-05-20T09:59:44+00:00"
+  }
+}

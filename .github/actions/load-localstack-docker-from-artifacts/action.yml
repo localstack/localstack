@@ -18,7 +18,7 @@ runs:
       with:
         python-version-file: '.python-version'
         cache: 'pip'
-        cache-dependency-path: 'requirements-dev.txt'
+        cache-dependency-path: 'requirements-typehint.txt'
 
     - name: Install docker helper dependencies
       shell: bash

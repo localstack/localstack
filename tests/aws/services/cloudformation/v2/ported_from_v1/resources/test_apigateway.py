@@ -60,7 +60,6 @@ Resources:
 
 
 # this is an `only_localstack` test because it makes use of _custom_id_ tag
-@pytest.mark.skip(reason="no support for pseudo-parameters")
 @markers.aws.only_localstack
 def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     api_name = f"rest-api-{short_uid()}"
@@ -116,7 +115,7 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     assert mappings[0] == "(none)"
 
 
-@pytest.mark.skip(reason="No support for AWS::Serverless transform")
+@pytest.mark.skip(reason="CFNV2:AWS::Serverless")
 @markers.aws.validated
 def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_post, aws_client):
     api_name = f"rest-api-{short_uid()}"
@@ -143,7 +142,10 @@ def test_cfn_apigateway_swagger_import(deploy_cfn_template, echo_http_server_pos
     assert content["url"].endswith("/post")
 
 
-@pytest.mark.skip(reason="No support for pseudo-parameters")
+@pytest.mark.skip(
+    reason="The v2 provider appears to instead return the correct url: "
+    "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/"
+)
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)
@@ -225,7 +227,7 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
     # assert not apis
 
 
-@pytest.mark.skip(reason="DependsOn is unsupported")
+@pytest.mark.skip(reason="CFNV2:Other NotFoundException Invalid Method identifier specified")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -279,7 +281,6 @@ def test_cfn_deploy_apigateway_models(deploy_cfn_template, snapshot, aws_client)
     assert result.status_code == 400
 
 
-@pytest.mark.skip(reason="DependsOn is unsupported")
 @markers.aws.validated
 def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
@@ -396,7 +397,6 @@ def test_cfn_apigateway_rest_api(deploy_cfn_template, aws_client):
     # assert not apis
 
 
-@pytest.mark.skip(reason="no support for pseudo-parameters")
 @markers.aws.validated
 def test_account(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
@@ -416,7 +416,9 @@ def test_account(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.skip(reason="ApiDeployment creation fails due to the REST API not having a method set")
+@pytest.mark.skip(
+    reason="CFNV2:Other ApiDeployment creation fails due to the REST API not having a method set"
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..tags.'aws:cloudformation:logical-id'",
@@ -467,7 +469,9 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
     assert usage_plan["quota"]["limit"] == 7000
 
 
-@pytest.mark.skip(reason="ApiDeployment creation fails due to the REST API not having a method set")
+@pytest.mark.skip(
+    reason="CFNV2:Other ApiDeployment creation fails due to the REST API not having a method set"
+)
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..createdDate", "$..description", "$..lastUpdatedDate", "$..tags"]
 )
@@ -553,7 +557,9 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
-@pytest.mark.skip(reason="No support for Fn::Sub")
+@pytest.mark.skip(
+    reason="CFNV2:AWS::Serverless no resource provider found for AWS::Serverless::Api"
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

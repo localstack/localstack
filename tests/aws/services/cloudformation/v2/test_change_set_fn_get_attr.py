@@ -15,7 +15,6 @@ from localstack.utils.strings import long_uid
         "per-resource-events..*",
         "delete-describe..*",
         #
-        "$..ChangeSetId",  # An issue for the WIP executor
         # Before/After Context
         "$..Capabilities",
         "$..NotificationARNs",

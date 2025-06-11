@@ -262,11 +262,10 @@ def create_aws_request_context(
         )
 
     aws_request: AWSPreparedRequest = client._endpoint.create_request(request_dict, operation)
-    context = RequestContext()
+    context = RequestContext(request=create_http_request(aws_request))
     context.service = service
     context.operation = operation
     context.region = region
-    context.request = create_http_request(aws_request)
     context.service_request = parameters
 
     return context

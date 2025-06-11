@@ -94,6 +94,7 @@ DescribeIpamByoasnMaxResults = int
 DescribeLaunchTemplatesMaxResults = int
 DescribeLockedSnapshotsMaxResults = int
 DescribeMacHostsRequestMaxResults = int
+DescribeMacModificationTasksMaxResults = int
 DescribeMovingAddressesMaxResults = int
 DescribeNatGatewaysMaxResults = int
 DescribeNetworkAclsMaxResults = int
@@ -230,6 +231,7 @@ LocalGatewayRoutetableId = str
 LocalGatewayVirtualInterfaceGroupId = str
 LocalGatewayVirtualInterfaceId = str
 Location = str
+MacModificationTaskId = str
 MaxIpv4AddrPerInterface = int
 MaxIpv6AddrPerInterface = int
 MaxNetworkInterfaces = int
@@ -317,6 +319,7 @@ ScheduledInstanceId = str
 SecurityGroupId = str
 SecurityGroupName = str
 SecurityGroupRuleId = str
+SensitiveMacCredentials = str
 SensitiveUrl = str
 SensitiveUserData = str
 ServiceLinkMaxResults = int
@@ -1342,6 +1345,11 @@ class InstanceMetadataTagsState(StrEnum):
     enabled = "enabled"
 
 
+class InstanceRebootMigrationState(StrEnum):
+    disabled = "disabled"
+    default = "default"
+
+
 class InstanceStateName(StrEnum):
     pending = "pending"
     running = "running"
@@ -2247,6 +2255,61 @@ class InstanceType(StrEnum):
     f2_12xlarge = "f2.12xlarge"
     f2_48xlarge = "f2.48xlarge"
     trn2_48xlarge = "trn2.48xlarge"
+    c7i_flex_12xlarge = "c7i-flex.12xlarge"
+    c7i_flex_16xlarge = "c7i-flex.16xlarge"
+    m7i_flex_12xlarge = "m7i-flex.12xlarge"
+    m7i_flex_16xlarge = "m7i-flex.16xlarge"
+    i7ie_metal_24xl = "i7ie.metal-24xl"
+    i7ie_metal_48xl = "i7ie.metal-48xl"
+    i8g_48xlarge = "i8g.48xlarge"
+    c8gd_medium = "c8gd.medium"
+    c8gd_large = "c8gd.large"
+    c8gd_xlarge = "c8gd.xlarge"
+    c8gd_2xlarge = "c8gd.2xlarge"
+    c8gd_4xlarge = "c8gd.4xlarge"
+    c8gd_8xlarge = "c8gd.8xlarge"
+    c8gd_12xlarge = "c8gd.12xlarge"
+    c8gd_16xlarge = "c8gd.16xlarge"
+    c8gd_24xlarge = "c8gd.24xlarge"
+    c8gd_48xlarge = "c8gd.48xlarge"
+    c8gd_metal_24xl = "c8gd.metal-24xl"
+    c8gd_metal_48xl = "c8gd.metal-48xl"
+    i7i_large = "i7i.large"
+    i7i_xlarge = "i7i.xlarge"
+    i7i_2xlarge = "i7i.2xlarge"
+    i7i_4xlarge = "i7i.4xlarge"
+    i7i_8xlarge = "i7i.8xlarge"
+    i7i_12xlarge = "i7i.12xlarge"
+    i7i_16xlarge = "i7i.16xlarge"
+    i7i_24xlarge = "i7i.24xlarge"
+    i7i_48xlarge = "i7i.48xlarge"
+    i7i_metal_24xl = "i7i.metal-24xl"
+    i7i_metal_48xl = "i7i.metal-48xl"
+    p6_b200_48xlarge = "p6-b200.48xlarge"
+    m8gd_medium = "m8gd.medium"
+    m8gd_large = "m8gd.large"
+    m8gd_xlarge = "m8gd.xlarge"
+    m8gd_2xlarge = "m8gd.2xlarge"
+    m8gd_4xlarge = "m8gd.4xlarge"
+    m8gd_8xlarge = "m8gd.8xlarge"
+    m8gd_12xlarge = "m8gd.12xlarge"
+    m8gd_16xlarge = "m8gd.16xlarge"
+    m8gd_24xlarge = "m8gd.24xlarge"
+    m8gd_48xlarge = "m8gd.48xlarge"
+    m8gd_metal_24xl = "m8gd.metal-24xl"
+    m8gd_metal_48xl = "m8gd.metal-48xl"
+    r8gd_medium = "r8gd.medium"
+    r8gd_large = "r8gd.large"
+    r8gd_xlarge = "r8gd.xlarge"
+    r8gd_2xlarge = "r8gd.2xlarge"
+    r8gd_4xlarge = "r8gd.4xlarge"
+    r8gd_8xlarge = "r8gd.8xlarge"
+    r8gd_12xlarge = "r8gd.12xlarge"
+    r8gd_16xlarge = "r8gd.16xlarge"
+    r8gd_24xlarge = "r8gd.24xlarge"
+    r8gd_48xlarge = "r8gd.48xlarge"
+    r8gd_metal_24xl = "r8gd.metal-24xl"
+    r8gd_metal_48xl = "r8gd.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -2647,6 +2710,23 @@ class LogDestinationType(StrEnum):
     kinesis_data_firehose = "kinesis-data-firehose"
 
 
+class MacModificationTaskState(StrEnum):
+    successful = "successful"
+    failed = "failed"
+    in_progress = "in-progress"
+    pending = "pending"
+
+
+class MacModificationTaskType(StrEnum):
+    sip_modification = "sip-modification"
+    volume_ownership_delegation = "volume-ownership-delegation"
+
+
+class MacSystemIntegrityProtectionSettingStatus(StrEnum):
+    enabled = "enabled"
+    disabled = "disabled"
+
+
 class ManagedBy(StrEnum):
     account = "account"
     declarative_policy = "declarative-policy"
@@ -2892,11 +2972,22 @@ class ProtocolValue(StrEnum):
     gre = "gre"
 
 
+class PublicIpDnsOption(StrEnum):
+    public_dual_stack_dns_name = "public-dual-stack-dns-name"
+    public_ipv4_dns_name = "public-ipv4-dns-name"
+    public_ipv6_dns_name = "public-ipv6-dns-name"
+
+
 class RIProductDescription(StrEnum):
     Linux_UNIX = "Linux/UNIX"
     Linux_UNIX_Amazon_VPC_ = "Linux/UNIX (Amazon VPC)"
     Windows = "Windows"
     Windows_Amazon_VPC_ = "Windows (Amazon VPC)"
+
+
+class RebootMigrationSupport(StrEnum):
+    unsupported = "unsupported"
+    supported = "supported"
 
 
 class RecurringChargeFrequency(StrEnum):
@@ -3062,6 +3153,7 @@ class ResourceType(StrEnum):
     instance_connect_endpoint = "instance-connect-endpoint"
     verified_access_endpoint_target = "verified-access-endpoint-target"
     ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
+    mac_modification_task = "mac-modification-task"
 
 
 class RootDeviceType(StrEnum):
@@ -3248,6 +3340,14 @@ class SnapshotBlockPublicAccessState(StrEnum):
 class SnapshotLocationEnum(StrEnum):
     regional = "regional"
     local = "local"
+
+
+class SnapshotReturnCodes(StrEnum):
+    success = "success"
+    skipped = "skipped"
+    missing_permissions = "missing-permissions"
+    internal_error = "internal-error"
+    client_error = "client-error"
 
 
 class SnapshotState(StrEnum):
@@ -3813,6 +3913,12 @@ class VpnStaticRouteSource(StrEnum):
     Static = "Static"
 
 
+class VpnTunnelProvisioningStatus(StrEnum):
+    available = "available"
+    pending = "pending"
+    failed = "failed"
+
+
 class WeekDay(StrEnum):
     sunday = "sunday"
     monday = "monday"
@@ -4183,6 +4289,7 @@ StringList = List[String]
 class AnalysisLoadBalancerTarget(TypedDict, total=False):
     Address: Optional[IpAddress]
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     Instance: Optional[AnalysisComponent]
     Port: Optional[Port]
 
@@ -4211,6 +4318,7 @@ class Explanation(TypedDict, total=False):
     Addresses: Optional[IpAddressList]
     AttachedTo: Optional[AnalysisComponent]
     AvailabilityZones: Optional[ValueStringList]
+    AvailabilityZoneIds: Optional[ValueStringList]
     Cidrs: Optional[ValueStringList]
     Component: Optional[AnalysisComponent]
     CustomerGateway: Optional[AnalysisComponent]
@@ -4444,6 +4552,18 @@ class ActiveInstance(TypedDict, total=False):
 ActiveInstanceSet = List[ActiveInstance]
 
 
+class ActiveVpnTunnelStatus(TypedDict, total=False):
+    Phase1EncryptionAlgorithm: Optional[String]
+    Phase2EncryptionAlgorithm: Optional[String]
+    Phase1IntegrityAlgorithm: Optional[String]
+    Phase2IntegrityAlgorithm: Optional[String]
+    Phase1DHGroup: Optional[Integer]
+    Phase2DHGroup: Optional[Integer]
+    IkeVersion: Optional[String]
+    ProvisioningStatus: Optional[VpnTunnelProvisioningStatus]
+    ProvisioningStatusReason: Optional[String]
+
+
 class AddIpamOperatingRegion(TypedDict, total=False):
     RegionName: Optional[String]
 
@@ -4574,11 +4694,12 @@ class AllocateHostsRequest(ServiceRequest):
     OutpostArn: Optional[String]
     HostMaintenance: Optional[HostMaintenance]
     AssetIds: Optional[AssetIdList]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     AutoPlacement: Optional[AutoPlacement]
     ClientToken: Optional[String]
     InstanceType: Optional[String]
     Quantity: Optional[Integer]
-    AvailabilityZone: String
+    AvailabilityZone: Optional[String]
 
 
 ResponseHostIdList = List[String]
@@ -5957,6 +6078,7 @@ class CapacityReservationInfo(TypedDict, total=False):
     InstanceType: Optional[String]
     AvailabilityZone: Optional[AvailabilityZoneName]
     Tenancy: Optional[CapacityReservationTenancy]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
 
 
 class CapacityReservationBillingRequest(TypedDict, total=False):
@@ -6767,6 +6889,39 @@ class Vpc(TypedDict, total=False):
 
 class CreateDefaultVpcResult(TypedDict, total=False):
     Vpc: Optional[Vpc]
+
+
+class CreateDelegateMacVolumeOwnershipTaskRequest(ServiceRequest):
+    ClientToken: Optional[String]
+    DryRun: Optional[Boolean]
+    InstanceId: InstanceId
+    MacCredentials: SensitiveMacCredentials
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class MacSystemIntegrityProtectionConfiguration(TypedDict, total=False):
+    AppleInternal: Optional[MacSystemIntegrityProtectionSettingStatus]
+    BaseSystem: Optional[MacSystemIntegrityProtectionSettingStatus]
+    DebuggingRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
+    DTraceRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
+    FilesystemProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
+    KextSigning: Optional[MacSystemIntegrityProtectionSettingStatus]
+    NvramProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
+    Status: Optional[MacSystemIntegrityProtectionSettingStatus]
+
+
+class MacModificationTask(TypedDict, total=False):
+    InstanceId: Optional[InstanceId]
+    MacModificationTaskId: Optional[MacModificationTaskId]
+    MacSystemIntegrityProtectionConfig: Optional[MacSystemIntegrityProtectionConfiguration]
+    StartTime: Optional[MillisecondDateTime]
+    Tags: Optional[TagList]
+    TaskState: Optional[MacModificationTaskState]
+    TaskType: Optional[MacModificationTaskType]
+
+
+class CreateDelegateMacVolumeOwnershipTaskResult(TypedDict, total=False):
+    MacModificationTask: Optional[MacModificationTask]
 
 
 class NewDhcpConfiguration(TypedDict, total=False):
@@ -8240,6 +8395,32 @@ class CreateLocalGatewayVirtualInterfaceResult(TypedDict, total=False):
     LocalGatewayVirtualInterface: Optional[LocalGatewayVirtualInterface]
 
 
+class MacSystemIntegrityProtectionConfigurationRequest(TypedDict, total=False):
+    AppleInternal: Optional[MacSystemIntegrityProtectionSettingStatus]
+    BaseSystem: Optional[MacSystemIntegrityProtectionSettingStatus]
+    DebuggingRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
+    DTraceRestrictions: Optional[MacSystemIntegrityProtectionSettingStatus]
+    FilesystemProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
+    KextSigning: Optional[MacSystemIntegrityProtectionSettingStatus]
+    NvramProtections: Optional[MacSystemIntegrityProtectionSettingStatus]
+
+
+class CreateMacSystemIntegrityProtectionModificationTaskRequest(ServiceRequest):
+    ClientToken: Optional[String]
+    DryRun: Optional[Boolean]
+    InstanceId: InstanceId
+    MacCredentials: Optional[SensitiveMacCredentials]
+    MacSystemIntegrityProtectionConfiguration: Optional[
+        MacSystemIntegrityProtectionConfigurationRequest
+    ]
+    MacSystemIntegrityProtectionStatus: MacSystemIntegrityProtectionSettingStatus
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class CreateMacSystemIntegrityProtectionModificationTaskResult(TypedDict, total=False):
+    MacModificationTask: Optional[MacModificationTask]
+
+
 class CreateManagedPrefixListRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     PrefixListName: String
@@ -8532,8 +8713,16 @@ class NetworkInterfacePrivateIpAddress(TypedDict, total=False):
 NetworkInterfacePrivateIpAddressList = List[NetworkInterfacePrivateIpAddress]
 
 
+class PublicIpDnsNameOptions(TypedDict, total=False):
+    DnsHostnameType: Optional[String]
+    PublicIpv4DnsName: Optional[String]
+    PublicIpv6DnsName: Optional[String]
+    PublicDualStackDnsName: Optional[String]
+
+
 class NetworkInterfaceIpv6Address(TypedDict, total=False):
     Ipv6Address: Optional[String]
+    PublicIpv6DnsName: Optional[String]
     IsPrimaryIpv6: Optional[Boolean]
 
 
@@ -8567,6 +8756,8 @@ class NetworkInterface(TypedDict, total=False):
     OutpostArn: Optional[String]
     OwnerId: Optional[String]
     PrivateDnsName: Optional[String]
+    PublicDnsName: Optional[String]
+    PublicIpDnsNameOptions: Optional[PublicIpDnsNameOptions]
     PrivateIpAddress: Optional[String]
     PrivateIpAddresses: Optional[NetworkInterfacePrivateIpAddressList]
     Ipv4Prefixes: Optional[Ipv4PrefixesList]
@@ -10071,6 +10262,7 @@ class CreateVpnConnectionRequest(ServiceRequest):
     VpnGatewayId: Optional[VpnGatewayId]
     TransitGatewayId: Optional[TransitGatewayId]
     TagSpecifications: Optional[TagSpecificationList]
+    PreSharedKeyStorage: Optional[String]
     DryRun: Optional[Boolean]
     Options: Optional[VpnConnectionOptionsSpecification]
 
@@ -10199,6 +10391,7 @@ class VpnConnection(TypedDict, total=False):
     Routes: Optional[VpnStaticRouteList]
     Tags: Optional[TagList]
     VgwTelemetry: Optional[VgwTelemetryList]
+    PreSharedKeyArn: Optional[String]
     VpnConnectionId: Optional[String]
     State: Optional[VpnState]
     CustomerGatewayConfiguration: Optional[customerGatewayConfiguration]
@@ -10803,6 +10996,14 @@ class DeleteSnapshotRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+class DeleteSnapshotReturnCode(TypedDict, total=False):
+    SnapshotId: Optional[SnapshotId]
+    ReturnCode: Optional[SnapshotReturnCodes]
+
+
+DeleteSnapshotResultSet = List[DeleteSnapshotReturnCode]
+
+
 class DeleteSpotDatafeedSubscriptionRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -11135,11 +11336,13 @@ class DeprovisionPublicIpv4PoolCidrResult(TypedDict, total=False):
 
 class DeregisterImageRequest(ServiceRequest):
     ImageId: ImageId
+    DeleteAssociatedSnapshots: Optional[Boolean]
     DryRun: Optional[Boolean]
 
 
 class DeregisterImageResult(TypedDict, total=False):
-    pass
+    Return: Optional[Boolean]
+    DeleteSnapshotResults: Optional[DeleteSnapshotResultSet]
 
 
 InstanceTagKeySet = List[String]
@@ -12880,6 +13083,7 @@ class InstanceTypeInfo(TypedDict, total=False):
     MediaAcceleratorInfo: Optional[MediaAcceleratorInfo]
     NeuronInfo: Optional[NeuronInfo]
     PhcSupport: Optional[PhcSupport]
+    RebootMigrationSupport: Optional[RebootMigrationSupport]
 
 
 InstanceTypeInfoList = List[InstanceTypeInfo]
@@ -12908,6 +13112,7 @@ class InstanceNetworkPerformanceOptions(TypedDict, total=False):
 
 class InstanceMaintenanceOptions(TypedDict, total=False):
     AutoRecovery: Optional[InstanceAutoRecoveryState]
+    RebootMigration: Optional[InstanceRebootMigrationState]
 
 
 class PrivateDnsNameOptionsResponse(TypedDict, total=False):
@@ -13548,6 +13753,25 @@ class DescribeMacHostsResult(TypedDict, total=False):
     NextToken: Optional[String]
 
 
+MacModificationTaskIdList = List[MacModificationTaskId]
+
+
+class DescribeMacModificationTasksRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+    MacModificationTaskIds: Optional[MacModificationTaskIdList]
+    MaxResults: Optional[DescribeMacModificationTasksMaxResults]
+    NextToken: Optional[String]
+
+
+MacModificationTaskList = List[MacModificationTask]
+
+
+class DescribeMacModificationTasksResult(TypedDict, total=False):
+    MacModificationTasks: Optional[MacModificationTaskList]
+    NextToken: Optional[String]
+
+
 class DescribeManagedPrefixListsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
@@ -14001,6 +14225,7 @@ class ReservedInstancesConfiguration(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     Platform: Optional[String]
     Scope: Optional[scope]
+    AvailabilityZoneId: Optional[String]
 
 
 class ReservedInstancesModificationResult(TypedDict, total=False):
@@ -14044,6 +14269,7 @@ class DescribeReservedInstancesOfferingsRequest(ServiceRequest):
     OfferingClass: Optional[OfferingClassType]
     ProductDescription: Optional[RIProductDescription]
     ReservedInstancesOfferingIds: Optional[ReservedInstancesOfferingIdStringList]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
     InstanceTenancy: Optional[Tenancy]
@@ -14077,6 +14303,7 @@ class ReservedInstancesOffering(TypedDict, total=False):
     PricingDetails: Optional[PricingDetailsList]
     RecurringCharges: Optional[RecurringChargesList]
     Scope: Optional[scope]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     ReservedInstancesOfferingId: Optional[String]
     InstanceType: Optional[InstanceType]
     AvailabilityZone: Optional[String]
@@ -14113,6 +14340,7 @@ class ReservedInstances(TypedDict, total=False):
     RecurringCharges: Optional[RecurringChargesList]
     Scope: Optional[scope]
     Tags: Optional[TagList]
+    AvailabilityZoneId: Optional[String]
     ReservedInstancesId: Optional[String]
     InstanceType: Optional[InstanceType]
     AvailabilityZone: Optional[String]
@@ -15455,6 +15683,7 @@ class VolumeStatusItem(TypedDict, total=False):
     VolumeId: Optional[String]
     VolumeStatus: Optional[VolumeStatusInfo]
     AttachmentStatuses: Optional[VolumeStatusAttachmentStatusList]
+    AvailabilityZoneId: Optional[String]
 
 
 VolumeStatusList = List[VolumeStatusItem]
@@ -16713,6 +16942,16 @@ class ExportVerifiedAccessInstanceClientConfigurationResult(TypedDict, total=Fal
     OpenVpnConfigurations: Optional[VerifiedAccessInstanceOpenVpnClientConfigurationList]
 
 
+class GetActiveVpnTunnelStatusRequest(ServiceRequest):
+    VpnConnectionId: VpnConnectionId
+    VpnTunnelOutsideIpAddress: String
+    DryRun: Optional[Boolean]
+
+
+class GetActiveVpnTunnelStatusResult(TypedDict, total=False):
+    ActiveVpnTunnelStatus: Optional[ActiveVpnTunnelStatus]
+
+
 class GetAllowedImagesSettingsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -17739,6 +17978,7 @@ class GetVpnConnectionDeviceSampleConfigurationRequest(ServiceRequest):
     VpnConnectionId: VpnConnectionId
     VpnConnectionDeviceTypeId: VpnConnectionDeviceTypeId
     InternetKeyExchangeVersion: Optional[String]
+    SampleType: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -18453,12 +18693,14 @@ class ModifyInstanceEventWindowResult(TypedDict, total=False):
 class ModifyInstanceMaintenanceOptionsRequest(ServiceRequest):
     InstanceId: InstanceId
     AutoRecovery: Optional[InstanceAutoRecoveryState]
+    RebootMigration: Optional[InstanceRebootMigrationState]
     DryRun: Optional[Boolean]
 
 
 class ModifyInstanceMaintenanceOptionsResult(TypedDict, total=False):
     InstanceId: Optional[String]
     AutoRecovery: Optional[InstanceAutoRecoveryState]
+    RebootMigration: Optional[InstanceRebootMigrationState]
 
 
 class ModifyInstanceMetadataDefaultsRequest(ServiceRequest):
@@ -18674,6 +18916,16 @@ class ModifyPrivateDnsNameOptionsRequest(ServiceRequest):
 
 class ModifyPrivateDnsNameOptionsResult(TypedDict, total=False):
     Return: Optional[Boolean]
+
+
+class ModifyPublicIpDnsNameOptionsRequest(ServiceRequest):
+    NetworkInterfaceId: NetworkInterfaceId
+    HostnameType: PublicIpDnsOption
+    DryRun: Optional[Boolean]
+
+
+class ModifyPublicIpDnsNameOptionsResult(TypedDict, total=False):
+    Successful: Optional[Boolean]
 
 
 ReservedInstancesConfigurationList = List[ReservedInstancesConfiguration]
@@ -19284,6 +19536,7 @@ class ModifyVpnTunnelOptionsRequest(ServiceRequest):
     TunnelOptions: ModifyVpnTunnelOptionsSpecification
     DryRun: Optional[Boolean]
     SkipTunnelReplacement: Optional[Boolean]
+    PreSharedKeyStorage: Optional[String]
 
 
 class ModifyVpnTunnelOptionsResult(TypedDict, total=False):
@@ -20490,17 +20743,18 @@ class Ec2Api:
     def allocate_hosts(
         self,
         context: RequestContext,
-        availability_zone: String,
         instance_family: String | None = None,
         tag_specifications: TagSpecificationList | None = None,
         host_recovery: HostRecovery | None = None,
         outpost_arn: String | None = None,
         host_maintenance: HostMaintenance | None = None,
         asset_ids: AssetIdList | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         auto_placement: AutoPlacement | None = None,
         client_token: String | None = None,
         instance_type: String | None = None,
         quantity: Integer | None = None,
+        availability_zone: String | None = None,
         **kwargs,
     ) -> AllocateHostsResult:
         raise NotImplementedError
@@ -21258,6 +21512,19 @@ class Ec2Api:
     ) -> CreateDefaultVpcResult:
         raise NotImplementedError
 
+    @handler("CreateDelegateMacVolumeOwnershipTask")
+    def create_delegate_mac_volume_ownership_task(
+        self,
+        context: RequestContext,
+        instance_id: InstanceId,
+        mac_credentials: SensitiveMacCredentials,
+        client_token: String | None = None,
+        dry_run: Boolean | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateDelegateMacVolumeOwnershipTaskResult:
+        raise NotImplementedError
+
     @handler("CreateDhcpOptions")
     def create_dhcp_options(
         self,
@@ -21590,6 +21857,22 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> CreateLocalGatewayVirtualInterfaceGroupResult:
+        raise NotImplementedError
+
+    @handler("CreateMacSystemIntegrityProtectionModificationTask")
+    def create_mac_system_integrity_protection_modification_task(
+        self,
+        context: RequestContext,
+        instance_id: InstanceId,
+        mac_system_integrity_protection_status: MacSystemIntegrityProtectionSettingStatus,
+        client_token: String | None = None,
+        dry_run: Boolean | None = None,
+        mac_credentials: SensitiveMacCredentials | None = None,
+        mac_system_integrity_protection_configuration: MacSystemIntegrityProtectionConfigurationRequest
+        | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateMacSystemIntegrityProtectionModificationTaskResult:
         raise NotImplementedError
 
     @handler("CreateManagedPrefixList")
@@ -23273,7 +23556,12 @@ class Ec2Api:
 
     @handler("DeregisterImage")
     def deregister_image(
-        self, context: RequestContext, image_id: ImageId, dry_run: Boolean | None = None, **kwargs
+        self,
+        context: RequestContext,
+        image_id: ImageId,
+        delete_associated_snapshots: Boolean | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
     ) -> DeregisterImageResult:
         raise NotImplementedError
 
@@ -24318,6 +24606,19 @@ class Ec2Api:
     ) -> DescribeMacHostsResult:
         raise NotImplementedError
 
+    @handler("DescribeMacModificationTasks")
+    def describe_mac_modification_tasks(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        mac_modification_task_ids: MacModificationTaskIdList | None = None,
+        max_results: DescribeMacModificationTasksMaxResults | None = None,
+        next_token: String | None = None,
+        **kwargs,
+    ) -> DescribeMacModificationTasksResult:
+        raise NotImplementedError
+
     @handler("DescribeManagedPrefixLists")
     def describe_managed_prefix_lists(
         self,
@@ -24601,6 +24902,7 @@ class Ec2Api:
         offering_class: OfferingClassType | None = None,
         product_description: RIProductDescription | None = None,
         reserved_instances_offering_ids: ReservedInstancesOfferingIdStringList | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         dry_run: Boolean | None = None,
         filters: FilterList | None = None,
         instance_tenancy: Tenancy | None = None,
@@ -26068,6 +26370,17 @@ class Ec2Api:
     ) -> ExportVerifiedAccessInstanceClientConfigurationResult:
         raise NotImplementedError
 
+    @handler("GetActiveVpnTunnelStatus")
+    def get_active_vpn_tunnel_status(
+        self,
+        context: RequestContext,
+        vpn_connection_id: VpnConnectionId,
+        vpn_tunnel_outside_ip_address: String,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> GetActiveVpnTunnelStatusResult:
+        raise NotImplementedError
+
     @handler("GetAllowedImagesSettings")
     def get_allowed_images_settings(
         self, context: RequestContext, dry_run: Boolean | None = None, **kwargs
@@ -26671,6 +26984,7 @@ class Ec2Api:
         vpn_connection_id: VpnConnectionId,
         vpn_connection_device_type_id: VpnConnectionDeviceTypeId,
         internet_key_exchange_version: String | None = None,
+        sample_type: String | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> GetVpnConnectionDeviceSampleConfigurationResult:
@@ -27088,6 +27402,7 @@ class Ec2Api:
         context: RequestContext,
         instance_id: InstanceId,
         auto_recovery: InstanceAutoRecoveryState | None = None,
+        reboot_migration: InstanceRebootMigrationState | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ModifyInstanceMaintenanceOptionsResult:
@@ -27295,6 +27610,17 @@ class Ec2Api:
         enable_resource_name_dns_aaaa_record: Boolean | None = None,
         **kwargs,
     ) -> ModifyPrivateDnsNameOptionsResult:
+        raise NotImplementedError
+
+    @handler("ModifyPublicIpDnsNameOptions")
+    def modify_public_ip_dns_name_options(
+        self,
+        context: RequestContext,
+        network_interface_id: NetworkInterfaceId,
+        hostname_type: PublicIpDnsOption,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> ModifyPublicIpDnsNameOptionsResult:
         raise NotImplementedError
 
     @handler("ModifyReservedInstances")
@@ -27777,6 +28103,7 @@ class Ec2Api:
         tunnel_options: ModifyVpnTunnelOptionsSpecification,
         dry_run: Boolean | None = None,
         skip_tunnel_replacement: Boolean | None = None,
+        pre_shared_key_storage: String | None = None,
         **kwargs,
     ) -> ModifyVpnTunnelOptionsResult:
         raise NotImplementedError

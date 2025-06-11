@@ -210,6 +210,11 @@ class MedicalScribeLanguageCode(StrEnum):
 class MedicalScribeNoteTemplate(StrEnum):
     HISTORY_AND_PHYSICAL = "HISTORY_AND_PHYSICAL"
     GIRPP = "GIRPP"
+    BIRP = "BIRP"
+    SIRP = "SIRP"
+    DAP = "DAP"
+    BEHAVIORAL_SOAP = "BEHAVIORAL_SOAP"
+    PHYSICAL_SOAP = "PHYSICAL_SOAP"
 
 
 class MedicalScribeParticipantRole(StrEnum):

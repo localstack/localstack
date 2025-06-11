@@ -6,6 +6,7 @@ on:
   push:
     paths:
       - '**'
+      - '!.github/**'
       - '.github/actions/**'
       - '.github/workflows/aws-main.yml'
       - '.github/workflows/aws-tests.yml'
@@ -13,13 +14,30 @@ on:
       - '!README.md'
       - '!.gitignore'
       - '!.git-blame-ignore-revs'
-      - '!.github/**'
+      - '!docs/**'
     branches:
       - master
+  pull_request:
+    paths:
+      - '**'
+      - '!.github/**'
+      - '.github/actions/**'
+      - '.github/workflows/aws-main.yml'
+      - '.github/workflows/aws-tests.yml'
+      - '!CODEOWNERS'
+      - '!README.md'
+      - '!.gitignore'
+      - '!.git-blame-ignore-revs'
+      - '!docs/**'
   workflow_dispatch:
     inputs:
       onlyAcceptanceTests:
         description: 'Only run acceptance tests'
+        required: false
+        type: boolean
+        default: false
+      forceARMTests:
+        description: 'Run the ARM tests'
         required: false
         type: boolean
         default: false
@@ -63,8 +81,9 @@ jobs:
       # default "disableCaching" to `false` if it's a push or schedule event
       disableCaching: ${{ inputs.disableCaching == true }}
       # default "disableTestSelection" to `true` if it's a push or schedule event
-      disableTestSelection: ${{ inputs.enableTestSelection != true }}
+      disableTestSelection: ${{ (inputs.enableTestSelection != '' && inputs.enableTestSelection) || github.event_name == 'push' }}
       PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
+      forceARMTests: ${{ inputs.forceARMTests == true }}
     secrets:
       DOCKERHUB_PULL_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
       DOCKERHUB_PULL_TOKEN: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
@@ -121,8 +140,7 @@ jobs:
             source .venv/bin/activate
             coverage report || true
             coverage html || true
-# TO-DO: enable job after workflow in CircleCI is disabled
-#            coveralls || true
+            coveralls || true
 
         - name: Create Coverage Diff (Code Coverage)
           # pycobertura diff will return with exit code 0-3 -> we currently expect 2 (2: the changes worsened the overall coverage),
@@ -170,9 +188,7 @@ jobs:
     name: "Push images"
     runs-on: ubuntu-latest
     # push image on master, target branch not set, and the dependent steps were either successful or skipped
-    # TO-DO: enable job after workflow in CircleCI is disabled
-    if: false
-    #    if: github.ref == 'refs/heads/master' && !failure() && !cancelled()
+    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
     needs:
       # all tests need to be successful for the image to be pushed
       - test
@@ -184,7 +200,7 @@ jobs:
           fetch-depth: 0
 
       - name: Load Localstack ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: ${{ env.PLATFORM_NAME_AMD64 }}
 
@@ -203,8 +219,8 @@ jobs:
 
       - name: Push ${{ env.PLATFORM_NAME_AMD64 }} Docker Image
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           PLATFORM: ${{ env.PLATFORM_NAME_AMD64 }}
         run: |
           # Push to Docker Hub
@@ -213,14 +229,14 @@ jobs:
           TARGET_IMAGE_NAME="public.ecr.aws/localstack/localstack" ./bin/docker-helper.sh push
 
       - name: Load Localstack ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
-        uses: localstack/localstack/.github/actions/load-localstack-docker-from-artifacts@master
+        uses: ./.github/actions/load-localstack-docker-from-artifacts
         with:
           platform: ${{ env.PLATFORM_NAME_ARM64 }}
 
       - name: Push ${{ env.PLATFORM_NAME_ARM64 }} Docker Image
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
           PLATFORM: ${{ env.PLATFORM_NAME_ARM64 }}
         run: |
           # Push to Docker Hub
@@ -230,8 +246,8 @@ jobs:
 
       - name: Push Multi-Arch Manifest
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
         run: |
           # Push to Docker Hub
           ./bin/docker-helper.sh push-manifests
@@ -240,19 +256,18 @@ jobs:
 
       - name: Publish dev release
         env:
-          DOCKER_USERNAME: ${{ secrets.DOCKERHUB_PUSH_USERNAME }}
-          DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PUSH_TOKEN }}
+          TWINE_USERNAME: ${{ secrets.TWINE_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.TWINE_PASSWORD }}
         run: |
           if git describe --exact-match --tags >/dev/null 2>&1; then
             echo "not publishing a dev release as this is a tagged commit"
           else
-            source .venv/bin/activate
-            make publish || echo "dev release failed (maybe it is already published)"
+            make install-runtime publish || echo "dev release failed (maybe it is already published)"
           fi
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master'
+    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs:
       - test
@@ -261,7 +276,7 @@ jobs:
         uses: localstack/tinybird-workflow-push@v3
         with:
           # differentiate between "acceptance only" and "proper / full" runs
-          workflow_id: ${{ inputs.onlyAcceptanceTests && 'tests_acceptance' || 'tests_full' }}
+          workflow_id: ${{ (inputs.onlyAcceptanceTests == true || github.event_name == 'push') && 'tests_acceptance' || 'tests_full' }}
           tinybird_token: ${{ secrets.TINYBIRD_CI_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           tinybird_datasource: "ci_workflows"
@@ -273,7 +288,7 @@ jobs:
     runs-on: ubuntu-latest
     # only remove the image artifacts if the build was successful
     # (this allows a re-build of failed jobs until for the time of the retention period)
-    if: success()
+    if: always() && !failure() && !cancelled()
     needs: push
     steps:
       - uses: geekyeggo/delete-artifact@v5

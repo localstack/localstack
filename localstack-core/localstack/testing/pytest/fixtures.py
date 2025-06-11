@@ -792,11 +792,10 @@ def wait_for_delivery_stream_ready(aws_client):
 
 @pytest.fixture
 def wait_for_dynamodb_stream_ready(aws_client):
-    def _wait_for_stream_ready(stream_arn: str):
+    def _wait_for_stream_ready(stream_arn: str, client=None):
         def is_stream_ready():
-            describe_stream_response = aws_client.dynamodbstreams.describe_stream(
-                StreamArn=stream_arn
-            )
+            ddb_client = client or aws_client.dynamodbstreams
+            describe_stream_response = ddb_client.describe_stream(StreamArn=stream_arn)
             return describe_stream_response["StreamDescription"]["StreamStatus"] == "ENABLED"
 
         return poll_condition(is_stream_ready)
@@ -2009,11 +2008,16 @@ def ec2_create_security_group(aws_client):
         :param ip_protocol: the ip protocol for the permissions (tcp by default)
         """
         if "GroupName" not in kwargs:
+            # FIXME: This will fail against AWS since the sg prefix is not valid for GroupName
+            # > "Group names may not be in the format sg-*".
             kwargs["GroupName"] = f"sg-{short_uid()}"
         # Making sure the call to CreateSecurityGroup gets the right arguments
         _args = select_from_typed_dict(CreateSecurityGroupRequest, kwargs)
         security_group = aws_client.ec2.create_security_group(**_args)
         security_group_id = security_group["GroupId"]
+
+        # FIXME: If 'ports' is None or an empty list, authorize_security_group_ingress will fail due to missing IpPermissions.
+        # Must ensure ports are explicitly provided or skip authorization entirely if not required.
         permissions = [
             {
                 "FromPort": port,

@@ -40,7 +40,7 @@ class TestServiceRequestCounter:
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
 
         chain = HandlerChain([counter])
-        chain.handle(RequestContext(), Response())
+        chain.handle(RequestContext(None), Response())
 
         aggregator.start.assert_not_called()
         aggregator.add_request.assert_not_called()

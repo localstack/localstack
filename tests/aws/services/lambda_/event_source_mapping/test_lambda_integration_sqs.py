@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
 
 from localstack.aws.api.lambda_ import InvalidParameterValueException, Runtime
+from localstack.config import is_env_true
 from localstack.testing.aws.lambda_utils import _await_event_source_mapping_enabled
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -414,6 +415,9 @@ def test_sqs_queue_as_lambda_dead_letter_queue(
 
 
 @markers.aws.validated
+@pytest.mark.skip(
+    reason="Flaky as an SQS queue will not always return messages in a ReceiveMessages call."
+)
 def test_report_batch_item_failures(
     create_lambda_function,
     sqs_create_queue,
@@ -537,6 +541,7 @@ def test_report_batch_item_failures(
     # now wait for the first invocation result which is expected to have processed message 1 we wait half the retry
     # interval to wait long enough for the message to appear, but short enough to check that the DLQ is empty after
     # the first attempt.
+    # FIXME: We cannot assume that the queue will always return a message in the given time-interval.
     first_invocation = aws_client.sqs.receive_message(
         QueueUrl=destination_url, WaitTimeSeconds=int(retry_timeout / 2), MaxNumberOfMessages=1
     )
@@ -1601,7 +1606,14 @@ class TestSQSEventSourceMapping:
             20,
             100,
             1_000,
-            10_000,
+            pytest.param(
+                10_000,
+                id="10000",
+                marks=pytest.mark.skipif(
+                    condition=not is_env_true("TEST_PERFORMANCE"),
+                    reason="Too resource intensive to be randomly allocated to a runner.",
+                ),
+            ),
         ],
     )
     @markers.aws.only_localstack

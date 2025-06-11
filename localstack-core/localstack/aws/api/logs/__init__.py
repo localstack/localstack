@@ -77,6 +77,7 @@ KeyPrefix = str
 KeyValueDelimiter = str
 KmsKeyId = str
 ListAnomaliesLimit = int
+ListLimit = int
 ListLogAnomalyDetectorsLimit = int
 ListLogGroupsForQueryMaxResults = int
 Locale = str
@@ -85,6 +86,7 @@ LogGroupArn = str
 LogGroupIdentifier = str
 LogGroupName = str
 LogGroupNamePattern = str
+LogGroupNameRegexPattern = str
 LogRecordPointer = str
 LogStreamName = str
 LogStreamSearchedCompletely = bool
@@ -1029,6 +1031,9 @@ class DescribeIndexPoliciesResponse(TypedDict, total=False):
     nextToken: Optional[NextToken]
 
 
+DescribeLogGroupsLogGroupIdentifiers = List[LogGroupIdentifier]
+
+
 class DescribeLogGroupsRequest(ServiceRequest):
     accountIdentifiers: Optional[AccountIds]
     logGroupNamePrefix: Optional[LogGroupName]
@@ -1037,6 +1042,7 @@ class DescribeLogGroupsRequest(ServiceRequest):
     limit: Optional[DescribeLimit]
     includeLinkedAccounts: Optional[IncludeLinkedAccounts]
     logGroupClass: Optional[LogGroupClass]
+    logGroupIdentifiers: Optional[DescribeLogGroupsLogGroupIdentifiers]
 
 
 InheritedProperties = List[InheritedProperty]
@@ -1755,6 +1761,29 @@ class ListLogGroupsForQueryResponse(TypedDict, total=False):
     nextToken: Optional[NextToken]
 
 
+class ListLogGroupsRequest(ServiceRequest):
+    logGroupNamePattern: Optional[LogGroupNameRegexPattern]
+    logGroupClass: Optional[LogGroupClass]
+    includeLinkedAccounts: Optional[IncludeLinkedAccounts]
+    accountIdentifiers: Optional[AccountIds]
+    nextToken: Optional[NextToken]
+    limit: Optional[ListLimit]
+
+
+class LogGroupSummary(TypedDict, total=False):
+    logGroupName: Optional[LogGroupName]
+    logGroupArn: Optional[Arn]
+    logGroupClass: Optional[LogGroupClass]
+
+
+LogGroupSummaries = List[LogGroupSummary]
+
+
+class ListLogGroupsResponse(TypedDict, total=False):
+    logGroups: Optional[LogGroupSummaries]
+    nextToken: Optional[NextToken]
+
+
 class ListTagsForResourceRequest(ServiceRequest):
     resourceArn: AmazonResourceName
 
@@ -2423,6 +2452,7 @@ class LogsApi:
         limit: DescribeLimit | None = None,
         include_linked_accounts: IncludeLinkedAccounts | None = None,
         log_group_class: LogGroupClass | None = None,
+        log_group_identifiers: DescribeLogGroupsLogGroupIdentifiers | None = None,
         **kwargs,
     ) -> DescribeLogGroupsResponse:
         raise NotImplementedError
@@ -2656,6 +2686,20 @@ class LogsApi:
         next_token: NextToken | None = None,
         **kwargs,
     ) -> ListLogAnomalyDetectorsResponse:
+        raise NotImplementedError
+
+    @handler("ListLogGroups")
+    def list_log_groups(
+        self,
+        context: RequestContext,
+        log_group_name_pattern: LogGroupNameRegexPattern | None = None,
+        log_group_class: LogGroupClass | None = None,
+        include_linked_accounts: IncludeLinkedAccounts | None = None,
+        account_identifiers: AccountIds | None = None,
+        next_token: NextToken | None = None,
+        limit: ListLimit | None = None,
+        **kwargs,
+    ) -> ListLogGroupsResponse:
         raise NotImplementedError
 
     @handler("ListLogGroupsForQuery")

@@ -3,6 +3,7 @@ import logging
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from moto.ec2 import ec2_backends
 from moto.ec2.utils import (
     random_security_group_id,
@@ -10,7 +11,7 @@ from moto.ec2.utils import (
     random_vpc_id,
 )
 
-from localstack.constants import TAG_KEY_CUSTOM_ID
+from localstack.constants import AWS_REGION_US_EAST_1, TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.patches import SecurityGroupIdentifier, VpcIdentifier
 from localstack.testing.pytest import markers
 from localstack.utils.id_generator import localstack_id_manager
@@ -694,6 +695,71 @@ class TestEc2Integrations:
         assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 400
         assert e.value.response["Error"]["Code"] == "InvalidSecurityGroupId.DuplicateCustomId"
 
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Tags",  # Tags can differ between environments
+            "$..Vpc.IsDefault",  # TODO: CreateVPC should return an IsDefault param
+            "$..Vpc.DhcpOptionsId",  # FIXME: DhcpOptionsId uses different reference formats in AWS vs LocalStack
+        ]
+    )
+    @markers.aws.validated
+    def test_get_security_groups_for_vpc(
+        self, snapshot, aws_client, create_vpc, ec2_create_security_group
+    ):
+        group_name = f"test-security-group-{short_uid()}"
+        group_description = f"Description for {group_name}"
+
+        # Returned security groups appear to be sorted by the randomly generated GroupId field,
+        # so we should sort snapshots by this value to mitigate flakiness for runs against AWS.
+        snapshot.add_transformer(
+            SortingTransformer("SecurityGroupForVpcs", lambda x: x["GroupName"])
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("GroupId"))
+        snapshot.add_transformer(snapshot.transform.key_value("GroupName"))
+        snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
+        snapshot.add_transformer(snapshot.transform.key_value("AssociationId"))
+        snapshot.add_transformer(snapshot.transform.key_value("DhcpOptionsId"))
+
+        # Create VPC for testing
+        vpc: dict = create_vpc(
+            cidr_block="10.0.0.0/16",
+            tag_specifications=[
+                {
+                    "ResourceType": "vpc",
+                    "Tags": [
+                        {"Key": "test-key", "Value": "test-value"},
+                    ],
+                }
+            ],
+        )
+        vpc_id: str = vpc["Vpc"]["VpcId"]
+        snapshot.match("create_vpc_response", vpc)
+
+        # Wait to ensure VPC is available
+        waiter = aws_client.ec2.get_waiter("vpc_available")
+        waiter.wait(VpcIds=[vpc_id])
+
+        # Get all security groups in the VPC
+        get_security_groups_for_vpc = aws_client.ec2.get_security_groups_for_vpc(VpcId=vpc_id)
+        snapshot.match("get_security_groups_for_vpc", get_security_groups_for_vpc)
+
+        # Create new security group in the VPC
+        create_security_group = ec2_create_security_group(
+            GroupName=group_name,
+            Description=group_description,
+            VpcId=vpc_id,
+            ports=[22],  # TODO: Handle port issues in the fixture
+        )
+        snapshot.match("create_security_group", create_security_group)
+
+        # Ensure new security group is in the VPC
+        get_security_groups_for_vpc_after_addition = aws_client.ec2.get_security_groups_for_vpc(
+            VpcId=vpc_id
+        )
+        snapshot.match(
+            "get_security_groups_for_vpc_after_addition", get_security_groups_for_vpc_after_addition
+        )
+
 
 @markers.snapshot.skip_snapshot_verify(
     # Moto and LS do not return the ClientToken
@@ -908,3 +974,59 @@ def test_raise_create_volume_without_size(snapshot, aws_client):
     with pytest.raises(ClientError) as e:
         aws_client.ec2.create_volume(AvailabilityZone="eu-central-1a")
     snapshot.match("request-missing-size", e.value.response)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filter_with_zone_names(snapshot, aws_client_factory):
+    snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
+
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
+    availability_zones = ec2_client.describe_availability_zones(ZoneNames=["us-east-1a"])
+    snapshot.match("availability_zones", availability_zones)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filter_with_zone_ids(snapshot, aws_client_factory):
+    snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
+
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
+    availability_zones = ec2_client.describe_availability_zones(ZoneIds=["use1-az1"])
+    snapshot.match("availability_zones", availability_zones)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        # not implemented in LS
+        "$..AvailabilityZones..GroupLongName",
+        "$..AvailabilityZones..GroupName",
+        "$..AvailabilityZones..NetworkBorderGroup",
+        "$..AvailabilityZones..OptInStatus",
+    ]
+)
+@markers.aws.validated
+def test_describe_availability_zones_filters(snapshot, aws_client_factory):
+    snapshot.add_transformer(snapshot.transform.regex(AWS_REGION_US_EAST_1, "<region>"))
+
+    ec2_client = aws_client_factory(region_name=AWS_REGION_US_EAST_1).ec2
+    availability_zones = ec2_client.describe_availability_zones(
+        Filters=[{"Name": "zone-name", "Values": ["us-east-1a"]}]
+    )
+    snapshot.match("availability_zones", availability_zones)

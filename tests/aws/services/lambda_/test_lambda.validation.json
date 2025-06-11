@@ -32,6 +32,9 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_cache_local[python]": {
     "last_validated_date": "2024-04-08T16:55:59+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_host_prefix_api_operation": {
+    "last_validated_date": "2025-05-26T16:38:53+00:00"
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
     "last_validated_date": "2024-04-08T16:56:25+00:00"
   },
@@ -63,7 +66,10 @@
     "last_validated_date": "2024-04-08T17:02:06+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_crud": {
-    "last_validated_date": "2024-04-08T16:59:42+00:00"
+    "last_validated_date": "2025-05-22T08:04:13+00:00"
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_concurrency_update": {
+    "last_validated_date": "2025-05-22T14:11:12+00:00"
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaConcurrency::test_lambda_provisioned_concurrency_moves_with_alias": {
     "last_validated_date": "2023-03-21T07:47:38+00:00"

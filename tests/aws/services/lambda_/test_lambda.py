@@ -129,6 +129,7 @@ TEST_LAMBDA_PYTHON_MULTIPLE_HANDLERS = os.path.join(
 TEST_LAMBDA_NOTIFIER = os.path.join(THIS_FOLDER, "functions/lambda_notifier.py")
 TEST_LAMBDA_CLOUDWATCH_LOGS = os.path.join(THIS_FOLDER, "functions/lambda_cloudwatch_logs.py")
 TEST_LAMBDA_XRAY_TRACEID = os.path.join(THIS_FOLDER, "functions/xray_tracing_traceid.py")
+TEST_LAMBDA_HOST_PREFIX_OPERATION = os.path.join(THIS_FOLDER, "functions/host_prefix_operation.py")
 
 PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
 NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
@@ -829,6 +830,36 @@ class TestLambdaBehavior:
 
         result = aws_client.lambda_.invoke(FunctionName=func_name, Payload=json.dumps({"pid": 1}))
         snapshot.match("lambda-init-inspection", result)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        not config.use_custom_dns(),
+        reason="Host prefix cannot be resolved if DNS server is disabled",
+    )
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # TODO: Fix hostPrefix operations failing by default within Lambda
+            #  Idea: Support prefixed and non-prefixed operations by default and botocore should drop the prefix for
+            #  non-supported hostnames such as IPv4 (e.g., `sync-192.168.65.254`)
+            "$..Payload.host_prefix.*",
+        ],
+    )
+    def test_lambda_host_prefix_api_operation(self, create_lambda_function, aws_client, snapshot):
+        """Ensure that API operations with a hostPrefix are forwarded to the LocalStack instance. Examples:
+        * StartSyncExecution: https://docs.aws.amazon.com/step-functions/latest/apireference/API_StartSyncExecution.html
+        * DiscoverInstances: https://docs.aws.amazon.com/cloud-map/latest/api/API_DiscoverInstances.html
+        hostPrefix background test_host_prefix_no_subdomain
+        StepFunction example for the hostPrefix `sync-` based on test_start_sync_execution
+        """
+        func_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_HOST_PREFIX_OPERATION,
+            runtime=Runtime.python3_12,
+        )
+        invoke_result = aws_client.lambda_.invoke(FunctionName=func_name)
+        assert "FunctionError" not in invoke_result
+        snapshot.match("invoke-result", invoke_result)
 
 
 URL_HANDLER_CODE = """
@@ -2278,6 +2309,39 @@ class TestLambdaConcurrency:
         )
         snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
         assert updated_concurrency_result["ReservedConcurrentExecutions"] == 0
+
+        aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
+
+        deleted_concurrency_result = aws_client.lambda_.get_function_concurrency(
+            FunctionName=func_name
+        )
+        snapshot.match("get_function_concurrency_deleted", deleted_concurrency_result)
+
+    @pytest.mark.skip_snapshot_verify(paths=["$..Configuration", "$..Code"])
+    @markers.aws.validated
+    def test_lambda_concurrency_update(self, snapshot, create_lambda_function, aws_client):
+        func_name = f"fn-concurrency-{short_uid()}"
+        create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_PYTHON_ECHO,
+            runtime=Runtime.python3_12,
+        )
+        new_reserved_concurrency = 3
+        reserved_concurrency_result = aws_client.lambda_.put_function_concurrency(
+            FunctionName=func_name, ReservedConcurrentExecutions=new_reserved_concurrency
+        )
+        snapshot.match("put_function_concurrency", reserved_concurrency_result)
+
+        updated_concurrency_result = aws_client.lambda_.get_function_concurrency(
+            FunctionName=func_name
+        )
+        snapshot.match("get_function_concurrency_updated", updated_concurrency_result)
+        assert (
+            updated_concurrency_result["ReservedConcurrentExecutions"] == new_reserved_concurrency
+        )
+
+        function_concurrency_info = aws_client.lambda_.get_function(FunctionName=func_name)
+        snapshot.match("get_function_concurrency_info", function_concurrency_info)
 
         aws_client.lambda_.delete_function_concurrency(FunctionName=func_name)
 

@@ -15,7 +15,6 @@ from localstack.utils.strings import long_uid
         "per-resource-events..*",
         "delete-describe..*",
         #
-        "$..ChangeSetId",  # An issue for the WIP executor
         # Before/After Context
         "$..Capabilities",
         "$..NotificationARNs",
@@ -49,7 +48,6 @@ class TestChangeSetValues:
         snapshot.add_transformer(RegexTransformer(test_name, "test-name"))
         template_1 = {
             "Resources": {
-                "Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": test_name}},
                 "Role": {
                     "Type": "AWS::Logs::LogGroup",
                     "Properties": {
@@ -59,6 +57,7 @@ class TestChangeSetValues:
                         "Tags": [],
                     },
                 },
+                "Topic": {"Type": "AWS::SNS::Topic", "Properties": {"TopicName": test_name}},
             }
         }
         template_2 = {
