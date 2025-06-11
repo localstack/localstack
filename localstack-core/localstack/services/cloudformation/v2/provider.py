@@ -1,5 +1,6 @@
 import copy
 import logging
+from datetime import datetime, timezone
 from typing import Any
 
 from localstack.aws.api import RequestContext, handler
@@ -101,7 +102,7 @@ def find_change_set_v2(
                     # TODO: check for active stacks
                     if (
                         stack_candidate.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
+                        and stack_candidate.status != StackStatus.DELETE_COMPLETE
                     ):
                         stack = stack_candidate
                         break
@@ -175,10 +176,10 @@ class CloudformationProviderV2(CloudformationProvider):
             # on a CREATE an empty Stack should be generated if we didn't find an active one
             if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
                 stack = Stack(
-                    context.account_id,
-                    context.region,
-                    request,
-                    structured_template,
+                    account_id=context.account_id,
+                    region_name=context.region,
+                    request_payload=request,
+                    template=structured_template,
                     template_body=template_body,
                 )
                 state.stacks_v2[stack.stack_id] = stack
@@ -240,7 +241,7 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template = structured_template
 
         # create change set for the stack and apply changes
-        change_set = ChangeSet(stack, request)
+        change_set = ChangeSet(stack, request, template=after_template)
 
         # only set parameters for the changeset, then switch to stack on execute_change_set
         change_set.populate_update_graph(
@@ -309,6 +310,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = result.parameters
                 change_set.stack.resolved_outputs = result.outputs
+                # if the deployment succeeded, update the stack's template representation to that
+                # which was just deployed
+                change_set.stack.template = change_set.template
             except Exception as e:
                 LOG.error(
                     "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
@@ -458,5 +462,37 @@ class CloudformationProviderV2(CloudformationProvider):
             # aws will silently ignore invalid stack names - we should do the same
             return
 
-        # TODO: actually delete
-        stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+        # shortcut for stacks which have no deployed resources i.e. where a change set was
+        # created, but never executed
+        if stack.status == StackStatus.REVIEW_IN_PROGRESS and not stack.resolved_resources:
+            stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+            stack.deletion_time = datetime.now(tz=timezone.utc)
+            return
+
+        # create a dummy change set
+        change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
+        change_set.populate_update_graph(
+            before_template=stack.template,
+            after_template=None,
+            before_parameters=stack.resolved_parameters,
+            after_parameters=None,
+        )
+
+        change_set_executor = ChangeSetModelExecutor(change_set)
+
+        def _run(*args):
+            try:
+                stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
+                change_set_executor.execute()
+                stack.set_stack_status(StackStatus.DELETE_COMPLETE)
+                stack.deletion_time = datetime.now(tz=timezone.utc)
+            except Exception as e:
+                LOG.warning(
+                    "Failed to delete stack '%s': %s",
+                    stack.stack_name,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
+                stack.set_stack_status(StackStatus.DELETE_FAILED)
+
+        start_worker_thread(_run)

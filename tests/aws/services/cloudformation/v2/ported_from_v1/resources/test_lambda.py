@@ -855,10 +855,9 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-        # CFNV2:Destroy does not destroy resources.
-        # deployment.destroy()
-        # with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
-        #     aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
+        deployment.destroy()
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+            aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
     @pytest.mark.skip(reason="CFNV2:Other")
     # TODO: consider moving into the dedicated DynamoDB => Lambda tests because it tests the filtering functionality rather than CloudFormation (just using CF to deploy resources)
@@ -1032,10 +1031,9 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-        # CFNV2:Destroy does not destroy resources.
-        # deployment.destroy()
-        # with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
-        #     aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
+        deployment.destroy()
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+            aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
     @pytest.mark.skip(reason="CFNV2:Other")
     @markers.snapshot.skip_snapshot_verify(
@@ -1161,11 +1159,10 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-        # CFNV2:Destroy does not destroy resources.
-        # deployment.destroy()
+        deployment.destroy()
 
-        # with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
-        #     aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
+        with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
+            aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
 
 class TestCfnLambdaDestinations:

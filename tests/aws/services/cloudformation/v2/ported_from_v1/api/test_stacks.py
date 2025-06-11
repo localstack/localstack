@@ -26,7 +26,7 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestStacksApi:
-    @pytest.mark.skip(reason="CFNV2:Destroy")
+    @pytest.mark.skip(reason="CFNV2:Other")
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
     )
@@ -445,7 +445,7 @@ class TestStacksApi:
         ]
         assert len(updated_resources) == length_expected
 
-    @pytest.mark.skip(reason="CFNV2:Destroy")
+    @pytest.mark.skip(reason="CFNV2:Other")
     @markers.aws.only_localstack
     def test_create_stack_with_custom_id(
         self, aws_client, cleanups, account_id, region_name, set_resource_custom_id
@@ -870,7 +870,7 @@ def test_describe_stack_events_errors(aws_client, snapshot):
 TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
 
 
-@pytest.mark.skip(reason="CFNV2:Destroy")
+@pytest.mark.skip(reason="CFNV2:Other stack events")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
