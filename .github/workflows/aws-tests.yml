@@ -618,6 +618,13 @@ jobs:
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
+
       - name: Run Cloudwatch v1 Provider Tests
         timeout-minutes: 30
         env:
