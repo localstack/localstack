@@ -773,8 +773,8 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidToken("Invalid token")
 
     @staticmethod
-    def _extract_base_arn(state_machine_arn: str) -> str:
-        """Extract the base ARN from a state machine ARN by removing any test case suffix."""
+    def _get_state_machine_arn(state_machine_arn: str) -> str:
+        """Extract the state machine ARN by removing the test case suffix."""
         return state_machine_arn.split("#")[0]
 
     @staticmethod
@@ -810,7 +810,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> StartExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
 
-        base_arn = self._extract_base_arn(state_machine_arn)
+        base_arn = self._get_state_machine_arn(state_machine_arn)
         store = self.get_store(context=context)
 
         alias: Optional[Alias] = store.aliases.get(base_arn)
@@ -900,7 +900,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     ) -> StartSyncExecutionOutput:
         self._validate_state_machine_arn(state_machine_arn)
 
-        base_arn = self._extract_base_arn(state_machine_arn)
+        base_arn = self._get_state_machine_arn(state_machine_arn)
         unsafe_state_machine: Optional[StateMachineInstance] = self.get_store(
             context
         ).state_machines.get(base_arn)
