@@ -17,6 +17,7 @@ class CounterPayload:
     name: str
     value: int
     type: str
+    schema_version: int
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -24,6 +25,7 @@ class CounterPayload:
             "name": self.name,
             "value": self.value,
             "type": self.type,
+            "schema_version": self.schema_version,
         }
 
 
@@ -35,6 +37,7 @@ class LabeledCounterPayload:
     name: str
     value: int
     type: str
+    schema_version: int
     labels: dict[str, Union[str, float]]
 
     def as_dict(self) -> dict[str, Any]:
@@ -43,6 +46,7 @@ class LabeledCounterPayload:
             "name": self.name,
             "value": self.value,
             "type": self.type,
+            "schema_version": self.schema_version,
         }
 
         for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
