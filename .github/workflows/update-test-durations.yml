@@ -43,7 +43,7 @@ jobs:
             path: artifacts-test-durations
             merge-multiple: true
             run-id: ${{ env.AWS_MAIN_LATEST_SCHEDULED_RUN_ID }}
-            github-token: ${{ secrets.GH_PAT_TEST_DURATIONS_ARTS }}  # PAT with access to artifacts from GH Actions
+            github-token: ${{ secrets.GH_UPDATE_TEST_DURATIONS_TOKEN }}  # PAT with access to artifacts from GH Actions
 
         - name: Merge test durations files
           shell: bash
