@@ -613,7 +613,7 @@ def create_and_record_mocked_execution(
         state_machine_name=state_machine_name,
         state_machine_type=state_machine_type,
     )
-    execution_arn = launch_and_record_mocked_sync_execution(
+    execution_arn = launch_and_record_mocked_execution(
         target_aws_client, sfn_snapshot, state_machine_arn, execution_input, test_name
     )
     return execution_arn
