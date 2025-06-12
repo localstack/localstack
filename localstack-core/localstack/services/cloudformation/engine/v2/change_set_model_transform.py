@@ -1,4 +1,5 @@
 import copy
+import logging
 import os
 from typing import Final, Optional
 
@@ -6,7 +7,10 @@ import boto3
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
-from localstack.services.cloudformation.engine.transformers import FailedTransformationException
+from localstack.services.cloudformation.engine.transformers import (
+    FailedTransformationException,
+    execute_macro,
+)
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     Maybe,
@@ -19,9 +23,14 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     ChangeSetModelPreproc,
     PreprocEntityDelta,
 )
+from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 
+LOG = logging.getLogger(__name__)
+
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
+EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
+SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
 
 
 # TODO: evaluate the use of subtypes to represent and validate types of transforms
@@ -56,7 +65,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
     # Ported from v1:
     @staticmethod
-    def _apply_serverless_transformation(
+    def _apply_global_serverless_transformation(
         region_name: str, template: dict, parameters: dict
     ) -> dict:
         """only returns string when parsing SAM template, otherwise None"""
@@ -79,17 +88,61 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if region_before is not None:
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
+    @staticmethod
+    def _apply_global_macro_transformation(
+        account_id: str,
+        region_name,
+        global_transform: GlobalTransform,
+        template: dict,
+        parameters: dict,
+    ) -> Optional[dict]:
+        macros_store = get_cloudformation_store(
+            account_id=account_id, region_name=region_name
+        ).macros
+        macro = macros_store.get(global_transform.name)
+        if macro is None:
+            return None
+        # Enable compatability with v1 util.
+        stack_parameters = {parameter["ParameterKey"]: parameter for parameter in parameters}
+        transformed_template = execute_macro(
+            account_id,
+            region_name,
+            parsed_template=template,
+            macro=macro,
+            stack_parameters=stack_parameters,
+            transformation_parameters=global_transform.parameters,
+        )
+        return transformed_template  # noqa: the type annotation on the v1 util appears to be incorrect.
+
     def _apply_global_transform(
         self, global_transform: GlobalTransform, template: dict, parameters: dict
     ) -> dict:
-        if global_transform.name == SERVERLESS_TRANSFORM:
-            return self._apply_serverless_transformation(
+        transformed_template = None
+        transform_name = global_transform.name
+        if transform_name == EXTENSIONS_TRANSFORM:
+            # Applied lazily in downstream tasks (see ChangeSetModelPreproc).
+            transformed_template = template
+        elif transform_name == SERVERLESS_TRANSFORM:
+            transformed_template = self._apply_global_serverless_transformation(
                 region_name=self._change_set.region_name,
                 template=template,
                 parameters=parameters,
             )
-        # TODO: expand support
-        raise RuntimeError(f"Unsupported global transform '{global_transform.name}'")
+        elif transform_name == SECRETSMANAGER_TRANSFORM:
+            # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
+            LOG.warning("%s is not yet supported. Ignoring.", SECRETSMANAGER_TRANSFORM)
+            transformed_template = template
+        else:
+            transformed_template = self._apply_global_macro_transformation(
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+                global_transform=global_transform,
+                template=template,
+                parameters=parameters,
+            )
+        if transformed_template is None:
+            raise RuntimeError(f"Unsupported global transform '{transform_name}'")
+        return transformed_template
 
     def transform(self) -> tuple[dict, dict]:
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
@@ -109,7 +162,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 )
 
         transformed_after_template = self._after_template
-        if not is_nothing(transform_before) and not is_nothing(self._after_template):
+        if not is_nothing(transform_after) and not is_nothing(self._after_template):
             transformed_after_template = self._after_template
             for after_global_transform in transform_after:
                 transformed_after_template = self._apply_global_transform(

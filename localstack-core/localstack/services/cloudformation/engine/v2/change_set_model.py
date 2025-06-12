@@ -802,6 +802,7 @@ class ChangeSetModel:
         node_property = self._visited_scopes.get(scope)
         if isinstance(node_property, NodeProperty):
             return node_property
+        # TODO: Review the use of Fn::Transform as resource properties.
         value = self._visit_value(
             scope=scope, before_value=before_property, after_value=after_property
         )
@@ -1162,7 +1163,17 @@ class ChangeSetModel:
             return value
         elif isinstance(value, str):
             value = [NormalisedGlobalTransformDefinition(Name=value, Parameters=Nothing)]
-        elif not isinstance(value, list):
+        elif isinstance(value, list):
+            tmp_value = list()
+            for item in value:
+                if isinstance(item, str):
+                    tmp_value.append(
+                        NormalisedGlobalTransformDefinition(Name=item, Parameters=Nothing)
+                    )
+                else:
+                    tmp_value.append(item)
+            value = tmp_value
+        else:
             raise RuntimeError(f"Invalid type for Transformer: '{value}'")
         return value
 
@@ -1325,7 +1336,8 @@ class ChangeSetModel:
     def _safe_access_in(scope: Scope, key: str, *objects: Maybe[dict]) -> tuple[Scope, Maybe[Any]]:
         results = list()
         for obj in objects:
-            # TODO: raise errors if not dict
+            if not isinstance(obj, (dict, NothingType)):
+                raise RuntimeError(f"Invalid definition type at '{obj}'")
             if not isinstance(obj, NothingType):
                 results.append(obj.get(key, Nothing))
             else:

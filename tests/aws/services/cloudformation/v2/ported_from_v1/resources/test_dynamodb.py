@@ -149,7 +149,6 @@ def test_global_table(deploy_cfn_template, snapshot, aws_client):
     assert "ResourceNotFoundException" == error_code
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_ttl_cdk(aws_client, snapshot, infrastructure_setup):
     infra = infrastructure_setup(namespace="DDBTableTTL")
@@ -195,7 +194,6 @@ def test_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("table_description", response)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 # We return the fields bellow, while AWS doesn't return them
 @markers.snapshot.skip_snapshot_verify(
