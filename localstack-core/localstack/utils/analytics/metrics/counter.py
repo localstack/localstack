@@ -109,7 +109,7 @@ class Counter(Metric, ThreadSafeCounter):
         ThreadSafeCounter.__init__(self)
 
         if schema_version is None:
-            raise ValueError("Labeled metrics require an explicit schema version.")
+            raise ValueError("An explicit schema_version is required for Counter metrics")
 
         if not isinstance(schema_version, int):
             raise TypeError("Schema version must be an integer.")
@@ -162,7 +162,7 @@ class LabeledCounter(Metric):
         super(LabeledCounter, self).__init__(namespace=namespace, name=name)
 
         if schema_version is None:
-            raise ValueError("Labeled metrics require an explicit schema version.")
+            raise ValueError("An explicit schema_version is required for Labeled Counter metrics")
 
         if not isinstance(schema_version, int):
             raise TypeError("Schema version must be an integer.")
