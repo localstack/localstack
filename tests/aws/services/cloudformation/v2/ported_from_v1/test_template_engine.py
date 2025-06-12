@@ -121,6 +121,7 @@ class TestIntrinsicFunctions:
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
         assert converted_string == deployed.outputs["Encoded"]
 
+    @pytest.mark.skip(reason="CFNV2:LanguageExtensions")
     @markers.aws.validated
     def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(

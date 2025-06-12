@@ -170,7 +170,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def __init__(self, change_set: ChangeSet):
         self._change_set = change_set
-        self._node_template = change_set.update_graph
+        self._node_template = change_set.update_model
         self._before_resolved_resources = change_set.stack.resolved_resources
         self._processed = dict()
 

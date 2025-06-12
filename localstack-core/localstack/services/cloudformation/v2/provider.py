@@ -1,7 +1,7 @@
 import copy
 import logging
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
@@ -37,11 +37,18 @@ from localstack.aws.api.cloudformation import (
 )
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeSetModel,
+    NodeTemplate,
+)
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
+    ChangeSetModelTransform,
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
@@ -122,6 +129,47 @@ def find_change_set_v2(
 
 
 class CloudformationProviderV2(CloudformationProvider):
+    @staticmethod
+    def _setup_change_set_model(
+        change_set: ChangeSet,
+        before_template: Optional[dict],
+        after_template: Optional[dict],
+        before_parameters: Optional[dict],
+        after_parameters: Optional[dict],
+    ):
+        # Create and preprocess the update graph for this template update.
+        change_set_model = ChangeSetModel(
+            before_template=before_template,
+            after_template=after_template,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
+        raw_update_model: NodeTemplate = change_set_model.get_update_model()
+        change_set.set_update_model(raw_update_model)
+
+        # Apply global transforms.
+        # TODO: skip this process iff both versions of the template don't specify transform blocks.
+        change_set_model_transform = ChangeSetModelTransform(
+            change_set=change_set,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+            before_template=before_template,
+            after_template=after_template,
+        )
+        transformed_before_template, transformed_after_template = (
+            change_set_model_transform.transform()
+        )
+
+        # Remodel the update graph after the applying the global transforms.
+        change_set_model = ChangeSetModel(
+            before_template=transformed_before_template,
+            after_template=transformed_after_template,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
+        update_model = change_set_model.get_update_model()
+        change_set.set_update_model(update_model)
+
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
         self, context: RequestContext, request: CreateChangeSetInput
@@ -242,14 +290,14 @@ class CloudformationProviderV2(CloudformationProvider):
 
         # create change set for the stack and apply changes
         change_set = ChangeSet(stack, request, template=after_template)
-
-        # only set parameters for the changeset, then switch to stack on execute_change_set
-        change_set.populate_update_graph(
+        self._setup_change_set_model(
+            change_set=change_set,
             before_template=before_template,
             after_template=after_template,
             before_parameters=before_parameters,
             after_parameters=after_parameters,
         )
+
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id
         stack.change_set_id = change_set.change_set_id
@@ -285,7 +333,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #     stack_name,
         #     len(change_set.template_resources),
         # )
-        if not change_set.update_graph:
+        if not change_set.update_model:
             raise RuntimeError("Programming error: no update graph found for change set")
 
         change_set.set_execution_status(ExecutionStatus.EXECUTE_IN_PROGRESS)
@@ -471,7 +519,8 @@ class CloudformationProviderV2(CloudformationProvider):
 
         # create a dummy change set
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
-        change_set.populate_update_graph(
+        self._setup_change_set_model(
+            change_set=change_set,
             before_template=stack.template,
             after_template=None,
             before_parameters=stack.resolved_parameters,

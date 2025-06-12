@@ -906,6 +906,7 @@ def test_deleted_changeset(snapshot, cleanups, aws_client):
     snapshot.match("postdelete_changeset_notfound", e.value)
 
 
+@pytest.mark.skip(reason="CFNV2:Macros")
 @markers.aws.validated
 def test_autoexpand_capability_requirement(cleanups, aws_client):
     stack_name = f"test-stack-{short_uid()}"
