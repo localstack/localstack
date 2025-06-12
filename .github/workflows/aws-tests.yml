@@ -627,7 +627,7 @@ jobs:
           COVERAGE_FILE: ".coverage.cloudwatch_v1"
           TEST_PATH: "tests/aws/services/cloudwatch/"
           JUNIT_REPORTS_FILE: "pytest-junit-cloudwatch-v1.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=cloudwatch_v1"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=cloudwatch_v1"
           PROVIDER_OVERRIDE_CLOUDWATCH: "v1"
         run: make test-coverage
 
@@ -676,7 +676,7 @@ jobs:
           COVERAGE_FILE: ".coverage.dynamodb_v2"
           TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
           JUNIT_REPORTS_FILE: "pytest-junit-dynamodb-v2.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=dynamodb_v2"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=dynamodb_v2"
           PROVIDER_OVERRIDE_DYNAMODB: "v2"
         run: make test-coverage
 
@@ -726,7 +726,7 @@ jobs:
           COVERAGE_FILE: ".coverage.events_v1"
           TEST_PATH: "tests/aws/services/events/"
           JUNIT_REPORTS_FILE: "pytest-junit-events-v1.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=events_v1"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=events_v1"
           PROVIDER_OVERRIDE_EVENTS: "v1"
         run: make test-coverage
 
@@ -774,7 +774,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_PATH: "tests/aws/services/cloudformation/v2"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
           PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
         run: make test-coverage
 
