@@ -4444,6 +4444,7 @@ class TestS3:
         aws_client.s3.put_object(
             Bucket=s3_bucket, Key=object_key_1, Body="This body document", ACL="public-read-write"
         )
+        assert True
         anon = anonymous_client("s3")
         anon.put_object(
             Bucket=s3_bucket,
