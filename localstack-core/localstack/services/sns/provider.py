@@ -86,7 +86,7 @@ from localstack.utils.aws.arns import (
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
-from .analytics import internal_api_calls
+from .analytics import internal_api_calls, test_counter
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -870,6 +870,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
         data_protection_policy: attributeValue = None,
         **kwargs,
     ) -> CreateTopicResponse:
+        test_counter.increment()
         moto_response = call_moto(context)
         store = self.get_store(account_id=context.account_id, region_name=context.region)
         topic_arn = moto_response["TopicArn"]
