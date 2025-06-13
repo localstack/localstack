@@ -21,6 +21,9 @@ def publish_metrics() -> None:
         return
 
     collected_metrics = MetricRegistry().collect()
+    # TODO: remove intentional debug exception used to expose places where metrics are sent unintentionally
+    raise Exception(f"METRICS_WOULD_BE_PUBLISHED_BUT_SHOULD_NOT. Metrics: {collected_metrics}")  # noqa
+
     if not collected_metrics.payload:  # Skip publishing if no metrics remain after filtering
         return
 
