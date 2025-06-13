@@ -240,6 +240,28 @@ jobs:
             dist/testselection/test-selection.txt
           retention-days: 1
 
+      # This step determines which services were affected by changes of the modified files
+      # The output from this step is later used in combination with the test-selection file
+      #
+      # The test-selection file specifies which tests to run for each service,
+      # while this step allows skipping entire jobs when no relevant services have changed
+      - name: Determine services affected by change
+        uses: dorny/paths-filter@v3.0.2
+        id: changed-services
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: |
+            cloudwatch-v1:
+               - 'tests/aws/services/cloudwatch/**'
+            dynamodb-v2:
+               - 'tests/aws/services/dynamodb/**'
+               - 'tests/aws/services/dynamodbstreams/**'
+               - 'tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py'
+            events-v1:
+               - 'tests/aws/services/events/**'
+            cloudformation-v2:
+               - 'tests/aws/services/cloudformation/v2/**'
+
       - name: Run Unit Tests
         timeout-minutes: 8
         env:
@@ -486,7 +508,6 @@ jobs:
           test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
 
-
   test-acceptance:
     name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
     needs:
@@ -601,7 +622,7 @@ jobs:
 
   test-cloudwatch-v1:
     name: Test CloudWatch V1
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.changed-services.outputs.cloudwatch-v1 == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -651,7 +672,7 @@ jobs:
 
   test-ddb-v2:
     name: Test DynamoDB(Streams) v2
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.changed-services.outputs.dynamodb-v2 == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -700,7 +721,7 @@ jobs:
 
   test-events-v1:
     name: Test EventBridge v1
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.changed-services.outputs.events-v1 == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -749,7 +770,7 @@ jobs:
 
   test-cfn-v2-engine:
     name: Test CloudFormation Engine v2
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.changed-services.outputs.cloudformation-v2 == 'true' }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
