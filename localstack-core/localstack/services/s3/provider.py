@@ -2397,11 +2397,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: UploadPartCopyRequest,
     ) -> UploadPartCopyOutput:
         # TODO: handle following parameters:
-        #  copy_source_if_match: CopySourceIfMatch = None,
-        #  copy_source_if_modified_since: CopySourceIfModifiedSince = None,
-        #  copy_source_if_none_match: CopySourceIfNoneMatch = None,
-        #  copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
-        #  request_payer: RequestPayer = None,
+        #  CopySourceIfMatch: Optional[CopySourceIfMatch]
+        #  CopySourceIfModifiedSince: Optional[CopySourceIfModifiedSince]
+        #  CopySourceIfNoneMatch: Optional[CopySourceIfNoneMatch]
+        #  CopySourceIfUnmodifiedSince: Optional[CopySourceIfUnmodifiedSince]
+        #  SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
+        #  SSECustomerKey: Optional[SSECustomerKey]
+        #  SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
+        #  CopySourceSSECustomerAlgorithm: Optional[CopySourceSSECustomerAlgorithm]
+        #  CopySourceSSECustomerKey: Optional[CopySourceSSECustomerKey]
+        #  CopySourceSSECustomerKeyMD5: Optional[CopySourceSSECustomerKeyMD5]
+        #  RequestPayer: Optional[RequestPayer]
+        #  ExpectedBucketOwner: Optional[AccountId]
+        #  ExpectedSourceBucketOwner: Optional[AccountId]
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
@@ -2449,24 +2457,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         source_range = request.get("CopySourceRange")
-        # TODO implement copy source IF (done in ASF provider)
+        # TODO implement copy source IF
 
         range_data: Optional[ObjectRange] = None
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
+        if s3_multipart.checksum_algorithm:
+            s3_part.checksum_algorithm = s3_multipart.checksum_algorithm
 
         stored_multipart = self._storage_backend.get_multipart(dest_bucket, s3_multipart)
         stored_multipart.copy_from_object(s3_part, src_bucket, src_s3_object, range_data)
 
         s3_multipart.parts[part_number] = s3_part
 
-        # TODO: return those fields (checksum not handled currently in moto for parts)
-        # ChecksumCRC32: Optional[ChecksumCRC32]
-        # ChecksumCRC32C: Optional[ChecksumCRC32C]
-        # ChecksumSHA1: Optional[ChecksumSHA1]
-        # ChecksumSHA256: Optional[ChecksumSHA256]
+        # TODO: return those fields
         #     RequestCharged: Optional[RequestCharged]
 
         result = CopyPartResult(
@@ -2480,6 +2486,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if src_s3_bucket.versioning_status and src_s3_object.version_id:
             response["CopySourceVersionId"] = src_s3_object.version_id
+
+        if s3_part.checksum_algorithm:
+            result[f"Checksum{s3_part.checksum_algorithm.upper()}"] = s3_part.checksum_value
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
 
@@ -2750,7 +2759,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 PartNumber=part_number,
                 Size=part.size,
             )
-            if s3_multipart.checksum_algorithm:
+            if s3_multipart.checksum_algorithm and part.checksum_algorithm:
                 part_item[f"Checksum{part.checksum_algorithm.upper()}"] = part.checksum_value
 
             parts.append(part_item)
