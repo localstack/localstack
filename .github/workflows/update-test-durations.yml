@@ -31,7 +31,7 @@ jobs:
             latest_workflow_id=$(curl -s https://api.github.com/repos/localstack/localstack/actions/workflows \
               | jq '.workflows[] | select(.name=="AWS / Build, Test, Push").id')
             latest_run_id=$(curl -s \
-              https://api.github.com/repos/localstack/localstack/actions/workflows/159258776/runs?branch=master&status=success&per_page=30 \
+              "https://api.github.com/repos/localstack/localstack/actions/workflows/${latest_workflow_id}/runs?branch=master&status=success&per_page=30" \
                 | jq '[.workflow_runs[] | select(.event == "schedule")][0].id')
             echo "Latest run: https://github.com/localstack/localstack/actions/runs/${latest_run_id}"
             echo "AWS_MAIN_LATEST_SCHEDULED_RUN_ID=${latest_run_id}" >> $GITHUB_ENV
@@ -43,7 +43,7 @@ jobs:
             path: artifacts-test-durations
             merge-multiple: true
             run-id: ${{ env.AWS_MAIN_LATEST_SCHEDULED_RUN_ID }}
-            github-token: ${{ secrets.GH_UPDATE_TEST_DURATIONS_TOKEN }}  # PAT with access to artifacts from GH Actions
+            github-token: ${{ secrets.GITHUB_TOKEN }}  # PAT with access to artifacts from GH Actions
 
         - name: Merge test durations files
           shell: bash
@@ -72,4 +72,4 @@ jobs:
             path: localstack
             add-paths: .test_durations
             labels: "semver: patch, area: testing, area: ci"
-            token: ${{ secrets.GH_UPDATE_TEST_DURATIONS_TOKEN }}
+            token: ${{ secrets.GITHUB_TOKEN }}
