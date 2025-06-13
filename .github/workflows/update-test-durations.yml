@@ -63,8 +63,8 @@ jobs:
           uses: peter-evans/create-pull-request@v7
           if: ${{ success() && inputs.publishMethod != 'UPLOAD_ARTIFACT' }}
           with:
-            title: "Update test durations"
-            body: "This PR includes an updated `.test_durations` file, generated using the latest test durations for the platform based on the master branch"
+            title: "[Testing] Update test durations"
+            body: "This PR includes an updated `.test_durations` file, generated based on latest test durations from master"
             branch: "test-durations-auto-updates"
             author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
             committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
