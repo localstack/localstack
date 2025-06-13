@@ -175,6 +175,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         self.cloudwatch_database.clear_tables()
 
     def on_after_state_reset(self):
+        self.cloudwatch_database = CloudwatchDatabase()
         self.start_alarm_scheduler()
 
     def on_before_state_load(self):
