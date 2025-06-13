@@ -201,3 +201,40 @@ def test_label_kwargs_order_independent():
         metric.value == 3 and metric.labels and metric.labels.get("status") == "error"
         for metric in collected_metrics
     ), "Unexpected counter value for label error"
+
+
+def test_default_schema_version_for_counter():
+    counter = Counter(namespace="test_namespace", name="test_name")
+    counter.increment()
+    collected_metrics = counter.collect()
+    assert collected_metrics[0].schema_version == 1, (
+        "Default schema_version for Counter should be 1"
+    )
+
+
+def test_custom_schema_version_for_counter():
+    counter = Counter(namespace="test_namespace", name="test_name", schema_version=3)
+    counter.increment()
+    collected_metrics = counter.collect()
+    assert collected_metrics[0].schema_version == 3
+
+
+def test_default_schema_version_for_labeled_counter():
+    labeled_counter = LabeledCounter(namespace="test_namespace", name="test_name", labels=["type"])
+    labeled_counter.labels(type="success").increment()
+    collected_metrics = labeled_counter.collect()
+    assert collected_metrics[0].schema_version == 1, (
+        "Default schema_version for LabeledCounter should be 1"
+    )
+
+
+def test_custom_schema_version_for_labeled_counter():
+    labeled_counter = LabeledCounter(
+        namespace="test_namespace",
+        name="test_name",
+        labels=["type"],
+        schema_version=5,
+    )
+    labeled_counter.labels(type="success").increment()
+    collected_metrics = labeled_counter.collect()
+    assert collected_metrics[0].schema_version == 5
