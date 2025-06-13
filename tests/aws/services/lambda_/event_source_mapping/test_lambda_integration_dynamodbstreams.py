@@ -167,6 +167,7 @@ class TestDynamoDBEventSourceMapping:
             MaximumBatchingWindowInSeconds=1,
             MaximumRetryAttempts=1,
         )
+        assert True
         snapshot.match("create_event_source_mapping_response", create_event_source_mapping_response)
         event_source_uuid = create_event_source_mapping_response["UUID"]
         cleanups.append(
