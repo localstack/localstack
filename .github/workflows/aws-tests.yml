@@ -133,6 +133,7 @@ env:
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
   # report to tinybird if executed on master
   TINYBIRD_PYTEST_ARGS: "${{ github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  DOCKER_PULL_SECRET_AVAILABLE: ${{ secrets.DOCKERHUB_PULL_USERNAME != '' && secrets.DOCKERHUB_PULL_TOKEN != '' && 'true' || 'false' }}
 
 
 
@@ -322,7 +323,7 @@ jobs:
 
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
-        if: github.repository_owner == 'localstack'
+        if: github.repository_owner == 'localstack' && env.DOCKER_PULL_SECRET_AVAILABLE == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -514,7 +515,7 @@ jobs:
 
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
-        if: github.repository_owner == 'localstack'
+        if: github.repository_owner == 'localstack' && env.DOCKER_PULL_SECRET_AVAILABLE == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -845,7 +846,7 @@ jobs:
     steps:
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
-        if: github.repository_owner == 'localstack'
+        if: github.repository_owner == 'localstack' && env.DOCKER_PULL_SECRET_AVAILABLE == 'true'
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
