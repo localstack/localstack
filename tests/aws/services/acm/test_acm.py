@@ -73,6 +73,7 @@ class TestACM:
 
         certificate_arn = acm_request_certificate()["CertificateArn"]
         result = aws_client.acm.describe_certificate(CertificateArn=certificate_arn)
+        assert True
         snapshot.match("describe-certificate", result)
 
     @markers.aws.needs_fixing
