@@ -576,100 +576,292 @@
     "last_validated_date": "2023-08-14T20:35:53+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[CRC32C]": {
-    "last_validated_date": "2025-03-17T22:35:48+00:00"
+    "last_validated_date": "2025-06-15T17:09:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.64,
+      "call": 13.05,
+      "teardown": 1.03,
+      "total": 14.72
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[CRC32]": {
-    "last_validated_date": "2025-03-17T22:35:34+00:00"
+    "last_validated_date": "2025-06-15T17:09:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.94,
+      "call": 13.68,
+      "teardown": 1.01,
+      "total": 15.63
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[SHA1]": {
-    "last_validated_date": "2025-03-17T22:36:04+00:00"
+    "last_validated_date": "2025-06-15T17:09:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 13.37,
+      "teardown": 0.96,
+      "total": 14.83
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_composite[SHA256]": {
-    "last_validated_date": "2025-03-17T22:36:19+00:00"
+    "last_validated_date": "2025-06-15T17:09:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.69,
+      "call": 12.73,
+      "teardown": 1.01,
+      "total": 14.43
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_default": {
-    "last_validated_date": "2025-03-17T22:36:46+00:00"
+    "last_validated_date": "2025-06-15T17:12:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 2.92,
+      "teardown": 0.99,
+      "total": 4.5
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32C]": {
-    "last_validated_date": "2025-03-17T22:59:31+00:00"
+    "last_validated_date": "2025-06-15T17:11:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 14.13,
+      "teardown": 0.96,
+      "total": 15.58
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC32]": {
-    "last_validated_date": "2025-03-17T22:59:16+00:00"
+    "last_validated_date": "2025-06-15T17:11:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 11.77,
+      "teardown": 1.01,
+      "total": 13.28
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object[CRC64NVME]": {
-    "last_validated_date": "2025-03-17T22:59:46+00:00"
+    "last_validated_date": "2025-06-15T17:12:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 12.83,
+      "teardown": 0.99,
+      "total": 14.31
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_complete_multipart_parts_checksum_full_object_default": {
-    "last_validated_date": "2025-03-17T18:22:27+00:00"
+    "last_validated_date": "2025-06-15T17:12:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.92,
+      "teardown": 1.0,
+      "total": 2.42
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[COMPOSITE-CRC32C]": {
-    "last_validated_date": "2025-03-17T18:20:13+00:00"
+    "last_validated_date": "2025-06-15T17:09:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.12,
+      "teardown": 0.61,
+      "total": 1.23
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[COMPOSITE-CRC32]": {
-    "last_validated_date": "2025-03-17T18:20:12+00:00"
+    "last_validated_date": "2025-06-15T17:09:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 0.12,
+      "teardown": 0.56,
+      "total": 1.16
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[COMPOSITE-CRC64NVME]": {
-    "last_validated_date": "2025-03-17T18:20:17+00:00"
+    "last_validated_date": "2025-06-15T17:09:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.56,
+      "call": 0.11,
+      "teardown": 0.77,
+      "total": 1.44
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[COMPOSITE-SHA1]": {
-    "last_validated_date": "2025-03-17T18:20:15+00:00"
+    "last_validated_date": "2025-06-15T17:09:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.57,
+      "call": 0.14,
+      "teardown": 0.58,
+      "total": 1.29
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[COMPOSITE-SHA256]": {
-    "last_validated_date": "2025-03-17T18:20:16+00:00"
+    "last_validated_date": "2025-06-15T17:09:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 0.14,
+      "teardown": 0.57,
+      "total": 1.19
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[FULL_OBJECT-CRC32C]": {
-    "last_validated_date": "2025-03-17T18:20:20+00:00"
+    "last_validated_date": "2025-06-15T17:09:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.64,
+      "call": 0.13,
+      "teardown": 0.64,
+      "total": 1.41
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[FULL_OBJECT-CRC32]": {
-    "last_validated_date": "2025-03-17T18:20:19+00:00"
+    "last_validated_date": "2025-06-15T17:09:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.13,
+      "teardown": 0.64,
+      "total": 1.28
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[FULL_OBJECT-CRC64NVME]": {
-    "last_validated_date": "2025-03-17T18:20:24+00:00"
+    "last_validated_date": "2025-06-15T17:10:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.15,
+      "teardown": 0.64,
+      "total": 1.3
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[FULL_OBJECT-SHA1]": {
-    "last_validated_date": "2025-03-17T18:20:21+00:00"
+    "last_validated_date": "2025-06-15T17:09:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.11,
+      "teardown": 0.91,
+      "total": 1.53
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_compatibility[FULL_OBJECT-SHA256]": {
-    "last_validated_date": "2025-03-17T18:20:23+00:00"
+    "last_validated_date": "2025-06-15T17:10:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 0.12,
+      "teardown": 0.83,
+      "total": 1.46
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_default_for_checksum[CRC32C]": {
-    "last_validated_date": "2025-03-17T18:20:27+00:00"
+    "last_validated_date": "2025-06-15T17:10:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.57,
+      "call": 0.13,
+      "teardown": 0.63,
+      "total": 1.33
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_default_for_checksum[CRC32]": {
-    "last_validated_date": "2025-03-17T18:20:25+00:00"
+    "last_validated_date": "2025-06-15T17:10:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 0.12,
+      "teardown": 0.6,
+      "total": 1.21
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_default_for_checksum[CRC64NVME]": {
-    "last_validated_date": "2025-03-17T18:20:31+00:00"
+    "last_validated_date": "2025-06-15T17:10:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 0.11,
+      "teardown": 0.57,
+      "total": 1.15
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_default_for_checksum[SHA1]": {
-    "last_validated_date": "2025-03-17T18:20:28+00:00"
+    "last_validated_date": "2025-06-15T17:10:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 0.14,
+      "teardown": 0.6,
+      "total": 1.33
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_checksum_type_default_for_checksum[SHA256]": {
-    "last_validated_date": "2025-03-17T18:20:29+00:00"
+    "last_validated_date": "2025-06-15T17:10:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.11,
+      "teardown": 0.57,
+      "total": 1.18
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_composite": {
-    "last_validated_date": "2025-03-17T18:21:29+00:00"
+    "last_validated_date": "2025-06-15T17:11:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 12.45,
+      "teardown": 0.89,
+      "total": 13.86
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_parts_checksum_exceptions_full_object": {
-    "last_validated_date": "2025-03-17T19:08:00+00:00"
+    "last_validated_date": "2025-06-15T17:12:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 42.48,
+      "teardown": 1.16,
+      "total": 44.13
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_size_validation": {
-    "last_validated_date": "2025-03-17T19:05:35+00:00"
+    "last_validated_date": "2025-06-15T17:13:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 1.14,
+      "teardown": 1.03,
+      "total": 2.7
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[CRC32C]": {
-    "last_validated_date": "2025-03-17T18:20:50+00:00"
+    "last_validated_date": "2025-06-15T17:10:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 9.47,
+      "teardown": 0.9,
+      "total": 10.84
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[CRC32]": {
-    "last_validated_date": "2025-03-17T18:20:42+00:00"
+    "last_validated_date": "2025-06-15T17:10:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 8.02,
+      "teardown": 0.84,
+      "total": 9.32
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[CRC64NVME]": {
-    "last_validated_date": "2025-03-17T18:21:23+00:00"
+    "last_validated_date": "2025-06-15T17:11:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 9.39,
+      "teardown": 0.81,
+      "total": 10.72
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[SHA1]": {
-    "last_validated_date": "2025-03-17T18:21:00+00:00"
+    "last_validated_date": "2025-06-15T17:10:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 14.71,
+      "teardown": 0.86,
+      "total": 16.09
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_checksum_exception[SHA256]": {
-    "last_validated_date": "2025-03-17T18:21:07+00:00"
+    "last_validated_date": "2025-06-15T17:11:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.62,
+      "call": 14.22,
+      "teardown": 0.81,
+      "total": 15.65
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_copy_checksum": {
     "last_validated_date": "2025-06-13T12:45:50+00:00",
