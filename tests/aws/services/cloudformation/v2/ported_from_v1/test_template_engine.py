@@ -976,7 +976,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @pytest.mark.skip(reason="CFNV2:Provider create_stack not ported")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1057,7 +1056,7 @@ class TestMacros:
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
     ):
         """
-        This tests shows the state of instrinsic functions during the execution of the macro
+        This tests shows the state of intrinsic functions during the execution of the macro
         """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../../../../templates/macros/print_references.py"
@@ -1102,7 +1101,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @pytest.mark.skip(reason="CFNV2:Provider create_stack not ported")
+    @pytest.mark.skip(reason="CFNV2:Validation")
     @pytest.mark.parametrize(
         "macro_function",
         [
@@ -1175,7 +1174,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         snapshot.match("failed_description", failed_events_by_policy[0])
 
-    @pytest.mark.skip(reason="CFNV2:Parameters missing ParameterType upon macro execution")
     @markers.aws.validated
     def test_pyplate_param_type_list(self, deploy_cfn_template, aws_client, snapshot):
         deploy_cfn_template(
