@@ -102,24 +102,12 @@ class Counter(Metric, ThreadSafeCounter):
     """
 
     _type: str
-    _schema_version: int
 
     def __init__(self, namespace: str, name: str, schema_version: int = 1):
-        Metric.__init__(self, namespace=namespace, name=name)
+        Metric.__init__(self, namespace=namespace, name=name, schema_version=schema_version)
         ThreadSafeCounter.__init__(self)
 
-        if schema_version is None:
-            raise ValueError("An explicit schema_version is required for Counter metrics")
-
-        if not isinstance(schema_version, int):
-            raise TypeError("Schema version must be an integer.")
-
-        if schema_version <= 0:
-            raise ValueError("Schema version must be greater than zero.")
-
         self._type = "counter"
-        self._schema_version = schema_version
-
         MetricRegistry().register(self)
 
     def collect(self) -> list[CounterPayload]:
@@ -151,7 +139,6 @@ class LabeledCounter(Metric):
     """
 
     _type: str
-    _schema_version: int
     _labels: list[str]
     _label_values: tuple[Optional[Union[str, float]], ...]
     _counters_by_label_values: defaultdict[
@@ -159,16 +146,9 @@ class LabeledCounter(Metric):
     ]
 
     def __init__(self, namespace: str, name: str, labels: list[str], schema_version: int = 1):
-        super(LabeledCounter, self).__init__(namespace=namespace, name=name)
-
-        if schema_version is None:
-            raise ValueError("An explicit schema_version is required for Labeled Counter metrics")
-
-        if not isinstance(schema_version, int):
-            raise TypeError("Schema version must be an integer.")
-
-        if schema_version <= 0:
-            raise ValueError("Schema version must be greater than zero.")
+        super(LabeledCounter, self).__init__(
+            namespace=namespace, name=name, schema_version=schema_version
+        )
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -180,7 +160,6 @@ class LabeledCounter(Metric):
             raise ValueError("Too many labels: counters allow a maximum of 6.")
 
         self._type = "counter"
-        self._schema_version = schema_version
         self._labels = labels
         self._counters_by_label_values = defaultdict(ThreadSafeCounter)
         MetricRegistry().register(self)

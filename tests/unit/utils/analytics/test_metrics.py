@@ -238,3 +238,37 @@ def test_custom_schema_version_for_labeled_counter():
     labeled_counter.labels(type="success").increment()
     collected_metrics = labeled_counter.collect()
     assert collected_metrics[0].schema_version == 5
+
+
+def test_labeled_counter_schema_version_none_raises_value_error():
+    with pytest.raises(
+        ValueError, match="An explicit schema_version is required for Counter metrics"
+    ):
+        LabeledCounter(
+            namespace="test_namespace",
+            name="test_name",
+            labels=["type"],
+            schema_version=None,
+        )
+
+
+@pytest.mark.parametrize("invalid_version", ["1", "invalid"])
+def test_labeled_counter_schema_version_non_int_raises_type_error(invalid_version):
+    with pytest.raises(TypeError, match="Schema version must be an integer."):
+        LabeledCounter(
+            namespace="test_namespace",
+            name="test_name",
+            labels=["type"],
+            schema_version=invalid_version,
+        )
+
+
+@pytest.mark.parametrize("invalid_version", [0, -5])
+def test_labeled_counter_schema_version_non_positive_raises_value_error(invalid_version):
+    with pytest.raises(ValueError, match="Schema version must be greater than zero."):
+        LabeledCounter(
+            namespace="test_namespace",
+            name="test_name",
+            labels=["type"],
+            schema_version=invalid_version,
+        )
