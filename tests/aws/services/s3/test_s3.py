@@ -483,7 +483,6 @@ class TestS3:
         assert metadata_saved["Metadata"] == {"test_meta_1": "foo", "__meta_2": "bar"}
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..ChecksumType"])
     def test_upload_file_multipart(self, s3_bucket, tmpdir, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         key = "my-key"
@@ -13015,6 +13014,84 @@ class TestS3MultipartUploadChecksum:
             MpuObjectSize=len(data),
         )
         snapshot.match("complete-multipart-good-size", success)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=key_name,
+            ObjectAttributes=["Checksum", "ETag"],
+        )
+        snapshot.match("get-object-attrs", object_attrs)
+
+    @markers.aws.validated
+    def test_multipart_upload_part_copy_checksum(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+
+        part_key = "test-part-checksum"
+        put_object = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key=part_key,
+            Body="this is a part",
+        )
+        snapshot.match("put-object", put_object)
+
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="SHA256"
+        )
+        snapshot.match("create-mpu-checksum-sha256", response)
+        upload_id = response["UploadId"]
+
+        copy_source_key = f"{s3_bucket}/{part_key}"
+        upload_part_copy = aws_client.s3.upload_part_copy(
+            Bucket=s3_bucket,
+            UploadId=upload_id,
+            Key=key_name,
+            PartNumber=1,
+            CopySource=copy_source_key,
+        )
+        snapshot.match("upload-part-copy", upload_part_copy)
+
+        list_parts = aws_client.s3.list_parts(
+            Bucket=s3_bucket,
+            UploadId=upload_id,
+            Key=key_name,
+        )
+        snapshot.match("list-parts", list_parts)
+
+        # complete with no checksum type specified, just all default values
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={
+                "Parts": [
+                    {
+                        "ETag": upload_part_copy["CopyPartResult"]["ETag"],
+                        "PartNumber": 1,
+                        "ChecksumSHA256": upload_part_copy["CopyPartResult"]["ChecksumSHA256"],
+                    }
+                ]
+            },
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        get_object_with_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-object-with-checksum", get_object_with_checksum)
+
+        head_object_with_checksum = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-with-checksum", head_object_with_checksum)
 
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
