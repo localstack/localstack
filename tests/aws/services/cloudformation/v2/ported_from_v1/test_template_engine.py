@@ -841,6 +841,7 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.skip(reason="CFNV2: CreateStack")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

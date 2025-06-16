@@ -228,7 +228,6 @@ def test_cfn_function_url(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("response_headers", lowered_headers)
 
 
-@pytest.mark.skip(reason="CFNV2:Other Function already exists error")
 @markers.aws.validated
 def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -275,7 +274,6 @@ def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("provisioned_concurrency_config", provisioned_concurrency_config)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_lambda_logging_config(deploy_cfn_template, snapshot, aws_client):
     function_name = f"function{short_uid()}"
@@ -308,7 +306,6 @@ def test_lambda_logging_config(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("logging_config", logging_config)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @pytest.mark.skipif(
     not in_default_partition(), reason="Test not applicable in non-default partitions"
 )
@@ -356,7 +353,6 @@ def test_event_invoke_config(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("event_invoke_config", event_invoke_config)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # Lambda ZIP flaky in CI
@@ -401,7 +397,6 @@ def test_lambda_version(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("get_function_version", get_function_version)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # Lambda ZIP flaky in CI
@@ -666,7 +661,6 @@ def test_lambda_function_tags(deploy_cfn_template, aws_client, snapshot):
 
 
 class TestCfnLambdaIntegrations:
-    @pytest.mark.skip(reason="CFNV2:Other")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Attributes.EffectiveDeliveryPolicy",  # broken in sns right now. needs to be wrapped within an http key
@@ -857,7 +851,6 @@ class TestCfnLambdaIntegrations:
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
             aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
-    @pytest.mark.skip(reason="CFNV2:Other")
     # TODO: consider moving into the dedicated DynamoDB => Lambda tests because it tests the filtering functionality rather than CloudFormation (just using CF to deploy resources)
     #  tests.aws.services.lambda_.test_lambda_integration_dynamodbstreams.TestDynamoDBEventSourceMapping.test_dynamodb_event_filter
     @markers.aws.validated
@@ -1319,7 +1312,6 @@ def test_python_lambda_code_deployed_via_s3(deploy_cfn_template, aws_client, s3_
     assert invocation_result["StatusCode"] == 200
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_lambda_cfn_dead_letter_config_async_invocation(
     deploy_cfn_template, aws_client, s3_create_bucket, snapshot
