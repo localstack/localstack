@@ -266,9 +266,6 @@ def execute_macro(
             message="Template format error: unsupported structure.. Rollback requested by user.",
         )
 
-    if result.get("fragment") is None:
-        pass
-
     return result.get("fragment")
 
 
