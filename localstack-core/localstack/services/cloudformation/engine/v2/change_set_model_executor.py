@@ -113,17 +113,26 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         event_status: OperationStatus,
         special_action: str = None,
         reason: str = None,
+        resource_type=None,
     ):
         status_from_action = special_action or EventOperationFromAction[action.value]
         if event_status.value == OperationStatus.SUCCESS.value:
             status = StackStatus(f"{status_from_action}_COMPLETE")
         else:
             status = StackStatus(f"{status_from_action}_{event_status.name}")
+
         self._change_set.stack.add_resource_event(
             logical_resource_id,
             self._get_physical_id(logical_resource_id, False),
             status=status,
             status_reason=reason,
+        )
+        self._change_set.stack.set_resource_status(
+            logical_resource_id=logical_resource_id,
+            physical_resource_id=self._get_physical_id(logical_resource_id, False),
+            resource_type=resource_type,
+            status=ResourceStatus(status),
+            resource_status_reason=reason,
         )
 
         if event_status.value == OperationStatus.FAILED.value:
@@ -225,7 +234,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     after_properties=after.properties,
                 )
                 self._add_resource_event(
-                    ChangeAction.Modify, name, event.status, reason=event.message
+                    ChangeAction.Modify,
+                    name,
+                    event.status,
+                    reason=event.message,
+                    resource_type=before.resource_type,
                 )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
@@ -243,7 +256,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
                 # Register a Create for the next type.
                 self._add_resource_event(
-                    ChangeAction.Modify, name, event.status, reason=event.message
+                    ChangeAction.Modify,
+                    name,
+                    event.status,
+                    reason=event.message,
+                    resource_type=before.resource_type,
                 )
                 event = self._execute_resource_action(
                     action=ChangeAction.Add,
@@ -253,14 +270,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     after_properties=after.properties,
                 )
                 self._add_resource_event(
-                    ChangeAction.Modify, name, event.status, reason=event.message
+                    ChangeAction.Modify,
+                    name,
+                    event.status,
+                    reason=event.message,
+                    resource_type=before.resource_type,
                 )
         elif not is_nothing(before):
             # Case: removal
             # XXX hacky, stick the previous resources' properties into the payload
             # XXX hacky, stick the previous resources' properties into the payload
             before_properties = self._merge_before_properties(name, before)
-            self._add_resource_event(ChangeAction.Remove, name, OperationStatus.IN_PROGRESS)
+            self._add_resource_event(
+                ChangeAction.Remove,
+                name,
+                OperationStatus.IN_PROGRESS,
+                resource_type=before.resource_type,
+            )
             event = self._execute_resource_action(
                 action=ChangeAction.Remove,
                 logical_resource_id=name,
@@ -268,10 +294,21 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=before_properties,
                 after_properties=None,
             )
-            self._add_resource_event(ChangeAction.Remove, name, event.status, reason=event.message)
+            self._add_resource_event(
+                ChangeAction.Remove,
+                name,
+                event.status,
+                reason=event.message,
+                resource_type=before.resource_type,
+            )
         elif not is_nothing(after):
             # Case: addition
-            self._add_resource_event(ChangeAction.Add, name, OperationStatus.IN_PROGRESS)
+            self._add_resource_event(
+                ChangeAction.Add,
+                name,
+                OperationStatus.IN_PROGRESS,
+                resource_type=after.resource_type,
+            )
             event = self._execute_resource_action(
                 action=ChangeAction.Add,
                 logical_resource_id=name,
@@ -279,7 +316,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=None,
                 after_properties=after.properties,
             )
-            self._add_resource_event(ChangeAction.Add, name, event.status, reason=event.message)
+            self._add_resource_event(
+                ChangeAction.Add,
+                name,
+                event.status,
+                reason=event.message,
+                resource_type=after.resource_type,
+            )
 
     def _merge_before_properties(
         self, name: str, preproc_resource: PreprocResource
@@ -367,15 +410,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 physical_resource_id = self._get_physical_id(logical_resource_id)
                 self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
 
-                self._change_set.stack.set_resource_status(
-                    logical_resource_id=logical_resource_id,
-                    physical_resource_id=physical_resource_id,
-                    resource_type=resource_type,
-                    status=ResourceStatus.CREATE_COMPLETE
-                    if action == ChangeAction.Add
-                    else ResourceStatus.UPDATE_COMPLETE,
-                )
-
             case OperationStatus.FAILED:
                 reason = event.message
                 LOG.warning(
@@ -383,16 +417,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason,
                 )
                 # TODO: duplication
-                stack.set_resource_status(
-                    logical_resource_id=logical_resource_id,
-                    # TODO
-                    physical_resource_id="",
-                    resource_type=resource_type,
-                    status=ResourceStatus.CREATE_FAILED
-                    if action == ChangeAction.Add
-                    else ResourceStatus.UPDATE_FAILED,
-                    resource_status_reason=reason,
-                )
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
         return event
