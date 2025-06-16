@@ -12,7 +12,13 @@
     "last_validated_date": "2025-04-24T17:54:44+00:00"
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
-    "last_validated_date": "2025-04-24T17:00:59+00:00"
+    "last_validated_date": "2025-06-16T22:25:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.24,
+      "call": 116.21,
+      "teardown": 0.14,
+      "total": 116.59
+    }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_dynamic_update": {
     "last_validated_date": "2025-04-24T17:02:59+00:00"

@@ -4,26 +4,43 @@ from typing import Callable
 
 import pytest
 
-from localstack.aws.api.cloudformation import DescribeChangeSetOutput, StackEvent
+from localstack.aws.api.cloudformation import DescribeChangeSetOutput
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
-PerResourceStackEvents = dict[str, list[StackEvent]]
+
+def normalize_event(event):
+    """Simplify the event and skip DELETE_* events."""
+    status = event.get("ResourceStatus")
+
+    return {
+        "LogicalResourceId": event.get("LogicalResourceId"),
+        "ResourceType": event.get("ResourceType"),
+        "ResourceStatus": status,
+        "Timestamp": event.get("Timestamp"),
+    }
 
 
 @pytest.fixture
 def capture_per_resource_events(
     aws_client: ServiceLevelClientFactory,
-) -> Callable[[str], PerResourceStackEvents]:
-    def capture(stack_name: str) -> PerResourceStackEvents:
+) -> Callable[[str], dict]:
+    def capture(stack_name: str) -> dict:
         events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
             "StackEvents"
         ]
-        per_resource_events = defaultdict(list)
+        per_resource_events = defaultdict(dict)
         for event in events:
             if logical_resource_id := event.get("LogicalResourceId"):
-                per_resource_events[logical_resource_id].append(event)
+                resource_name = (
+                    logical_resource_id if logical_resource_id != stack_name else "Stack"
+                )
+                normalized_event = normalize_event(event)
+                per_resource_events[resource_name][normalized_event["ResourceStatus"]] = (
+                    normalized_event
+                )
+
         return per_resource_events
 
     return capture

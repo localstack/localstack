@@ -21,7 +21,6 @@ pytestmark = pytest.mark.skipif(
 )
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "per-resource-events..*",
         "delete-describe..*",
         #
         # Before/After Context
@@ -34,6 +33,10 @@ pytestmark = pytest.mark.skipif(
         "$..Replacement",
         "$..PolicyAction",
         "$..PhysicalResourceId",
+        # Unsupported events
+        "$..DELETE_COMPLETE",
+        "$..DELETE_IN_PROGRESS",
+        "$..UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
     ]
 )
 class TestCaptureUpdateProcess:
