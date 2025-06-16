@@ -863,13 +863,22 @@
       "total": 15.65
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_copy_checksum": {
-    "last_validated_date": "2025-06-13T12:45:50+00:00",
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_copy_checksum[COMPOSITE]": {
+    "last_validated_date": "2025-06-16T10:53:40+00:00",
     "durations_in_seconds": {
-      "setup": 0.92,
-      "call": 1.39,
-      "teardown": 1.01,
-      "total": 3.32
+      "setup": 0.97,
+      "call": 1.5,
+      "teardown": 1.06,
+      "total": 3.53
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3MultipartUploadChecksum::test_multipart_upload_part_copy_checksum[FULL_OBJECT]": {
+    "last_validated_date": "2025-06-16T10:53:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 1.4,
+      "teardown": 0.94,
+      "total": 2.86
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockLegalHold::test_delete_locked_object": {
