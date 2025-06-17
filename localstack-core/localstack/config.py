@@ -1245,6 +1245,9 @@ DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
 # This flag enables `connect_to` to be in-memory only and not do networking calls
 IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 
+# This flag enables all responses from LocalStack to contain a `x-localstack` HTTP header.
+LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_true("LOCALSTACK_RESPONSE_HEADER_ENABLED")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1351,6 +1354,7 @@ CONFIG_ENV_VARS = [
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
+    "LOCALSTACK_RESPONSE_HEADER_ENABLED",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",
