@@ -37,6 +37,8 @@ from localstack.aws.api.s3 import (
     LoggingEnabled,
     Metadata,
     MethodNotAllowed,
+    MetricsConfiguration,
+    MetricsId,
     MultipartUploadId,
     NoSuchKey,
     NoSuchVersion,
@@ -115,6 +117,7 @@ class S3Bucket:
     intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
     analytics_configurations: dict[AnalyticsId, AnalyticsConfiguration]
     inventory_configurations: dict[InventoryId, InventoryConfiguration]
+    metric_configurations: dict[MetricsId, MetricsConfiguration]
     object_lock_default_retention: Optional[DefaultRetention]
     replication: ReplicationConfiguration
     owner: Owner
@@ -154,6 +157,7 @@ class S3Bucket:
         self.intelligent_tiering_configurations = {}
         self.analytics_configurations = {}
         self.inventory_configurations = {}
+        self.metric_configurations = {}
         self.object_lock_default_retention = {}
         self.replication = None
         self.acl = acl

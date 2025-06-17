@@ -4428,5 +4428,178 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_put_bucket_metrics_configuration": {
+    "recorded-date": "13-06-2025, 08:33:02",
+    "recorded-content": {
+      "put_bucket_metrics_configuration": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_bucket_metrics_configuration": {
+        "MetricsConfiguration": {
+          "Filter": {
+            "Prefix": "logs/"
+          },
+          "Id": "<id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_overwrite_bucket_metrics_configuration": {
+    "recorded-date": "13-06-2025, 08:33:03",
+    "recorded-content": {
+      "overwrite_bucket_metrics_configuration": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_bucket_metrics_configuration": {
+        "MetricsConfiguration": {
+          "Filter": {
+            "Prefix": "logs/new-prefix"
+          },
+          "Id": "<id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_list_bucket_metrics_configurations": {
+    "recorded-date": "13-06-2025, 08:33:04",
+    "recorded-content": {
+      "list_bucket_metrics_configurations": {
+        "IsTruncated": false,
+        "MetricsConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "logs/prefix"
+            },
+            "Id": "<id:1>"
+          },
+          {
+            "Filter": {
+              "Prefix": "logs/prefix"
+            },
+            "Id": "<id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_get_bucket_metrics_configuration": {
+    "recorded-date": "13-06-2025, 08:33:17",
+    "recorded-content": {
+      "get_bucket_metrics_configuration": {
+        "MetricsConfiguration": {
+          "Filter": {
+            "Prefix": "logs/"
+          },
+          "Id": "<id:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_get_bucket_metrics_configuration_not_exist": {
+    "recorded-date": "13-06-2025, 08:33:18",
+    "recorded-content": {
+      "get_bucket_metrics_configuration": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_delete_metrics_configuration": {
+    "recorded-date": "13-06-2025, 08:33:19",
+    "recorded-content": {
+      "delete_bucket_metrics_configuration": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "get_bucket_metrics_configuration": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_list_bucket_metrics_configurations_paginated": {
+    "recorded-date": "13-06-2025, 08:33:16",
+    "recorded-content": {
+      "list_bucket_metrics_configurations_page_2": {
+        "ContinuationToken": "<continuation-token:1>",
+        "IsTruncated": false,
+        "MetricsConfigurationList": [
+          {
+            "Filter": {
+              "Prefix": "logs/prefix"
+            },
+            "Id": "<id:1>"
+          },
+          {
+            "Filter": {
+              "Prefix": "logs/prefix"
+            },
+            "Id": "<id:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_delete_metrics_configuration_twice": {
+    "recorded-date": "13-06-2025, 08:33:20",
+    "recorded-content": {
+      "delete_bucket_metrics_configuration_1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete_bucket_metrics_configuration_2": {
+        "Error": {
+          "Code": "NoSuchConfiguration",
+          "Message": "The specified configuration does not exist."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

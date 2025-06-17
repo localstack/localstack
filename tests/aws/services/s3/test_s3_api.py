@@ -2180,3 +2180,164 @@ class TestS3ObjectWritePrecondition:
             IfMatch=multipart_etag,
         )
         snapshot.match("complete-multipart-if-match-overwrite-multipart", complete_multipart_1)
+
+
+class TestS3MetricsConfiguration:
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # PutBucketMetricsConfiguration should return 204, but we return 200
+            "$.put_bucket_metrics_configuration.ResponseMetadata.HTTPStatusCode",
+        ]
+    )
+    def test_put_bucket_metrics_configuration(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer([snapshot.transform.key_value("Id")])
+
+        metric_id = short_uid()
+        metrics_config = {"Id": metric_id, "Filter": {"Prefix": "logs/"}}
+
+        put_result = aws_client.s3.put_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id, MetricsConfiguration=metrics_config
+        )
+        snapshot.match("put_bucket_metrics_configuration", put_result)
+
+        get_result = aws_client.s3.get_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
+        snapshot.match("get_bucket_metrics_configuration", get_result)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # PutBucketMetricsConfiguration should return 204, but we return 200
+            "$.overwrite_bucket_metrics_configuration.ResponseMetadata.HTTPStatusCode",
+        ]
+    )
+    def test_overwrite_bucket_metrics_configuration(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer([snapshot.transform.key_value("Id")])
+
+        metric_id = short_uid()
+        metrics_config = {"Id": metric_id, "Filter": {"Prefix": "logs/"}}
+
+        aws_client.s3.put_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id, MetricsConfiguration=metrics_config
+        )
+
+        metrics_config["Filter"]["Prefix"] = "logs/new-prefix"
+
+        overwrite_result = aws_client.s3.put_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id, MetricsConfiguration=metrics_config
+        )
+        snapshot.match("overwrite_bucket_metrics_configuration", overwrite_result)
+
+        get_result = aws_client.s3.get_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
+        snapshot.match("get_bucket_metrics_configuration", get_result)
+
+    @markers.aws.validated
+    def test_list_bucket_metrics_configurations(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+
+        metric_id_1 = f"1-{short_uid()}"
+        metric_id_2 = f"2-{short_uid()}"
+
+        metrics_configs = {
+            metric_id_1: {"Id": metric_id_1, "Filter": {"Prefix": "logs/prefix"}},
+            metric_id_2: {"Id": metric_id_2, "Filter": {"Prefix": "logs/prefix"}},
+        }
+
+        for metrics_config in metrics_configs.values():
+            aws_client.s3.put_bucket_metrics_configuration(
+                Bucket=s3_bucket, Id=metrics_config["Id"], MetricsConfiguration=metrics_config
+            )
+
+        result_configs = aws_client.s3.list_bucket_metrics_configurations(Bucket=s3_bucket)
+        snapshot.match("list_bucket_metrics_configurations", result_configs)
+
+    @markers.aws.validated
+    def test_list_bucket_metrics_configurations_paginated(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Id"),
+                snapshot.transform.key_value("NextContinuationToken"),
+                snapshot.transform.key_value("ContinuationToken"),
+            ]
+        )
+
+        metrics_configs = {}
+        for i in range(102):
+            metric_id = f"{100 + i}-{short_uid()}"
+            metrics_configs[metric_id] = {"Id": metric_id, "Filter": {"Prefix": "logs/prefix"}}
+
+        for metrics_config in metrics_configs.values():
+            aws_client.s3.put_bucket_metrics_configuration(
+                Bucket=s3_bucket, Id=metrics_config["Id"], MetricsConfiguration=metrics_config
+            )
+
+        result_configs_page_1 = aws_client.s3.list_bucket_metrics_configurations(Bucket=s3_bucket)
+        assert len(result_configs_page_1["MetricsConfigurationList"]) == 100
+        assert result_configs_page_1["NextContinuationToken"]
+
+        result_configs_page_2 = aws_client.s3.list_bucket_metrics_configurations(
+            Bucket=s3_bucket, ContinuationToken=result_configs_page_1["NextContinuationToken"]
+        )
+        snapshot.match("list_bucket_metrics_configurations_page_2", result_configs_page_2)
+
+    @markers.aws.validated
+    def test_get_bucket_metrics_configuration(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+
+        metric_id = short_uid()
+        metrics_config = {"Id": metric_id, "Filter": {"Prefix": "logs/"}}
+
+        aws_client.s3.put_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id, MetricsConfiguration=metrics_config
+        )
+
+        result = aws_client.s3.get_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
+        snapshot.match("get_bucket_metrics_configuration", result)
+
+    @markers.aws.validated
+    def test_get_bucket_metrics_configuration_not_exist(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+
+        with pytest.raises(ClientError) as get_err:
+            aws_client.s3.get_bucket_metrics_configuration(Bucket=s3_bucket, Id="does-not-exist")
+        snapshot.match("get_bucket_metrics_configuration", get_err.value.response)
+
+    @markers.aws.validated
+    def test_delete_metrics_configuration(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+
+        metric_id = short_uid()
+        metrics_config = {"Id": metric_id, "Filter": {"Prefix": "logs/"}}
+
+        aws_client.s3.put_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id, MetricsConfiguration=metrics_config
+        )
+
+        delete_result = aws_client.s3.delete_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id
+        )
+        snapshot.match("delete_bucket_metrics_configuration", delete_result)
+
+        with pytest.raises(ClientError) as get_err:
+            aws_client.s3.get_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
+        snapshot.match("get_bucket_metrics_configuration", get_err.value.response)
+
+    @markers.aws.validated
+    def test_delete_metrics_configuration_twice(self, s3_bucket, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Id"))
+
+        metric_id = short_uid()
+        metrics_config = {"Id": metric_id, "Filter": {"Prefix": "logs/"}}
+
+        aws_client.s3.put_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id, MetricsConfiguration=metrics_config
+        )
+
+        delete_result_1 = aws_client.s3.delete_bucket_metrics_configuration(
+            Bucket=s3_bucket, Id=metric_id
+        )
+        snapshot.match("delete_bucket_metrics_configuration_1", delete_result_1)
+
+        with pytest.raises(ClientError) as delete_err:
+            aws_client.s3.delete_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
+        snapshot.match("delete_bucket_metrics_configuration_2", delete_err.value.response)
