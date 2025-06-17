@@ -133,6 +133,7 @@ class TestLambdaRuntimesCommon:
             "$..environment.LD_LIBRARY_PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.PATH",  # Only rust runtime (additional /var/lang/bin)
             "$..environment.LC_CTYPE",  # Only python3.11 (part of a broken image rollout, likely rolled back)
+            "$..environment.RUBYLIB",  # Changed around 2025-06-17
             # Newer Nodejs images explicitly disable a temporary performance workaround for Nodejs 20 on certain hosts:
             # https://nodejs.org/api/cli.html#uv_use_io_uringvalue
             # https://techfindings.net/archives/6469
