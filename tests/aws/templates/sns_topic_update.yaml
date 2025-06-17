@@ -1,0 +1,28 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TopicName:
+    Type: String
+    Default: sns-topic-simple
+  DisplayName:
+    Type: String
+    Default: Initial Display Name
+  Environment:
+    Type: String
+    Default: test
+  Project:
+    Type: String
+    Default: localstack
+Resources:
+  TestTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+      DisplayName: !Ref DisplayName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref Project
+Outputs:
+  TopicArn:
+    Value: !Ref TestTopic
