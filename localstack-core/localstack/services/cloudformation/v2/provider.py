@@ -236,7 +236,10 @@ class CloudformationProviderV2(CloudformationProvider):
                     raise ValidationError(f"Stack '{stack_name}' does not exist.")
                 stack = active_stack_candidates[0]
 
-        stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
+        if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
+            stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
+        else:
+            stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
         # TODO: test if rollback status is allowed as well
         if (

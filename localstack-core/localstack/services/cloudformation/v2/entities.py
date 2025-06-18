@@ -28,7 +28,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
-from localstack.utils.time import timestamp_millis
 
 
 class ResolvedResource(TypedDict):
@@ -120,7 +119,7 @@ class Stack:
 
         event: StackEvent = {
             "EventId": long_uid(),
-            "Timestamp": timestamp_millis(),
+            "Timestamp": datetime.now(tz=timezone.utc),
             "StackId": self.stack_id,
             "StackName": self.stack_name,
             "LogicalResourceId": resource_id,

@@ -33,10 +33,6 @@ pytestmark = pytest.mark.skipif(
         "$..Replacement",
         "$..PolicyAction",
         "$..PhysicalResourceId",
-        # Unsupported events
-        "$..DELETE_COMPLETE",
-        "$..DELETE_IN_PROGRESS",
-        "$..UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
     ]
 )
 class TestCaptureUpdateProcess:

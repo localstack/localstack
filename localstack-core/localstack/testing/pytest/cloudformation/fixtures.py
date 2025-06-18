@@ -4,17 +4,18 @@ from typing import Callable
 
 import pytest
 
-from localstack.aws.api.cloudformation import DescribeChangeSetOutput
+from localstack.aws.api.cloudformation import DescribeChangeSetOutput, StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 
-def normalize_event(event):
+def normalize_event(event: StackEvent):
     """Simplify the event and skip DELETE_* events."""
     status = event.get("ResourceStatus")
 
     return {
+        # TODO "PhysicalResourceId": event.get("PhysicalResourceId"),
         "LogicalResourceId": event.get("LogicalResourceId"),
         "ResourceType": event.get("ResourceType"),
         "ResourceStatus": status,
@@ -30,18 +31,51 @@ def capture_per_resource_events(
         events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
             "StackEvents"
         ]
-        per_resource_events = defaultdict(dict)
+        per_resource_events = defaultdict(list)
         for event in events:
+            # TODO: not supported events
+            if event.get("ResourceStatus") in {
+                "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+                "DELETE_IN_PROGRESS",
+                "DELETE_COMPLETE",
+            }:
+                continue
+
             if logical_resource_id := event.get("LogicalResourceId"):
                 resource_name = (
                     logical_resource_id if logical_resource_id != stack_name else "Stack"
                 )
                 normalized_event = normalize_event(event)
-                per_resource_events[resource_name][normalized_event["ResourceStatus"]] = (
-                    normalized_event
-                )
+                per_resource_events[resource_name].append(normalized_event)
 
-        return per_resource_events
+        for resource_id in per_resource_events:
+            per_resource_events[resource_id].sort(key=lambda event: event["Timestamp"])
+
+        filtered_per_resource_events = {}
+        for resource_id in per_resource_events:
+            events = []
+            last: tuple[str, str, str] | None = None
+
+            for event in per_resource_events[resource_id]:
+                unique_key = (
+                    event["LogicalResourceId"],
+                    event["ResourceStatus"],
+                    event["ResourceType"],
+                )
+                if last is None:
+                    events.append(event)
+                    last = unique_key
+                    continue
+
+                if unique_key == last:
+                    continue
+
+                events.append(event)
+                last = unique_key
+
+            filtered_per_resource_events[resource_id] = events
+
+        return filtered_per_resource_events
 
     return capture
 
@@ -182,9 +216,6 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
         ]
         snapshot.match("post-create-2-describe", describe)
 
-        events = capture_per_resource_events(stack_name)
-        snapshot.match("per-resource-events", events)
-
         # delete stack
         aws_client_no_retry.cloudformation.delete_stack(StackName=stack_id)
         aws_client_no_retry.cloudformation.get_waiter("stack_delete_complete").wait(
@@ -194,5 +225,8 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             0
         ]
         snapshot.match("delete-describe", describe)
+
+        events = capture_per_resource_events(stack_id)
+        snapshot.match("per-resource-events", events)
 
     yield inner

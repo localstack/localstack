@@ -95,7 +95,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
-    "recorded-date": "17-06-2025, 15:48:17",
+    "recorded-date": "18-06-2025, 16:17:02",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -322,84 +322,6 @@
         "StackStatus": "UPDATE_COMPLETE",
         "Tags": []
       },
-      "per-resource-events": {
-        "Foo": {
-          "CREATE_COMPLETE": {
-            "LogicalResourceId": "Foo",
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "Timestamp": "timestamp"
-          },
-          "CREATE_IN_PROGRESS": {
-            "LogicalResourceId": "Foo",
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "Timestamp": "timestamp"
-          },
-          "DELETE_COMPLETE": {
-            "LogicalResourceId": "Foo",
-            "ResourceStatus": "DELETE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "Timestamp": "timestamp"
-          },
-          "DELETE_IN_PROGRESS": {
-            "LogicalResourceId": "Foo",
-            "ResourceStatus": "DELETE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "Timestamp": "timestamp"
-          },
-          "UPDATE_COMPLETE": {
-            "LogicalResourceId": "Foo",
-            "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::SNS::Topic",
-            "Timestamp": "timestamp"
-          },
-          "UPDATE_IN_PROGRESS": {
-            "LogicalResourceId": "Foo",
-            "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceType": "AWS::SNS::Topic",
-            "Timestamp": "timestamp"
-          }
-        },
-        "Stack": {
-          "CREATE_COMPLETE": {
-            "LogicalResourceId": "<stack-name:1>",
-            "ResourceStatus": "CREATE_COMPLETE",
-            "ResourceType": "AWS::CloudFormation::Stack",
-            "Timestamp": "timestamp"
-          },
-          "CREATE_IN_PROGRESS": {
-            "LogicalResourceId": "<stack-name:1>",
-            "ResourceStatus": "CREATE_IN_PROGRESS",
-            "ResourceType": "AWS::CloudFormation::Stack",
-            "Timestamp": "timestamp"
-          },
-          "REVIEW_IN_PROGRESS": {
-            "LogicalResourceId": "<stack-name:1>",
-            "ResourceStatus": "REVIEW_IN_PROGRESS",
-            "ResourceType": "AWS::CloudFormation::Stack",
-            "Timestamp": "timestamp"
-          },
-          "UPDATE_COMPLETE": {
-            "LogicalResourceId": "<stack-name:1>",
-            "ResourceStatus": "UPDATE_COMPLETE",
-            "ResourceType": "AWS::CloudFormation::Stack",
-            "Timestamp": "timestamp"
-          },
-          "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS": {
-            "LogicalResourceId": "<stack-name:1>",
-            "ResourceStatus": "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
-            "ResourceType": "AWS::CloudFormation::Stack",
-            "Timestamp": "timestamp"
-          },
-          "UPDATE_IN_PROGRESS": {
-            "LogicalResourceId": "<stack-name:1>",
-            "ResourceStatus": "UPDATE_IN_PROGRESS",
-            "ResourceType": "AWS::CloudFormation::Stack",
-            "Timestamp": "timestamp"
-          }
-        }
-      },
       "delete-describe": {
         "CreationTime": "datetime",
         "DeletionTime": "datetime",
@@ -414,6 +336,108 @@
         "StackName": "<stack-name:1>",
         "StackStatus": "DELETE_COMPLETE",
         "Tags": []
+      },
+      "per-resource-events": {
+        "Foo": [
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Foo",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "<stack-name:1>": [
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          }
+        ]
       }
     }
   },
