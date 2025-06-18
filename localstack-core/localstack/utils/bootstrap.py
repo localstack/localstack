@@ -523,7 +523,7 @@ class ContainerConfigurators:
                 # Show a deprecation warning for each individual env var collected above
                 LOG.warning(
                     "Non-prefixed environment variable %(env_var)s is forwarded to the LocalStack container! "
-                    "Please use `LOCALSTACK_%(env_var)s` instead of %(env_var)s to explicitly mark this environment variable to be forwarded form the CLI to the LocalStack Runtime.",
+                    "Please use `LOCALSTACK_%(env_var)s` instead of %(env_var)s to explicitly mark this environment variable to be forwarded from the CLI to the LocalStack Runtime.",
                     {"env_var": non_prefixed_env_var},
                 )
 
