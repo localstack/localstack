@@ -107,9 +107,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
                 return self._get_install_marker_path(install_dir)
         return None
 
-    def _download_and_extract_archive(
-        self, download_url: str, archive_path: str, target_directory: str
-    ) -> None:
+    def _download_and_extract_archive(self, archive_path: str, target_directory: str) -> None:
         """
         Download and extract archive. Can be overridden by subclasses for custom behavior.
 
@@ -118,6 +116,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         :param target_directory: Directory to extract to
         :return: None
         """
+        download_url = self._get_download_url()
         download_and_extract(
             download_url,
             retries=3,
@@ -154,7 +153,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         archive_name = os.path.basename(download_url)
         archive_path = os.path.join(config.dirs.tmp, archive_name)
         try:
-            self._download_and_extract_archive(download_url, archive_path, target_directory)
+            self._download_and_extract_archive(archive_path, target_directory)
             self._handle_single_directory_extraction(target_directory)
         finally:
             rm_rf(archive_path)
