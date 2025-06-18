@@ -3714,5 +3714,137 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_api": {
+    "recorded-date": "18-06-2025, 12:28:55",
+    "recorded-content": {
+      "put-integration-response-wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-response-wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_resource": {
+    "recorded-date": "18-06-2025, 12:28:25",
+    "recorded-content": {
+      "put-integration-response-wrong-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-response-wrong-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_method": {
+    "recorded-date": "18-06-2025, 11:47:00",
+    "recorded-content": {
+      "put-integration-response-wrong-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-response-wrong-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_statuscode": {
+    "recorded-date": "18-06-2025, 11:51:51",
+    "recorded-content": {
+      "put-integration-response-invalid-statusCode": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-integration-response-invalid-statusCode": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_responsetemplates": {
+    "recorded-date": "18-06-2025, 13:03:29",
+    "recorded-content": {
+      "put-integration-response-invalid-responseTemplates-1": {
+        "Error": {
+          "Code": "SerializationException",
+          "Message": "class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-response-invalid-responseTemplates-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Validation Result: warnings : [], errors : [Invalid content type specified: 123]"
+        },
+        "message": "Validation Result: warnings : [], errors : [Invalid content type specified: 123]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
