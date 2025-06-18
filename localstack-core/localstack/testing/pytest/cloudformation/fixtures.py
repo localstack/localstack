@@ -1,30 +1,39 @@
 import json
 from collections import defaultdict
-from typing import Callable
+from datetime import datetime
+from typing import Callable, TypedDict, cast
 
 import pytest
 
-from localstack.aws.api.cloudformation import DescribeChangeSetOutput, StackEvent
+from localstack.aws.api.cloudformation import DescribeChangeSetOutput, PhysicalResourceId, StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 
-def normalize_event(event: StackEvent):
-    return {
-        "PhysicalResourceId": event.get("PhysicalResourceId"),
-        "LogicalResourceId": event.get("LogicalResourceId"),
-        "ResourceType": event.get("ResourceType"),
-        "ResourceStatus": event.get("ResourceStatus"),
-        "Timestamp": event.get("Timestamp"),
-    }
+class NormalizedEvent(TypedDict):
+    ResourceStatus: str
+    LogicalResourceId: str | None
+    ResourceType: str | None
+    Timestamp: datetime | None
+
+
+def normalize_event(event: StackEvent) -> NormalizedEvent:
+    status = event.get("ResourceStatus")
+    return NormalizedEvent(
+        PhysicalResourceId=event.get("PhysicalResourceId"),
+        LogicalResourceId=event.get("LogicalResourceId"),
+        ResourceType=event.get("ResourceType"),
+        ResourceStatus=status,
+        Timestamp=event.get("Timestamp"),
+    )
 
 
 @pytest.fixture
 def capture_per_resource_events(
     aws_client: ServiceLevelClientFactory,
-) -> Callable[[str], dict]:
-    def capture(stack_name: str) -> dict:
+) -> Callable[[str], dict[str, list[NormalizedEvent]]]:
+    def capture(stack_name: str) -> dict[str, list[NormalizedEvent]]:
         events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
             "StackEvents"
         ]

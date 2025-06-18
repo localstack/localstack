@@ -40,7 +40,7 @@
     "durations_in_seconds": {
       "setup": 0.26,
       "call": 116.94,
-      "teardown": 0.15,
+      "teardown": 0.35,
       "total": 117.35
     }
   },
