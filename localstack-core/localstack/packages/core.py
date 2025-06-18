@@ -109,13 +109,14 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
 
     def _download_and_extract_archive(
         self, download_url: str, archive_path: str, target_directory: str
-    ):
+    ) -> None:
         """
         Download and extract archive. Can be overridden by subclasses for custom behavior.
 
         :param download_url: URL to download from
         :param archive_path: Local path to save the archive
         :param target_directory: Directory to extract to
+        :return: None
         """
         download_and_extract(
             download_url,
@@ -124,12 +125,13 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
             target_dir=target_directory,
         )
 
-    def _handle_single_directory_extraction(self, target_directory: str):
+    def _handle_single_directory_extraction(self, target_directory: str) -> None:
         """
         Handle extraction of archives that contain a single root directory.
         Moves the contents up one level if extract_single_directory is True.
 
         :param target_directory: The target extraction directory
+        :return: None
         """
         if not self.extract_single_directory:
             return
