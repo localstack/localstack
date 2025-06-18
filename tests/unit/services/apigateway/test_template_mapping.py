@@ -101,6 +101,16 @@ class TestApiGatewayVtlTemplate:
 
         assert rendered_request == '""'
 
+    def test_apply_template_no_json_payload_non_quoted(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body="not json"))
+
+        template = "$input.json('$.message')"
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
+
+        assert rendered_request == '""'
+
     def test_apply_template_no_json_payload_nested(self):
         variables = MappingTemplateVariables(input=MappingTemplateInput(body='"#foobar123"'))
 
@@ -287,6 +297,16 @@ class TestApiGatewayVtlTemplate:
 
     def test_input_path_empty_body(self):
         variables = MappingTemplateVariables(input=MappingTemplateInput(body=""))
+
+        template = '$input.path("$.myVar")'
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
+
+        assert rendered_request == ""
+
+    def test_input_path_not_json_body(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body="not json"))
 
         template = '$input.path("$.myVar")'
         rendered_request = ApiGatewayVtlTemplate().render_vtl(
