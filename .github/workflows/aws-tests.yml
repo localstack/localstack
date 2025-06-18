@@ -345,8 +345,7 @@ jobs:
     steps:
       - name: Determine Runner Architecture
         shell: bash
-        run: |
-          echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
+        run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
       - name: Login to Docker Hub
         # login to DockerHub to avoid rate limiting issues on custom runners
