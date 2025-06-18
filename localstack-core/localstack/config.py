@@ -1246,7 +1246,7 @@ DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
 IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 
 # This flag enables all responses from LocalStack to contain a `x-localstack` HTTP header.
-LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_true("LOCALSTACK_RESPONSE_HEADER_ENABLED")
+LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_not_false("LOCALSTACK_RESPONSE_HEADER_ENABLED")
 
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
