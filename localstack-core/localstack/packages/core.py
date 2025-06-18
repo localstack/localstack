@@ -107,29 +107,55 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
                 return self._get_install_marker_path(install_dir)
         return None
 
-    def _install(self, target: InstallTarget) -> None:
-        target_directory = self._get_install_dir(target)
-        mkdir(target_directory)
-        download_url = self._get_download_url()
-        archive_name = os.path.basename(download_url)
-        archive_path = os.path.join(config.dirs.tmp, archive_name)
+    def _download_and_extract_archive(
+        self, download_url: str, archive_path: str, target_directory: str
+    ):
+        """
+        Download and extract archive. Can be overridden by subclasses for custom behavior.
+
+        :param download_url: URL to download from
+        :param archive_path: Local path to save the archive
+        :param target_directory: Directory to extract to
+        """
         download_and_extract(
             download_url,
             retries=3,
             tmp_archive=archive_path,
             target_dir=target_directory,
         )
-        rm_rf(archive_path)
-        if self.extract_single_directory:
-            dir_contents = os.listdir(target_directory)
-            if len(dir_contents) != 1:
-                return
-            target_subdir = os.path.join(target_directory, dir_contents[0])
-            if not os.path.isdir(target_subdir):
-                return
-            os.rename(target_subdir, f"{target_directory}.backup")
-            rm_rf(target_directory)
-            os.rename(f"{target_directory}.backup", target_directory)
+
+    def _handle_single_directory_extraction(self, target_directory: str):
+        """
+        Handle extraction of archives that contain a single root directory.
+        Moves the contents up one level if extract_single_directory is True.
+
+        :param target_directory: The target extraction directory
+        """
+        if not self.extract_single_directory:
+            return
+
+        dir_contents = os.listdir(target_directory)
+        if len(dir_contents) != 1:
+            return
+        target_subdir = os.path.join(target_directory, dir_contents[0])
+        if not os.path.isdir(target_subdir):
+            return
+        os.rename(target_subdir, f"{target_directory}.backup")
+        rm_rf(target_directory)
+        os.rename(f"{target_directory}.backup", target_directory)
+
+    def _install(self, target: InstallTarget) -> None:
+        target_directory = self._get_install_dir(target)
+        mkdir(target_directory)
+
+        download_url = self._get_download_url()
+        archive_name = os.path.basename(download_url)
+        archive_path = os.path.join(config.dirs.tmp, archive_name)
+        try:
+            self._download_and_extract_archive(download_url, archive_path, target_directory)
+            self._handle_single_directory_extraction(target_directory)
+        finally:
+            rm_rf(archive_path)
 
 
 class PermissionDownloadInstaller(DownloadInstaller, ABC):
