@@ -11,14 +11,11 @@ from localstack.utils.strings import short_uid
 
 
 def normalize_event(event: StackEvent):
-    """Simplify the event and skip DELETE_* events."""
-    status = event.get("ResourceStatus")
-
     return {
-        # TODO "PhysicalResourceId": event.get("PhysicalResourceId"),
+        "PhysicalResourceId": event.get("PhysicalResourceId"),
         "LogicalResourceId": event.get("LogicalResourceId"),
         "ResourceType": event.get("ResourceType"),
-        "ResourceStatus": status,
+        "ResourceStatus": event.get("ResourceStatus"),
         "Timestamp": event.get("Timestamp"),
     }
 
@@ -43,7 +40,9 @@ def capture_per_resource_events(
 
             if logical_resource_id := event.get("LogicalResourceId"):
                 resource_name = (
-                    logical_resource_id if logical_resource_id != stack_name else "Stack"
+                    logical_resource_id
+                    if logical_resource_id != event.get("StackName")
+                    else "Stack"
                 )
                 normalized_event = normalize_event(event)
                 per_resource_events[resource_name].append(normalized_event)

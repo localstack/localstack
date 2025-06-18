@@ -1,6 +1,24 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_dynamic]": {
-    "last_validated_date": "2025-06-17T15:57:39+00:00",
+    "last_validated_date": "2025-06-18T19:14:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 25.11,
+      "teardown": 0.14,
+      "total": 25.25
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_parameter_for_condition_create_resource]": {
+    "last_validated_date": "2025-06-18T19:14:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 26.23,
+      "teardown": 0.14,
+      "total": 26.37
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_mapping_scenarios[update_string_referencing_resource]": {
+    "last_validated_date": "2025-06-18T19:15:45+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 25.01,
@@ -8,85 +26,67 @@
       "total": 25.16
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_parameter_for_condition_create_resource]": {
-    "last_validated_date": "2025-06-17T15:58:04+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 24.98,
-      "teardown": 0.14,
-      "total": 25.12
-    }
-  },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_mapping_scenarios[update_string_referencing_resource]": {
-    "last_validated_date": "2025-06-17T15:59:04+00:00",
-    "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 26.25,
-      "teardown": 0.14,
-      "total": 26.39
-    }
-  },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_conditions": {
-    "last_validated_date": "2025-06-17T15:57:14+00:00",
+    "last_validated_date": "2025-06-18T19:13:55+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 38.17,
-      "teardown": 0.15,
-      "total": 38.32
+      "call": 37.82,
+      "teardown": 0.16,
+      "total": 37.98
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
-    "last_validated_date": "2025-06-18T16:17:02+00:00",
+    "last_validated_date": "2025-06-18T19:04:55+00:00",
     "durations_in_seconds": {
-      "setup": 1.3,
-      "call": 115.52,
-      "teardown": 0.16,
-      "total": 116.98
+      "setup": 0.26,
+      "call": 116.94,
+      "teardown": 0.15,
+      "total": 117.35
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_dynamic_update": {
-    "last_validated_date": "2025-06-17T15:50:21+00:00",
+    "last_validated_date": "2025-06-18T19:06:59+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 123.39,
-      "teardown": 0.14,
-      "total": 123.53
+      "call": 124.05,
+      "teardown": 0.16,
+      "total": 124.21
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_execute_with_ref": {
-    "last_validated_date": "2025-06-17T15:58:38+00:00",
+    "last_validated_date": "2025-06-18T19:15:20+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 27.0,
-      "teardown": 6.57,
-      "total": 33.57
+      "call": 26.07,
+      "teardown": 6.64,
+      "total": 32.71
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_mappings_with_parameter_lookup": {
-    "last_validated_date": "2025-06-17T15:56:35+00:00",
+    "last_validated_date": "2025-06-18T19:13:18+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 124.37,
-      "teardown": 0.15,
-      "total": 124.52
+      "call": 128.68,
+      "teardown": 0.14,
+      "total": 128.82
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_mappings_with_static_fields": {
-    "last_validated_date": "2025-06-17T15:54:31+00:00",
+    "last_validated_date": "2025-06-18T19:11:09+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 124.47,
+      "call": 124.56,
       "teardown": 0.14,
-      "total": 124.61
+      "total": 124.7
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_parameter_changes": {
-    "last_validated_date": "2025-06-17T15:52:26+00:00",
+    "last_validated_date": "2025-06-18T19:09:04+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
-      "call": 125.38,
+      "call": 124.46,
       "teardown": 0.14,
-      "total": 125.52
+      "total": 124.6
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::test_single_resource_static_update": {

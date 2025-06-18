@@ -109,8 +109,8 @@ class Stack:
         status: str = "",
         status_reason: str = "",
     ):
-        resource_id = resource_id or self.stack_name
-        physical_res_id = physical_res_id or self.stack_id
+        resource_id = resource_id
+        physical_res_id = physical_res_id
         resource_type = (
             self.template.get("Resources", {})
             .get(resource_id, {})
