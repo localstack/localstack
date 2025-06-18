@@ -476,30 +476,7 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DescribeStackEventsOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-        if stack_name:
-            if is_stack_arn(stack_name):
-                stack = state.stacks_v2[stack_name]
-            else:
-                stack_candidates = []
-                for stack in state.stacks_v2.values():
-                    if (
-                        stack.stack_name == stack_name
-                        and stack.status != StackStatus.DELETE_COMPLETE
-                    ):
-                        stack_candidates.append(stack)
-                if len(stack_candidates) == 0:
-                    raise ValidationError(f"No stack with name {stack_name} found")
-                elif len(stack_candidates) > 1:
-                    raise RuntimeError("Programing error, duplicate stacks found")
-                else:
-                    stack = stack_candidates[0]
-        else:
-            raise NotImplementedError
-
-        if not stack:
-            # aws will silently ignore invalid stack names - we should do the same
-            return
-
+        stack = find_stack_v2(state, stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
 
     @handler("DeleteStack")
