@@ -8,7 +8,6 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
-from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
@@ -110,9 +109,23 @@ def infrastructure_setup(cdk_template_path, aws_client):
 
 @pytest.fixture(scope="function", autouse=True)
 def skip_x_localstack_snapshots(request):
-    # Apply the skip_snapshot_verify marker to all tests, skipping the x-localstack header.
-    if hasattr(request.node, "add_marker"):
-        request.node.add_marker(markers.snapshot.skip_snapshot_verify(paths=["$..x-localstack"]))
+    # Add x-localstack skip to all snapshot tests. This is (unfortuantely) required since
+    # merging together multiple 'paths' parameters from the original skip_snapshot_verify()
+    # does not work properly. If we find a more elegant marker merging approach, this should
+    # be removed.
+    if hasattr(request.node, "fixturenames") and "snapshot" in request.node.fixturenames:
+        existing_paths = []
+        for marker in request.node.iter_markers("skip_snapshot_verify"):
+            if hasattr(marker, "kwargs") and "paths" in marker.kwargs:
+                paths = marker.kwargs["paths"]
+                existing_paths.extend(paths if isinstance(paths, list) else [paths])
+
+        if "$..x-localstack" not in existing_paths:
+            all_paths = existing_paths + ["$..x-localstack"]
+            request.node.own_markers = [
+                m for m in request.node.own_markers if m.name != "skip_snapshot_verify"
+            ]
+            request.node.add_marker(pytest.mark.skip_snapshot_verify(paths=all_paths))
 
 
 @pytest.fixture(scope="function")
