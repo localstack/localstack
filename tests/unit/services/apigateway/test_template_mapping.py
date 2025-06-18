@@ -94,12 +94,32 @@ class TestApiGatewayVtlTemplate:
     def test_apply_template_no_json_payload(self):
         variables = MappingTemplateVariables(input=MappingTemplateInput(body='"#foobar123"'))
 
+        template = "$input.json('$.message')"
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
+
+        assert rendered_request == '""'
+
+    def test_apply_template_no_json_payload_nested(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body='"#foobar123"'))
+
+        template = "$input.json('$.message').testAccess"
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
+
+        assert rendered_request == ""
+
+    def test_apply_template_no_json_payload_escaped(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body='"#foobar123"'))
+
         template = "$util.escapeJavaScript($input.json('$.message'))"
         rendered_request = ApiGatewayVtlTemplate().render_vtl(
             template=template, variables=variables
         )
 
-        assert "[]" == rendered_request
+        assert rendered_request == '\\"\\"'
 
     @pytest.mark.parametrize("format", [APPLICATION_JSON, APPLICATION_XML])
     def test_render_custom_template(self, format):
@@ -264,6 +284,16 @@ class TestApiGatewayVtlTemplate:
         )
 
         assert rendered_request == "%7B%7D"
+
+    def test_input_path_empty_body(self):
+        variables = MappingTemplateVariables(input=MappingTemplateInput(body=""))
+
+        template = '$input.path("$.myVar")'
+        rendered_request = ApiGatewayVtlTemplate().render_vtl(
+            template=template, variables=variables
+        )
+
+        assert rendered_request == ""
 
 
 TEMPLATE_JSON = """
