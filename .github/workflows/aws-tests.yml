@@ -627,7 +627,7 @@ jobs:
 
   test-cloudwatch-v1:
     name: Test CloudWatch V1
-    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.outputs.cloudwatch-v1 == 'true' }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudwatch-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -677,7 +677,7 @@ jobs:
 
   test-ddb-v2:
     name: Test DynamoDB(Streams) v2
-    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.outputs.dynamodb-v2 == 'true' }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.dynamodb-v2 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -726,7 +726,7 @@ jobs:
 
   test-events-v1:
     name: Test EventBridge v1
-    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.outputs.events-v1 == 'true' }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.events-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -775,7 +775,7 @@ jobs:
 
   test-cfn-v2-engine:
     name: Test CloudFormation Engine v2
-    if: ${{ !inputs.onlyAcceptanceTests && needs.test-preflight.outputs.cloudformation-v2 == 'true' }}
+    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudformation-v2 == 'true' )}}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
