@@ -74,7 +74,8 @@ def extract_jsonpath(value: dict | list, path: str):
     jsonpath_expr = parse(path)
     result = [match.value for match in jsonpath_expr.find(value)]
     if not result:
-        return ""
+        # return ""
+        return None
     result = result[0] if len(result) == 1 else result
     return result
 
@@ -221,7 +222,7 @@ class VelocityInput:
 
     def _extract_json_path(self, path):
         if not self.value:
-            return ""
+            return None
         value = self.value if isinstance(self.value, dict) else json.loads(self.value)
         return extract_jsonpath(value, path)
 
@@ -231,7 +232,9 @@ class VelocityInput:
     def json(self, path):
         path = path or "$"
         matching = self._extract_json_path(path)
-        if isinstance(matching, (list, dict)):
+        if matching is None:
+            matching = ""
+        elif isinstance(matching, (list, dict)):
             matching = json_safe(matching)
         return json.dumps(matching)
 

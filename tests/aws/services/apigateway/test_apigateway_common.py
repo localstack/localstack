@@ -839,11 +839,11 @@ class TestApiGatewayCommon:
         _create_route("to-string", '#set($result = $input.path("$.json"))$result.toString()')
         _create_route(
             "invalid-path",
-            '#set($result = $input.path("$.nonExisting")){"body": $result, "nested": $result.nested}',
+            '#set($result = $input.path("$.nonExisting")){"body": $result, "nested": $result.nested, "isNull": #if( $result == $null )"true"#else"false"#end, "isEmptyString": #if( $result == "" )"true"#else"false"#end}',
         )
         _create_route(
             "nested-list",
-            '#set($result = $input.path("$.json.listValue")){"body": $result, "nested": $result.nested}',
+            '#set($result = $input.path("$.json.listValue")){"body": $result, "nested": $result.nested, "isNull": #if( $result == $null )"true"#else"false"#end, "isEmptyString": #if( $result == "" )"true"#else"false"#end}',
         )
 
         stage_name = "dev"

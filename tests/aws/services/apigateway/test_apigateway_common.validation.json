@@ -12,12 +12,12 @@
     "last_validated_date": "2025-03-19T17:03:40+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_path_template_formatting": {
-    "last_validated_date": "2025-06-18T16:41:18+00:00",
+    "last_validated_date": "2025-06-18T17:29:00+00:00",
     "durations_in_seconds": {
-      "setup": 0.46,
-      "call": 63.58,
-      "teardown": 0.56,
-      "total": 64.6
+      "setup": 0.48,
+      "call": 42.72,
+      "teardown": 0.86,
+      "total": 44.06
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_integration_request_parameters_mapping": {
