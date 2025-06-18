@@ -3223,5 +3223,150 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_via_object_attrs_pagination": {
+    "recorded-date": "16-06-2025, 13:47:27",
+    "recorded-content": {
+      "list-parts": {
+        "Bucket": "bucket",
+        "ChecksumAlgorithm": "SHA256",
+        "ChecksumType": "COMPOSITE",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "test-object-attrs-pagination",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 2,
+        "Owner": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+            "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 5242881
+          },
+          {
+            "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+            "ETag": "\"c4c753e69bb853187f5854c46cf801c6\"",
+            "LastModified": "datetime",
+            "PartNumber": 2,
+            "Size": 5242881
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "complete-mpu": {
+        "Bucket": "bucket",
+        "ChecksumSHA256": "2Wjxbc3N6c1y3Eqve6x8X+xPy4qXhB1vAMgge0qeZJM=-2",
+        "ChecksumType": "COMPOSITE",
+        "ETag": "\"14cb3f95b2dfe6bd47fb59d47949e00e-2\"",
+        "Key": "test-object-attrs-pagination",
+        "Location": "<location:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs-all": {
+        "LastModified": "datetime",
+        "ObjectParts": {
+          "IsTruncated": false,
+          "MaxParts": 1000,
+          "NextPartNumberMarker": 2,
+          "PartNumberMarker": 0,
+          "Parts": [
+            {
+              "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+              "PartNumber": 1,
+              "Size": 5242881
+            },
+            {
+              "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+              "PartNumber": 2,
+              "Size": 5242881
+            }
+          ],
+          "TotalPartsCount": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs-1": {
+        "LastModified": "datetime",
+        "ObjectParts": {
+          "IsTruncated": false,
+          "MaxParts": 1000,
+          "NextPartNumberMarker": 2,
+          "PartNumberMarker": 0,
+          "Parts": [
+            {
+              "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+              "PartNumber": 1,
+              "Size": 5242881
+            },
+            {
+              "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+              "PartNumber": 2,
+              "Size": 5242881
+            }
+          ],
+          "TotalPartsCount": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs-next": {
+        "LastModified": "datetime",
+        "ObjectParts": {
+          "IsTruncated": false,
+          "MaxParts": 1,
+          "NextPartNumberMarker": 2,
+          "PartNumberMarker": 1,
+          "Parts": [
+            {
+              "ChecksumSHA256": "DjU70AB1bON8k0n0fVHv2PJQVWcA/jWsITp6ti20Tbs=",
+              "PartNumber": 2,
+              "Size": 5242881
+            }
+          ],
+          "TotalPartsCount": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-attrs-wrong-part": {
+        "LastModified": "datetime",
+        "ObjectParts": {
+          "IsTruncated": false,
+          "MaxParts": 1,
+          "NextPartNumberMarker": 0,
+          "PartNumberMarker": 10,
+          "TotalPartsCount": 2
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

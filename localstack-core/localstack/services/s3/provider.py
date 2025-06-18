@@ -167,6 +167,7 @@ from localstack.aws.api.s3 import (
     ObjectLockRetention,
     ObjectLockToken,
     ObjectOwnership,
+    ObjectPart,
     ObjectVersion,
     ObjectVersionId,
     ObjectVersionStorageClass,
@@ -317,6 +318,7 @@ from localstack.services.s3.validation import (
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -2032,6 +2034,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         object_attrs = request.get("ObjectAttributes", [])
         response = GetObjectAttributesOutput()
+        object_checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
         if "ETag" in object_attrs:
             response["ETag"] = s3_object.etag
         if "StorageClass" in object_attrs:
@@ -2045,7 +2048,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 checksum_value = s3_object.checksum_value
             response["Checksum"] = {
                 f"Checksum{checksum_algorithm.upper()}": checksum_value,
-                "ChecksumType": getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT),
+                "ChecksumType": object_checksum_type,
             }
 
         response["LastModified"] = s3_object.last_modified
@@ -2054,9 +2057,55 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if "ObjectParts" in object_attrs and s3_object.parts:
-            # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
-            #  need to store more data about the Parts once we implement checksums for them
-            response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
+            if object_checksum_type == ChecksumType.FULL_OBJECT:
+                response["ObjectParts"] = GetObjectAttributesParts(
+                    TotalPartsCount=len(s3_object.parts)
+                )
+            else:
+                # this is basically a simplified `ListParts` call on the object, only returned when the checksum type is
+                # COMPOSITE
+                count = 0
+                is_truncated = False
+                part_number_marker = request.get("PartNumberMarker") or 0
+                max_parts = request.get("MaxParts") or 1000
+
+                parts = []
+                all_parts = sorted(s3_object.parts.items())
+                last_part_number, last_part = all_parts[-1]
+
+                # TODO: remove this backward compatibility hack needed for state created with <= 4.5
+                #  the parts would only be a tuple and would not store the proper state for 4.5 and earlier, so we need
+                #  to return early
+                if isinstance(last_part, tuple):
+                    response["ObjectParts"] = GetObjectAttributesParts(
+                        TotalPartsCount=len(s3_object.parts)
+                    )
+                    return response
+
+                for part_number, part in all_parts:
+                    if part_number <= part_number_marker:
+                        continue
+                    part_item = select_from_typed_dict(ObjectPart, part)
+
+                    parts.append(part_item)
+                    count += 1
+
+                    if count >= max_parts and part["PartNumber"] != last_part_number:
+                        is_truncated = True
+                        break
+
+                object_parts = GetObjectAttributesParts(
+                    TotalPartsCount=len(s3_object.parts),
+                    IsTruncated=is_truncated,
+                    MaxParts=max_parts,
+                    PartNumberMarker=part_number_marker,
+                    NextPartNumberMarker=0,
+                )
+                if parts:
+                    object_parts["Parts"] = parts
+                    object_parts["NextPartNumberMarker"] = parts[-1]["PartNumber"]
+
+                response["ObjectParts"] = object_parts
 
         return response
 
@@ -2729,8 +2778,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         **kwargs,
     ) -> ListPartsOutput:
-        # TODO: implement MaxParts
-        # TODO: implements PartNumberMarker
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if (
@@ -2742,10 +2789,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-
-        #     AbortDate: Optional[AbortDate] TODO: lifecycle
-        #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
-        #     RequestCharged: Optional[RequestCharged]
 
         count = 0
         is_truncated = False
@@ -2796,6 +2839,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_multipart.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
             response["ChecksumType"] = getattr(s3_multipart, "checksum_type", None)
+
+        #     AbortDate: Optional[AbortDate] TODO: lifecycle
+        #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
+        #     RequestCharged: Optional[RequestCharged]
 
         return response
 
@@ -4680,7 +4727,13 @@ def get_part_range(s3_object: S3Object, part_number: PartNumber) -> ObjectRange:
             ActualPartCount=len(s3_object.parts),
         )
 
-    begin, part_length = part_data
+    # TODO: remove for next major version 5.0, compatibility for <= 4.5
+    if isinstance(part_data, tuple):
+        begin, part_length = part_data
+    else:
+        begin = part_data["_position"]
+        part_length = part_data["Size"]
+
     end = begin + part_length - 1
     return ObjectRange(
         begin=begin,

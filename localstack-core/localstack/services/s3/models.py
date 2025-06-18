@@ -52,6 +52,7 @@ from localstack.aws.api.s3 import (
     ObjectStorageClass,
     ObjectVersionId,
     Owner,
+    Part,
     PartNumber,
     Payer,
     Policy,
@@ -89,6 +90,10 @@ from localstack.utils.tagging import TaggingService
 LOG = logging.getLogger(__name__)
 
 _gmt_zone_info = ZoneInfo("GMT")
+
+
+class InternalObjectPart(Part):
+    _position: int
 
 
 # note: not really a need to use a dataclass here, as it has a lot of fields, but only a few are set at creation
@@ -275,7 +280,7 @@ class S3Object:
     website_redirect_location: Optional[WebsiteRedirectLocation]
     acl: Optional[AccessControlPolicy]
     is_current: bool
-    parts: Optional[dict[int, tuple[int, int]]]
+    parts: Optional[dict[int, InternalObjectPart]]
     restore: Optional[Restore]
     internal_last_modified: int
 
@@ -498,14 +503,16 @@ class S3Multipart:
         object_etag = hashlib.md5(usedforsecurity=False)
         has_checksum = self.checksum_algorithm is not None
         checksum_hash = None
+        checksum_key = None
         if has_checksum:
+            checksum_key = f"Checksum{self.checksum_algorithm.upper()}"
             if self.checksum_type == ChecksumType.COMPOSITE:
                 checksum_hash = get_s3_checksum(self.checksum_algorithm)
             else:
                 checksum_hash = CombinedCrcHash(self.checksum_algorithm)
 
         pos = 0
-        parts_map = {}
+        parts_map: dict[int, InternalObjectPart] = {}
         for index, part in enumerate(parts):
             part_number = part["PartNumber"]
             part_etag = part["ETag"].strip('"')
@@ -526,7 +533,6 @@ class S3Multipart:
                 )
 
             if has_checksum:
-                checksum_key = f"Checksum{self.checksum_algorithm.upper()}"
                 if not (part_checksum := part.get(checksum_key)):
                     if self.checksum_type == ChecksumType.COMPOSITE:
                         # weird case, they still try to validate a different checksum type than the multipart
@@ -575,7 +581,16 @@ class S3Multipart:
 
             object_etag.update(bytes.fromhex(s3_part.etag))
             # keep track of the parts size, as it can be queried afterward on the object as a Range
-            parts_map[part_number] = (pos, s3_part.size)
+            internal_part = InternalObjectPart(
+                _position=pos,
+                Size=s3_part.size,
+                ETag=s3_part.etag,
+                PartNumber=s3_part.part_number,
+            )
+            if has_checksum and self.checksum_type == ChecksumType.COMPOSITE:
+                internal_part[checksum_key] = s3_part.checksum_value
+
+            parts_map[part_number] = internal_part
             pos += s3_part.size
 
         if mpu_size and mpu_size != pos:

@@ -12298,7 +12298,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=key_name,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-object-attrs", object_attrs)
 
@@ -12311,7 +12311,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=dest_key,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
 
@@ -12595,7 +12595,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=key_name,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-object-attrs", object_attrs)
 
@@ -12608,7 +12608,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=dest_key,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
 
@@ -12877,7 +12877,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=key_name,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-object-attrs", object_attrs)
 
@@ -12890,7 +12890,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=dest_key,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
 
@@ -12959,7 +12959,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=key_name,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-object-attrs", object_attrs)
 
@@ -13023,7 +13023,10 @@ class TestS3MultipartUploadChecksum:
         snapshot.match("get-object-attrs", object_attrs)
 
     @markers.aws.validated
-    def test_multipart_upload_part_copy_checksum(self, s3_bucket, snapshot, aws_client):
+    @pytest.mark.parametrize("checksum_type", ("COMPOSITE", "FULL_OBJECT"))
+    def test_multipart_upload_part_copy_checksum(
+        self, s3_bucket, snapshot, aws_client, checksum_type
+    ):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -13044,7 +13047,7 @@ class TestS3MultipartUploadChecksum:
 
         key_name = "test-multipart-checksum"
         response = aws_client.s3.create_multipart_upload(
-            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="SHA256"
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC32C", ChecksumType=checksum_type
         )
         snapshot.match("create-mpu-checksum-sha256", response)
         upload_id = response["UploadId"]
@@ -13075,7 +13078,7 @@ class TestS3MultipartUploadChecksum:
                     {
                         "ETag": upload_part_copy["CopyPartResult"]["ETag"],
                         "PartNumber": 1,
-                        "ChecksumSHA256": upload_part_copy["CopyPartResult"]["ChecksumSHA256"],
+                        "ChecksumCRC32C": upload_part_copy["CopyPartResult"]["ChecksumCRC32C"],
                     }
                 ]
             },
@@ -13096,7 +13099,7 @@ class TestS3MultipartUploadChecksum:
         object_attrs = aws_client.s3.get_object_attributes(
             Bucket=s3_bucket,
             Key=key_name,
-            ObjectAttributes=["Checksum", "ETag"],
+            ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-object-attrs", object_attrs)
 
