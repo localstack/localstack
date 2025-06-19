@@ -1409,6 +1409,9 @@ class TestIAMServiceRoles:
         snapshot.match("attached-role-policies", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns a empty list for no tags
     @pytest.mark.parametrize("service_name", SERVICES_CUSTOM_SUFFIX)
     def test_service_role_lifecycle_custom_suffix(
         self, aws_client, snapshot, create_service_linked_role, service_name
