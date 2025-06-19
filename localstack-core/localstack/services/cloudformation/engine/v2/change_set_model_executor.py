@@ -106,7 +106,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     raise e
         return physical_resource_id
 
-    def _add_resource_event(
+    def _process_event(
         self,
         action: ChangeAction,
         logical_resource_id,
@@ -117,16 +117,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     ):
         status_from_action = special_action or EventOperationFromAction[action.value]
         if event_status.value == OperationStatus.SUCCESS.value:
-            status = StackStatus(f"{status_from_action}_COMPLETE")
+            status = f"{status_from_action}_COMPLETE"
         else:
-            status = StackStatus(f"{status_from_action}_{event_status.name}")
+            status = f"{status_from_action}_{event_status.name}"
 
-        self._change_set.stack.add_resource_event(
-            logical_resource_id,
-            self._get_physical_id(logical_resource_id, False),
-            status=status,
-            status_reason=reason,
-        )
         self._change_set.stack.set_resource_status(
             logical_resource_id=logical_resource_id,
             physical_resource_id=self._get_physical_id(logical_resource_id, False),
@@ -225,7 +219,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # XXX hacky, stick the previous resources' properties into the payload
                 before_properties = self._merge_before_properties(name, before)
 
-                self._add_resource_event(ChangeAction.Modify, name, OperationStatus.IN_PROGRESS)
+                self._process_event(ChangeAction.Modify, name, OperationStatus.IN_PROGRESS)
                 event = self._execute_resource_action(
                     action=ChangeAction.Modify,
                     logical_resource_id=name,
@@ -233,7 +227,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     before_properties=before_properties,
                     after_properties=after.properties,
                 )
-                self._add_resource_event(
+                self._process_event(
                     ChangeAction.Modify,
                     name,
                     event.status,
@@ -255,7 +249,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     after_properties=None,
                 )
                 # Register a Create for the next type.
-                self._add_resource_event(
+                self._process_event(
                     ChangeAction.Modify,
                     name,
                     event.status,
@@ -269,7 +263,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     before_properties=None,
                     after_properties=after.properties,
                 )
-                self._add_resource_event(
+                self._process_event(
                     ChangeAction.Modify,
                     name,
                     event.status,
@@ -281,7 +275,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # XXX hacky, stick the previous resources' properties into the payload
             # XXX hacky, stick the previous resources' properties into the payload
             before_properties = self._merge_before_properties(name, before)
-            self._add_resource_event(
+            self._process_event(
                 ChangeAction.Remove,
                 name,
                 OperationStatus.IN_PROGRESS,
@@ -294,7 +288,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=before_properties,
                 after_properties=None,
             )
-            self._add_resource_event(
+            self._process_event(
                 ChangeAction.Remove,
                 name,
                 event.status,
@@ -303,7 +297,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             )
         elif not is_nothing(after):
             # Case: addition
-            self._add_resource_event(
+            self._process_event(
                 ChangeAction.Add,
                 name,
                 OperationStatus.IN_PROGRESS,
@@ -316,7 +310,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties=None,
                 after_properties=after.properties,
             )
-            self._add_resource_event(
+            self._process_event(
                 ChangeAction.Add,
                 name,
                 event.status,

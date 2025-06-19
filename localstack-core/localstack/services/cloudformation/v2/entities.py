@@ -98,11 +98,35 @@ class Stack:
         if reason:
             self.status_reason = reason
 
-        self.add_resource_event(
-            self.stack_name, self.stack_id, status.value, status_reason=reason or ""
+        self._store_event(self.stack_name, self.stack_id, status.value, status_reason=reason)
+
+    def set_resource_status(
+        self,
+        *,
+        logical_resource_id: str,
+        physical_resource_id: str | None,
+        resource_type: str,
+        status: ResourceStatus,
+        resource_status_reason: str | None = None,
+    ):
+        resource_description = StackResource(
+            StackName=self.stack_name,
+            StackId=self.stack_id,
+            LogicalResourceId=logical_resource_id,
+            PhysicalResourceId=physical_resource_id,
+            ResourceType=resource_type,
+            Timestamp=datetime.now(tz=timezone.utc),
+            ResourceStatus=status,
+            ResourceStatusReason=resource_status_reason,
         )
 
-    def add_resource_event(
+        if not resource_status_reason:
+            resource_description.pop("ResourceStatusReason")
+
+        self.resource_states[logical_resource_id] = resource_description
+        self._store_event(logical_resource_id, physical_resource_id, status, resource_status_reason)
+
+    def _store_event(
         self,
         resource_id: str = None,
         physical_res_id: str = None,
@@ -132,26 +156,6 @@ class Stack:
             event["ResourceStatusReason"] = status_reason
 
         self.events.insert(0, event)
-
-    def set_resource_status(
-        self,
-        *,
-        logical_resource_id: str,
-        physical_resource_id: str | None,
-        resource_type: str,
-        status: ResourceStatus,
-        resource_status_reason: str | None = None,
-    ):
-        self.resource_states[logical_resource_id] = StackResource(
-            StackName=self.stack_name,
-            StackId=self.stack_id,
-            LogicalResourceId=logical_resource_id,
-            PhysicalResourceId=physical_resource_id,
-            ResourceType=resource_type,
-            Timestamp=datetime.now(tz=timezone.utc),
-            ResourceStatus=status,
-            ResourceStatusReason=resource_status_reason,
-        )
 
     def describe_details(self) -> ApiStack:
         result = {
