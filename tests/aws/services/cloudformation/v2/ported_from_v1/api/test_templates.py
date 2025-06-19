@@ -17,7 +17,7 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
+@pytest.mark.skip(reason="CFNV2:Provider")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers", "$..Parameters"]

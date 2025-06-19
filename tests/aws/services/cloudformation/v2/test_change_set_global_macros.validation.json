@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/v2/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_base_global_macro": {
+    "last_validated_date": "2025-06-16T09:52:29+00:00",
+    "durations_in_seconds": {
+      "setup": 12.19,
+      "call": 37.41,
+      "teardown": 5.9,
+      "total": 55.5
+    }
+  }
+}

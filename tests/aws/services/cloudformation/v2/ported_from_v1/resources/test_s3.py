@@ -130,7 +130,6 @@ def test_object_lock_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("object-lock-info-only-enabled", cors_info)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_cfn_handle_s3_notification_configuration(
     aws_client,
