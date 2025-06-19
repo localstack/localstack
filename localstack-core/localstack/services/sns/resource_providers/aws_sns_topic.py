@@ -172,22 +172,25 @@ class SNSTopicProvider(ResourceProvider[SNSTopicProperties]):
           - sns:ListSubscriptionsByTopic
           - sns:GetDataProtectionPolicy
           - sns:PutDataProtectionPolicy
-          - sns:CreateTopic (for TopicName changes)
-          - sns:DeleteTopic (for TopicName changes)
+          - sns:CreateTopic (Not in the original spec)
+          - sns:DeleteTopic (Not in the original spec)
         """
         desired_state = request.desired_state
         previous_state = request.previous_state
         sns = request.aws_client_factory.sns
 
-        current_topic_arn = desired_state.get("TopicArn") or previous_state.get("TopicArn")
+        current_topic_arn = previous_state.get("TopicArn")
         if not current_topic_arn:
-            raise ValueError("TopicArn not found in desired_state or previous_state")
+            raise ValueError("TopicArn not found in previous_state")
 
         # Check if TopicName has changed (requires recreation)
         desired_topic_name = desired_state.get("TopicName")
         previous_topic_name = previous_state.get("TopicName")
 
-        if desired_topic_name and previous_topic_name and desired_topic_name != previous_topic_name:
+        if not previous_topic_name:
+            raise ValueError("Previous topic name is not present.")
+
+        if desired_topic_name != previous_topic_name:
             # TopicName changed - need to create new topic and delete old one
 
             # First, get current subscriptions and tags to preserve them

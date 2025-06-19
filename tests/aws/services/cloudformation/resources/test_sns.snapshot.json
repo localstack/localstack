@@ -136,7 +136,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_attributes": {
-    "recorded-date": "17-06-2025, 11:15:00",
+    "recorded-date": "19-06-2025, 19:39:41",
     "recorded-content": {
       "initial-topic-attributes": {
         "Attributes": {
@@ -201,12 +201,39 @@
       "initial-topic-tags": {
         "Tags": [
           {
+            "Key": "Project",
+            "Value": "localstack"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "replaced-value"
+          },
+          {
             "Key": "Environment",
             "Value": "test"
           },
           {
-            "Key": "Project",
-            "Value": "localstack"
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "TestTopic"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "replaced-value"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "initial-subscriptions": {
+        "Subscriptions": [
+          {
+            "Endpoint": "test@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "<topic-arn:1>"
           }
         ],
         "ResponseMetadata": {
@@ -277,12 +304,39 @@
       "updated-topic-tags": {
         "Tags": [
           {
+            "Key": "Project",
+            "Value": "backend"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "replaced-value"
+          },
+          {
             "Key": "Environment",
             "Value": "production"
           },
           {
-            "Key": "Project",
-            "Value": "backend"
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "TestTopic"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "replaced-value"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "new-subscriptions": {
+        "Subscriptions": [
+          {
+            "Endpoint": "test@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "<topic-arn:1>"
           }
         ],
         "ResponseMetadata": {
@@ -293,7 +347,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_name": {
-    "recorded-date": "17-06-2025, 18:26:00",
+    "recorded-date": "19-06-2025, 17:23:02",
     "recorded-content": {
       "initial-topic-attributes": {
         "Attributes": {
@@ -358,13 +412,25 @@
       "initial-topic-tags": {
         "Tags": [
           {
+            "Key": "Project",
+            "Value": "localstack"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "replaced-value"
+          },
+          {
             "Key": "Environment",
             "Value": "test"
           },
           {
-            "Key": "Project",
-            "Value": "localstack"
-          } 
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "TestTopic"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "replaced-value"
+          }
         ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -374,10 +440,10 @@
       "initial-subscriptions": {
         "Subscriptions": [
           {
-            "SubscriptionArn": "<subscription-arn:1>",
+            "Endpoint": "test@example.com",
             "Owner": "111111111111",
             "Protocol": "email",
-            "Endpoint": "test@example.com",
+            "SubscriptionArn": "PendingConfirmation",
             "TopicArn": "<topic-arn:1>"
           }
         ],
@@ -449,12 +515,24 @@
       "new-topic-tags": {
         "Tags": [
           {
+            "Key": "Project",
+            "Value": "localstack"
+          },
+          {
+            "Key": "aws:cloudformation:stack-name",
+            "Value": "replaced-value"
+          },
+          {
             "Key": "Environment",
             "Value": "production"
           },
           {
-            "Key": "Project",
-            "Value": "localstack"
+            "Key": "aws:cloudformation:logical-id",
+            "Value": "TestTopic"
+          },
+          {
+            "Key": "aws:cloudformation:stack-id",
+            "Value": "replaced-value"
           }
         ],
         "ResponseMetadata": {
@@ -465,10 +543,10 @@
       "new-subscriptions": {
         "Subscriptions": [
           {
-            "SubscriptionArn": "<subscription-arn:2>",
+            "Endpoint": "test@example.com",
             "Owner": "111111111111",
             "Protocol": "email",
-            "Endpoint": "test@example.com",
+            "SubscriptionArn": "PendingConfirmation",
             "TopicArn": "<topic-arn:2>"
           }
         ],

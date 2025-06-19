@@ -5,6 +5,24 @@
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_fifo_with_deduplication": {
     "last_validated_date": "2023-11-27T20:27:29+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_attributes": {
+    "last_validated_date": "2025-06-19T19:54:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.69,
+      "call": 38.56,
+      "teardown": 50.87,
+      "total": 90.12
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_name": {
+    "last_validated_date": "2025-06-19T20:02:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.64,
+      "call": 73.71,
+      "teardown": 50.41,
+      "total": 124.76
+    }
+  },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_with_attributes": {
     "last_validated_date": "2024-08-16T15:44:50+00:00"
   },
