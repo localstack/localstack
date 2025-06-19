@@ -88,7 +88,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.resolved_parameters[node_parameter.name] = delta.after
         return delta
 
-    def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str:
+    def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str | None:
         physical_resource_id = None
         try:
             physical_resource_id = self._after_resource_physical_id(logical_resource_id)
@@ -416,7 +416,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     "Resource provider operation failed: '%s'",
                     reason,
                 )
-                # TODO: duplication
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
         return event

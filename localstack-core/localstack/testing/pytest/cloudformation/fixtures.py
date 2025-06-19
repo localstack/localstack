@@ -1,6 +1,6 @@
 import json
 from collections import defaultdict
-from typing import Callable
+from typing import Callable, Optional, TypedDict
 
 import pytest
 
@@ -10,20 +10,31 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 
-def normalize_event(event: StackEvent):
-    return {
-        "PhysicalResourceId": event.get("PhysicalResourceId"),
-        "LogicalResourceId": event.get("LogicalResourceId"),
-        "ResourceType": event.get("ResourceType"),
-        "ResourceStatus": event.get("ResourceStatus"),
-        "Timestamp": event.get("Timestamp"),
-    }
+class NormalizedEvent(TypedDict):
+    PhysicalResourceId: Optional[str]
+    LogicalResourceId: str
+    ResourceType: str
+    ResourceStatus: str
+    Timestamp: str
+
+
+PerResourceStackEvents = dict[str, list[NormalizedEvent]]
+
+
+def normalize_event(event: StackEvent) -> NormalizedEvent:
+    return NormalizedEvent(
+        PhysicalResourceId=event.get("PhysicalResourceId"),
+        LogicalResourceId=event.get("LogicalResourceId"),
+        ResourceType=event.get("ResourceType"),
+        ResourceStatus=event.get("ResourceStatus"),
+        Timestamp=event.get("Timestamp"),
+    )
 
 
 @pytest.fixture
 def capture_per_resource_events(
     aws_client: ServiceLevelClientFactory,
-) -> Callable[[str], dict]:
+) -> Callable[[str], PerResourceStackEvents]:
     def capture(stack_name: str) -> dict:
         events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
             "StackEvents"
