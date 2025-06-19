@@ -174,6 +174,7 @@ def test_lifecycle_nested_stack(deploy_cfn_template, s3_create_bucket, aws_clien
         "$..Role.Description",
         "$..Role.MaxSessionDuration",
         "$..Role.AssumeRolePolicyDocument..Action",
+        "$..Role.Tags",  # Moto returns a empty list for no tags
     ]
 )
 @markers.aws.validated
