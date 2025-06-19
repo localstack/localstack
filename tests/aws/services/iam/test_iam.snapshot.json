@@ -201,7 +201,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
-    "recorded-date": "06-03-2025, 12:25:04",
+    "recorded-date": "19-06-2025, 11:47:40",
     "recorded-content": {
       "create_policy_response": {
         "Policy": {
