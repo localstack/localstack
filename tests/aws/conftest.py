@@ -8,6 +8,7 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
+from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
@@ -109,14 +110,22 @@ def infrastructure_setup(cdk_template_path, aws_client):
 
 @pytest.hookimpl
 def pytest_runtest_setup(item):
-    # Add x-localstack skip to all snapshot tests. This is (unfortuantely) required since
-    # merging together multiple 'paths' parameters from the original skip_snapshot_verify()
-    # does not work properly. If we find a more elegant marker merging approach, this should
-    # be removed.
-    for mark in item.iter_markers(name="skip_snapshot_verify"):
-        if (paths := mark.kwargs.get("paths")) and mark.kwargs.get("condition", True):
-            if "$..x-localstack" not in paths:
-                paths.append("$..x-localstack")
+    # If snapshot fixture is not used, we don't need to skip anything.
+    if "snapshot" not in item.fixturenames:
+        return
+
+    # If snapshot fixture is used AND no skip_snapshot_verify marker is used, mark test to skip x-localstack.
+    is_localstack_header_path = f"$..{constants.HEADER_LOCALSTACK_IDENTIFIER}"
+    if not (skip_markers := list(item.iter_markers(name="skip_snapshot_verify"))):
+        item.add_marker(markers.snapshot.skip_snapshot_verify(paths=[is_localstack_header_path]))
+        return
+
+    # Otherwise, dynamically inject a path to the custom header inside all skip_snapshot_verify markers paths.
+    # If a path parameter is None, it's assumed that all paths are skipped.
+    for mark in skip_markers:
+        if (paths := mark.kwargs.get("paths")) and is_localstack_header_path not in paths:
+            paths.append(is_localstack_header_path)
+            continue
 
 
 @pytest.fixture(scope="function")
