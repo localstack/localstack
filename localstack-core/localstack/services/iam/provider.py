@@ -347,7 +347,10 @@ class IamProvider(IamApi):
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
-        profile.tags.extend(tags)
+        new_keys = [tag["Key"] for tag in tags]
+        updated_tags = [tag for tag in profile.tags if tag["Key"] not in new_keys]
+        updated_tags.extend(tags)
+        profile.tags = updated_tags
 
     def untag_instance_profile(
         self,
