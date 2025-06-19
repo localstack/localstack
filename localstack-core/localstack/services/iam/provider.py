@@ -335,7 +335,7 @@ class IamProvider(IamApi):
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
         response = ListInstanceProfileTagsResponse()
-        response["Tags"] = [Tag(Key=k, Value=v) for k, v in profile.tags.items()]
+        response["Tags"] = profile.tags
         return response
 
     def tag_instance_profile(
@@ -347,8 +347,7 @@ class IamProvider(IamApi):
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
-        value_by_key = {tag["Key"]: tag["Value"] for tag in tags}
-        profile.tags.update(value_by_key)
+        profile.tags.extend(tags)
 
     def untag_instance_profile(
         self,
@@ -359,8 +358,7 @@ class IamProvider(IamApi):
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
-        for tag in tag_keys:
-            profile.tags.pop(tag, None)
+        profile.tags = [tag for tag in profile.tags if tag["Key"] not in tag_keys]
 
     def create_service_linked_role(
         self,
