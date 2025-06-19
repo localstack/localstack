@@ -160,6 +160,9 @@ class TestIAMExtensions:
         snapshot.match("invalid-json", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns a empty list for tags
     def test_role_with_path_lifecycle(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.iam_api())
         role_name = f"role-{short_uid()}"

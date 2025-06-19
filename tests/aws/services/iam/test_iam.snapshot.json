@@ -325,7 +325,7 @@
     }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_role_with_path_lifecycle": {
-    "recorded-date": "06-03-2025, 12:24:45",
+    "recorded-date": "19-06-2025, 11:39:59",
     "recorded-content": {
       "create-role-response": {
         "Role": {
