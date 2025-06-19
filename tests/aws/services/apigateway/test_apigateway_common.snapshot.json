@@ -1378,7 +1378,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_path_template_formatting": {
-    "recorded-date": "12-03-2025, 21:18:25",
+    "recorded-date": "18-06-2025, 17:28:59",
     "recorded-content": {
       "dict-response": "{foo=bar}",
       "json-list": "[{\"foo\":\"bar\"}]",
@@ -1389,7 +1389,10 @@
       "dict-with-nested-list": "{foo=[{\"nested\":\"bar\"}]}",
       "bigger-dict": "{bigger=dict, to=test, with=separators}",
       "to-string": "{foo=bar}",
-      "list-to-string": "{list=[{\"foo\":\"bar\"}]}"
+      "list-to-string": "{list=[{\"foo\":\"bar\"}]}",
+      "empty-body": "{\"body\": , \"nested\": , \"isNull\": \"true\", \"isEmptyString\": \"true\"}",
+      "nested-empty-list": "{\"body\": [], \"nested\": , \"isNull\": \"false\", \"isEmptyString\": \"false\"}",
+      "nested-null-list": "{\"body\": , \"nested\": , \"isNull\": \"true\", \"isEmptyString\": \"true\"}"
     }
   },
   "tests/aws/services/apigateway/test_apigateway_common.py::TestApiGatewayCommon::test_input_body_formatting": {
