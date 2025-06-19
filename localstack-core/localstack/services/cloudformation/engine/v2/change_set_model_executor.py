@@ -116,7 +116,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_type=None,
     ):
         status_from_action = special_action or EventOperationFromAction[action.value]
-        if event_status.value == OperationStatus.SUCCESS.value:
+        if event_status == OperationStatus.SUCCESS:
             status = f"{status_from_action}_COMPLETE"
         else:
             status = f"{status_from_action}_{event_status.name}"
@@ -129,7 +129,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             resource_status_reason=reason,
         )
 
-        if event_status.value == OperationStatus.FAILED.value:
+        if event_status == OperationStatus.FAILED:
             self._change_set.stack.set_stack_status(StackStatus(status))
 
     def _after_deployed_property_value_of(
