@@ -110,6 +110,8 @@ def infrastructure_setup(cdk_template_path, aws_client):
 
 @pytest.hookimpl
 def pytest_runtest_setup(item):
+    """Modifies all tests using the snapshot fixture to skip validating 'x-localstack' header"""
+
     # If snapshot fixture is not used, we don't need to skip anything.
     if "snapshot" not in item.fixturenames:
         return
@@ -123,8 +125,12 @@ def pytest_runtest_setup(item):
     # Otherwise, dynamically inject a path to the custom header inside all skip_snapshot_verify markers paths.
     # If a path parameter is None, it's assumed that all paths are skipped.
     for mark in skip_markers:
-        if (paths := mark.kwargs.get("paths")) and is_localstack_header_path not in paths:
-            paths.append(is_localstack_header_path)
+        paths = mark.kwargs.get("paths")
+        if paths is None and len(mark.args) > 0:
+            paths = mark.args[0]
+
+        if paths and is_localstack_header_path not in paths:
+            mark.kwargs["paths"] = paths + [is_localstack_header_path]
             continue
 
 
