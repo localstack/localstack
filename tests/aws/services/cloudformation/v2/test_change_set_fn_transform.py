@@ -367,3 +367,65 @@ class TestChangeSetFnTransform:
         }
 
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("transform", ["true", "false"])
+    def test_conditional_transform(
+            self,
+            transform,
+            snapshot,
+            capture_update_process,
+            create_macro,
+    ):
+        name1 = f"parameter-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+        )
+        macro_name = "ReplaceString"
+        create_macro(macro_name, macro_function_path)
+
+        template_1 = {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+
+        template_2 = {
+            "Parameters": {
+                "Transform": {
+                    "Type": "String"
+                }
+            },
+            "Conditions": {
+                "Deploy": {
+                    "Fn::Equals": [
+                        {
+                            "Ref": "Transform"
+                        },
+                        "true"
+                    ]
+                }
+            },
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "Deploy",
+                    "Properties": {
+                        "Name": name1,
+                        "Value": "<replace-this>",
+                        "Type": "String",
+                        "Fn::Transform": [
+                            {"Name": "ReplaceString", "Parameters": {"Input": "snippet-transform"}},
+                        ],
+                    },
+                }
+            }
+        }
+
+        capture_update_process(snapshot, template_1, template_2, p2={"Transform": transform})
