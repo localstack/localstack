@@ -17,6 +17,7 @@ class CounterPayload:
     name: str
     value: int
     type: str
+    schema_version: int
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -24,6 +25,7 @@ class CounterPayload:
             "name": self.name,
             "value": self.value,
             "type": self.type,
+            "schema_version": self.schema_version,
         }
 
 
@@ -35,6 +37,7 @@ class LabeledCounterPayload:
     name: str
     value: int
     type: str
+    schema_version: int
     labels: dict[str, Union[str, float]]
 
     def as_dict(self) -> dict[str, Any]:
@@ -43,6 +46,7 @@ class LabeledCounterPayload:
             "name": self.name,
             "value": self.value,
             "type": self.type,
+            "schema_version": self.schema_version,
         }
 
         for i, (label_name, label_value) in enumerate(self.labels.items(), 1):
@@ -99,12 +103,11 @@ class Counter(Metric, ThreadSafeCounter):
 
     _type: str
 
-    def __init__(self, namespace: str, name: str):
-        Metric.__init__(self, namespace=namespace, name=name)
+    def __init__(self, namespace: str, name: str, schema_version: int = 1):
+        Metric.__init__(self, namespace=namespace, name=name, schema_version=schema_version)
         ThreadSafeCounter.__init__(self)
 
         self._type = "counter"
-
         MetricRegistry().register(self)
 
     def collect(self) -> list[CounterPayload]:
@@ -118,7 +121,11 @@ class Counter(Metric, ThreadSafeCounter):
 
         return [
             CounterPayload(
-                namespace=self._namespace, name=self.name, value=self._count, type=self._type
+                namespace=self._namespace,
+                name=self.name,
+                value=self._count,
+                type=self._type,
+                schema_version=self._schema_version,
             )
         ]
 
@@ -138,8 +145,10 @@ class LabeledCounter(Metric):
         tuple[Optional[Union[str, float]], ...], ThreadSafeCounter
     ]
 
-    def __init__(self, namespace: str, name: str, labels: list[str]):
-        super(LabeledCounter, self).__init__(namespace=namespace, name=name)
+    def __init__(self, namespace: str, name: str, labels: list[str], schema_version: int = 1):
+        super(LabeledCounter, self).__init__(
+            namespace=namespace, name=name, schema_version=schema_version
+        )
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -202,6 +211,7 @@ class LabeledCounter(Metric):
                     name=self.name,
                     value=counter.count,
                     type=self._type,
+                    schema_version=self._schema_version,
                     labels=labels_dict,
                 )
             )

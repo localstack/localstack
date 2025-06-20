@@ -16,7 +16,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_sam_policies(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -33,7 +32,6 @@ def test_sam_policies(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("list_attached_role_policies", roles)
 
 
-@pytest.mark.skip(reason="CFNV2:ServerlessResources")
 @markers.aws.validated
 def test_sam_template(deploy_cfn_template, aws_client):
     # deploy template
@@ -51,7 +49,6 @@ def test_sam_template(deploy_cfn_template, aws_client):
     assert result == {"hello": "world"}
 
 
-@pytest.mark.skip(reason="CFNV2:ServerlessResources")
 @markers.aws.validated
 def test_sam_sqs_event(deploy_cfn_template, aws_client):
     result_key = f"event-{short_uid()}"
@@ -78,7 +75,6 @@ def test_sam_sqs_event(deploy_cfn_template, aws_client):
     assert body == message_body
 
 
-@pytest.mark.skip(reason="CFNV2:ServerlessResources")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..Tags", "$..tags", "$..Configuration.CodeSha256"])
 def test_cfn_handle_serverless_api_resource(deploy_cfn_template, aws_client, snapshot):

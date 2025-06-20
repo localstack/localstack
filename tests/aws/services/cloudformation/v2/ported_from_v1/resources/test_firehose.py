@@ -14,7 +14,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..Destinations"])
 def test_firehose_stack_with_kinesis_as_source(deploy_cfn_template, snapshot, aws_client):

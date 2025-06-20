@@ -16,7 +16,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:DescribeStacks")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
 def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
@@ -101,14 +100,13 @@ def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
     rs = aws_client.kinesis.describe_stream(StreamName=kinesis_stream_name)
     assert rs["StreamDescription"]["StreamName"] == kinesis_stream_name
 
-    # CFNV2:Destroy does not destroy resources.
     # clean up
-    # stack.destroy()
+    stack.destroy()
 
-    # rs = aws_client.kinesis.list_streams()
-    # assert kinesis_stream_name not in rs["StreamNames"]
-    # rs = aws_client.firehose.list_delivery_streams()
-    # assert firehose_stream_name not in rs["DeliveryStreamNames"]
+    rs = aws_client.kinesis.list_streams()
+    assert kinesis_stream_name not in rs["StreamNames"]
+    rs = aws_client.firehose.list_delivery_streams()
+    assert firehose_stream_name not in rs["DeliveryStreamNames"]
 
 
 # TODO: use a different template and move this test to a more generic API level test suite
