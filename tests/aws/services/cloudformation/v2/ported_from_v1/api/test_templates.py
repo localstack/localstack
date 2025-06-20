@@ -39,7 +39,6 @@ def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("template-summary", res)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 @pytest.mark.parametrize("url_style", ["s3_url", "http_path", "http_host", "http_invalid"])
 def test_create_stack_from_s3_template_url(

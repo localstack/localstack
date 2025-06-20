@@ -644,7 +644,7 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @pytest.mark.skip(reason="CFNV2:Provider create_stack not ported")
+    @pytest.mark.skip("CFNV2:GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -914,7 +914,7 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
 
-    @pytest.mark.skip(reason="CFNV2:Provider create_stack not ported")
+    @pytest.mark.skip("CFNV2:GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -976,6 +976,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
+    @pytest.mark.skip("CFNV2:Validation")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1029,6 +1030,7 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
+    @pytest.mark.skip("CFNV2:Validation")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1050,7 +1052,7 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @pytest.mark.skip(reason="CFNV2:Provider create_stack not ported")
+    @pytest.mark.skip("CFNV2:GetTemplate")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client

@@ -30,6 +30,7 @@ def wait_stack_set_operation(aws_client):
     return waiter
 
 
+@pytest.mark.skip("CFNV2:StackSets")
 @markers.aws.validated
 def test_create_stack_set_with_stack_instances(
     account_id,

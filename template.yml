@@ -1,0 +1,6 @@
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: foo
