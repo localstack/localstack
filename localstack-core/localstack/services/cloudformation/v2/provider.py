@@ -13,6 +13,8 @@ from localstack.aws.api.cloudformation import (
     ClientRequestToken,
     CreateChangeSetInput,
     CreateChangeSetOutput,
+    CreateStackInput,
+    CreateStackOutput,
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
@@ -270,8 +272,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 )
                 raise ValidationError(msg)
 
-        # TDOO: transformations
-
         # TODO: reconsider the way parameters are modelled in the update graph process.
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
@@ -302,7 +302,6 @@ class CloudformationProviderV2(CloudformationProvider):
         )
 
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
-        stack.change_set_id = change_set.change_set_id
         stack.change_set_id = change_set.change_set_id
         state.change_sets[change_set.change_set_id] = change_set
 
@@ -432,6 +431,94 @@ class CloudformationProviderV2(CloudformationProvider):
             change_set=change_set, include_property_values=include_property_values or False
         )
         return result
+
+    @handler("CreateStack", expand=False)
+    def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
+        try:
+            stack_name = request["StackName"]
+        except KeyError:
+            # TODO: proper exception
+            raise ValidationError("StackName must be specified")
+
+        state = get_cloudformation_store(context.account_id, context.region)
+        # TODO: copied from create_change_set, consider unifying
+        template_body = request.get("TemplateBody")
+        # s3 or secretsmanager url
+        template_url = request.get("TemplateURL")
+
+        # validate and resolve template
+        if template_body and template_url:
+            raise ValidationError(
+                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
+            )  # TODO: check proper message
+
+        if not template_body and not template_url:
+            raise ValidationError(
+                "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
+            )  # TODO: check proper message
+
+        template_body = api_utils.extract_template_body(request)
+        structured_template = template_preparer.parse_template(template_body)
+
+        stack = Stack(
+            account_id=context.account_id,
+            region_name=context.region,
+            request_payload=request,
+            template=structured_template,
+            template_body=template_body,
+        )
+        # TODO: what is the correct initial status?
+        state.stacks_v2[stack.stack_id] = stack
+
+        # TODO: reconsider the way parameters are modelled in the update graph process.
+        #  The options might be reduce to using the current style, or passing the extra information
+        #  as a metadata object. The choice should be made considering when the extra information
+        #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
+        request_parameters = request.get("Parameters", list())
+        # TODO: handle parameter defaults and resolution
+        after_parameters: dict[str, Any] = {
+            parameter["ParameterKey"]: parameter["ParameterValue"]
+            for parameter in request_parameters
+        }
+        after_template = structured_template
+
+        # Create internal change set to execute
+        change_set = ChangeSet(
+            stack,
+            {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.CREATE},
+            template=after_template,
+        )
+        self._setup_change_set_model(
+            change_set=change_set,
+            before_template=None,
+            after_template=after_template,
+            before_parameters=None,
+            after_parameters=after_parameters,
+        )
+
+        # deployment process
+        stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
+        change_set_executor = ChangeSetModelExecutor(change_set)
+
+        def _run(*args):
+            try:
+                result = change_set_executor.execute()
+                stack.set_stack_status(StackStatus.CREATE_COMPLETE)
+                stack.resolved_resources = result.resources
+                stack.resolved_parameters = result.parameters
+                stack.resolved_outputs = result.outputs
+                # if the deployment succeeded, update the stack's template representation to that
+                # which was just deployed
+                stack.template = change_set.template
+            except Exception as e:
+                LOG.error(
+                    "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                )
+                stack.set_stack_status(StackStatus.CREATE_FAILED)
+
+        start_worker_thread(_run)
+
+        return CreateStackOutput(StackId=stack.stack_id)
 
     @handler("DescribeStacks")
     def describe_stacks(
