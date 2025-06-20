@@ -160,6 +160,9 @@ class TestIAMExtensions:
         snapshot.match("invalid-json", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_role_with_path_lifecycle(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.iam_api())
         role_name = f"role-{short_uid()}"
@@ -586,6 +589,9 @@ class TestIAMIntegrations:
                 aws_client.iam.delete_service_linked_role(RoleName=role_name)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_update_assume_role_policy(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -616,6 +622,9 @@ class TestIAMIntegrations:
             aws_client.iam.delete_role(RoleName=role_name)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
         snapshot.add_transformer(snapshot.transform.iam_api())
         path_prefix = f"/{short_uid()}/"
@@ -644,6 +653,9 @@ class TestIAMIntegrations:
         snapshot.match("list_roles_result", list_roles_result)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_list_roles_with_permission_boundary(
         self, snapshot, aws_client, create_role, create_policy, cleanups
     ):
@@ -692,6 +704,7 @@ class TestIAMIntegrations:
             "$..Policy.IsAttachable",
             "$..Policy.PermissionsBoundaryUsageCount",
             "$..Policy.Tags",
+            "$..Policy.Description",
         ]
     )
     def test_role_attach_policy(self, snapshot, aws_client, create_role, create_policy):
@@ -748,6 +761,7 @@ class TestIAMIntegrations:
             "$..Policy.IsAttachable",
             "$..Policy.PermissionsBoundaryUsageCount",
             "$..Policy.Tags",
+            "$..Policy.Description",
         ]
     )
     def test_user_attach_policy(self, snapshot, aws_client, create_user, create_policy):
@@ -819,6 +833,9 @@ class TestIAMPolicyEncoding:
         snapshot.match("get-policy-response", get_policy_response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_put_role_policy_encoding(self, snapshot, aws_client, create_role, region_name):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -1369,7 +1386,9 @@ class TestIAMServiceRoles:
 
     @markers.aws.validated
     # last used and the description depend on whether the role was created in the snapshot account by a service or manually
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Role.RoleLastUsed", "$..Role.Description"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.RoleLastUsed", "$..Role.Description", "$..Role.Tags"]
+    )
     @pytest.mark.parametrize(
         "service_name",
         [pytest.param(service, marks=marker) for service, marker in SERVICES.items()],
@@ -1390,6 +1409,9 @@ class TestIAMServiceRoles:
         snapshot.match("attached-role-policies", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     @pytest.mark.parametrize("service_name", SERVICES_CUSTOM_SUFFIX)
     def test_service_role_lifecycle_custom_suffix(
         self, aws_client, snapshot, create_service_linked_role, service_name

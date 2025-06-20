@@ -15,7 +15,13 @@
     "last_validated_date": "2025-03-06T12:24:26+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMExtensions::test_role_with_path_lifecycle": {
-    "last_validated_date": "2025-03-06T12:24:45+00:00"
+    "last_validated_date": "2025-06-19T11:39:59+00:00",
+    "durations_in_seconds": {
+      "setup": 1.34,
+      "call": 2.25,
+      "teardown": 0.01,
+      "total": 3.6
+    }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_attach_detach_role_policy": {
     "last_validated_date": "2025-03-06T12:24:54+00:00"
@@ -45,7 +51,13 @@
     "last_validated_date": "2025-03-06T12:24:48+00:00"
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_role_attach_policy": {
-    "last_validated_date": "2025-03-06T12:25:03+00:00"
+    "last_validated_date": "2025-06-19T11:47:40+00:00",
+    "durations_in_seconds": {
+      "setup": 1.46,
+      "call": 5.22,
+      "teardown": 2.05,
+      "total": 8.73
+    }
   },
   "tests/aws/services/iam/test_iam.py::TestIAMIntegrations::test_simulate_principle_policy[group]": {
     "last_validated_date": "2025-04-21T20:07:37+00:00"

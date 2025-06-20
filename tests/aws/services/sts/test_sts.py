@@ -96,7 +96,10 @@ TEST_SAML_ASSERTION = """
 class TestSTSIntegrations:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..PackedPolicySize"],
+        paths=[
+            "$..PackedPolicySize",
+            "$..Role.Tags",  # Moto returns an empty list for no tags
+        ],
     )
     def test_assume_role(self, aws_client, create_role, account_id, snapshot):
         snapshot.add_transformers_list(
@@ -326,6 +329,9 @@ class TestSTSIntegrations:
 
 class TestSTSAssumeRoleTagging:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_iam_role_chaining_override_transitive_tags(
         self,
         aws_client,
@@ -408,6 +414,9 @@ class TestSTSAssumeRoleTagging:
         snapshot.match("override-transitive-tag-case-ignore-error", e.value.response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Role.Tags"]
+    )  # Moto returns an empty list for no tags
     def test_assume_role_tag_validation(
         self,
         aws_client,
