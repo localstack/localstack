@@ -1438,6 +1438,21 @@ class TestS3ObjectLock:
                     "ObjectLockEnabled": "Enabled",
                     "Rule": {
                         "DefaultRetention": {
+                            "Mode": "BAD-VALUE",
+                            "Days": 1,
+                        }
+                    },
+                },
+            )
+        snapshot.match("put-lock-config-bad-mode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {
+                        "DefaultRetention": {
                             "Mode": "GOVERNANCE",
                             "Days": 1,
                             "Years": 1,

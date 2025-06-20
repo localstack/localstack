@@ -150,7 +150,13 @@
     "last_validated_date": "2025-01-21T18:11:37+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_exc": {
-    "last_validated_date": "2025-01-21T18:11:40+00:00"
+    "last_validated_date": "2025-06-20T17:03:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.55,
+      "call": 2.64,
+      "teardown": 0.83,
+      "total": 4.02
+    }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectLock::test_put_object_lock_configuration_on_existing_bucket": {
     "last_validated_date": "2025-01-21T18:11:36+00:00"
