@@ -162,7 +162,7 @@ class TestIAMExtensions:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_role_with_path_lifecycle(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.iam_api())
         role_name = f"role-{short_uid()}"
@@ -591,7 +591,7 @@ class TestIAMIntegrations:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_update_assume_role_policy(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -624,7 +624,7 @@ class TestIAMIntegrations:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_create_describe_role(self, snapshot, aws_client, create_role, cleanups):
         snapshot.add_transformer(snapshot.transform.iam_api())
         path_prefix = f"/{short_uid()}/"
@@ -655,7 +655,7 @@ class TestIAMIntegrations:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_list_roles_with_permission_boundary(
         self, snapshot, aws_client, create_role, create_policy, cleanups
     ):
@@ -835,7 +835,7 @@ class TestIAMPolicyEncoding:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_put_role_policy_encoding(self, snapshot, aws_client, create_role, region_name):
         snapshot.add_transformer(snapshot.transform.iam_api())
 
@@ -1411,7 +1411,7 @@ class TestIAMServiceRoles:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     @pytest.mark.parametrize("service_name", SERVICES_CUSTOM_SUFFIX)
     def test_service_role_lifecycle_custom_suffix(
         self, aws_client, snapshot, create_service_linked_role, service_name

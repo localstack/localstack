@@ -98,7 +98,7 @@ class TestSTSIntegrations:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..PackedPolicySize",
-            "$..Role.Tags",  # Moto returns a empty list for no tags
+            "$..Role.Tags",  # Moto returns an empty list for no tags
         ],
     )
     def test_assume_role(self, aws_client, create_role, account_id, snapshot):
@@ -331,7 +331,7 @@ class TestSTSAssumeRoleTagging:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_iam_role_chaining_override_transitive_tags(
         self,
         aws_client,
@@ -416,7 +416,7 @@ class TestSTSAssumeRoleTagging:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Role.Tags"]
-    )  # Moto returns a empty list for no tags
+    )  # Moto returns an empty list for no tags
     def test_assume_role_tag_validation(
         self,
         aws_client,
