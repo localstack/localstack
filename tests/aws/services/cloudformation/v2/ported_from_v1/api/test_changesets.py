@@ -478,7 +478,6 @@ def test_create_change_set_with_ssm_parameter(
         cleanup_stacks([stack_id])
 
 
-@pytest.mark.skip("CFNV2:Validation")
 @markers.aws.validated
 def test_describe_change_set_nonexisting(snapshot, aws_client):
     with pytest.raises(Exception) as ex:

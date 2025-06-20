@@ -84,7 +84,7 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
 
 class StackNotFoundError(ValidationError):
     def __init__(self, stack_name: str):
-        super().__init__(f"Stack with id {stack_name} does not exist")
+        super().__init__(f"Stack [{stack_name}] does not exist")
 
 
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
