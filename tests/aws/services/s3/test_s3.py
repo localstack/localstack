@@ -9411,6 +9411,15 @@ class TestS3ObjectLockRetention:
         head_object = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
         snapshot.match("head-object-with-lock", head_object)
 
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=bucket_name,
+                Key=object_key + "2",
+                Body="test-put-object-lock",
+                ObjectLockMode="GOVERNANCE",
+            )
+        snapshot.match("put-object-with-lock-no-date", e.value.response)
+
     @markers.aws.validated
     def test_object_lock_delete_markers(self, s3_create_bucket, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
@@ -9581,6 +9590,50 @@ class TestS3ObjectLockRetention:
             VersionId=version_id,
         )
         snapshot.match("delete-obj-after-lock-expiration", response)
+
+    @markers.aws.validated
+    def test_s3_object_lock_mode_validation(self, aws_client, s3_create_bucket, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        object_key = "test-retention-validation"
+
+        s3_bucket_lock = s3_create_bucket(ObjectLockEnabledForBucket=True)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                Body="test",
+                ObjectLockMode="BAD-VALUE",
+            )
+        snapshot.match("put-obj-locked-error-no-retain-date", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                Body="test",
+                ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+            )
+        snapshot.match("put-obj-locked-error-no-mode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                Body="test",
+                ObjectLockMode="BAD-VALUE",
+                ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+            )
+        snapshot.match("put-obj-locked-bad-value", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.create_multipart_upload(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                ObjectLockMode="BAD-VALUE",
+                ObjectLockRetainUntilDate=datetime.datetime.now() + datetime.timedelta(minutes=10),
+            )
+        snapshot.match("create-mpu-locked-bad-value", e.value.response)
 
 
 class TestS3ObjectLockLegalHold:

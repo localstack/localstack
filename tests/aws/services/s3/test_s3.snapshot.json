@@ -9831,7 +9831,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_bucket_config_default_retention": {
-    "recorded-date": "21-01-2025, 18:18:03",
+    "recorded-date": "20-06-2025, 17:35:52",
     "recorded-content": {
       "put-lock-config": {
         "ResponseMetadata": {
@@ -9891,6 +9891,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "put-object-with-lock-no-date": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-retain-until-date",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
@@ -17879,6 +17890,57 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_lock_mode_validation": {
+    "recorded-date": "20-06-2025, 17:33:40",
+    "recorded-content": {
+      "put-obj-locked-error-no-retain-date": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-retain-until-date",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-locked-error-no-mode": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-mode",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-locked-bad-value": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-mode",
+          "ArgumentValue": "BAD-VALUE",
+          "Code": "InvalidArgument",
+          "Message": "Unknown wormMode directive."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-mpu-locked-bad-value": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-mode",
+          "ArgumentValue": "BAD-VALUE",
+          "Code": "InvalidArgument",
+          "Message": "Unknown wormMode directive."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
