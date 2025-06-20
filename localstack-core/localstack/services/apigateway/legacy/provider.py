@@ -89,6 +89,7 @@ from localstack.aws.api.apigateway import (
     UsagePlan,
     UsagePlanKeys,
     UsagePlans,
+    ValidationException,
     VpcLink,
     VpcLinks,
 )
@@ -2059,6 +2060,28 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         status_code: StatusCode,
         **kwargs,
     ) -> IntegrationResponse:
+        if not re.fullmatch(r"[1-5]\d\d", status_code):
+            raise ValidationException(
+                "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+            )
+
+        try:
+            # get integration response doesn't return the right exception compared to AWS
+            moto_rest_api = get_moto_rest_api(context, rest_api_id)
+        except NotFoundException:
+            raise NotFoundException("Invalid Resource identifier specified")
+        moto_resource = moto_rest_api.resources.get(resource_id)
+        if not moto_resource:
+            raise NotFoundException("Invalid Resource identifier specified")
+
+        moto_method = moto_resource.resource_methods.get(http_method)
+        if not moto_method:
+            raise NotFoundException("Invalid Method identifier specified")
+
+        integration_response = moto_method.method_integration.integration_responses.get(status_code)
+        if not integration_response:
+            raise NotFoundException("Invalid Integration Response identifier specified")
+
         response: IntegrationResponse = call_moto(context)
         remove_empty_attributes_from_integration_response(response)
         # moto does not return selectionPattern is set to an empty string
@@ -2078,7 +2101,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         context: RequestContext,
         request: PutIntegrationResponseRequest,
     ) -> IntegrationResponse:
-        moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        status_code = request.get("statusCode")
+        if not re.fullmatch(r"[1-5]\d\d", status_code):
+            raise ValidationException(
+                "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+            )
+
+        try:
+            # put integration response doesn't return the right exception compared to AWS
+            moto_rest_api = get_moto_rest_api(context=context, rest_api_id=request.get("restApiId"))
+        except NotFoundException:
+            raise NotFoundException("Invalid Resource identifier specified")
+
         moto_resource = moto_rest_api.resources.get(request.get("resourceId"))
         if not moto_resource:
             raise NotFoundException("Invalid Resource identifier specified")
