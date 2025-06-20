@@ -55,6 +55,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_executor impo
 from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
     ChangeSetModelTransform,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
+    ChangeSetModelValidator,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -292,6 +295,11 @@ class CloudformationProviderV2(CloudformationProvider):
             before_parameters=before_parameters,
             after_parameters=after_parameters,
         )
+        try:
+            ChangeSetModelValidator(change_set).validate()
+        except ValidationError:
+            change_set.set_change_set_status(ChangeSetStatus.FAILED)
+            raise
 
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id

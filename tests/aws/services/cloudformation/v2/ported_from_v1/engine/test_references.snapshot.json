@@ -38,7 +38,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/engine/test_references.py::test_useful_error_when_invalid_ref": {
-    "recorded-date": "28-05-2024, 11:42:58",
+    "recorded-date": "20-06-2025, 15:25:28",
     "recorded-content": {
       "validation_error": {
         "Error": {
