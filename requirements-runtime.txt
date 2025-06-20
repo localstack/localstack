@@ -345,7 +345,7 @@ typing-extensions==4.14.0
     #   typing-inspection
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.4.0
+urllib3==2.5.0
     # via
     #   botocore
     #   docker
