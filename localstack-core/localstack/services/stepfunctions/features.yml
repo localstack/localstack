@@ -1,0 +1,78 @@
+service: StepFunctions
+name: Step Functions
+emulation_level: emulated
+aws_provider:
+  api: stepfunctions
+features:
+  - name: "State machines"
+    description: "Define workflows that are comprised of a series of event-driven steps"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-statemachines.html"
+    api_methods:
+      - "CreateStateMachine"
+      - "DeleteStateMachine"
+      - "DescribeStateMachine"
+    emulation_level: "emulated"
+    status: "supported"
+
+  - name: "Aliases"
+    description: "Create and manage state machine version-based pointers to manage the state machine configuration"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-state-machine-alias.html"
+    api_methods:
+      - "CreateStateMachineAlias"
+      - "ListStateMachineAliases"
+      - "DescribeStateMachineAlias"
+      - "UpdateStateMachineAlias"
+      - "ValidateStateMachineDefinition"
+      - "DeleteStateMachineAlias"
+    status: "supported"
+    limitations:
+      - "Support for state machine aliasing in CloudFormation templates in not enabled"
+      - "DeploymentPreference parameter is not supported"
+
+  - name: "Activity Management"
+    description: "Create and manage activities that are used to perform tasks in the state machine"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/concepts-activities.html"
+    api_methods:
+      - "CreateActivity"
+      - "DeleteActivity"
+      - "DescribeActivity"
+      - "ListActivities"
+      - "GetActivityTask"
+      - "SendTaskFailure"
+      - "SendTaskHeartbeat"
+      - "SendTaskSuccess"
+    emulation_level: "emulated"
+    status: "supported"
+
+  - name: "Execution management"
+    description: "Manage and control the execution of your workflows"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/statemachine-starting.html"
+    api_methods:
+      - "StartExecution"
+      - "StopExecution"
+      - "DescribeExecution"
+      - "ListExecutions"
+      - "StartSyncExecution"
+      - "GetExecutionHistory"
+    status: "supported"
+    limitations:
+      - "Paging is not supported for ListExecutions"
+      - "Paging and ordering is not supported for GetExecutionHistory"
+
+  - name: "Map Runs"
+    description: "Execute workloads with distributed map states"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/state-map.html"
+    api_methods:
+      - "DescribeMapRun"
+      - "ListMapRuns"
+      - "UpdateMapRun"
+    status: "supported"
+    limitations:
+      - "Pagination is not supported for ListMapRuns"
+
+  - name: "Restart state machine execution"
+    description: "Restart executions of standard workflows that did not finish successfully"
+    aws_documentation_url: "https://docs.aws.amazon.com/step-functions/latest/dg/redrive-executions.html"
+    api_methods:
+      - "RedriveExecution"
+    status: "unsupported"
