@@ -17807,7 +17807,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_compliance_mode": {
-    "recorded-date": "20-06-2025, 16:56:13",
+    "recorded-date": "20-06-2025, 17:19:56",
     "recorded-content": {
       "put-obj-locked-1": {
         "ChecksumCRC32": "2H9+DA==",
@@ -17834,6 +17834,14 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 403
+        }
+      },
+      "put-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
         }
       },
       "delete-locked-2": {

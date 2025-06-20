@@ -921,12 +921,12 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_compliance_mode": {
-    "last_validated_date": "2025-06-20T16:56:13+00:00",
+    "last_validated_date": "2025-06-20T17:19:57+00:00",
     "durations_in_seconds": {
-      "setup": 0.47,
-      "call": 11.63,
-      "teardown": 0.74,
-      "total": 12.84
+      "setup": 0.44,
+      "call": 11.7,
+      "teardown": 1.29,
+      "total": 13.43
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {

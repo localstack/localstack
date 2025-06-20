@@ -9536,6 +9536,9 @@ class TestS3ObjectLockRetention:
             aws_client.s3.delete_object(Bucket=s3_bucket_lock, Key=object_key, VersionId=version_id)
         snapshot.match("delete-locked-1", e.value.response)
 
+        put_delete_marker = aws_client.s3.delete_object(Bucket=s3_bucket_lock, Key=object_key)
+        snapshot.match("put-delete-marker", put_delete_marker)
+
         # delete object with retention lock with bypass before 5 seconds
         with pytest.raises(ClientError) as e:
             aws_client.s3.delete_object(
