@@ -11,6 +11,7 @@ from localstack.aws.api.cloudformation import (
     ResourceStatus,
     StackDriftInformation,
     StackDriftStatus,
+    StackEvent,
     StackResource,
     StackStatus,
     StackStatusReason,
@@ -26,7 +27,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeTemplate,
 )
 from localstack.utils.aws import arns
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 class ResolvedResource(TypedDict):
@@ -43,6 +44,7 @@ class Stack:
     stack_id: str
     creation_time: datetime
     deletion_time: datetime | None
+    events = list[StackEvent]
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -89,11 +91,14 @@ class Stack:
         self.resolved_resources = {}
         self.resolved_outputs = {}
         self.resource_states = {}
+        self.events = []
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
         if reason:
             self.status_reason = reason
+
+        self._store_event(self.stack_name, self.stack_id, status.value, status_reason=reason)
 
     def set_resource_status(
         self,
@@ -104,7 +109,7 @@ class Stack:
         status: ResourceStatus,
         resource_status_reason: str | None = None,
     ):
-        self.resource_states[logical_resource_id] = StackResource(
+        resource_description = StackResource(
             StackName=self.stack_name,
             StackId=self.stack_id,
             LogicalResourceId=logical_resource_id,
@@ -114,6 +119,43 @@ class Stack:
             ResourceStatus=status,
             ResourceStatusReason=resource_status_reason,
         )
+
+        if not resource_status_reason:
+            resource_description.pop("ResourceStatusReason")
+
+        self.resource_states[logical_resource_id] = resource_description
+        self._store_event(logical_resource_id, physical_resource_id, status, resource_status_reason)
+
+    def _store_event(
+        self,
+        resource_id: str = None,
+        physical_res_id: str = None,
+        status: str = "",
+        status_reason: str = "",
+    ):
+        resource_id = resource_id
+        physical_res_id = physical_res_id
+        resource_type = (
+            self.template.get("Resources", {})
+            .get(resource_id, {})
+            .get("Type", "AWS::CloudFormation::Stack")
+        )
+
+        event: StackEvent = {
+            "EventId": long_uid(),
+            "Timestamp": datetime.now(tz=timezone.utc),
+            "StackId": self.stack_id,
+            "StackName": self.stack_name,
+            "LogicalResourceId": resource_id,
+            "PhysicalResourceId": physical_res_id,
+            "ResourceStatus": status,
+            "ResourceType": resource_type,
+        }
+
+        if status_reason:
+            event["ResourceStatusReason"] = status_reason
+
+        self.events.insert(0, event)
 
     def describe_details(self) -> ApiStack:
         result = {

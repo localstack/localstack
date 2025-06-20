@@ -141,7 +141,6 @@ def test_update_subscription(snapshot, deploy_cfn_template, aws_client, sqs_queu
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_sns_topic_with_attributes(infrastructure_setup, aws_client, snapshot):
     infra = infrastructure_setup(namespace="SnsTests")

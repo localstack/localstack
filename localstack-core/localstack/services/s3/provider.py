@@ -80,6 +80,7 @@ from localstack.aws.api.s3 import (
     GetBucketLifecycleConfigurationOutput,
     GetBucketLocationOutput,
     GetBucketLoggingOutput,
+    GetBucketMetricsConfigurationOutput,
     GetBucketOwnershipControlsOutput,
     GetBucketPolicyOutput,
     GetBucketPolicyStatusOutput,
@@ -126,6 +127,7 @@ from localstack.aws.api.s3 import (
     ListBucketAnalyticsConfigurationsOutput,
     ListBucketIntelligentTieringConfigurationsOutput,
     ListBucketInventoryConfigurationsOutput,
+    ListBucketMetricsConfigurationsOutput,
     ListBucketsOutput,
     ListMultipartUploadsOutput,
     ListObjectsOutput,
@@ -138,6 +140,8 @@ from localstack.aws.api.s3 import (
     MaxParts,
     MaxUploads,
     MethodNotAllowed,
+    MetricsConfiguration,
+    MetricsId,
     MissingSecurityHeader,
     MpuObjectSize,
     MultipartUpload,
@@ -163,6 +167,7 @@ from localstack.aws.api.s3 import (
     ObjectLockRetention,
     ObjectLockToken,
     ObjectOwnership,
+    ObjectPart,
     ObjectVersion,
     ObjectVersionId,
     ObjectVersionStorageClass,
@@ -240,6 +245,7 @@ from localstack.services.s3.exceptions import (
     MalformedXML,
     NoSuchConfiguration,
     NoSuchObjectLockConfiguration,
+    TooManyConfigurations,
     UnexpectedContent,
 )
 from localstack.services.s3.models import (
@@ -312,6 +318,7 @@ from localstack.services.s3.validation import (
 from localstack.services.s3.website_hosting import register_website_hosting_routes
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import s3_bucket_name
+from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import short_uid, to_bytes, to_str
 
 LOG = logging.getLogger(__name__)
@@ -2027,6 +2034,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         object_attrs = request.get("ObjectAttributes", [])
         response = GetObjectAttributesOutput()
+        object_checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
         if "ETag" in object_attrs:
             response["ETag"] = s3_object.etag
         if "StorageClass" in object_attrs:
@@ -2040,7 +2048,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 checksum_value = s3_object.checksum_value
             response["Checksum"] = {
                 f"Checksum{checksum_algorithm.upper()}": checksum_value,
-                "ChecksumType": getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT),
+                "ChecksumType": object_checksum_type,
             }
 
         response["LastModified"] = s3_object.last_modified
@@ -2049,9 +2057,55 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["VersionId"] = s3_object.version_id
 
         if "ObjectParts" in object_attrs and s3_object.parts:
-            # TODO: implements ObjectParts, this is basically a simplified `ListParts` call on the object, we might
-            #  need to store more data about the Parts once we implement checksums for them
-            response["ObjectParts"] = GetObjectAttributesParts(TotalPartsCount=len(s3_object.parts))
+            if object_checksum_type == ChecksumType.FULL_OBJECT:
+                response["ObjectParts"] = GetObjectAttributesParts(
+                    TotalPartsCount=len(s3_object.parts)
+                )
+            else:
+                # this is basically a simplified `ListParts` call on the object, only returned when the checksum type is
+                # COMPOSITE
+                count = 0
+                is_truncated = False
+                part_number_marker = request.get("PartNumberMarker") or 0
+                max_parts = request.get("MaxParts") or 1000
+
+                parts = []
+                all_parts = sorted(s3_object.parts.items())
+                last_part_number, last_part = all_parts[-1]
+
+                # TODO: remove this backward compatibility hack needed for state created with <= 4.5
+                #  the parts would only be a tuple and would not store the proper state for 4.5 and earlier, so we need
+                #  to return early
+                if isinstance(last_part, tuple):
+                    response["ObjectParts"] = GetObjectAttributesParts(
+                        TotalPartsCount=len(s3_object.parts)
+                    )
+                    return response
+
+                for part_number, part in all_parts:
+                    if part_number <= part_number_marker:
+                        continue
+                    part_item = select_from_typed_dict(ObjectPart, part)
+
+                    parts.append(part_item)
+                    count += 1
+
+                    if count >= max_parts and part["PartNumber"] != last_part_number:
+                        is_truncated = True
+                        break
+
+                object_parts = GetObjectAttributesParts(
+                    TotalPartsCount=len(s3_object.parts),
+                    IsTruncated=is_truncated,
+                    MaxParts=max_parts,
+                    PartNumberMarker=part_number_marker,
+                    NextPartNumberMarker=0,
+                )
+                if parts:
+                    object_parts["Parts"] = parts
+                    object_parts["NextPartNumberMarker"] = parts[-1]["PartNumber"]
+
+                response["ObjectParts"] = object_parts
 
         return response
 
@@ -2397,11 +2451,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: UploadPartCopyRequest,
     ) -> UploadPartCopyOutput:
         # TODO: handle following parameters:
-        #  copy_source_if_match: CopySourceIfMatch = None,
-        #  copy_source_if_modified_since: CopySourceIfModifiedSince = None,
-        #  copy_source_if_none_match: CopySourceIfNoneMatch = None,
-        #  copy_source_if_unmodified_since: CopySourceIfUnmodifiedSince = None,
-        #  request_payer: RequestPayer = None,
+        #  CopySourceIfMatch: Optional[CopySourceIfMatch]
+        #  CopySourceIfModifiedSince: Optional[CopySourceIfModifiedSince]
+        #  CopySourceIfNoneMatch: Optional[CopySourceIfNoneMatch]
+        #  CopySourceIfUnmodifiedSince: Optional[CopySourceIfUnmodifiedSince]
+        #  SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
+        #  SSECustomerKey: Optional[SSECustomerKey]
+        #  SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
+        #  CopySourceSSECustomerAlgorithm: Optional[CopySourceSSECustomerAlgorithm]
+        #  CopySourceSSECustomerKey: Optional[CopySourceSSECustomerKey]
+        #  CopySourceSSECustomerKeyMD5: Optional[CopySourceSSECustomerKeyMD5]
+        #  RequestPayer: Optional[RequestPayer]
+        #  ExpectedBucketOwner: Optional[AccountId]
+        #  ExpectedSourceBucketOwner: Optional[AccountId]
         dest_bucket = request["Bucket"]
         dest_key = request["Key"]
         store = self.get_store(context.account_id, context.region)
@@ -2449,24 +2511,22 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         source_range = request.get("CopySourceRange")
-        # TODO implement copy source IF (done in ASF provider)
+        # TODO implement copy source IF
 
         range_data: Optional[ObjectRange] = None
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
         s3_part = S3Part(part_number=part_number)
+        if s3_multipart.checksum_algorithm:
+            s3_part.checksum_algorithm = s3_multipart.checksum_algorithm
 
         stored_multipart = self._storage_backend.get_multipart(dest_bucket, s3_multipart)
         stored_multipart.copy_from_object(s3_part, src_bucket, src_s3_object, range_data)
 
         s3_multipart.parts[part_number] = s3_part
 
-        # TODO: return those fields (checksum not handled currently in moto for parts)
-        # ChecksumCRC32: Optional[ChecksumCRC32]
-        # ChecksumCRC32C: Optional[ChecksumCRC32C]
-        # ChecksumSHA1: Optional[ChecksumSHA1]
-        # ChecksumSHA256: Optional[ChecksumSHA256]
+        # TODO: return those fields
         #     RequestCharged: Optional[RequestCharged]
 
         result = CopyPartResult(
@@ -2480,6 +2540,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         if src_s3_bucket.versioning_status and src_s3_object.version_id:
             response["CopySourceVersionId"] = src_s3_object.version_id
+
+        if s3_part.checksum_algorithm:
+            result[f"Checksum{s3_part.checksum_algorithm.upper()}"] = s3_part.checksum_value
 
         add_encryption_to_response(response, s3_object=s3_multipart.object)
 
@@ -2715,8 +2778,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         sse_customer_key_md5: SSECustomerKeyMD5 = None,
         **kwargs,
     ) -> ListPartsOutput:
-        # TODO: implement MaxParts
-        # TODO: implements PartNumberMarker
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if (
@@ -2728,10 +2789,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 "The upload ID may be invalid, or the upload may have been aborted or completed.",
                 UploadId=upload_id,
             )
-
-        #     AbortDate: Optional[AbortDate] TODO: lifecycle
-        #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
-        #     RequestCharged: Optional[RequestCharged]
 
         count = 0
         is_truncated = False
@@ -2750,7 +2807,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 PartNumber=part_number,
                 Size=part.size,
             )
-            if s3_multipart.checksum_algorithm:
+            if s3_multipart.checksum_algorithm and part.checksum_algorithm:
                 part_item[f"Checksum{part.checksum_algorithm.upper()}"] = part.checksum_value
 
             parts.append(part_item)
@@ -2782,6 +2839,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_multipart.checksum_algorithm:
             response["ChecksumAlgorithm"] = s3_multipart.object.checksum_algorithm
             response["ChecksumType"] = getattr(s3_multipart, "checksum_type", None)
+
+        #     AbortDate: Optional[AbortDate] TODO: lifecycle
+        #     AbortRuleId: Optional[AbortRuleId] TODO: lifecycle
+        #     RequestCharged: Optional[RequestCharged]
 
         return response
 
@@ -4424,6 +4485,143 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         return response
 
+    def put_bucket_metrics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: MetricsId,
+        metrics_configuration: MetricsConfiguration,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> None:
+        """
+        Update or add a new metrics configuration. If the provided `id` already exists, its associated configuration
+        will be overwritten. The total number of metric configurations is limited to 1000. If this limit is exceeded,
+        an error is raised unless the `is` already exists.
+
+        :param context: The request context.
+        :param bucket: The name of the bucket associated with the metrics configuration.
+        :param id: Identifies the metrics configuration being added or updated.
+        :param metrics_configuration: A new or updated configuration associated with the given metrics identifier.
+        :param expected_bucket_owner: The expected account ID of the bucket owner.
+        :return: None
+        :raises TooManyConfigurations: If the total number of metrics configurations exceeds 1000 AND the provided
+            `metrics_id` does not already exist.
+        """
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
+
+        if (
+            len(s3_bucket.metric_configurations) >= 1000
+            and id not in s3_bucket.metric_configurations
+        ):
+            raise TooManyConfigurations("Too many metrics configurations")
+        s3_bucket.metric_configurations[id] = metrics_configuration
+
+    def get_bucket_metrics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: MetricsId,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> GetBucketMetricsConfigurationOutput:
+        """
+        Retrieve the metrics configuration associated with a given metrics identifier.
+
+        :param context: The request context.
+        :param bucket: The name of the bucket associated with the metrics configuration.
+        :param id: The unique identifier of the metrics configuration to retrieve.
+        :param expected_bucket_owner: The expected account ID of the bucket owner.
+        :return: The metrics configuration associated with the given metrics identifier.
+        :raises NoSuchConfiguration: If the provided metrics configuration does not exist.
+        """
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
+
+        metric_config = s3_bucket.metric_configurations.get(id)
+        if not metric_config:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+        return GetBucketMetricsConfigurationOutput(MetricsConfiguration=metric_config)
+
+    def list_bucket_metrics_configurations(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        continuation_token: Token = None,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> ListBucketMetricsConfigurationsOutput:
+        """
+        Lists the metric configurations available, allowing for pagination using a continuation token to retrieve more
+        results.
+
+        :param context: The request context.
+        :param bucket: The name of the bucket associated with the metrics configuration.
+        :param continuation_token: An optional continuation token to retrieve the next set of results in case there are
+            more results than the default limit. Provided as a base64-encoded string value.
+        :param expected_bucket_owner: The expected account ID of the bucket owner.
+        :return: A list of metric configurations and an optional continuation token for fetching subsequent data, if
+            applicable.
+        """
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
+
+        metrics_configurations: list[MetricsConfiguration] = []
+        next_continuation_token = None
+
+        decoded_continuation_token = (
+            to_str(base64.urlsafe_b64decode(continuation_token.encode()))
+            if continuation_token
+            else None
+        )
+
+        for metric in sorted(s3_bucket.metric_configurations.values(), key=lambda r: r["Id"]):
+            if continuation_token and metric["Id"] < decoded_continuation_token:
+                continue
+
+            if len(metrics_configurations) >= 100:
+                next_continuation_token = to_str(base64.urlsafe_b64encode(metric["Id"].encode()))
+                break
+
+            metrics_configurations.append(metric)
+
+        return ListBucketMetricsConfigurationsOutput(
+            IsTruncated=next_continuation_token is not None,
+            ContinuationToken=continuation_token,
+            NextContinuationToken=next_continuation_token,
+            MetricsConfigurationList=metrics_configurations,
+        )
+
+    def delete_bucket_metrics_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: MetricsId,
+        expected_bucket_owner: AccountId = None,
+        **kwargs,
+    ) -> None:
+        """
+        Removes a specific metrics configuration identified by its metrics ID.
+
+        :param context: The request context.
+        :param bucket: The name of the bucket associated with the metrics configuration.
+        :param id: The unique identifier of the metrics configuration to delete.
+        :param expected_bucket_owner: The expected account ID of the bucket owner.
+        :return: None
+        :raises NoSuchConfiguration: If the provided metrics configuration does not exist.
+        """
+        store, s3_bucket = self._get_cross_account_bucket(
+            context, bucket, expected_bucket_owner=expected_bucket_owner
+        )
+
+        deleted_config = s3_bucket.metric_configurations.pop(id, None)
+        if not deleted_config:
+            raise NoSuchConfiguration("The specified configuration does not exist.")
+
 
 def generate_version_id(bucket_versioning_status: str) -> str | None:
     if not bucket_versioning_status:
@@ -4529,7 +4727,13 @@ def get_part_range(s3_object: S3Object, part_number: PartNumber) -> ObjectRange:
             ActualPartCount=len(s3_object.parts),
         )
 
-    begin, part_length = part_data
+    # TODO: remove for next major version 5.0, compatibility for <= 4.5
+    if isinstance(part_data, tuple):
+        begin, part_length = part_data
+    else:
+        begin = part_data["_position"]
+        part_length = part_data["Size"]
+
     end = begin + part_length - 1
     return ObjectRange(
         begin=begin,

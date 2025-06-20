@@ -86,6 +86,15 @@
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_pagination": {
     "last_validated_date": "2025-01-21T18:15:18+00:00"
   },
+  "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_list_parts_via_object_attrs_pagination": {
+    "last_validated_date": "2025-06-16T13:47:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.97,
+      "call": 10.45,
+      "teardown": 0.97,
+      "total": 12.39
+    }
+  },
   "tests/aws/services/s3/test_s3_list_operations.py::TestS3ListParts::test_s3_list_parts_timestamp_precision": {
     "last_validated_date": "2025-01-21T18:15:22+00:00"
   }

@@ -27,17 +27,17 @@ aws-sam-translator==1.98.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.40.31
+awscli==1.40.35
     # via localstack-core (pyproject.toml)
 awscrt==0.27.2
     # via localstack-core
-boto3==1.38.32
+boto3==1.38.36
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.38.32
+botocore==1.38.36
     # via
     #   aws-xray-sdk
     #   awscli
@@ -49,20 +49,20 @@ build==1.2.2.post1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==6.0.0
+cachetools==6.1.0
     # via
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core
-certifi==2025.4.26
+certifi==2025.6.15
     # via
     #   opensearch-py
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.35.4
+cfn-lint==1.36.0
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
@@ -172,7 +172,7 @@ jsonschema-specifications==2025.4.1
     # via
     #   jsonschema
     #   openapi-schema-validator
-kclpy-ext==3.0.3
+kclpy-ext==3.0.5
     # via localstack-core (pyproject.toml)
 lazy-object-proxy==1.11.0
     # via openapi-spec-validator
@@ -239,13 +239,13 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.22
     # via cffi
-pydantic==2.11.5
+pydantic==2.11.7
     # via aws-sam-translator
 pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.1
     # via rich
-pymongo==4.13.0
+pymongo==4.13.2
     # via localstack-core (pyproject.toml)
 pyopenssl==25.1.0
     # via

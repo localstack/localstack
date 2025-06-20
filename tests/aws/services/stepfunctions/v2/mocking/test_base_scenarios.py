@@ -12,7 +12,9 @@ from localstack.testing.pytest.stepfunctions.utils import (
     SfnNoneRecursiveParallelTransformer,
     await_execution_terminated,
     create_and_record_execution,
+    create_and_record_express_sync_execution,
     create_and_record_mocked_execution,
+    create_and_record_mocked_sync_execution,
 )
 from localstack.utils.strings import short_uid
 from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
@@ -231,6 +233,72 @@ class TestBaseScenarios:
                 exec_input,
                 state_machine_name,
                 test_name,
+            )
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..billingDetails",
+        ]
+    )
+    def test_lambda_service_invoke_sync_execution(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        create_state_machine,
+        create_lambda_function,
+        sfn_snapshot,
+        monkeypatch,
+        mock_config_file,
+    ):
+        template = ServicesTemplates.load_sfn_template(ServicesTemplates.LAMBDA_INVOKE)
+        definition = json.dumps(template)
+
+        function_name = f"lambda_{short_uid()}"
+        sfn_snapshot.add_transformer(RegexTransformer(function_name, "lambda_function_name"))
+        exec_input = json.dumps({"FunctionName": function_name, "Payload": {"body": "string body"}})
+
+        if is_aws_cloud():
+            create_lambda_function(
+                func_name=function_name,
+                handler_file=ServicesTemplates.LAMBDA_ID_FUNCTION,
+                runtime=Runtime.python3_12,
+            )
+            create_and_record_express_sync_execution(
+                aws_client,
+                create_state_machine_iam_role,
+                create_state_machine,
+                sfn_snapshot,
+                definition,
+                exec_input,
+            )
+        else:
+            state_machine_name = f"mocked_state_machine_{short_uid()}"
+            test_name = "TestCaseName"
+            lambda_200_string_body = MockedServiceIntegrationsLoader.load(
+                MockedServiceIntegrationsLoader.MOCKED_RESPONSE_LAMBDA_200_STRING_BODY
+            )
+            mock_config = {
+                "StateMachines": {
+                    state_machine_name: {
+                        "TestCases": {test_name: {"Start": "lambda_200_string_body"}}
+                    }
+                },
+                "MockedResponses": {"lambda_200_string_body": lambda_200_string_body},
+            }
+            mock_config_file_path = mock_config_file(mock_config)
+            monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
+
+            create_and_record_mocked_sync_execution(
+                target_aws_client=aws_client_no_sync_prefix,
+                create_state_machine_iam_role=create_state_machine_iam_role,
+                create_state_machine=create_state_machine,
+                sfn_snapshot=sfn_snapshot,
+                definition=definition,
+                execution_input=exec_input,
+                state_machine_name=state_machine_name,
+                test_name=test_name,
             )
 
     @markers.aws.validated

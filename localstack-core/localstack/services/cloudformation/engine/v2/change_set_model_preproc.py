@@ -27,6 +27,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeOutput,
     NodeOutputs,
     NodeParameter,
+    NodeParameters,
     NodeProperties,
     NodeProperty,
     NodeResource,
@@ -881,6 +882,21 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_mapping(self, node_mapping: NodeMapping) -> PreprocEntityDelta:
         bindings_delta = self.visit(node_mapping.bindings)
         return bindings_delta
+
+    def visit_node_parameters(
+        self, node_parameters: NodeParameters
+    ) -> PreprocEntityDelta[dict[str, Any], dict[str, Any]]:
+        before_parameters = dict()
+        after_parameters = dict()
+        for parameter in node_parameters.parameters:
+            parameter_delta = self.visit(parameter)
+            parameter_before = parameter_delta.before
+            if not is_nothing(parameter_before):
+                before_parameters[parameter.name] = parameter_before
+            parameter_after = parameter_delta.after
+            if not is_nothing(parameter_after):
+                after_parameters[parameter.name] = parameter_after
+        return PreprocEntityDelta(before=before_parameters, after=after_parameters)
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
         dynamic_value = node_parameter.dynamic_value

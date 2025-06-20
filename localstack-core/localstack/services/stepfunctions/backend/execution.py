@@ -392,6 +392,7 @@ class SyncExecution(Execution):
             exec_comm=self._get_start_execution_worker_comm(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
+            mock_test_case=self.mock_test_case,
         )
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:

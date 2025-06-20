@@ -46,3 +46,8 @@ class MalformedPolicy(CommonServiceException):
 class InvalidBucketOwnerAWSAccountID(CommonServiceException):
     def __init__(self, message=None) -> None:
         super().__init__("InvalidBucketOwnerAWSAccountID", status_code=400, message=message)
+
+
+class TooManyConfigurations(CommonServiceException):
+    def __init__(self, message=None) -> None:
+        super().__init__("TooManyConfigurations", status_code=400, message=message)

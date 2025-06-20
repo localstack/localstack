@@ -226,7 +226,6 @@ def test_cfn_with_apigateway_resources(deploy_cfn_template, aws_client, snapshot
     # assert not apis
 
 
-@pytest.mark.skip(reason="CFNV2:Other NotFoundException Invalid Method identifier specified")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

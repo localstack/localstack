@@ -2475,5 +2475,132 @@
         }
       }
     }
+  },
+  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke_sync_execution": {
+    "recorded-date": "03-06-2025, 18:47:04",
+    "recorded-content": {
+      "creation_response": {
+        "creationDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "start_execution_sync_response": {
+        "billingDetails": {
+          "billedDurationInMilliseconds": 300,
+          "billedMemoryUsedInMB": 64
+        },
+        "executionArn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",
+        "input": {
+          "FunctionName": "lambda_function_name",
+          "Payload": {
+            "body": "string body"
+          }
+        },
+        "inputDetails": {
+          "included": true
+        },
+        "name": "<SyncExecArn_Part1_0idx>",
+        "output": {
+          "ExecutedVersion": "$LATEST",
+          "Payload": {
+            "body": "string body"
+          },
+          "SdkHttpMetadata": {
+            "AllHttpHeaders": {
+              "X-Amz-Executed-Version": [
+                "$LATEST"
+              ],
+              "x-amzn-Remapped-Content-Length": [
+                "0"
+              ],
+              "Connection": [
+                "keep-alive"
+              ],
+              "x-amzn-RequestId": "x-amzn-RequestId",
+              "Content-Length": [
+                "23"
+              ],
+              "Date": "date",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+              "Content-Type": [
+                "application/json"
+              ]
+            },
+            "HttpHeaders": {
+              "Connection": "keep-alive",
+              "Content-Length": "23",
+              "Content-Type": "application/json",
+              "Date": "date",
+              "X-Amz-Executed-Version": "$LATEST",
+              "x-amzn-Remapped-Content-Length": "0",
+              "x-amzn-RequestId": "x-amzn-RequestId",
+              "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+            },
+            "HttpStatusCode": 200
+          },
+          "SdkResponseMetadata": {
+            "RequestId": "RequestId"
+          },
+          "StatusCode": 200,
+          "final": {
+            "ExecutedVersion": "$LATEST",
+            "Payload": {
+              "body": "string body"
+            },
+            "SdkHttpMetadata": {
+              "AllHttpHeaders": {
+                "X-Amz-Executed-Version": [
+                  "$LATEST"
+                ],
+                "x-amzn-Remapped-Content-Length": [
+                  "0"
+                ],
+                "Connection": [
+                  "keep-alive"
+                ],
+                "x-amzn-RequestId": "x-amzn-RequestId",
+                "Content-Length": [
+                  "23"
+                ],
+                "Date": "date",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
+                "Content-Type": [
+                  "application/json"
+                ]
+              },
+              "HttpHeaders": {
+                "Connection": "keep-alive",
+                "Content-Length": "23",
+                "Content-Type": "application/json",
+                "Date": "date",
+                "X-Amz-Executed-Version": "$LATEST",
+                "x-amzn-Remapped-Content-Length": "0",
+                "x-amzn-RequestId": "x-amzn-RequestId",
+                "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
+              },
+              "HttpStatusCode": 200
+            },
+            "SdkResponseMetadata": {
+              "RequestId": "RequestId"
+            },
+            "StatusCode": 200
+          }
+        },
+        "outputDetails": {
+          "included": true
+        },
+        "startDate": "datetime",
+        "stateMachineArn": "arn:<partition>:states:<region>:111111111111:stateMachine:<ArnPart_0idx>",
+        "status": "SUCCEEDED",
+        "stopDate": "datetime",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
