@@ -7,6 +7,7 @@ from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
 
 from typing_extensions import TypeVar
 
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -139,6 +140,14 @@ class ChangeSetEntity(abc.ABC):
 
     def __repr__(self):
         return str(self)
+
+    def validate(self, template: NodeTemplate):
+        self._perform_validation(template)
+        for child in self.get_children():
+            child.validate(template)
+
+    def _perform_validation(self, template: NodeTemplate):
+        pass
 
 
 class ChangeSetNode(ChangeSetEntity, abc.ABC): ...
@@ -383,6 +392,31 @@ class NodeIntrinsicFunction(ChangeSetNode):
         super().__init__(scope=scope, change_type=change_type)
         self.intrinsic_function = intrinsic_function
         self.arguments = arguments
+
+    def _perform_validation(self, template: NodeTemplate):
+        validation_fn = getattr(
+            self, f"_perform_validation_{self.intrinsic_function.lower()}", None
+        )
+        if validation_fn:
+            validation_fn(template)
+
+    def _perform_validation_ref(self, template: NodeTemplate):
+        target = self.arguments.value
+        for parameter in template.parameters.parameters:
+            if target == parameter.name:
+                return
+
+        for condition in template.conditions.conditions:
+            if target == condition.name:
+                return
+
+        for resource in template.resources.resources:
+            if target == resource.name:
+                return
+
+        raise ValidationError(
+            f"Template format error: Unresolved resource dependencies [{target}] in the Resources block of the template"
+        )
 
 
 class NodeObject(ChangeSetNode):

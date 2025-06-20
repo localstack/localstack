@@ -44,6 +44,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
@@ -187,7 +188,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if node_resource.name == resource_name:
                 self.visit(node_resource)
                 return node_resource
-        raise RuntimeError(f"No resource '{resource_name}' was found")
+        raise ValidationError(f"No resource '{resource_name}' was found")
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource

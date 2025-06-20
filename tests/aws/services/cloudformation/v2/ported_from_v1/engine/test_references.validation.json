@@ -12,6 +12,12 @@
     "last_validated_date": "2024-06-18T19:55:48+00:00"
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/engine/test_references.py::test_useful_error_when_invalid_ref": {
-    "last_validated_date": "2024-05-28T11:42:58+00:00"
+    "last_validated_date": "2025-06-20T15:25:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.84,
+      "call": 0.32,
+      "teardown": 0.0,
+      "total": 2.16
+    }
   }
 }

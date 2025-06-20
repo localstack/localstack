@@ -80,9 +80,8 @@ class TestFnSub:
         snapshot.match("get-parameter-result", get_param_res)
 
 
-@pytest.mark.skip(reason="CFNV2:Validation")
 @markers.aws.validated
-def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
+def test_useful_error_when_invalid_ref(aws_client, snapshot):
     """
     When trying to resolve a non-existent !Ref, make sure the error message includes the name of the !Ref
     to clarify which !Ref cannot be resolved.
@@ -105,8 +104,16 @@ def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
         }
     )
 
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
     with pytest.raises(ClientError) as exc_info:
-        deploy_cfn_template(template=template)
+        aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            ChangeSetType="CREATE",
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
+        )
 
     snapshot.match("validation_error", exc_info.value.response)
 
