@@ -201,6 +201,11 @@ jobs:
   test-preflight:
     name: "Preflight & Unit-Tests"
     runs-on: ubuntu-latest
+    outputs:
+      cloudwatch-v1: ${{ steps.changes.outputs.cloudwatch-v1 }}
+      dynamodb-v2: ${{ steps.changes.outputs.dynamodb-v2 }}
+      events-v1: ${{ steps.changes.outputs.events-v1 }}
+      cloudformation-v2: ${{ steps.changes.outputs.cloudformation-v2 }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -240,6 +245,28 @@ jobs:
           path: |
             dist/testselection/test-selection.txt
           retention-days: 1
+
+      # This step determines which services were affected by changes of the modified files
+      # The output from this step is later used in combination with the test-selection file
+      #
+      # The test-selection file specifies which tests to run for each service,
+      # while this step allows skipping entire jobs when no relevant services have changed
+      - name: Determine services affected by change
+        uses: dorny/paths-filter@v3.0.2
+        id: changes
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          filters: |
+            cloudwatch-v1:
+               - 'tests/aws/services/cloudwatch/**'
+            dynamodb-v2:
+               - 'tests/aws/services/dynamodb/**'
+               - 'tests/aws/services/dynamodbstreams/**'
+               - 'tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py'
+            events-v1:
+               - 'tests/aws/services/events/**'
+            cloudformation-v2:
+               - 'tests/aws/services/cloudformation/v2/**'
 
       - name: Run Unit Tests
         timeout-minutes: 8
@@ -493,7 +520,6 @@ jobs:
           test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
 
-
   test-acceptance:
     name: "Acceptance Tests (${{ contains(matrix.runner, 'arm') && 'ARM64' || 'AMD64' }})"
     needs:
@@ -608,7 +634,7 @@ jobs:
 
   test-cloudwatch-v1:
     name: Test CloudWatch V1
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudwatch-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -625,6 +651,13 @@ jobs:
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v4
+        with:
+          name: test-selection
+          path: dist/testselection/
+
       - name: Run Cloudwatch v1 Provider Tests
         timeout-minutes: 30
         env:
@@ -634,7 +667,7 @@ jobs:
           COVERAGE_FILE: ".coverage.cloudwatch_v1"
           TEST_PATH: "tests/aws/services/cloudwatch/"
           JUNIT_REPORTS_FILE: "pytest-junit-cloudwatch-v1.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=cloudwatch_v1"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=cloudwatch_v1"
           PROVIDER_OVERRIDE_CLOUDWATCH: "v1"
         run: make test-coverage
 
@@ -651,7 +684,7 @@ jobs:
 
   test-ddb-v2:
     name: Test DynamoDB(Streams) v2
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.dynamodb-v2 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -683,7 +716,7 @@ jobs:
           COVERAGE_FILE: ".coverage.dynamodb_v2"
           TEST_PATH: "tests/aws/services/dynamodb/ tests/aws/services/dynamodbstreams/ tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py"
           JUNIT_REPORTS_FILE: "pytest-junit-dynamodb-v2.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=dynamodb_v2"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=dynamodb_v2"
           PROVIDER_OVERRIDE_DYNAMODB: "v2"
         run: make test-coverage
 
@@ -700,7 +733,7 @@ jobs:
 
   test-events-v1:
     name: Test EventBridge v1
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.events-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -733,7 +766,7 @@ jobs:
           COVERAGE_FILE: ".coverage.events_v1"
           TEST_PATH: "tests/aws/services/events/"
           JUNIT_REPORTS_FILE: "pytest-junit-events-v1.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=events_v1"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=events_v1"
           PROVIDER_OVERRIDE_EVENTS: "v1"
         run: make test-coverage
 
@@ -749,7 +782,7 @@ jobs:
 
   test-cfn-v2-engine:
     name: Test CloudFormation Engine v2
-    if: ${{ !inputs.onlyAcceptanceTests }}
+    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudformation-v2 == 'true' )}}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -781,7 +814,7 @@ jobs:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TEST_PATH: "tests/aws/services/cloudformation/v2"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
           PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
         run: make test-coverage
 
