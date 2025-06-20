@@ -9206,6 +9206,16 @@ class TestS3ObjectLockRetention:
             )
         snapshot.match("update-retention-past-date", e.value.response)
 
+        # update a retention with a bad ObjectLock Mode
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_locked,
+                Key=object_key,
+                VersionId=version_id,
+                Retention={"Mode": "BAD-VALUE", "RetainUntilDate": future_datetime},
+            )
+        snapshot.match("update-retention-bad-value", e.value.response)
+
         s3_bucket_basic = s3_create_bucket(ObjectLockEnabledForBucket=False)  # same as default
         aws_client.s3.put_object(Bucket=s3_bucket_basic, Key=object_key, Body="test")
         # put object retention in a object in bucket without lock configured
@@ -9261,7 +9271,6 @@ class TestS3ObjectLockRetention:
             BypassGovernanceRetention=True,
         )
         snapshot.match("delete-obj-locked-bypass", response)
-        # TODO: add retention on delete marker? todo add delete marker on locked object?
 
         put_obj_2 = aws_client.s3.put_object(
             Bucket=s3_bucket_lock,
@@ -9280,7 +9289,8 @@ class TestS3ObjectLockRetention:
                 Key=object_key,
                 Retention={
                     "Mode": "GOVERNANCE",
-                    "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+                    "RetainUntilDate": datetime.datetime.now(tz=datetime.UTC)
+                    + datetime.timedelta(seconds=5),
                 },
             )
         snapshot.match("update-retention-locked-object", e.value.response)
@@ -9299,7 +9309,8 @@ class TestS3ObjectLockRetention:
             Key=object_key,
             Retention={
                 "Mode": "GOVERNANCE",
-                "RetainUntilDate": datetime.datetime.utcnow() + datetime.timedelta(seconds=5),
+                "RetainUntilDate": datetime.datetime.now(tz=datetime.UTC)
+                + datetime.timedelta(seconds=5),
             },
         )
         snapshot.match("update-retention-object", update_retention)
@@ -9489,6 +9500,84 @@ class TestS3ObjectLockRetention:
                 },
             )
         snapshot.match("put-object-retention-reduce", e.value.response)
+
+    @markers.aws.validated
+    def test_s3_object_retention_compliance_mode(self, aws_client, s3_create_bucket, snapshot):
+        # BEWARE of this test!
+        # using `COMPLIANCE` will make the object virtually *impossible* to delete, so don't set a long duration
+        # for the `RetainUntilDate`
+        # only way to delete the object and indirectly the bucket will be to delete the AWS Account
+        # see https://docs.aws.amazon.com/AmazonS3/latest/userguide/object-lock.html#object-lock-overview
+        # > The only way to delete an object under the compliance mode before its retention date expires is to delete
+        # > the associated AWS account.
+        snapshot.add_transformer(snapshot.transform.key_value("VersionId"))
+        object_key = "test-retention-locked-object"
+
+        s3_bucket_lock = s3_create_bucket(ObjectLockEnabledForBucket=True)
+        put_obj_1 = aws_client.s3.put_object(Bucket=s3_bucket_lock, Key=object_key, Body="test")
+        snapshot.match("put-obj-locked-1", put_obj_1)
+
+        version_id = put_obj_1["VersionId"]
+
+        short_future = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(seconds=5)
+
+        update_retention = aws_client.s3.put_object_retention(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            Retention={
+                "Mode": "COMPLIANCE",
+                "RetainUntilDate": short_future,
+            },
+        )
+        snapshot.match("add-compliance-retention", update_retention)
+
+        # delete object with retention lock without bypass before 5 seconds
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket_lock, Key=object_key, VersionId=version_id)
+        snapshot.match("delete-locked-1", e.value.response)
+
+        # delete object with retention lock with bypass before 5 seconds
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                VersionId=version_id,
+                BypassGovernanceRetention=True,
+            )
+        snapshot.match("delete-locked-2", e.value.response)
+
+        # update a retention to be lower than the existing one without bypass
+        earlier_datetime = short_future - datetime.timedelta(seconds=1)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                VersionId=version_id,
+                Retention={"Mode": "COMPLIANCE", "RetainUntilDate": earlier_datetime},
+            )
+        snapshot.match("update-retention-shortened", e.value.response)
+
+        # update a retention to be less restrictive than COMPLIANCE
+        earlier_datetime = short_future + datetime.timedelta(seconds=1)
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_retention(
+                Bucket=s3_bucket_lock,
+                Key=object_key,
+                VersionId=version_id,
+                Retention={"Mode": "GOVERNANCE", "RetainUntilDate": earlier_datetime},
+            )
+        snapshot.match("update-retention-less-restrictive", e.value.response)
+
+        # delete object with lock without bypass after 5 seconds
+        sleep = 10 if is_aws_cloud() else 6
+        time.sleep(sleep)
+
+        response = aws_client.s3.delete_object(
+            Bucket=s3_bucket_lock,
+            Key=object_key,
+            VersionId=version_id,
+        )
+        snapshot.match("delete-obj-after-lock-expiration", response)
 
 
 class TestS3ObjectLockLegalHold:

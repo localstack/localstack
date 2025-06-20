@@ -326,6 +326,7 @@ LOG = logging.getLogger(__name__)
 STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
 SSE_ALGORITHMS = get_class_attrs_from_spec_class(ServerSideEncryption)
 OBJECT_OWNERSHIPS = get_class_attrs_from_spec_class(ObjectOwnership)
+OBJECT_LOCK_MODES = get_class_attrs_from_spec_class(ObjectLockMode)
 
 DEFAULT_S3_TMP_DIR = "/tmp/localstack-s3-storage"
 
@@ -3668,6 +3669,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ):
             raise MalformedXML()
 
+        if default_retention["Mode"] not in OBJECT_LOCK_MODES:
+            raise MalformedXML()
+
         s3_bucket.object_lock_default_retention = default_retention
         if not s3_bucket.object_lock_enabled:
             s3_bucket.object_lock_enabled = True
@@ -3792,8 +3796,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             http_method="PUT",
         )
 
-        if retention and not validate_dict_fields(
-            retention, required_fields={"Mode", "RetainUntilDate"}
+        if retention and (
+            not validate_dict_fields(retention, required_fields={"Mode", "RetainUntilDate"})
+            or retention["Mode"] not in OBJECT_LOCK_MODES
         ):
             raise MalformedXML()
 
@@ -3807,11 +3812,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=pst_datetime.strftime("%a %b %d %H:%M:%S %Z %Y"),
             )
 
-        if (
+        is_request_reducing_locking = (
             not retention
             or (s3_object.lock_until and s3_object.lock_until > retention["RetainUntilDate"])
-        ) and not (
-            bypass_governance_retention and s3_object.lock_mode == ObjectLockMode.GOVERNANCE
+            or (
+                retention["Mode"] == ObjectLockMode.GOVERNANCE
+                and s3_object.lock_mode == ObjectLockMode.COMPLIANCE
+            )
+        )
+        if is_request_reducing_locking and (
+            s3_object.lock_mode == ObjectLockMode.COMPLIANCE
+            or (
+                s3_object.lock_mode == ObjectLockMode.GOVERNANCE and not bypass_governance_retention
+            )
         ):
             raise AccessDenied("Access Denied because object protected by object lock.")
 
