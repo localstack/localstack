@@ -148,8 +148,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     steps:
@@ -308,8 +309,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -458,8 +460,9 @@ jobs:
           - amd64
           - arm64
         exclude:
-          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - arch: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'arm64' || ''}}
+          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
+          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
     needs:
       - test-integration
       - test-bootstrap
@@ -504,8 +507,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - runner: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'ubuntu-24.04-arm' || ''}}
+          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -578,8 +582,9 @@ jobs:
           - amd64
           - arm64
         exclude:
-          # skip the ARM integration tests in case we are not on the master and not on the upgrade-dependencies branch and forceARMTests is not set to true
-          - arch: ${{ (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false) && 'arm64' || ''}}
+          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
+          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
     needs:
       - test-acceptance
     runs-on: ubuntu-latest
