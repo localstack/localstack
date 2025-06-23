@@ -8,7 +8,6 @@ from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack import config as localstack_config
 from localstack import constants
-from localstack.testing.pytest import markers
 from localstack.testing.snapshots.transformer_utility import (
     SNAPSHOT_BASIC_TRANSFORMER,
     SNAPSHOT_BASIC_TRANSFORMER_NEW,
@@ -108,32 +107,6 @@ def infrastructure_setup(cdk_template_path, aws_client):
     return _infrastructure_setup
 
 
-@pytest.hookimpl
-def pytest_runtest_setup(item):
-    """Modifies all tests using the snapshot fixture to skip validating 'x-localstack' header"""
-
-    # If snapshot fixture is not used, we don't need to skip anything.
-    if "snapshot" not in item.fixturenames:
-        return
-
-    # If snapshot fixture is used AND no skip_snapshot_verify marker is used, mark test to skip x-localstack.
-    is_localstack_header_path = f"$..{constants.HEADER_LOCALSTACK_IDENTIFIER}"
-    if not (skip_markers := list(item.iter_markers(name="skip_snapshot_verify"))):
-        item.add_marker(markers.snapshot.skip_snapshot_verify(paths=[is_localstack_header_path]))
-        return
-
-    # Otherwise, dynamically inject a path to the custom header inside all skip_snapshot_verify markers paths.
-    # If a path parameter is None, it's assumed that all paths are skipped.
-    for mark in skip_markers:
-        paths = mark.kwargs.get("paths")
-        if paths is None and len(mark.args) > 0:
-            paths = mark.args[0]
-
-        if paths and is_localstack_header_path not in paths:
-            mark.kwargs["paths"] = paths + [is_localstack_header_path]
-            continue
-
-
 @pytest.fixture(scope="function")
 def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_name):
     # Overwrite utility with our own => Will be refactored in the future
@@ -144,6 +117,9 @@ def snapshot(request, _snapshot_session: SnapshotSession, account_id, region_nam
     _snapshot_session.add_transformer(
         RegexTransformer(f"arn:{get_partition(region_name)}:", "arn:<partition>:"), priority=2
     )
+
+    # Removes the 'x-localstack' header from all responses
+    _snapshot_session.add_transformer(_snapshot_session.transform.remove_key("x-localstack"))
 
     # TODO: temporary to migrate to new default transformers.
     #   remove this after all exemptions are gone
