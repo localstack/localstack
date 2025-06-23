@@ -371,11 +371,11 @@ class TestChangeSetFnTransform:
     @markers.aws.validated
     @pytest.mark.parametrize("transform", ["true", "false"])
     def test_conditional_transform(
-            self,
-            transform,
-            snapshot,
-            capture_update_process,
-            create_macro,
+        self,
+        transform,
+        snapshot,
+        capture_update_process,
+        create_macro,
     ):
         name1 = f"parameter-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
@@ -397,21 +397,8 @@ class TestChangeSetFnTransform:
         }
 
         template_2 = {
-            "Parameters": {
-                "Transform": {
-                    "Type": "String"
-                }
-            },
-            "Conditions": {
-                "Deploy": {
-                    "Fn::Equals": [
-                        {
-                            "Ref": "Transform"
-                        },
-                        "true"
-                    ]
-                }
-            },
+            "Parameters": {"Transform": {"Type": "String"}},
+            "Conditions": {"Deploy": {"Fn::Equals": [{"Ref": "Transform"}, "true"]}},
             "Resources": {
                 "Parameter": {
                     "Type": "AWS::SSM::Parameter",
@@ -425,17 +412,17 @@ class TestChangeSetFnTransform:
                         ],
                     },
                 }
-            }
+            },
         }
 
         capture_update_process(snapshot, template_1, template_2, p2={"Transform": transform})
 
     @markers.aws.validated
     def test_macro_with_function(
-            self,
-            snapshot,
-            capture_update_process,
-            create_macro,
+        self,
+        snapshot,
+        capture_update_process,
+        create_macro,
     ):
         name1 = f"parameter-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
@@ -465,7 +452,10 @@ class TestChangeSetFnTransform:
                         "Value": "<replace-this>",
                         "Type": "String",
                         "Fn::Transform": [
-                            {"Name": macro_name, "Parameters": {"Input":{"Fn::Join": ["-", ["test", "string"]]}}},
+                            {
+                                "Name": macro_name,
+                                "Parameters": {"Input": {"Fn::Join": ["-", ["test", "string"]]}},
+                            },
                         ],
                     },
                 }
