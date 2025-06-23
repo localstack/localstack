@@ -81,7 +81,7 @@ def save_file(file, content, append=False, permissions=None):
         f.flush()
 
 
-def load_file(file_path, default=None, mode=None):
+def load_file(file_path: str, default=None, mode=None):
     if not os.path.isfile(file_path):
         return default
     if not mode:
