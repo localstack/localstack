@@ -23,6 +23,11 @@ TagValue = str
 ValidationExceptionMessage = str
 
 
+class CertificateExport(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
 class CertificateManagedBy(StrEnum):
     CLOUDFRONT = "CLOUDFRONT"
 
@@ -273,6 +278,7 @@ CertificateChainBlob = bytes
 
 class CertificateOptions(TypedDict, total=False):
     CertificateTransparencyLoggingPreference: Optional[CertificateTransparencyLoggingPreference]
+    Export: Optional[CertificateExport]
 
 
 class ExtendedKeyUsage(TypedDict, total=False):
@@ -374,6 +380,7 @@ class CertificateSummary(TypedDict, total=False):
     KeyAlgorithm: Optional[KeyAlgorithm]
     KeyUsages: Optional[KeyUsageNames]
     ExtendedKeyUsages: Optional[ExtendedKeyUsageNames]
+    ExportOption: Optional[CertificateExport]
     InUse: Optional[NullableBoolean]
     Exported: Optional[NullableBoolean]
     RenewalEligibility: Optional[RenewalEligibility]
@@ -436,6 +443,7 @@ class Filters(TypedDict, total=False):
     extendedKeyUsage: Optional[ExtendedKeyUsageFilterList]
     keyUsage: Optional[KeyUsageFilterList]
     keyTypes: Optional[KeyAlgorithmList]
+    exportOption: Optional[CertificateExport]
     managedBy: Optional[CertificateManagedBy]
 
 
@@ -524,6 +532,15 @@ class ResendValidationEmailRequest(ServiceRequest):
     CertificateArn: Arn
     Domain: DomainNameString
     ValidationDomain: DomainNameString
+
+
+class RevokeCertificateRequest(ServiceRequest):
+    CertificateArn: Arn
+    RevocationReason: RevocationReason
+
+
+class RevokeCertificateResponse(TypedDict, total=False):
+    CertificateArn: Optional[Arn]
 
 
 class UpdateCertificateOptionsRequest(ServiceRequest):
@@ -649,6 +666,16 @@ class AcmApi:
         validation_domain: DomainNameString,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("RevokeCertificate")
+    def revoke_certificate(
+        self,
+        context: RequestContext,
+        certificate_arn: Arn,
+        revocation_reason: RevocationReason,
+        **kwargs,
+    ) -> RevokeCertificateResponse:
         raise NotImplementedError
 
     @handler("UpdateCertificateOptions")
