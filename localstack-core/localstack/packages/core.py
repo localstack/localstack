@@ -155,7 +155,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         rm_rf(target_directory)
         os.rename(f"{target_directory}.backup", target_directory)
 
-    def _verify_checksum(self, archive_path: str):
+    def _verify_checksum(self, archive_path: str) -> None:
         if not self.verify_archive_integrity:
             LOG.debug("Skipping integrity verification (verify_integrity=False)")
             return
@@ -169,6 +169,12 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
             # read checksum file, parse it, and verify against the downloaded archive
             sha_content = load_file(checksum_path)
             _, expected_checksum = parse_sha_file_format(sha_content)
+
+            if not expected_checksum:
+                raise PackageException(
+                    f"Could not parse checksum from {checksum_name}. "
+                    "Please check the checksum file format."
+                )
 
             if not verify_file_integrity(
                 algorithm=self._get_checksum_algo(),
@@ -185,7 +191,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
             # Clean up temporary files
             rm_rf(checksum_path)
 
-    def _download_and_verify(self, target: InstallTarget, download_url: str):
+    def _download_and_verify(self, target: InstallTarget, download_url: str) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
         archive_name = os.path.basename(download_url)

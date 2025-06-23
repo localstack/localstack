@@ -1,14 +1,17 @@
 import re
 
 
-def parse_sha_file_format(checksum_content: str) -> tuple[str | None, str | None]:
+def parse_sha_file_format(checksum_content: str) -> tuple[str, str]:
     """
     Parses a SHA file content and returns a checksum SHA hash value.
 
     :param checksum_content: Path to the SHA file.
-    :return: SHA hash value.
+    :return: Tuple of filename and checksum
     """
     # TODO: extend this to support more formats
+    file_name = None
+    checksum = None
+
     content = checksum_content.lower().splitlines()
     raw_checksum = ""
 
@@ -32,23 +35,25 @@ def parse_sha_file_format(checksum_content: str) -> tuple[str | None, str | None
     if ":" in raw_checksum and not raw_checksum.lower().startswith("sha512"):
         file_name, rest = raw_checksum.split(":", 1)
         checksum = re.sub(r"\s+", "", rest.strip())
-        return file_name, checksum
 
     # Format: checksum  filename
     if re.match(r"^[a-f0-9]{64,128}\s{2,}", raw_checksum, re.IGNORECASE):
         file_name = raw_checksum.split()[-1]
         parts = raw_checksum.strip().split()
         checksum = parts[0]
-        return file_name, checksum
 
     # Format: SHA512 (filename) = checksum
     if raw_checksum.lower().startswith("sha512"):
         match = re.match(r"SHA512\s+\((.*?)\)\s+=\s+([a-f0-9]+)", raw_checksum, re.IGNORECASE)
         if match:
             file_name, checksum = match.groups()
-            return file_name, checksum
 
-    return None, None
+    if file_name is None or checksum is None:
+        raise ValueError(
+            "Error parsing checksum file content. Unsupported format or empty content."
+        )
+
+    return file_name, checksum
 
 
 def verify_file_integrity(algorithm: str, file_path: str, expected_checksum: str) -> bool:
