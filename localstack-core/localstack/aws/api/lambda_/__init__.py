@@ -84,6 +84,7 @@ RuntimeVersionArn = str
 S3Bucket = str
 S3Key = str
 S3ObjectVersion = str
+SchemaRegistryUri = str
 SecurityGroupId = str
 SensitiveString = str
 SourceOwner = str
@@ -169,6 +170,17 @@ class InvocationType(StrEnum):
 class InvokeMode(StrEnum):
     BUFFERED = "BUFFERED"
     RESPONSE_STREAM = "RESPONSE_STREAM"
+
+
+class KafkaSchemaRegistryAuthType(StrEnum):
+    BASIC_AUTH = "BASIC_AUTH"
+    CLIENT_CERTIFICATE_TLS_AUTH = "CLIENT_CERTIFICATE_TLS_AUTH"
+    SERVER_ROOT_CA_CERTIFICATE = "SERVER_ROOT_CA_CERTIFICATE"
+
+
+class KafkaSchemaValidationAttribute(StrEnum):
+    KEY = "KEY"
+    VALUE = "VALUE"
 
 
 class LastUpdateStatus(StrEnum):
@@ -274,6 +286,11 @@ class Runtime(StrEnum):
     java21 = "java21"
     python3_13 = "python3.13"
     nodejs22_x = "nodejs22.x"
+
+
+class SchemaRegistryEventRecordFormat(StrEnum):
+    JSON = "JSON"
+    SOURCE = "SOURCE"
 
 
 class SnapStartApplyOn(StrEnum):
@@ -706,8 +723,31 @@ class AllowedPublishers(TypedDict, total=False):
     SigningProfileVersionArns: SigningProfileVersionArns
 
 
+class KafkaSchemaValidationConfig(TypedDict, total=False):
+    Attribute: Optional[KafkaSchemaValidationAttribute]
+
+
+KafkaSchemaValidationConfigList = List[KafkaSchemaValidationConfig]
+
+
+class KafkaSchemaRegistryAccessConfig(TypedDict, total=False):
+    Type: Optional[KafkaSchemaRegistryAuthType]
+    URI: Optional[Arn]
+
+
+KafkaSchemaRegistryAccessConfigList = List[KafkaSchemaRegistryAccessConfig]
+
+
+class KafkaSchemaRegistryConfig(TypedDict, total=False):
+    SchemaRegistryURI: Optional[SchemaRegistryUri]
+    EventRecordFormat: Optional[SchemaRegistryEventRecordFormat]
+    AccessConfigs: Optional[KafkaSchemaRegistryAccessConfigList]
+    SchemaValidationConfigs: Optional[KafkaSchemaValidationConfigList]
+
+
 class AmazonManagedKafkaEventSourceConfig(TypedDict, total=False):
     ConsumerGroupId: Optional[URI]
+    SchemaRegistryConfig: Optional[KafkaSchemaRegistryConfig]
 
 
 ArchitecturesList = List[Architecture]
@@ -795,6 +835,7 @@ class ScalingConfig(TypedDict, total=False):
 
 class SelfManagedKafkaEventSourceConfig(TypedDict, total=False):
     ConsumerGroupId: Optional[URI]
+    SchemaRegistryConfig: Optional[KafkaSchemaRegistryConfig]
 
 
 FunctionResponseTypeList = List[FunctionResponseType]
@@ -1758,6 +1799,8 @@ class UpdateEventSourceMappingRequest(ServiceRequest):
     TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
     FunctionResponseTypes: Optional[FunctionResponseTypeList]
     ScalingConfig: Optional[ScalingConfig]
+    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
+    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
     DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
     KMSKeyArn: Optional[KMSKeyArn]
     MetricsConfig: Optional[EventSourceMappingMetricsConfig]
@@ -2520,6 +2563,8 @@ class LambdaApi:
         tumbling_window_in_seconds: TumblingWindowInSeconds | None = None,
         function_response_types: FunctionResponseTypeList | None = None,
         scaling_config: ScalingConfig | None = None,
+        amazon_managed_kafka_event_source_config: AmazonManagedKafkaEventSourceConfig | None = None,
+        self_managed_kafka_event_source_config: SelfManagedKafkaEventSourceConfig | None = None,
         document_db_event_source_config: DocumentDBEventSourceConfig | None = None,
         kms_key_arn: KMSKeyArn | None = None,
         metrics_config: EventSourceMappingMetricsConfig | None = None,
