@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Any, Optional, Tuple
+from typing import Any, Literal, Optional, Tuple
 
 import requests
 
@@ -12,7 +12,8 @@ from localstack import config
 
 from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
-from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
+from ..utils.cheksum import check_file_integrity, parse_sha_file_format
+from ..utils.files import chmod_r, chown_r, load_file, mkdir, rm_rf
 from ..utils.http import download
 from ..utils.run import is_root, run
 from ..utils.venv import VirtualEnvironment
@@ -63,19 +64,45 @@ class DownloadInstaller(ExecutableInstaller):
 
 
 class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
-    def __init__(self, name: str, version: str, extract_single_directory: bool = False):
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        extract_single_directory: bool = False,
+        verify_integrity: bool = False,
+    ):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
         :param extract_single_directory: whether to extract files from single root folder in the archive
+        :param verify_integrity: whether to verify the integrity of the downloaded archive
         """
         super().__init__(name, version)
         self.extract_single_directory = extract_single_directory
+        self.verify_integrity = verify_integrity
 
     def _get_install_marker_path(self, install_dir: str) -> str:
         raise NotImplementedError()
 
     def _get_download_url(self) -> str:
+        raise NotImplementedError()
+
+    def _get_checksum_url(self) -> str:
+        """
+        Checksum URL for the archive. This is used to verify the integrity of the downloaded archive.
+        This method should be implemented by subclasses to provide the correct URL for the checksum file.
+
+        :return: URL to the checksum file for the archive.
+        """
+        raise NotImplementedError()
+
+    def _get_checksum_algo(self) -> Literal["sha256", "sha512"]:
+        """
+        Checksum algorithm used to verify the integrity of the downloaded archive.
+        This method should be implemented by subclasses to provide the correct algorithm.
+
+        :return: Checksum algorithm, e.g. "sha256".
+        """
         raise NotImplementedError()
 
     def get_installed_dir(self) -> str | None:
@@ -107,23 +134,6 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
                 return self._get_install_marker_path(install_dir)
         return None
 
-    def _download_and_extract_archive(self, archive_path: str, target_directory: str) -> None:
-        """
-        Download and extract archive. Can be overridden by subclasses for custom behavior.
-
-        :param download_url: URL to download from
-        :param archive_path: Local path to save the archive
-        :param target_directory: Directory to extract to
-        :return: None
-        """
-        download_url = self._get_download_url()
-        download_and_extract(
-            download_url,
-            retries=3,
-            tmp_archive=archive_path,
-            target_dir=target_directory,
-        )
-
     def _handle_single_directory_extraction(self, target_directory: str) -> None:
         """
         Handle extraction of archives that contain a single root directory.
@@ -145,18 +155,56 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         rm_rf(target_directory)
         os.rename(f"{target_directory}.backup", target_directory)
 
-    def _install(self, target: InstallTarget) -> None:
+    def _verify_checksum(self, archive_path: str):
+        if not self.verify_integrity:
+            LOG.debug("Skipping integrity verification (verify_integrity=False)")
+            return
+
+        checksum_url = self._get_checksum_url()
+        checksum_name = os.path.basename(checksum_url)
+        checksum_path = os.path.join(config.dirs.tmp, checksum_name)
+        try:
+            # download the checksum file
+            download(url=checksum_url, path=checksum_path)
+            # read checksum file, parse it, and verify against the downloaded archive
+            sha_content = load_file(checksum_path)
+            _, expected_checksum = parse_sha_file_format(sha_content)
+
+            if not check_file_integrity(
+                algorithm=self._get_checksum_algo(),
+                file_path=archive_path,
+                expected_checksum=expected_checksum,
+            ):
+                raise PackageException(
+                    f"Checksum verification failed for {os.path.basename(archive_path)}. "
+                    "The downloaded file may be corrupted or tampered with."
+                )
+
+            LOG.info("Archive integrity verified successfully")
+        finally:
+            # Clean up temporary files
+            rm_rf(checksum_path)
+
+    def _download_and_verify(self, target: InstallTarget, download_url: str):
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
-
-        download_url = self._get_download_url()
         archive_name = os.path.basename(download_url)
         archive_path = os.path.join(config.dirs.tmp, archive_name)
         try:
-            self._download_and_extract_archive(archive_path, target_directory)
+            download_and_extract(
+                download_url,
+                retries=3,
+                tmp_archive=archive_path,
+                target_dir=target_directory,
+            )
+            self._verify_checksum(archive_path)
             self._handle_single_directory_extraction(target_directory)
         finally:
             rm_rf(archive_path)
+
+    def _install(self, target: InstallTarget) -> None:
+        download_url = self._get_download_url()
+        self._download_and_verify(target=target, download_url=download_url)
 
 
 class PermissionDownloadInstaller(DownloadInstaller, ABC):
