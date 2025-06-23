@@ -4,9 +4,12 @@ import os
 from typing import Any, Final, Optional, TypedDict
 
 import boto3
+from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
+from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
     execute_macro,
@@ -27,12 +30,14 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.utils import testutil
 
 LOG = logging.getLogger(__name__)
 
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
+INCLUDE_TRANSFORM = "AWS::Include"
 
 _SCOPE_TRANSFORM_TEMPLATE_OUTCOME: Final[Scope] = Scope("TRANSFORM_TEMPLATE_OUTCOME")
 
@@ -139,6 +144,32 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
     @staticmethod
+    def _apply_global_include(
+        global_transform: GlobalTransform, template: dict, parameters: dict, account_id, region_name
+    ) -> dict:
+        location = global_transform.parameters.get("Location")
+        if not location or not location.startswith("s3://"):
+            raise FailedTransformationException(
+                transformation=INCLUDE_TRANSFORM,
+                message="Unexpected Location parameter for AWS::Include transformer: %s" % location,
+            )
+
+        s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
+        bucket, _, path = location.removeprefix("s3://").partition("/")
+        try:
+            content = testutil.download_s3_object(s3_client, bucket, path)
+        except ClientError:
+            raise FailedTransformationException(
+                transformation=INCLUDE_TRANSFORM,
+                message="Error downloading S3 object '%s/%s'" % (bucket, path),
+            )
+        try:
+            template_to_include = parse_template(content)
+        except Exception as e:
+            raise FailedTransformationException(transformation=INCLUDE_TRANSFORM, message=str(e))
+        return {**template, **template_to_include}
+
+    @staticmethod
     def _apply_global_macro_transformation(
         account_id: str,
         region_name,
@@ -182,6 +213,14 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
             LOG.warning("%s is not yet supported. Ignoring.", SECRETSMANAGER_TRANSFORM)
             transformed_template = template
+        elif transform_name == INCLUDE_TRANSFORM:
+            transformed_template = self._apply_global_include(
+                global_transform=global_transform,
+                region_name=self._change_set.region_name,
+                account_id=self._change_set.account_id,
+                template=template,
+                parameters=parameters,
+            )
         else:
             transformed_template = self._apply_global_macro_transformation(
                 account_id=self._change_set.account_id,
