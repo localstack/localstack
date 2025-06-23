@@ -3454,8 +3454,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
+        expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> None:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
@@ -3463,8 +3465,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.intelligent_tiering_configurations[id] = intelligent_tiering_configuration
 
     def get_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
     ) -> GetBucketIntelligentTieringConfigurationOutput:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if not (itier_config := s3_bucket.intelligent_tiering_configurations.get(id)):
@@ -3475,8 +3483,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
     def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
     ) -> None:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if not s3_bucket.intelligent_tiering_configurations.pop(id, None):
@@ -3486,9 +3500,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         bucket: BucketName,
-        continuation_token: Token = None,
+        continuation_token: Token | None = None,
+        expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         return ListBucketIntelligentTieringConfigurationsOutput(
