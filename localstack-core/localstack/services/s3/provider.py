@@ -1195,6 +1195,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="x-amz-bypass-governance-retention",
             )
 
+        # TODO: this is only supported for Directory Buckets
+        non_supported_precondition = None
+        if if_match:
+            non_supported_precondition = "If-Match"
+        if if_match_size:
+            non_supported_precondition = "x-amz-if-match-size"
+        if if_match_last_modified_time:
+            non_supported_precondition = "x-amz-if-match-last-modified-time"
+        if non_supported_precondition:
+            LOG.warning(
+                "DeleteObject Preconditions is only supported for Directory Buckets. "
+                "LocalStack does not support Directory Buckets yet."
+            )
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=non_supported_precondition,
+            )
+
         if s3_bucket.versioning_status is None:
             if version_id and version_id != "null":
                 raise InvalidArgument(
