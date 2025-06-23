@@ -12,7 +12,7 @@ from localstack import config
 
 from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
-from ..utils.cheksum import check_file_integrity, parse_sha_file_format
+from ..utils.cheksum import parse_sha_file_format, verify_file_integrity
 from ..utils.files import chmod_r, chown_r, load_file, mkdir, rm_rf
 from ..utils.http import download
 from ..utils.run import is_root, run
@@ -170,7 +170,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
             sha_content = load_file(checksum_path)
             _, expected_checksum = parse_sha_file_format(sha_content)
 
-            if not check_file_integrity(
+            if not verify_file_integrity(
                 algorithm=self._get_checksum_algo(),
                 file_path=archive_path,
                 expected_checksum=expected_checksum,

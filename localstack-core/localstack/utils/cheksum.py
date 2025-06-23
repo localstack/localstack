@@ -51,7 +51,7 @@ def parse_sha_file_format(checksum_content: str) -> tuple[str | None, str | None
     return None, None
 
 
-def check_file_integrity(algorithm: str, file_path: str, expected_checksum: str) -> bool:
+def verify_file_integrity(algorithm: str, file_path: str, expected_checksum: str) -> bool:
     """
     Verify the checksum of a file against an expected value.
 
