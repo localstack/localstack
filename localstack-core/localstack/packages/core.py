@@ -69,17 +69,17 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         name: str,
         version: str,
         extract_single_directory: bool = False,
-        verify_integrity: bool = False,
+        verify_archive_integrity: bool = False,
     ):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
         :param extract_single_directory: whether to extract files from single root folder in the archive
-        :param verify_integrity: whether to verify the integrity of the downloaded archive
+        :param verify_archive_integrity: whether to verify the integrity of the downloaded archive
         """
         super().__init__(name, version)
         self.extract_single_directory = extract_single_directory
-        self.verify_integrity = verify_integrity
+        self.verify_archive_integrity = verify_archive_integrity
 
     def _get_install_marker_path(self, install_dir: str) -> str:
         raise NotImplementedError()
@@ -156,7 +156,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         os.rename(f"{target_directory}.backup", target_directory)
 
     def _verify_checksum(self, archive_path: str):
-        if not self.verify_integrity:
+        if not self.verify_archive_integrity:
             LOG.debug("Skipping integrity verification (verify_integrity=False)")
             return
 
