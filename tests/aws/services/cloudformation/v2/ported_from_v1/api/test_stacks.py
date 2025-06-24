@@ -261,7 +261,6 @@ class TestStacksApi:
         statuses = {res["ResourceStatus"] for res in resources}
         assert statuses == {"UPDATE_COMPLETE"}
 
-    @pytest.mark.skip(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange(
         self, deploy_cfn_template, aws_client, snapshot
