@@ -351,7 +351,6 @@ class TestSsmParameters:
         snapshot.match("topic-tags", tags)
 
     @markers.aws.validated
-    @pytest.mark.skip("CFNV2:resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
