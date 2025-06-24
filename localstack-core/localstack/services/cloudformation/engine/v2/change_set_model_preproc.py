@@ -9,6 +9,11 @@ from botocore.exceptions import ClientError
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.resolving import (
+    DynamicReference,
+    extract_dynamic_reference,
+    perform_dynamic_reference_lookup,
+)
 from localstack.services.cloudformation.engine.transformers import (
     Transformer,
     execute_macro,
@@ -1040,7 +1045,23 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
-        return self.visit(node_property.value)
+        # TODO: is this the right place?
+        value = self.visit(node_property.value)
+        if not is_nothing(value.before):
+            if dynamic_reference := extract_dynamic_reference(value.before):
+                value.before = self._perform_dynamic_reference_lookup(dynamic_reference)
+        if not is_nothing(value.after):
+            if dynamic_reference := extract_dynamic_reference(value.after):
+                value.after = self._perform_dynamic_reference_lookup(dynamic_reference)
+        return value
+
+    def _perform_dynamic_reference_lookup(self, reference: DynamicReference) -> str | None:
+        # moved to helper method to help migration in the future
+        return perform_dynamic_reference_lookup(
+            reference=reference,
+            account_id=self._change_set.account_id,
+            region_name=self._change_set.region_name,
+        )
 
     def visit_node_properties(
         self, node_properties: NodeProperties
