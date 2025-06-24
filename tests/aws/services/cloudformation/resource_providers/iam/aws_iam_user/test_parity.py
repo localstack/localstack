@@ -22,6 +22,9 @@ class TestParity:
     """
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..IsTruncated"]
+    )  # Moto always returns this pagination-related field, AWS only when true
     def test_create_with_full_properties(self, aws_client, deploy_cfn_template, snapshot, cleanups):
         """A sort of smoke test that simply covers as many properties as possible"""
         # TODO: keep extending this test with more properties for higher parity with the official resource on AWS
