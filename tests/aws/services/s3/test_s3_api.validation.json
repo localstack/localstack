@@ -68,6 +68,42 @@
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketVersioning::test_object_version_id_format": {
     "last_validated_date": "2025-01-21T18:10:31+00:00"
   },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_all_non_express": {
+    "last_validated_date": "2025-06-23T09:06:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.96,
+      "call": 0.24,
+      "teardown": 1.13,
+      "total": 2.33
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_modified_non_express": {
+    "last_validated_date": "2025-06-23T09:05:53+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 0.23,
+      "teardown": 1.16,
+      "total": 2.44
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_non_express": {
+    "last_validated_date": "2025-06-23T08:53:21+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 0.24,
+      "teardown": 1.1,
+      "total": 2.39
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3DeletePrecondition::test_delete_object_if_match_size_non_express": {
+    "last_validated_date": "2025-06-23T09:06:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.98,
+      "call": 0.22,
+      "teardown": 1.17,
+      "total": 2.37
+    }
+  },
   "tests/aws/services/s3/test_s3_api.py::TestS3MetricsConfiguration::test_delete_metrics_configuration": {
     "last_validated_date": "2025-06-13T08:33:19+00:00"
   },
