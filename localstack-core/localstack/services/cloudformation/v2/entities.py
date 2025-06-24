@@ -24,6 +24,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ResolvedParameter,
     UpdateModel,
 )
 from localstack.utils.aws import arns
@@ -47,7 +48,7 @@ class Stack:
     events = list[StackEvent]
 
     # state after deploy
-    resolved_parameters: dict[str, str]
+    resolved_parameters: dict[str, ResolvedParameter]
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: dict[str, str]
     resource_states: dict[str, StackResource]
@@ -157,6 +158,17 @@ class Stack:
         self.events.insert(0, event)
 
     def describe_details(self) -> ApiStack:
+        # TODO: move this method into the provider
+        # TODO: add masking support.
+        parameters = []
+        for key, resolved_parameter in self.resolved_parameters.items():
+            parameters.append(
+                Parameter(
+                    ParameterKey=key,
+                    ParameterValue=resolved_parameter.value,
+                    ResolvedValue=resolved_parameter.resolved_value,
+                )
+            )
         result = {
             "CreationTime": self.creation_time,
             "DeletionTime": self.deletion_time,
@@ -173,6 +185,7 @@ class Stack:
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
+            "Parameters": parameters,
         }
         if change_set_id := self.change_set_id:
             result["ChangeSetId"] = change_set_id

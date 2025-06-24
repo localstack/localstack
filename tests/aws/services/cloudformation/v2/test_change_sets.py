@@ -2,7 +2,7 @@ import copy
 import json
 
 import pytest
-from localstack_snapshot.snapshots.transformer import RegexTransformer
+from localstack_snapshot.snapshots.transformer import RegexTransformer, SortingTransformer
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.cloudformation.v2.utils import is_v2_engine
@@ -812,7 +812,6 @@ def test_single_resource_static_update(aws_client: ServiceLevelClientFactory, sn
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
-        "$..Parameters",
         "$..Replacement",
         "$..PolicyAction",
         "$..PhysicalResourceId",
@@ -830,40 +829,74 @@ def test_dynamic_ssm_parameter_lookup(
     """
     Test reading parameter values from SSM works correctly
     """
+    external_ssm_parameter_name = f"param-{short_uid()}"
+    external_value1 = f"external-1-{short_uid()}"
+    external_value2 = f"external-2-{short_uid()}"
+    provided_value1 = f"provided-1-{short_uid()}"
+    provided_value2 = f"provided-2-{short_uid()}"
+    default_value = f"default-{short_uid()}"
+
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
-
-    parameter_name = f"param-{short_uid()}"
-    value1 = f"1-{short_uid()}"
-    value2 = f"2-{short_uid()}"
-
     snapshot.add_transformers_list(
         [
-            snapshot.transform.regex(parameter_name, "<parameter-name>"),
-            snapshot.transform.regex(value1, "<value-1>"),
-            snapshot.transform.regex(value2, "<value-2>"),
+            SortingTransformer("Outputs", lambda output: output["OutputKey"]),
+            SortingTransformer("Parameters", lambda output: output["ParameterKey"]),
+            snapshot.transform.regex(external_ssm_parameter_name, "<parameter-name>"),
+            snapshot.transform.regex(external_value1, "<external-value-1>"),
+            snapshot.transform.regex(external_value2, "<external-value-2>"),
+            snapshot.transform.regex(provided_value1, "<provided-value-1>"),
+            snapshot.transform.regex(provided_value2, "<provided-value-2>"),
+            snapshot.transform.regex(default_value, "<default-value-2>"),
         ]
     )
 
-    create_parameter(Name=parameter_name, Value=value1, Type="String")
+    create_parameter(Name=external_ssm_parameter_name, Value=external_value1, Type="String")
 
     template = {
         "Parameters": {
-            "InputValue": {
+            "ExternalInputValue": {
                 "Type": "AWS::SSM::Parameter::Value<String>",
+            },
+            "ProvidedInputValue": {
+                "Type": "String",
+            },
+            "DefaultInputValue": {
+                "Type": "String",
+                "Default": default_value,
             },
         },
         "Resources": {
-            "DerivedParameter": {
+            "ExternalParameter": {
                 "Type": "AWS::SSM::Parameter",
                 "Properties": {
                     "Type": "String",
-                    "Value": {"Ref": "InputValue"},
+                    "Value": {"Ref": "ExternalInputValue"},
+                },
+            },
+            "ProvidedParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {"Ref": "ProvidedInputValue"},
+                },
+            },
+            "DefaultParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {"Ref": "DefaultInputValue"},
                 },
             },
         },
         "Outputs": {
-            "DerivedParameterName": {
-                "Value": {"Ref": "DerivedParameter"},
+            "ExternalParameterName": {
+                "Value": {"Ref": "ExternalParameter"},
+            },
+            "ProvidedParameterName": {
+                "Value": {"Ref": "ProvidedParameter"},
+            },
+            "DefaultParameterName": {
+                "Value": {"Ref": "DefaultParameter"},
             },
         },
     }
@@ -878,7 +911,13 @@ def test_dynamic_ssm_parameter_lookup(
         ChangeSetName=change_set_name,
         TemplateBody=json.dumps(template),
         ChangeSetType="CREATE",
-        Parameters=[{"ParameterKey": "InputValue", "ParameterValue": parameter_name}],
+        Parameters=[
+            {"ParameterKey": "ExternalInputValue", "ParameterValue": external_ssm_parameter_name},
+            {
+                "ParameterKey": "ProvidedInputValue",
+                "ParameterValue": provided_value1,
+            },
+        ],
     )
     snapshot.match("create-change-set-1", change_set_details)
     stack_id = change_set_details["StackId"]
@@ -925,7 +964,9 @@ def test_dynamic_ssm_parameter_lookup(
 
     # update the SSM parameter
     # XXX don't use the create_parameter fixture, as this would cause a double deletion
-    aws_client.ssm.put_parameter(Name=parameter_name, Value=value2, Type="String", Overwrite=True)
+    aws_client.ssm.put_parameter(
+        Name=external_ssm_parameter_name, Value=external_value2, Type="String", Overwrite=True
+    )
 
     # now try to re-deploy and see what happens
     change_set_details = aws_client_no_retry.cloudformation.create_change_set(
@@ -933,7 +974,13 @@ def test_dynamic_ssm_parameter_lookup(
         ChangeSetName=change_set_name,
         TemplateBody=json.dumps(template),
         ChangeSetType="UPDATE",
-        Parameters=[{"ParameterKey": "InputValue", "ParameterValue": parameter_name}],
+        Parameters=[
+            {"ParameterKey": "ExternalInputValue", "ParameterValue": external_ssm_parameter_name},
+            {
+                "ParameterKey": "ProvidedInputValue",
+                "ParameterValue": provided_value2,
+            },
+        ],
     )
     snapshot.match("create-change-set-2", change_set_details)
     stack_id = change_set_details["StackId"]

@@ -499,6 +499,18 @@ INTRINSIC_FUNCTIONS: Final[set[str]] = {
 }
 
 
+class ResolvedParameter:
+    value: str
+    resolved_value: str | None
+
+    def __init__(self, value: str, resolved_value: str | None = None):
+        self.value = value
+        self.resolved_value = resolved_value
+
+    def resolve(self) -> str:
+        return self.resolved_value or self.value
+
+
 class ChangeSetModel:
     # TODO: should this instead be generalised to work on "Stack" objects instead of just "Template"s?
 
@@ -1398,7 +1410,7 @@ class ChangeSetModel:
 
     @staticmethod
     def _is_terminal(value: Any) -> bool:
-        return type(value) in {int, float, bool, str, None, NothingType}
+        return type(value) in {int, float, bool, str, None, NothingType, ResolvedParameter}
 
     @staticmethod
     def _is_object(value: Any) -> bool:

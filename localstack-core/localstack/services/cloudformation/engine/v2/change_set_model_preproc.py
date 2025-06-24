@@ -36,6 +36,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeTemplate,
     Nothing,
     NothingType,
+    ResolvedParameter,
     Scope,
     TerminalValue,
     TerminalValueCreated,
@@ -171,6 +172,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     _before_resolved_resources: Final[dict]
     _before_cache: Final[dict[Scope, Any]]
     _after_cache: Final[dict[Scope, Any]]
+    resolved_parameters: Final[dict[str, ResolvedParameter]]
 
     def __init__(self, change_set: ChangeSet):
         self._change_set = change_set
@@ -200,6 +202,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         after_runtime_cache = self._change_set.update_model.after_runtime_cache
         after_runtime_cache[runtime_cache_key] = copy.deepcopy(self._after_cache)
+        self.resolved_parameters = dict()
 
     def process(self) -> None:
         self._setup_runtime_cache()
@@ -337,6 +340,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_parameter = self._get_node_parameter_if_exists(parameter_name=logical_id)
         if isinstance(node_parameter, NodeParameter):
             parameter_delta = self.visit(node_parameter)
+            if isinstance(parameter_delta.before, ResolvedParameter):
+                parameter_delta.before = parameter_delta.before.resolve()
+            if isinstance(parameter_delta.after, ResolvedParameter):
+                parameter_delta.after = parameter_delta.after.resolve()
             return parameter_delta
 
         node_resource = self._get_node_resource_for(
@@ -951,14 +958,18 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     # we don't need to resolve the parameter here since it was done in the previous deployment
                     after = before
                 else:
-                    after = resolve_ssm_parameter(
+                    resolved_value = resolve_ssm_parameter(
                         account_id=self._change_set.account_id,
                         region_name=self._change_set.region_name,
                         stack_parameter_value=after,
                     )
+                    after = ResolvedParameter(value=after, resolved_value=resolved_value)
             else:
                 raise Exception(f"Unsupported stack parameter type: {parameter_type}")
+        else:
+            after = ResolvedParameter(value=after)
 
+        self.resolved_parameters[node_parameter.name] = after
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:
