@@ -3687,7 +3687,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::test_dynamic_ssm_parameter_lookup": {
-    "recorded-date": "24-06-2025, 12:51:24",
+    "recorded-date": "24-06-2025, 13:57:09",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -3707,7 +3707,7 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "Value": "1-d0d04e54",
+                  "Value": "<value-1>",
                   "Type": "String"
                 }
               },
@@ -3726,8 +3726,8 @@
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "1-d0d04e54"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-1>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3762,8 +3762,8 @@
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "1-d0d04e54"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-1>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3794,14 +3794,14 @@
         "Outputs": [
           {
             "OutputKey": "DerivedParameterName",
-            "OutputValue": "CFN-DerivedParameter-swzfj5uOI0xp"
+            "OutputValue": "CFN-DerivedParameter-YIO8ynD1Sgjp"
           }
         ],
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "1-d0d04e54"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-1>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3828,13 +3828,13 @@
               "Action": "Modify",
               "AfterContext": {
                 "Properties": {
-                  "Value": "2-90be8ed8",
+                  "Value": "<value-2>",
                   "Type": "String"
                 }
               },
               "BeforeContext": {
                 "Properties": {
-                  "Value": "1-d0d04e54",
+                  "Value": "<value-1>",
                   "Type": "String"
                 }
               },
@@ -3843,10 +3843,10 @@
                   "ChangeSource": "DirectModification",
                   "Evaluation": "Static",
                   "Target": {
-                    "AfterValue": "2-90be8ed8",
+                    "AfterValue": "<value-2>",
                     "Attribute": "Properties",
                     "AttributeChangeType": "Modify",
-                    "BeforeValue": "1-d0d04e54",
+                    "BeforeValue": "<value-1>",
                     "Name": "Value",
                     "Path": "/Properties/Value",
                     "RequiresRecreation": "Never"
@@ -3854,7 +3854,7 @@
                 }
               ],
               "LogicalResourceId": "DerivedParameter",
-              "PhysicalResourceId": "CFN-DerivedParameter-swzfj5uOI0xp",
+              "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
               "Replacement": "False",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
@@ -3871,8 +3871,8 @@
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "2-90be8ed8"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3904,7 +3904,7 @@
                 }
               ],
               "LogicalResourceId": "DerivedParameter",
-              "PhysicalResourceId": "CFN-DerivedParameter-swzfj5uOI0xp",
+              "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
               "Replacement": "False",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
@@ -3921,8 +3921,8 @@
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "2-90be8ed8"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3953,14 +3953,14 @@
         "Outputs": [
           {
             "OutputKey": "DerivedParameterName",
-            "OutputValue": "CFN-DerivedParameter-swzfj5uOI0xp"
+            "OutputValue": "CFN-DerivedParameter-YIO8ynD1Sgjp"
           }
         ],
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "2-90be8ed8"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3981,14 +3981,14 @@
         "Outputs": [
           {
             "OutputKey": "DerivedParameterName",
-            "OutputValue": "CFN-DerivedParameter-swzfj5uOI0xp"
+            "OutputValue": "CFN-DerivedParameter-YIO8ynD1Sgjp"
           }
         ],
         "Parameters": [
           {
             "ParameterKey": "InputValue",
-            "ParameterValue": "param-e8903479",
-            "ResolvedValue": "2-90be8ed8"
+            "ParameterValue": "<parameter-name>",
+            "ResolvedValue": "<value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -4008,21 +4008,21 @@
           },
           {
             "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "CFN-DerivedParameter-swzfj5uOI0xp",
+            "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "CFN-DerivedParameter-swzfj5uOI0xp",
+            "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
             "ResourceStatus": "UPDATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "CFN-DerivedParameter-swzfj5uOI0xp",
+            "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
