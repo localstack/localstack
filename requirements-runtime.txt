@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.98.0
+aws-sam-translator==1.99.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -29,7 +29,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.40.40
     # via localstack-core (pyproject.toml)
-awscrt==0.27.2
+awscrt==0.27.4
     # via localstack-core
 boto3==1.38.41
     # via
@@ -62,7 +62,7 @@ certifi==2025.6.15
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.36.0
+cfn-lint==1.36.1
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
@@ -206,7 +206,7 @@ openapi-spec-validator==0.7.2
     # via
     #   moto-ext
     #   openapi-core
-opensearch-py==2.8.0
+opensearch-py==3.0.0
     # via localstack-core (pyproject.toml)
 packaging==25.0
     # via
@@ -243,7 +243,7 @@ pydantic==2.11.7
     # via aws-sam-translator
 pydantic-core==2.33.2
     # via pydantic
-pygments==2.19.1
+pygments==2.19.2
     # via rich
 pymongo==4.13.2
     # via localstack-core (pyproject.toml)
@@ -261,7 +261,7 @@ python-dateutil==2.9.0.post0
     #   botocore
     #   moto-ext
     #   opensearch-py
-python-dotenv==1.1.0
+python-dotenv==1.1.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -345,7 +345,7 @@ typing-extensions==4.14.0
     #   typing-inspection
 typing-inspection==0.4.1
     # via pydantic
-urllib3==2.4.0
+urllib3==2.5.0
     # via
     #   botocore
     #   docker
