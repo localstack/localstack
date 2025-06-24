@@ -386,6 +386,17 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         changes: Changes = change_set_describer.get_changes()
 
+        # TODO: add masking support.
+        parameters = []
+        for key, resolved_parameter in change_set_describer.resolved_parameters.items():
+            parameters.append(
+                Parameter(
+                    ParameterKey=key,
+                    ParameterValue=resolved_parameter.value,
+                    ResolvedValue=resolved_parameter.resolved_value,
+                )
+            )
+
         result = DescribeChangeSetOutput(
             Status=change_set.status,
             ChangeSetId=change_set.change_set_id,
@@ -395,11 +406,7 @@ class CloudformationProviderV2(CloudformationProvider):
             StackId=change_set.stack.stack_id,
             StackName=change_set.stack.stack_name,
             CreationTime=change_set.creation_time,
-            Parameters=[
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.stack.resolved_parameters.items()
-            ],
+            Parameters=parameters,
             Changes=changes,
         )
         return result

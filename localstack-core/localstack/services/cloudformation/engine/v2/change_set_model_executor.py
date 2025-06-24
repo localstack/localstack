@@ -13,7 +13,6 @@ from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
-    NodeParameter,
     NodeResource,
     is_nothing,
 )
@@ -49,13 +48,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict]
     outputs: Final[dict]
-    resolved_parameters: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
-        self.resolved_parameters = dict()
 
     # TODO: use a structured type for the return value
     def execute(self) -> ChangeSetModelExecutorResult:
@@ -63,11 +60,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return ChangeSetModelExecutorResult(
             resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
         )
-
-    def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        delta = super().visit_node_parameter(node_parameter)
-        self.resolved_parameters[node_parameter.name] = delta.after
-        return delta
 
     def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str | None:
         physical_resource_id = None

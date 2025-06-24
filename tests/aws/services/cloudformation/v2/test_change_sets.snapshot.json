@@ -3687,7 +3687,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_change_sets.py::test_dynamic_ssm_parameter_lookup": {
-    "recorded-date": "24-06-2025, 13:57:09",
+    "recorded-date": "24-06-2025, 14:41:11",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -3707,12 +3707,44 @@
               "Action": "Add",
               "AfterContext": {
                 "Properties": {
-                  "Value": "<value-1>",
+                  "Value": "<default-value-2>",
                   "Type": "String"
                 }
               },
               "Details": [],
-              "LogicalResourceId": "DerivedParameter",
+              "LogicalResourceId": "DefaultParameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "<external-value-1>",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "ExternalParameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "<provided-value-1>",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "ProvidedParameter",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
@@ -3725,9 +3757,17 @@
         "NotificationARNs": [],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-1>"
+            "ResolvedValue": "<external-value-1>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-1>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3748,7 +3788,27 @@
             "ResourceChange": {
               "Action": "Add",
               "Details": [],
-              "LogicalResourceId": "DerivedParameter",
+              "LogicalResourceId": "DefaultParameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "ExternalParameter",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "ProvidedParameter",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
             },
@@ -3761,9 +3821,17 @@
         "NotificationARNs": [],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-1>"
+            "ResolvedValue": "<external-value-1>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-1>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3793,15 +3861,31 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "DerivedParameterName",
-            "OutputValue": "CFN-DerivedParameter-YIO8ynD1Sgjp"
+            "OutputKey": "DefaultParameterName",
+            "OutputValue": "CFN-DefaultParameter-XZTowJJO5ayT"
+          },
+          {
+            "OutputKey": "ExternalParameterName",
+            "OutputValue": "CFN-ExternalParameter-tKIiDHqu6jnn"
+          },
+          {
+            "OutputKey": "ProvidedParameterName",
+            "OutputValue": "CFN-ProvidedParameter-48Iab30cQ0nx"
           }
         ],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-1>"
+            "ResolvedValue": "<external-value-1>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-1>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3828,13 +3912,13 @@
               "Action": "Modify",
               "AfterContext": {
                 "Properties": {
-                  "Value": "<value-2>",
+                  "Value": "<external-value-2>",
                   "Type": "String"
                 }
               },
               "BeforeContext": {
                 "Properties": {
-                  "Value": "<value-1>",
+                  "Value": "<external-value-1>",
                   "Type": "String"
                 }
               },
@@ -3843,18 +3927,72 @@
                   "ChangeSource": "DirectModification",
                   "Evaluation": "Static",
                   "Target": {
-                    "AfterValue": "<value-2>",
+                    "AfterValue": "<external-value-2>",
                     "Attribute": "Properties",
                     "AttributeChangeType": "Modify",
-                    "BeforeValue": "<value-1>",
+                    "BeforeValue": "<external-value-1>",
                     "Name": "Value",
                     "Path": "/Properties/Value",
                     "RequiresRecreation": "Never"
                   }
                 }
               ],
-              "LogicalResourceId": "DerivedParameter",
-              "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
+              "LogicalResourceId": "ExternalParameter",
+              "PhysicalResourceId": "CFN-ExternalParameter-tKIiDHqu6jnn",
+              "Replacement": "False",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": [
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "<provided-value-2>",
+                  "Type": "String"
+                }
+              },
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "<provided-value-1>",
+                  "Type": "String"
+                }
+              },
+              "Details": [
+                {
+                  "CausingEntity": "ProvidedInputValue",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "AfterValue": "<provided-value-2>",
+                    "Attribute": "Properties",
+                    "AttributeChangeType": "Modify",
+                    "BeforeValue": "<provided-value-1>",
+                    "Name": "Value",
+                    "Path": "/Properties/Value",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "AfterValue": "<provided-value-2>",
+                    "Attribute": "Properties",
+                    "AttributeChangeType": "Modify",
+                    "BeforeValue": "<provided-value-1>",
+                    "Name": "Value",
+                    "Path": "/Properties/Value",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "ProvidedParameter",
+              "PhysicalResourceId": "CFN-ProvidedParameter-48Iab30cQ0nx",
               "Replacement": "False",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
@@ -3870,9 +4008,17 @@
         "NotificationARNs": [],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-2>"
+            "ResolvedValue": "<external-value-2>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3903,8 +4049,42 @@
                   }
                 }
               ],
-              "LogicalResourceId": "DerivedParameter",
-              "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
+              "LogicalResourceId": "ExternalParameter",
+              "PhysicalResourceId": "CFN-ExternalParameter-tKIiDHqu6jnn",
+              "Replacement": "False",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": [
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "Details": [
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Value",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "CausingEntity": "ProvidedInputValue",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Value",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "ProvidedParameter",
+              "PhysicalResourceId": "CFN-ProvidedParameter-48Iab30cQ0nx",
               "Replacement": "False",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": [
@@ -3920,9 +4100,17 @@
         "NotificationARNs": [],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-2>"
+            "ResolvedValue": "<external-value-2>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3952,15 +4140,31 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "DerivedParameterName",
-            "OutputValue": "CFN-DerivedParameter-YIO8ynD1Sgjp"
+            "OutputKey": "DefaultParameterName",
+            "OutputValue": "CFN-DefaultParameter-XZTowJJO5ayT"
+          },
+          {
+            "OutputKey": "ExternalParameterName",
+            "OutputValue": "CFN-ExternalParameter-tKIiDHqu6jnn"
+          },
+          {
+            "OutputKey": "ProvidedParameterName",
+            "OutputValue": "CFN-ProvidedParameter-48Iab30cQ0nx"
           }
         ],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-2>"
+            "ResolvedValue": "<external-value-2>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3980,15 +4184,31 @@
         "NotificationARNs": [],
         "Outputs": [
           {
-            "OutputKey": "DerivedParameterName",
-            "OutputValue": "CFN-DerivedParameter-YIO8ynD1Sgjp"
+            "OutputKey": "DefaultParameterName",
+            "OutputValue": "CFN-DefaultParameter-XZTowJJO5ayT"
+          },
+          {
+            "OutputKey": "ExternalParameterName",
+            "OutputValue": "CFN-ExternalParameter-tKIiDHqu6jnn"
+          },
+          {
+            "OutputKey": "ProvidedParameterName",
+            "OutputValue": "CFN-ProvidedParameter-48Iab30cQ0nx"
           }
         ],
         "Parameters": [
           {
-            "ParameterKey": "InputValue",
+            "ParameterKey": "DefaultInputValue",
+            "ParameterValue": "<default-value-2>"
+          },
+          {
+            "ParameterKey": "ExternalInputValue",
             "ParameterValue": "<parameter-name>",
-            "ResolvedValue": "<value-2>"
+            "ResolvedValue": "<external-value-2>"
+          },
+          {
+            "ParameterKey": "ProvidedInputValue",
+            "ParameterValue": "<provided-value-2>"
           }
         ],
         "RollbackConfiguration": {},
@@ -3998,31 +4218,77 @@
         "Tags": []
       },
       "per-resource-events": {
-        "DerivedParameter": [
+        "DefaultParameter": [
           {
-            "LogicalResourceId": "DerivedParameter",
+            "LogicalResourceId": "DefaultParameter",
             "PhysicalResourceId": "",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
-            "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
+            "LogicalResourceId": "DefaultParameter",
+            "PhysicalResourceId": "CFN-DefaultParameter-XZTowJJO5ayT",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ExternalParameter": [
+          {
+            "LogicalResourceId": "ExternalParameter",
+            "PhysicalResourceId": "",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "ExternalParameter",
+            "PhysicalResourceId": "CFN-ExternalParameter-tKIiDHqu6jnn",
             "ResourceStatus": "CREATE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
-            "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
+            "LogicalResourceId": "ExternalParameter",
+            "PhysicalResourceId": "CFN-ExternalParameter-tKIiDHqu6jnn",
             "ResourceStatus": "UPDATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
-            "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "CFN-DerivedParameter-YIO8ynD1Sgjp",
+            "LogicalResourceId": "ExternalParameter",
+            "PhysicalResourceId": "CFN-ExternalParameter-tKIiDHqu6jnn",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ProvidedParameter": [
+          {
+            "LogicalResourceId": "ProvidedParameter",
+            "PhysicalResourceId": "",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "ProvidedParameter",
+            "PhysicalResourceId": "CFN-ProvidedParameter-48Iab30cQ0nx",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "ProvidedParameter",
+            "PhysicalResourceId": "CFN-ProvidedParameter-48Iab30cQ0nx",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "ProvidedParameter",
+            "PhysicalResourceId": "CFN-ProvidedParameter-48Iab30cQ0nx",
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
