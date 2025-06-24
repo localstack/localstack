@@ -10,6 +10,7 @@ ArnType = str
 BackingKeyIdResponseType = str
 BackingKeyIdType = str
 BooleanType = bool
+CurrentKeyMaterialIdType = str
 CloudHsmClusterIdType = str
 CustomKeyStoreIdType = str
 CustomKeyStoreNameType = str
@@ -717,6 +718,7 @@ class KeyMetadata(TypedDict, total=False):
     DeletionDate: Optional[DateType]
     ValidTo: Optional[DateType]
     Origin: Optional[OriginType]
+    CurrentKeyMaterialId: Optional[CurrentKeyMaterialIdType]
     CustomKeyStoreId: Optional[CustomKeyStoreIdType]
     CloudHsmClusterId: Optional[CloudHsmClusterIdType]
     ExpirationModel: Optional[ExpirationModelType]

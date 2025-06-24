@@ -1371,14 +1371,13 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
-    def test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material(
-        self, kms_create_key, aws_client, snapshot
+    def test_rotate_key_on_demand_succeeds_for_key_with_imported_key_material(
+            self, kms_create_key, aws_client, snapshot
     ):
         key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
 
-        with pytest.raises(ClientError) as e:
-            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        snapshot.match("error-response", e.value.response)
+        response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        snapshot.match("rotate-on-demand-response", response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
@@ -2093,3 +2092,9 @@ class TestKMSGenerateKeys:
 
         err = exc.value.response
         snapshot.match("dryrun_exception", err)
+
+
+
+
+
+

@@ -2090,6 +2090,18 @@
       }
     }
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_succeeds_for_key_with_imported_key_material": {
+    "recorded-date": "24-06-2025, 18:13:33",
+    "recorded-content": {
+      "rotate-on-demand-response": {
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
     "recorded-date": "08-03-2025, 09:26:50",
     "recorded-content": {
@@ -2130,22 +2142,6 @@
           "Code": "UnsupportedOperationException",
           "Message": ""
         },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material": {
-    "recorded-date": "08-03-2025, 09:28:13",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "UnsupportedOperationException",
-          "Message": "<key-arn> origin is EXTERNAL which is not valid for this operation."
-        },
-        "message": "<key-arn> origin is EXTERNAL which is not valid for this operation.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
