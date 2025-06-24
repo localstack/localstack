@@ -81,11 +81,19 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
                 "AWS::SSM::Parameter::Value<CommaDelimitedList>",
             ]:
-                delta.after = resolve_ssm_parameter(
-                    account_id=self._change_set.account_id,
-                    region_name=self._change_set.region_name,
-                    stack_parameter_value=delta.after,
-                )
+                if is_nothing(delta.after):
+                    if is_nothing(delta.before):
+                        raise RuntimeError(
+                            "Invalid state: no resolved parameter found for SSM parameter {node_parameter.name}"
+                        )
+                    # we don't need to resolve the parameter here since it was done in the previous deployment
+                    delta.after = delta.before
+                else:
+                    delta.after = resolve_ssm_parameter(
+                        account_id=self._change_set.account_id,
+                        region_name=self._change_set.region_name,
+                        stack_parameter_value=delta.after,
+                    )
             else:
                 raise Exception(f"Unsupported stack parameter type: {parameter_type}")
 
