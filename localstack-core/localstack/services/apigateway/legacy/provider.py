@@ -2066,32 +2066,28 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             )
 
         try:
-            # get integration response doesn't return the right exception compared to AWS
             moto_rest_api = get_moto_rest_api(context, rest_api_id)
         except NotFoundException:
             raise NotFoundException("Invalid Resource identifier specified")
-        moto_resource = moto_rest_api.resources.get(resource_id)
-        if not moto_resource:
+        if not (moto_resource := moto_rest_api.resources.get(resource_id)):
             raise NotFoundException("Invalid Resource identifier specified")
 
-        moto_method = moto_resource.resource_methods.get(http_method)
-        if not moto_method:
+        if not (moto_method := moto_resource.resource_methods.get(http_method)):
             raise NotFoundException("Invalid Method identifier specified")
-
-        integration_response = moto_method.method_integration.integration_responses.get(status_code)
-        if not integration_response:
-            raise NotFoundException("Invalid Integration Response identifier specified")
+        integration_response = None
+        try:
+            integration_response = moto_method.method_integration.integration_responses.get(status_code)
+            if not integration_response:
+                raise NotFoundException("Invalid Integration Response identifier specified")
+        except NotFoundException:
+            pass
 
         response: IntegrationResponse = call_moto(context)
         remove_empty_attributes_from_integration_response(response)
         # moto does not return selectionPattern is set to an empty string
         # TODO: fix upstream
         if "selectionPattern" not in response:
-            moto_rest_api = get_moto_rest_api(context, rest_api_id)
-            moto_resource = moto_rest_api.resources.get(resource_id)
-            method_integration = moto_resource.resource_methods[http_method].method_integration
-            integration_response = method_integration.integration_responses[status_code]
-            if integration_response.selection_pattern is not None:
+            if integration_response is not None and integration_response.selection_pattern is not None:
                 response["selectionPattern"] = integration_response.selection_pattern
         return response
 
