@@ -801,6 +801,23 @@ def test_single_resource_static_update(aws_client: ServiceLevelClientFactory, sn
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe..*",
+        "$..Outputs..OutputValue",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..Replacement",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+    ]
+)
 def test_dynamic_ssm_parameter_lookup(
     snapshot,
     aws_client: ServiceLevelClientFactory,
@@ -818,6 +835,15 @@ def test_dynamic_ssm_parameter_lookup(
     parameter_name = f"param-{short_uid()}"
     value1 = f"1-{short_uid()}"
     value2 = f"2-{short_uid()}"
+
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(parameter_name, "<parameter-name>"),
+            snapshot.transform.regex(value1, "<value-1>"),
+            snapshot.transform.regex(value2, "<value-2>"),
+        ]
+    )
+
     create_parameter(Name=parameter_name, Value=value1, Type="String")
 
     template = {
