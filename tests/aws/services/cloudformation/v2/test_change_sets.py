@@ -8,6 +8,8 @@ from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.cloudformation.fixtures import _normalise_describe_change_set_output
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 pytestmark = pytest.mark.skipif(
@@ -16,9 +18,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skipif(
-    condition=not is_v2_engine() and not is_aws_cloud(), reason="Requires the V2 engine"
-)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "delete-describe..*",
@@ -799,3 +798,152 @@ def test_single_resource_static_update(aws_client: ServiceLevelClientFactory, sn
 
     parameter = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]
     snapshot.match("parameter-2", parameter)
+
+
+@markers.aws.validated
+def test_dynamic_ssm_parameter_lookup(
+    snapshot,
+    aws_client: ServiceLevelClientFactory,
+    aws_client_no_retry: ServiceLevelClientFactory,
+    cleanups,
+    create_parameter,
+    capture_update_process,
+    capture_per_resource_events,
+):
+    """
+    Test reading parameter values from SSM works correctly
+    """
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    parameter_name = f"param-{short_uid()}"
+    value1 = f"1-{short_uid()}"
+    value2 = f"2-{short_uid()}"
+    create_parameter(Name=parameter_name, Value=value1, Type="String")
+
+    template = {
+        "Parameters": {
+            "InputValue": {
+                "Type": "AWS::SSM::Parameter::Value<String>",
+            },
+        },
+        "Resources": {
+            "DerivedParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {"Ref": "InputValue"},
+                },
+            },
+        },
+        "Outputs": {
+            "DerivedParameterName": {
+                "Value": {"Ref": "DerivedParameter"},
+            },
+        },
+    }
+
+    # TODO: from here down is copied from capture_update_process, since we don't want to change
+    #  the template but an external value
+
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
+    change_set_details = aws_client_no_retry.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=json.dumps(template),
+        ChangeSetType="CREATE",
+        Parameters=[{"ParameterKey": "InputValue", "ParameterValue": parameter_name}],
+    )
+    snapshot.match("create-change-set-1", change_set_details)
+    stack_id = change_set_details["StackId"]
+    change_set_id = change_set_details["Id"]
+    aws_client_no_retry.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=change_set_id
+    )
+    cleanups.append(
+        lambda: call_safe(
+            aws_client_no_retry.cloudformation.delete_change_set,
+            kwargs=dict(ChangeSetName=change_set_id),
+        )
+    )
+
+    describe_change_set_with_prop_values = aws_client_no_retry.cloudformation.describe_change_set(
+        ChangeSetName=change_set_id, IncludePropertyValues=True
+    )
+    _normalise_describe_change_set_output(describe_change_set_with_prop_values)
+    snapshot.match("describe-change-set-1-prop-values", describe_change_set_with_prop_values)
+
+    describe_change_set_without_prop_values = (
+        aws_client_no_retry.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id, IncludePropertyValues=False
+        )
+    )
+    _normalise_describe_change_set_output(describe_change_set_without_prop_values)
+    snapshot.match("describe-change-set-1", describe_change_set_without_prop_values)
+
+    execute_results = aws_client_no_retry.cloudformation.execute_change_set(
+        ChangeSetName=change_set_id
+    )
+    snapshot.match("execute-change-set-1", execute_results)
+    aws_client_no_retry.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+
+    # ensure stack deletion
+    cleanups.append(
+        lambda: call_safe(
+            aws_client_no_retry.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+        )
+    )
+
+    describe = aws_client_no_retry.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+    snapshot.match("post-create-1-describe", describe)
+
+    # update the SSM parameter
+    # XXX don't use the create_parameter fixture, as this would cause a double deletion
+    aws_client.ssm.put_parameter(Name=parameter_name, Value=value2, Type="String", Overwrite=True)
+
+    # now try to re-deploy and see what happens
+    change_set_details = aws_client_no_retry.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=json.dumps(template),
+        ChangeSetType="UPDATE",
+        Parameters=[{"ParameterKey": "InputValue", "ParameterValue": parameter_name}],
+    )
+    snapshot.match("create-change-set-2", change_set_details)
+    stack_id = change_set_details["StackId"]
+    change_set_id = change_set_details["Id"]
+    aws_client_no_retry.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=change_set_id
+    )
+
+    describe_change_set_with_prop_values = aws_client_no_retry.cloudformation.describe_change_set(
+        ChangeSetName=change_set_id, IncludePropertyValues=True
+    )
+    _normalise_describe_change_set_output(describe_change_set_with_prop_values)
+    snapshot.match("describe-change-set-2-prop-values", describe_change_set_with_prop_values)
+
+    describe_change_set_without_prop_values = (
+        aws_client_no_retry.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id, IncludePropertyValues=False
+        )
+    )
+    _normalise_describe_change_set_output(describe_change_set_without_prop_values)
+    snapshot.match("describe-change-set-2", describe_change_set_without_prop_values)
+
+    execute_results = aws_client_no_retry.cloudformation.execute_change_set(
+        ChangeSetName=change_set_id
+    )
+    snapshot.match("execute-change-set-2", execute_results)
+    aws_client_no_retry.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack_id)
+
+    describe = aws_client_no_retry.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+    snapshot.match("post-create-2-describe", describe)
+
+    # delete stack
+    aws_client_no_retry.cloudformation.delete_stack(StackName=stack_id)
+    aws_client_no_retry.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_id)
+    describe = aws_client_no_retry.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+    snapshot.match("delete-describe", describe)
+
+    events = capture_per_resource_events(stack_id)
+    snapshot.match("per-resource-events", events)
