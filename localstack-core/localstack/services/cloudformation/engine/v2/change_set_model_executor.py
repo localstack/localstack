@@ -349,7 +349,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             before_properties=before_properties,
             after_properties=after_properties,
         )
-        resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
+        resource_provider = resource_provider_executor.try_load_resource_provider(
+            action, resource_type
+        )
 
         extra_resource_properties = {}
         event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
