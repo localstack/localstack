@@ -31,9 +31,6 @@ from localstack.utils.strings import short_uid
 )
 class TestChangeSetGlobalMacros:
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="CFNV2:Other deletion of CFN macro is received before the template update event"
-    )
     def test_base_global_macro(
         self,
         aws_client,
@@ -94,7 +91,6 @@ class TestChangeSetGlobalMacros:
                 },
             },
             "Outputs": {
-                "ParameterName": {"Value": {"Ref": "Parameter"}},
                 "Parameter2Name": {"Value": {"Ref": "Parameter2"}},
             },
         }

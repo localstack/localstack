@@ -8,6 +8,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeProperty,
     NodeResource,
+    NodeResources,
     PropertiesKey,
     is_nothing,
 )
@@ -57,7 +58,8 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         attribute_name = arguments_list[1]
 
         node_resource = self._get_node_resource_for(
-            resource_name=logical_name_of_resource, node_template=self._node_template
+            resource_name=logical_name_of_resource,
+            node_template=self._change_set.update_model.node_template,
         )
         node_property: Optional[NodeProperty] = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
@@ -182,6 +184,13 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 after_properties=after.properties,
             )
 
+    def visit_node_resources(self, node_resources: NodeResources) -> None:
+        for node_resource in node_resources.resources:
+            delta_resource = self.visit(node_resource)
+            self._describe_resource_change(
+                name=node_resource.name, before=delta_resource.before, after=delta_resource.after
+            )
+
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
@@ -189,7 +198,4 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         after_resource = delta.after
         if not is_nothing(after_resource) and after_resource.physical_resource_id is None:
             after_resource.physical_resource_id = CHANGESET_KNOWN_AFTER_APPLY
-        self._describe_resource_change(
-            name=node_resource.name, before=delta.before, after=delta.after
-        )
         return delta

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import base64
+import copy
 import re
-from typing import Any, Final, Generic, Optional, TypeVar
+from typing import Any, Callable, Final, Generic, Optional, TypeVar
 
 from botocore.exceptions import ClientError
 
@@ -165,19 +166,44 @@ class PreprocOutput:
 
 class ChangeSetModelPreproc(ChangeSetModelVisitor):
     _change_set: Final[ChangeSet]
-    _node_template: Final[NodeTemplate]
     _before_resolved_resources: Final[dict]
-    _processed: dict[Scope, Any]
+    _before_cache: Final[dict[Scope, Any]]
+    _after_cache: Final[dict[Scope, Any]]
 
     def __init__(self, change_set: ChangeSet):
         self._change_set = change_set
-        self._node_template = change_set.update_model
         self._before_resolved_resources = change_set.stack.resolved_resources
-        self._processed = dict()
+        self._before_cache = dict()
+        self._after_cache = dict()
+
+    def _setup_runtime_cache(self) -> None:
+        runtime_cache_key = self.__class__.__name__
+
+        self._before_cache.clear()
+        self._after_cache.clear()
+
+        before_runtime_cache = self._change_set.update_model.before_runtime_cache
+        if cache := before_runtime_cache.get(runtime_cache_key):
+            self._before_cache.update(cache)
+
+        after_runtime_cache = self._change_set.update_model.after_runtime_cache
+        if cache := after_runtime_cache.get(runtime_cache_key):
+            self._after_cache.update(cache)
+
+    def _save_runtime_cache(self):
+        runtime_cache_key = self.__class__.__name__
+
+        before_runtime_cache = self._change_set.update_model.before_runtime_cache
+        before_runtime_cache[runtime_cache_key] = copy.deepcopy(self._before_cache)
+
+        after_runtime_cache = self._change_set.update_model.after_runtime_cache
+        after_runtime_cache[runtime_cache_key] = copy.deepcopy(self._after_cache)
 
     def process(self) -> None:
-        self._processed.clear()
-        self.visit(self._node_template)
+        self._setup_runtime_cache()
+        node_template = self._change_set.update_model.node_template
+        self.visit(node_template)
+        self._save_runtime_cache()
 
     def _get_node_resource_for(
         self, resource_name: str, node_template: NodeTemplate
@@ -209,7 +235,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # be accessible through delta objects, to ensure computation is always complete at
         # every level.
         _ = self._get_node_resource_for(
-            resource_name=resource_logical_id, node_template=self._node_template
+            resource_name=resource_logical_id,
+            node_template=self._change_set.update_model.node_template,
         )
         resolved_resource = resolved_resources.get(resource_logical_id)
         if resolved_resource is None:
@@ -241,7 +268,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         )
 
     def _get_node_mapping(self, map_name: str) -> NodeMapping:
-        mappings: list[NodeMapping] = self._node_template.mappings.mappings
+        mappings: list[NodeMapping] = self._change_set.update_model.node_template.mappings.mappings
         # TODO: another scenarios suggesting property lookups might be preferable.
         for mapping in mappings:
             if mapping.name == map_name:
@@ -250,7 +277,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         raise RuntimeError(f"Undefined '{map_name}' mapping")
 
     def _get_node_parameter_if_exists(self, parameter_name: str) -> Maybe[NodeParameter]:
-        parameters: list[NodeParameter] = self._node_template.parameters.parameters
+        parameters: list[NodeParameter] = (
+            self._change_set.update_model.node_template.parameters.parameters
+        )
         # TODO: another scenarios suggesting property lookups might be preferable.
         for parameter in parameters:
             if parameter.name == parameter_name:
@@ -259,7 +288,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return Nothing
 
     def _get_node_condition_if_exists(self, condition_name: str) -> Maybe[NodeCondition]:
-        conditions: list[NodeCondition] = self._node_template.conditions.conditions
+        conditions: list[NodeCondition] = (
+            self._change_set.update_model.node_template.conditions.conditions
+        )
         # TODO: another scenarios suggesting property lookups might be preferable.
         for condition in conditions:
             if condition.name == condition_name:
@@ -307,7 +338,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return parameter_delta
 
         node_resource = self._get_node_resource_for(
-            resource_name=logical_id, node_template=self._node_template
+            resource_name=logical_id, node_template=self._change_set.update_model.node_template
         )
         resource_delta = self.visit(node_resource)
         before = resource_delta.before
@@ -327,13 +358,36 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return mapping_value_delta
 
     def visit(self, change_set_entity: ChangeSetEntity) -> PreprocEntityDelta:
-        scope = change_set_entity.scope
-        if scope in self._processed:
-            delta = self._processed[scope]
-            return delta
+        entity_scope = change_set_entity.scope
+        if entity_scope in self._before_cache and entity_scope in self._after_cache:
+            before = self._before_cache[entity_scope]
+            after = self._after_cache[entity_scope]
+            return PreprocEntityDelta(before=before, after=after)
         delta = super().visit(change_set_entity=change_set_entity)
-        self._processed[scope] = delta
+        if isinstance(delta, PreprocEntityDelta):
+            self._before_cache[entity_scope] = delta.before
+            self._after_cache[entity_scope] = delta.after
         return delta
+
+    def _cached_apply(
+        self, scope: Scope, arguments_delta: PreprocEntityDelta, resolver: Callable[[Any], Any]
+    ) -> PreprocEntityDelta:
+        arguments_before = arguments_delta.before
+        arguments_after = arguments_delta.after
+
+        before = self._before_cache.get(scope, Nothing)
+        if is_nothing(before) and not is_nothing(arguments_before):
+            before = resolver(arguments_before)
+            if isinstance(before, PreprocEntityDelta):
+                before = before.before
+
+        after = self._after_cache.get(scope, Nothing)
+        if is_nothing(after) and not is_nothing(arguments_after):
+            after = resolver(arguments_after)
+            if isinstance(after, PreprocEntityDelta):
+                after = after.after
+
+        return PreprocEntityDelta(before=before, after=after)
 
     def visit_terminal_value_modified(
         self, terminal_value_modified: TerminalValueModified
@@ -391,7 +445,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         attribute_name = arguments_list[1]
 
         node_resource = self._get_node_resource_for(
-            resource_name=logical_name_of_resource, node_template=self._node_template
+            resource_name=logical_name_of_resource,
+            node_template=self._change_set.update_model.node_template,
         )
         node_property: Optional[NodeProperty] = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
@@ -451,8 +506,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-        arguments_before = arguments_delta.before
-        arguments_after = arguments_delta.after
 
         def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
             condition_name = args[0]
@@ -462,16 +515,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 after=args[1] if boolean_expression_delta.after else args[2],
             )
 
-        # TODO: add support for this being created or removed.
-        before = Nothing
-        if not is_nothing(arguments_before):
-            before_outcome_delta = _compute_delta_for_if_statement(arguments_before)
-            before = before_outcome_delta.before
-        after = Nothing
-        if not is_nothing(arguments_after):
-            after_outcome_delta = _compute_delta_for_if_statement(arguments_after)
-            after = after_outcome_delta.after
-        return PreprocEntityDelta(before=before, after=after)
+        delta = self._cached_apply(
+            scope=node_intrinsic_function.scope,
+            arguments_delta=arguments_delta,
+            resolver=_compute_delta_for_if_statement,
+        )
+        return delta
 
     def visit_node_intrinsic_function_fn_and(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -966,27 +1015,20 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_condition_name = arguments_delta.before
-        after_condition_name = arguments_delta.after
 
         def _delta_of_condition(name: str) -> PreprocEntityDelta:
             node_condition = self._get_node_condition_if_exists(condition_name=name)
             if is_nothing(node_condition):
                 raise RuntimeError(f"Undefined condition '{name}'")
-            delta = self.visit(node_condition)
-            return delta
+            condition_delta = self.visit(node_condition)
+            return condition_delta
 
-        before = Nothing
-        if not is_nothing(before_condition_name):
-            before_delta = _delta_of_condition(before_condition_name)
-            before = before_delta.before
-
-        after = Nothing
-        if not is_nothing(after_condition_name):
-            after_delta = _delta_of_condition(after_condition_name)
-            after = after_delta.after
-
-        return PreprocEntityDelta(before=before, after=after)
+        delta = self._cached_apply(
+            resolver=_delta_of_condition,
+            scope=node_intrinsic_function.scope,
+            arguments_delta=arguments_delta,
+        )
+        return delta
 
     def visit_node_array(self, node_array: NodeArray) -> PreprocEntityDelta:
         node_change_type = node_array.change_type

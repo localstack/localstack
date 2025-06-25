@@ -24,7 +24,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
-    NodeTemplate,
+    UpdateModel,
 )
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
@@ -195,7 +195,7 @@ class ChangeSet:
     change_set_name: str
     change_set_id: str
     change_set_type: ChangeSetType
-    update_model: Optional[NodeTemplate]
+    update_model: Optional[UpdateModel]
     status: ChangeSetStatus
     execution_status: ExecutionStatus
     creation_time: datetime
@@ -222,7 +222,7 @@ class ChangeSet:
             region_name=self.stack.region_name,
         )
 
-    def set_update_model(self, update_model: NodeTemplate) -> None:
+    def set_update_model(self, update_model: UpdateModel) -> None:
         self.update_model = update_model
 
     def set_change_set_status(self, status: ChangeSetStatus):
