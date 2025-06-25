@@ -10,7 +10,7 @@ from typing import (
     TypeVar,
 )
 
-from botocore.model import OperationModel, ServiceModel  # type: ignore[import-untyped]
+from botocore.model import OperationModel, ServiceModel
 from rolo.gateway import RequestContext as RoloRequestContext
 
 from localstack.aws.connect import InternalRequestParameters
