@@ -11,6 +11,7 @@ from subprocess import Popen
 from typing import IO, Literal, Optional, Union
 
 from localstack.constants import MAVEN_REPO_URL
+from localstack.utils.checksum import parse_sha_file_format, verify_file_integrity
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
 from localstack.utils.http import download
 from localstack.utils.run import run
@@ -176,7 +177,21 @@ def download_and_extract(
     retries: Optional[int] = 0,
     sleep: Optional[int] = 3,
     tmp_archive: Optional[str] = None,
+    checksum_url: Optional[str] = None,
+    checksum_algo: Optional[Literal["sha256", "sha512"]] = None,
 ) -> None:
+    """
+    Download and extract an archive to a target directory with optional checksum verification.
+
+    :param archive_url: URL of the archive to download
+    :param target_dir: Directory to extract the archive contents to
+    :param retries: Number of download retries (default: 0)
+    :param sleep: Sleep time between retries in seconds (default: 3)
+    :param tmp_archive: Optional path for the temporary archive file
+    :param checksum_url: Optional URL of the checksum file for verification
+    :param checksum_algo: Optional checksum algorithm (e.g., 'sha256', 'sha512')
+    :raises Exception: If download fails, checksum verification fails, or archive format is unsupported
+    """
     mkdir(target_dir)
 
     _, ext = os.path.splitext(tmp_archive or archive_url)
@@ -204,6 +219,45 @@ def download_and_extract(
     if os.path.getsize(tmp_archive) <= 0:
         raise Exception("Failed to download archive from %s: . Retries exhausted", archive_url)
 
+    # Verify checksum if provided
+    if checksum_url and checksum_algo:
+        LOG.info("Verifying archive integrity...")
+        checksum_name = os.path.basename(checksum_url)
+        checksum_path = os.path.join(tempfile.gettempdir(), checksum_name)
+        try:
+            # Download checksum file
+            download(checksum_url, checksum_path)
+
+            # Parse checksum file
+            checksum_content = load_file(checksum_path)
+            _, expected_checksum = parse_sha_file_format(checksum_content)
+
+            if not expected_checksum:
+                raise Exception(
+                    f"Could not parse checksum from {checksum_name}. "
+                    "Please check the checksum file format."
+                )
+
+            # Verify integrity
+            if not verify_file_integrity(
+                algorithm=checksum_algo,
+                file_path=tmp_archive,
+                expected_checksum=expected_checksum,
+            ):
+                raise Exception(
+                    f"Checksum verification failed for {os.path.basename(archive_url)}. "
+                    "The downloaded file may be corrupted or tampered with."
+                )
+
+            LOG.debug("Archive integrity verified successfully")
+        except Exception as e:
+            # Clean up the corrupted download
+            rm_rf(tmp_archive)
+            LOG.debug("Failed to verify archive integrity: %s", e)
+        finally:
+            # Clean up checksum file
+            rm_rf(checksum_path)
+
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
     elif ext in (
@@ -217,11 +271,29 @@ def download_and_extract(
         raise Exception(f"Unsupported archive format: {ext}")
 
 
-def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
+def download_and_extract_with_retry(
+    archive_url,
+    tmp_archive,
+    target_dir,
+    checksum_url: Optional[str] = None,
+    checksum_algo: Optional[Literal["sha256", "sha512"]] = None,
+):
     try:
-        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
+        download_and_extract(
+            archive_url,
+            target_dir,
+            tmp_archive=tmp_archive,
+            checksum_url=checksum_url,
+            checksum_algo=checksum_algo,
+        )
     except Exception as e:
         # try deleting and re-downloading the zip file
         LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s", tmp_archive, e)
         rm_rf(tmp_archive)
-        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
+        download_and_extract(
+            archive_url,
+            target_dir,
+            tmp_archive=tmp_archive,
+            checksum_url=checksum_url,
+            checksum_algo=checksum_algo,
+        )

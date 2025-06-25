@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Any, Literal, Optional, Tuple
+from typing import Any, Optional, Tuple
 
 import requests
 
@@ -12,8 +12,7 @@ from localstack import config
 
 from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
-from ..utils.cheksum import parse_sha_file_format, verify_file_integrity
-from ..utils.files import chmod_r, chown_r, load_file, mkdir, rm_rf
+from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
 from ..utils.http import download
 from ..utils.run import is_root, run
 from ..utils.venv import VirtualEnvironment
@@ -69,17 +68,14 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         name: str,
         version: str,
         extract_single_directory: bool = False,
-        verify_archive_integrity: bool = False,
     ):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
         :param extract_single_directory: whether to extract files from single root folder in the archive
-        :param verify_archive_integrity: whether to verify the integrity of the downloaded archive
         """
         super().__init__(name, version)
         self.extract_single_directory = extract_single_directory
-        self.verify_archive_integrity = verify_archive_integrity
 
     def _get_install_marker_path(self, install_dir: str) -> str:
         raise NotImplementedError()
@@ -87,23 +83,25 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
     def _get_download_url(self) -> str:
         raise NotImplementedError()
 
-    def _get_checksum_url(self) -> str:
+    def _get_checksum_url(self) -> str | None:
         """
         Checksum URL for the archive. This is used to verify the integrity of the downloaded archive.
-        This method should be implemented by subclasses to provide the correct URL for the checksum file.
+        This method can be implemented by subclasses to provide the correct URL for the checksum file.
+        If not implemented, checksum verification will be skipped.
 
-        :return: URL to the checksum file for the archive.
+        :return: URL to the checksum file for the archive, or None if not available.
         """
-        raise NotImplementedError()
+        return None
 
-    def _get_checksum_algo(self) -> Literal["sha256", "sha512"]:
+    def _get_checksum_algo(self) -> str | None:
         """
         Checksum algorithm used to verify the integrity of the downloaded archive.
-        This method should be implemented by subclasses to provide the correct algorithm.
+        This method can be implemented by subclasses to provide the correct algorithm.
+        If not implemented, checksum verification will be skipped.
 
-        :return: Checksum algorithm, e.g. "sha256".
+        :return: Checksum algorithm, e.g. "sha256", or None
         """
-        raise NotImplementedError()
+        return None
 
     def get_installed_dir(self) -> str | None:
         installed_dir = super().get_installed_dir()
@@ -155,62 +153,36 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         rm_rf(target_directory)
         os.rename(f"{target_directory}.backup", target_directory)
 
-    def _verify_checksum(self, archive_path: str) -> None:
-        if not self.verify_archive_integrity:
-            LOG.debug("Skipping integrity verification (verify_integrity=False)")
-            return
-
-        checksum_url = self._get_checksum_url()
-        checksum_name = os.path.basename(checksum_url)
-        checksum_path = os.path.join(config.dirs.tmp, checksum_name)
-        try:
-            # download the checksum file
-            download(url=checksum_url, path=checksum_path)
-            # read checksum file, parse it, and verify against the downloaded archive
-            sha_content = load_file(checksum_path)
-            _, expected_checksum = parse_sha_file_format(sha_content)
-
-            if not expected_checksum:
-                raise PackageException(
-                    f"Could not parse checksum from {checksum_name}. "
-                    "Please check the checksum file format."
-                )
-
-            if not verify_file_integrity(
-                algorithm=self._get_checksum_algo(),
-                file_path=archive_path,
-                expected_checksum=expected_checksum,
-            ):
-                raise PackageException(
-                    f"Checksum verification failed for {os.path.basename(archive_path)}. "
-                    "The downloaded file may be corrupted or tampered with."
-                )
-
-            LOG.info("Archive integrity verified successfully")
-        finally:
-            # Clean up temporary files
-            rm_rf(checksum_path)
-
-    def _download_and_verify(self, target: InstallTarget, download_url: str) -> None:
+    def _download_archive(
+        self,
+        target: InstallTarget,
+        download_url: str,
+    ):
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
+        download_url = download_url or self._get_download_url()
         archive_name = os.path.basename(download_url)
         archive_path = os.path.join(config.dirs.tmp, archive_name)
+
+        # Get checksum info if available
+        checksum_url = self._get_checksum_url()
+        checksum_algo = self._get_checksum_algo()
+
         try:
             download_and_extract(
                 download_url,
                 retries=3,
                 tmp_archive=archive_path,
                 target_dir=target_directory,
+                checksum_url=checksum_url,
+                checksum_algo=checksum_algo,
             )
-            self._verify_checksum(archive_path)
             self._handle_single_directory_extraction(target_directory)
         finally:
             rm_rf(archive_path)
 
     def _install(self, target: InstallTarget) -> None:
-        download_url = self._get_download_url()
-        self._download_and_verify(target=target, download_url=download_url)
+        self._download_archive(target, self._get_download_url())
 
 
 class PermissionDownloadInstaller(DownloadInstaller, ABC):
