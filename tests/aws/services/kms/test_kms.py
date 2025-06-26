@@ -1372,10 +1372,9 @@ class TestKMS:
 
     @markers.aws.validated
     def test_rotate_key_on_demand_succeeds_for_key_with_imported_key_material(
-            self, kms_create_key, aws_client, snapshot
+        self, kms_create_key, aws_client, snapshot
     ):
         key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
-
         response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
         snapshot.match("rotate-on-demand-response", response)
 
@@ -2092,9 +2091,3 @@ class TestKMSGenerateKeys:
 
         err = exc.value.response
         snapshot.match("dryrun_exception", err)
-
-
-
-
-
-
