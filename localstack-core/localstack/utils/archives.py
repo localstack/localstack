@@ -248,7 +248,6 @@ def download_and_extract_with_retry(
     tmp_archive,
     target_dir,
     checksum_url: Optional[str] = None,
-    checksum_algo: Optional[Literal["sha256", "sha512"]] = None,
 ):
     try:
         download_and_extract(

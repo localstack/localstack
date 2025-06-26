@@ -147,7 +147,7 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         self,
         target: InstallTarget,
         download_url: str,
-    ):
+    ) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
         download_url = download_url or self._get_download_url()
