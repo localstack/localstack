@@ -531,7 +531,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # Implicit change type computation.
         return PreprocEntityDelta(before=before, after=after)
 
-    def _compute_fn_transform(self, args: dict[str, Any]) -> Any:
+    def _compute_fn_transform(self, args: dict[str, Any], template: dict, parameters: dict) -> Any:
         # TODO: add typing to arguments before this level.
         # TODO: add schema validation
         # TODO: add support for other transform types
@@ -567,10 +567,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             transform_output: Any = execute_macro(
                 account_id=account_id,
                 region_name=region_name,
-                parsed_template=dict(),  # TODO: review the requirements for this argument.
-                macro=args,  # TODO: review support for non dict bindings (v1).
+                parsed_template=template,  # TODO: review the requirements for this argument.
+                macro=macros_store.get(
+                    args.get("Name")
+                ),  # TODO: review support for non dict bindings (v1).
                 stack_parameters=stack_parameters,
-                transformation_parameters=transform_parameters,
+                transformation_parameters=args.get("parameters"),
                 is_intrinsic=True,
             )
             return transform_output
@@ -595,12 +597,25 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # TODO: add tests to review the behaviour of CFN with changes to transformation
         #  function code and no changes to the template.
 
+        def get_parent_dict(d, path):
+            keys = path.split("/")
+            for key in keys[:-1]:
+                if key:
+                    d = d[key]
+            return d
+
         before = Nothing
         if not is_nothing(arguments_before):
-            before = self._compute_fn_transform(args=arguments_before)
+            pass
+            # before = self._compute_fn_transform(args=arguments_before,template=get_nested_value(self._change_set.stack.template, ),  parameters=self._change_set.template )
         after = Nothing
         if not is_nothing(arguments_after):
-            after = self._compute_fn_transform(args=arguments_after)
+            path = node_intrinsic_function.scope.replace("/divergence", "")
+            after = self._compute_fn_transform(
+                args=arguments_after,
+                template=get_parent_dict(self._change_set.stack.template, path),
+                parameters=self._change_set.stack.resolved_parameters,
+            )
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_intrinsic_function_fn_sub(

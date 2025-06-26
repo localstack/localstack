@@ -310,11 +310,15 @@ class NodeTransform(ChangeSetNode):
 
 class NodeResources(ChangeSetNode):
     resources: Final[list[NodeResource]]
+    transformations: Final[list[NodeTransform]]
 
-    def __init__(self, scope: Scope, resources: list[NodeResource]):
+    def __init__(
+        self, scope: Scope, resources: list[NodeResource], transformations: list[NodeTransform]
+    ):
         change_type = parent_change_type_of(resources)
         super().__init__(scope=scope, change_type=change_type)
         self.resources = resources
+        self.transformations = transformations
 
 
 class NodeResource(ChangeSetNode):
@@ -905,11 +909,17 @@ class ChangeSetModel:
     ) -> NodeResources:
         # TODO: investigate type changes behavior.
         resources: list[NodeResource] = list()
+        transformations: list(NodeTransform) = list()
         resource_names = self._safe_keys_of(before_resources, after_resources)
         for resource_name in resource_names:
             resource_scope, (before_resource, after_resource) = self._safe_access_in(
                 scope, resource_name, before_resources, after_resources
             )
+            # if resource_name == "Fn::Transform":
+            #     transformation = self._visit_transform(scope=resource_scope, before_transform=before_resource, after_transform=after_resource)
+            #     transformations.append(transformation)
+            #     continue
+
             resource = self._visit_resource(
                 scope=resource_scope,
                 resource_name=resource_name,
@@ -917,7 +927,7 @@ class ChangeSetModel:
                 after_resource=after_resource,
             )
             resources.append(resource)
-        return NodeResources(scope=scope, resources=resources)
+        return NodeResources(scope=scope, resources=resources, transformations=transformations)
 
     def _visit_mapping(
         self, scope: Scope, name: str, before_mapping: Maybe[dict], after_mapping: Maybe[dict]

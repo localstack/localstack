@@ -365,6 +365,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 # which was just deployed
                 change_set.stack.template = change_set.template
             except Exception as e:
+                import traceback
+
+                traceback.print_exc()
                 LOG.error(
                     "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
                 )

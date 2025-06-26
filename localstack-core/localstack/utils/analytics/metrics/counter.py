@@ -180,7 +180,10 @@ class LabeledCounter(Metric):
 
         _label_values = tuple(kwargs[label] for label in self._labels)
 
-        return self._counters_by_label_values[_label_values]
+        try:
+            return self._counters_by_label_values[_label_values]
+        except Exception as e:
+            print(e)
 
     def collect(self) -> list[LabeledCounterPayload]:
         if config.DISABLE_EVENTS:
