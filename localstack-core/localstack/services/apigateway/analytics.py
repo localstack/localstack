@@ -1,5 +1,5 @@
-from localstack.utils.analytics.metrics import Counter
+from localstack.utils.analytics.metrics import LabeledCounter
 
-invocation_counter = Counter(
+invocation_counter = LabeledCounter(
     namespace="apigateway", name="rest_api_execute", labels=["invocation_type"]
 )

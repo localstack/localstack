@@ -7,6 +7,7 @@ from typing import Optional, Pattern
 
 from localstack_snapshot.snapshots.transformer import (
     PATTERN_ISO8601,
+    GenericTransformer,
     JsonpathTransformer,
     KeyValueBasedTransformer,
     RegexTransformer,
@@ -108,6 +109,26 @@ class TransformerUtility:
         :return: RegexTransformer
         """
         return RegexTransformer(regex, replacement)
+
+    @staticmethod
+    def remove_key(key: str):
+        """Creates a new GenericTransformer that removes all instances of the specified key.
+
+        :param key: the name of the key which should be removed from all responses
+        :return: GenericTransformer
+        """
+
+        def _remove_key_recursive(snapshot_content: dict, *_) -> dict:
+            def _remove_key_from_data(data):
+                if isinstance(data, dict):
+                    return {k: _remove_key_from_data(v) for k, v in data.items() if k != key}
+                elif isinstance(data, list):
+                    return [_remove_key_from_data(item) for item in data]
+                return data
+
+            return {k: _remove_key_from_data(v) for k, v in snapshot_content.items()}
+
+        return GenericTransformer(_remove_key_recursive)
 
     # TODO add more utility functions? e.g. key_value with function as parameter?
 

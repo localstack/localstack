@@ -42,7 +42,6 @@ def test_nested_getatt_ref(deploy_cfn_template, aws_client, attribute_name, snap
     assert topic_arn in topic_arns
 
 
-@pytest.mark.skip(reason="CFNV2:Fn::Sub")
 @markers.aws.validated
 def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     """

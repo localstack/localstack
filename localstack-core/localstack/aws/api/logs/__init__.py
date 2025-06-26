@@ -198,6 +198,14 @@ class EvaluationFrequency(StrEnum):
     ONE_HOUR = "ONE_HOUR"
 
 
+class EventSource(StrEnum):
+    CloudTrail = "CloudTrail"
+    Route53Resolver = "Route53Resolver"
+    VPCFlow = "VPCFlow"
+    EKSAudit = "EKSAudit"
+    AWSWAF = "AWSWAF"
+
+
 class ExportTaskStatusCode(StrEnum):
     CANCELLED = "CANCELLED"
     COMPLETED = "COMPLETED"
@@ -235,6 +243,10 @@ class LogGroupClass(StrEnum):
     STANDARD = "STANDARD"
     INFREQUENT_ACCESS = "INFREQUENT_ACCESS"
     DELIVERY = "DELIVERY"
+
+
+class OCSFVersion(StrEnum):
+    V1_1 = "V1.1"
 
 
 class OpenSearchResourceStatusType(StrEnum):
@@ -1605,6 +1617,12 @@ class ParsePostgres(TypedDict, total=False):
     source: Optional[Source]
 
 
+class ParseToOCSF(TypedDict, total=False):
+    source: Optional[Source]
+    eventSource: EventSource
+    ocsfVersion: OCSFVersion
+
+
 class ParseRoute53(TypedDict, total=False):
     source: Optional[Source]
 
@@ -1676,6 +1694,7 @@ class Processor(TypedDict, total=False):
     parseJSON: Optional[ParseJSON]
     parseKeyValue: Optional[ParseKeyValue]
     parseRoute53: Optional[ParseRoute53]
+    parseToOCSF: Optional[ParseToOCSF]
     parsePostgres: Optional[ParsePostgres]
     parseVPC: Optional[ParseVPC]
     parseWAF: Optional[ParseWAF]

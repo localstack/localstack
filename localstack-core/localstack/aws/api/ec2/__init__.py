@@ -3452,6 +3452,8 @@ class SubnetState(StrEnum):
     pending = "pending"
     available = "available"
     unavailable = "unavailable"
+    failed = "failed"
+    failed_insufficient_capacity = "failed-insufficient-capacity"
 
 
 class SummaryStatus(StrEnum):
@@ -4609,6 +4611,7 @@ class Address(TypedDict, total=False):
     CustomerOwnedIp: Optional[String]
     CustomerOwnedIpv4Pool: Optional[String]
     CarrierIp: Optional[String]
+    SubnetId: Optional[String]
     ServiceManaged: Optional[ServiceManaged]
     InstanceId: Optional[String]
     PublicIp: Optional[String]
@@ -5235,6 +5238,7 @@ class AssociatedRole(TypedDict, total=False):
 
 
 AssociatedRolesList = List[AssociatedRole]
+AssociatedSubnetList = List[SubnetId]
 
 
 class AssociatedTargetNetwork(TypedDict, total=False):
@@ -6827,6 +6831,7 @@ class Subnet(TypedDict, total=False):
     Ipv6Native: Optional[Boolean]
     PrivateDnsNameOptionsOnLaunch: Optional[PrivateDnsNameOptionsOnLaunch]
     BlockPublicAccessStates: Optional[BlockPublicAccessStates]
+    Type: Optional[String]
     SubnetId: Optional[String]
     State: Optional[SubnetState]
     VpcId: Optional[String]
@@ -8773,6 +8778,7 @@ class NetworkInterface(TypedDict, total=False):
     Ipv6Native: Optional[Boolean]
     Ipv6Address: Optional[String]
     Operator: Optional[OperatorResponse]
+    AssociatedSubnets: Optional[AssociatedSubnetList]
 
 
 class CreateNetworkInterfaceResult(TypedDict, total=False):
@@ -18893,11 +18899,15 @@ class NetworkInterfaceAttachmentChanges(TypedDict, total=False):
     DeleteOnTermination: Optional[Boolean]
 
 
+SubnetIdList = List[SubnetId]
+
+
 class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
     EnaSrdSpecification: Optional[EnaSrdSpecification]
     EnablePrimaryIpv6: Optional[Boolean]
     ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
     AssociatePublicIpAddress: Optional[Boolean]
+    AssociatedSubnetIds: Optional[SubnetIdList]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
     Description: Optional[AttributeValue]
@@ -27590,6 +27600,7 @@ class Ec2Api:
         enable_primary_ipv6: Boolean | None = None,
         connection_tracking_specification: ConnectionTrackingSpecificationRequest | None = None,
         associate_public_ip_address: Boolean | None = None,
+        associated_subnet_ids: SubnetIdList | None = None,
         dry_run: Boolean | None = None,
         description: AttributeValue | None = None,
         source_dest_check: AttributeBooleanValue | None = None,

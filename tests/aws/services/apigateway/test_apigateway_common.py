@@ -837,6 +837,14 @@ class TestApiGatewayCommon:
         _create_route("nested", '#set($result = $input.path("$.json"))$result.nested')
         _create_route("list", '#set($result = $input.path("$.json"))$result[0]')
         _create_route("to-string", '#set($result = $input.path("$.json"))$result.toString()')
+        _create_route(
+            "invalid-path",
+            '#set($result = $input.path("$.nonExisting")){"body": $result, "nested": $result.nested, "isNull": #if( $result == $null )"true"#else"false"#end, "isEmptyString": #if( $result == "" )"true"#else"false"#end}',
+        )
+        _create_route(
+            "nested-list",
+            '#set($result = $input.path("$.json.listValue")){"body": $result, "nested": $result.nested, "isNull": #if( $result == $null )"true"#else"false"#end, "isEmptyString": #if( $result == "" )"true"#else"false"#end}',
+        )
 
         stage_name = "dev"
         aws_client.apigateway.create_deployment(restApiId=api_id, stageName=stage_name)
@@ -846,6 +854,8 @@ class TestApiGatewayCommon:
         nested_url = url + "nested"
         list_url = url + "list"
         to_string = url + "to-string"
+        invalid_path = url + "invalid-path"
+        nested_list = url + "nested-list"
 
         response = requests.post(path_url, json={"foo": "bar"})
         snapshot.match("dict-response", response.text)
@@ -878,6 +888,15 @@ class TestApiGatewayCommon:
 
         response = requests.post(to_string, json={"list": [{"foo": "bar"}]})
         snapshot.match("list-to-string", response.text)
+
+        response = requests.post(invalid_path)
+        snapshot.match("empty-body", response.text)
+
+        response = requests.post(nested_list, json={"listValue": []})
+        snapshot.match("nested-empty-list", response.text)
+
+        response = requests.post(nested_list, json={"listValue": None})
+        snapshot.match("nested-null-list", response.text)
 
     @markers.aws.validated
     def test_input_body_formatting(

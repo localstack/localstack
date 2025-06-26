@@ -130,7 +130,6 @@ def test_object_lock_configuration(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("object-lock-info-only-enabled", cors_info)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_cfn_handle_s3_notification_configuration(
     aws_client,
@@ -145,13 +144,12 @@ def test_cfn_handle_s3_notification_configuration(
     rs = aws_client.s3.get_bucket_notification_configuration(Bucket=stack.outputs["BucketName"])
     snapshot.match("get_bucket_notification_configuration", rs)
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # with pytest.raises(ClientError) as ctx:
-    #     aws_client.s3.get_bucket_notification_configuration(Bucket=stack.outputs["BucketName"])
-    # snapshot.match("get_bucket_notification_configuration_error", ctx.value.response)
+    with pytest.raises(ClientError) as ctx:
+        aws_client.s3.get_bucket_notification_configuration(Bucket=stack.outputs["BucketName"])
+    snapshot.match("get_bucket_notification_configuration_error", ctx.value.response)
 
-    # snapshot.add_transformer(snapshot.transform.key_value("Id"))
-    # snapshot.add_transformer(snapshot.transform.key_value("QueueArn"))
-    # snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+    snapshot.add_transformer(snapshot.transform.key_value("Id"))
+    snapshot.add_transformer(snapshot.transform.key_value("QueueArn"))
+    snapshot.add_transformer(snapshot.transform.key_value("BucketName"))

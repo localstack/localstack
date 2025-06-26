@@ -19,7 +19,6 @@ pytestmark = pytest.mark.skipif(
 
 @markers.snapshot.skip_snapshot_verify
 class TestCloudFormationMappings:
-    @pytest.mark.skip(reason="CFNV2:DescribeStackResources")
     @markers.aws.validated
     def test_simple_mapping_working(self, aws_client, deploy_cfn_template):
         """
@@ -249,7 +248,6 @@ class TestCloudFormationMappings:
 
             aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
 
-    # @pytest.mark.skip(reason="CFNV2:Mappings")
     @markers.aws.validated
     def test_aws_refs_in_mappings(self, deploy_cfn_template, account_id):
         """

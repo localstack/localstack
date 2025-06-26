@@ -498,5 +498,20 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_changesets.py::TestUpdates::test_deleting_resource": {
+    "recorded-date": "02-06-2025, 10:29:41",
+    "recorded-content": {
+      "get-parameter-error": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

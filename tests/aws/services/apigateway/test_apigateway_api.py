@@ -2634,3 +2634,83 @@ class TestApigatewayIntegration:
                 },
             )
         snapshot.match("put-integration-request-param-bool-value", e.value.response)
+
+    @markers.aws.validated
+    def test_lifecycle_integration_response(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        put_response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseTemplates={"application/json": '"created"'},
+            selectionPattern="",
+        )
+        snapshot.match("put-integration-response", put_response)
+
+        get_response = apigw_client.get_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        snapshot.match("get-integration-response", get_response)
+
+        update_response = apigw_client.update_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/selectionPattern",
+                    "value": "updated-pattern",
+                }
+            ],
+        )
+        snapshot.match("update-integration-response", update_response)
+
+        overwrite_response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseTemplates={"application/json": "overwrite"},
+            selectionPattern="overwrite-pattern",
+        )
+        snapshot.match("overwrite-integration-response", overwrite_response)
+
+        get_method = apigw_client.get_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-method", get_method)
+
+        delete_response = apigw_client.delete_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        snapshot.match("delete-integration-response", delete_response)

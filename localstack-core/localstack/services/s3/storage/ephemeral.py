@@ -340,10 +340,12 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         ):
             if not range_data:
                 stored_part.write(src_stored_object)
-                return
+            else:
+                object_slice = LimitedStream(src_stored_object, range_data=range_data)
+                stored_part.write(object_slice)
 
-            object_slice = LimitedStream(src_stored_object, range_data=range_data)
-            stored_part.write(object_slice)
+            if s3_part.checksum_algorithm:
+                s3_part.checksum_value = stored_part.checksum
 
 
 class BucketTemporaryFileSystem(TypedDict):

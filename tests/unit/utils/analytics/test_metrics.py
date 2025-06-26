@@ -4,6 +4,7 @@ import pytest
 
 from localstack.utils.analytics.metrics import (
     Counter,
+    LabeledCounter,
     MetricRegistry,
     MetricRegistryKey,
 )
@@ -34,7 +35,7 @@ def test_counter_reset():
 
 
 def test_labeled_counter_increment():
-    labeled_counter = Counter(
+    labeled_counter = LabeledCounter(
         namespace="test_namespace", name="test_multilabel_counter", labels=["status"]
     )
     labeled_counter.labels(status="success").increment(value=2)
@@ -53,7 +54,7 @@ def test_labeled_counter_increment():
 
 
 def test_labeled_counter_reset():
-    labeled_counter = Counter(
+    labeled_counter = LabeledCounter(
         namespace="test_namespace", name="test_multilabel_counter", labels=["status"]
     )
     labeled_counter.labels(status="success").increment(value=5)
@@ -83,7 +84,7 @@ def test_counter_when_events_disabled(disable_analytics):
 
 
 def test_labeled_counter_when_events_disabled_(disable_analytics):
-    labeled_counter = Counter(
+    labeled_counter = LabeledCounter(
         namespace="test_namespace", name="test_multilabel_counter", labels=["status"]
     )
     labeled_counter.labels(status="status").increment(value=5)
@@ -138,7 +139,7 @@ def test_thread_safety():
 
 def test_max_labels_limit():
     with pytest.raises(ValueError, match="Too many labels: counters allow a maximum of 6."):
-        Counter(
+        LabeledCounter(
             namespace="test_namespace",
             name="test_counter",
             labels=["l1", "l2", "l3", "l4", "l5", "l6", "l7"],
@@ -165,24 +166,26 @@ def test_counter_raises_if_label_values_off():
     with pytest.raises(
         ValueError, match="At least one label is required; the labels list cannot be empty."
     ):
-        Counter(namespace="test_namespace", name="test_counter", labels=[]).labels(l1="a")
+        LabeledCounter(namespace="test_namespace", name="test_counter", labels=[]).labels(l1="a")
 
     with pytest.raises(ValueError):
-        Counter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
+        LabeledCounter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
             l1="a", non_existing="asdf"
         )
 
     with pytest.raises(ValueError):
-        Counter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(l1="a")
+        LabeledCounter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
+            l1="a"
+        )
 
     with pytest.raises(ValueError):
-        Counter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
+        LabeledCounter(namespace="test_namespace", name="test_counter", labels=["l1", "l2"]).labels(
             l1="a", l2="b", l3="c"
         )
 
 
 def test_label_kwargs_order_independent():
-    labeled_counter = Counter(
+    labeled_counter = LabeledCounter(
         namespace="test_namespace", name="test_multilabel_counter", labels=["status", "type"]
     )
     labeled_counter.labels(status="success", type="counter").increment(value=2)
@@ -198,3 +201,74 @@ def test_label_kwargs_order_independent():
         metric.value == 3 and metric.labels and metric.labels.get("status") == "error"
         for metric in collected_metrics
     ), "Unexpected counter value for label error"
+
+
+def test_default_schema_version_for_counter():
+    counter = Counter(namespace="test_namespace", name="test_name")
+    counter.increment()
+    collected_metrics = counter.collect()
+    assert collected_metrics[0].schema_version == 1, (
+        "Default schema_version for Counter should be 1"
+    )
+
+
+def test_custom_schema_version_for_counter():
+    counter = Counter(namespace="test_namespace", name="test_name", schema_version=3)
+    counter.increment()
+    collected_metrics = counter.collect()
+    assert collected_metrics[0].schema_version == 3
+
+
+def test_default_schema_version_for_labeled_counter():
+    labeled_counter = LabeledCounter(namespace="test_namespace", name="test_name", labels=["type"])
+    labeled_counter.labels(type="success").increment()
+    collected_metrics = labeled_counter.collect()
+    assert collected_metrics[0].schema_version == 1, (
+        "Default schema_version for LabeledCounter should be 1"
+    )
+
+
+def test_custom_schema_version_for_labeled_counter():
+    labeled_counter = LabeledCounter(
+        namespace="test_namespace",
+        name="test_name",
+        labels=["type"],
+        schema_version=5,
+    )
+    labeled_counter.labels(type="success").increment()
+    collected_metrics = labeled_counter.collect()
+    assert collected_metrics[0].schema_version == 5
+
+
+def test_labeled_counter_schema_version_none_raises_value_error():
+    with pytest.raises(
+        ValueError, match="An explicit schema_version is required for Counter metrics"
+    ):
+        LabeledCounter(
+            namespace="test_namespace",
+            name="test_name",
+            labels=["type"],
+            schema_version=None,
+        )
+
+
+@pytest.mark.parametrize("invalid_version", ["1", "invalid"])
+def test_labeled_counter_schema_version_non_int_raises_type_error(invalid_version):
+    with pytest.raises(TypeError, match="Schema version must be an integer."):
+        LabeledCounter(
+            namespace="test_namespace",
+            name="test_name",
+            labels=["type"],
+            schema_version=invalid_version,
+        )
+
+
+@pytest.mark.parametrize("invalid_version", [0, -5])
+def test_labeled_counter_schema_version_non_positive_raises_value_error(invalid_version):
+    with pytest.raises(ValueError, match="Schema version must be greater than zero."):
+        LabeledCounter(
+            namespace="test_namespace",
+            name="test_name",
+            labels=["type"],
+            schema_version=invalid_version,
+        )

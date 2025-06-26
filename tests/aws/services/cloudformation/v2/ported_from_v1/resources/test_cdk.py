@@ -16,7 +16,9 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestCdkInit:
-    @pytest.mark.skip(reason="CFNV2:Fn::Join on empty string args")
+    @pytest.mark.skip(
+        reason="CFNV2:Destroy each test passes individually but because we don't delete resources, running all parameterized options fails"
+    )
     @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
     @markers.aws.validated
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):

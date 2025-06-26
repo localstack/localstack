@@ -1,5 +1,6 @@
 import os.path
 
+import botocore.exceptions
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
@@ -32,12 +33,11 @@ def test_parameter_defaults(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("Name"))
     snapshot.add_transformer(snapshot.transform.key_value("Value"))
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # with pytest.raises(botocore.exceptions.ClientError) as ctx:
-    #     aws_client.ssm.get_parameter(Name=parameter_name)
-    # snapshot.match("ssm_parameter_not_found", ctx.value.response)
+    with pytest.raises(botocore.exceptions.ClientError) as ctx:
+        aws_client.ssm.get_parameter(Name=parameter_name)
+    snapshot.match("ssm_parameter_not_found", ctx.value.response)
 
 
 @markers.aws.validated
@@ -144,7 +144,6 @@ def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("patch_baseline", describe_resource)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_maintenance_window(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(

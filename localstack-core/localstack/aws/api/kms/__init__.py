@@ -7,6 +7,8 @@ from localstack.aws.api import RequestContext, ServiceException, ServiceRequest,
 AWSAccountIdType = str
 AliasNameType = str
 ArnType = str
+BackingKeyIdResponseType = str
+BackingKeyIdType = str
 BooleanType = bool
 CloudHsmClusterIdType = str
 CustomKeyStoreIdType = str
@@ -19,6 +21,7 @@ GrantIdType = str
 GrantNameType = str
 GrantTokenType = str
 KeyIdType = str
+KeyMaterialDescriptionType = str
 KeyStorePasswordType = str
 LimitType = int
 MarkerType = str
@@ -150,6 +153,21 @@ class GrantOperation(StrEnum):
     DeriveSharedSecret = "DeriveSharedSecret"
 
 
+class ImportState(StrEnum):
+    IMPORTED = "IMPORTED"
+    PENDING_IMPORT = "PENDING_IMPORT"
+
+
+class ImportType(StrEnum):
+    NEW_KEY_MATERIAL = "NEW_KEY_MATERIAL"
+    EXISTING_KEY_MATERIAL = "EXISTING_KEY_MATERIAL"
+
+
+class IncludeKeyMaterial(StrEnum):
+    ALL_KEY_MATERIAL = "ALL_KEY_MATERIAL"
+    ROTATIONS_ONLY = "ROTATIONS_ONLY"
+
+
 class KeyAgreementAlgorithmSpec(StrEnum):
     ECDH = "ECDH"
 
@@ -161,6 +179,12 @@ class KeyEncryptionMechanism(StrEnum):
 class KeyManagerType(StrEnum):
     AWS = "AWS"
     CUSTOMER = "CUSTOMER"
+
+
+class KeyMaterialState(StrEnum):
+    NON_CURRENT = "NON_CURRENT"
+    CURRENT = "CURRENT"
+    PENDING_ROTATION = "PENDING_ROTATION"
 
 
 class KeySpec(StrEnum):
@@ -177,6 +201,9 @@ class KeySpec(StrEnum):
     HMAC_384 = "HMAC_384"
     HMAC_512 = "HMAC_512"
     SM2 = "SM2"
+    ML_DSA_44 = "ML_DSA_44"
+    ML_DSA_65 = "ML_DSA_65"
+    ML_DSA_87 = "ML_DSA_87"
 
 
 class KeyState(StrEnum):
@@ -207,6 +234,7 @@ class MacAlgorithmSpec(StrEnum):
 class MessageType(StrEnum):
     RAW = "RAW"
     DIGEST = "DIGEST"
+    EXTERNAL_MU = "EXTERNAL_MU"
 
 
 class MultiRegionKeyType(StrEnum):
@@ -237,6 +265,7 @@ class SigningAlgorithmSpec(StrEnum):
     ECDSA_SHA_384 = "ECDSA_SHA_384"
     ECDSA_SHA_512 = "ECDSA_SHA_512"
     SM2DSA = "SM2DSA"
+    ML_DSA_SHAKE_256 = "ML_DSA_SHAKE_256"
 
 
 class WrappingKeySpec(StrEnum):
@@ -702,6 +731,7 @@ class KeyMetadata(TypedDict, total=False):
     PendingDeletionWindowInDays: Optional[PendingWindowInDaysType]
     MacAlgorithms: Optional[MacAlgorithmSpecList]
     XksKeyConfiguration: Optional[XksKeyConfigurationType]
+    CurrentKeyMaterialId: Optional[BackingKeyIdType]
 
 
 class CreateKeyResponse(TypedDict, total=False):
@@ -754,6 +784,7 @@ class DecryptResponse(TypedDict, total=False):
     Plaintext: Optional[PlaintextType]
     EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
     CiphertextForRecipient: Optional[CiphertextType]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -770,6 +801,12 @@ class DeleteCustomKeyStoreResponse(TypedDict, total=False):
 
 class DeleteImportedKeyMaterialRequest(ServiceRequest):
     KeyId: KeyIdType
+    KeyMaterialId: Optional[BackingKeyIdType]
+
+
+class DeleteImportedKeyMaterialResponse(TypedDict, total=False):
+    KeyId: Optional[KeyIdType]
+    KeyMaterialId: Optional[BackingKeyIdResponseType]
 
 
 PublicKeyType = bytes
@@ -870,6 +907,7 @@ class GenerateDataKeyPairResponse(TypedDict, total=False):
     KeyId: Optional[KeyIdType]
     KeyPairSpec: Optional[DataKeyPairSpec]
     CiphertextForRecipient: Optional[CiphertextType]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class GenerateDataKeyPairWithoutPlaintextRequest(ServiceRequest):
@@ -885,6 +923,7 @@ class GenerateDataKeyPairWithoutPlaintextResponse(TypedDict, total=False):
     PublicKey: Optional[PublicKeyType]
     KeyId: Optional[KeyIdType]
     KeyPairSpec: Optional[DataKeyPairSpec]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class GenerateDataKeyRequest(ServiceRequest):
@@ -902,6 +941,7 @@ class GenerateDataKeyResponse(TypedDict, total=False):
     Plaintext: Optional[PlaintextType]
     KeyId: Optional[KeyIdType]
     CiphertextForRecipient: Optional[CiphertextType]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class GenerateDataKeyWithoutPlaintextRequest(ServiceRequest):
@@ -916,6 +956,7 @@ class GenerateDataKeyWithoutPlaintextRequest(ServiceRequest):
 class GenerateDataKeyWithoutPlaintextResponse(TypedDict, total=False):
     CiphertextBlob: Optional[CiphertextType]
     KeyId: Optional[KeyIdType]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class GenerateMacRequest(ServiceRequest):
@@ -1015,10 +1056,14 @@ class ImportKeyMaterialRequest(ServiceRequest):
     EncryptedKeyMaterial: CiphertextType
     ValidTo: Optional[DateType]
     ExpirationModel: Optional[ExpirationModelType]
+    ImportType: Optional[ImportType]
+    KeyMaterialDescription: Optional[KeyMaterialDescriptionType]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class ImportKeyMaterialResponse(TypedDict, total=False):
-    pass
+    KeyId: Optional[KeyIdType]
+    KeyMaterialId: Optional[BackingKeyIdType]
 
 
 class KeyListEntry(TypedDict, total=False):
@@ -1072,12 +1117,19 @@ class ListKeyPoliciesResponse(TypedDict, total=False):
 
 class ListKeyRotationsRequest(ServiceRequest):
     KeyId: KeyIdType
+    IncludeKeyMaterial: Optional[IncludeKeyMaterial]
     Limit: Optional[LimitType]
     Marker: Optional[MarkerType]
 
 
 class RotationsListEntry(TypedDict, total=False):
     KeyId: Optional[KeyIdType]
+    KeyMaterialId: Optional[BackingKeyIdType]
+    KeyMaterialDescription: Optional[KeyMaterialDescriptionType]
+    ImportState: Optional[ImportState]
+    KeyMaterialState: Optional[KeyMaterialState]
+    ExpirationModel: Optional[ExpirationModelType]
+    ValidTo: Optional[DateType]
     RotationDate: Optional[DateType]
     RotationType: Optional[RotationType]
 
@@ -1145,6 +1197,8 @@ class ReEncryptResponse(TypedDict, total=False):
     KeyId: Optional[KeyIdType]
     SourceEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
     DestinationEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
+    SourceKeyMaterialId: Optional[BackingKeyIdType]
+    DestinationKeyMaterialId: Optional[BackingKeyIdType]
 
 
 class ReplicateKeyRequest(ServiceRequest):
@@ -1387,8 +1441,12 @@ class KmsApi:
 
     @handler("DeleteImportedKeyMaterial")
     def delete_imported_key_material(
-        self, context: RequestContext, key_id: KeyIdType, **kwargs
-    ) -> None:
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        key_material_id: BackingKeyIdType | None = None,
+        **kwargs,
+    ) -> DeleteImportedKeyMaterialResponse:
         raise NotImplementedError
 
     @handler("DeriveSharedSecret")
@@ -1595,6 +1653,9 @@ class KmsApi:
         encrypted_key_material: CiphertextType,
         valid_to: DateType | None = None,
         expiration_model: ExpirationModelType | None = None,
+        import_type: ImportType | None = None,
+        key_material_description: KeyMaterialDescriptionType | None = None,
+        key_material_id: BackingKeyIdType | None = None,
         **kwargs,
     ) -> ImportKeyMaterialResponse:
         raise NotImplementedError
@@ -1639,6 +1700,7 @@ class KmsApi:
         self,
         context: RequestContext,
         key_id: KeyIdType,
+        include_key_material: IncludeKeyMaterial | None = None,
         limit: LimitType | None = None,
         marker: MarkerType | None = None,
         **kwargs,

@@ -76,6 +76,7 @@ from localstack.aws.api.apigateway import (
     ResourceOwner,
     RestApi,
     RestApis,
+    RoutingMode,
     SecurityPolicy,
     Stage,
     Stages,
@@ -421,6 +422,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         mutual_tls_authentication: MutualTlsAuthenticationInput = None,
         ownership_verification_certificate_arn: String = None,
         policy: String = None,
+        routing_mode: RoutingMode = None,
         **kwargs,
     ) -> DomainName:
         if not domain_name:
@@ -451,6 +453,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             regionalCertificateArn=regional_certificate_arn,
             securityPolicy=SecurityPolicy.TLS_1_2,
             endpointConfiguration=endpoint_configuration,
+            routingMode=routing_mode,
         )
         store.domain_names[domain_name] = domain
         return domain
@@ -627,6 +630,16 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             elif "/contentHandling" in path and op == "replace":
                 integration_response.content_handling = patch_operation.get("value")
+
+            elif "/selectionPattern" in path and op == "replace":
+                integration_response.selection_pattern = patch_operation.get("value")
+
+        response: IntegrationResponse = integration_response.to_json()
+        # in case it's empty, we still want to pass it on as ""
+        # TODO: add a test case for this
+        response["selectionPattern"] = integration_response.selection_pattern
+
+        return response
 
     def update_resource(
         self,

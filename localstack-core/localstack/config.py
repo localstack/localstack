@@ -1007,6 +1007,7 @@ LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT = int(os.environ.get("LAMBDA_RUNTIME_ENVIRONM
 # b) json dict mapping the <runtime> to an image, e.g. {"python3.9": "custom-repo/lambda-py:thon3.9"}
 LAMBDA_RUNTIME_IMAGE_MAPPING = os.environ.get("LAMBDA_RUNTIME_IMAGE_MAPPING", "").strip()
 
+
 # PUBLIC: 0 (default)
 # Whether to disable usage of deprecated runtimes
 LAMBDA_RUNTIME_VALIDATION = int(os.environ.get("LAMBDA_RUNTIME_VALIDATION") or 0)
@@ -1244,6 +1245,9 @@ DISTRIBUTED_MODE = is_env_true("DISTRIBUTED_MODE")
 # This flag enables `connect_to` to be in-memory only and not do networking calls
 IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 
+# This flag enables all responses from LocalStack to contain a `x-localstack` HTTP header.
+LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_not_false("LOCALSTACK_RESPONSE_HEADER_ENABLED")
+
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
 # https://docs.localstack.cloud/references/configuration/
@@ -1350,6 +1354,7 @@ CONFIG_ENV_VARS = [
     "LOCALSTACK_API_KEY",
     "LOCALSTACK_AUTH_TOKEN",
     "LOCALSTACK_HOST",
+    "LOCALSTACK_RESPONSE_HEADER_ENABLED",
     "LOG_LICENSE_ISSUES",
     "LS_LOG",
     "MAIN_CONTAINER_NAME",

@@ -4,9 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "silv-io"
-      - "alexrashed"
     ignore:
       - dependency-name: "python"
         update-types: ["version-update:semver-major", "version-update:semver-minor"]
@@ -23,9 +20,6 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
-    reviewers:
-      - "silv-io"
-      - "alexrashed"
     labels:
       - "area: dependencies"
       - "semver: patch"

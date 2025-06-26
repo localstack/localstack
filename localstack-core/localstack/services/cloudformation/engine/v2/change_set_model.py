@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import enum
 from itertools import zip_longest
-from typing import Any, Final, Generator, Optional, Union, cast
+from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
 
 from typing_extensions import TypeVar
 
@@ -78,6 +78,11 @@ def change_type_of(before: Maybe[Any], after: Maybe[Any], children: list[Maybe[C
     return change_type
 
 
+class NormalisedGlobalTransformDefinition(TypedDict):
+    Name: Any
+    Parameters: Maybe[Any]
+
+
 class Scope(str):
     _ROOT_SCOPE: Final[str] = str()
     _SEPARATOR: Final[str] = "/"
@@ -143,6 +148,7 @@ class ChangeSetTerminal(ChangeSetEntity, abc.ABC): ...
 
 
 class NodeTemplate(ChangeSetNode):
+    transform: Final[NodeTransform]
     mappings: Final[NodeMappings]
     parameters: Final[NodeParameters]
     conditions: Final[NodeConditions]
@@ -152,14 +158,16 @@ class NodeTemplate(ChangeSetNode):
     def __init__(
         self,
         scope: Scope,
+        transform: NodeTransform,
         mappings: NodeMappings,
         parameters: NodeParameters,
         conditions: NodeConditions,
         resources: NodeResources,
         outputs: NodeOutputs,
     ):
-        change_type = parent_change_type_of([resources, outputs])
+        change_type = parent_change_type_of([transform, resources, outputs])
         super().__init__(scope=scope, change_type=change_type)
+        self.transform = transform
         self.mappings = mappings
         self.parameters = parameters
         self.conditions = conditions
@@ -275,6 +283,29 @@ class NodeConditions(ChangeSetNode):
         change_type = parent_change_type_of(conditions)
         super().__init__(scope=scope, change_type=change_type)
         self.conditions = conditions
+
+
+class NodeGlobalTransform(ChangeSetNode):
+    name: Final[TerminalValue]
+    parameters: Final[Maybe[ChangeSetEntity]]
+
+    def __init__(self, scope: Scope, name: TerminalValue, parameters: Maybe[ChangeSetEntity]):
+        if not is_nothing(parameters):
+            change_type = parent_change_type_of([name, parameters])
+        else:
+            change_type = name.change_type
+        super().__init__(scope=scope, change_type=change_type)
+        self.name = name
+        self.parameters = parameters
+
+
+class NodeTransform(ChangeSetNode):
+    global_transforms: Final[list[NodeGlobalTransform]]
+
+    def __init__(self, scope: Scope, global_transforms: list[NodeGlobalTransform]):
+        change_type = parent_change_type_of(global_transforms)
+        super().__init__(scope=scope, change_type=change_type)
+        self.global_transforms = global_transforms
 
 
 class NodeResources(ChangeSetNode):
@@ -401,6 +432,8 @@ class TerminalValueUnchanged(TerminalValue):
         super().__init__(scope=scope, change_type=ChangeType.UNCHANGED, value=value)
 
 
+NameKey: Final[str] = "Name"
+TransformKey: Final[str] = "Transform"
 TypeKey: Final[str] = "Type"
 ConditionKey: Final[str] = "Condition"
 ConditionsKey: Final[str] = "Conditions"
@@ -415,7 +448,10 @@ OutputsKey: Final[str] = "Outputs"
 DependsOnKey: Final[str] = "DependsOn"
 # TODO: expand intrinsic functions set.
 RefKey: Final[str] = "Ref"
+RefConditionKey: Final[str] = "Condition"
 FnIfKey: Final[str] = "Fn::If"
+FnAnd: Final[str] = "Fn::And"
+FnOr: Final[str] = "Fn::Or"
 FnNotKey: Final[str] = "Fn::Not"
 FnJoinKey: Final[str] = "Fn::Join"
 FnGetAttKey: Final[str] = "Fn::GetAtt"
@@ -429,7 +465,10 @@ FnGetAZs: Final[str] = "Fn::GetAZs"
 FnBase64: Final[str] = "Fn::Base64"
 INTRINSIC_FUNCTIONS: Final[set[str]] = {
     RefKey,
+    RefConditionKey,
     FnIfKey,
+    FnAnd,
+    FnOr,
     FnNotKey,
     FnJoinKey,
     FnEqualsKey,
@@ -534,6 +573,13 @@ class ChangeSetModel:
         self._visited_scopes[scope] = node_intrinsic_function
         return node_intrinsic_function
 
+    def _resolve_intrinsic_function_fn_sub(self, arguments: ChangeSetEntity) -> ChangeType:
+        # TODO: This routine should instead export the implicit Ref and GetAtt calls within the first
+        #       string template parameter and compute the respective change set types. Currently,
+        #       changes referenced by Fn::Sub templates are only picked up during preprocessing; not
+        #       at modelling.
+        return arguments.change_type
+
     def _resolve_intrinsic_function_fn_get_att(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: add support for nested intrinsic functions.
         # TODO: validate arguments structure and type.
@@ -585,6 +631,18 @@ class ChangeSetModel:
         # TODO: this should check the replacement flag for a resource update.
         node_resource = self._retrieve_or_visit_resource(resource_name=logical_id)
         return node_resource.change_type
+
+    def _resolve_intrinsic_function_condition(self, arguments: ChangeSetEntity) -> ChangeType:
+        if arguments.change_type != ChangeType.UNCHANGED:
+            return arguments.change_type
+        if not isinstance(arguments, TerminalValue):
+            return arguments.change_type
+
+        condition_name = arguments.value
+        node_condition = self._retrieve_condition_if_exists(condition_name=condition_name)
+        if isinstance(node_condition, NodeCondition):
+            return node_condition.change_type
+        raise RuntimeError(f"Undefined condition '{condition_name}'")
 
     def _resolve_intrinsic_function_fn_find_in_map(self, arguments: ChangeSetEntity) -> ChangeType:
         if arguments.change_type != ChangeType.UNCHANGED:
@@ -744,6 +802,7 @@ class ChangeSetModel:
         node_property = self._visited_scopes.get(scope)
         if isinstance(node_property, NodeProperty):
             return node_property
+        # TODO: Review the use of Fn::Transform as resource properties.
         value = self._visit_value(
             scope=scope, before_value=before_property, after_value=after_property
         )
@@ -1073,9 +1132,87 @@ class ChangeSetModel:
             outputs.append(output)
         return NodeOutputs(scope=scope, outputs=outputs)
 
+    def _visit_global_transform(
+        self,
+        scope: Scope,
+        before_global_transform: Maybe[NormalisedGlobalTransformDefinition],
+        after_global_transform: Maybe[NormalisedGlobalTransformDefinition],
+    ) -> NodeGlobalTransform:
+        name_scope, (before_name, after_name) = self._safe_access_in(
+            scope, NameKey, before_global_transform, after_global_transform
+        )
+        name = self._visit_terminal_value(
+            scope=name_scope, before_value=before_name, after_value=after_name
+        )
+
+        parameters_scope, (before_parameters, after_parameters) = self._safe_access_in(
+            scope, ParametersKey, before_global_transform, after_global_transform
+        )
+        parameters = self._visit_value(
+            scope=parameters_scope, before_value=before_parameters, after_value=after_parameters
+        )
+
+        return NodeGlobalTransform(scope=scope, name=name, parameters=parameters)
+
+    @staticmethod
+    def _normalise_transformer_value(value: Maybe[str | list[Any]]) -> Maybe[list[Any]]:
+        # To simplify downstream logics, reduce the type options to array of transformations.
+        # TODO: add further validation logic
+        # TODO: should we sort to avoid detecting user-side ordering changes as template changes?
+        if isinstance(value, NothingType):
+            return value
+        elif isinstance(value, str):
+            value = [NormalisedGlobalTransformDefinition(Name=value, Parameters=Nothing)]
+        elif isinstance(value, list):
+            tmp_value = list()
+            for item in value:
+                if isinstance(item, str):
+                    tmp_value.append(
+                        NormalisedGlobalTransformDefinition(Name=item, Parameters=Nothing)
+                    )
+                else:
+                    tmp_value.append(item)
+            value = tmp_value
+        elif isinstance(value, dict):
+            if "Name" not in value:
+                raise RuntimeError(f"Missing 'Name' field in Transform definition '{value}'")
+            name = value["Name"]
+            parameters = value.get("Parameters", Nothing)
+            value = [NormalisedGlobalTransformDefinition(Name=name, Parameters=parameters)]
+        else:
+            raise RuntimeError(f"Invalid Transform definition: '{value}'")
+        return value
+
+    def _visit_transform(
+        self, scope: Scope, before_transform: Maybe[Any], after_transform: Maybe[Any]
+    ) -> NodeTransform:
+        before_transform_normalised = self._normalise_transformer_value(before_transform)
+        after_transform_normalised = self._normalise_transformer_value(after_transform)
+        global_transforms = list()
+        for index, (before_global_transform, after_global_transform) in enumerate(
+            zip_longest(before_transform_normalised, after_transform_normalised, fillvalue=Nothing)
+        ):
+            global_transform_scope = scope.open_index(index=index)
+            global_transform: NodeGlobalTransform = self._visit_global_transform(
+                scope=global_transform_scope,
+                before_global_transform=before_global_transform,
+                after_global_transform=after_global_transform,
+            )
+            global_transforms.append(global_transform)
+        return NodeTransform(scope=scope, global_transforms=global_transforms)
+
     def _model(self, before_template: Maybe[dict], after_template: Maybe[dict]) -> NodeTemplate:
         root_scope = Scope()
         # TODO: visit other child types
+
+        transform_scope, (before_transform, after_transform) = self._safe_access_in(
+            root_scope, TransformKey, before_template, after_template
+        )
+        transform = self._visit_transform(
+            scope=transform_scope,
+            before_transform=before_transform,
+            after_transform=after_transform,
+        )
 
         mappings_scope, (before_mappings, after_mappings) = self._safe_access_in(
             root_scope, MappingsKey, before_template, after_template
@@ -1118,9 +1255,9 @@ class ChangeSetModel:
             scope=outputs_scope, before_outputs=before_outputs, after_outputs=after_outputs
         )
 
-        # TODO: compute the change_type of the template properly.
         return NodeTemplate(
             scope=root_scope,
+            transform=transform,
             mappings=mappings,
             parameters=parameters,
             conditions=conditions,
@@ -1205,7 +1342,8 @@ class ChangeSetModel:
     def _safe_access_in(scope: Scope, key: str, *objects: Maybe[dict]) -> tuple[Scope, Maybe[Any]]:
         results = list()
         for obj in objects:
-            # TODO: raise errors if not dict
+            if not isinstance(obj, (dict, NothingType)):
+                raise RuntimeError(f"Invalid definition type at '{obj}'")
             if not isinstance(obj, NothingType):
                 results.append(obj.get(key, Nothing))
             else:

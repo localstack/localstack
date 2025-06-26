@@ -1075,3 +1075,83 @@ class TestS3ListParts:
         timestamp: str = resp_dict["ListPartsResult"]["Part"]["LastModified"]
         # the timestamp should be looking like the following: 2023-11-15T12:02:40.000Z
         assert_timestamp_is_iso8061_s3_format(timestamp)
+
+    @markers.aws.validated
+    def test_list_parts_via_object_attrs_pagination(self, s3_bucket, snapshot, aws_client):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+            ]
+        )
+        object_key = "test-object-attrs-pagination"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=object_key, ChecksumAlgorithm="SHA256"
+        )
+        upload_id = response["UploadId"]
+
+        # data must be at least 5MiB
+        part_data = b"a" * (5_242_880 + 1)
+        multipart_upload_parts = []
+
+        for i in range(1, 3):
+            upload_part = aws_client.s3.upload_part(
+                Bucket=s3_bucket,
+                Key=object_key,
+                Body=part_data,
+                PartNumber=i,
+                UploadId=upload_id,
+                ChecksumAlgorithm="SHA256",
+            )
+            multipart_upload_parts.append(
+                {
+                    "ETag": upload_part["ETag"],
+                    "PartNumber": i,
+                    "ChecksumSHA256": upload_part["ChecksumSHA256"],
+                }
+            )
+
+        response = aws_client.s3.list_parts(Bucket=s3_bucket, UploadId=upload_id, Key=object_key)
+        snapshot.match("list-parts", response)
+
+        complete_multipart = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            UploadId=upload_id,
+            Key=object_key,
+            MultipartUpload={"Parts": multipart_upload_parts},
+        )
+        snapshot.match("complete-mpu", complete_multipart)
+
+        object_attrs = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["ObjectParts"],
+        )
+        snapshot.match("get-object-attrs-all", object_attrs)
+
+        object_attrs_1 = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket, Key=object_key, ObjectAttributes=["ObjectParts"], MaxParts=1
+        )
+        snapshot.match("get-object-attrs-1", object_attrs)
+        next_part_number_marker = object_attrs_1["ObjectParts"]["NextPartNumberMarker"]
+
+        object_attrs_next = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["ObjectParts"],
+            MaxParts=1,
+            PartNumberMarker=next_part_number_marker,
+        )
+        snapshot.match("get-object-attrs-next", object_attrs_next)
+
+        object_attrs_wrong = aws_client.s3.get_object_attributes(
+            Bucket=s3_bucket,
+            Key=object_key,
+            ObjectAttributes=["ObjectParts"],
+            MaxParts=1,
+            PartNumberMarker=10,
+        )
+        snapshot.match("get-object-attrs-wrong-part", object_attrs_wrong)

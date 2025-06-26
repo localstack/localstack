@@ -13,6 +13,7 @@ from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.kms import (
     AlgorithmSpec,
     AlreadyExistsException,
+    BackingKeyIdType,
     CancelKeyDeletionRequest,
     CancelKeyDeletionResponse,
     CiphertextType,
@@ -25,6 +26,7 @@ from localstack.aws.api.kms import (
     DateType,
     DecryptResponse,
     DeleteAliasRequest,
+    DeleteImportedKeyMaterialResponse,
     DeriveSharedSecretResponse,
     DescribeKeyRequest,
     DescribeKeyResponse,
@@ -57,12 +59,14 @@ from localstack.aws.api.kms import (
     GrantTokenList,
     GrantTokenType,
     ImportKeyMaterialResponse,
+    ImportType,
     IncorrectKeyException,
     InvalidCiphertextException,
     InvalidGrantIdException,
     InvalidKeyUsageException,
     KeyAgreementAlgorithmSpec,
     KeyIdType,
+    KeyMaterialDescriptionType,
     KeySpec,
     KeyState,
     KeyUsageType,
@@ -955,7 +959,39 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         **kwargs,
     ) -> ReEncryptResponse:
         # TODO: when implementing, ensure cross-account support for source_key_id and destination_key_id
-        raise NotImplementedError
+        # Parse and fetch source Key
+        account_id, region_name, source_key_id = self._parse_key_id(source_key_id, context)
+        source_key = self._get_kms_key(account_id, region_name, source_key_id)
+        # Decrypt using source key
+        decrypt_response = self.decrypt(
+            context=context,
+            ciphertext_blob=ciphertext_blob,
+            encryption_context=source_encryption_context,
+            encryption_algorithm=source_encryption_algorithm,
+            key_id=source_key_id,
+            grant_tokens=grant_tokens,
+        )
+        # Parse and fetch destination key
+        account_id, region_name, destination_key_id = self._parse_key_id(
+            destination_key_id, context
+        )
+        destination_key = self._get_kms_key(account_id, region_name, destination_key_id)
+        # Encrypt using destination key
+        encrypt_response = self.encrypt(
+            context=context,
+            encryption_context=destination_encryption_context,
+            key_id=destination_key_id,
+            plaintext=decrypt_response["Plaintext"],
+            grant_tokens=grant_tokens,
+            dry_run=dry_run,
+        )
+        return ReEncryptResponse(
+            CiphertextBlob=encrypt_response["CiphertextBlob"],
+            SourceKeyId=source_key.metadata.get("Arn"),
+            KeyId=destination_key.metadata.get("Arn"),
+            SourceEncryptionAlgorithm=source_encryption_algorithm,
+            DestinationEncryptionAlgorithm=destination_encryption_algorithm,
+        )
 
     def encrypt(
         self,
@@ -1104,8 +1140,11 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_id: KeyIdType,
         import_token: CiphertextType,
         encrypted_key_material: CiphertextType,
-        valid_to: DateType = None,
-        expiration_model: ExpirationModelType = None,
+        valid_to: DateType | None = None,
+        expiration_model: ExpirationModelType | None = None,
+        import_type: ImportType | None = None,
+        key_material_description: KeyMaterialDescriptionType | None = None,
+        key_material_id: BackingKeyIdType | None = None,
         **kwargs,
     ) -> ImportKeyMaterialResponse:
         store = self._get_store(context.account_id, context.region)
@@ -1159,8 +1198,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return ImportKeyMaterialResponse()
 
     def delete_imported_key_material(
-        self, context: RequestContext, key_id: KeyIdType, **kwargs
-    ) -> None:
+        self,
+        context: RequestContext,
+        key_id: KeyIdType,
+        key_material_id: BackingKeyIdType | None = None,
+        **kwargs,
+    ) -> DeleteImportedKeyMaterialResponse:
+        # TODO add support for key_material_id
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1172,6 +1216,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Enabled"] = False
         key.metadata["KeyState"] = KeyState.PendingImport
         key.metadata.pop("ExpirationModel", None)
+
+        # TODO populate DeleteImportedKeyMaterialResponse
+        return DeleteImportedKeyMaterialResponse()
 
     @handler("CreateAlias", expand=False)
     def create_alias(self, context: RequestContext, request: CreateAliasRequest) -> None:

@@ -7,6 +7,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeConditions,
     NodeDependsOn,
     NodeDivergence,
+    NodeGlobalTransform,
     NodeIntrinsicFunction,
     NodeMapping,
     NodeMappings,
@@ -20,6 +21,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeResource,
     NodeResources,
     NodeTemplate,
+    NodeTransform,
     TerminalValueCreated,
     TerminalValueModified,
     TerminalValueRemoved,
@@ -54,6 +56,12 @@ class ChangeSetModelVisitor(abc.ABC):
         # being evaluated, hence enforce the visiting of all the resources first.
         self.visit(node_template.resources)
         self.visit(node_template.outputs)
+
+    def visit_node_transform(self, node_transform: NodeTransform):
+        self.visit_children(node_transform)
+
+    def visit_node_global_transform(self, node_global_transform: NodeGlobalTransform):
+        self.visit_children(node_global_transform)
 
     def visit_node_outputs(self, node_outputs: NodeOutputs):
         self.visit_children(node_outputs)
@@ -144,6 +152,12 @@ class ChangeSetModelVisitor(abc.ABC):
     def visit_node_intrinsic_function_fn_if(self, node_intrinsic_function: NodeIntrinsicFunction):
         self.visit_children(node_intrinsic_function)
 
+    def visit_node_intrinsic_function_fn_and(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_fn_or(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
     def visit_node_intrinsic_function_fn_not(self, node_intrinsic_function: NodeIntrinsicFunction):
         self.visit_children(node_intrinsic_function)
 
@@ -156,6 +170,11 @@ class ChangeSetModelVisitor(abc.ABC):
         self.visit_children(node_intrinsic_function)
 
     def visit_node_intrinsic_function_ref(self, node_intrinsic_function: NodeIntrinsicFunction):
+        self.visit_children(node_intrinsic_function)
+
+    def visit_node_intrinsic_function_condition(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
         self.visit_children(node_intrinsic_function)
 
     def visit_node_divergence(self, node_divergence: NodeDivergence):

@@ -81,7 +81,6 @@ def test_nested_statemachine_with_sync2(deploy_cfn_template, aws_client):
     assert output["Value"] == 3
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.needs_fixing
 def test_apigateway_invoke(deploy_cfn_template, aws_client):
     deploy_result = deploy_cfn_template(
@@ -108,7 +107,6 @@ def test_apigateway_invoke(deploy_cfn_template, aws_client):
     assert "hello from stepfunctions" in execution_result["output"]
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.validated
 def test_apigateway_invoke_with_path(deploy_cfn_template, aws_client):
     deploy_result = deploy_cfn_template(
@@ -136,7 +134,6 @@ def test_apigateway_invoke_with_path(deploy_cfn_template, aws_client):
     assert "hello_with_path from stepfunctions" in execution_result["output"]
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.only_localstack
 def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
@@ -182,7 +179,6 @@ def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     assert "hello from stepfunctions" in execution_result["output"]
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.only_localstack
 def test_apigateway_invoke_localhost_with_path(deploy_cfn_template, aws_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
@@ -269,7 +265,7 @@ def test_retry_and_catch(deploy_cfn_template, aws_client):
 def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
     sm_name = f"sm_{short_uid()}"
     activity_name = f"act_{short_uid()}"
-    deploy_cfn_template(
+    stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__),
             "../../../../../templates/statemachine_machine_with_activity.yml",
@@ -286,13 +282,12 @@ def test_cfn_statemachine_with_dependencies(deploy_cfn_template, aws_client):
     activities = [act for act in rs["activities"] if activity_name in act["name"]]
     assert len(activities) == 1
 
-    # CFNV2:Destroy does not destroy resources.
-    # stack.destroy()
+    stack.destroy()
 
-    # rs = aws_client.stepfunctions.list_state_machines()
-    # statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
+    rs = aws_client.stepfunctions.list_state_machines()
+    statemachines = [sm for sm in rs["stateMachines"] if sm_name in sm["name"]]
 
-    # assert not statemachines
+    assert not statemachines
 
 
 @markers.aws.validated

@@ -8,7 +8,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeProperty,
     NodeResource,
-    Nothing,
     PropertiesKey,
     is_nothing,
 )
@@ -41,66 +40,44 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         self.process()
         return self._changes
 
-    def visit_node_intrinsic_function_fn_get_att(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
+    def _resolve_attribute(self, arguments: str | list[str], select_before: bool) -> str:
+        if select_before:
+            return super()._resolve_attribute(arguments=arguments, select_before=select_before)
+
+        # Replicate AWS's limitations in describing change set's updated values.
         # Consideration: If we can properly compute the before and after value, why should we
-        #  artificially limit the precision of our output to match AWS's?
+        #                artificially limit the precision of our output to match AWS's?
 
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_argument: Optional[list[str]] = arguments_delta.before
-        if isinstance(before_argument, str):
-            before_argument = before_argument.split(".")
-        after_argument: Optional[list[str]] = arguments_delta.after
-        if isinstance(after_argument, str):
-            after_argument = after_argument.split(".")
+        arguments_list: list[str]
+        if isinstance(arguments, str):
+            arguments_list = arguments.split(".")
+        else:
+            arguments_list = arguments
+        logical_name_of_resource = arguments_list[0]
+        attribute_name = arguments_list[1]
 
-        before = Nothing
-        if not is_nothing(before_argument):
-            before_logical_name_of_resource = before_argument[0]
-            before_attribute_name = before_argument[1]
-            before_node_resource = self._get_node_resource_for(
-                resource_name=before_logical_name_of_resource, node_template=self._node_template
-            )
-            before_node_property: Optional[NodeProperty] = self._get_node_property_for(
-                property_name=before_attribute_name, node_resource=before_node_resource
-            )
-            if before_node_property is not None:
-                before_property_delta = self.visit(before_node_property)
-                before = before_property_delta.before
+        node_resource = self._get_node_resource_for(
+            resource_name=logical_name_of_resource, node_template=self._node_template
+        )
+        node_property: Optional[NodeProperty] = self._get_node_property_for(
+            property_name=attribute_name, node_resource=node_resource
+        )
+        if node_property is not None:
+            property_delta = self.visit(node_property)
+            if property_delta.before == property_delta.after:
+                value = property_delta.after
             else:
-                before = self._before_deployed_property_value_of(
-                    resource_logical_id=before_logical_name_of_resource,
-                    property_name=before_attribute_name,
+                value = CHANGESET_KNOWN_AFTER_APPLY
+        else:
+            try:
+                value = self._after_deployed_property_value_of(
+                    resource_logical_id=logical_name_of_resource,
+                    property_name=attribute_name,
                 )
+            except RuntimeError:
+                value = CHANGESET_KNOWN_AFTER_APPLY
 
-        after = Nothing
-        if not is_nothing(after_argument):
-            after_logical_name_of_resource = after_argument[0]
-            after_attribute_name = after_argument[1]
-            after_node_resource = self._get_node_resource_for(
-                resource_name=after_logical_name_of_resource, node_template=self._node_template
-            )
-            after_property_delta: PreprocEntityDelta
-            after_node_property = self._get_node_property_for(
-                property_name=after_attribute_name, node_resource=after_node_resource
-            )
-            if after_node_property is not None:
-                after_property_delta = self.visit(after_node_property)
-                if after_property_delta.before == after_property_delta.after:
-                    after = after_property_delta.after
-                else:
-                    after = CHANGESET_KNOWN_AFTER_APPLY
-            else:
-                try:
-                    after = self._after_deployed_property_value_of(
-                        resource_logical_id=after_logical_name_of_resource,
-                        property_name=after_attribute_name,
-                    )
-                except RuntimeError:
-                    after = CHANGESET_KNOWN_AFTER_APPLY
-
-        return PreprocEntityDelta(before=before, after=after)
+        return value
 
     def visit_node_intrinsic_function_fn_join(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -209,6 +186,9 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
         delta = super().visit_node_resource(node_resource=node_resource)
+        after_resource = delta.after
+        if not is_nothing(after_resource) and after_resource.physical_resource_id is None:
+            after_resource.physical_resource_id = CHANGESET_KNOWN_AFTER_APPLY
         self._describe_resource_change(
             name=node_resource.name, before=delta.before, after=delta.after
         )

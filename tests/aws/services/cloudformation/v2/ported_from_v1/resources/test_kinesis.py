@@ -16,7 +16,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:ReferenceDotSyntax")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
 def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
@@ -101,14 +100,13 @@ def test_cfn_handle_kinesis_firehose_resources(deploy_cfn_template, aws_client):
     rs = aws_client.kinesis.describe_stream(StreamName=kinesis_stream_name)
     assert rs["StreamDescription"]["StreamName"] == kinesis_stream_name
 
-    # CFNV2:Destroy does not destroy resources.
     # clean up
-    # stack.destroy()
+    stack.destroy()
 
-    # rs = aws_client.kinesis.list_streams()
-    # assert kinesis_stream_name not in rs["StreamNames"]
-    # rs = aws_client.firehose.list_delivery_streams()
-    # assert firehose_stream_name not in rs["DeliveryStreamNames"]
+    rs = aws_client.kinesis.list_streams()
+    assert kinesis_stream_name not in rs["StreamNames"]
+    rs = aws_client.firehose.list_delivery_streams()
+    assert firehose_stream_name not in rs["DeliveryStreamNames"]
 
 
 # TODO: use a different template and move this test to a more generic API level test suite
@@ -169,7 +167,9 @@ def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client, snaps
     snapshot.add_transformer(snapshot.transform.key_value("TableName"))
 
 
-@pytest.mark.skip(reason="CFNV2:ReferenceDotSyntax")
+@pytest.mark.skip(
+    reason="CFNV2:Other resource provider returns NULL physical resource id for StreamConsumer thus later references to this resource fail to compute"
+)
 @markers.aws.validated
 def test_kinesis_stream_consumer_creations(deploy_cfn_template, aws_client):
     consumer_name = f"{short_uid()}"
