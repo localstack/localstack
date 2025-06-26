@@ -276,8 +276,10 @@ def is_macos() -> bool:
 def is_windows() -> bool:
     return platform.system().lower() == "windows"
 
+
 def is_wsl() -> bool:
     return platform.system().lower() == "linux" and os.environ.get("WSL_DISTRO_NAME") is not None
+
 
 def ping(host):
     """Returns True if the host responds to a ping request"""
