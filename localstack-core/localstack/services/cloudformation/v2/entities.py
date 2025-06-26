@@ -1,10 +1,11 @@
 from datetime import datetime, timezone
-from typing import Optional, TypedDict
+from typing import NotRequired, Optional, TypedDict
 
 from localstack.aws.api.cloudformation import (
     ChangeSetStatus,
     ChangeSetType,
     CreateChangeSetInput,
+    CreateStackInput,
     ExecutionStatus,
     Output,
     Parameter,
@@ -21,7 +22,6 @@ from localstack.aws.api.cloudformation import (
 )
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
-    StackTemplate,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     UpdateModel,
@@ -38,7 +38,6 @@ class Stack:
     stack_name: str
     parameters: list[Parameter]
     change_set_id: str | None
-    change_set_name: str | None
     status: StackStatus
     status_reason: StackStatusReason | None
     stack_id: str
@@ -56,10 +55,9 @@ class Stack:
         self,
         account_id: str,
         region_name: str,
-        request_payload: CreateChangeSetInput,
-        template: StackTemplate | None = None,
+        request_payload: CreateChangeSetInput | CreateStackInput,
+        template: dict | None = None,
         template_body: str | None = None,
-        change_set_ids: list[str] | None = None,
     ):
         self.account_id = account_id
         self.region_name = region_name
@@ -67,12 +65,12 @@ class Stack:
         self.template_body = template_body
         self.status = StackStatus.CREATE_IN_PROGRESS
         self.status_reason = None
-        self.change_set_ids = change_set_ids or []
+        self.change_set_ids = []
         self.creation_time = datetime.now(tz=timezone.utc)
         self.deletion_time = None
+        self.change_set_id = None
 
         self.stack_name = request_payload["StackName"]
-        self.change_set_name = request_payload.get("ChangeSetName")
         self.parameters = request_payload.get("Parameters", [])
         self.stack_id = arns.cloudformation_stack_arn(
             self.stack_name,
@@ -159,7 +157,6 @@ class Stack:
 
     def describe_details(self) -> ApiStack:
         result = {
-            "ChangeSetId": self.change_set_id,
             "CreationTime": self.creation_time,
             "DeletionTime": self.deletion_time,
             "StackId": self.stack_id,
@@ -176,6 +173,9 @@ class Stack:
             "RollbackConfiguration": {},
             "Tags": [],
         }
+        if change_set_id := self.change_set_id:
+            result["ChangeSetId"] = change_set_id
+
         if self.resolved_outputs:
             describe_outputs = []
             for key, value in self.resolved_outputs.items():
@@ -191,6 +191,11 @@ class Stack:
         return result
 
 
+class ChangeSetRequestPayload(TypedDict, total=False):
+    ChangeSetName: str
+    ChangeSetType: NotRequired[ChangeSetType]
+
+
 class ChangeSet:
     change_set_name: str
     change_set_id: str
@@ -203,8 +208,8 @@ class ChangeSet:
     def __init__(
         self,
         stack: Stack,
-        request_payload: CreateChangeSetInput,
-        template: StackTemplate | None = None,
+        request_payload: ChangeSetRequestPayload,
+        template: dict | None = None,
     ):
         self.stack = stack
         self.template = template
