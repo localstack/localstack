@@ -1389,6 +1389,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise UnsupportedOperationException()
         if key.metadata["Origin"] == OriginType.EXTERNAL:
             key.metadata["CurrentKeyMaterialId"] = self._return_key_material_id()
+            # TODO Update the key material ID so it show in ListKeyRotation'
 
         key.rotate_key_on_demand()
 
