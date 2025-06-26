@@ -3847,7 +3847,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_get_integration_response_invalid_integration": {
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_integration": {
     "recorded-date": "26-06-2025, 11:21:05",
     "recorded-content": {
       "get-integration-response-without-integration": {

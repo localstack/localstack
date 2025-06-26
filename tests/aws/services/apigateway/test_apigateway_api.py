@@ -2784,7 +2784,7 @@ class TestApigatewayIntegration:
         snapshot.match("put-integration-response-invalid-responseTemplates-2", e.value.response)
 
     @markers.aws.validated
-    def test_get_integration_response_invalid_integration(
+    def test_integration_response_invalid_integration(
         self, aws_client, apigw_create_rest_api, snapshot
     ):
         snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
