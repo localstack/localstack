@@ -93,16 +93,6 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
         """
         return None
 
-    def _get_checksum_algo(self) -> str | None:
-        """
-        Checksum algorithm used to verify the integrity of the downloaded archive.
-        This method can be implemented by subclasses to provide the correct algorithm.
-        If not implemented, checksum verification will be skipped.
-
-        :return: Checksum algorithm, e.g. "sha256", or None
-        """
-        return None
-
     def get_installed_dir(self) -> str | None:
         installed_dir = super().get_installed_dir()
         subdir = self._get_archive_subdir()
@@ -166,7 +156,6 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
 
         # Get checksum info if available
         checksum_url = self._get_checksum_url()
-        checksum_algo = self._get_checksum_algo()
 
         try:
             download_and_extract(
@@ -175,7 +164,6 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
                 tmp_archive=archive_path,
                 target_dir=target_directory,
                 checksum_url=checksum_url,
-                checksum_algo=checksum_algo,
             )
             self._handle_single_directory_extraction(target_directory)
         finally:

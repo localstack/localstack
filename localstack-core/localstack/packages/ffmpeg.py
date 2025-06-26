@@ -44,9 +44,6 @@ class FfmpegPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def get_ffprobe_path(self) -> str:
         return os.path.join(self.get_installed_dir(), "bin", "ffprobe")  # type: ignore[arg-type]
 
-    def _get_checksum_algo(self) -> str | None:
-        return "sha256"
-
     def _get_checksum_url(self) -> str | None:
         return FFMPEG_STATIC_CHECKSUM_URL
 

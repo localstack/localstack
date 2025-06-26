@@ -282,7 +282,7 @@ def verify_local_file_with_checksum_url(file_path: str, checksum_url: str, filen
        * 128 characters: SHA512
     """
     # Get checksums from URL
-    LOG.debug("Fetching checksums from {checksum_url}...".format(checksum_url=checksum_url))
+    LOG.debug("Fetching checksums from %s...", checksum_url)
     checksums = parse_checksum_file_from_url(checksum_url)
 
     if not checksums:
@@ -328,8 +328,22 @@ def verify_local_file_with_checksum_url(file_path: str, checksum_url: str, filen
         raise ChecksumException(f"Unsupported checksum length: {checksum_length}")
 
     # Calculate checksum of local file
-    LOG.debug("Calculating {algorithm} checksum of {file_path}...".format(algorithm=algorithm, file_path=file_path))
+    LOG.debug("Calculating %s checksum of %s...", algorithm, file_path)
     calculated_checksum = calculate_file_checksum(file_path, algorithm)
+
+    is_valid = calculated_checksum == expected_checksum.lower()
+
+    if not is_valid:
+        LOG.error(
+            "Checksum mismatch for %s: calculated %s, expected %s",
+            file_path,
+            calculated_checksum,
+            expected_checksum,
+        )
+        raise ChecksumException(
+            f"Checksum mismatch for {file_path}: calculated {calculated_checksum}, expected {expected_checksum}"
+        )
+    LOG.info("Checksum verification successful for %s", file_path)
 
     # Compare checksums
     return calculated_checksum == expected_checksum.lower()

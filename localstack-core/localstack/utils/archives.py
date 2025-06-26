@@ -178,7 +178,6 @@ def download_and_extract(
     sleep: Optional[int] = 3,
     tmp_archive: Optional[str] = None,
     checksum_url: Optional[str] = None,
-    checksum_algo: Optional[Literal["sha256", "sha512"]] = None,
 ) -> None:
     """
     Download and extract an archive to a target directory with optional checksum verification.
@@ -189,7 +188,6 @@ def download_and_extract(
     :param sleep: Sleep time between retries in seconds (default: 3)
     :param tmp_archive: Optional path for the temporary archive file
     :param checksum_url: Optional URL of the checksum file for verification
-    :param checksum_algo: Optional checksum algorithm (e.g., 'sha256', 'sha512')
     :raises Exception: If download fails, checksum verification fails, or archive format is unsupported
     """
     mkdir(target_dir)
@@ -220,7 +218,7 @@ def download_and_extract(
         raise Exception("Failed to download archive from %s: . Retries exhausted", archive_url)
 
     # Verify checksum if provided
-    if checksum_url and checksum_algo:
+    if checksum_url:
         LOG.info("Verifying archive integrity...")
         try:
             verify_local_file_with_checksum_url(
@@ -258,7 +256,6 @@ def download_and_extract_with_retry(
             target_dir,
             tmp_archive=tmp_archive,
             checksum_url=checksum_url,
-            checksum_algo=checksum_algo,
         )
     except Exception as e:
         # try deleting and re-downloading the zip file
@@ -269,5 +266,4 @@ def download_and_extract_with_retry(
             target_dir,
             tmp_archive=tmp_archive,
             checksum_url=checksum_url,
-            checksum_algo=checksum_algo,
         )

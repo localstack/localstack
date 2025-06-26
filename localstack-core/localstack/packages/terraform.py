@@ -40,9 +40,6 @@ class TerraformPackageInstaller(ArchiveDownloadAndExtractInstaller):
         super()._install(target)
         chmod_r(self.get_executable_path(), 0o777)  # type: ignore[arg-type]
 
-    def _get_checksum_algo(self) -> str | None:
-        return "sha256"
-
     def _get_checksum_url(self) -> str | None:
         return TERRAFORM_CHECKSUM_URL_TEMPLATE.format(version=TERRAFORM_VERSION)
 
