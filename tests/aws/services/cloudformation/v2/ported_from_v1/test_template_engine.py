@@ -611,7 +611,6 @@ class TestImportValues:
         # assert cfn_client.list_imports(ExportName=export_name)["Imports"]
 
 
-@pytest.mark.skip(reason="CFNV2:Macros unsupported")
 class TestMacros:
     @markers.aws.validated
     def test_macro_deployment(
@@ -645,6 +644,7 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
+    @pytest.mark.skip("CFNV2:GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -705,6 +705,9 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.skip(
+        reason="CFNV2:Fn::Transform as resource property with missing Name and Parameters fields."
+    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -841,6 +844,7 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.skip(reason="CFNV2:Validation")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -910,6 +914,7 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
 
+    @pytest.mark.skip("CFNV2:GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -971,6 +976,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
+    @pytest.mark.skip("CFNV2:Validation")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1024,6 +1030,7 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
+    @pytest.mark.skip("CFNV2:Validation")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1045,12 +1052,13 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
+    @pytest.mark.skip("CFNV2:GetTemplate")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
     ):
         """
-        This tests shows the state of instrinsic functions during the execution of the macro
+        This tests shows the state of intrinsic functions during the execution of the macro
         """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../../../../templates/macros/print_references.py"
@@ -1095,6 +1103,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
+    @pytest.mark.skip(reason="CFNV2:Validation")
     @pytest.mark.parametrize(
         "macro_function",
         [

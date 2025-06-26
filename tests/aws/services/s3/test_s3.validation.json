@@ -900,7 +900,13 @@
     "last_validated_date": "2025-01-21T18:17:18+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_bucket_config_default_retention": {
-    "last_validated_date": "2025-01-21T18:18:03+00:00"
+    "last_validated_date": "2025-06-20T17:35:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 1.55,
+      "teardown": 1.78,
+      "total": 3.81
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_object_lock_delete_markers": {
     "last_validated_date": "2025-01-21T18:18:05+00:00"
@@ -911,11 +917,41 @@
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_copy_object_retention_lock": {
     "last_validated_date": "2025-01-21T18:18:00+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_lock_mode_validation": {
+    "last_validated_date": "2025-06-20T17:33:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.43,
+      "call": 1.68,
+      "teardown": 0.86,
+      "total": 2.97
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention": {
-    "last_validated_date": "2025-01-21T18:17:58+00:00"
+    "last_validated_date": "2025-06-20T17:02:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 12.42,
+      "teardown": 0.62,
+      "total": 13.51
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_compliance_mode": {
+    "last_validated_date": "2025-06-20T17:19:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.44,
+      "call": 11.7,
+      "teardown": 1.29,
+      "total": 13.43
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
-    "last_validated_date": "2025-01-23T11:12:34+00:00"
+    "last_validated_date": "2025-06-20T16:29:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 3.38,
+      "teardown": 2.69,
+      "total": 6.57
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3PresignedPost::test_post_object_default_checksum": {
     "last_validated_date": "2025-03-17T21:46:24+00:00"

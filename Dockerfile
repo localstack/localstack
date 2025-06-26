@@ -57,7 +57,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 
 # set workdir
 RUN mkdir -p /opt/code/localstack

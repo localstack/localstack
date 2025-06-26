@@ -874,6 +874,91 @@ class TestKMS:
     @pytest.mark.parametrize(
         "key_spec,algo",
         [
+            ("SYMMETRIC_DEFAULT", "SYMMETRIC_DEFAULT"),
+            ("RSA_2048", "RSAES_OAEP_SHA_256"),
+        ],
+    )
+    @markers.aws.validated
+    def test_re_encrypt(self, kms_create_key, key_spec, algo, aws_client, snapshot):
+        message = b"test message 123 !%$@ 1234567890"
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
+        destination_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=key_spec)["KeyId"]
+        # Encrypt the message using the source key
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
+        )["CiphertextBlob"]
+        # Re-encrypt the previously encryted message using the destination key
+        result = aws_client.kms.re_encrypt(
+            SourceKeyId=source_key_id,
+            DestinationKeyId=destination_key_id,
+            CiphertextBlob=ciphertext,
+            SourceEncryptionAlgorithm=algo,
+            DestinationEncryptionAlgorithm=algo,
+        )
+        snapshot.match("test_re_encrypt", result)
+        # Decrypt using the source key
+        source_key_plaintext = aws_client.kms.decrypt(
+            KeyId=source_key_id, CiphertextBlob=ciphertext, EncryptionAlgorithm=algo
+        )["Plaintext"]
+        # Decrypt using the destination key
+        destination_key_plaintext = aws_client.kms.decrypt(
+            KeyId=destination_key_id,
+            CiphertextBlob=result["CiphertextBlob"],
+            EncryptionAlgorithm=algo,
+        )["Plaintext"]
+        # Both source and destination plain texts should match the original
+        assert base64.b64decode(source_key_plaintext) == message
+        assert base64.b64decode(destination_key_plaintext) == message
+
+    @markers.aws.validated
+    def test_re_encrypt_incorrect_source_key(self, kms_create_key, aws_client, snapshot):
+        algo = "SYMMETRIC_DEFAULT"
+        message = b"test message 123 !%$@ 1234567890"
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=algo)["KeyId"]
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
+        )["CiphertextBlob"]
+        invalid_key_id = kms_create_key(
+            Description="test hmac key",
+            KeySpec="HMAC_224",
+            KeyUsage="GENERATE_VERIFY_MAC",
+        )["KeyId"]
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.re_encrypt(
+                SourceKeyId=invalid_key_id,
+                DestinationKeyId=invalid_key_id,
+                CiphertextBlob=ciphertext,
+                SourceEncryptionAlgorithm=algo,
+                DestinationEncryptionAlgorithm=algo,
+            )
+        snapshot.match("incorrect-source-key", exc.value.response)
+
+    @markers.aws.validated
+    def test_re_encrypt_invalid_destination_key(self, kms_create_key, aws_client):
+        algo = "SYMMETRIC_DEFAULT"
+        message = b"test message 123 !%$@ 1234567890"
+        source_key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec=algo)["KeyId"]
+        ciphertext = aws_client.kms.encrypt(
+            KeyId=source_key_id, Plaintext=base64.b64encode(message), EncryptionAlgorithm=algo
+        )["CiphertextBlob"]
+        invalid_key_id = kms_create_key(KeyUsage="SIGN_VERIFY", KeySpec="ECC_NIST_P256")["KeyId"]
+        with pytest.raises(ClientError) as exc:
+            aws_client.kms.re_encrypt(
+                SourceKeyId=source_key_id,
+                DestinationKeyId=invalid_key_id,
+                CiphertextBlob=ciphertext,
+                SourceEncryptionAlgorithm=algo,
+                DestinationEncryptionAlgorithm=algo,
+            )
+        # TODO: Determine where 'context.operation.name' is being set to 'ReEncryptTo' as the expected AWS operation name is 'ReEncrypt'
+        # Then enable the snapshot check
+        # snapshot.match("invalid-destination-key-usage", exc.value.response)
+        assert exc.match("InvalidKeyUsageException")
+
+    @pytest.mark.parametrize(
+        "key_spec,algo",
+        [
             ("RSA_2048", "RSAES_OAEP_SHA_1"),
             ("RSA_2048", "RSAES_OAEP_SHA_256"),
             ("RSA_3072", "RSAES_OAEP_SHA_1"),
@@ -1879,7 +1964,7 @@ class TestKMSMultiAccounts:
         # - GenerateDataKeyPairWithoutPlaintext
         # - GenerateDataKeyWithoutPlaintext
         # - GenerateMac
-        # - ReEncrypt (NOT IMPLEMENTED IN LOCALSTACK)
+        # - ReEncrypt
         # - Sign
         # - Verify
         # - VerifyMac

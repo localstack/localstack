@@ -1,3 +1,4 @@
+import datetime
 import json
 import string
 from operator import itemgetter
@@ -1438,6 +1439,21 @@ class TestS3ObjectLock:
                     "ObjectLockEnabled": "Enabled",
                     "Rule": {
                         "DefaultRetention": {
+                            "Mode": "BAD-VALUE",
+                            "Days": 1,
+                        }
+                    },
+                },
+            )
+        snapshot.match("put-lock-config-bad-mode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_object_lock_configuration(
+                Bucket=s3_bucket,
+                ObjectLockConfiguration={
+                    "ObjectLockEnabled": "Enabled",
+                    "Rule": {
+                        "DefaultRetention": {
                             "Mode": "GOVERNANCE",
                             "Days": 1,
                             "Years": 1,
@@ -2341,3 +2357,50 @@ class TestS3MetricsConfiguration:
         with pytest.raises(ClientError) as delete_err:
             aws_client.s3.delete_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
         snapshot.match("delete_bucket_metrics_configuration_2", delete_err.value.response)
+
+
+class TestS3DeletePrecondition:
+    @markers.aws.validated
+    def test_delete_object_if_match_non_express(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch="badvalue")
+        snapshot.match("delete-obj-if-match", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_modified_non_express(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+
+        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatchLastModifiedTime=earlier)
+        snapshot.match("delete-obj-if-match-last-modified", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_size_non_express(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatchSize=10)
+        snapshot.match("delete-obj-if-match-size", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_all_non_express(self, s3_bucket, aws_client, snapshot):
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(
+                Bucket=s3_bucket,
+                Key=key,
+                IfMatchSize=10,
+                IfMatch="badvalue",
+                IfMatchLastModifiedTime=earlier,
+            )
+        snapshot.match("delete-obj-if-match-all", e.value.response)
