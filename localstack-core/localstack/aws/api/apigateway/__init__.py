@@ -202,12 +202,6 @@ class LimitExceededException(ServiceException):
     retryAfterSeconds: Optional[String]
 
 
-class ValidationException(ServiceException):
-    code: str = "ValidationException"
-    sender_fault: bool = False
-    status_code: int = 400
-
-
 class NotFoundException(ServiceException):
     code: str = "NotFoundException"
     sender_fault: bool = False

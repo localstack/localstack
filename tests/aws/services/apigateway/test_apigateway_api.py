@@ -2742,7 +2742,6 @@ class TestApigatewayIntegration:
         api_id = response["id"]
         root_resource_id = response["rootResourceId"]
 
-        # aws_client.apigateway.put_method(
         apigw_client.put_method(
             restApiId=api_id,
             resourceId=root_resource_id,
@@ -2783,6 +2782,65 @@ class TestApigatewayIntegration:
         # TODO: AWS returns a BadRequestException
         #   But LocalStack currently doesn't raise any Error
         snapshot.match("put-integration-response-invalid-responseTemplates-2", e.value.response)
+
+    @markers.aws.validated
+    def test_get_integration_response_invalid_integration(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+            )
+        snapshot.match("get-integration-response-without-integration", e.value.response)
+
+    @markers.aws.validated
+    def test_integration_response_wrong_status_code(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="201",
+            )
+        snapshot.match("get-integration-response-wrong-status-code", e.value.response)
 
     @markers.aws.validated
     def test_lifecycle_integration_response(self, aws_client, apigw_create_rest_api, snapshot):

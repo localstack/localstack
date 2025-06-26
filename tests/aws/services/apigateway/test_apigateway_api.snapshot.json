@@ -3846,5 +3846,37 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_get_integration_response_invalid_integration": {
+    "recorded-date": "26-06-2025, 11:21:05",
+    "recorded-content": {
+      "get-integration-response-without-integration": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Integration identifier specified"
+        },
+        "message": "Invalid Integration identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_status_code": {
+    "recorded-date": "26-06-2025, 11:21:43",
+    "recorded-content": {
+      "get-integration-response-wrong-status-code": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

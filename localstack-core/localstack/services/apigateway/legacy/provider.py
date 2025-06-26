@@ -89,7 +89,6 @@ from localstack.aws.api.apigateway import (
     UsagePlan,
     UsagePlanKeys,
     UsagePlans,
-    ValidationException,
     VpcLink,
     VpcLinks,
 )
@@ -2061,8 +2060,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         **kwargs,
     ) -> IntegrationResponse:
         if not re.fullmatch(r"[1-5]\d\d", status_code):
-            raise ValidationException(
-                "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+            raise CommonServiceException(
+                code="ValidationException",
+                message=f"1 validation error detected: Value '{status_code}' at 'statusCode' failed to "
+                f"satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d",
             )
         try:
             moto_rest_api = get_moto_rest_api(context, rest_api_id)
@@ -2075,11 +2076,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not (moto_method := moto_resource.resource_methods.get(http_method)):
             raise NotFoundException("Invalid Method identifier specified")
 
-        integration_response = None
-        if integration_responses := moto_method.method_integration.integration_responses:
-            integration_response = integration_responses.get(status_code)
-            if not integration_response:
-                raise NotFoundException("Invalid Integration Response identifier specified")
+        if not moto_method.method_integration:
+            raise NotFoundException("Invalid Integration identifier specified")
+        if not (
+            integration_responses := moto_method.method_integration.integration_responses
+        ) or not (integration_response := integration_responses.get(status_code)):
+            raise NotFoundException("Invalid Response status code specified")
 
         response: IntegrationResponse = call_moto(context)
         remove_empty_attributes_from_integration_response(response)
@@ -2101,8 +2103,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     ) -> IntegrationResponse:
         status_code = request.get("statusCode")
         if not re.fullmatch(r"[1-5]\d\d", status_code):
-            raise ValidationException(
-                "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+            raise CommonServiceException(
+                code="ValidationException",
+                message=f"1 validation error detected: Value '{status_code}' at 'statusCode' failed to "
+                f"satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d",
             )
         try:
             # put integration response doesn't return the right exception compared to AWS
