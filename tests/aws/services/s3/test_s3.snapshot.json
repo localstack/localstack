@@ -9574,7 +9574,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_exc": {
-    "recorded-date": "23-01-2025, 11:12:34",
+    "recorded-date": "20-06-2025, 16:29:06",
     "recorded-content": {
       "put-object-retention-no-bucket": {
         "Error": {
@@ -9634,6 +9634,16 @@
           "ArgumentValue": "Tue Dec 31 16:00:00 PST 2019",
           "Code": "InvalidArgument",
           "Message": "The retain until date must be in the future!"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-retention-bad-value": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -9723,7 +9733,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention": {
-    "recorded-date": "21-01-2025, 18:17:58",
+    "recorded-date": "20-06-2025, 17:02:01",
     "recorded-content": {
       "put-obj-locked-1": {
         "ChecksumCRC32": "2H9+DA==",
@@ -9821,7 +9831,7 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_bucket_config_default_retention": {
-    "recorded-date": "21-01-2025, 18:18:03",
+    "recorded-date": "20-06-2025, 17:35:52",
     "recorded-content": {
       "put-lock-config": {
         "ResponseMetadata": {
@@ -9881,6 +9891,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "put-object-with-lock-no-date": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-retain-until-date",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
@@ -17792,6 +17813,134 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_retention_compliance_mode": {
+    "recorded-date": "20-06-2025, 17:19:56",
+    "recorded-content": {
+      "put-obj-locked-1": {
+        "ChecksumCRC32": "2H9+DA==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"098f6bcd4621d373cade4e832627b4f6\"",
+        "ServerSideEncryption": "AES256",
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "add-compliance-retention": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-locked-1": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied because object protected by object lock."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "put-delete-marker": {
+        "DeleteMarker": true,
+        "VersionId": "<version-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "delete-locked-2": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied because object protected by object lock."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "update-retention-shortened": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied because object protected by object lock."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "update-retention-less-restrictive": {
+        "Error": {
+          "Code": "AccessDenied",
+          "Message": "Access Denied because object protected by object lock."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 403
+        }
+      },
+      "delete-obj-after-lock-expiration": {
+        "VersionId": "<version-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3ObjectLockRetention::test_s3_object_lock_mode_validation": {
+    "recorded-date": "20-06-2025, 17:33:40",
+    "recorded-content": {
+      "put-obj-locked-error-no-retain-date": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-retain-until-date",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-locked-error-no-mode": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-mode",
+          "Code": "InvalidArgument",
+          "Message": "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-obj-locked-bad-value": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-mode",
+          "ArgumentValue": "BAD-VALUE",
+          "Code": "InvalidArgument",
+          "Message": "Unknown wormMode directive."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-mpu-locked-bad-value": {
+        "Error": {
+          "ArgumentName": "x-amz-object-lock-mode",
+          "ArgumentValue": "BAD-VALUE",
+          "Code": "InvalidArgument",
+          "Message": "Unknown wormMode directive."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

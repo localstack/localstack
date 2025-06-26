@@ -7,6 +7,8 @@ VERSION = __version__
 # HTTP headers used to forward proxy request URLs
 HEADER_LOCALSTACK_EDGE_URL = "x-localstack-edge"
 HEADER_LOCALSTACK_REQUEST_URL = "x-localstack-request-url"
+# HTTP header optionally added to LocalStack responses
+HEADER_LOCALSTACK_IDENTIFIER = "x-localstack"
 # xXx custom localstack authorization header only used in ext
 HEADER_LOCALSTACK_AUTHORIZATION = "x-localstack-authorization"
 HEADER_LOCALSTACK_TARGET = "x-localstack-target"

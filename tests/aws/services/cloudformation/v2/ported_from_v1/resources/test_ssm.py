@@ -144,7 +144,6 @@ def test_deploy_patch_baseline(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("patch_baseline", describe_resource)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.validated
 def test_maintenance_window(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(

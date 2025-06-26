@@ -326,6 +326,7 @@ LOG = logging.getLogger(__name__)
 STORAGE_CLASSES = get_class_attrs_from_spec_class(StorageClass)
 SSE_ALGORITHMS = get_class_attrs_from_spec_class(ServerSideEncryption)
 OBJECT_OWNERSHIPS = get_class_attrs_from_spec_class(ObjectOwnership)
+OBJECT_LOCK_MODES = get_class_attrs_from_spec_class(ObjectLockMode)
 
 DEFAULT_S3_TMP_DIR = "/tmp/localstack-s3-storage"
 
@@ -1193,6 +1194,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             raise InvalidArgument(
                 "x-amz-bypass-governance-retention is only applicable to Object Lock enabled buckets.",
                 ArgumentName="x-amz-bypass-governance-retention",
+            )
+
+        # TODO: this is only supported for Directory Buckets
+        non_supported_precondition = None
+        if if_match:
+            non_supported_precondition = "If-Match"
+        if if_match_size:
+            non_supported_precondition = "x-amz-if-match-size"
+        if if_match_last_modified_time:
+            non_supported_precondition = "x-amz-if-match-last-modified-time"
+        if non_supported_precondition:
+            LOG.warning(
+                "DeleteObject Preconditions is only supported for Directory Buckets. "
+                "LocalStack does not support Directory Buckets yet."
+            )
+            raise NotImplementedException(
+                "A header you provided implies functionality that is not implemented",
+                Header=non_supported_precondition,
             )
 
         if s3_bucket.versioning_status is None:
@@ -3454,8 +3473,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
+        expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> None:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         validate_bucket_intelligent_tiering_configuration(id, intelligent_tiering_configuration)
@@ -3463,8 +3484,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         s3_bucket.intelligent_tiering_configurations[id] = intelligent_tiering_configuration
 
     def get_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
     ) -> GetBucketIntelligentTieringConfigurationOutput:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if not (itier_config := s3_bucket.intelligent_tiering_configurations.get(id)):
@@ -3475,8 +3502,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         )
 
     def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
     ) -> None:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         if not s3_bucket.intelligent_tiering_configurations.pop(id, None):
@@ -3486,9 +3519,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self,
         context: RequestContext,
         bucket: BucketName,
-        continuation_token: Token = None,
+        continuation_token: Token | None = None,
+        expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
+        # TODO add support for expected_bucket_owner
         store, s3_bucket = self._get_cross_account_bucket(context, bucket)
 
         return ListBucketIntelligentTieringConfigurationsOutput(
@@ -3668,6 +3703,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         ):
             raise MalformedXML()
 
+        if default_retention["Mode"] not in OBJECT_LOCK_MODES:
+            raise MalformedXML()
+
         s3_bucket.object_lock_default_retention = default_retention
         if not s3_bucket.object_lock_enabled:
             s3_bucket.object_lock_enabled = True
@@ -3792,8 +3830,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             http_method="PUT",
         )
 
-        if retention and not validate_dict_fields(
-            retention, required_fields={"Mode", "RetainUntilDate"}
+        if retention and (
+            not validate_dict_fields(retention, required_fields={"Mode", "RetainUntilDate"})
+            or retention["Mode"] not in OBJECT_LOCK_MODES
         ):
             raise MalformedXML()
 
@@ -3807,11 +3846,19 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentValue=pst_datetime.strftime("%a %b %d %H:%M:%S %Z %Y"),
             )
 
-        if (
+        is_request_reducing_locking = (
             not retention
             or (s3_object.lock_until and s3_object.lock_until > retention["RetainUntilDate"])
-        ) and not (
-            bypass_governance_retention and s3_object.lock_mode == ObjectLockMode.GOVERNANCE
+            or (
+                retention["Mode"] == ObjectLockMode.GOVERNANCE
+                and s3_object.lock_mode == ObjectLockMode.COMPLIANCE
+            )
+        )
+        if is_request_reducing_locking and (
+            s3_object.lock_mode == ObjectLockMode.COMPLIANCE
+            or (
+                s3_object.lock_mode == ObjectLockMode.GOVERNANCE and not bypass_governance_retention
+            )
         ):
             raise AccessDenied("Access Denied because object protected by object lock.")
 
@@ -4684,18 +4731,34 @@ def get_object_lock_parameters_from_bucket_and_request(
     request: PutObjectRequest | CopyObjectRequest | CreateMultipartUploadRequest,
     s3_bucket: S3Bucket,
 ):
-    # TODO: also validate here?
     lock_mode = request.get("ObjectLockMode")
     lock_legal_status = request.get("ObjectLockLegalHoldStatus")
     lock_until = request.get("ObjectLockRetainUntilDate")
 
-    if default_retention := s3_bucket.object_lock_default_retention:
-        lock_mode = lock_mode or default_retention.get("Mode")
-        if lock_mode and not lock_until:
-            lock_until = get_retention_from_now(
-                days=default_retention.get("Days"),
-                years=default_retention.get("Years"),
-            )
+    if lock_mode and not lock_until:
+        raise InvalidArgument(
+            "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied",
+            ArgumentName="x-amz-object-lock-retain-until-date",
+        )
+    elif not lock_mode and lock_until:
+        raise InvalidArgument(
+            "x-amz-object-lock-retain-until-date and x-amz-object-lock-mode must both be supplied",
+            ArgumentName="x-amz-object-lock-mode",
+        )
+
+    if lock_mode and lock_mode not in OBJECT_LOCK_MODES:
+        raise InvalidArgument(
+            "Unknown wormMode directive.",
+            ArgumentName="x-amz-object-lock-mode",
+            ArgumentValue=lock_mode,
+        )
+
+    if (default_retention := s3_bucket.object_lock_default_retention) and not lock_mode:
+        lock_mode = default_retention["Mode"]
+        lock_until = get_retention_from_now(
+            days=default_retention.get("Days"),
+            years=default_retention.get("Years"),
+        )
 
     return ObjectLockParameters(lock_until, lock_legal_status, lock_mode)
 

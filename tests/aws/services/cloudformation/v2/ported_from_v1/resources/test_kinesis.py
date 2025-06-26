@@ -16,7 +16,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:DescribeStacks")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StreamDescription.StreamModeDetails"])
 def test_stream_creation(deploy_cfn_template, snapshot, aws_client):
