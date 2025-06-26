@@ -11,6 +11,9 @@ TERRAFORM_VERSION = os.getenv("TERRAFORM_VERSION", "1.5.7")
 TERRAFORM_URL_TEMPLATE = (
     "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
 )
+TERRAFORM_CHECKSUM_URL_TEMPLATE = (
+    "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_SHA256SUMS"
+)
 
 
 class TerraformPackage(Package["TerraformPackageInstaller"]):
@@ -36,6 +39,12 @@ class TerraformPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
         chmod_r(self.get_executable_path(), 0o777)  # type: ignore[arg-type]
+
+    def _get_checksum_algo(self) -> str | None:
+        return "sha256"
+
+    def _get_checksum_url(self) -> str | None:
+        return TERRAFORM_CHECKSUM_URL_TEMPLATE.format(version=TERRAFORM_VERSION)
 
 
 terraform_package = TerraformPackage()

@@ -9,7 +9,9 @@ from localstack.utils.platform import Arch, get_arch
 ARCH_MAPPING = {Arch.amd64: "linux64", Arch.arm64: "linuxarm64"}
 
 # Download URL template for ffmpeg 7.1 LGPL builds from BtbN GitHub Releases
-FFMPEG_STATIC_BIN_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-n{version}-latest-{arch}-lgpl-{version}.tar.xz"
+FFMPEG_BASE_URL = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest"
+FFMPEG_STATIC_BIN_URL = FFMPEG_BASE_URL + "/ffmpeg-n{version}-latest-{arch}-lgpl-{version}.tar.xz"
+FFMPEG_STATIC_CHECKSUM_URL = FFMPEG_BASE_URL + "/checksums.sha256"
 
 
 class FfmpegPackage(Package["FfmpegPackageInstaller"]):
@@ -41,6 +43,12 @@ class FfmpegPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
     def get_ffprobe_path(self) -> str:
         return os.path.join(self.get_installed_dir(), "bin", "ffprobe")  # type: ignore[arg-type]
+
+    def _get_checksum_algo(self) -> str | None:
+        return "sha256"
+
+    def _get_checksum_url(self) -> str | None:
+        return FFMPEG_STATIC_CHECKSUM_URL
 
 
 ffmpeg_package = FfmpegPackage()

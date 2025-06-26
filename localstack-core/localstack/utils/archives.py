@@ -11,11 +11,11 @@ from subprocess import Popen
 from typing import IO, Literal, Optional, Union
 
 from localstack.constants import MAVEN_REPO_URL
-from localstack.utils.checksum import parse_sha_file_format, verify_file_integrity
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
 from localstack.utils.http import download
 from localstack.utils.run import run
 
+from .checksum import verify_local_file_with_checksum_url
 from .run import is_command_available
 from .strings import truncate
 
@@ -222,41 +222,15 @@ def download_and_extract(
     # Verify checksum if provided
     if checksum_url and checksum_algo:
         LOG.info("Verifying archive integrity...")
-        checksum_name = os.path.basename(checksum_url)
-        checksum_path = os.path.join(tempfile.gettempdir(), checksum_name)
         try:
-            # Download checksum file
-            download(checksum_url, checksum_path)
-
-            # Parse checksum file
-            checksum_content = load_file(checksum_path)
-            _, expected_checksum = parse_sha_file_format(checksum_content)
-
-            if not expected_checksum:
-                raise Exception(
-                    f"Could not parse checksum from {checksum_name}. "
-                    "Please check the checksum file format."
-                )
-
-            # Verify integrity
-            if not verify_file_integrity(
-                algorithm=checksum_algo,
+            verify_local_file_with_checksum_url(
                 file_path=tmp_archive,
-                expected_checksum=expected_checksum,
-            ):
-                raise Exception(
-                    f"Checksum verification failed for {os.path.basename(archive_url)}. "
-                    "The downloaded file may be corrupted or tampered with."
-                )
-
-            LOG.debug("Archive integrity verified successfully")
+                checksum_url=checksum_url,
+            )
         except Exception as e:
-            # Clean up the corrupted download
+            # clean up the corrupted download
             rm_rf(tmp_archive)
-            LOG.debug("Failed to verify archive integrity: %s", e)
-        finally:
-            # Clean up checksum file
-            rm_rf(checksum_path)
+            raise e
 
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
