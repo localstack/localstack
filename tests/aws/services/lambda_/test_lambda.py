@@ -763,6 +763,10 @@ class TestLambdaBehavior:
         snapshot.match("invoke-result-read-number-after-timeout", result)
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        not config.is_aws_cloud(),
+        reason="AWS returns a permissions error. Potentially remove this test in future.",
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # not set directly on init in lambda, but only on runtime processes
