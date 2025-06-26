@@ -182,13 +182,16 @@ def download_and_extract(
     """
     Download and extract an archive to a target directory with optional checksum verification.
 
+    Checksum verification is only performed if a `checksum_url` is provided.
+    Else, the archive is downloaded and extracted without verification.
+
     :param archive_url: URL of the archive to download
     :param target_dir: Directory to extract the archive contents to
     :param retries: Number of download retries (default: 0)
     :param sleep: Sleep time between retries in seconds (default: 3)
     :param tmp_archive: Optional path for the temporary archive file
     :param checksum_url: Optional URL of the checksum file for verification
-    :raises Exception: If download fails, checksum verification fails, or archive format is unsupported
+    :return: None
     """
     mkdir(target_dir)
 

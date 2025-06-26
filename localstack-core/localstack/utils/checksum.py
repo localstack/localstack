@@ -52,12 +52,6 @@ class StandardFormat(ChecksumFormat):
     """
 
     def can_parse(self, content: str) -> bool:
-        """
-        Check if content matches standard checksum format.
-
-        :param content: The content to check
-        :return: True if content matches standard format
-        """
         lines = content.strip().split("\n")
         for line in lines[:5]:  # Check first 5 lines
             if re.match(r"^[a-fA-F0-9]{32,128}\s+\S+", line.strip()):
@@ -65,12 +59,6 @@ class StandardFormat(ChecksumFormat):
         return False
 
     def parse(self, content: str) -> dict[str, str]:
-        """
-        Parse standard format checksum content.
-
-        :param content: The content to parse
-        :return: Dictionary mapping filenames to checksums
-        """
         checksums = {}
         for line in content.strip().split("\n"):
             line = line.strip()
@@ -94,12 +82,6 @@ class BSDFormat(ChecksumFormat):
     """
 
     def can_parse(self, content: str) -> bool:
-        """
-        Check if content matches BSD checksum format.
-
-        :param content: The content to check
-        :return: True if content matches BSD format
-        """
         lines = content.strip().split("\n")
         for line in lines[:5]:
             if re.match(r"^(MD5|SHA1|SHA256|SHA512)\s*\(.+\)\s*=\s*[a-fA-F0-9]+", line):
@@ -107,12 +89,6 @@ class BSDFormat(ChecksumFormat):
         return False
 
     def parse(self, content: str) -> dict[str, str]:
-        """
-        Parse BSD format checksum content.
-
-        :param content: The content to parse
-        :return: Dictionary mapping filenames to checksums
-        """
         checksums = {}
         for line in content.strip().split("\n"):
             line = line.strip()
@@ -140,12 +116,6 @@ class ApacheBSDFormat(ChecksumFormat):
     """
 
     def can_parse(self, content: str) -> bool:
-        """
-        Check if content matches Apache BSD checksum format.
-
-        :param content: The content to check
-        :return: True if content matches Apache BSD format
-        """
         lines = content.strip().split("\n")
         if lines and ":" in lines[0]:
             # Check if it looks like filename: hex_data
@@ -155,12 +125,6 @@ class ApacheBSDFormat(ChecksumFormat):
         return False
 
     def parse(self, content: str) -> dict[str, str]:
-        """
-        Parse Apache BSD format checksum content.
-
-        :param content: The content to parse
-        :return: Dictionary mapping filenames to checksums
-        """
         checksums = {}
         lines = content.strip().split("\n")
 
@@ -343,7 +307,7 @@ def verify_local_file_with_checksum_url(file_path: str, checksum_url: str, filen
         raise ChecksumException(
             f"Checksum mismatch for {file_path}: calculated {calculated_checksum}, expected {expected_checksum}"
         )
-    LOG.info("Checksum verification successful for %s", file_path)
+    LOG.debug("Checksum verification successful for %s", file_path)
 
     # Compare checksums
     return calculated_checksum == expected_checksum.lower()
