@@ -104,7 +104,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_length": {
-    "recorded-date": "27-06-2025, 17:20:30",
+    "recorded-date": "27-06-2025, 22:28:07",
     "recorded-content": {
       "transformed": {
         "Outputs": {
@@ -126,6 +126,43 @@
               "Value": 3
             },
             "Type": "AWS::SSM::Parameter"
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach": {
+    "recorded-date": "27-06-2025, 21:12:38",
+    "recorded-content": {
+      "transformed": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Parameters": {
+          "pRepoARNs": {
+            "Description": "ARN of SSO instance",
+            "Type": "CommaDelimitedList"
+          }
+        },
+        "Resources": {
+          "SnsTopic<topic-name-0>": {
+            "Properties": {
+              "FifoTopic": true,
+              "TopicName": "<topic-name-0>.fifo"
+            },
+            "Type": "AWS::SNS::Topic"
+          },
+          "SnsTopic<topic-name-1>": {
+            "Properties": {
+              "FifoTopic": true,
+              "TopicName": "<topic-name-1>.fifo"
+            },
+            "Type": "AWS::SNS::Topic"
+          },
+          "SnsTopic<topic-name-2>": {
+            "Properties": {
+              "FifoTopic": true,
+              "TopicName": "<topic-name-2>.fifo"
+            },
+            "Type": "AWS::SNS::Topic"
           }
         }
       }
