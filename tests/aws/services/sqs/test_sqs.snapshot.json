@@ -3974,5 +3974,43 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_aws_trace_header_propagation[sqs]": {
+    "recorded-date": "27-06-2025, 10:55:55",
+    "recorded-content": {
+      "xray-msg": {
+        "Attributes": {
+          "AWSTraceHeader": "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1",
+          "SentTimestamp": "timestamp"
+        },
+        "Body": "test",
+        "MD5OfBody": "098f6bcd4621d373cade4e832627b4f6",
+        "MD5OfMessageAttributes": "235c5c510d26fb653d073faed50ae77c",
+        "MessageAttributes": {
+          "timestamp": "timestamp"
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:1>"
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_aws_trace_header_propagation[sqs_query]": {
+    "recorded-date": "27-06-2025, 10:55:56",
+    "recorded-content": {
+      "xray-msg": {
+        "Attributes": {
+          "AWSTraceHeader": "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1",
+          "SentTimestamp": "timestamp"
+        },
+        "Body": "test",
+        "MD5OfBody": "098f6bcd4621d373cade4e832627b4f6",
+        "MD5OfMessageAttributes": "235c5c510d26fb653d073faed50ae77c",
+        "MessageAttributes": {
+          "timestamp": "timestamp"
+        },
+        "MessageId": "<uuid:1>",
+        "ReceiptHandle": "<receipt-handle:1>"
+      }
+    }
   }
 }
