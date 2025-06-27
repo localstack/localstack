@@ -153,7 +153,7 @@ def test_language_extensions(deploy_cfn_template, aws_client, snapshot):
     value = "a,b,c"
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/cfn_languageextensions_exploration.yml"
+            os.path.dirname(__file__), "../../../templates/cfn_languageextensions_length.yml"
         ),
         parameters={
             "QueueList": value,
