@@ -155,7 +155,16 @@ def apply_global_transformations(
                 account_id, region_name, processed_template, stack_parameters
             )
         elif transformation["Name"] == EXTENSIONS_TRANSFORM:
-            continue
+            processed_template = apply_language_extensions_transform(
+                account_id,
+                region_name,
+                processed_template,
+                stack_name,
+                resources,
+                mappings,
+                conditions,
+                stack_parameters,
+            )
         elif transformation["Name"] == SECRETSMANAGER_TRANSFORM:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
             LOG.warning("%s is not yet supported. Ignoring.", SECRETSMANAGER_TRANSFORM)
@@ -267,6 +276,50 @@ def execute_macro(
         )
 
     return result.get("fragment")
+
+
+def apply_language_extensions_transform(
+    account_id: str,
+    region_name: str,
+    template: dict,
+    stack_name: str,
+    resources: dict,
+    mappings: dict,
+    conditions: dict[str, bool],
+    stack_parameters: dict,
+) -> dict:
+    """
+    Resolve language extensions constructs
+    """
+
+    def _visit(obj, path, **_):
+        # Fn::Length
+        if isinstance(obj, dict) and "Fn::Length" in obj:
+            value = obj["Fn::Length"]
+            if isinstance(value, dict):
+                value = resolve_refs_recursively(
+                    account_id,
+                    region_name,
+                    stack_name,
+                    resources,
+                    mappings,
+                    conditions,
+                    stack_parameters,
+                    value,
+                )
+
+            if isinstance(value, list):
+                # no conversion required
+                return len(value)
+            elif isinstance(value, str):
+                length = len(value.split(","))
+                return length
+            return obj
+
+            # reference
+        return obj
+
+    return recurse_object(template, _visit)
 
 
 def apply_serverless_transformation(

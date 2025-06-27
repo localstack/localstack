@@ -1,6 +1,11 @@
+import os
 import textwrap
 
+import pytest
+
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid, to_bytes
 
 
@@ -141,3 +146,73 @@ def test_transformer_individual_resource_level(deploy_cfn_template, s3_bucket, a
     resource_ref = result.outputs["ResourceRef"]
     # just checking that this doens't fail, i.e. the topic exists
     aws_client.sns.get_topic_attributes(TopicArn=resource_ref)
+
+
+@markers.aws.validated
+def test_language_extensions(deploy_cfn_template, aws_client, snapshot):
+    value = "a,b,c"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_languageextensions_exploration.yml"
+        ),
+        parameters={
+            "QueueList": value,
+        },
+    )
+
+    parameter_name = stack.outputs["ParameterName"]
+    snapshot.add_transformer(snapshot.transform.regex(parameter_name, "<parameter-name>"))
+    value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]
+    snapshot.match("parameter-value", value)
+
+
+@pytest.fixture
+def transform_template(aws_client: ServiceLevelClientFactory, cleanups):
+    stack_ids: list[str] = []
+
+    def transform(template: str) -> dict:
+        """
+        1. create_stack
+        3. get_template processed
+        """
+
+        stack_name = f"stack-{short_uid()}"
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            Parameters=[{"ParameterKey": "QueueList", "ParameterValue": "a,b,c"}],
+        )
+        stack_id = stack["StackId"]
+        stack_ids.append(stack_id)
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+            StackName=stack_id,
+        )
+        template = aws_client.cloudformation.get_template(
+            StackName=stack_id, TemplateStage="Processed"
+        )["TemplateBody"]
+        return template
+
+    yield transform
+
+    for stack_id in stack_ids:
+        call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+
+class TestLanguageExtensionsTransform:
+    """
+    Manual testing of the language extensions trasnform
+    """
+
+    @markers.aws.validated
+    def test_transform_length(self, transform_template, snapshot):
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_exploration.yml",
+                )
+            )
+        ) as infile:
+            transformed_template = transform_template(infile.read())
+        snapshot.match("transformed", transformed_template)
