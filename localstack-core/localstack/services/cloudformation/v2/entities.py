@@ -31,6 +31,7 @@ from localstack.utils.strings import long_uid, short_uid
 
 
 class ResolvedResource(TypedDict):
+    Type: str
     Properties: dict
 
 
@@ -189,6 +190,9 @@ class Stack:
                 )
             result["Outputs"] = describe_outputs
         return result
+
+    def is_active(self) -> bool:
+        return self.status != StackStatus.DELETE_COMPLETE
 
 
 class ChangeSetRequestPayload(TypedDict, total=False):
