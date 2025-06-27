@@ -14,6 +14,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.models import (
+    HEADER_LEN,
     IV_LEN,
     ON_DEMAND_ROTATION_LIMIT,
     Ciphertext,
@@ -1787,7 +1788,7 @@ class TestKMS:
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..message", "$..KeyMaterialId"])
     def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
         key_id = kms_create_key()["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
@@ -1818,6 +1819,15 @@ class TestKMS:
                 EncryptionAlgorithm=algo,
             )
         snapshot.match("decrypt_response_without_encryption_context", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=ciphertext[HEADER_LEN:],
+                EncryptionAlgorithm=algo,
+                EncryptionContext=encryption_context,
+            )
+        snapshot.match("decrypt_response_with_invalid_ciphertext", e.value.response)
 
     @markers.aws.validated
     def test_get_parameters_for_import(self, kms_create_key, snapshot, aws_client):
