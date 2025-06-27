@@ -1,0 +1,14 @@
+Transform: AWS::LanguageExtensions
+Parameters:
+  QueueList:
+    Type: CommaDelimitedList
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        'Fn::Length': !Ref QueueList
+Outputs:
+  ParameterName:
+    Value: !Ref MyParameter

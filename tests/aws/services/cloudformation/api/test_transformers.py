@@ -1,6 +1,13 @@
+import json
+import os
 import textwrap
 
+import pytest
+from botocore.exceptions import WaiterError
+
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
+from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid, to_bytes
 
 
@@ -141,3 +148,130 @@ def test_transformer_individual_resource_level(deploy_cfn_template, s3_bucket, a
     resource_ref = result.outputs["ResourceRef"]
     # just checking that this doens't fail, i.e. the topic exists
     aws_client.sns.get_topic_attributes(TopicArn=resource_ref)
+
+
+@markers.aws.validated
+def test_language_extensions(deploy_cfn_template, aws_client, snapshot):
+    value = "a,b,c"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_languageextensions_length.yml"
+        ),
+        parameters={
+            "QueueList": value,
+        },
+    )
+
+    parameter_name = stack.outputs["ParameterName"]
+    snapshot.add_transformer(snapshot.transform.regex(parameter_name, "<parameter-name>"))
+    value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]
+    snapshot.match("parameter-value", value)
+
+
+@pytest.fixture
+def transform_template(aws_client: ServiceLevelClientFactory, cleanups):
+    stack_ids: list[str] = []
+
+    def transform(template: str, parameters: dict[str, str] | None = None) -> dict:
+        stack_name = f"stack-{short_uid()}"
+        parameters = [
+            {"ParameterKey": key, "ParameterValue": value}
+            for key, value in (parameters or {}).items()
+        ]
+        stack = aws_client.cloudformation.create_stack(
+            StackName=stack_name,
+            TemplateBody=template,
+            Capabilities=["CAPABILITY_AUTO_EXPAND"],
+            Parameters=parameters,
+        )
+        stack_id = stack["StackId"]
+        stack_ids.append(stack_id)
+        try:
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+                StackName=stack_id,
+            )
+        except WaiterError as e:
+            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)
+            raise RuntimeError(json.dumps(events, indent=2, default=repr)) from e
+
+        template = aws_client.cloudformation.get_template(
+            StackName=stack_id, TemplateStage="Processed"
+        )["TemplateBody"]
+        return template
+
+    yield transform
+
+    for stack_id in stack_ids:
+        call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+
+class TestLanguageExtensionsTransform:
+    """
+    Manual testing of the language extensions trasnform
+    """
+
+    @markers.aws.validated
+    def test_transform_length(self, transform_template, snapshot):
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_length.yml",
+                )
+            )
+        ) as infile:
+            parameters = {"QueueList": "a,b,c"}
+            transformed_template = transform_template(infile.read(), parameters)
+        snapshot.match("transformed", transformed_template)
+
+    @markers.aws.validated
+    def test_transform_foreach(self, transform_template, snapshot):
+        topic_names = [
+            f"mytopic1{short_uid()}",
+            f"mytopic2{short_uid()}",
+            f"mytopic3{short_uid()}",
+        ]
+        for i, name in enumerate(topic_names):
+            snapshot.add_transformer(snapshot.transform.regex(name, f"<topic-name-{i}>"))
+
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_foreach.yml",
+                )
+            )
+        ) as infile:
+            transformed_template = transform_template(
+                infile.read(),
+                parameters={
+                    "pRepoARNs": ",".join(topic_names),
+                },
+            )
+        snapshot.match("transformed", transformed_template)
+
+    @pytest.mark.skip("WIP")
+    @markers.aws.validated
+    def test_transform_foreach_use_case(self, transform_template, snapshot):
+        event_names = ["Event1", "Event2"]
+        server_event_names = ["ServerEvent1", "ServerEvent2"]
+        for i, name in enumerate(event_names + server_event_names):
+            snapshot.add_transformer(snapshot.transform.regex(name, f"<event-name-{i}>"))
+
+        parameters = {
+            "AppSyncSubscriptionFilterNames": ",".join(event_names),
+            "AppSyncServerEventNames": ",".join(server_event_names),
+        }
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_ryanair.yml",
+                )
+            )
+        ) as infile:
+            transformed_template = transform_template(
+                infile.read(),
+                parameters=parameters,
+            )
+        snapshot.match("transformed", transformed_template)
