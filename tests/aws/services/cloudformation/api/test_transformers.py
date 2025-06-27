@@ -170,18 +170,17 @@ def test_language_extensions(deploy_cfn_template, aws_client, snapshot):
 def transform_template(aws_client: ServiceLevelClientFactory, cleanups):
     stack_ids: list[str] = []
 
-    def transform(template: str) -> dict:
-        """
-        1. create_stack
-        3. get_template processed
-        """
-
+    def transform(template: str, parameters: dict[str, str] | None = None) -> dict:
         stack_name = f"stack-{short_uid()}"
+        parameters = [
+            {"ParameterKey": key, "ParameterValue": value}
+            for key, value in (parameters or {}).items()
+        ]
         stack = aws_client.cloudformation.create_stack(
             StackName=stack_name,
             TemplateBody=template,
             Capabilities=["CAPABILITY_AUTO_EXPAND"],
-            Parameters=[{"ParameterKey": "QueueList", "ParameterValue": "a,b,c"}],
+            Parameters=parameters,
         )
         stack_id = stack["StackId"]
         stack_ids.append(stack_id)
@@ -210,7 +209,13 @@ class TestLanguageExtensionsTransform:
             os.path.realpath(
                 os.path.join(
                     os.path.dirname(__file__),
-                    "../../../templates/cfn_languageextensions_exploration.yml",
+                    "../../../templates/cfn_languageextensions_length.yml",
+                )
+            )
+        ) as infile:
+            parameters = {"QueueList": "a,b,c"}
+            transformed_template = transform_template(infile.read(), parameters)
+        snapshot.match("transformed", transformed_template)
                 )
             )
         ) as infile:
