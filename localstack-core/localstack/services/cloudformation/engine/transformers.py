@@ -1,8 +1,10 @@
+import copy
 import json
 import logging
 import os
 from copy import deepcopy
-from typing import Dict, Optional, Type, Union
+from dataclasses import dataclass
+from typing import Any, Callable, Dict, Optional, Type, Union
 
 import boto3
 from botocore.exceptions import ClientError
@@ -12,6 +14,7 @@ from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.template_deployer import resolve_refs_recursively
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.utils import testutil
 from localstack.utils.objects import recurse_object
@@ -24,6 +27,29 @@ EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
 
 TransformResult = Union[dict, str]
+
+
+@dataclass
+class ResolveRefsRecursivelyContext:
+    account_id: str
+    region_name: str
+    stack_name: str
+    resources: dict
+    mappings: dict
+    conditions: dict
+    parameters: dict
+
+    def resolve(self, value: Any) -> Any:
+        return resolve_refs_recursively(
+            self.account_id,
+            self.region_name,
+            self.stack_name,
+            self.resources,
+            self.mappings,
+            self.conditions,
+            self.parameters,
+            value,
+        )
 
 
 class Transformer:
@@ -155,15 +181,19 @@ def apply_global_transformations(
                 account_id, region_name, processed_template, stack_parameters
             )
         elif transformation["Name"] == EXTENSIONS_TRANSFORM:
-            processed_template = apply_language_extensions_transform(
+            resolve_context = ResolveRefsRecursivelyContext(
                 account_id,
                 region_name,
-                processed_template,
                 stack_name,
                 resources,
                 mappings,
                 conditions,
                 stack_parameters,
+            )
+
+            processed_template = apply_language_extensions_transform(
+                processed_template,
+                resolve_context,
             )
         elif transformation["Name"] == SECRETSMANAGER_TRANSFORM:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
@@ -279,35 +309,30 @@ def execute_macro(
 
 
 def apply_language_extensions_transform(
-    account_id: str,
-    region_name: str,
     template: dict,
-    stack_name: str,
-    resources: dict,
-    mappings: dict,
-    conditions: dict[str, bool],
-    stack_parameters: dict,
+    resolve_context: ResolveRefsRecursivelyContext,
 ) -> dict:
     """
     Resolve language extensions constructs
     """
 
     def _visit(obj, path, **_):
+        # Fn::ForEach
+        if isinstance(obj, dict) and any("Fn::ForEach" in key for key in obj):
+            newobj = {}
+            for key in obj:
+                if "Fn::ForEach" not in key:
+                    newobj[key] = obj[key]
+                    continue
+
+                new_entries = expand_fn_foreach(obj[key], resolve_context)
+                newobj.update(**new_entries)
+            return newobj
         # Fn::Length
         if isinstance(obj, dict) and "Fn::Length" in obj:
             value = obj["Fn::Length"]
             if isinstance(value, dict):
-                value = resolve_refs_recursively(
-                    account_id,
-                    region_name,
-                    stack_name,
-                    resources,
-                    mappings,
-                    conditions,
-                    stack_parameters,
-                    value,
-                )
-
+                value = resolve_context.resolve(value)
             if isinstance(value, list):
                 # no conversion required
                 return len(value)
@@ -320,6 +345,74 @@ def apply_language_extensions_transform(
         return obj
 
     return recurse_object(template, _visit)
+
+
+def expand_fn_foreach(
+    foreach_defn: list,
+    resolve_context: ResolveRefsRecursivelyContext,
+) -> dict:
+    if len(foreach_defn) != 3:
+        raise ValidationError(
+            f"Fn::ForEach: invalid number of arguments, expected 3 got {len(foreach_defn)}"
+        )
+    output = {}
+    iteration_name, iteration_value, template = foreach_defn
+    if not isinstance(iteration_name, str):
+        raise ValidationError(
+            f"Fn::ForEach: incorrect type for iteration name '{iteration_name}', expected str"
+        )
+    if isinstance(iteration_value, dict):
+        # we have a reference
+        if "Ref" in iteration_value:
+            iteration_value = resolve_context.resolve(iteration_value)
+        else:
+            raise NotImplementedError(
+                f"Fn::Transform: intrinsic {iteration_value} not supported in this position yet"
+            )
+    if not isinstance(iteration_value, list):
+        raise ValidationError(
+            f"Fn::ForEach: incorrect type for iteration variables '{iteration_value}', expected list"
+        )
+
+    if not isinstance(template, dict):
+        raise ValidationError(
+            f"Fn::ForEach: incorrect type for template '{template}', expected dict"
+        )
+
+    # TODO: locations other than resources
+    replace_template_value = "${" + iteration_name + "}"
+    try:
+        logical_resource_id_template = list(template.keys())[0]
+    except IndexError:
+        raise ValidationError("Fn::ForEach: no resource defined in body")
+    if replace_template_value not in logical_resource_id_template:
+        raise ValidationError("Fn::ForEach: no placeholder in logical resource id")
+
+    def gen_visit(variable: str) -> Callable:
+        def _visit(obj: Any, path: Any):
+            if isinstance(obj, dict) and "Ref" in obj:
+                ref_variable = obj["Ref"]
+                if ref_variable == iteration_name:
+                    return variable
+            elif isinstance(obj, dict) and "Fn::Join" in obj:
+                # first visit arguments
+                arguments = recurse_object(
+                    obj["Fn::Join"],
+                    _visit,
+                )
+                separator, items = arguments
+                return separator.join(items)
+            return obj
+
+        return _visit
+
+    for variable in iteration_value:
+        logical_resource_id = logical_resource_id_template.replace(replace_template_value, variable)
+        resource_body = copy.deepcopy(template[logical_resource_id_template])
+        body = recurse_object(resource_body, gen_visit(variable))
+        output[logical_resource_id] = body
+
+    return output
 
 
 def apply_serverless_transformation(

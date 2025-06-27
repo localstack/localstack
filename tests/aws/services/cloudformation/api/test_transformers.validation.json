@@ -1,11 +1,20 @@
 {
-  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_length": {
-    "last_validated_date": "2025-06-27T17:20:30+00:00",
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach": {
+    "last_validated_date": "2025-06-27T21:12:38+00:00",
     "durations_in_seconds": {
-      "setup": 1.68,
-      "call": 7.17,
-      "teardown": 0.17,
-      "total": 9.02
+      "setup": 1.99,
+      "call": 7.07,
+      "teardown": 0.24,
+      "total": 9.3
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_length": {
+    "last_validated_date": "2025-06-27T22:28:07+00:00",
+    "durations_in_seconds": {
+      "setup": 2.08,
+      "call": 6.9,
+      "teardown": 0.16,
+      "total": 9.14
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {

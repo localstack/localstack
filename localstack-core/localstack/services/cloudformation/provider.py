@@ -244,30 +244,31 @@ class CloudformationProvider(CloudformationApi):
             old_parameters={},
         )
 
-        # handle conditions
-        stack = Stack(context.account_id, context.region, request, template)
-
         try:
             template = template_preparer.transform_template(
                 context.account_id,
                 context.region,
                 template,
-                stack.stack_name,
-                stack.resources,
-                stack.mappings,
+                request["StackName"],
+                template["Resources"],
+                template.get("Mappings", {}),
                 {},  # TODO
                 resolved_parameters,
             )
         except FailedTransformationException as e:
-            stack.add_stack_event(
-                stack.stack_name,
-                stack.stack_id,
-                status="ROLLBACK_IN_PROGRESS",
-                status_reason=e.message,
-            )
-            stack.set_stack_status("ROLLBACK_COMPLETE")
-            state.stacks[stack.stack_id] = stack
-            return CreateStackOutput(StackId=stack.stack_id)
+            raise NotImplementedError from e
+            # stack.add_stack_event(
+            #     stack.stack_name,
+            #     stack.stack_id,
+            #     status="ROLLBACK_IN_PROGRESS",
+            #     status_reason=e.message,
+            # )
+            # stack.set_stack_status("ROLLBACK_COMPLETE")
+            # state.stacks[stack.stack_id] = stack
+            # return CreateStackOutput(StackId=stack.stack_id)
+
+        # handle conditions
+        stack = Stack(context.account_id, context.region, request, template)
 
         # perform basic static analysis on the template
         for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
@@ -512,12 +513,16 @@ class CloudformationProvider(CloudformationApi):
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
             copy_template = clone(stack.template_original)
-            copy_template.pop("ChangeSetName", None)
-            copy_template.pop("StackName", None)
-            copy_template.pop("StackId", None)
-            copy_template.pop("Transform", None)
-            copy_template.pop("Conditions", None)
-            copy_template.pop("Mappings", None)
+            for key in [
+                "ChangeSetName",
+                "StackName",
+                "StackId",
+                "Transform",
+                "Conditions",
+                "Mappings",
+                "Outputs",
+            ]:
+                copy_template.pop(key, None)
             for resource in copy_template.get("Resources", {}).values():
                 resource.pop("LogicalResourceId", None)
             template_body = json.dumps(copy_template)

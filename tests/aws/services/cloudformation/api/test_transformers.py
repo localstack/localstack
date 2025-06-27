@@ -216,8 +216,29 @@ class TestLanguageExtensionsTransform:
             parameters = {"QueueList": "a,b,c"}
             transformed_template = transform_template(infile.read(), parameters)
         snapshot.match("transformed", transformed_template)
+
+    @markers.aws.validated
+    def test_transform_foreach(self, transform_template, snapshot):
+        topic_names = [
+            f"mytopic1{short_uid()}",
+            f"mytopic2{short_uid()}",
+            f"mytopic3{short_uid()}",
+        ]
+        for i, name in enumerate(topic_names):
+            snapshot.add_transformer(snapshot.transform.regex(name, f"<topic-name-{i}>"))
+
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_foreach.yml",
                 )
             )
         ) as infile:
-            transformed_template = transform_template(infile.read())
+            transformed_template = transform_template(
+                infile.read(),
+                parameters={
+                    "pRepoARNs": ",".join(topic_names),
+                },
+            )
         snapshot.match("transformed", transformed_template)
