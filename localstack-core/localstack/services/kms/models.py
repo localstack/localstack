@@ -285,7 +285,7 @@ class KmsKey:
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
     next_rotation_date: datetime.datetime
-    previous_keys = [str]
+    previous_keys = [bytes]
 
     def __init__(
         self,
@@ -743,8 +743,8 @@ class KmsKey:
                 f"The on-demand rotations limit has been reached for the given keyId. "
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
             )
-        self.previous_keys.append(self.crypto_key.key_material)
-        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+        else:
+            self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
 class KmsGrant:
