@@ -1,7 +1,9 @@
+import json
 import os
 import textwrap
 
 import pytest
+from botocore.exceptions import WaiterError
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -184,9 +186,14 @@ def transform_template(aws_client: ServiceLevelClientFactory, cleanups):
         )
         stack_id = stack["StackId"]
         stack_ids.append(stack_id)
-        aws_client.cloudformation.get_waiter("stack_create_complete").wait(
-            StackName=stack_id,
-        )
+        try:
+            aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+                StackName=stack_id,
+            )
+        except WaiterError as e:
+            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)
+            raise RuntimeError(json.dumps(events, indent=2, default=repr)) from e
+
         template = aws_client.cloudformation.get_template(
             StackName=stack_id, TemplateStage="Processed"
         )["TemplateBody"]
@@ -240,5 +247,31 @@ class TestLanguageExtensionsTransform:
                 parameters={
                     "pRepoARNs": ",".join(topic_names),
                 },
+            )
+        snapshot.match("transformed", transformed_template)
+
+    @pytest.mark.skip("WIP")
+    @markers.aws.validated
+    def test_transform_foreach_use_case(self, transform_template, snapshot):
+        event_names = ["Event1", "Event2"]
+        server_event_names = ["ServerEvent1", "ServerEvent2"]
+        for i, name in enumerate(event_names + server_event_names):
+            snapshot.add_transformer(snapshot.transform.regex(name, f"<event-name-{i}>"))
+
+        parameters = {
+            "AppSyncSubscriptionFilterNames": ",".join(event_names),
+            "AppSyncServerEventNames": ",".join(server_event_names),
+        }
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_ryanair.yml",
+                )
+            )
+        ) as infile:
+            transformed_template = transform_template(
+                infile.read(),
+                parameters=parameters,
             )
         snapshot.match("transformed", transformed_template)
