@@ -167,5 +167,148 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach_use_case": {
+    "recorded-date": "27-06-2025, 23:05:43",
+    "recorded-content": {
+      "transformed": {
+        "Parameters": {
+          "AppSyncServerEventNames": {
+            "Type": "CommaDelimitedList"
+          },
+          "AppSyncSubscriptionFilterNames": {
+            "Type": "CommaDelimitedList"
+          }
+        },
+        "Resources": {
+          "GraphQLApi": {
+            "Properties": {
+              "AuthenticationType": "API_KEY",
+              "Name": "stack-43f234db_api"
+            },
+            "Type": "AWS::AppSync::GraphQLApi"
+          },
+          "GraphQLApiSchema": {
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Definition": "\ninput PublishServer<event-name-0>Input {\n  value: String!\n}\n\ninput PublishServer<event-name-1>Input {\n  value: String!\n}\n\ntype Query {\n  _empty: String\n}\n\ntype Subscription {\n  on<event-name-0>: String\n  @aws_subscribe(mutations: [\"publishServer<event-name-0>\"])\n  on<event-name-1>: String\n  @aws_subscribe(mutations: [\"publishServer<event-name-1>\"])\n}\n\ntype Mutation {\n  publishServer<event-name-0>(input: PublishServer<event-name-0>Input!): String\n  publishServer<event-name-1>(input: PublishServer<event-name-1>Input!): String\n}\n\nschema {\n  query: Query\n  mutation: Mutation\n  subscription: Subscription\n}\n"
+            },
+            "Type": "AWS::AppSync::GraphQLSchema"
+          },
+          "GraphQLNoneDataSource": {
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Name": "noneds",
+              "Type": "NONE"
+            },
+            "Type": "AWS::AppSync::DataSource"
+          },
+          "GraphQLResolverPublish<event-name-0>Subscription": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Code": "export function request(ctx) {}\n\nexport function response(ctx) {}\n",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "on<event-name-0>",
+              "Runtime": {
+                "Name": "APPSYNC_JS",
+                "RuntimeVersion": "1.0.0"
+              },
+              "TypeName": "Subscription"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          },
+          "GraphQLResolverPublish<event-name-1>Subscription": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Code": "export function request(ctx) {}\n\nexport function response(ctx) {}\n",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "on<event-name-1>",
+              "Runtime": {
+                "Name": "APPSYNC_JS",
+                "RuntimeVersion": "1.0.0"
+              },
+              "TypeName": "Subscription"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          },
+          "GraphQLResolverPublishServer<event-name-0>Mutation": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "publishServer<event-name-0>",
+              "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"payload\": $util.toJson($context.arguments)\n}\n",
+              "ResponseMappingTemplate": "$util.toJson($context.result)",
+              "TypeName": "Mutation"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          },
+          "GraphQLResolverPublishServer<event-name-1>Mutation": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "publishServer<event-name-1>",
+              "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"payload\": $util.toJson($context.arguments)\n}\n",
+              "ResponseMappingTemplate": "$util.toJson($context.result)",
+              "TypeName": "Mutation"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          }
+        }
+      }
+    }
   }
 }
