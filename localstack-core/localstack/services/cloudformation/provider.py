@@ -514,6 +514,10 @@ class CloudformationProvider(CloudformationApi):
             copy_template = clone(stack.template_original)
             copy_template.pop("ChangeSetName", None)
             copy_template.pop("StackName", None)
+            copy_template.pop("StackId", None)
+            copy_template.pop("Transform", None)
+            copy_template.pop("Conditions", None)
+            copy_template.pop("Mappings", None)
             for resource in copy_template.get("Resources", {}).values():
                 resource.pop("LogicalResourceId", None)
             template_body = json.dumps(copy_template)

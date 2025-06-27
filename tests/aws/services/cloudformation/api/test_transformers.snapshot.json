@@ -88,5 +88,47 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_language_extensions": {
+    "recorded-date": "27-06-2025, 16:00:24",
+    "recorded-content": {
+      "parameter-value": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<parameter-name>",
+        "Type": "String",
+        "Value": "3",
+        "Version": 1
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_length": {
+    "recorded-date": "27-06-2025, 17:20:30",
+    "recorded-content": {
+      "transformed": {
+        "Outputs": {
+          "ParameterName": {
+            "Value": {
+              "Ref": "MyParameter"
+            }
+          }
+        },
+        "Parameters": {
+          "QueueList": {
+            "Type": "CommaDelimitedList"
+          }
+        },
+        "Resources": {
+          "MyParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": 3
+            },
+            "Type": "AWS::SSM::Parameter"
+          }
+        }
+      }
+    }
   }
 }
