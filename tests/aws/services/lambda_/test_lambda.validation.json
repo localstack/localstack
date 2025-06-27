@@ -53,6 +53,15 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
     "last_validated_date": "2025-06-03T22:24:26+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_timeout_init_phase": {
+    "last_validated_date": "2025-06-26T15:43:49+00:00",
+    "durations_in_seconds": {
+      "setup": 12.9,
+      "call": 29.54,
+      "teardown": 2.64,
+      "total": 45.08
+    }
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_mixed_architecture": {
     "last_validated_date": "2024-05-15T12:55:52+00:00"
   },

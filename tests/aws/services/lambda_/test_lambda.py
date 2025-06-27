@@ -683,6 +683,36 @@ class TestLambdaBehavior:
 
         wait_until(_assert_log_output, strategy="linear")
 
+    @markers.aws.validated
+    def test_lambda_timeout_init_phase(self, create_lambda_function, snapshot, aws_client):
+        # The init phase is limited to 10 seconds. If init takes longer, Lambda retries
+        # the init phase at the time of the first function invocation with the configured
+        # function timeout.
+        snapshot.add_transformer(snapshot.transform.lambda_report_logs())
+        snapshot.add_transformer(
+            snapshot.transform.key_value("LogResult", reference_replacement=False)
+        )
+        snapshot.add_transformer(snapshot.transform.regex(PATTERN_UUID, "<request-id>"))
+
+        func_name = f"test_lambda_{short_uid()}"
+        create_result = create_lambda_function(
+            func_name=func_name,
+            handler_file=TEST_LAMBDA_TIMEOUT_INIT_PYTHON,
+            runtime=Runtime.python3_12,
+            client=aws_client.lambda_,
+            timeout=30,  # Set timeout longer than 10s to allow init retry with function timeout
+        )
+        snapshot.match("create-result", create_result)
+
+        # First invocation should trigger init retry due to init timeout
+        result = aws_client.lambda_.invoke(
+            FunctionName=func_name, Payload=json.dumps({"wait": 1}), LogType="Tail"
+        )
+        snapshot.match("invoke-result", result)
+
+        logs = to_str(base64.b64decode(to_str(result["LogResult"])))
+        snapshot.match("log-events", logs.splitlines(keepends=True))
+
     @pytest.mark.skip(reason="Currently flaky in CI")
     @markers.aws.validated
     def test_lambda_invoke_timed_out_environment_reuse(
@@ -764,7 +794,7 @@ class TestLambdaBehavior:
 
     @markers.aws.validated
     @pytest.mark.skipif(
-        not config.is_aws_cloud(),
+        not is_aws_cloud(),
         reason="AWS returns a permissions error. Potentially remove this test in future.",
     )
     @markers.snapshot.skip_snapshot_verify(
@@ -1513,7 +1543,6 @@ class TestLambdaFeatures:
         return creation_result["CreateFunctionResponse"]["FunctionArn"]
 
     # TODO remove, currently missing init duration in REPORT
-    @markers.snapshot.skip_snapshot_verify(paths=["$..logs.logs"])
     @markers.aws.validated
     def test_invocation_with_logs(self, snapshot, invocation_echo_lambda, aws_client):
         """Test invocation of a lambda with no invocation type set, but LogType="Tail""" ""

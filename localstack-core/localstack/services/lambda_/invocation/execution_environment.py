@@ -172,7 +172,7 @@ class ExecutionEnvironment:
         if config.LAMBDA_INIT_USER is not None:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
         if config.LS_LOG in config.TRACE_LOG_LEVELS:
-            env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "trace"
+            env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "info"
         if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
             env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
         if config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES:

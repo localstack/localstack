@@ -736,55 +736,6 @@ jobs:
             .coverage.dynamodb_v2
           retention-days: 30
 
-  test-lambda-rie-v2:
-    name: Test Lambda RIE v2
-    if: ${{ !inputs.onlyAcceptanceTests }}
-    runs-on: ubuntu-latest
-    needs:
-      - test-preflight
-      - build
-    timeout-minutes: 60
-    env:
-      # Set job-specific environment variables for pytest-tinybird
-      CI_JOB_NAME: ${{ github.job }}
-      CI_JOB_ID: ${{ github.job }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Prepare Local Test Environment
-        uses: ./.github/actions/setup-tests-env
-
-      - name: Download Test Selection
-        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
-        with:
-          name: test-selection
-          path: dist/testselection/
-
-      - name: Run Lambda RIE v2 Provider Tests
-        timeout-minutes: 30
-        env:
-          # add the GitHub API token to avoid rate limit issues
-          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          COVERAGE_FILE: ".coverage.lambda_rie_v2"
-          TEST_PATH: "tests/aws/services/lambda_"
-          JUNIT_REPORTS_FILE: "pytest-junit-lambda-rie-v2.xml"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=lambda_rie_v2"
-          LAMBDA_INIT_RELEASE_VERSION: "v0.0.1-dev"
-        run: make test-coverage
-
-      - name: Archive Test Results
-        uses: actions/upload-artifact@v4
-        if: success() || failure()
-        with:
-          name: test-results-lambda-rie-v2
-          include-hidden-files: true
-          path: |
-            pytest-junit-lambda-rie-v2.xml
-            .coverage.lambda_rie_v2
-          retention-days: 30
-
   test-events-v1:
     name: Test EventBridge v1
     if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.events-v1 == 'true') }}
