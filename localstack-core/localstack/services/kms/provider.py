@@ -1072,6 +1072,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             if self._is_rsa_spec(key.crypto_key.key_spec) and not ciphertext:
                 plaintext = key.decrypt_rsa(ciphertext_blob)
             else:
+                # if symmetric encryption then ciphertext must not be None
+                if ciphertext is None:
+                    raise InvalidCiphertextException()
                 plaintext = key.decrypt(ciphertext, encryption_context)
         except InvalidTag:
             raise InvalidCiphertextException()
