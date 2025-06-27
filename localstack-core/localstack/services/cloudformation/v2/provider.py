@@ -408,6 +408,30 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         changes: Changes = change_set_describer.get_changes()
 
+        # TODO: add masking support.
+        parameters = []
+        # hacky: look up in the cache the resolved and given values
+        for input_parameter in change_set.stack.parameters:
+            name = input_parameter["ParameterKey"]
+            supplied_value = input_parameter["ParameterValue"]
+            scope = f"/Parameters/{name}"
+            value = change_set_describer._after_cache.get(scope)
+            if value is not None and value != supplied_value:
+                parameters.append(
+                    Parameter(
+                        ParameterKey=name,
+                        ParameterValue=supplied_value,
+                        ResolvedValue=value,
+                    )
+                )
+            else:
+                parameters.append(
+                    Parameter(
+                        ParameterKey=name,
+                        ParameterValue=value,
+                    )
+                )
+
         result = DescribeChangeSetOutput(
             Status=change_set.status,
             ChangeSetId=change_set.change_set_id,
@@ -417,11 +441,7 @@ class CloudformationProviderV2(CloudformationProvider):
             StackId=change_set.stack.stack_id,
             StackName=change_set.stack.stack_name,
             CreationTime=change_set.creation_time,
-            Parameters=[
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.stack.resolved_parameters.items()
-            ],
+            Parameters=parameters,
             Changes=changes,
         )
         return result

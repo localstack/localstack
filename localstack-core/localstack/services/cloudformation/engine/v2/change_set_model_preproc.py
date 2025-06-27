@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import base64
 import copy
+import logging
 import re
 from typing import Any, Callable, Final, Generic, Optional, TypeVar
 
@@ -9,6 +10,7 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.transformers import (
     Transformer,
     execute_macro,
@@ -31,6 +33,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameters,
     NodeProperties,
     NodeProperty,
+    NodeResolvableParameter,
     NodeResource,
     NodeTemplate,
     Nothing,
@@ -52,6 +55,8 @@ from localstack.utils.aws.arns import get_partition
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
+
+LOG = logging.getLogger(__name__)
 
 _AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
 
@@ -932,6 +937,61 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         before = dynamic_delta.before or default_delta.before
         after = dynamic_delta.after or default_delta.after
+
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_resolvable_parameter(self, node_parameter: NodeResolvableParameter):
+        type_delta = self.visit(node_parameter.type_)
+
+        dynamic_value = node_parameter.dynamic_value
+        dynamic_value_delta = self.visit(dynamic_value)
+
+        # TODO: unify with self._cached_apply such that _cached_apply can take multiple arguments
+        type_before = type_delta.before
+        type_after = type_delta.after
+
+        name_before = dynamic_value_delta.before
+        name_after = dynamic_value_delta.after
+
+        def _resolve_parameter(type: str, name: str) -> str:
+            match type:
+                case (
+                    "AWS::SSM::Parameter::Value<String>"
+                    | "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>"
+                    | "AWS::SSM::Parameter::Value<CommaDelimitedList>"
+                ):
+                    return resolve_ssm_parameter(
+                        account_id=self._change_set.account_id,
+                        region_name=self._change_set.region_name,
+                        stack_parameter_value=name,
+                    )
+                case _:
+                    LOG.warning(
+                        "Dynamic parameter of type '%s' not yet supported. Resolving to input value '%s'",
+                        type,
+                        name,
+                    )
+                    return name
+
+        scope = node_parameter.scope
+
+        value_before = self._before_cache.get(scope, Nothing)
+        if is_nothing(value_before) and not is_nothing(name_before):
+            value_before = _resolve_parameter(type_before, name_before)
+            if isinstance(value_before, PreprocEntityDelta):
+                value_before = value_before.before
+
+        value_after = self._after_cache.get(scope, Nothing)
+        if is_nothing(value_after) and not is_nothing(name_after):
+            value_after = _resolve_parameter(type_after, name_after)
+            if isinstance(value_after, PreprocEntityDelta):
+                value_after = value_after.after
+
+        default_value = node_parameter.default_value
+        default_delta = self.visit(default_value)
+
+        before = value_before or default_delta.before
+        after = value_after or default_delta.after
 
         return PreprocEntityDelta(before=before, after=after)
 

@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameters,
     NodeProperties,
     NodeProperty,
+    NodeResolvableParameter,
     NodeResource,
     NodeResources,
     NodeTemplate,
@@ -79,6 +80,9 @@ class ChangeSetModelVisitor(abc.ABC):
         self.visit_children(node_parameters)
 
     def visit_node_parameter(self, node_parameter: NodeParameter):
+        self.visit_children(node_parameter)
+
+    def visit_node_resolvable_parameter(self, node_parameter: NodeResolvableParameter):
         self.visit_children(node_parameter)
 
     def visit_node_conditions(self, node_conditions: NodeConditions):

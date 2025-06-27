@@ -223,6 +223,10 @@ class NodeParameter(ChangeSetNode):
         self.default_value = default_value
 
 
+class NodeResolvableParameter(NodeParameter):
+    pass
+
+
 class NodeParameters(ChangeSetNode):
     parameters: Final[list[NodeParameter]]
 
@@ -994,13 +998,22 @@ class ChangeSetModel:
 
         dynamic_value = self._visit_dynamic_parameter(parameter_name=parameter_name)
 
-        node_parameter = NodeParameter(
-            scope=scope,
-            name=parameter_name,
-            type_=type_,
-            default_value=default_value,
-            dynamic_value=dynamic_value,
-        )
+        if type_.value.startswith("AWS::"):
+            node_parameter = NodeResolvableParameter(
+                scope=scope,
+                name=parameter_name,
+                type_=type_,
+                default_value=default_value,
+                dynamic_value=dynamic_value,
+            )
+        else:
+            node_parameter = NodeParameter(
+                scope=scope,
+                name=parameter_name,
+                type_=type_,
+                default_value=default_value,
+                dynamic_value=dynamic_value,
+            )
         self._visited_scopes[scope] = node_parameter
         return node_parameter
 
