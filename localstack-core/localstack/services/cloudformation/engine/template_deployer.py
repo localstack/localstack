@@ -1295,7 +1295,7 @@ class TemplateDeployer:
             action, logical_resource_id=resource_id
         )
 
-        resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
+        resource_provider = executor.try_load_resource_provider(action, get_resource_type(resource))
         if resource_provider is not None:
             # add in-progress event
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
@@ -1427,9 +1427,10 @@ class TemplateDeployer:
                 ):
                     continue
 
+                action = "Remove"
                 executor = self.create_resource_provider_executor()
                 resource_provider_payload = self.create_resource_provider_payload(
-                    "Remove", logical_resource_id=resource_id
+                    action, logical_resource_id=resource_id
                 )
                 LOG.debug(
                     'Handling "Remove" for resource "%s" (%s/%s) type "%s"',
@@ -1438,7 +1439,9 @@ class TemplateDeployer:
                     len(resources),
                     resource["ResourceType"],
                 )
-                resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
+                resource_provider = executor.try_load_resource_provider(
+                    action, get_resource_type(resource)
+                )
                 if resource_provider is not None:
                     event = executor.deploy_loop(
                         resource_provider, resource, resource_provider_payload
