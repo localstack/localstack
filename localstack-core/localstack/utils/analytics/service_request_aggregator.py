@@ -21,6 +21,7 @@ class ServiceRequestInfo(NamedTuple):
     operation: str
     status_code: int
     err_type: Optional[str] = None
+    provider: Optional[str] = None
 
 
 class ServiceRequestAggregator:
