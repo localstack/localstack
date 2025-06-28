@@ -9,12 +9,12 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach_use_case": {
-    "last_validated_date": "2025-06-27T23:05:43+00:00",
+    "last_validated_date": "2025-07-02T10:48:05+00:00",
     "durations_in_seconds": {
-      "setup": 1.2,
-      "call": 22.88,
-      "teardown": 0.17,
-      "total": 24.25
+      "setup": 1.41,
+      "call": 24.52,
+      "teardown": 0.2,
+      "total": 26.13
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_length": {

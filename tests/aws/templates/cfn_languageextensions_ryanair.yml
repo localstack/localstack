@@ -5,7 +5,6 @@ Parameters:
   AppSyncServerEventNames:
     Type: CommaDelimitedList
 Resources:
-
   GraphQLApi:
     Type: AWS::AppSync::GraphQLApi
     Properties:
@@ -94,3 +93,6 @@ Resources:
             }
           ResponseMappingTemplate: |
             $util.toJson($context.result)
+Outputs:
+  GraphQLApiArn:
+    Value: !Ref GraphQLApi

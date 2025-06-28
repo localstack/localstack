@@ -169,9 +169,16 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach_use_case": {
-    "recorded-date": "27-06-2025, 23:05:43",
+    "recorded-date": "02-07-2025, 10:48:05",
     "recorded-content": {
       "transformed": {
+        "Outputs": {
+          "GraphQLApiArn": {
+            "Value": {
+              "Ref": "GraphQLApi"
+            }
+          }
+        },
         "Parameters": {
           "AppSyncServerEventNames": {
             "Type": "CommaDelimitedList"
@@ -184,7 +191,7 @@
           "GraphQLApi": {
             "Properties": {
               "AuthenticationType": "API_KEY",
-              "Name": "stack-43f234db_api"
+              "Name": "<stack-name>_api"
             },
             "Type": "AWS::AppSync::GraphQLApi"
           },
@@ -280,7 +287,7 @@
               },
               "FieldName": "publishServer<event-name-0>",
               "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"payload\": $util.toJson($context.arguments)\n}\n",
-              "ResponseMappingTemplate": "$util.toJson($context.result)",
+              "ResponseMappingTemplate": "$util.toJson($context.result)\n",
               "TypeName": "Mutation"
             },
             "Type": "AWS::AppSync::Resolver"
@@ -302,13 +309,19 @@
               },
               "FieldName": "publishServer<event-name-1>",
               "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"payload\": $util.toJson($context.arguments)\n}\n",
-              "ResponseMappingTemplate": "$util.toJson($context.result)",
+              "ResponseMappingTemplate": "$util.toJson($context.result)\n",
               "TypeName": "Mutation"
             },
             "Type": "AWS::AppSync::Resolver"
           }
         }
-      }
+      },
+      "stack-outputs": [
+        {
+          "OutputKey": "GraphQLApiArn",
+          "OutputValue": "arn:<partition>:appsync:<region>:111111111111:apis/yxkwk65tyvc3dbaefx4yfp3rb4"
+        }
+      ]
     }
   }
 }

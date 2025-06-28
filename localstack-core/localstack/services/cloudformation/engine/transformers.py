@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import os
+import re
 from copy import deepcopy
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, Optional, Type, Union
@@ -318,6 +319,7 @@ def apply_language_extensions_transform(
 
     def _visit(obj, path, **_):
         # Fn::ForEach
+        # TODO: can this be used in non-resource positions?
         if isinstance(obj, dict) and any("Fn::ForEach" in key for key in obj):
             newobj = {}
             for key in obj:
@@ -333,7 +335,9 @@ def apply_language_extensions_transform(
             value = obj["Fn::Length"]
             if isinstance(value, dict):
                 value = resolve_context.resolve(value)
+
             if isinstance(value, list):
+                # TODO: what if one of the elements was AWS::NoValue?
                 # no conversion required
                 return len(value)
             elif isinstance(value, str):
@@ -394,6 +398,19 @@ def expand_fn_foreach(
                 ref_variable = obj["Ref"]
                 if ref_variable == iteration_name:
                     return variable
+            elif isinstance(obj, dict) and "Fn::Sub" in obj:
+                arguments = recurse_object(obj["Fn::Sub"], _visit)
+                if isinstance(arguments, str):
+                    # simple case
+                    # TODO: can this reference anything outside of the template?
+                    result = arguments
+                    variables_found = re.findall("\\${([^}]+)}", arguments)
+                    for var in variables_found:
+                        if var == iteration_name:
+                            result = result.replace(f"${{{var}}}", variable)
+                    return result
+                else:
+                    raise NotImplementedError
             elif isinstance(obj, dict) and "Fn::Join" in obj:
                 # first visit arguments
                 arguments = recurse_object(

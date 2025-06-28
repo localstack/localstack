@@ -169,11 +169,13 @@ def test_language_extensions(deploy_cfn_template, aws_client, snapshot):
 
 
 @pytest.fixture
-def transform_template(aws_client: ServiceLevelClientFactory, cleanups):
+def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups):
     stack_ids: list[str] = []
 
-    def transform(template: str, parameters: dict[str, str] | None = None) -> dict:
+    def transform(template: str, parameters: dict[str, str] | None = None) -> tuple[str, dict]:
         stack_name = f"stack-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
+
         parameters = [
             {"ParameterKey": key, "ParameterValue": value}
             for key, value in (parameters or {}).items()
@@ -197,7 +199,7 @@ def transform_template(aws_client: ServiceLevelClientFactory, cleanups):
         template = aws_client.cloudformation.get_template(
             StackName=stack_id, TemplateStage="Processed"
         )["TemplateBody"]
-        return template
+        return stack_name, template
 
     yield transform
 
@@ -250,9 +252,17 @@ class TestLanguageExtensionsTransform:
             )
         snapshot.match("transformed", transformed_template)
 
-    @pytest.mark.skip("WIP")
     @markers.aws.validated
-    def test_transform_foreach_use_case(self, transform_template, snapshot):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..DependsOn",
+            # skipped due to a big in the provider not rendering the template correctly
+            "$..Resources.GraphQLApi.Properties.Name",
+            "$..OutputValue",
+            "$..Outputs",
+        ]
+    )
+    def test_transform_foreach_use_case(self, aws_client, transform_template, snapshot):
         event_names = ["Event1", "Event2"]
         server_event_names = ["ServerEvent1", "ServerEvent2"]
         for i, name in enumerate(event_names + server_event_names):
@@ -270,8 +280,14 @@ class TestLanguageExtensionsTransform:
                 )
             )
         ) as infile:
-            transformed_template = transform_template(
+            stack_name, transformed_template = transform_template(
                 infile.read(),
                 parameters=parameters,
             )
         snapshot.match("transformed", transformed_template)
+
+        # check that the resources have been created correctly
+        outputs = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
+            "Outputs"
+        ]
+        snapshot.match("stack-outputs", outputs)

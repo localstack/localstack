@@ -267,13 +267,11 @@ class CloudformationProvider(CloudformationApi):
             # state.stacks[stack.stack_id] = stack
             # return CreateStackOutput(StackId=stack.stack_id)
 
-        # handle conditions
-        stack = Stack(context.account_id, context.region, request, template)
-
         # perform basic static analysis on the template
         for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
             validation_fn(template)
 
+        # handle conditions
         stack = Stack(context.account_id, context.region, request, template)
 
         # resolve conditions
