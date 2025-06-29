@@ -915,5 +915,35 @@
         }
       }
     }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_describe_config_set_event_destinations": {
+    "recorded-date": "29-06-2025, 09:05:24",
+    "recorded-content": {
+      "event_destinations": {
+        "ConfigurationSet": {
+          "Name": "<config-set-name>"
+        },
+        "EventDestinations": [
+          {
+            "Enabled": true,
+            "MatchingEventTypes": [
+              "bounce",
+              "click",
+              "delivery",
+              "open",
+              "send"
+            ],
+            "Name": "<event-destination-name>",
+            "SNSDestination": {
+              "TopicARN": "<arn>"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
