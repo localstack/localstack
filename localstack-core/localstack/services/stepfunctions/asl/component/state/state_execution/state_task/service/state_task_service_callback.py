@@ -1,6 +1,5 @@
 import abc
 import json
-import threading
 import time
 from typing import Any, Callable, Final, Optional
 
@@ -41,7 +40,7 @@ from localstack.services.stepfunctions.asl.eval.callback.callback import (
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.utils.threads import TMP_THREADS
+from localstack.utils.threads import TMP_THREADS, Thread
 
 # TODO: consider implementing a polling pattern similar to that observable from AWS:
 # https://repost.aws/questions/QUFFlHcbvIQFe-bS3RAi7TWA/a-glue-job-in-a-step-function-is-taking-so-long-to-continue-the-next-step
@@ -123,7 +122,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                     heartbeat_endpoint=heartbeat_endpoint,
                 )
 
-            thread_wait_for_task_token = threading.Thread(
+            thread_wait_for_task_token = Thread(
                 target=_local_update_wait_for_task_token,
                 name=f"WaitForTaskToken_SyncTask_{self.resource.resource_arn}",
                 daemon=True,

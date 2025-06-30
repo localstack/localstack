@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import json
-import threading
 from typing import Any, Final, Optional
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
@@ -31,7 +30,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
     DEFAULT_MAX_CONCURRENCY_VALUE,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.utils.threads import TMP_THREADS
+from localstack.utils.threads import TMP_THREADS, Thread
 
 
 class InlineIterationComponentEvalInput:
@@ -81,7 +80,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         self, env: Environment, eval_input: InlineIterationComponentEvalInput, job_pool: JobPool
     ) -> IterationWorker:
         worker = self._create_worker(env=env, eval_input=eval_input, job_pool=job_pool)
-        worker_thread = threading.Thread(target=worker.eval, daemon=True)
+        worker_thread = Thread(target=worker.eval, daemon=True)
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
         return worker

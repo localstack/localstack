@@ -2,7 +2,6 @@ import abc
 import copy
 import logging
 import threading
-from threading import Thread
 from typing import Any, Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
@@ -36,6 +35,7 @@ from localstack.services.stepfunctions.asl.component.state.state_props import St
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.common import TMP_THREADS
+from localstack.utils.threads import Thread
 
 LOG = logging.getLogger(__name__)
 
@@ -182,6 +182,7 @@ class ExecutionState(CommonStateField, abc.ABC):
                 execution_exceptions.append(ex)
             terminated_event.set()
 
+        # TODO: this should probably be a different span :thinking: it's related and unrelated
         thread = Thread(target=_exec_and_notify, daemon=True)
         TMP_THREADS.append(thread)
         thread.start()

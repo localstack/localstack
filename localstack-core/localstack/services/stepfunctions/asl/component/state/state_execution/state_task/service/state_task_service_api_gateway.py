@@ -7,7 +7,6 @@ from json import JSONDecodeError
 from typing import Any, Final, Optional, TypedDict
 from urllib.parse import urlencode, urljoin, urlparse
 
-import requests
 from requests import Response
 
 from localstack import config
@@ -36,6 +35,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_detail import EventDetails
 from localstack.utils.collections import select_from_typed_dict
+from localstack.utils.http import safe_requests
 from localstack.utils.strings import long_uid
 from localstack.utils.urls import localstack_host
 
@@ -311,8 +311,11 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         if json_data is not None and method not in {Method.PATCH, Method.POST, Method.PUT}:
             raise ValueError()  # TODO
 
-        response: Response = getattr(requests, method.lower())(
-            invoke_url, headers=headers, json=json_data
+        # response: Response = getattr(requests, method.lower())(
+        #     invoke_url, headers=headers, json=json_data
+        # )
+        response: Response = safe_requests.request(
+            method.lower(), invoke_url, headers=headers, json=json_data
         )
 
         if response.status_code != 200:

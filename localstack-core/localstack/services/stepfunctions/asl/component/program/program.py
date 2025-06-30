@@ -1,5 +1,4 @@
 import logging
-import threading
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
@@ -38,7 +37,7 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.utils.collections import select_from_typed_dict
-from localstack.utils.threads import TMP_THREADS
+from localstack.utils.threads import TMP_THREADS, Thread
 
 LOG = logging.getLogger(__name__)
 
@@ -76,7 +75,7 @@ class Program(EvalComponent):
     def eval(self, env: Environment) -> None:
         timeout = self.timeout_seconds.timeout_seconds if self.timeout_seconds else None
         env.next_state_name = self.start_at.start_at_name
-        worker_thread = threading.Thread(target=super().eval, args=(env,), daemon=True)
+        worker_thread = Thread(target=super().eval, args=(env,), daemon=True)
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
         worker_thread.join(timeout=timeout)

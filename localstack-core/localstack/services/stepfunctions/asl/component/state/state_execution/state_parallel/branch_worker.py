@@ -6,7 +6,7 @@ from typing import Final, Optional
 from localstack.aws.api.stepfunctions import Timestamp
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.eval.environment import Environment
-from localstack.utils.threads import TMP_THREADS
+from localstack.utils.threads import TMP_THREADS, Thread
 
 LOG = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ class BranchWorker:
         if self._worker_thread is not None:
             raise RuntimeError(f"Attempted to rerun BranchWorker for program ${self._program}.")
 
-        self._worker_thread = threading.Thread(
+        self._worker_thread = Thread(
             target=self._thread_routine, name=f"BranchWorker_${self._program}", daemon=True
         )
         TMP_THREADS.append(self._worker_thread)

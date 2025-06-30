@@ -1,5 +1,4 @@
 import datetime
-from threading import Thread
 from typing import Final, Optional
 
 from localstack.aws.api.stepfunctions import (
@@ -31,6 +30,7 @@ from localstack.services.stepfunctions.backend.execution_worker_comm import (
 )
 from localstack.services.stepfunctions.mocking.mock_config import MockTestCase
 from localstack.utils.common import TMP_THREADS
+from localstack.utils.threads import Thread
 
 
 class ExecutionWorker:

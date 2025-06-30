@@ -1,5 +1,4 @@
 import logging
-import threading
 from typing import Final
 
 from localstack.aws.api.stepfunctions import (
@@ -18,7 +17,7 @@ from localstack.services.stepfunctions.asl.component.eval_component import EvalC
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.utils.threads import TMP_THREADS
+from localstack.utils.threads import TMP_THREADS, Thread
 
 LOG = logging.getLogger(__name__)
 
@@ -36,7 +35,7 @@ class TestStateProgram(EvalComponent):
 
     def eval(self, env: TestStateEnvironment) -> None:
         env.next_state_name = self.test_state.name
-        worker_thread = threading.Thread(target=super().eval, args=(env,), daemon=True)
+        worker_thread = Thread(target=super().eval, args=(env,), daemon=True)
         TMP_THREADS.append(worker_thread)
         worker_thread.start()
         worker_thread.join(timeout=TEST_CASE_EXECUTION_TIMEOUT_SECONDS)
