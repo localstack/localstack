@@ -6,7 +6,6 @@ from http import HTTPMethod
 from typing import Literal, Optional, TypedDict
 from urllib.parse import urlparse
 
-import requests
 from botocore.exceptions import ClientError
 from werkzeug.datastructures import Headers
 
@@ -21,6 +20,7 @@ from localstack.aws.spec import get_service_catalog
 from localstack.constants import APPLICATION_JSON, INTERNAL_AWS_ACCESS_KEY_ID
 from localstack.utils.aws.arns import extract_region_from_arn
 from localstack.utils.aws.client_types import ServicePrincipal
+from localstack.utils.http import safe_requests
 from localstack.utils.strings import to_bytes, to_str
 
 from ..context import (
@@ -235,7 +235,8 @@ class RestApiAwsIntegration(RestApiIntegration):
         if method not in NO_BODY_METHODS:
             request_parameters["data"] = data
 
-        request_response = requests.request(**request_parameters)
+        # request_response = requests.request(**request_parameters)
+        request_response = safe_requests.request(**request_parameters)
         response_content = request_response.content
 
         if (
