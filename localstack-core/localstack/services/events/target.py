@@ -7,7 +7,6 @@ from abc import ABC, abstractmethod
 from typing import Any, Dict, Set, Type
 from urllib.parse import urlencode
 
-import requests
 from botocore.client import BaseClient
 
 from localstack import config
@@ -44,6 +43,7 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.aws.message_forwarding import (
     add_target_http_parameters,
 )
+from localstack.utils.http import safe_requests
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import to_bytes
 from localstack.utils.time import now_utc
@@ -408,7 +408,7 @@ class ApiGatewayTargetSender(TargetSender):
         headers[TRACE_HEADER_KEY] = trace_header.to_header_str()
 
         # Send the HTTP request
-        response = requests.request(
+        response = safe_requests.request(
             method=http_method, url=url, headers=headers, data=event_json, timeout=5
         )
         if not response.ok:
@@ -548,7 +548,7 @@ class EventsApiDestinationTargetSender(TargetSender):
         # add trace header
         headers[TRACE_HEADER_KEY] = trace_header.to_header_str()
 
-        result = requests.request(
+        result = safe_requests.request(
             method=method, url=endpoint, data=json.dumps(event or {}), headers=headers
         )
         if result.status_code >= 400:

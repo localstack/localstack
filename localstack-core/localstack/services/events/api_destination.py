@@ -3,8 +3,6 @@ import json
 import logging
 import re
 
-import requests
-
 from localstack.aws.api.events import (
     ApiDestinationDescription,
     ApiDestinationHttpMethod,
@@ -28,7 +26,7 @@ from localstack.utils.aws.arns import (
 from localstack.utils.aws.message_forwarding import (
     list_of_parameters_to_object,
 )
-from localstack.utils.http import add_query_params_to_url
+from localstack.utils.http import add_query_params_to_url, safe_requests
 from localstack.utils.strings import to_str
 
 VALID_AUTH_TYPES = [t.value for t in ConnectionAuthorizationType]
@@ -292,7 +290,7 @@ def _auth_keys_from_connection(connection_details, auth_secret):
             oauth_header = list_of_parameters_to_object(
                 oauth_http_parameters.get("HeaderParameters", [])
             )
-            oauth_result = requests.request(
+            oauth_result = safe_requests.request(
                 method=oauth_method,
                 url=oauth_endpoint,
                 data=json.dumps(oauth_body),
