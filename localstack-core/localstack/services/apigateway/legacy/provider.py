@@ -1023,17 +1023,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         moto_rest_api = get_moto_rest_api(context, rest_api_id)
         moto_resource = moto_rest_api.resources.get(resource_id)
         if not moto_resource:
-            # TODO: check if this is the correct exception
             raise NotFoundException("Invalid Resource identifier specified")
 
         moto_method = moto_resource.resource_methods.get(http_method)
         if not moto_method:
-            # TODO: check if this is the correct exception
             raise NotFoundException("Invalid Method identifier specified")
 
         method_response = moto_method.method_responses.get(status_code)
         if not method_response:
-            # TODO: check if this is the correct exception
             raise NotFoundException("Invalid Response status code specified")
 
         for patch_operation in patch_operations:

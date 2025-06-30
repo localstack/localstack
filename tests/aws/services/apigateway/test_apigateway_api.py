@@ -3003,6 +3003,38 @@ class TestApigatewayIntegration:
             )
         snapshot.match("update-method-response-invalid-statuscode-and-wrong-op", e.value.response)
 
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId="wrong",
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="POST",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-method", e.value.response)
+
     @markers.aws.validated
     def test_update_method_response_wrong_operations(
         self, aws_client, apigw_create_rest_api, snapshot
