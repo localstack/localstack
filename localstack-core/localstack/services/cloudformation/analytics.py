@@ -55,3 +55,13 @@ resources = LabeledCounter(
     labels=["resource_type", "missing", "action"],
     schema_version=COUNTER_VERSION,
 )
+
+
+def track_resource_operation(
+    action: ActionOptions | str, expected_resource_type: str, *, missing: bool
+):
+    resources.labels(
+        resource_type=expected_resource_type,
+        missing=missing,
+        action=ActionOptions.from_action(action),
+    ).increment()

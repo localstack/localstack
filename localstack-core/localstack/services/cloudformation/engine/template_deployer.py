@@ -11,9 +11,11 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     get_action_name_for_resource_change,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.changes import ChangeConfig, ResourceChange
@@ -31,6 +33,7 @@ from localstack.services.cloudformation.engine.template_utils import (
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
+    NoResourceProvider,
     OperationStatus,
     ProgressEvent,
     ResourceProviderExecutor,
@@ -1295,7 +1298,9 @@ class TemplateDeployer:
             action, logical_resource_id=resource_id
         )
 
-        resource_provider = executor.try_load_resource_provider(action, get_resource_type(resource))
+        resource_type = get_resource_type(resource)
+        resource_provider = executor.try_load_resource_provider(resource_type)
+        track_resource_operation(action, resource_type, missing=resource_provider is None)
         if resource_provider is not None:
             # add in-progress event
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
@@ -1321,6 +1326,15 @@ class TemplateDeployer:
                 resource_provider, resource, resource_provider_payload
             )
         else:
+            # track that we don't handle the resource, and possibly raise an exception
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+
+            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                raise NoResourceProvider
+
             resource["PhysicalResourceId"] = MOCK_REFERENCE
             progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
@@ -1419,6 +1433,7 @@ class TemplateDeployer:
         )
         for i, resource_id in enumerate(ordered_resource_ids):
             resource = resources[resource_id]
+            resource_type = get_resource_type(resource)
             try:
                 # TODO: cache condition value in resource details on deployment and use cached value here
                 if not evaluate_resource_condition(
@@ -1437,16 +1452,17 @@ class TemplateDeployer:
                     resource_id,
                     i + 1,
                     len(resources),
-                    resource["ResourceType"],
+                    resource_type,
                 )
-                resource_provider = executor.try_load_resource_provider(
-                    action, get_resource_type(resource)
-                )
+                resource_provider = executor.try_load_resource_provider(resource_type)
+                track_resource_operation(action, resource_type, missing=resource_provider is None)
                 if resource_provider is not None:
                     event = executor.deploy_loop(
                         resource_provider, resource, resource_provider_payload
                     )
                 else:
+                    if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                        raise NoResourceProvider
                     event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
                 match event.status:
                     case OperationStatus.SUCCESS:

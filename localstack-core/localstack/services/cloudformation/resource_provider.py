@@ -19,14 +19,11 @@ from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory
-from localstack.services.cloudformation import analytics
-from localstack.services.cloudformation.analytics import ActionOptions
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
     fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
-    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
@@ -560,7 +557,7 @@ class ResourceProviderExecutor:
                 raise NotImplementedError(change_type)  # TODO: change error type
 
     @staticmethod
-    def try_load_resource_provider(action: str, resource_type: str) -> ResourceProvider | None:
+    def try_load_resource_provider(resource_type: str) -> ResourceProvider | None:
         # TODO: unify namespace of plugins
 
         # 1. try to load pro resource provider
@@ -582,9 +579,6 @@ class ResourceProviderExecutor:
         # 2. try to load community resource provider
         try:
             plugin = plugin_manager.load(resource_type)
-            analytics.resources.labels(
-                resource_type=resource_type, missing=False, action=ActionOptions.from_action(action)
-            ).increment()
             return plugin.factory()
         except ValueError:
             # could not find a plugin for that name
@@ -597,21 +591,8 @@ class ResourceProviderExecutor:
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
-        # 3. we could not find the resource provider so log the missing resource provider
-        log_not_available_message(
-            resource_type,
-            f'No resource provider found for "{resource_type}"',
-        )
-
-        analytics.resources.labels(
-            resource_type=resource_type, missing=True, action=ActionOptions.from_action(action)
-        ).increment()
-
-        if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-            # TODO: figure out a better way to handle non-implemented here?
-            return None
-        else:
-            raise NoResourceProvider
+        # we could not find the resource provider
+        return None
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type: str, resource_type_schema: dict
