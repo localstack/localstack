@@ -7,6 +7,8 @@ from concurrent.futures import Future
 from multiprocessing.dummy import Pool
 from typing import Callable, List, Optional
 
+from localstack.runtime.hooks import hook_spec
+
 LOG = logging.getLogger(__name__)
 
 # arrays for temporary threads and resources
@@ -15,6 +17,13 @@ TMP_PROCESSES = []
 
 counter_lock = threading.Lock()
 counter = 0
+
+
+HOOKS_THREADING_POST_INIT_WORKER = "localstack.hooks.threading_post_init_worker"
+HOOKS_THREADING_PRE_INIT_WORKER = "localstack.hooks.threading_pre_init_worker"
+
+pre_init_thread_worker = hook_spec(HOOKS_THREADING_PRE_INIT_WORKER)
+post_init_thread_worker = hook_spec(HOOKS_THREADING_POST_INIT_WORKER)
 
 
 class FuncThread(threading.Thread):
@@ -49,8 +58,18 @@ class FuncThread(threading.Thread):
         self.result_future = Future()
         self._stop_event = threading.Event()
         self.on_stop = on_stop
+        self._init_data = {}
+        try:
+            pre_init_thread_worker.run(self._init_data)
+        except Exception:
+            LOG.debug("Error in init")
 
     def run(self):
+        try:
+            post_init_thread_worker.run(self._init_data)
+        except Exception:
+            LOG.debug("Error in init")
+
         result = None
         try:
             kwargs = {}
@@ -161,3 +180,21 @@ def parallelize(func: Callable, arr: List, size: int = None):
 
     with Pool(size) as pool:
         return pool.map(func, arr)
+
+
+class Thread(threading.Thread):
+    def __init__(self, /, **kwargs):
+        threading.Thread.__init__(self, **kwargs)
+        self._locals = {}
+        try:
+            pre_init_thread_worker.run(self._locals)
+        except Exception:
+            LOG.debug("Error in init")
+
+    def run(self):
+        try:
+            post_init_thread_worker.run(self._locals)
+        except Exception:
+            LOG.debug("Error in init")
+
+        super().run()
