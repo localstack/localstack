@@ -128,6 +128,7 @@ class LanguageCode(StrEnum):
     cs_CZ = "cs-CZ"
     cy_WL = "cy-WL"
     el_GR = "el-GR"
+    et_EE = "et-EE"
     et_ET = "et-ET"
     eu_ES = "eu-ES"
     fi_FI = "fi-FI"
