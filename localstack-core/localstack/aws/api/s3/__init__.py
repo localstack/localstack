@@ -495,6 +495,7 @@ class ObjectStorageClass(StrEnum):
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
+    FSX_OPENZFS = "FSX_OPENZFS"
 
 
 class ObjectVersionStorageClass(StrEnum):
@@ -574,6 +575,7 @@ class RestoreRequestType(StrEnum):
 
 class ServerSideEncryption(StrEnum):
     AES256 = "AES256"
+    aws_fsx = "aws:fsx"
     aws_kms = "aws:kms"
     aws_kms_dsse = "aws:kms:dsse"
 
@@ -600,6 +602,7 @@ class StorageClass(StrEnum):
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
+    FSX_OPENZFS = "FSX_OPENZFS"
 
 
 class StorageClassAnalysisSchemaVersion(StrEnum):
