@@ -3878,5 +3878,203 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_method_response": {
+    "recorded-date": "27-06-2025, 10:31:48",
+    "recorded-content": {
+      "put-method-response": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": false
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-method-response": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": true
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.my-header": true
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-method-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response": {
+    "recorded-date": "30-06-2025, 12:42:31",
+    "recorded-content": {
+      "remove-update-method-response": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add-update-method-response": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": true
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_wrong_operations": {
+    "recorded-date": "30-06-2025, 13:54:57",
+    "recorded-content": {
+      "update-method-response-wrong-operation-1": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-2": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-3": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-4": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "4 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.3.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.4.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-5": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.3.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_negative_tests": {
+    "recorded-date": "30-06-2025, 14:25:36",
+    "recorded-content": {
+      "update-method-response-wrong-statuscode": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-invalid-statuscode": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-invalid-statuscode-and-wrong-op": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

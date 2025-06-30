@@ -2921,3 +2921,371 @@ class TestApigatewayIntegration:
             statusCode="200",
         )
         snapshot.match("delete-integration-response", delete_response)
+
+    @markers.aws.validated
+    def test_update_method_response_negative_tests(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="201",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-statuscode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="wrong",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-invalid-statuscode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="wrong",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-invalid-statuscode-and-wrong-op", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_response_wrong_operations(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-3", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-4", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "remove",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-5", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_response(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        remove_update_response = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "remove",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "remove",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("remove-update-method-response", remove_update_response)
+
+        add_update_response = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "add",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("add-update-method-response", add_update_response)
+
+    @markers.aws.validated
+    def test_lifecycle_method_response(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        put_method_response = apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+        snapshot.match("put-method-response", put_method_response)
+
+        get_response = apigw_client.get_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        snapshot.match("get-integration-response", get_response)
+
+        update_response = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "replace",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("update-method-response", update_response)
+
+        get_method = apigw_client.get_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-method", get_method)
+
+        delete_response = apigw_client.delete_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        snapshot.match("delete-method-response", delete_response)
