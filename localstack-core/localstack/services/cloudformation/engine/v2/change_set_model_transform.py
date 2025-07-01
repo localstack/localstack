@@ -252,11 +252,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if not transformed_before_template:
                 transformed_before_template = self._before_template
                 for before_global_transform in transform_before:
-                    transformed_before_template = self._apply_global_transform(
-                        global_transform=before_global_transform,
-                        parameters=parameters_before,
-                        template=transformed_before_template,
-                    )
+                    if not is_nothing(before_global_transform.name):
+                        transformed_before_template = self._apply_global_transform(
+                            global_transform=before_global_transform,
+                            parameters=parameters_before,
+                            template=transformed_before_template,
+                        )
                 self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
@@ -265,11 +266,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if not transformed_after_template:
                 transformed_after_template = self._after_template
                 for after_global_transform in transform_after:
-                    transformed_after_template = self._apply_global_transform(
-                        global_transform=after_global_transform,
-                        parameters=parameters_after,
-                        template=transformed_after_template,
-                    )
+                    if not is_nothing(after_global_transform.name):
+                        transformed_after_template = self._apply_global_transform(
+                            global_transform=after_global_transform,
+                            parameters=parameters_after,
+                            template=transformed_after_template,
+                        )
                 self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
 
         self._save_runtime_cache()
