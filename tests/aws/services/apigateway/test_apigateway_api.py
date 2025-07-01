@@ -2949,7 +2949,6 @@ class TestApigatewayIntegration:
             resourceId=root_resource_id,
             httpMethod="GET",
             statusCode="200",
-            # responseParameters={},
             responseParameters={"method.response.header.my-header": False},
             responseModels={"application/json": "Empty"},
         )
