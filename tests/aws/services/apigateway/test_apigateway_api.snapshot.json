@@ -3880,15 +3880,11 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_method_response": {
-    "recorded-date": "27-06-2025, 10:31:48",
+    "recorded-date": "01-07-2025, 15:48:02",
     "recorded-content": {
       "put-method-response": {
-        "responseModels": {
-          "application/json": "Empty"
-        },
-        "responseParameters": {
-          "method.response.header.my-header": false
-        },
+        "responseModels": {},
+        "responseParameters": {},
         "statusCode": "200",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -3896,19 +3892,28 @@
         }
       },
       "get-integration-response": {
-        "responseModels": {
-          "application/json": "Empty"
-        },
-        "responseParameters": {
-          "method.response.header.my-header": false
-        },
+        "responseModels": {},
+        "responseParameters": {},
         "statusCode": "200",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
       },
-      "update-method-response": {
+      "add-method-responses": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": true
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-method-responses": {
         "responseModels": {
           "application/json": "Empty"
         },
@@ -4092,6 +4097,93 @@
           "Message": "Invalid Method identifier specified"
         },
         "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_lack_response_parameters_and_models": {
+    "recorded-date": "01-07-2025, 15:48:38",
+    "recorded-content": {
+      "update-method-response-operation-without-response-parameters": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-without-response-models": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Content-Type specified was not found"
+        },
+        "message": "Content-Type specified was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /wrong/method.response.header.my-header"
+        },
+        "message": "Invalid patch path /wrong/method.response.header.my-header",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_wrong_param_names": {
+    "recorded-date": "01-07-2025, 15:49:16",
+    "recorded-content": {
+      "update-method-response-operation-with-wrong-param-name-1": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-param-name-2": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-param-name-3": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Content-Type specified was not found"
+        },
+        "message": "Content-Type specified was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-param-name-4": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Content-Type specified was not found"
+        },
+        "message": "Content-Type specified was not found",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404

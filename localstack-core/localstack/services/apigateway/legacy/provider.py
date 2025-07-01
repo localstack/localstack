@@ -985,19 +985,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         method_response = moto_method_response.to_json()
         return method_response
 
-    @handler("UpdateMethodResponse", expand=False)
+    @handler("UpdateMethodResponse")
     def update_method_response(
         self,
         context: RequestContext,
-        request: TestInvokeMethodRequest,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+        patch_operations: ListOfPatchOperation | None = None,
         **kwargs,
     ) -> MethodResponse:
-        rest_api_id = request["restApiId"]
-        resource_id = request["resourceId"]
-        http_method = request["httpMethod"]
-        status_code = request["statusCode"]
-        patch_operations = request.get("patchOperations", [])
-
         error_messages = []
         for index, operation in enumerate(patch_operations):
             op = operation.get("op")
@@ -1040,6 +1038,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
             if path.startswith("/responseParameters/"):
                 param_name = path.removeprefix("/responseParameters/")
+                if param_name not in method_response.response_parameters and op in (
+                    "replace",
+                    "remove",
+                ):
+                    raise NotFoundException("Invalid parameter name specified")
                 if op in ("add", "replace"):
                     method_response.response_parameters[param_name] = value == "true"
                 elif op == "remove":
@@ -1048,17 +1051,24 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             elif path.startswith("/responseModels/"):
                 param_name = path.removeprefix("/responseModels/")
                 param_name = param_name.replace("~1", "/")
+                if param_name not in method_response.response_models and op in (
+                    "replace",
+                    "remove",
+                ):
+                    raise NotFoundException("Content-Type specified was not found")
                 if op in ("add", "replace"):
                     method_response.response_models[param_name] = value
                 elif op == "remove":
                     method_response.response_models.pop(param_name)
+            else:
+                raise BadRequestException(f"Invalid patch path {path}")
 
         response: MethodResponse = method_response.to_json()
 
         # AWS doesn't send back empty responseParameters or responseModels
-        if method_response.response_parameters == {}:
+        if not method_response.response_parameters:
             response.pop("responseParameters")
-        if method_response.response_models == {}:
+        if not method_response.response_models:
             response.pop("responseModels")
 
         return response
