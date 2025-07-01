@@ -2102,7 +2102,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
-    "recorded-date": "27-06-2025, 09:00:59",
+    "recorded-date": "01-07-2025, 10:36:09",
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {

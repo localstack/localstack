@@ -744,7 +744,10 @@ class KmsKey:
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
             )
         else:
-            self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+            if self.metadata["Origin"] == "EXTERNAL":
+                self.metadata["CurrentKeyMaterialId"] = self.crypto_key.key_material.hex()
+            else:
+                self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
 class KmsGrant:

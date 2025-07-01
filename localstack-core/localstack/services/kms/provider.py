@@ -380,10 +380,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def _is_rsa_spec(key_spec: str) -> bool:
         return key_spec in [KeySpec.RSA_2048, KeySpec.RSA_3072, KeySpec.RSA_4096]
 
-    @staticmethod
-    def _return_key_material_id() -> bytes:
-        return os.urandom(32)
-
     #
     # Operation Handlers
     #
@@ -1194,15 +1190,21 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise ValidationException(
                 "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
             )
-        current_material = key_to_import_material_to.crypto_key.key_material
-        if current_material:
-            key_to_import_material_to.previous_keys.append(current_material)
 
             # TODO actually set validTo and make the key expire
         key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
-        key_to_import_material_to.crypto_key.load_key_material(key_material)
-
+        if key_to_import_material_to.metadata["Origin"] == "EXTERNAL":
+            if "CurrentKeyMaterialId" not in key_to_import_material_to.metadata:
+                key_to_import_material_to.metadata["CurrentKeyMaterialId"] = key_material.hex()
+            if key_material != key_to_import_material_to.crypto_key.key_material:
+                key_to_import_material_to.previous_keys.append(
+                    key_to_import_material_to.crypto_key.key_material
+                )
+            key_to_import_material_to.crypto_key.load_key_material(key_material)
+            response_data = {"KeyId": key_to_import_material_to.metadata["KeyId"]}
+            response_data["KeyMaterialId"] = key_material.hex()
+            return ImportKeyMaterialResponse(**response_data)
         return ImportKeyMaterialResponse()
 
     def delete_imported_key_material(

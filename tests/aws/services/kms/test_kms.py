@@ -2,7 +2,6 @@ import base64
 import hashlib
 import json
 import os
-import time
 import uuid
 from datetime import datetime
 from random import getrandbits
@@ -25,7 +24,7 @@ from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
-from localstack.utils.sync import poll_condition
+from localstack.utils.sync import poll_condition, retry
 
 
 def create_tags(**kwargs):
@@ -97,6 +96,19 @@ def _get_alias(kms_client, alias_name, key_id=None):
             break
         next_token = response["nextToken"]
     return None
+
+
+def _verify_key_meta(aws_client, key_id, item_key, item_value):
+    key_data = aws_client.kms.describe_key(KeyId=key_id)["KeyMetadata"][item_key]
+    if key_data == item_value:
+        return True
+    raise AssertionError("Key metadata does not match expected value")
+
+
+def _rotate_key_status(aws_client, key_id):
+    if "OnDemandRotationStartDate" not in aws_client.kms.get_key_rotation_status(KeyId=key_id):
+        return True
+    raise AssertionError("Key is still rotating")
 
 
 class TestKMS:
@@ -1474,14 +1486,10 @@ class TestKMS:
             Origin="EXTERNAL", KeySpec="SYMMETRIC_DEFAULT", KeyUsage="ENCRYPT_DECRYPT"
         )
         key_id = key["KeyId"]
-
-        # Get parameters for import
         params = aws_client.kms.get_parameters_for_import(
             KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_4096"
         )
-
         first_symmetric_key = os.urandom(32)
-        # import symmetric key (key material) into KMS
         public_key = load_der_public_key(params["PublicKey"])
         encrypted_key = public_key.encrypt(
             first_symmetric_key,
@@ -1490,34 +1498,37 @@ class TestKMS:
             ),
         )
 
-        # Import key material
-        aws_client.kms.import_key_material(
+        first_key_response = aws_client.kms.import_key_material(
             KeyId=key_id,
             ImportToken=params["ImportToken"],
             EncryptedKeyMaterial=encrypted_key,
             ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
         )
 
-        # Generate data key
+        assert _verify_key_meta(aws_client, key_id, "KeyId", key_id)
+        assert retry(
+            function=_verify_key_meta,
+            retries=2,
+            sleep=1.0,
+            aws_client=aws_client,
+            key_id=key_id,
+            item_key="CurrentKeyMaterialId",
+            item_value=first_key_response["KeyMaterialId"],
+        )
         key_before_import_encryption_content = aws_client.kms.generate_data_key(
             KeyId=key_id,
             NumberOfBytes=32,
         )
-
         deciphered_text = aws_client.kms.decrypt(
             CiphertextBlob=key_before_import_encryption_content["CiphertextBlob"]
         )
-
         assert key_before_import_encryption_content["Plaintext"] == deciphered_text["Plaintext"]
 
         # Get parameters for import
         param = aws_client.kms.get_parameters_for_import(
             KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_4096"
         )
-
-        # Import second key
         second_symmetric_key = os.urandom(32)
-        # import symmetric key (key material) into KMS
         public_key = load_der_public_key(param["PublicKey"])
         new_encrypted_key = public_key.encrypt(
             second_symmetric_key,
@@ -1526,32 +1537,40 @@ class TestKMS:
             ),
         )
 
-        # Import second key material
-        aws_client.kms.import_key_material(
+        # Import second key material for rotation later on, OnDemand
+        second_key_response = aws_client.kms.import_key_material(
             KeyId=key_id,
             ImportToken=param["ImportToken"],
             EncryptedKeyMaterial=new_encrypted_key,
             ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
             ImportType="NEW_KEY_MATERIAL",
         )
-
-        # Rotate the key
         aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        retry(
+            function=_rotate_key_status,
+            retries=10,
+            sleep=3.0,
+            aws_client=aws_client,
+            key_id=key_id,
+        )
+        assert _verify_key_meta(aws_client, key_id, "KeyId", key_id)
+        assert retry(
+            function=_verify_key_meta,
+            retries=20,
+            sleep=3.0,
+            aws_client=aws_client,
+            key_id=key_id,
+            item_key="CurrentKeyMaterialId",
+            item_value=second_key_response["KeyMaterialId"],
+        )
 
-        # wait for the key to rotate as it's running on a background worker in aws
-        while "OnDemandRotationStartDate" in aws_client.kms.get_key_rotation_status(KeyId=key_id):
-            time.sleep(0.5)
-
-        # Generate data key on new key
         key_after_rotation_encryption_content = aws_client.kms.generate_data_key(
             KeyId=key_id, NumberOfBytes=32
         )
-
         second_deciphered_text = aws_client.kms.decrypt(
             KeyId=key_id,
             CiphertextBlob=key_after_rotation_encryption_content["CiphertextBlob"],
         )
-
         assert (
             key_after_rotation_encryption_content["Plaintext"]
             == second_deciphered_text["Plaintext"]
@@ -1560,13 +1579,11 @@ class TestKMS:
             key_after_rotation_encryption_content["Plaintext"]
             == second_deciphered_text["Plaintext"]
         )
-
-        # Check decyprt of first Material
+        # Check we can still use the first Material to decrypt data
         first_deciphered_text = aws_client.kms.decrypt(
-            KeyId=key_before_import_encryption_content["KeyId"],
+            KeyId=key_id,
             CiphertextBlob=key_before_import_encryption_content["CiphertextBlob"],
         )
-
         assert (
             key_before_import_encryption_content["Plaintext"] == first_deciphered_text["Plaintext"]
         )
