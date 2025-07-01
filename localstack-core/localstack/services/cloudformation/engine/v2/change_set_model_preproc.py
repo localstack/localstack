@@ -595,22 +595,22 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         )
         return delta
 
-    def _compute_fn_transform(self, args: dict[str, Any]) -> Any:
+    def _compute_fn_transform(self, macro_definition: dict[str, Any]) -> Any:
         # TODO: add typing to arguments before this level.
         # TODO: add schema validation
         # TODO: add support for other transform types
 
         account_id = self._change_set.account_id
         region_name = self._change_set.region_name
-        transform_name: str = args.get("Name")
+        transform_name: str = macro_definition.get("Name")
         if not isinstance(transform_name, str):
             raise RuntimeError("Invalid or missing Fn::Transform 'Name' argument")
-        transform_parameters: dict = args.get("Parameters")
+        transform_parameters: dict = macro_definition.get("Parameters")
         if not isinstance(transform_parameters, dict):
             raise RuntimeError("Invalid or missing Fn::Transform 'Parameters' argument")
 
         if transform_name in transformers:
-            # TODO: port and refactor this 'transformers' logic to this package.
+            # TODO: port and refactor this 'transformers' logic to this package.https://lmstudio.ai/
             builtin_transformer_class = transformers[transform_name]
             builtin_transformer: Transformer = builtin_transformer_class()
             transform_output: Any = builtin_transformer.transform(
@@ -624,17 +624,36 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         if transform_name in macros_store:
             # TODO: this formatting of stack parameters is odd but required to integrate with v1 execute_macro util.
             #  consider porting this utils and passing the plain list of parameters instead.
-            stack_parameters = {
-                parameter["ParameterKey"]: parameter
-                for parameter in self._change_set.stack.parameters
+
+            resolved_parameters = {
+                **self._change_set.stack.resolved_parameters,
+                **self.visit_node_parameters(
+                    self._change_set.update_model.node_template.parameters
+                ).after,
             }
+
+            template_parameters = {
+                **self._change_set.stack.template.get("Parameters", {}),
+                **(self._change_set.template or {}).get("Parameters", {}),
+            }
+
+            for key, value in resolved_parameters.items():
+                template_parameters[key]["ParameterValue"] = value
+
+            # -2 removes: divergence/Fn::transform, -3 returns the path until the parent
+            scope = macro_definition.get("Scope").split("/")[:-3]
+            template = self._change_set.template or {}
+            for key in scope:
+                if key:
+                    template = template.get(key)
+
             transform_output: Any = execute_macro(
                 account_id=account_id,
                 region_name=region_name,
-                parsed_template=dict(),  # TODO: review the requirements for this argument.
-                macro=args,  # TODO: review support for non dict bindings (v1).
-                stack_parameters=stack_parameters,
-                transformation_parameters=transform_parameters,
+                parsed_template=template,  # TODO: review the requirements for this argument.
+                macro=macro_definition,  # TODO: review support for non dict bindings (v1).
+                stack_parameters=template_parameters,
+                transformation_parameters=macro_definition.get("Parameters"),
                 is_intrinsic=True,
             )
             return transform_output
@@ -647,6 +666,15 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+
+        # TODO find better manage of this
+        # The scope of a transformation is important to determine the template passed to the macro
+        if arguments_delta.before:
+            arguments_delta.before["Scope"] = node_intrinsic_function.scope
+
+        if arguments_delta.after:
+            arguments_delta.after["Scope"] = node_intrinsic_function.scope
+
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,

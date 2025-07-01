@@ -812,6 +812,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
                 stack.deletion_time = datetime.now(tz=timezone.utc)
             except Exception as e:
+                import traceback
+
+                traceback.print_exc()
                 LOG.warning(
                     "Failed to delete stack '%s': %s",
                     stack.stack_name,
