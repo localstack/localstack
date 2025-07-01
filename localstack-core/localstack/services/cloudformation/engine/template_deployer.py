@@ -1461,6 +1461,11 @@ class TemplateDeployer:
                         resource_provider, resource, resource_provider_payload
                     )
                 else:
+                    log_not_available_message(
+                        resource_type,
+                        f'No resource provider found for "{resource_type}"',
+                    )
+
                     if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
                         raise NoResourceProvider
                     event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
