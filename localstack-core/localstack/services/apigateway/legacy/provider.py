@@ -1031,6 +1031,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not method_response:
             raise NotFoundException("Invalid Response status code specified")
 
+        if method_response.response_models is None:
+            method_response.response_models = {}
+        if method_response.response_parameters is None:
+            method_response.response_parameters = {}
+
         for patch_operation in patch_operations:
             op = patch_operation["op"]
             path = patch_operation["path"]

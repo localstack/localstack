@@ -3047,8 +3047,6 @@ class TestApigatewayIntegration:
             resourceId=root_resource_id,
             httpMethod="GET",
             statusCode="200",
-            responseParameters={},
-            responseModels={},
         )
 
         with pytest.raises(ClientError) as e:
