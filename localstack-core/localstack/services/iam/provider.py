@@ -53,7 +53,6 @@ from localstack.aws.api.iam import (
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
     SimulationPolicyListType,
-    Tag,
     User,
     arnType,
     customSuffixType,
@@ -278,7 +277,7 @@ class IamProvider(IamApi):
         if moto_role.permissions_boundary:
             role["PermissionsBoundary"] = moto_role.permissions_boundary
         if moto_role.tags:
-            role["Tags"] = [Tag(Key=k, Value=v) for k, v in moto_role.tags.items()]
+            role["Tags"] = moto_role.tags
         # role["RoleLastUsed"]: # TODO: add support
         return role
 
@@ -299,8 +298,9 @@ class IamProvider(IamApi):
         response_roles = []
         for moto_role in moto_roles:
             response_role = self.moto_role_to_role_type(moto_role)
-            # Permission boundary should not be a part of the response
+            # Permission boundary and Tags should not be a part of the response
             response_role.pop("PermissionsBoundary", None)
+            response_role.pop("Tags", None)
             response_roles.append(response_role)
             if path_prefix:  # TODO: this is consistent with the patch it migrates, but should add tests for this.
                 response_role["AssumeRolePolicyDocument"] = quote(

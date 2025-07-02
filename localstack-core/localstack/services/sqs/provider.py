@@ -1679,6 +1679,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MessageSystemAttributeName.SenderId: context.account_id,  # not the account ID in AWS
             MessageSystemAttributeName.SentTimestamp: str(now(millis=True)),
         }
+        # we are not using the `context.trace_context` here as it is automatically populated
+        # AWS only adds the `AWSTraceHeader` attribute if the header is explicitly present
+        # TODO: check maybe with X-Ray Active mode?
+        if "X-Amzn-Trace-Id" in context.request.headers:
+            result[MessageSystemAttributeName.AWSTraceHeader] = str(
+                context.request.headers["X-Amzn-Trace-Id"]
+            )
 
         if message_system_attributes is not None:
             for attr in message_system_attributes:

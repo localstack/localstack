@@ -1,11 +1,20 @@
 {
   "tests/aws/services/cloudformation/v2/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_base_global_macro": {
-    "last_validated_date": "2025-06-16T09:52:29+00:00",
+    "last_validated_date": "2025-06-24T15:16:22+00:00",
     "durations_in_seconds": {
-      "setup": 12.19,
-      "call": 37.41,
-      "teardown": 5.9,
-      "total": 55.5
+      "setup": 11.62,
+      "call": 34.97,
+      "teardown": 5.44,
+      "total": 52.03
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_update_after_macro_for_before_version_is_deleted": {
+    "last_validated_date": "2025-06-26T11:59:07+00:00",
+    "durations_in_seconds": {
+      "setup": 11.46,
+      "call": 52.25,
+      "teardown": 1.78,
+      "total": 65.49
     }
   }
 }

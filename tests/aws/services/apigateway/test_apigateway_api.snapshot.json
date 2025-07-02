@@ -3714,5 +3714,481 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_api": {
+    "recorded-date": "18-06-2025, 12:28:55",
+    "recorded-content": {
+      "put-integration-response-wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-response-wrong-api": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_resource": {
+    "recorded-date": "18-06-2025, 12:28:25",
+    "recorded-content": {
+      "put-integration-response-wrong-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-response-wrong-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_method": {
+    "recorded-date": "18-06-2025, 11:47:00",
+    "recorded-content": {
+      "put-integration-response-wrong-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "get-integration-response-wrong-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_statuscode": {
+    "recorded-date": "18-06-2025, 11:51:51",
+    "recorded-content": {
+      "put-integration-response-invalid-statusCode": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "get-integration-response-invalid-statusCode": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_responsetemplates": {
+    "recorded-date": "18-06-2025, 13:03:29",
+    "recorded-content": {
+      "put-integration-response-invalid-responseTemplates-1": {
+        "Error": {
+          "Code": "SerializationException",
+          "Message": "class com.amazon.coral.value.json.numbers.TruncatingBigNumber can not be converted to an String"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "put-integration-response-invalid-responseTemplates-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Validation Result: warnings : [], errors : [Invalid content type specified: 123]"
+        },
+        "message": "Validation Result: warnings : [], errors : [Invalid content type specified: 123]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_integration": {
+    "recorded-date": "26-06-2025, 11:21:05",
+    "recorded-content": {
+      "get-integration-response-without-integration": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Integration identifier specified"
+        },
+        "message": "Invalid Integration identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_wrong_status_code": {
+    "recorded-date": "26-06-2025, 11:21:43",
+    "recorded-content": {
+      "get-integration-response-wrong-status-code": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_lifecycle_method_response": {
+    "recorded-date": "01-07-2025, 15:48:02",
+    "recorded-content": {
+      "put-method-response": {
+        "responseModels": {},
+        "responseParameters": {},
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-response": {
+        "responseModels": {},
+        "responseParameters": {},
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "add-method-responses": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": true
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-method-responses": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": true
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-method": {
+        "apiKeyRequired": false,
+        "authorizationType": "NONE",
+        "httpMethod": "GET",
+        "methodIntegration": {
+          "cacheKeyParameters": [],
+          "cacheNamespace": "<cache-namespace:1>",
+          "passthroughBehavior": "WHEN_NO_MATCH",
+          "requestTemplates": {
+            "application/json": {
+              "statusCode": 200
+            }
+          },
+          "timeoutInMillis": 29000,
+          "type": "MOCK"
+        },
+        "methodResponses": {
+          "200": {
+            "responseModels": {
+              "application/json": "Empty"
+            },
+            "responseParameters": {
+              "method.response.header.my-header": true
+            },
+            "statusCode": "200"
+          }
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-method-response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response": {
+    "recorded-date": "30-06-2025, 12:42:31",
+    "recorded-content": {
+      "remove-update-method-response": {
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "add-update-method-response": {
+        "responseModels": {
+          "application/json": "Empty"
+        },
+        "responseParameters": {
+          "method.response.header.my-header": true
+        },
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_wrong_operations": {
+    "recorded-date": "30-06-2025, 13:54:57",
+    "recorded-content": {
+      "update-method-response-wrong-operation-1": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-2": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-3": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-4": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "4 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.3.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.4.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-operation-5": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.3.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_response_negative_tests": {
+    "recorded-date": "30-06-2025, 15:24:43",
+    "recorded-content": {
+      "update-method-response-wrong-statuscode": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-invalid-statuscode": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-invalid-statuscode-and-wrong-op": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong_op' at 'updateMethodResponseInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'statusCode' failed to satisfy constraint: Member must satisfy regular expression pattern: [1-5]\\d\\d"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-method-response-wrong-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-wrong-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_lack_response_parameters_and_models": {
+    "recorded-date": "01-07-2025, 15:48:38",
+    "recorded-content": {
+      "update-method-response-operation-without-response-parameters": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-without-response-models": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Content-Type specified was not found"
+        },
+        "message": "Content-Type specified was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-path": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path /wrong/method.response.header.my-header"
+        },
+        "message": "Invalid patch path /wrong/method.response.header.my-header",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_update_method_wrong_param_names": {
+    "recorded-date": "01-07-2025, 15:49:16",
+    "recorded-content": {
+      "update-method-response-operation-with-wrong-param-name-1": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-param-name-2": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid parameter name specified"
+        },
+        "message": "Invalid parameter name specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-param-name-3": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Content-Type specified was not found"
+        },
+        "message": "Content-Type specified was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "update-method-response-operation-with-wrong-param-name-4": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Content-Type specified was not found"
+        },
+        "message": "Content-Type specified was not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

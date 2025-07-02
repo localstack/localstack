@@ -645,7 +645,6 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@pytest.mark.skip("CFNV2:Other")
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,

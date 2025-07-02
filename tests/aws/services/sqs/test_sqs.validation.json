@@ -1,4 +1,22 @@
 {
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_aws_trace_header_propagation[sqs]": {
+    "last_validated_date": "2025-06-27T10:55:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 0.71,
+      "teardown": 0.15,
+      "total": 1.33
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_aws_trace_header_propagation[sqs_query]": {
+    "last_validated_date": "2025-06-27T10:55:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.68,
+      "teardown": 0.15,
+      "total": 0.83
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_change_message_visibility_after_visibility_timeout_expiration[sqs]": {
     "last_validated_date": "2024-04-30T13:33:26+00:00"
   },

@@ -270,6 +270,7 @@ NeuronDeviceMemorySize = int
 NeuronDeviceName = str
 NextToken = str
 NitroTpmSupportedVersionType = str
+OdbNetworkArn = str
 OfferingId = str
 OutpostArn = str
 OutpostLagId = str
@@ -5692,8 +5693,10 @@ class EbsBlockDevice(TypedDict, total=False):
     KmsKeyId: Optional[String]
     Throughput: Optional[Integer]
     OutpostArn: Optional[String]
+    AvailabilityZone: Optional[String]
     Encrypted: Optional[Boolean]
     VolumeInitializationRate: Optional[Integer]
+    AvailabilityZoneId: Optional[String]
 
 
 class BlockDeviceMapping(TypedDict, total=False):
@@ -7341,6 +7344,7 @@ class CreateFpgaImageResult(TypedDict, total=False):
 
 class CreateImageRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
+    SnapshotLocation: Optional[SnapshotLocationEnum]
     DryRun: Optional[Boolean]
     InstanceId: InstanceId
     Name: String
@@ -8886,6 +8890,7 @@ class CreateRouteRequest(ServiceRequest):
     LocalGatewayId: Optional[LocalGatewayId]
     CarrierGatewayId: Optional[CarrierGatewayId]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
     DryRun: Optional[Boolean]
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
@@ -9022,6 +9027,7 @@ class Route(TypedDict, total=False):
     State: Optional[RouteState]
     VpcPeeringConnectionId: Optional[String]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
 
 
 RouteList = List[Route]
@@ -19955,6 +19961,7 @@ class ReplaceRouteRequest(ServiceRequest):
     LocalGatewayId: Optional[LocalGatewayId]
     CarrierGatewayId: Optional[CarrierGatewayId]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
     DryRun: Optional[Boolean]
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
@@ -21608,6 +21615,7 @@ class Ec2Api:
         instance_id: InstanceId,
         name: String,
         tag_specifications: TagSpecificationList | None = None,
+        snapshot_location: SnapshotLocationEnum | None = None,
         dry_run: Boolean | None = None,
         description: String | None = None,
         no_reboot: Boolean | None = None,
@@ -22097,6 +22105,7 @@ class Ec2Api:
         local_gateway_id: LocalGatewayId | None = None,
         carrier_gateway_id: CarrierGatewayId | None = None,
         core_network_arn: CoreNetworkArn | None = None,
+        odb_network_arn: OdbNetworkArn | None = None,
         dry_run: Boolean | None = None,
         destination_cidr_block: String | None = None,
         gateway_id: RouteGatewayId | None = None,
@@ -28503,6 +28512,7 @@ class Ec2Api:
         local_gateway_id: LocalGatewayId | None = None,
         carrier_gateway_id: CarrierGatewayId | None = None,
         core_network_arn: CoreNetworkArn | None = None,
+        odb_network_arn: OdbNetworkArn | None = None,
         dry_run: Boolean | None = None,
         destination_cidr_block: String | None = None,
         gateway_id: RouteGatewayId | None = None,

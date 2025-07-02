@@ -1,5 +1,6 @@
 import copy
 import logging
+from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -23,6 +24,8 @@ from localstack.aws.api.cloudformation import (
     DisableRollback,
     ExecuteChangeSetOutput,
     ExecutionStatus,
+    GetTemplateSummaryInput,
+    GetTemplateSummaryOutput,
     IncludePropertyValues,
     InvalidChangeSetStatusException,
     LogicalResourceId,
@@ -44,7 +47,7 @@ from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
-    NodeTemplate,
+    UpdateModel,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_describer import (
     ChangeSetModelDescriber,
@@ -130,6 +133,7 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template: Optional[dict],
         before_parameters: Optional[dict],
         after_parameters: Optional[dict],
+        previous_update_model: Optional[UpdateModel],
     ):
         # Create and preprocess the update graph for this template update.
         change_set_model = ChangeSetModel(
@@ -138,7 +142,12 @@ class CloudformationProviderV2(CloudformationProvider):
             before_parameters=before_parameters,
             after_parameters=after_parameters,
         )
-        raw_update_model: NodeTemplate = change_set_model.get_update_model()
+        raw_update_model: UpdateModel = change_set_model.get_update_model()
+        # If there exists an update model which operated in the 'before' version of this change set,
+        # port the runtime values computed for the before version into this latest update model.
+        if previous_update_model:
+            raw_update_model.before_runtime_cache.clear()
+            raw_update_model.before_runtime_cache.update(previous_update_model.after_runtime_cache)
         change_set.set_update_model(raw_update_model)
 
         # Apply global transforms.
@@ -162,6 +171,12 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
         )
         update_model = change_set_model.get_update_model()
+        # Bring the cache for the previous operations forward in the update graph for this version
+        # of the templates. This enables downstream update graph visitors to access runtime
+        # information computed whilst evaluating the previous version of this template, and during
+        # the transformations.
+        update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
+        update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
         change_set.set_update_model(update_model)
 
     @handler("CreateChangeSet", expand=False)
@@ -211,9 +226,7 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_candidates: list[Stack] = [
                 s for stack_arn, s in state.stacks_v2.items() if s.stack_name == stack_name
             ]
-            active_stack_candidates = [
-                s for s in stack_candidates if self._stack_status_is_active(s.status)
-            ]
+            active_stack_candidates = [s for s in stack_candidates if s.is_active()]
 
             # on a CREATE an empty Stack should be generated if we didn't find an active one
             if not active_stack_candidates and change_set_type == ChangeSetType.CREATE:
@@ -283,6 +296,15 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template = stack.template
         after_template = structured_template
 
+        previous_update_model = None
+        try:
+            # FIXME: 'change_set_id' for 'stack' objects is dynamically attributed
+            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+                previous_update_model = previous_change_set.update_model
+        except Exception:
+            # No change set available on this stack.
+            pass
+
         # create change set for the stack and apply changes
         change_set = ChangeSet(stack, request, template=after_template)
         self._setup_change_set_model(
@@ -291,6 +313,7 @@ class CloudformationProviderV2(CloudformationProvider):
             after_template=after_template,
             before_parameters=before_parameters,
             after_parameters=after_parameters,
+            previous_update_model=previous_update_model,
         )
 
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
@@ -487,6 +510,7 @@ class CloudformationProviderV2(CloudformationProvider):
             after_template=after_template,
             before_parameters=None,
             after_parameters=after_parameters,
+            previous_update_model=None,
         )
 
         # deployment process
@@ -565,6 +589,67 @@ class CloudformationProviderV2(CloudformationProvider):
             raise StackNotFoundError(stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
 
+    @handler("GetTemplateSummary", expand=False)
+    def get_template_summary(
+        self,
+        context: RequestContext,
+        request: GetTemplateSummaryInput,
+    ) -> GetTemplateSummaryOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack_name = request.get("StackName")
+
+        if stack_name:
+            stack = find_stack_v2(state, stack_name)
+            if not stack:
+                raise StackNotFoundError(stack_name)
+            template = stack.template
+        else:
+            template_body = request.get("TemplateBody")
+            # s3 or secretsmanager url
+            template_url = request.get("TemplateURL")
+
+            # validate and resolve template
+            if template_body and template_url:
+                raise ValidationError(
+                    "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
+                )  # TODO: check proper message
+
+            if not template_body and not template_url:
+                raise ValidationError(
+                    "Specify exactly one of 'TemplateBody' or 'TemplateUrl'"
+                )  # TODO: check proper message
+
+            template_body = api_utils.extract_template_body(request)
+            template = template_preparer.parse_template(template_body)
+
+        id_summaries = defaultdict(list)
+        for resource_id, resource in template["Resources"].items():
+            res_type = resource["Type"]
+            id_summaries[res_type].append(resource_id)
+
+        summarized_parameters = []
+        for parameter_id, parameter_body in template.get("Parameters", {}).items():
+            summarized_parameters.append(
+                {
+                    "ParameterKey": parameter_id,
+                    "DefaultValue": parameter_body.get("Default"),
+                    "ParameterType": parameter_body["Type"],
+                    "Description": parameter_body.get("Description"),
+                }
+            )
+        result = GetTemplateSummaryOutput(
+            Parameters=summarized_parameters,
+            Metadata=template.get("Metadata"),
+            ResourceIdentifierSummaries=[
+                {"ResourceType": key, "LogicalResourceIds": values}
+                for key, values in id_summaries.items()
+            ],
+            ResourceTypes=list(id_summaries.keys()),
+            Version=template.get("AWSTemplateFormatVersion", "2010-09-09"),
+        )
+
+        return result
+
     @handler("UpdateStack", expand=False)
     def update_stack(
         self,
@@ -633,6 +718,10 @@ class CloudformationProviderV2(CloudformationProvider):
         before_template = stack.template
         after_template = structured_template
 
+        previous_update_model = None
+        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+            previous_update_model = previous_change_set.update_model
+
         change_set = ChangeSet(
             stack,
             {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.CREATE},
@@ -644,9 +733,13 @@ class CloudformationProviderV2(CloudformationProvider):
             after_template=after_template,
             before_parameters=before_parameters,
             after_parameters=after_parameters,
+            previous_update_model=previous_update_model,
         )
 
-        if change_set.update_model.change_type == ChangeType.UNCHANGED:
+        # TODO: some changes are only detectable at runtime; consider using
+        #       the ChangeSetModelDescriber, or a new custom visitors, to
+        #       pick-up on runtime changes.
+        if change_set.update_model.node_template.change_type == ChangeType.UNCHANGED:
             raise ValidationError("No updates are to be performed.")
 
         stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
@@ -695,6 +788,10 @@ class CloudformationProviderV2(CloudformationProvider):
             stack.deletion_time = datetime.now(tz=timezone.utc)
             return
 
+        previous_update_model = None
+        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+            previous_update_model = previous_change_set.update_model
+
         # create a dummy change set
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
         self._setup_change_set_model(
@@ -703,6 +800,7 @@ class CloudformationProviderV2(CloudformationProvider):
             after_template=None,
             before_parameters=stack.resolved_parameters,
             after_parameters=None,
+            previous_update_model=previous_update_model,
         )
 
         change_set_executor = ChangeSetModelExecutor(change_set)

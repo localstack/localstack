@@ -3531,6 +3531,45 @@ class TestSqsProvider:
         )
 
     @markers.aws.validated
+    def test_aws_trace_header_propagation(self, sqs_create_queue, aws_sqs_client, snapshot):
+        def add_xray_header(request, **_kwargs):
+            request.headers["X-Amzn-Trace-Id"] = (
+                "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            )
+
+        try:
+            aws_sqs_client.meta.events.register("before-send.sqs.SendMessage", add_xray_header)
+
+            queue_url = sqs_create_queue()
+
+            msg_attrs_provider = {
+                "timestamp": {"StringValue": "1493147359900", "DataType": "Number"}
+            }
+
+            aws_sqs_client.send_message(
+                QueueUrl=queue_url, MessageBody="test", MessageAttributes=msg_attrs_provider
+            )
+
+            response = aws_sqs_client.receive_message(
+                QueueUrl=queue_url,
+                AttributeNames=["SentTimestamp", "AWSTraceHeader"],
+                MaxNumberOfMessages=1,
+                MessageAttributeNames=["All"],
+                VisibilityTimeout=2,
+                WaitTimeSeconds=2,
+            )
+
+            assert len(response["Messages"]) == 1
+            message = response["Messages"][0]
+            snapshot.match("xray-msg", message)
+            assert (
+                message["Attributes"]["AWSTraceHeader"]
+                == "Root=1-3152b799-8954dae64eda91bc9a23a7e8;Parent=7fa8c0f79203be72;Sampled=1"
+            )
+        finally:
+            aws_sqs_client.meta.events.unregister("before-send.sqs.SendMessage", add_xray_header)
+
+    @markers.aws.validated
     def test_inflight_message_requeue(self, sqs_create_queue, aws_client):
         visibility_timeout = 3
         queue_name = f"queue-{short_uid()}"

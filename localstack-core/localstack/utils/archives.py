@@ -15,6 +15,7 @@ from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_f
 from localstack.utils.http import download
 from localstack.utils.run import run
 
+from .checksum import verify_local_file_with_checksum_url
 from .run import is_command_available
 from .strings import truncate
 
@@ -176,7 +177,22 @@ def download_and_extract(
     retries: Optional[int] = 0,
     sleep: Optional[int] = 3,
     tmp_archive: Optional[str] = None,
+    checksum_url: Optional[str] = None,
 ) -> None:
+    """
+    Download and extract an archive to a target directory with optional checksum verification.
+
+    Checksum verification is only performed if a `checksum_url` is provided.
+    Else, the archive is downloaded and extracted without verification.
+
+    :param archive_url: URL of the archive to download
+    :param target_dir: Directory to extract the archive contents to
+    :param retries: Number of download retries (default: 0)
+    :param sleep: Sleep time between retries in seconds (default: 3)
+    :param tmp_archive: Optional path for the temporary archive file
+    :param checksum_url: Optional URL of the checksum file for verification
+    :return: None
+    """
     mkdir(target_dir)
 
     _, ext = os.path.splitext(tmp_archive or archive_url)
@@ -204,6 +220,19 @@ def download_and_extract(
     if os.path.getsize(tmp_archive) <= 0:
         raise Exception("Failed to download archive from %s: . Retries exhausted", archive_url)
 
+    # Verify checksum if provided
+    if checksum_url:
+        LOG.info("Verifying archive integrity...")
+        try:
+            verify_local_file_with_checksum_url(
+                file_path=tmp_archive,
+                checksum_url=checksum_url,
+            )
+        except Exception as e:
+            # clean up the corrupted download
+            rm_rf(tmp_archive)
+            raise e
+
     if ext == ".zip":
         unzip(tmp_archive, target_dir)
     elif ext in (
@@ -217,11 +246,26 @@ def download_and_extract(
         raise Exception(f"Unsupported archive format: {ext}")
 
 
-def download_and_extract_with_retry(archive_url, tmp_archive, target_dir):
+def download_and_extract_with_retry(
+    archive_url,
+    tmp_archive,
+    target_dir,
+    checksum_url: Optional[str] = None,
+):
     try:
-        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
+        download_and_extract(
+            archive_url,
+            target_dir,
+            tmp_archive=tmp_archive,
+            checksum_url=checksum_url,
+        )
     except Exception as e:
         # try deleting and re-downloading the zip file
         LOG.info("Unable to extract file, re-downloading ZIP archive %s: %s", tmp_archive, e)
         rm_rf(tmp_archive)
-        download_and_extract(archive_url, target_dir, tmp_archive=tmp_archive)
+        download_and_extract(
+            archive_url,
+            target_dir,
+            tmp_archive=tmp_archive,
+            checksum_url=checksum_url,
+        )

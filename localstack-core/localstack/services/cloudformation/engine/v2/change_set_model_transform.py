@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameter,
     NodeTransform,
     Nothing,
+    Scope,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -32,6 +33,8 @@ LOG = logging.getLogger(__name__)
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
+
+_SCOPE_TRANSFORM_TEMPLATE_OUTCOME: Final[Scope] = Scope("TRANSFORM_TEMPLATE_OUTCOME")
 
 
 # TODO: evaluate the use of subtypes to represent and validate types of transforms
@@ -190,35 +193,47 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         return transformed_template
 
     def transform(self) -> tuple[dict, dict]:
-        parameters_delta = self.visit_node_parameters(self._node_template.parameters)
+        self._setup_runtime_cache()
+
+        node_template = self._change_set.update_model.node_template
+
+        parameters_delta = self.visit_node_parameters(node_template.parameters)
         parameters_before = parameters_delta.before
         parameters_after = parameters_delta.after
 
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
-            self.visit_node_transform(self._node_template.transform)
+            self.visit_node_transform(node_template.transform)
         )
         transform_before: Maybe[list[GlobalTransform]] = transform_delta.before
         transform_after: Maybe[list[GlobalTransform]] = transform_delta.after
 
         transformed_before_template = self._before_template
-        if not is_nothing(transform_before) and not is_nothing(self._before_template):
-            transformed_before_template = self._before_template
-            for before_global_transform in transform_before:
-                transformed_before_template = self._apply_global_transform(
-                    global_transform=before_global_transform,
-                    parameters=parameters_before,
-                    template=transformed_before_template,
-                )
+        if transform_before and not is_nothing(self._before_template):
+            transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
+            if not transformed_before_template:
+                transformed_before_template = self._before_template
+                for before_global_transform in transform_before:
+                    transformed_before_template = self._apply_global_transform(
+                        global_transform=before_global_transform,
+                        parameters=parameters_before,
+                        template=transformed_before_template,
+                    )
+                self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
-        if not is_nothing(transform_after) and not is_nothing(self._after_template):
-            transformed_after_template = self._after_template
-            for after_global_transform in transform_after:
-                transformed_after_template = self._apply_global_transform(
-                    global_transform=after_global_transform,
-                    parameters=parameters_after,
-                    template=transformed_after_template,
-                )
+        if transform_after and not is_nothing(self._after_template):
+            transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
+            if not transformed_after_template:
+                transformed_after_template = self._after_template
+                for after_global_transform in transform_after:
+                    transformed_after_template = self._apply_global_transform(
+                        global_transform=after_global_transform,
+                        parameters=parameters_after,
+                        template=transformed_after_template,
+                    )
+                self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
+
+        self._save_runtime_cache()
 
         return transformed_before_template, transformed_after_template
 

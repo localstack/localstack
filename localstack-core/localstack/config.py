@@ -277,6 +277,10 @@ def is_windows() -> bool:
     return platform.system().lower() == "windows"
 
 
+def is_wsl() -> bool:
+    return platform.system().lower() == "linux" and os.environ.get("WSL_DISTRO_NAME") is not None
+
+
 def ping(host):
     """Returns True if the host responds to a ping request"""
     is_in_windows = is_windows()
@@ -384,6 +388,8 @@ OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 is_in_docker = in_docker()
 is_in_linux = is_linux()
 is_in_macos = is_macos()
+is_in_windows = is_windows()
+is_in_wsl = is_wsl()
 default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"
 
 # CLI specific: the configuration profile to load

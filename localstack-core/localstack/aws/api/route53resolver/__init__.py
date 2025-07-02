@@ -10,6 +10,7 @@ BlockOverrideTtl = int
 Boolean = bool
 Count = int
 CreatorRequestId = str
+DelegationRecord = str
 DestinationArn = str
 DomainListFileUrl = str
 DomainName = str
@@ -139,6 +140,7 @@ class IpAddressStatus(StrEnum):
     DELETE_FAILED_FAS_EXPIRED = "DELETE_FAILED_FAS_EXPIRED"
     UPDATING = "UPDATING"
     UPDATE_FAILED = "UPDATE_FAILED"
+    ISOLATED = "ISOLATED"
 
 
 class MutationProtectionStatus(StrEnum):
@@ -183,6 +185,7 @@ class ResolverDNSSECValidationStatus(StrEnum):
 class ResolverEndpointDirection(StrEnum):
     INBOUND = "INBOUND"
     OUTBOUND = "OUTBOUND"
+    INBOUND_DELEGATION = "INBOUND_DELEGATION"
 
 
 class ResolverEndpointStatus(StrEnum):
@@ -241,6 +244,7 @@ class RuleTypeOption(StrEnum):
     FORWARD = "FORWARD"
     SYSTEM = "SYSTEM"
     RECURSIVE = "RECURSIVE"
+    DELEGATE = "DELEGATE"
 
 
 class ShareStatus(StrEnum):
@@ -667,6 +671,7 @@ class CreateResolverRuleRequest(ServiceRequest):
     TargetIps: Optional[TargetList]
     ResolverEndpointId: Optional[ResourceId]
     Tags: Optional[TagList]
+    DelegationRecord: Optional[DelegationRecord]
 
 
 class ResolverRule(TypedDict, total=False):
@@ -684,6 +689,7 @@ class ResolverRule(TypedDict, total=False):
     ShareStatus: Optional[ShareStatus]
     CreationTime: Optional[Rfc3339TimeString]
     ModificationTime: Optional[Rfc3339TimeString]
+    DelegationRecord: Optional[DelegationRecord]
 
 
 class CreateResolverRuleResponse(TypedDict, total=False):
@@ -1520,6 +1526,7 @@ class Route53ResolverApi:
         target_ips: TargetList | None = None,
         resolver_endpoint_id: ResourceId | None = None,
         tags: TagList | None = None,
+        delegation_record: DelegationRecord | None = None,
         **kwargs,
     ) -> CreateResolverRuleResponse:
         raise NotImplementedError
