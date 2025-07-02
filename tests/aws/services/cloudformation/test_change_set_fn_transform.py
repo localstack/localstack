@@ -157,6 +157,12 @@ class TestChangeSetFnTransform:
         capture_update_process(snapshot, template_1, template_2)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Changes..ResourceChange.AfterContext.Properties.Body.paths",
+            "$..Changes..ResourceChange.AfterContext.Properties.SourceArn",
+        ]
+    )
     def test_serverless_fn_transform(
         self, snapshot, capture_update_process, s3_bucket, aws_client, tmp_path
     ):

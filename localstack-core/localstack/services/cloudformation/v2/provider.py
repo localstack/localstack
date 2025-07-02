@@ -463,6 +463,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 # which was just deployed
                 change_set.stack.template = change_set.template
             except Exception as e:
+                import traceback
+                traceback.print_exc()
                 LOG.error(
                     "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
                 )
@@ -1261,7 +1263,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=stack.template,
+            before_template=json.loads(stack.template_body or "{}"),
             after_template=None,
             before_parameters=stack.resolved_parameters,
             after_parameters=None,
