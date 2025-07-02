@@ -391,6 +391,28 @@ class TestSES:
         assert cloned_rule_set["Rules"] == original_rule_set["Rules"]
         assert [x["Name"] for x in cloned_rule_set["Rules"]] == rule_names
 
+    @markers.aws.validated
+    def test_set_identity_headers_in_notifications_enabled(self, aws_client, setup_email_addresses, snapshot):
+        sender_email, _ = setup_email_addresses()
+        notification_type = "Bounce"
+        enabled = True
+
+        # Call the API
+        response = aws_client.ses.set_identity_headers_in_notifications_enabled(
+            Identity=sender_email,
+            NotificationType=notification_type,
+            Enabled=enabled,
+        )
+        snapshot.match("set-headers-in-notifications-enabled", response)
+
+        # Optionally, verify the backend state if running locally
+        if not is_aws_cloud():
+            from localstack.services.ses.provider import ses_backends
+            region = aws_client.ses.meta.region_name
+            account_id = "000000000000"
+            backend = ses_backends[account_id][region]
+            assert backend.identity_headers_in_notifications_enabled[sender_email][notification_type] is True
+
     @markers.aws.manual_setup_required
     @markers.snapshot.skip_snapshot_verify(
         paths=[
