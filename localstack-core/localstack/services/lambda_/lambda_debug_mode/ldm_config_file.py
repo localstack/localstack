@@ -39,14 +39,14 @@ class DuplicateLDMConfig(LDMException):
         )
 
 
-class _LambdaFunctionConfig(BaseModel):
+class LambdaFunctionConfig(BaseModel):
     debug_port: Optional[int] = Field(None, alias="debug-port")
     enforce_timeouts: bool = Field(False, alias="enforce-timeouts")
 
 
-class _LDMConfigFile(BaseModel):
+class LDMConfigFile(BaseModel):
     # Bindings of Lambda function Arn and the respective debugging configuration.
-    functions: dict[Arn, _LambdaFunctionConfig]
+    functions: dict[Arn, LambdaFunctionConfig]
 
 
 class _LDMConfigPostProcessingState:
@@ -86,7 +86,7 @@ class _SafeLoaderWithDuplicateCheck(SafeLoader):
         return mapping
 
 
-def _from_yaml_string(yaml_string: str) -> Optional[_LDMConfigFile]:
+def _from_yaml_string(yaml_string: str) -> Optional[LDMConfigFile]:
     try:
         data = yaml.load(yaml_string, _SafeLoaderWithDuplicateCheck)
     except yaml.YAMLError as yaml_error:
@@ -97,12 +97,12 @@ def _from_yaml_string(yaml_string: str) -> Optional[_LDMConfigFile]:
         data = None
     if not data:
         return None
-    config = _LDMConfigFile(**data)
+    config = LDMConfigFile(**data)
     return config
 
 
 def _post_process_ldm_config_file(
-    ldm_config: _LDMConfigFile,
+    ldm_config: LDMConfigFile,
     post_processing_state: Optional[_LDMConfigPostProcessingState] = None,
 ) -> None:
     post_processing_state = post_processing_state or _LDMConfigPostProcessingState()
@@ -127,7 +127,7 @@ def _post_process_ldm_config_file(
 
 def _post_process_lambda_function_config(
     post_processing_state: _LDMConfigPostProcessingState,
-    lambda_function_config: _LambdaFunctionConfig,
+    lambda_function_config: LambdaFunctionConfig,
 ) -> None:
     debug_port: Optional[int] = lambda_function_config.debug_port
     if debug_port is None:
@@ -137,7 +137,7 @@ def _post_process_lambda_function_config(
     post_processing_state.ports_used.add(debug_port)
 
 
-def parse_ldm_config(yaml_string: str) -> Optional[_LDMConfigFile]:
+def parse_ldm_config(yaml_string: str) -> Optional[LDMConfigFile]:
     # Attempt to parse the yaml string.
     try:
         yaml_data = yaml.load(yaml_string, _SafeLoaderWithDuplicateCheck)
@@ -152,7 +152,7 @@ def parse_ldm_config(yaml_string: str) -> Optional[_LDMConfigFile]:
 
     # Attempt to build the LDMConfig object from the yaml object.
     try:
-        config = _LDMConfigFile(**yaml_data)
+        config = LDMConfigFile(**yaml_data)
     except ValidationError as validation_error:
         validation_errors = validation_error.errors() or list()
         error_messages = [
