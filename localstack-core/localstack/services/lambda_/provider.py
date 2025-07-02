@@ -1434,6 +1434,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if version:
                 self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
+            # Notify the LDM about the version deletion.
+            LDM.remove_configuration(qualified_lambda_arn=version.qualified_arn)
         else:
             # delete the whole function
             # TODO: introduce locking for safe deletion: We could create a new version at the API layer before
@@ -1444,6 +1446,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # we can safely destroy the code here
                 if version.config.code:
                     version.config.code.destroy()
+                # Notify the LDM about the version deletion.
+                LDM.remove_configuration(qualified_lambda_arn=version.qualified_arn)
 
     def list_functions(
         self,
