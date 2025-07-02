@@ -747,6 +747,7 @@ class KmsKey:
             if self.metadata["Origin"] == "EXTERNAL":
                 self.metadata["CurrentKeyMaterialId"] = self.crypto_key.key_material.hex()
             else:
+                self.previous_keys.append(self.crypto_key.key_material)
                 self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
