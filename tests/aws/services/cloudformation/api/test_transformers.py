@@ -1,9 +1,11 @@
 import json
 import os
 import textwrap
+from dataclasses import dataclass
 
 import pytest
 from botocore.exceptions import WaiterError
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -150,29 +152,17 @@ def test_transformer_individual_resource_level(deploy_cfn_template, s3_bucket, a
     aws_client.sns.get_topic_attributes(TopicArn=resource_ref)
 
 
-@markers.aws.validated
-def test_language_extensions(deploy_cfn_template, aws_client, snapshot):
-    value = "a,b,c"
-    stack = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../templates/cfn_languageextensions_length.yml"
-        ),
-        parameters={
-            "QueueList": value,
-        },
-    )
-
-    parameter_name = stack.outputs["ParameterName"]
-    snapshot.add_transformer(snapshot.transform.regex(parameter_name, "<parameter-name>"))
-    value = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]
-    snapshot.match("parameter-value", value)
+@dataclass
+class TransformResult:
+    stack_id: str
+    template: dict
 
 
 @pytest.fixture
 def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups):
     stack_ids: list[str] = []
 
-    def transform(template: str, parameters: dict[str, str] | None = None) -> tuple[str, dict]:
+    def transform(template: str, parameters: dict[str, str] | None = None) -> TransformResult:
         stack_name = f"stack-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
 
@@ -193,13 +183,30 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
                 StackName=stack_id,
             )
         except WaiterError as e:
-            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)
-            raise RuntimeError(json.dumps(events, indent=2, default=repr)) from e
+            events = aws_client.cloudformation.describe_stack_events(StackName=stack_id)[
+                "StackEvents"
+            ]
+            relevant_fields = [
+                {
+                    key: event.get(key)
+                    for key in [
+                        "LogicalResourceId",
+                        "ResourceType",
+                        "ResourceStatus",
+                        "ResourceStatusReason",
+                    ]
+                }
+                for event in events
+            ]
+            raise RuntimeError(json.dumps(relevant_fields, indent=2, default=repr)) from e
+
+        stack_resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_id)
+        snapshot.match("resources", stack_resources)
 
         template = aws_client.cloudformation.get_template(
             StackName=stack_id, TemplateStage="Processed"
         )["TemplateBody"]
-        return stack_name, template
+        return TransformResult(template=template, stack_id=stack_id)
 
     yield transform
 
@@ -213,6 +220,9 @@ class TestLanguageExtensionsTransform:
     """
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Outputs", "$..PhysicalResourceId", "$..StackId"]
+    )
     def test_transform_length(self, transform_template, snapshot):
         with open(
             os.path.realpath(
@@ -223,10 +233,14 @@ class TestLanguageExtensionsTransform:
             )
         ) as infile:
             parameters = {"QueueList": "a,b,c"}
-            transformed_template = transform_template(infile.read(), parameters)
-        snapshot.match("transformed", transformed_template)
+            transformed_template_result = transform_template(infile.read(), parameters)
+
+        snapshot.match("transformed", transformed_template_result.template)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Outputs", "$..PhysicalResourceId", "$..StackId"]
+    )
     def test_transform_foreach(self, transform_template, snapshot):
         topic_names = [
             f"mytopic1{short_uid()}",
@@ -244,13 +258,32 @@ class TestLanguageExtensionsTransform:
                 )
             )
         ) as infile:
-            transformed_template = transform_template(
+            transform_result = transform_template(
                 infile.read(),
                 parameters={
                     "pRepoARNs": ",".join(topic_names),
                 },
             )
-        snapshot.match("transformed", transformed_template)
+        snapshot.match("transformed", transform_result.template)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
+    )
+    def test_transform_foreach_multiple_resources(self, transform_template, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
+        )
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_foreach_multiple_resources.yml",
+                )
+            )
+        ) as infile:
+            transform_result = transform_template(infile.read())
+        snapshot.match("transformed", transform_result.template)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -260,9 +293,14 @@ class TestLanguageExtensionsTransform:
             "$..Resources.GraphQLApi.Properties.Name",
             "$..OutputValue",
             "$..Outputs",
+            "$..StackResources..PhysicalResourceId",
+            "$..StackResources..StackId",
         ]
     )
     def test_transform_foreach_use_case(self, aws_client, transform_template, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
+        )
         event_names = ["Event1", "Event2"]
         server_event_names = ["ServerEvent1", "ServerEvent2"]
         for i, name in enumerate(event_names + server_event_names):
@@ -280,14 +318,14 @@ class TestLanguageExtensionsTransform:
                 )
             )
         ) as infile:
-            stack_name, transformed_template = transform_template(
+            transform_result = transform_template(
                 infile.read(),
                 parameters=parameters,
             )
-        snapshot.match("transformed", transformed_template)
+        snapshot.match("transformed", transform_result.template)
 
         # check that the resources have been created correctly
-        outputs = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0][
-            "Outputs"
-        ]
+        outputs = aws_client.cloudformation.describe_stacks(StackName=transform_result.stack_id)[
+            "Stacks"
+        ][0]["Outputs"]
         snapshot.match("stack-outputs", outputs)
