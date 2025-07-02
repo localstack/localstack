@@ -19,6 +19,7 @@ def to_qualified_lambda_function_arn(lambda_arn: Arn) -> Arn:
           - arn:aws:lambda:eu-central-1:000000000000:function ->
               exception UnknownLambdaArnFormat
     """
+    # TODO: consider adding arn syntax validation at this depth.
 
     if not lambda_arn:
         return lambda_arn
