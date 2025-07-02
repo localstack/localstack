@@ -2192,29 +2192,6 @@ def create_rest_apigw_openapi(aws_client_factory):
 
 
 @pytest.fixture
-def appsync_create_api(aws_client):
-    graphql_apis = []
-
-    def factory(**kwargs):
-        if "name" not in kwargs:
-            kwargs["name"] = f"graphql-api-testing-name-{short_uid()}"
-        if not kwargs.get("authenticationType"):
-            kwargs["authenticationType"] = "API_KEY"
-
-        result = aws_client.appsync.create_graphql_api(**kwargs)["graphqlApi"]
-        graphql_apis.append(result["apiId"])
-        return result
-
-    yield factory
-
-    for api in graphql_apis:
-        try:
-            aws_client.appsync.delete_graphql_api(apiId=api)
-        except Exception as e:
-            LOG.debug("Error cleaning up AppSync API: %s, %s", api, e)
-
-
-@pytest.fixture
 def assert_host_customisation(monkeypatch):
     localstack_host = "foo.bar"
     monkeypatch.setattr(

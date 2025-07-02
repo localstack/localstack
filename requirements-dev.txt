@@ -29,7 +29,7 @@ aws-cdk-asset-awscli-v1==2.2.240
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==44.7.0
+aws-cdk-cloud-assembly-schema==44.8.0
     # via aws-cdk-lib
 aws-cdk-lib==2.202.0
     # via localstack-core
@@ -433,7 +433,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.0
+ruff==0.12.1
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.0
     # via

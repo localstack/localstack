@@ -4,12 +4,15 @@ import uuid
 from dataclasses import dataclass
 from typing import Final, Optional
 
+from localstack import config
 from localstack.aws.api.cloudformation import (
     ChangeAction,
     ResourceStatus,
     StackStatus,
 )
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.cloudformation.analytics import track_resource_operation
+from localstack.services.cloudformation.deployment_utils import log_not_available_message
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
@@ -27,6 +30,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
+    NoResourceProvider,
     OperationStatus,
     ProgressEvent,
     ResourceProviderExecutor,
@@ -350,6 +354,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             after_properties=after_properties,
         )
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
+        track_resource_operation(action, resource_type, missing=resource_provider is not None)
+        log_not_available_message(
+            resource_type,
+            f'No resource provider found for "{resource_type}"',
+        )
+        if resource_provider is None and not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            raise NoResourceProvider
 
         extra_resource_properties = {}
         event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
