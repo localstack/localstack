@@ -65,7 +65,9 @@ class _SafeLoaderWithDuplicateCheck(SafeLoader):
         )
 
     @staticmethod
-    def _construct_mappings_with_duplicate_check(loader: Loader, node: MappingNode, deep=False) -> dict:
+    def _construct_mappings_with_duplicate_check(
+        loader: Loader, node: MappingNode, deep=False
+    ) -> dict:
         # Constructs yaml bindings, whilst checking for duplicate mapping key definitions, raising a
         # MarkedYAMLError when one is found.
         mapping = dict()
