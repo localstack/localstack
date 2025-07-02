@@ -211,6 +211,7 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_debug_mode.ldm import LDM
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.provider_utils import (
@@ -241,7 +242,6 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.event_matcher import validate_event_pattern
-from localstack.utils.lambda_debug_mode.lambda_debug_mode_session import LambdaDebugModeSession
 from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.urls import localstack_host
@@ -283,8 +283,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def on_before_start(self):
         # Attempt to start the Lambda Debug Mode session object.
         try:
-            lambda_debug_mode_session = LambdaDebugModeSession.get()
-            lambda_debug_mode_session.ensure_running()
+            LDM.start_debug_mode()
         except Exception as ex:
             LOG.error(
                 "Unexpected error encountered when attempting to initialise Lambda Debug Mode '%s'.",
@@ -404,8 +403,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.stop()
         # Attempt to signal to the Lambda Debug Mode session object to stop.
         try:
-            lambda_debug_mode_session = LambdaDebugModeSession.get()
-            lambda_debug_mode_session.signal_stop()
+            LDM.stop_debug_mode()
         except Exception as ex:
             LOG.error(
                 "Unexpected error encountered when attempting to signal Lambda Debug Mode to stop '%s'.",

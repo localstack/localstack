@@ -11,9 +11,6 @@ from localstack.services.lambda_.invocation.lambda_models import (
     InitializationType,
 )
 from localstack.services.lambda_.invocation.models import lambda_stores
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
-    is_lambda_debug_enabled_for,
-)
 
 LOG = logging.getLogger(__name__)
 
@@ -129,24 +126,6 @@ class CountingService:
 
         unqualified_function_arn = function_version.id.unqualified_arn()
         qualified_arn = function_version.id.qualified_arn()
-
-        # Enforce one lease per ARN if the global flag is set
-        if is_lambda_debug_enabled_for(qualified_arn):
-            with provisioned_tracker.lock, on_demand_tracker.lock:
-                on_demand_executions: int = on_demand_tracker.concurrent_executions[
-                    unqualified_function_arn
-                ]
-                provisioned_executions = provisioned_tracker.concurrent_executions[qualified_arn]
-                if on_demand_executions or provisioned_executions:
-                    LOG.warning(
-                        "Concurrent lambda invocations disabled for '%s' by Lambda Debug Mode",
-                        qualified_arn,
-                    )
-                    raise TooManyRequestsException(
-                        "Rate Exceeded.",
-                        Reason="SingleLeaseEnforcement",
-                        Type="User",
-                    )
 
         lease_type = None
         # HACK: skip reserved and provisioned concurrency if function not available (e.g., in Lambda@Edge)
