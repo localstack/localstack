@@ -368,6 +368,99 @@ class TestApiGatewayApiRestApi:
         snapshot.match("not-found-update-rest-api", ex.value.response)
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
+    @markers.aws.validated
+    def test_create_rest_api_with_endpoint_configuration(self, apigw_create_rest_api, snapshot):
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["EDGE"],
+                }
+            )
+        snapshot.match("create-with-invalid-ip-address-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "ipv4",
+                    "types": ["wrong"],
+                }
+            )
+        snapshot.match("create-with-invalid-types", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["wrong"],
+                }
+            )
+        snapshot.match("create-with-invalid-ip-address-type-and-types", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "types": ["wrong"],
+                    "ipAddressType": "wrong",
+                }
+            )
+        snapshot.match("create-with-invalid-types-and-ip-address-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+                minimumCompressionSize=-1,
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["wrong"],
+                }
+            )
+        snapshot.match("create-with-multiple-errors-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+                minimumCompressionSize=-1,
+                endpointConfiguration={
+                    "ipAddressType": "ipv4",
+                    "types": ["EDGE"],
+                }
+            )
+        snapshot.match("create-with-multiple-errors-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "types": ["EDGE", "REGIONAL"],
+                }
+            )
+        snapshot.match("create-with-two-types", e.value.response)
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "ipAddressType": "dualstack",
+                "types": ["EDGE"],
+            }
+        )
+        snapshot.match("create-with-endpoint-config-dualstack", response)
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "ipAddressType": "ipv4",
+                "types": ["REGIONAL"],
+            }
+        )
+        snapshot.match("create-with-endpoint-config-regional", response)
+
 
 class TestApiGatewayApiResource:
     @markers.aws.validated

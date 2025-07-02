@@ -244,6 +244,28 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
+        endpoint_configuration = request.get("endpointConfiguration", {})
+        ip_address_type = endpoint_configuration.get("ipAddressType", "ipv4")
+        types = endpoint_configuration.get("types", ["EDGE"])
+        if len(types)>1:
+            raise BadRequestException("Cannot create an api with multiple Endpoint Types.")
+
+        error_messages = []
+        if types not in (["PRIVATE"], ["EDGE"], ["REGIONAL"]):
+            error_messages.append(
+                f"Value '[{types[0]}]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]",
+            )
+        if ip_address_type not in ("ipv4", "dualstack"):
+            error_messages.append(
+                f"Value '{ip_address_type}' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]",
+            )
+
+        if error_messages:
+            prefix = f"{len(error_messages)} validation error{'s' if len(error_messages) > 1 else ''} detected: "
+            raise CommonServiceException(
+                code="ValidationException",
+                message=prefix + "; ".join(error_messages),
+            )
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
 
@@ -262,6 +284,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             rest_api.binaryMediaTypes = binary_media_types
 
         response: RestApi = rest_api.to_dict()
+        response["endpointConfiguration"]["ipAddressType"] = ip_address_type
         remove_empty_attributes_from_rest_api(response)
         store = get_apigateway_store(context=context)
         rest_api_container = RestApiContainer(rest_api=response)
