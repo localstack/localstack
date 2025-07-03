@@ -1538,6 +1538,7 @@ class TestKMS:
             ImportType="NEW_KEY_MATERIAL",
         )
         response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        snapshot.match("rotate-on-demand-response", response)
         retry(
             function=_rotate_key_status,
             retries=10,
@@ -1545,7 +1546,6 @@ class TestKMS:
             aws_client=aws_client,
             key_id=key_id,
         )
-        snapshot.match("rotate-on-demand-response", response)
 
         # Checks on the key to make sure both materials are usable
         assert retry(

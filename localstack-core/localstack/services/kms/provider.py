@@ -1204,7 +1204,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             key_to_import_material_to.crypto_key.load_key_material(key_material)
             return ImportKeyMaterialResponse(
                 KeyId=key_to_import_material_to.metadata["KeyId"],
-                KeyMaterialId= key_material.hex(),
+                KeyMaterialId=key_material.hex(),
             )
         return ImportKeyMaterialResponse()
 
