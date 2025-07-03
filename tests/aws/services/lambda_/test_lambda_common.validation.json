@@ -384,7 +384,7 @@
     "last_validated_date": "2025-03-31T12:22:31+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs16.x]": {
-    "last_validated_date": "2025-03-31T12:21:56+00:00"
+    "last_validated_date": "2025-06-05T23:12:34+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_uncaught_exception_invoke[nodejs18.x]": {
     "last_validated_date": "2025-03-31T12:21:54+00:00"
