@@ -2089,21 +2089,57 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_succeeds_for_key_with_imported_key_material": {
-    "recorded-date": "26-06-2025, 19:19:22",
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
+    "recorded-date": "03-07-2025, 18:36:54",
     "recorded-content": {
-      "rotate-on-demand-response": {
+      "describe_before_rotation": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<<current-key-material-id>:1>",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
         "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "rotate-on-demand-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "describe_after_rotation": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<<current-key-material-id>:2>",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
       }
     }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
-    "recorded-date": "01-07-2025, 10:36:09",
-    "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
     "recorded-date": "26-06-2025, 19:19:22",

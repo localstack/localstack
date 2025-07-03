@@ -1202,9 +1202,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                     key_to_import_material_to.crypto_key.key_material
                 )
             key_to_import_material_to.crypto_key.load_key_material(key_material)
-            response_data = {"KeyId": key_to_import_material_to.metadata["KeyId"]}
-            response_data["KeyMaterialId"] = key_material.hex()
-            return ImportKeyMaterialResponse(**response_data)
+            return ImportKeyMaterialResponse(
+                KeyId=key_to_import_material_to.metadata["KeyId"],
+                KeyMaterialId= key_material.hex(),
+            )
         return ImportKeyMaterialResponse()
 
     def delete_imported_key_material(
