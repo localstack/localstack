@@ -70,6 +70,7 @@ jobs:
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}"
           TEST_PATH: "tests/integration/docker_utils"
           DEBUG: "1"
+          DISABLE_EVENTS: 1
         run: |
           # determine path of podman socket
           podmanSocket=$(podman system info --format json | jq -r '.host.remoteSocket.path')
