@@ -136,7 +136,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_attributes": {
-    "recorded-date": "19-06-2025, 19:39:41",
+    "recorded-date": "03-07-2025, 17:18:54",
     "recorded-content": {
       "initial-topic-attributes": {
         "Attributes": {
@@ -193,34 +193,6 @@
           "SubscriptionsPending": "0",
           "TopicArn": "<topic-arn:1>"
         },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "initial-topic-tags": {
-        "Tags": [
-          {
-            "Key": "Project",
-            "Value": "localstack"
-          },
-          {
-            "Key": "aws:cloudformation:stack-name",
-            "Value": "replaced-value"
-          },
-          {
-            "Key": "Environment",
-            "Value": "test"
-          },
-          {
-            "Key": "aws:cloudformation:logical-id",
-            "Value": "TestTopic"
-          },
-          {
-            "Key": "aws:cloudformation:stack-id",
-            "Value": "replaced-value"
-          }
-        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -301,34 +273,6 @@
           "HTTPStatusCode": 200
         }
       },
-      "updated-topic-tags": {
-        "Tags": [
-          {
-            "Key": "Project",
-            "Value": "backend"
-          },
-          {
-            "Key": "aws:cloudformation:stack-name",
-            "Value": "replaced-value"
-          },
-          {
-            "Key": "Environment",
-            "Value": "production"
-          },
-          {
-            "Key": "aws:cloudformation:logical-id",
-            "Value": "TestTopic"
-          },
-          {
-            "Key": "aws:cloudformation:stack-id",
-            "Value": "replaced-value"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "new-subscriptions": {
         "Subscriptions": [
           {
@@ -347,7 +291,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_update_name": {
-    "recorded-date": "19-06-2025, 17:23:02",
+    "recorded-date": "03-07-2025, 17:17:06",
     "recorded-content": {
       "initial-topic-attributes": {
         "Attributes": {
@@ -404,34 +348,6 @@
           "SubscriptionsPending": "0",
           "TopicArn": "<topic-arn:1>"
         },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "initial-topic-tags": {
-        "Tags": [
-          {
-            "Key": "Project",
-            "Value": "localstack"
-          },
-          {
-            "Key": "aws:cloudformation:stack-name",
-            "Value": "replaced-value"
-          },
-          {
-            "Key": "Environment",
-            "Value": "test"
-          },
-          {
-            "Key": "aws:cloudformation:logical-id",
-            "Value": "TestTopic"
-          },
-          {
-            "Key": "aws:cloudformation:stack-id",
-            "Value": "replaced-value"
-          }
-        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -507,34 +423,6 @@
           "SubscriptionsPending": "0",
           "TopicArn": "<topic-arn:2>"
         },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "new-topic-tags": {
-        "Tags": [
-          {
-            "Key": "Project",
-            "Value": "localstack"
-          },
-          {
-            "Key": "aws:cloudformation:stack-name",
-            "Value": "replaced-value"
-          },
-          {
-            "Key": "Environment",
-            "Value": "production"
-          },
-          {
-            "Key": "aws:cloudformation:logical-id",
-            "Value": "TestTopic"
-          },
-          {
-            "Key": "aws:cloudformation:stack-id",
-            "Value": "replaced-value"
-          }
-        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

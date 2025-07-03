@@ -260,8 +260,8 @@ def test_sns_topic_update_attributes(deploy_cfn_template, aws_client, snapshot):
     assert updated_tag_dict["Project"] == "backend"
 
     # Subscriptions should be preserved
-    snapshot.match("new-subscriptions", initial_subscriptions)
-
+    new_subscriptions = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+    snapshot.match("new-subscriptions", new_subscriptions)
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(

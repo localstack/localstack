@@ -36,13 +36,7 @@
     "last_validated_date": "2024-04-09T07:19:51+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_function_tags": {
-    "last_validated_date": "2025-06-19T19:34:04+00:00",
-    "durations_in_seconds": {
-      "setup": 0.66,
-      "call": 37.59,
-      "teardown": 14.83,
-      "total": 53.08
-    }
+    "last_validated_date": "2024-10-01T12:52:51+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::test_lambda_layer_crud": {
     "last_validated_date": "2024-12-20T18:23:31+00:00"
