@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import enum
+from dataclasses import dataclass
 from itertools import zip_longest
 from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
 
@@ -221,6 +222,19 @@ class NodeParameter(ChangeSetNode):
         self.type_ = type_
         self.dynamic_value = dynamic_value
         self.default_value = default_value
+
+
+class NodeResolvableParameter(NodeParameter):
+    pass
+
+
+@dataclass
+class ResolvedParameter:
+    value: str
+    resolved_value: str | None = None
+
+    def resolve(self) -> str:
+        return self.resolved_value or self.value
 
 
 class NodeParameters(ChangeSetNode):
@@ -994,13 +1008,22 @@ class ChangeSetModel:
 
         dynamic_value = self._visit_dynamic_parameter(parameter_name=parameter_name)
 
-        node_parameter = NodeParameter(
-            scope=scope,
-            name=parameter_name,
-            type_=type_,
-            default_value=default_value,
-            dynamic_value=dynamic_value,
-        )
+        if type_.value.startswith("AWS::"):
+            node_parameter = NodeResolvableParameter(
+                scope=scope,
+                name=parameter_name,
+                type_=type_,
+                default_value=default_value,
+                dynamic_value=dynamic_value,
+            )
+        else:
+            node_parameter = NodeParameter(
+                scope=scope,
+                name=parameter_name,
+                type_=type_,
+                default_value=default_value,
+                dynamic_value=dynamic_value,
+            )
         self._visited_scopes[scope] = node_parameter
         return node_parameter
 

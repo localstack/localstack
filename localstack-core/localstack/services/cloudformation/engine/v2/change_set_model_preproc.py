@@ -9,6 +9,7 @@ from botocore.exceptions import ClientError
 
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.transformers import (
     Transformer,
     execute_macro,
@@ -31,10 +32,12 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameters,
     NodeProperties,
     NodeProperty,
+    NodeResolvableParameter,
     NodeResource,
     NodeTemplate,
     Nothing,
     NothingType,
+    ResolvedParameter,
     Scope,
     TerminalValue,
     TerminalValueCreated,
@@ -935,6 +938,43 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_resolvable_parameter(self, node_parameter: NodeResolvableParameter):
+        dynamic_value = node_parameter.dynamic_value
+        dynamic_delta = self.visit(dynamic_value)
+
+        default_value = node_parameter.default_value
+        default_delta = self.visit(default_value)
+
+        before = dynamic_delta.before or default_delta.before
+        after = dynamic_delta.after or default_delta.after
+        delta = PreprocEntityDelta(before=before, after=after)
+
+        parameter_type: str = node_parameter.type_.value
+        if parameter_type in [
+            "AWS::SSM::Parameter::Value<String>",
+            "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
+            "AWS::SSM::Parameter::Value<CommaDelimitedList>",
+        ]:
+            if not is_nothing(delta.before):
+                resolved_value = resolve_ssm_parameter(
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                    stack_parameter_value=delta.before,
+                )
+                delta.before = ResolvedParameter(delta.before, resolved_value)
+
+            if not is_nothing(delta.after):
+                resolved_value = resolve_ssm_parameter(
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                    stack_parameter_value=delta.after,
+                )
+                delta.after = ResolvedParameter(delta.after, resolved_value)
+        else:
+            raise Exception(f"Unsupported stack parameter type: {parameter_type}")
+
+        return delta
+
     def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:
         array_identifiers_delta = self.visit(node_depends_on.depends_on)
         return array_identifiers_delta
@@ -980,6 +1020,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             arguments_delta=arguments_delta,
             resolver=_compute_fn_ref,
         )
+        if isinstance(delta.before, ResolvedParameter):
+            delta.before = delta.before.resolve()
+        if isinstance(delta.after, ResolvedParameter):
+            delta.after = delta.after.resolve()
         return delta
 
     def visit_node_intrinsic_function_condition(

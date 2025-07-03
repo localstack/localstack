@@ -24,6 +24,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ResolvedParameter,
     UpdateModel,
 )
 from localstack.utils.aws import arns
@@ -176,6 +177,26 @@ class Stack:
         }
         if change_set_id := self.change_set_id:
             result["ChangeSetId"] = change_set_id
+
+        if self.resolved_parameters:
+            parameters = []
+            for key, value in self.resolved_parameters.items():
+                if isinstance(value, ResolvedParameter):
+                    parameters.append(
+                        Parameter(
+                            ParameterKey=key,
+                            ParameterValue=value.value,
+                            ResolvedValue=value.resolved_value,
+                        )
+                    )
+                else:
+                    parameters.append(
+                        Parameter(
+                            ParameterKey=key,
+                            ParameterValue=value,
+                        )
+                    )
+            result["Parameters"] = parameters
 
         if self.resolved_outputs:
             describe_outputs = []

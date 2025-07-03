@@ -316,7 +316,7 @@ class TestImports:
         assert stack2.outputs["MessageQueueArn2"] == queue_arn2
 
 
-@pytest.mark.skip(reason="CFNV2:resolve")
+# @pytest.mark.skip(reason="CFNV2:resolve")
 class TestSsmParameters:
     @markers.aws.validated
     def test_create_stack_with_ssm_parameters(
