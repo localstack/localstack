@@ -321,6 +321,7 @@ class TestApiGatewayImportRestApi:
 
         # assert that are no multiple authorizers
         authorizers = aws_client.apigateway.get_authorizers(restApiId=rest_api_id)
+        authorizers["items"] = sorted(authorizers["items"], key=itemgetter("name"))
         snapshot.match("get-authorizers", authorizers)
 
         models = aws_client.apigateway.get_models(restApiId=rest_api_id)
