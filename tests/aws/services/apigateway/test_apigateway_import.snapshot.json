@@ -27,7 +27,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "02-07-2025, 16:23:23",
+    "recorded-date": "03-07-2025, 15:44:09",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -54,22 +54,22 @@
           {
             "authType": "oauth2",
             "authorizerCredentials": "<authorizer-credentials:1>",
+            "authorizerResultTtlInSeconds": 60,
             "authorizerUri": "<authorizer-uri:1>",
             "id": "<authorizer-id:1>",
             "identitySource": "method.request.header.Authorization",
             "identityValidationExpression": "^x-[a-z]+",
-            "name": "test-authorizer-not-used",
+            "name": "test-authorizer",
             "type": "TOKEN"
           },
           {
             "authType": "oauth2",
             "authorizerCredentials": "<authorizer-credentials:1>",
-            "authorizerResultTtlInSeconds": 60,
             "authorizerUri": "<authorizer-uri:1>",
             "id": "<authorizer-id:2>",
             "identitySource": "method.request.header.Authorization",
             "identityValidationExpression": "^x-[a-z]+",
-            "name": "test-authorizer",
+            "name": "test-authorizer-not-used",
             "type": "TOKEN"
           }
         ],
@@ -210,7 +210,7 @@
       "method-root-get": {
         "apiKeyRequired": false,
         "authorizationType": "CUSTOM",
-        "authorizerId": "<authorizer-id:2>",
+        "authorizerId": "<authorizer-id:1>",
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
@@ -301,7 +301,7 @@
       "method-pets-get": {
         "apiKeyRequired": false,
         "authorizationType": "CUSTOM",
-        "authorizerId": "<authorizer-id:2>",
+        "authorizerId": "<authorizer-id:1>",
         "httpMethod": "GET",
         "methodIntegration": {
           "cacheKeyParameters": [],
