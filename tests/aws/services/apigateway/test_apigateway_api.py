@@ -376,7 +376,7 @@ class TestApiGatewayApiRestApi:
                 endpointConfiguration={
                     "ipAddressType": "wrong",
                     "types": ["EDGE"],
-                }
+                },
             )
         snapshot.match("create-with-invalid-ip-address-type", e.value.response)
 
@@ -386,7 +386,7 @@ class TestApiGatewayApiRestApi:
                 endpointConfiguration={
                     "ipAddressType": "ipv4",
                     "types": ["wrong"],
-                }
+                },
             )
         snapshot.match("create-with-invalid-types", e.value.response)
 
@@ -396,7 +396,7 @@ class TestApiGatewayApiRestApi:
                 endpointConfiguration={
                     "ipAddressType": "wrong",
                     "types": ["wrong"],
-                }
+                },
             )
         snapshot.match("create-with-invalid-ip-address-type-and-types", e.value.response)
 
@@ -406,7 +406,7 @@ class TestApiGatewayApiRestApi:
                 endpointConfiguration={
                     "types": ["wrong"],
                     "ipAddressType": "wrong",
-                }
+                },
             )
         snapshot.match("create-with-invalid-types-and-ip-address-type", e.value.response)
 
@@ -418,7 +418,7 @@ class TestApiGatewayApiRestApi:
                 endpointConfiguration={
                     "ipAddressType": "wrong",
                     "types": ["wrong"],
-                }
+                },
             )
         snapshot.match("create-with-multiple-errors-1", e.value.response)
 
@@ -430,7 +430,7 @@ class TestApiGatewayApiRestApi:
                 endpointConfiguration={
                     "ipAddressType": "ipv4",
                     "types": ["EDGE"],
-                }
+                },
             )
         snapshot.match("create-with-multiple-errors-2", e.value.response)
 
@@ -439,7 +439,7 @@ class TestApiGatewayApiRestApi:
                 name=f"test-api-{short_uid()}",
                 endpointConfiguration={
                     "types": ["EDGE", "REGIONAL"],
-                }
+                },
             )
         snapshot.match("create-with-two-types", e.value.response)
 
@@ -448,7 +448,7 @@ class TestApiGatewayApiRestApi:
             endpointConfiguration={
                 "ipAddressType": "dualstack",
                 "types": ["EDGE"],
-            }
+            },
         )
         snapshot.match("create-with-endpoint-config-dualstack", response)
 
@@ -457,7 +457,7 @@ class TestApiGatewayApiRestApi:
             endpointConfiguration={
                 "ipAddressType": "ipv4",
                 "types": ["REGIONAL"],
-            }
+            },
         )
         snapshot.match("create-with-endpoint-config-regional", response)
 

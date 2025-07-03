@@ -247,7 +247,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         endpoint_configuration = request.get("endpointConfiguration", {})
         ip_address_type = endpoint_configuration.get("ipAddressType", "ipv4")
         types = endpoint_configuration.get("types", ["EDGE"])
-        if len(types)>1:
+        if len(types) > 1:
             raise BadRequestException("Cannot create an api with multiple Endpoint Types.")
 
         error_messages = []
@@ -259,7 +259,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             error_messages.append(
                 f"Value '{ip_address_type}' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]",
             )
-
         if error_messages:
             prefix = f"{len(error_messages)} validation error{'s' if len(error_messages) > 1 else ''} detected: "
             raise CommonServiceException(
