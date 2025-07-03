@@ -158,7 +158,7 @@ function cmd-load() {
 
 function cmd-push() {
     _enforce_image_name
-    _enforce_main_branch
+    # _enforce_main_branch
     _enforce_no_fork
     _enforce_docker_credentials
     _enforce_platform
@@ -213,7 +213,7 @@ function cmd-push() {
 
 function cmd-push-manifests() {
     _enforce_image_name
-    _enforce_main_branch
+    # _enforce_main_branch
     _enforce_no_fork
     _enforce_docker_credentials
     _set_version_defaults
