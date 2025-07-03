@@ -910,7 +910,11 @@ def create_vpc_endpoint(default_vpc, aws_client):
 
 
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..endpointConfiguration.types", "$..policy.Statement..Resource", "$..endpointConfiguration.ipAddressType"]
+    paths=[
+        "$..endpointConfiguration.types",
+        "$..policy.Statement..Resource",
+        "$..endpointConfiguration.ipAddressType",
+    ]
 )
 @markers.aws.validated
 def test_create_execute_api_vpc_endpoint(
