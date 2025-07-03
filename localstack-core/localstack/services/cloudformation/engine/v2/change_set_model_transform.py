@@ -12,7 +12,9 @@ from localstack.services.cloudformation.engine.policy_loader import create_polic
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
+    Transformer,
     execute_macro,
+    transformers,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -276,7 +278,127 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         self._save_runtime_cache()
 
+        ### Handle Embedded Fn::Transform
+        transformed_before_template = self._execute_embedded_transformations(
+            template=transformed_before_template, resolved_parameters=parameters_before
+        )
+        transformed_after_template = self._execute_embedded_transformations(
+            template=transformed_after_template, resolved_parameters=parameters_after
+        )
+
         return transformed_before_template, transformed_after_template
+
+    def _execute_embedded_transformations(
+        self, template, resolved_parameters
+    ) -> PreprocEntityDelta:
+        transformations = self._find_fn_transforms(template)
+        normalized_transformations = self._normalize_transform_definitions(transformations)
+
+        transformed_template = copy.deepcopy(template)
+        for transformation in normalized_transformations:
+            transformed_template = self._execute_embedded_transformation(
+                transformation=transformation,
+                template=transformed_template,
+                resolved_parameters=resolved_parameters,
+            )
+        return transformed_template
+
+    @staticmethod
+    def _normalize_transform_definitions(
+        transform_definitions: list[(any, str)],
+    ) -> list[(dict, any)]:
+        def _normalize_individual_transform(transform_def: str | dict):
+            # TODO: validate parameters, imports, refs to resources or conditionals are not supported.
+            #      only literals, refs to parameters and basic intrinsic functions like sub and join, posibly select
+            if isinstance(transform_def, str):
+                return {"Name": transform_def, "Parameters": {}}
+
+            if isinstance(transform_def, dict):
+                return {
+                    "Name": transform_def["Name"],
+                    "Parameters": transform_def.get("Parameters", {}),
+                }
+
+            raise FailedTransformationException("Invalid Definition of transformation")
+
+        normalized_transforms = []
+        for path, value in transform_definitions:
+            if isinstance(value, list):
+                for transform in value:
+                    normalized_transforms.append((path, _normalize_individual_transform(transform)))
+            else:
+                normalized_transforms.append((path, _normalize_individual_transform(value)))
+
+        return normalized_transforms
+
+    def _execute_embedded_transformation(
+        self, transformation: (dict, str), template: dict, resolved_parameters: dict
+    ) -> dict:
+        macros_store = get_cloudformation_store(
+            account_id=self._change_set.account_id, region_name=self._change_set.region_name
+        ).macros
+
+        def _apply_transform_on_template(scope, template, value):
+            pass
+
+        scope = transformation[1]
+        transform_name = transformation[0]["Name"]
+        transform_parameters = transformation[0]["Parameters"]
+
+        if transform_name in transformers:
+            builtin_transformer_class = transformers[transform_name]
+            builtin_transformer: Transformer = builtin_transformer_class()
+            transform_output: Any = builtin_transformer.transform(
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+                parameters=transform_parameters,
+            )
+            _apply_transform_on_template(scope, template, transform_output)
+
+        template_parameters = template.get(
+            "Parameters"
+        )  # The complete definition is required for the macro execution
+        if transform_name.get("Name") in macros_store:
+            for key, value in resolved_parameters.items():
+                template_parameters[key]["ParameterValue"] = value
+
+            # A macro is only able to access their node parent and siblings
+            parent_node = template
+            for key in scope.split("/")[:-3]:
+                if key:
+                    parent_node = template.get(key)
+
+            transform_output: Any = execute_macro(
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+                parsed_template=parent_node,
+                macro=transformation[0],
+                stack_parameters=transform_parameters,
+                transformation_parameters=transform_parameters,
+                is_intrinsic=True,
+            )
+            return transform_output
+        raise
+
+    def _find_fn_transforms(self, obj, path=None) -> list[(any, str)]:
+        if path is None:
+            path = []
+
+        results = []
+
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                current_path = path + [key]
+                if key == "Fn::Transform":
+                    results.append(("/".join(current_path), value))
+                results.extend(self._find_fn_transforms(value, current_path))
+
+        elif isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                current_path = path + [f"[{idx}]"]
+                results.extend(self._find_fn_transforms(item, current_path))
+
+        return results
 
     def visit_node_global_transform(
         self, node_global_transform: NodeGlobalTransform
