@@ -516,7 +516,6 @@ class CloudformationProvider(CloudformationApi):
                 "Transform",
                 "Conditions",
                 "Mappings",
-                "Outputs",
             ]:
                 copy_template.pop(key, None)
             for resource in copy_template.get("Resources", {}).values():
