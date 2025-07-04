@@ -5395,7 +5395,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_macro_with_function": {
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_macro_with_intrinsic_function": {
     "recorded-date": "20-06-2025, 22:19:25",
     "recorded-content": {
       "create-change-set-1": {

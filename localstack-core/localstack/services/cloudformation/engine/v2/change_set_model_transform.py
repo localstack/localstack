@@ -306,7 +306,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     @staticmethod
     def _normalize_transform_definitions(
         transform_definitions: list[(any, str)],
-    ) -> list[(dict, any)]:
+    ) -> dict:
         def _normalize_individual_transform(transform_def: str | dict):
             # TODO: validate parameters, imports, refs to resources or conditionals are not supported.
             #      only literals, refs to parameters and basic intrinsic functions like sub and join, posibly select
@@ -325,9 +325,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         for path, value in transform_definitions:
             if isinstance(value, list):
                 for transform in value:
-                    normalized_transforms.append((path, _normalize_individual_transform(transform)))
+                    normalized_transforms.append((_normalize_individual_transform(transform), path))
             else:
-                normalized_transforms.append((path, _normalize_individual_transform(value)))
+                normalized_transforms.append((_normalize_individual_transform(value), path))
 
         return normalized_transforms
 
@@ -338,8 +338,20 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             account_id=self._change_set.account_id, region_name=self._change_set.region_name
         ).macros
 
-        def _apply_transform_on_template(scope, template, value):
-            pass
+        def _apply_transform_on_template(scope, template, transformation_result, include=False):
+            node = template
+            prev_node = node
+            for key in scope.split("/")[:-1]:
+                prev_node = node
+                node = node[key]
+
+            if include and isinstance(prev_node, dict):
+                del node["Fn::Transform"]
+                prev_node[key].update(transformation_result)
+            else:
+                prev_node[key] = transformation_result
+
+            return template
 
         scope = transformation[1]
         transform_name = transformation[0]["Name"]
@@ -353,32 +365,25 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 region_name=self._change_set.region_name,
                 parameters=transform_parameters,
             )
-            _apply_transform_on_template(scope, template, transform_output)
+            return _apply_transform_on_template(scope, template, transform_output, True)
 
-        template_parameters = template.get(
-            "Parameters"
-        )  # The complete definition is required for the macro execution
-        if transform_name.get("Name") in macros_store:
-            for key, value in resolved_parameters.items():
-                template_parameters[key]["ParameterValue"] = value
-
+        if transform_name in macros_store:
             # A macro is only able to access their node parent and siblings
             parent_node = template
-            for key in scope.split("/")[:-3]:
-                if key:
-                    parent_node = template.get(key)
+            for key in scope.split("/")[:-1]:
+                parent_node = parent_node.get(key)
 
             transform_output: Any = execute_macro(
                 account_id=self._change_set.account_id,
                 region_name=self._change_set.region_name,
                 parsed_template=parent_node,
                 macro=transformation[0],
-                stack_parameters=transform_parameters,
+                stack_parameters=resolved_parameters,
                 transformation_parameters=transform_parameters,
                 is_intrinsic=True,
             )
-            return transform_output
-        raise
+            return _apply_transform_on_template(scope, template, transform_output)
+        raise FailedTransformationException("Macro not found")
 
     def _find_fn_transforms(self, obj, path=None) -> list[(any, str)]:
         if path is None:
@@ -395,7 +400,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         elif isinstance(obj, list):
             for idx, item in enumerate(obj):
-                current_path = path + [f"[{idx}]"]
+                current_path = path + [f"{idx}"]
                 results.extend(self._find_fn_transforms(item, current_path))
 
         return results
