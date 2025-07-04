@@ -268,6 +268,11 @@ class CloudformationProvider(CloudformationApi):
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
+        # HACK: recreate the stack (including all of its confusing processes in the __init__ method
+        # to set the stack template to be the transformed template, rather than the untransformed
+        # template
+        stack = Stack(context.account_id, context.region, request, template)
+
         # perform basic static analysis on the template
         for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
             validation_fn(template)
@@ -518,6 +523,9 @@ class CloudformationProvider(CloudformationApi):
                 "Mappings",
             ]:
                 copy_template.pop(key, None)
+            for key in ["Parameters", "Outputs"]:
+                if key in copy_template and not copy_template[key]:
+                    copy_template.pop(key)
             for resource in copy_template.get("Resources", {}).values():
                 resource.pop("LogicalResourceId", None)
             template_body = json.dumps(copy_template)

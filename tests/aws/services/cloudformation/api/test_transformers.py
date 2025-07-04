@@ -220,9 +220,7 @@ class TestLanguageExtensionsTransform:
     """
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Outputs", "$..PhysicalResourceId", "$..StackId"]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId", "$..StackId"])
     def test_transform_length(self, transform_template, snapshot):
         with open(
             os.path.realpath(
@@ -238,9 +236,7 @@ class TestLanguageExtensionsTransform:
         snapshot.match("transformed", transformed_template_result.template)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Outputs", "$..PhysicalResourceId", "$..StackId"]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId", "$..StackId"])
     def test_transform_foreach(self, transform_template, snapshot):
         topic_names = [
             f"mytopic1{short_uid()}",
@@ -292,7 +288,6 @@ class TestLanguageExtensionsTransform:
             # skipped due to a big in the provider not rendering the template correctly
             "$..Resources.GraphQLApi.Properties.Name",
             "$..OutputValue",
-            "$..Outputs",
             "$..StackResources..PhysicalResourceId",
             "$..StackResources..StackId",
         ]
