@@ -245,8 +245,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         endpoint_configuration = request.get("endpointConfiguration", {})
-        ip_address_type = endpoint_configuration.get("ipAddressType", "ipv4")
         types = endpoint_configuration.get("types", ["EDGE"])
+        ip_address_type = endpoint_configuration.get("ipAddressType")
         if len(types) > 1:
             raise BadRequestException("Cannot create an api with multiple Endpoint Types.")
 
@@ -255,7 +255,13 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             error_messages.append(
                 f"Value '[{types[0]}]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]",
             )
-        if ip_address_type not in ("ipv4", "dualstack"):
+        elif not ip_address_type:
+            if types in (["EDGE"], ["REGIONAL"]):
+                ip_address_type = "ipv4"
+            else:
+                ip_address_type = "dualstack"
+
+        if ip_address_type not in ("ipv4", "dualstack", None):
             error_messages.append(
                 f"Value '{ip_address_type}' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]",
             )
@@ -267,6 +273,8 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             )
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
+        if types == ["PRIVATE"] and ip_address_type == "ipv4":
+            raise BadRequestException("Only dualstack ipAddressType is supported for Private APIs.")
 
         minimum_compression_size = request.get("minimumCompressionSize")
         if minimum_compression_size is not None and (

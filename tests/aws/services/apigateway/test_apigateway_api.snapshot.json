@@ -4324,5 +4324,129 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_private_type": {
+    "recorded-date": "03-07-2025, 18:17:19",
+    "recorded-content": {
+      "create-with-private-type-and-ipv4-ip-address-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Only dualstack ipAddressType is supported for Private APIs."
+        },
+        "message": "Only dualstack ipAddressType is supported for Private APIs.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-private-type-and-wrong-ip-address-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-private-type-and-ipv4-ip-address-type-and-empty-description": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Description cannot be an empty string"
+        },
+        "message": "Description cannot be an empty string",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_verify_defaults": {
+    "recorded-date": "04-07-2025, 09:55:21",
+    "recorded-content": {
+      "create-with-edge-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-regional-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "REGIONAL"
+          ]
+        },
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-private-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "PRIVATE"
+          ]
+        },
+        "id": "<id:3>",
+        "name": "<name:3>",
+        "rootResourceId": "<root-resource-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-empty-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:4>",
+        "name": "<name:4>",
+        "rootResourceId": "<root-resource-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-empty-ip-address-type-and-wrong-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[wrong]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
