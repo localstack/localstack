@@ -355,12 +355,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
         track_resource_operation(action, resource_type, missing=resource_provider is not None)
-        log_not_available_message(
-            resource_type,
-            f'No resource provider found for "{resource_type}"',
-        )
-        if resource_provider is None and not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-            raise NoResourceProvider
+        if resource_provider is None:
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                raise NoResourceProvider
 
         extra_resource_properties = {}
         event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})

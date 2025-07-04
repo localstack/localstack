@@ -1,0 +1,22 @@
+# Example taken from AWS documentation
+# https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-resource.html#intrinsic-function-reference-foreach-example-replicate-resource
+
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::LanguageExtensions'
+Parameters:
+  pRepoARNs:
+    Description: ARN of SSO instance
+    Type: CommaDelimitedList
+Resources:
+  'Fn::ForEach::Topics':
+    - TopicName
+    - !Ref pRepoARNs
+    - 'SnsTopic${TopicName}':
+        Type: 'AWS::SNS::Topic'
+        Properties:
+          TopicName:
+           'Fn::Join':
+            - '.'
+            - - !Ref TopicName
+              - fifo
+          FifoTopic: true
