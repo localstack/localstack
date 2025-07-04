@@ -324,3 +324,37 @@ class TestLanguageExtensionsTransform:
             "Stacks"
         ][0]["Outputs"]
         snapshot.match("stack-outputs", outputs)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..StackResources..PhysicalResourceId",
+            "$..StackResources..StackId",
+        ]
+    )
+    def test_transform_to_json_string(self, aws_client, transform_template, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
+        )
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_tojsonstring.yml",
+                )
+            )
+        ) as infile:
+            transform_result = transform_template(infile.read())
+        snapshot.match("transformed", transform_result.template)
+
+        outputs = aws_client.cloudformation.describe_stacks(StackName=transform_result.stack_id)[
+            "Stacks"
+        ][0]["Outputs"]
+        outputs = {every["OutputKey"]: every["OutputValue"] for every in outputs}
+
+        object_value = aws_client.ssm.get_parameter(Name=outputs["ObjectName"])["Parameter"][
+            "Value"
+        ]
+        snapshot.match("object-value", object_value)
+        array_value = aws_client.ssm.get_parameter(Name=outputs["ArrayName"])["Parameter"]["Value"]
+        snapshot.match("array-value", array_value)

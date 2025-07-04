@@ -649,5 +649,80 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_to_json_string": {
+    "recorded-date": "04-07-2025, 21:24:07",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyArrayParameter",
+            "PhysicalResourceId": "CFN-MyArrayParameter-eqEzcW394ZEQ",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/33b24490-591d-11f0-ab22-02a204c1bf21",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyObjectParameter",
+            "PhysicalResourceId": "CFN-MyObjectParameter-L5EAPcOD2MfJ",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/33b24490-591d-11f0-ab22-02a204c1bf21",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "Outputs": {
+          "ArrayName": {
+            "Value": {
+              "Ref": "MyArrayParameter"
+            }
+          },
+          "ObjectName": {
+            "Value": {
+              "Ref": "MyObjectParameter"
+            }
+          }
+        },
+        "Resources": {
+          "MyArrayParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": "[\"a\",\"b\",\"c\"]"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyObjectParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": {
+                "a": "foo",
+                "b": "bar"
+              }
+            },
+            "Type": "AWS::SSM::Parameter"
+          }
+        }
+      },
+      "object-value": {
+        "a": "foo",
+        "b": "bar"
+      },
+      "array-value": "[\"a\",\"b\",\"c\"]"
+    }
   }
 }

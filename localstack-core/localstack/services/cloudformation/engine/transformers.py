@@ -331,7 +331,7 @@ def apply_language_extensions_transform(
                 newobj.update(**new_entries)
             return newobj
         # Fn::Length
-        if isinstance(obj, dict) and "Fn::Length" in obj:
+        elif isinstance(obj, dict) and "Fn::Length" in obj:
             value = obj["Fn::Length"]
             if isinstance(value, dict):
                 value = resolve_context.resolve(value)
@@ -344,6 +344,9 @@ def apply_language_extensions_transform(
                 length = len(value.split(","))
                 return length
             return obj
+        elif isinstance(obj, dict) and "Fn::ToJsonString" in obj:
+            # TODO: is the default representation ok here?
+            return json.dumps(obj["Fn::ToJsonString"], default=str, separators=(",", ":"))
 
             # reference
         return obj
