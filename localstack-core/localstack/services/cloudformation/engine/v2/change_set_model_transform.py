@@ -4,12 +4,17 @@ import os
 from typing import Any, Final, Optional, TypedDict
 
 import boto3
+from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
+from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
+    Transformer,
     execute_macro,
+    transformers,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -27,12 +32,15 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.utils import testutil
+from localstack.utils.objects import recurse_object
 
 LOG = logging.getLogger(__name__)
 
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
+INCLUDE_TRANSFORM = "AWS::Include"
 
 _SCOPE_TRANSFORM_TEMPLATE_OUTCOME: Final[Scope] = Scope("TRANSFORM_TEMPLATE_OUTCOME")
 
@@ -139,6 +147,32 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
     @staticmethod
+    def _apply_global_include(
+        global_transform: GlobalTransform, template: dict, parameters: dict, account_id, region_name
+    ) -> dict:
+        location = global_transform.parameters.get("Location")
+        if not location or not location.startswith("s3://"):
+            raise FailedTransformationException(
+                transformation=INCLUDE_TRANSFORM,
+                message="Unexpected Location parameter for AWS::Include transformer: %s" % location,
+            )
+
+        s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
+        bucket, _, path = location.removeprefix("s3://").partition("/")
+        try:
+            content = testutil.download_s3_object(s3_client, bucket, path)
+        except ClientError:
+            raise FailedTransformationException(
+                transformation=INCLUDE_TRANSFORM,
+                message="Error downloading S3 object '%s/%s'" % (bucket, path),
+            )
+        try:
+            template_to_include = parse_template(content)
+        except Exception as e:
+            raise FailedTransformationException(transformation=INCLUDE_TRANSFORM, message=str(e))
+        return {**template, **template_to_include}
+
+    @staticmethod
     def _apply_global_macro_transformation(
         account_id: str,
         region_name,
@@ -182,6 +216,14 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
             LOG.warning("%s is not yet supported. Ignoring.", SECRETSMANAGER_TRANSFORM)
             transformed_template = template
+        elif transform_name == INCLUDE_TRANSFORM:
+            transformed_template = self._apply_global_include(
+                global_transform=global_transform,
+                region_name=self._change_set.region_name,
+                account_id=self._change_set.account_id,
+                template=template,
+                parameters=parameters,
+            )
         else:
             transformed_template = self._apply_global_macro_transformation(
                 account_id=self._change_set.account_id,
@@ -213,11 +255,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if not transformed_before_template:
                 transformed_before_template = self._before_template
                 for before_global_transform in transform_before:
-                    transformed_before_template = self._apply_global_transform(
-                        global_transform=before_global_transform,
-                        parameters=parameters_before,
-                        template=transformed_before_template,
-                    )
+                    if not is_nothing(before_global_transform.name):
+                        transformed_before_template = self._apply_global_transform(
+                            global_transform=before_global_transform,
+                            parameters=parameters_before,
+                            template=transformed_before_template,
+                        )
                 self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
@@ -226,16 +269,187 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if not transformed_after_template:
                 transformed_after_template = self._after_template
                 for after_global_transform in transform_after:
-                    transformed_after_template = self._apply_global_transform(
-                        global_transform=after_global_transform,
-                        parameters=parameters_after,
-                        template=transformed_after_template,
-                    )
+                    if not is_nothing(after_global_transform.name):
+                        transformed_after_template = self._apply_global_transform(
+                            global_transform=after_global_transform,
+                            parameters=parameters_after,
+                            template=transformed_after_template,
+                        )
                 self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
 
         self._save_runtime_cache()
 
+        ### Handle Embedded Fn::Transform
+        transformed_before_template = self._execute_embedded_transformations(
+            template=transformed_before_template, resolved_parameters=parameters_before
+        )
+        transformed_after_template = self._execute_embedded_transformations(
+            template=transformed_after_template, resolved_parameters=parameters_after
+        )
+
         return transformed_before_template, transformed_after_template
+
+    def _execute_embedded_transformations(
+        self, template, resolved_parameters
+    ) -> PreprocEntityDelta:
+        account_id = self._change_set.account_id
+        region_name = self._change_set.region_name
+        stack_name = self._change_set.change_set_name
+
+        def _visit(obj, path, **_):
+            if isinstance(obj, dict) and "Fn::Transform" in obj:
+                transform = (
+                    obj["Fn::Transform"]
+                    if isinstance(obj["Fn::Transform"], dict)
+                    else {"Name": obj["Fn::Transform"]}
+                )
+                transform_name = transform.get("Name")
+                transformer_class = transformers.get(transform_name)
+                macro_store = get_cloudformation_store(
+                    account_id=account_id, region_name=region_name
+                ).macros
+                parameters = transform.get("Parameters") or {}
+                stack_parameters = resolved_parameters
+
+                if transformer_class:
+                    transformer = transformer_class()
+                    transformed = transformer.transform(account_id, region_name, parameters)
+                    obj_copy = copy.deepcopy(obj)
+                    obj_copy.pop("Fn::Transform")
+                    obj_copy.update(transformed)
+                    return obj_copy
+
+                elif transform_name in macro_store:
+                    obj_copy = copy.deepcopy(obj)
+                    obj_copy.pop("Fn::Transform")
+                    result = execute_macro(
+                        account_id,
+                        region_name,
+                        obj_copy,
+                        transform,
+                        stack_parameters,
+                        parameters,
+                        True,
+                    )
+                    return result
+                else:
+                    LOG.warning(
+                        "Unsupported transform function '%s' used in %s", transform_name, stack_name
+                    )
+            return obj
+
+        return recurse_object(template, _visit)
+
+    @staticmethod
+    def _normalize_transform_definitions(
+        transform_definitions: list[(any, str)],
+    ) -> dict:
+        def _normalize_individual_transform(transform_def: str | dict):
+            # TODO: validate parameters, imports, refs to resources or conditionals are not supported.
+            #      only literals, refs to parameters and basic intrinsic functions like sub and join, posibly select
+            if isinstance(transform_def, str):
+                return {"Name": transform_def, "Parameters": {}}
+
+            if isinstance(transform_def, dict):
+                return {
+                    "Name": transform_def["Name"],
+                    "Parameters": transform_def.get("Parameters", {}),
+                }
+
+            raise FailedTransformationException("Invalid Definition of transformation")
+
+        normalized_transforms = []
+        for path, value in transform_definitions:
+            if isinstance(value, list):
+                for transform in value:
+                    normalized_transforms.append((_normalize_individual_transform(transform), path))
+            else:
+                normalized_transforms.append((_normalize_individual_transform(value), path))
+
+        return normalized_transforms
+
+    def _execute_embedded_transformation(
+        self, transformation: (dict, str), template: dict, resolved_parameters: dict
+    ) -> dict:
+        macros_store = get_cloudformation_store(
+            account_id=self._change_set.account_id, region_name=self._change_set.region_name
+        ).macros
+
+        def _apply_transform_on_template(scope, template, transformation_result, include=False):
+            # node = template
+            # prev_node = node
+            # for key in scope.split("/")[:-1]:
+            #     prev_node = node
+            #     node = node[key]
+            #
+            # if include and isinstance(prev_node, dict):
+            #     del node["Fn::Transform"]
+            #     prev_node[key].update(transformation_result)
+            # else:
+            #     prev_node[key] = transformation_result
+            #
+            # return template
+            scope = scope.replace("/", ".")
+
+            def _visit(obj, path):
+                if path == scope:
+                    return transformation_result
+                return obj
+
+            t = recurse_object(template, _visit)
+            return t
+
+        scope = transformation[1]
+        transform_name = transformation[0]["Name"]
+        transform_parameters = transformation[0]["Parameters"]
+
+        if transform_name in transformers:
+            builtin_transformer_class = transformers[transform_name]
+            builtin_transformer: Transformer = builtin_transformer_class()
+            transform_output: Any = builtin_transformer.transform(
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+                parameters=transform_parameters,
+            )
+            return _apply_transform_on_template(scope, template, transform_output, True)
+
+        if transform_name in macros_store:
+            # A macro is only able to access their node parent and siblings
+            parent_node = template
+            for key in scope.split("/")[:-1]:
+                parent_node = parent_node.get(key)
+
+            transform_output: Any = execute_macro(
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+                parsed_template=parent_node,
+                macro=transformation[0],
+                stack_parameters=resolved_parameters,
+                transformation_parameters=transform_parameters,
+                is_intrinsic=True,
+            )
+            return _apply_transform_on_template(scope, template, transform_output)
+        raise FailedTransformationException("Macro not found")
+
+    def _find_fn_transforms(self, obj, path=None) -> list[(any, str)]:
+        if path is None:
+            path = []
+
+        results = []
+
+        if isinstance(obj, dict):
+            for key, value in obj.items():
+                current_path = path + [key]
+                if key == "Fn::Transform":
+                    results.append(("/".join(current_path), value))
+                results.extend(self._find_fn_transforms(value, current_path))
+
+        elif isinstance(obj, list):
+            for idx, item in enumerate(obj):
+                current_path = path + [f"{idx}"]
+                results.extend(self._find_fn_transforms(item, current_path))
+
+        return results
 
     def visit_node_global_transform(
         self, node_global_transform: NodeGlobalTransform
