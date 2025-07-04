@@ -1,4 +1,4 @@
-name: AWS Integration Tests
+name: AWS / Integration Tests
 
 on:
   workflow_dispatch:
