@@ -134,5 +134,87 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_policy_resets_to_default": {
+    "recorded-date": "04-07-2025, 00:04:32",
+    "recorded-content": {
+      "default-topic-attributes": {
+        "Version": "2008-10-17",
+        "Id": "__default_policy_ID",
+        "Statement": [
+          {
+            "Sid": "__default_statement_ID",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": [
+              "SNS:GetTopicAttributes",
+              "SNS:SetTopicAttributes",
+              "SNS:AddPermission",
+              "SNS:RemovePermission",
+              "SNS:DeleteTopic",
+              "SNS:Subscribe",
+              "SNS:ListSubscriptionsByTopic",
+              "SNS:Publish"
+            ],
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
+            "Condition": {
+              "StringEquals": {
+                "AWS:SourceOwner": "111111111111"
+              }
+            }
+          }
+        ]
+      },
+      "modified-topic-attributes": {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Sid": "0",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": "sns:Publish",
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
+            "Condition": {
+              "StringEquals": {
+                "aws:SourceAccount": "111111111111"
+              }
+            }
+          }
+        ]
+      },
+      "reverted-topic-attributes": {
+        "Version": "2008-10-17",
+        "Id": "__default_policy_ID",
+        "Statement": [
+          {
+            "Sid": "__default_statement_ID",
+            "Effect": "Allow",
+            "Principal": {
+              "AWS": "*"
+            },
+            "Action": [
+              "SNS:GetTopicAttributes",
+              "SNS:SetTopicAttributes",
+              "SNS:AddPermission",
+              "SNS:RemovePermission",
+              "SNS:DeleteTopic",
+              "SNS:Subscribe",
+              "SNS:ListSubscriptionsByTopic",
+              "SNS:Publish"
+            ],
+            "Resource": "arn:<partition>:sns:<region>:111111111111:<topic-name>",
+            "Condition": {
+              "StringEquals": {
+                "AWS:SourceOwner": "111111111111"
+              }
+            }
+          }
+        ]
+      }
+    }
   }
 }

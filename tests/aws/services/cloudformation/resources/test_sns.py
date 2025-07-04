@@ -5,6 +5,7 @@ import pytest
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import short_uid
 
 
@@ -150,6 +151,61 @@ def test_sns_topic_with_attributes(infrastructure_setup, aws_client, snapshot):
             TopicArn=outputs["TopicArn"],
         )
         snapshot.match("topic-archive-policy", response["Attributes"]["ArchivePolicy"])
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Statement..Action",  # TODO: see https://github.com/getmoto/moto/pull/9041
+    ]
+)
+def test_sns_topic_policy_resets_to_default(
+    sns_topic, infrastructure_setup, aws_client, snapshot, account_id
+):
+    """Tests the delete statement of a ``AWS::SNS::TopicPolicy`` resource, which should reset the topic's policy to the
+    default policy."""
+    # simulate a pre-existing topic
+    existing_topic_arn = sns_topic["Attributes"]["TopicArn"]
+    existing_topic_name = parse_arn(existing_topic_arn)["resource"]
+    snapshot.add_transformer(snapshot.transform.regex(existing_topic_name, "<topic-name>"))
+
+    # create the stack
+    stack_name = "SnsTopicPolicyStack"
+    infra = infrastructure_setup(namespace="SnsTests")
+    # persisting the stack means persisting the existing_topic_arn reference, but that changes every test run
+    infra.persist_output = False
+    stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
+
+    # get the existing topic
+    topic = cdk.aws_sns.Topic.from_topic_arn(stack, "Topic", existing_topic_arn)
+
+    # add the topic policy resource
+    topic_policy = cdk.aws_sns.TopicPolicy(stack, "CustomTopicPolicy", topics=[topic])
+    topic_policy.document.add_statements(
+        cdk.aws_iam.PolicyStatement(
+            effect=cdk.aws_iam.Effect.ALLOW,
+            principals=[cdk.aws_iam.AnyPrincipal()],
+            actions=["sns:Publish"],
+            resources=[topic.topic_arn],
+            conditions={"StringEquals": {"aws:SourceAccount": account_id}},
+        )
+    )
+
+    # snapshot its policy
+    default = aws_client.sns.get_topic_attributes(TopicArn=existing_topic_arn)
+    snapshot.match("default-topic-attributes", default["Attributes"]["Policy"])
+
+    # deploy the stack
+    cdk.CfnOutput(stack, "TopicArn", value=topic.topic_arn)
+    with infra.provisioner() as prov:
+        assert prov.get_stack_outputs(stack_name=stack_name)["TopicArn"] == existing_topic_arn
+
+        modified = aws_client.sns.get_topic_attributes(TopicArn=existing_topic_arn)
+        snapshot.match("modified-topic-attributes", modified["Attributes"]["Policy"])
+
+    # now that it's destroyed, get the topic attributes again
+    reverted = aws_client.sns.get_topic_attributes(TopicArn=existing_topic_arn)
+    snapshot.match("reverted-topic-attributes", reverted["Attributes"]["Policy"])
 
 
 @markers.aws.validated
