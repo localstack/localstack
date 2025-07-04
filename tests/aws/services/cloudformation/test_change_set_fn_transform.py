@@ -52,6 +52,9 @@ class TestChangeSetFnTransform:
 
     @markers.aws.validated
     @pytest.mark.parametrize("include_format", ["yml", "json"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Changes..ResourceChange.AfterContext.Properties.Name"]
+    )
     def test_embedded_fn_transform_include(
         self, include_format, snapshot, capture_update_process, s3_bucket, aws_client, tmp_path
     ):
@@ -424,7 +427,7 @@ class TestChangeSetFnTransform:
         capture_update_process(snapshot, template_1, template_2, p2={"Transform": transform})
 
     @markers.aws.validated
-    def test_macro_with_function(
+    def test_macro_with_intrisic_function(
         self,
         snapshot,
         capture_update_process,
