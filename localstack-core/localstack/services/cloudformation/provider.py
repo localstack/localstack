@@ -244,35 +244,33 @@ class CloudformationProvider(CloudformationApi):
             old_parameters={},
         )
 
+        stack = Stack(context.account_id, context.region, request, template)
+
         try:
             template = template_preparer.transform_template(
                 context.account_id,
                 context.region,
                 template,
-                request["StackName"],
-                template["Resources"],
-                template.get("Mappings", {}),
+                stack.stack_name,
+                stack.resources,
+                stack.mappings,
                 {},  # TODO
                 resolved_parameters,
             )
         except FailedTransformationException as e:
-            raise NotImplementedError from e
-            # stack.add_stack_event(
-            #     stack.stack_name,
-            #     stack.stack_id,
-            #     status="ROLLBACK_IN_PROGRESS",
-            #     status_reason=e.message,
-            # )
-            # stack.set_stack_status("ROLLBACK_COMPLETE")
-            # state.stacks[stack.stack_id] = stack
-            # return CreateStackOutput(StackId=stack.stack_id)
+            stack.add_stack_event(
+                stack.stack_name,
+                stack.stack_id,
+                status="ROLLBACK_IN_PROGRESS",
+                status_reason=e.message,
+            )
+            stack.set_stack_status("ROLLBACK_COMPLETE")
+            state.stacks[stack.stack_id] = stack
+            return CreateStackOutput(StackId=stack.stack_id)
 
         # perform basic static analysis on the template
         for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
             validation_fn(template)
-
-        # handle conditions
-        stack = Stack(context.account_id, context.region, request, template)
 
         # resolve conditions
         raw_conditions = template.get("Conditions", {})
