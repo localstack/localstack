@@ -33,6 +33,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils import testutil
+from localstack.utils.objects import recurse_object
 
 LOG = logging.getLogger(__name__)
 
@@ -291,17 +292,53 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     def _execute_embedded_transformations(
         self, template, resolved_parameters
     ) -> PreprocEntityDelta:
-        transformations = self._find_fn_transforms(template)
-        normalized_transformations = self._normalize_transform_definitions(transformations)
+        account_id = self._change_set.account_id
+        region_name = self._change_set.region_name
+        stack_name = self._change_set.change_set_name
 
-        transformed_template = copy.deepcopy(template)
-        for transformation in normalized_transformations:
-            transformed_template = self._execute_embedded_transformation(
-                transformation=transformation,
-                template=transformed_template,
-                resolved_parameters=resolved_parameters,
-            )
-        return transformed_template
+        def _visit(obj, path, **_):
+            if isinstance(obj, dict) and "Fn::Transform" in obj:
+                transform = (
+                    obj["Fn::Transform"]
+                    if isinstance(obj["Fn::Transform"], dict)
+                    else {"Name": obj["Fn::Transform"]}
+                )
+                transform_name = transform.get("Name")
+                transformer_class = transformers.get(transform_name)
+                macro_store = get_cloudformation_store(
+                    account_id=account_id, region_name=region_name
+                ).macros
+                parameters = transform.get("Parameters") or {}
+                stack_parameters = resolved_parameters
+
+                if transformer_class:
+                    transformer = transformer_class()
+                    transformed = transformer.transform(account_id, region_name, parameters)
+                    obj_copy = copy.deepcopy(obj)
+                    obj_copy.pop("Fn::Transform")
+                    obj_copy.update(transformed)
+                    return obj_copy
+
+                elif transform_name in macro_store:
+                    obj_copy = copy.deepcopy(obj)
+                    obj_copy.pop("Fn::Transform")
+                    result = execute_macro(
+                        account_id,
+                        region_name,
+                        obj_copy,
+                        transform,
+                        stack_parameters,
+                        parameters,
+                        True,
+                    )
+                    return result
+                else:
+                    LOG.warning(
+                        "Unsupported transform function '%s' used in %s", transform_name, stack_name
+                    )
+            return obj
+
+        return recurse_object(template, _visit)
 
     @staticmethod
     def _normalize_transform_definitions(
@@ -339,19 +376,28 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         ).macros
 
         def _apply_transform_on_template(scope, template, transformation_result, include=False):
-            node = template
-            prev_node = node
-            for key in scope.split("/")[:-1]:
-                prev_node = node
-                node = node[key]
+            # node = template
+            # prev_node = node
+            # for key in scope.split("/")[:-1]:
+            #     prev_node = node
+            #     node = node[key]
+            #
+            # if include and isinstance(prev_node, dict):
+            #     del node["Fn::Transform"]
+            #     prev_node[key].update(transformation_result)
+            # else:
+            #     prev_node[key] = transformation_result
+            #
+            # return template
+            scope = scope.replace("/", ".")
 
-            if include and isinstance(prev_node, dict):
-                del node["Fn::Transform"]
-                prev_node[key].update(transformation_result)
-            else:
-                prev_node[key] = transformation_result
+            def _visit(obj, path):
+                if path == scope:
+                    return transformation_result
+                return obj
 
-            return template
+            t = recurse_object(template, _visit)
+            return t
 
         scope = transformation[1]
         transform_name = transformation[0]["Name"]

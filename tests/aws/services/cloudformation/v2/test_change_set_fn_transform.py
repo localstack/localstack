@@ -427,7 +427,7 @@ class TestChangeSetFnTransform:
         capture_update_process(snapshot, template_1, template_2, p2={"Transform": transform})
 
     @markers.aws.validated
-    def test_macro_with_intrisic_function(
+    def test_macro_with_intrinsic_function(
         self,
         snapshot,
         capture_update_process,
