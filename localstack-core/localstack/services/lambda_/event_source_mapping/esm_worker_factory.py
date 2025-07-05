@@ -37,12 +37,12 @@ from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import 
     SqsPoller,
 )
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
+from localstack.services.lambda_.lambda_debug_mode.ldm import (
+    DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
+    LDM,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
-    DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
-    is_lambda_debug_mode,
-)
 
 
 class PollerHolder:
@@ -65,7 +65,7 @@ class EsmWorkerFactory:
         # Sender (always Lambda)
         function_arn = self.esm_config["FunctionArn"]
 
-        if is_lambda_debug_mode():
+        if LDM.is_enabled():
             timeout_seconds = DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
         else:
             # 900s is the maximum amount of time a Lambda can run for.

@@ -11,11 +11,11 @@ from werkzeug import Request
 from localstack.http import Response, route
 from localstack.services.edge import ROUTER
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
-from localstack.utils.backoff import ExponentialBackoff
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
+from localstack.services.lambda_.lambda_debug_mode.ldm import (
     DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
-    is_lambda_debug_mode,
+    LDM,
 )
+from localstack.utils.backoff import ExponentialBackoff
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
 
@@ -209,7 +209,7 @@ class ExecutorEndpoint(Endpoint):
         # Note that if timeouts are enforced for the lambda function invoked at this endpoint
         # (this is needs to be configured in the Lambda Debug Mode Config file), the lambda
         # function will continue to enforce the expected timeouts.
-        if is_lambda_debug_mode():
+        if LDM.is_enabled():
             # The value is set to a default high value to ensure eventual termination.
             timeout_seconds = DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
         else:
