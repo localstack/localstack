@@ -427,6 +427,7 @@ jobs:
           path: |
             target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml
             target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}
+            target/metric_reports
           retention-days: 30
 
   test-bootstrap:
