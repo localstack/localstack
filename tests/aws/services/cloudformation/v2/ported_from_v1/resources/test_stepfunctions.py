@@ -81,7 +81,6 @@ def test_nested_statemachine_with_sync2(deploy_cfn_template, aws_client):
     assert output["Value"] == 3
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.needs_fixing
 def test_apigateway_invoke(deploy_cfn_template, aws_client):
     deploy_result = deploy_cfn_template(
@@ -108,7 +107,6 @@ def test_apigateway_invoke(deploy_cfn_template, aws_client):
     assert "hello from stepfunctions" in execution_result["output"]
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.validated
 def test_apigateway_invoke_with_path(deploy_cfn_template, aws_client):
     deploy_result = deploy_cfn_template(
@@ -136,7 +134,6 @@ def test_apigateway_invoke_with_path(deploy_cfn_template, aws_client):
     assert "hello_with_path from stepfunctions" in execution_result["output"]
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.only_localstack
 def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""
@@ -182,7 +179,6 @@ def test_apigateway_invoke_localhost(deploy_cfn_template, aws_client):
     assert "hello from stepfunctions" in execution_result["output"]
 
 
-@pytest.mark.skip(reason="CFNV2:Other botocore invalid resource identifier specified")
 @markers.aws.only_localstack
 def test_apigateway_invoke_localhost_with_path(deploy_cfn_template, aws_client):
     """tests the same as above but with the "generic" localhost version of invoking the apigateway"""

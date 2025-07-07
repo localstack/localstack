@@ -201,6 +201,9 @@ class KeySpec(StrEnum):
     HMAC_384 = "HMAC_384"
     HMAC_512 = "HMAC_512"
     SM2 = "SM2"
+    ML_DSA_44 = "ML_DSA_44"
+    ML_DSA_65 = "ML_DSA_65"
+    ML_DSA_87 = "ML_DSA_87"
 
 
 class KeyState(StrEnum):
@@ -231,6 +234,7 @@ class MacAlgorithmSpec(StrEnum):
 class MessageType(StrEnum):
     RAW = "RAW"
     DIGEST = "DIGEST"
+    EXTERNAL_MU = "EXTERNAL_MU"
 
 
 class MultiRegionKeyType(StrEnum):
@@ -261,6 +265,7 @@ class SigningAlgorithmSpec(StrEnum):
     ECDSA_SHA_384 = "ECDSA_SHA_384"
     ECDSA_SHA_512 = "ECDSA_SHA_512"
     SM2DSA = "SM2DSA"
+    ML_DSA_SHAKE_256 = "ML_DSA_SHAKE_256"
 
 
 class WrappingKeySpec(StrEnum):

@@ -6,6 +6,7 @@
 .coverage.*
 htmlcov
 *.orig
+*.sln
 
 # ignore .vs files that store temproray cache of visual studio workspace settings
 .vs

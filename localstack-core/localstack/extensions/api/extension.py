@@ -1,6 +1,11 @@
 from plux import Plugin
 
-from .aws import CompositeExceptionHandler, CompositeHandler, CompositeResponseHandler
+from .aws import (
+    CompositeExceptionHandler,
+    CompositeFinalizer,
+    CompositeHandler,
+    CompositeResponseHandler,
+)
 from .http import RouteHandler, Router
 
 
@@ -83,6 +88,14 @@ class Extension(BaseExtension):
         Called with the custom exception handlers of the LocalStack gateway. Overwrite this to add or update handlers.
 
         :param handlers: custom exception handlers of the gateway
+        """
+        pass
+
+    def update_finalizers(self, handlers: CompositeFinalizer):
+        """
+        Called with the custom finalizer handlers of the LocalStack gateway. Overwrite this to add or update handlers.
+
+        :param handlers: custom finalizer handlers of the gateway
         """
         pass
 

@@ -147,6 +147,22 @@ class ChangeSetNode(ChangeSetEntity, abc.ABC): ...
 class ChangeSetTerminal(ChangeSetEntity, abc.ABC): ...
 
 
+class UpdateModel:
+    # TODO: may be expanded to keep track of other runtime values such as resolved_parameters.
+
+    node_template: Final[NodeTemplate]
+    before_runtime_cache: Final[dict]
+    after_runtime_cache: Final[dict]
+
+    def __init__(
+        self,
+        node_template: NodeTemplate,
+    ):
+        self.node_template = node_template
+        self.before_runtime_cache = dict()
+        self.after_runtime_cache = dict()
+
+
 class NodeTemplate(ChangeSetNode):
     transform: Final[NodeTransform]
     mappings: Final[NodeMappings]
@@ -515,9 +531,8 @@ class ChangeSetModel:
         )
         # TODO: need to do template preprocessing e.g. parameter resolution, conditions etc.
 
-    def get_update_model(self) -> NodeTemplate:
-        # TODO: rethink naming of this for outer utils
-        return self._node_template
+    def get_update_model(self) -> UpdateModel:
+        return UpdateModel(node_template=self._node_template)
 
     def _visit_terminal_value(
         self, scope: Scope, before_value: Maybe[Any], after_value: Maybe[Any]
@@ -548,8 +563,9 @@ class ChangeSetModel:
         node_intrinsic_function = self._visited_scopes.get(scope)
         if isinstance(node_intrinsic_function, NodeIntrinsicFunction):
             return node_intrinsic_function
+        arguments_scope = scope.open_scope("args")
         arguments = self._visit_value(
-            scope=scope, before_value=before_arguments, after_value=after_arguments
+            scope=arguments_scope, before_value=before_arguments, after_value=after_arguments
         )
         if is_created(before=before_arguments, after=after_arguments):
             change_type = ChangeType.CREATED
@@ -777,7 +793,7 @@ class ChangeSetModel:
                     self._safe_access_in(scope, dominant_type_name, before_value, after_value)
                 )
                 value = self._visit_intrinsic_function(
-                    scope=scope,
+                    scope=intrinsic_function_scope,
                     intrinsic_function=dominant_type_name,
                     before_arguments=before_arguments,
                     after_arguments=after_arguments,
@@ -802,6 +818,7 @@ class ChangeSetModel:
         node_property = self._visited_scopes.get(scope)
         if isinstance(node_property, NodeProperty):
             return node_property
+        # TODO: Review the use of Fn::Transform as resource properties.
         value = self._visit_value(
             scope=scope, before_value=before_property, after_value=after_property
         )
@@ -936,7 +953,7 @@ class ChangeSetModel:
                 scope, mapping_name, before_mappings, after_mappings
             )
             mapping = self._visit_mapping(
-                scope=scope,
+                scope=scope_mapping,
                 name=mapping_name,
                 before_mapping=before_mapping,
                 after_mapping=after_mapping,
@@ -1156,14 +1173,30 @@ class ChangeSetModel:
     @staticmethod
     def _normalise_transformer_value(value: Maybe[str | list[Any]]) -> Maybe[list[Any]]:
         # To simplify downstream logics, reduce the type options to array of transformations.
-        # TODO: add validation logic
+        # TODO: add further validation logic
         # TODO: should we sort to avoid detecting user-side ordering changes as template changes?
         if isinstance(value, NothingType):
             return value
         elif isinstance(value, str):
             value = [NormalisedGlobalTransformDefinition(Name=value, Parameters=Nothing)]
-        elif not isinstance(value, list):
-            raise RuntimeError(f"Invalid type for Transformer: '{value}'")
+        elif isinstance(value, list):
+            tmp_value = list()
+            for item in value:
+                if isinstance(item, str):
+                    tmp_value.append(
+                        NormalisedGlobalTransformDefinition(Name=item, Parameters=Nothing)
+                    )
+                else:
+                    tmp_value.append(item)
+            value = tmp_value
+        elif isinstance(value, dict):
+            if "Name" not in value:
+                raise RuntimeError(f"Missing 'Name' field in Transform definition '{value}'")
+            name = value["Name"]
+            parameters = value.get("Parameters", Nothing)
+            value = [NormalisedGlobalTransformDefinition(Name=name, Parameters=parameters)]
+        else:
+            raise RuntimeError(f"Invalid Transform definition: '{value}'")
         return value
 
     def _visit_transform(
@@ -1325,7 +1358,8 @@ class ChangeSetModel:
     def _safe_access_in(scope: Scope, key: str, *objects: Maybe[dict]) -> tuple[Scope, Maybe[Any]]:
         results = list()
         for obj in objects:
-            # TODO: raise errors if not dict
+            if not isinstance(obj, (dict, NothingType)):
+                raise RuntimeError(f"Invalid definition type at '{obj}'")
             if not isinstance(obj, NothingType):
                 results.append(obj.get(key, Nothing))
             else:

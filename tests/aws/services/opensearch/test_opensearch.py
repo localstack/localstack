@@ -202,8 +202,8 @@ class TestOpensearchProvider:
         test_index_id = "new-index-id"
         test_document = {"test-key": "test-value"}
         admin_client = OpenSearch(hosts=endpoint, http_auth=master_user_auth)
-        admin_client.create(test_index_name, id=test_index_id, body={})
-        admin_client.index(test_index_name, body=test_document)
+        admin_client.create(index=test_index_name, id=test_index_id, body={})
+        admin_client.index(index=test_index_name, body=test_document)
 
         # create a new "readall" rolemapping
         test_rolemapping = {"backend_roles": ["readall"], "users": []}
@@ -238,10 +238,10 @@ class TestOpensearchProvider:
         retry(_search, sleep=0.5, retries=3)
 
         with pytest.raises(AuthorizationException):
-            test_user_client.create("new-index2", id="new-index-id2", body={})
+            test_user_client.create(index="new-index2", id="new-index-id2", body={})
 
         with pytest.raises(AuthorizationException):
-            test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
+            test_user_client.index(index=test_index_name, body={"test-key1": "test-value1"})
 
         # add the user to the all_access role
         rolemappins_patch = [{"op": "add", "path": "/users/-", "value": "test_user"}]
@@ -253,8 +253,8 @@ class TestOpensearchProvider:
         assert response.status_code == 200
 
         # ensure the user can now write and create a new index
-        test_user_client.create("new-index2", id="new-index-id2", body={})
-        test_user_client.index(test_index_name, body={"test-key1": "test-value1"})
+        test_user_client.create(index="new-index2", id="new-index-id2", body={})
+        test_user_client.index(index=test_index_name, body={"test-key1": "test-value1"})
 
     @markers.aws.validated
     def test_sql_plugin(self, opensearch_create_domain, aws_client, snapshot, account_id):

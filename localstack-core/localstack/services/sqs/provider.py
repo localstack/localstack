@@ -77,6 +77,7 @@ from localstack.http import Request, route
 from localstack.services.edge import ROUTER
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.sqs import constants as sqs_constants
+from localstack.services.sqs import query_api
 from localstack.services.sqs.constants import (
     HEADER_LOCALSTACK_SQS_OVERRIDE_MESSAGE_COUNT,
     HEADER_LOCALSTACK_SQS_OVERRIDE_WAIT_TIME_SECONDS,
@@ -828,6 +829,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         return sqs_stores[account_id][region]
 
     def on_before_start(self):
+        query_api.register(ROUTER)
         self._router_rules = ROUTER.add(SqsDeveloperEndpoints())
         self._queue_update_worker.start()
         self._start_cloudwatch_metrics_reporting()
@@ -1677,6 +1679,13 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             MessageSystemAttributeName.SenderId: context.account_id,  # not the account ID in AWS
             MessageSystemAttributeName.SentTimestamp: str(now(millis=True)),
         }
+        # we are not using the `context.trace_context` here as it is automatically populated
+        # AWS only adds the `AWSTraceHeader` attribute if the header is explicitly present
+        # TODO: check maybe with X-Ray Active mode?
+        if "X-Amzn-Trace-Id" in context.request.headers:
+            result[MessageSystemAttributeName.AWSTraceHeader] = str(
+                context.request.headers["X-Amzn-Trace-Id"]
+            )
 
         if message_system_attributes is not None:
             for attr in message_system_attributes:

@@ -53,9 +53,10 @@ from localstack.aws.api.iam import (
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
     SimulationPolicyListType,
-    Tag,
     User,
+    allUsers,
     arnType,
+    credentialAgeDays,
     customSuffixType,
     existingUserNameType,
     groupNameType,
@@ -278,7 +279,7 @@ class IamProvider(IamApi):
         if moto_role.permissions_boundary:
             role["PermissionsBoundary"] = moto_role.permissions_boundary
         if moto_role.tags:
-            role["Tags"] = [Tag(Key=k, Value=v) for k, v in moto_role.tags.items()]
+            role["Tags"] = moto_role.tags
         # role["RoleLastUsed"]: # TODO: add support
         return role
 
@@ -299,8 +300,9 @@ class IamProvider(IamApi):
         response_roles = []
         for moto_role in moto_roles:
             response_role = self.moto_role_to_role_type(moto_role)
-            # Permission boundary should not be a part of the response
+            # Permission boundary and Tags should not be a part of the response
             response_role.pop("PermissionsBoundary", None)
+            response_role.pop("Tags", None)
             response_roles.append(response_role)
             if path_prefix:  # TODO: this is consistent with the patch it migrates, but should add tests for this.
                 response_role["AssumeRolePolicyDocument"] = quote(
@@ -335,7 +337,7 @@ class IamProvider(IamApi):
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
         response = ListInstanceProfileTagsResponse()
-        response["Tags"] = [Tag(Key=k, Value=v) for k, v in profile.tags.items()]
+        response["Tags"] = profile.tags
         return response
 
     def tag_instance_profile(
@@ -347,8 +349,10 @@ class IamProvider(IamApi):
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
-        value_by_key = {tag["Key"]: tag["Value"] for tag in tags}
-        profile.tags.update(value_by_key)
+        new_keys = [tag["Key"] for tag in tags]
+        updated_tags = [tag for tag in profile.tags if tag["Key"] not in new_keys]
+        updated_tags.extend(tags)
+        profile.tags = updated_tags
 
     def untag_instance_profile(
         self,
@@ -359,8 +363,7 @@ class IamProvider(IamApi):
     ) -> None:
         backend = get_iam_backend(context)
         profile = backend.get_instance_profile(instance_profile_name)
-        for tag in tag_keys:
-            profile.tags.pop(tag, None)
+        profile.tags = [tag for tag in profile.tags if tag["Key"] not in tag_keys]
 
     def create_service_linked_role(
         self,
@@ -692,8 +695,14 @@ class IamProvider(IamApi):
         return {k: v for k, v in data.items() if k in key_set}
 
     def create_service_specific_credential(
-        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        service_name: serviceName,
+        credential_age_days: credentialAgeDays | None = None,
+        **kwargs,
     ) -> CreateServiceSpecificCredentialResponse:
+        # TODO add support for credential_age_days
         moto_user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         credential = self._new_service_specific_credential(user_name, service_name, context)
@@ -703,10 +712,14 @@ class IamProvider(IamApi):
     def list_service_specific_credentials(
         self,
         context: RequestContext,
-        user_name: userNameType = None,
-        service_name: serviceName = None,
+        user_name: userNameType | None = None,
+        service_name: serviceName | None = None,
+        all_users: allUsers | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
+        # TODO add support for all_users, marker, max_items
         moto_user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         result = [

@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.13-slim-bookworm@sha256:7a3ed1226224bcc1fe5443262363d42f48cf832a540c1836ba8ccbeaadf8637c AS base
+FROM python:3.11.13-slim-bookworm@sha256:9e1912aab0a30bbd9488eb79063f68f42a68ab0946cbe98fecf197fe5b085506 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -57,7 +57,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && test ! $(which python3.9)
 
 SHELL [ "/bin/bash", "-c" ]
-ENV LANG C.UTF-8
+ENV LANG=C.UTF-8
 
 # set workdir
 RUN mkdir -p /opt/code/localstack

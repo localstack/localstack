@@ -645,7 +645,6 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@pytest.mark.skip("CFNV2:Other")
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
@@ -906,7 +905,7 @@ def test_deleted_changeset(snapshot, cleanups, aws_client):
     snapshot.match("postdelete_changeset_notfound", e.value)
 
 
-@pytest.mark.skip(reason="CFNV2:Macros")
+@pytest.mark.skip("CFNV2:Capabilities")
 @markers.aws.validated
 def test_autoexpand_capability_requirement(cleanups, aws_client):
     stack_name = f"test-stack-{short_uid()}"

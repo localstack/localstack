@@ -64,7 +64,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.8]": {
-    "recorded-date": "31-03-2025, 12:18:00",
+    "recorded-date": "17-06-2025, 09:51:26",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -205,7 +205,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java11]": {
-    "recorded-date": "31-03-2025, 12:18:12",
+    "recorded-date": "17-06-2025, 09:51:40",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -344,7 +344,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2]": {
-    "recorded-date": "31-03-2025, 12:21:46",
+    "recorded-date": "17-06-2025, 09:52:11",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -477,7 +477,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java8.al2]": {
-    "recorded-date": "31-03-2025, 12:18:15",
+    "recorded-date": "17-06-2025, 09:51:44",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -549,13 +549,13 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SECRET_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -563,7 +563,7 @@
           "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "echo.Handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
@@ -592,13 +592,13 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SECRET_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -606,7 +606,7 @@
           "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "echo.Handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
@@ -616,7 +616,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby3.2]": {
-    "recorded-date": "31-03-2025, 12:18:19",
+    "recorded-date": "17-06-2025, 09:51:47",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -687,12 +687,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "GEM_HOME": "/var/runtime",
           "GEM_PATH": "/var/task/vendor/bundle/ruby/3.2.0:/opt/ruby/gems/3.2.0:/var/runtime:/var/runtime/ruby/3.2.0",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
@@ -701,11 +701,11 @@
           "LD_LIBRARY_PATH": "/var/lang/lib:/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
           "PATH": "/var/lang/bin:/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
           "PWD": "/var/task",
-          "RUBYLIB": "/var/task:/var/runtime/lib:/opt/ruby/lib",
+          "RUBYLIB": "/var/runtime/gems/aws_lambda_ric-3.0.0/lib:/var/task:/var/runtime/lib:/opt/ruby/lib",
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "function.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
@@ -733,12 +733,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "GEM_HOME": "/var/runtime",
           "GEM_PATH": "/var/task/vendor/bundle/ruby/3.2.0:/opt/ruby/gems/3.2.0:/var/runtime:/var/runtime/ruby/3.2.0",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
@@ -747,11 +747,11 @@
           "LD_LIBRARY_PATH": "/var/lang/lib:/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
           "PATH": "/var/lang/bin:/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
           "PWD": "/var/task",
-          "RUBYLIB": "/var/task:/var/runtime/lib:/opt/ruby/lib",
+          "RUBYLIB": "/var/runtime/gems/aws_lambda_ric-3.0.0/lib:/var/task:/var/runtime/lib:/opt/ruby/lib",
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "function.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
@@ -761,7 +761,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.11]": {
-    "recorded-date": "31-03-2025, 12:17:51",
+    "recorded-date": "17-06-2025, 09:51:17",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -832,12 +832,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -848,7 +848,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "handler.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
@@ -876,12 +876,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -892,7 +892,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "handler.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
@@ -902,7 +902,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java17]": {
-    "recorded-date": "31-03-2025, 12:18:08",
+    "recorded-date": "17-06-2025, 09:51:36",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1037,7 +1037,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs18.x]": {
-    "recorded-date": "31-03-2025, 12:17:39",
+    "recorded-date": "17-06-2025, 09:51:05",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1107,12 +1107,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -1124,7 +1124,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "index.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
@@ -1151,12 +1151,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -1168,7 +1168,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "index.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
@@ -1178,7 +1178,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[java21]": {
-    "recorded-date": "31-03-2025, 12:18:04",
+    "recorded-date": "17-06-2025, 09:51:33",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1313,7 +1313,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[provided.al2023]": {
-    "recorded-date": "31-03-2025, 12:21:36",
+    "recorded-date": "17-06-2025, 09:52:07",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1446,7 +1446,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.9]": {
-    "recorded-date": "31-03-2025, 12:17:57",
+    "recorded-date": "17-06-2025, 09:51:23",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1517,12 +1517,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -1533,7 +1533,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "handler.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
@@ -1561,12 +1561,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -1577,7 +1577,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "handler.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
@@ -1587,7 +1587,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.10]": {
-    "recorded-date": "31-03-2025, 12:17:54",
+    "recorded-date": "17-06-2025, 09:51:20",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1658,12 +1658,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -1674,7 +1674,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "handler.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:1>"
@@ -1702,12 +1702,12 @@
           "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
           "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
           "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-          "AWS_LAMBDA_RUNTIME_API": "127.0.0.1:9001",
+          "AWS_LAMBDA_RUNTIME_API": "169.254.100.1:9001",
           "AWS_REGION": "<region>",
           "AWS_SECRET_ACCESS_KEY": "<aws-secret-access-key:1>",
           "AWS_SESSION_TOKEN": "<aws-session-token:1>",
           "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-          "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
+          "AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1:2000",
           "LAMBDA_RUNTIME_DIR": "/var/runtime",
           "LAMBDA_TASK_ROOT": "/var/task",
           "LANG": "en_US.UTF-8",
@@ -1718,7 +1718,7 @@
           "SHLVL": "0",
           "TEST_KEY": "TEST_VAL",
           "TZ": ":UTC",
-          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
+          "_AWS_XRAY_DAEMON_ADDRESS": "169.254.100.1",
           "_AWS_XRAY_DAEMON_PORT": "2000",
           "_HANDLER": "handler.handler",
           "_X_AMZN_TRACE_ID": "<x-amzn-trace-id:2>"
@@ -1728,7 +1728,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.12]": {
-    "recorded-date": "31-03-2025, 12:17:48",
+    "recorded-date": "17-06-2025, 09:51:14",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -1871,7 +1871,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs20.x]": {
-    "recorded-date": "31-03-2025, 12:17:36",
+    "recorded-date": "17-06-2025, 09:51:01",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2010,7 +2010,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet6]": {
-    "recorded-date": "31-03-2025, 12:18:32",
+    "recorded-date": "17-06-2025, 09:51:57",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -2155,7 +2155,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs16.x]": {
-    "recorded-date": "31-03-2025, 12:17:42",
+    "recorded-date": "17-06-2025, 09:51:08",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -4072,7 +4072,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[dotnet8]": {
-    "recorded-date": "31-03-2025, 12:18:36",
+    "recorded-date": "17-06-2025, 09:52:01",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -4362,7 +4362,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby3.3]": {
-    "recorded-date": "31-03-2025, 12:18:22",
+    "recorded-date": "17-06-2025, 09:51:50",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -4630,7 +4630,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[python3.13]": {
-    "recorded-date": "31-03-2025, 12:17:45",
+    "recorded-date": "17-06-2025, 09:51:11",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -4897,7 +4897,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[nodejs22.x]": {
-    "recorded-date": "31-03-2025, 12:17:33",
+    "recorded-date": "17-06-2025, 09:50:58",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [
@@ -5159,7 +5159,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_common.py::TestLambdaRuntimesCommon::test_introspection_invoke[ruby3.4]": {
-    "recorded-date": "31-03-2025, 12:18:27",
+    "recorded-date": "17-06-2025, 09:51:54",
     "recorded-content": {
       "create_function_result": {
         "Architectures": [

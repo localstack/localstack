@@ -11,6 +11,7 @@ AccessGrantsInstanceId = str
 AccessGrantsLocationArn = str
 AccessGrantsLocationId = str
 AccessKeyId = str
+AccessPointBucketName = str
 AccessPointName = str
 AccountId = str
 Alias = str
@@ -25,6 +26,8 @@ ConfigId = str
 ConfirmRemoveSelfBucketAccess = bool
 ConfirmationRequired = bool
 ContinuationToken = str
+DataSourceId = str
+DataSourceType = str
 Days = int
 DaysAfterInitiation = int
 DurationSeconds = int
@@ -567,10 +570,12 @@ class AccessPoint(TypedDict, total=False):
     Name: AccessPointName
     NetworkOrigin: NetworkOrigin
     VpcConfiguration: Optional[VpcConfiguration]
-    Bucket: BucketName
+    Bucket: AccessPointBucketName
     AccessPointArn: Optional[S3AccessPointArn]
     Alias: Optional[Alias]
     BucketAccountId: Optional[AccountId]
+    DataSourceId: Optional[DataSourceId]
+    DataSourceType: Optional[DataSourceType]
 
 
 AccessPointList = List[AccessPoint]
@@ -1576,7 +1581,7 @@ class GetAccessPointRequest(ServiceRequest):
 
 class GetAccessPointResult(TypedDict, total=False):
     Name: Optional[AccessPointName]
-    Bucket: Optional[BucketName]
+    Bucket: Optional[AccessPointBucketName]
     NetworkOrigin: Optional[NetworkOrigin]
     VpcConfiguration: Optional[VpcConfiguration]
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
@@ -1585,6 +1590,8 @@ class GetAccessPointResult(TypedDict, total=False):
     AccessPointArn: Optional[S3AccessPointArn]
     Endpoints: Optional[Endpoints]
     BucketAccountId: Optional[AccountId]
+    DataSourceId: Optional[DataSourceId]
+    DataSourceType: Optional[DataSourceType]
 
 
 class GetAccessPointScopeRequest(ServiceRequest):
@@ -2037,6 +2044,8 @@ class ListAccessPointsRequest(ServiceRequest):
     Bucket: Optional[BucketName]
     NextToken: Optional[NonEmptyMaxLength1024String]
     MaxResults: Optional[MaxResults]
+    DataSourceId: Optional[DataSourceId]
+    DataSourceType: Optional[DataSourceType]
 
 
 class ListAccessPointsResult(TypedDict, total=False):
@@ -2920,6 +2929,8 @@ class S3ControlApi:
         bucket: BucketName | None = None,
         next_token: NonEmptyMaxLength1024String | None = None,
         max_results: MaxResults | None = None,
+        data_source_id: DataSourceId | None = None,
+        data_source_type: DataSourceType | None = None,
         **kwargs,
     ) -> ListAccessPointsResult:
         raise NotImplementedError

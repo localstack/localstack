@@ -26,6 +26,7 @@ ChecksumCRC32C = str
 ChecksumCRC64NVME = str
 ChecksumSHA1 = str
 ChecksumSHA256 = str
+ClientToken = str
 CloudFunction = str
 CloudFunctionInvocationRole = str
 Code = str
@@ -133,6 +134,9 @@ QuoteEscapeCharacter = str
 Range = str
 RecordDelimiter = str
 Region = str
+RenameSource = str
+RenameSourceIfMatch = str
+RenameSourceIfNoneMatch = str
 ReplaceKeyPrefixWith = str
 ReplaceKeyWith = str
 ReplicaKmsKeyID = str
@@ -146,6 +150,7 @@ ResponseContentType = str
 Restore = str
 RestoreOutputPath = str
 Role = str
+S3RegionalOrS3ExpressBucketArnString = str
 S3TablesArn = str
 S3TablesBucketArn = str
 S3TablesName = str
@@ -491,6 +496,7 @@ class ObjectStorageClass(StrEnum):
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
+    FSX_OPENZFS = "FSX_OPENZFS"
 
 
 class ObjectVersionStorageClass(StrEnum):
@@ -570,6 +576,7 @@ class RestoreRequestType(StrEnum):
 
 class ServerSideEncryption(StrEnum):
     AES256 = "AES256"
+    aws_fsx = "aws:fsx"
     aws_kms = "aws:kms"
     aws_kms_dsse = "aws:kms:dsse"
 
@@ -596,6 +603,7 @@ class StorageClass(StrEnum):
     GLACIER_IR = "GLACIER_IR"
     SNOW = "SNOW"
     EXPRESS_ONEZONE = "EXPRESS_ONEZONE"
+    FSX_OPENZFS = "FSX_OPENZFS"
 
 
 class StorageClassAnalysisSchemaVersion(StrEnum):
@@ -648,6 +656,12 @@ class BucketAlreadyOwnedByYou(ServiceException):
 
 class EncryptionTypeMismatch(ServiceException):
     code: str = "EncryptionTypeMismatch"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
+class IdempotencyParameterMismatch(ServiceException):
+    code: str = "IdempotencyParameterMismatch"
     sender_fault: bool = False
     status_code: int = 400
 
@@ -1141,6 +1155,7 @@ class Bucket(TypedDict, total=False):
     Name: Optional[BucketName]
     CreationDate: Optional[CreationDate]
     BucketRegion: Optional[BucketRegion]
+    BucketArn: Optional[S3RegionalOrS3ExpressBucketArnString]
 
 
 class BucketInfo(TypedDict, total=False):
@@ -1484,6 +1499,7 @@ class CreateBucketConfiguration(TypedDict, total=False):
     LocationConstraint: Optional[BucketLocationConstraint]
     Location: Optional[LocationInfo]
     Bucket: Optional[BucketInfo]
+    Tags: Optional[TagSet]
 
 
 class S3TablesDestination(TypedDict, total=False):
@@ -1505,6 +1521,7 @@ class CreateBucketMetadataTableConfigurationRequest(ServiceRequest):
 
 class CreateBucketOutput(TypedDict, total=False):
     Location: Optional[Location]
+    BucketArn: Optional[S3RegionalOrS3ExpressBucketArnString]
 
 
 class CreateBucketRequest(ServiceRequest):
@@ -1643,6 +1660,7 @@ class DeleteBucketEncryptionRequest(ServiceRequest):
 class DeleteBucketIntelligentTieringConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: IntelligentTieringId
+    ExpectedBucketOwner: Optional[AccountId]
 
 
 class DeleteBucketInventoryConfigurationRequest(ServiceRequest):
@@ -1952,6 +1970,7 @@ class GetBucketIntelligentTieringConfigurationOutput(TypedDict, total=False):
 class GetBucketIntelligentTieringConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: IntelligentTieringId
+    ExpectedBucketOwner: Optional[AccountId]
 
 
 class InventorySchedule(TypedDict, total=False):
@@ -2557,6 +2576,7 @@ class HeadObjectOutput(TypedDict, total=False):
     RequestCharged: Optional[RequestCharged]
     ReplicationStatus: Optional[ReplicationStatus]
     PartsCount: Optional[PartsCount]
+    TagCount: Optional[TagCount]
     ObjectLockMode: Optional[ObjectLockMode]
     ObjectLockRetainUntilDate: Optional[ObjectLockRetainUntilDate]
     ObjectLockLegalHoldStatus: Optional[ObjectLockLegalHoldStatus]
@@ -2663,6 +2683,7 @@ class ListBucketIntelligentTieringConfigurationsOutput(TypedDict, total=False):
 class ListBucketIntelligentTieringConfigurationsRequest(ServiceRequest):
     Bucket: BucketName
     ContinuationToken: Optional[Token]
+    ExpectedBucketOwner: Optional[AccountId]
 
 
 class ListBucketInventoryConfigurationsOutput(TypedDict, total=False):
@@ -3074,6 +3095,7 @@ class PutBucketEncryptionRequest(ServiceRequest):
 class PutBucketIntelligentTieringConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     Id: IntelligentTieringId
+    ExpectedBucketOwner: Optional[AccountId]
     IntelligentTieringConfiguration: IntelligentTieringConfiguration
 
 
@@ -3367,6 +3389,29 @@ class PutPublicAccessBlockRequest(ServiceRequest):
 
 class RecordsEvent(TypedDict, total=False):
     Payload: Optional[Body]
+
+
+class RenameObjectOutput(TypedDict, total=False):
+    pass
+
+
+RenameSourceIfUnmodifiedSince = datetime
+RenameSourceIfModifiedSince = datetime
+
+
+class RenameObjectRequest(ServiceRequest):
+    Bucket: BucketName
+    Key: ObjectKey
+    RenameSource: RenameSource
+    DestinationIfMatch: Optional[IfMatch]
+    DestinationIfNoneMatch: Optional[IfNoneMatch]
+    DestinationIfModifiedSince: Optional[IfModifiedSince]
+    DestinationIfUnmodifiedSince: Optional[IfUnmodifiedSince]
+    SourceIfMatch: Optional[RenameSourceIfMatch]
+    SourceIfNoneMatch: Optional[RenameSourceIfNoneMatch]
+    SourceIfModifiedSince: Optional[RenameSourceIfModifiedSince]
+    SourceIfUnmodifiedSince: Optional[RenameSourceIfUnmodifiedSince]
+    ClientToken: Optional[ClientToken]
 
 
 class RequestProgress(TypedDict, total=False):
@@ -3814,7 +3859,12 @@ class S3Api:
 
     @handler("DeleteBucketIntelligentTieringConfiguration")
     def delete_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -4019,7 +4069,12 @@ class S3Api:
 
     @handler("GetBucketIntelligentTieringConfiguration")
     def get_bucket_intelligent_tiering_configuration(
-        self, context: RequestContext, bucket: BucketName, id: IntelligentTieringId, **kwargs
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        id: IntelligentTieringId,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
     ) -> GetBucketIntelligentTieringConfigurationOutput:
         raise NotImplementedError
 
@@ -4383,6 +4438,7 @@ class S3Api:
         context: RequestContext,
         bucket: BucketName,
         continuation_token: Token | None = None,
+        expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> ListBucketIntelligentTieringConfigurationsOutput:
         raise NotImplementedError
@@ -4596,6 +4652,7 @@ class S3Api:
         bucket: BucketName,
         id: IntelligentTieringId,
         intelligent_tiering_configuration: IntelligentTieringConfiguration,
+        expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -4928,6 +4985,26 @@ class S3Api:
         expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("RenameObject")
+    def rename_object(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        key: ObjectKey,
+        rename_source: RenameSource,
+        destination_if_match: IfMatch | None = None,
+        destination_if_none_match: IfNoneMatch | None = None,
+        destination_if_modified_since: IfModifiedSince | None = None,
+        destination_if_unmodified_since: IfUnmodifiedSince | None = None,
+        source_if_match: RenameSourceIfMatch | None = None,
+        source_if_none_match: RenameSourceIfNoneMatch | None = None,
+        source_if_modified_since: RenameSourceIfModifiedSince | None = None,
+        source_if_unmodified_since: RenameSourceIfUnmodifiedSince | None = None,
+        client_token: ClientToken | None = None,
+        **kwargs,
+    ) -> RenameObjectOutput:
         raise NotImplementedError
 
     @handler("RestoreObject")

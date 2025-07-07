@@ -270,6 +270,7 @@ NeuronDeviceMemorySize = int
 NeuronDeviceName = str
 NextToken = str
 NitroTpmSupportedVersionType = str
+OdbNetworkArn = str
 OfferingId = str
 OutpostArn = str
 OutpostLagId = str
@@ -3452,6 +3453,8 @@ class SubnetState(StrEnum):
     pending = "pending"
     available = "available"
     unavailable = "unavailable"
+    failed = "failed"
+    failed_insufficient_capacity = "failed-insufficient-capacity"
 
 
 class SummaryStatus(StrEnum):
@@ -4609,6 +4612,7 @@ class Address(TypedDict, total=False):
     CustomerOwnedIp: Optional[String]
     CustomerOwnedIpv4Pool: Optional[String]
     CarrierIp: Optional[String]
+    SubnetId: Optional[String]
     ServiceManaged: Optional[ServiceManaged]
     InstanceId: Optional[String]
     PublicIp: Optional[String]
@@ -5235,6 +5239,7 @@ class AssociatedRole(TypedDict, total=False):
 
 
 AssociatedRolesList = List[AssociatedRole]
+AssociatedSubnetList = List[SubnetId]
 
 
 class AssociatedTargetNetwork(TypedDict, total=False):
@@ -5688,8 +5693,10 @@ class EbsBlockDevice(TypedDict, total=False):
     KmsKeyId: Optional[String]
     Throughput: Optional[Integer]
     OutpostArn: Optional[String]
+    AvailabilityZone: Optional[String]
     Encrypted: Optional[Boolean]
     VolumeInitializationRate: Optional[Integer]
+    AvailabilityZoneId: Optional[String]
 
 
 class BlockDeviceMapping(TypedDict, total=False):
@@ -6827,6 +6834,7 @@ class Subnet(TypedDict, total=False):
     Ipv6Native: Optional[Boolean]
     PrivateDnsNameOptionsOnLaunch: Optional[PrivateDnsNameOptionsOnLaunch]
     BlockPublicAccessStates: Optional[BlockPublicAccessStates]
+    Type: Optional[String]
     SubnetId: Optional[String]
     State: Optional[SubnetState]
     VpcId: Optional[String]
@@ -7336,6 +7344,7 @@ class CreateFpgaImageResult(TypedDict, total=False):
 
 class CreateImageRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
+    SnapshotLocation: Optional[SnapshotLocationEnum]
     DryRun: Optional[Boolean]
     InstanceId: InstanceId
     Name: String
@@ -8773,6 +8782,7 @@ class NetworkInterface(TypedDict, total=False):
     Ipv6Native: Optional[Boolean]
     Ipv6Address: Optional[String]
     Operator: Optional[OperatorResponse]
+    AssociatedSubnets: Optional[AssociatedSubnetList]
 
 
 class CreateNetworkInterfaceResult(TypedDict, total=False):
@@ -8880,6 +8890,7 @@ class CreateRouteRequest(ServiceRequest):
     LocalGatewayId: Optional[LocalGatewayId]
     CarrierGatewayId: Optional[CarrierGatewayId]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
     DryRun: Optional[Boolean]
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
@@ -9016,6 +9027,7 @@ class Route(TypedDict, total=False):
     State: Optional[RouteState]
     VpcPeeringConnectionId: Optional[String]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
 
 
 RouteList = List[Route]
@@ -14593,6 +14605,7 @@ class SecurityGroupVpcAssociation(TypedDict, total=False):
     VpcOwnerId: Optional[String]
     State: Optional[SecurityGroupVpcAssociationState]
     StateReason: Optional[String]
+    GroupOwnerId: Optional[String]
 
 
 SecurityGroupVpcAssociationList = List[SecurityGroupVpcAssociation]
@@ -17232,6 +17245,7 @@ class GetInstanceTypesFromInstanceRequirementsRequest(ServiceRequest):
     InstanceRequirements: InstanceRequirementsRequest
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
+    Context: Optional[String]
 
 
 class InstanceTypeInfoFromInstanceRequirements(TypedDict, total=False):
@@ -18893,11 +18907,15 @@ class NetworkInterfaceAttachmentChanges(TypedDict, total=False):
     DeleteOnTermination: Optional[Boolean]
 
 
+SubnetIdList = List[SubnetId]
+
+
 class ModifyNetworkInterfaceAttributeRequest(ServiceRequest):
     EnaSrdSpecification: Optional[EnaSrdSpecification]
     EnablePrimaryIpv6: Optional[Boolean]
     ConnectionTrackingSpecification: Optional[ConnectionTrackingSpecificationRequest]
     AssociatePublicIpAddress: Optional[Boolean]
+    AssociatedSubnetIds: Optional[SubnetIdList]
     DryRun: Optional[Boolean]
     NetworkInterfaceId: NetworkInterfaceId
     Description: Optional[AttributeValue]
@@ -19945,6 +19963,7 @@ class ReplaceRouteRequest(ServiceRequest):
     LocalGatewayId: Optional[LocalGatewayId]
     CarrierGatewayId: Optional[CarrierGatewayId]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
     DryRun: Optional[Boolean]
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
@@ -21598,6 +21617,7 @@ class Ec2Api:
         instance_id: InstanceId,
         name: String,
         tag_specifications: TagSpecificationList | None = None,
+        snapshot_location: SnapshotLocationEnum | None = None,
         dry_run: Boolean | None = None,
         description: String | None = None,
         no_reboot: Boolean | None = None,
@@ -22087,6 +22107,7 @@ class Ec2Api:
         local_gateway_id: LocalGatewayId | None = None,
         carrier_gateway_id: CarrierGatewayId | None = None,
         core_network_arn: CoreNetworkArn | None = None,
+        odb_network_arn: OdbNetworkArn | None = None,
         dry_run: Boolean | None = None,
         destination_cidr_block: String | None = None,
         gateway_id: RouteGatewayId | None = None,
@@ -26560,16 +26581,11 @@ class Ec2Api:
     ) -> GetInstanceTpmEkPubResult:
         raise NotImplementedError
 
-    @handler("GetInstanceTypesFromInstanceRequirements")
+    @handler("GetInstanceTypesFromInstanceRequirements", expand=False)
     def get_instance_types_from_instance_requirements(
         self,
         context: RequestContext,
-        architecture_types: ArchitectureTypeSet,
-        virtualization_types: VirtualizationTypeSet,
-        instance_requirements: InstanceRequirementsRequest,
-        dry_run: Boolean | None = None,
-        max_results: Integer | None = None,
-        next_token: String | None = None,
+        request: GetInstanceTypesFromInstanceRequirementsRequest,
         **kwargs,
     ) -> GetInstanceTypesFromInstanceRequirementsResult:
         raise NotImplementedError
@@ -27590,6 +27606,7 @@ class Ec2Api:
         enable_primary_ipv6: Boolean | None = None,
         connection_tracking_specification: ConnectionTrackingSpecificationRequest | None = None,
         associate_public_ip_address: Boolean | None = None,
+        associated_subnet_ids: SubnetIdList | None = None,
         dry_run: Boolean | None = None,
         description: AttributeValue | None = None,
         source_dest_check: AttributeBooleanValue | None = None,
@@ -28492,6 +28509,7 @@ class Ec2Api:
         local_gateway_id: LocalGatewayId | None = None,
         carrier_gateway_id: CarrierGatewayId | None = None,
         core_network_arn: CoreNetworkArn | None = None,
+        odb_network_arn: OdbNetworkArn | None = None,
         dry_run: Boolean | None = None,
         destination_cidr_block: String | None = None,
         gateway_id: RouteGatewayId | None = None,

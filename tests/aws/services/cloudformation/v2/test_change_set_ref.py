@@ -243,7 +243,6 @@ class TestChangeSetRef:
         }
         capture_update_process(snapshot, template_1, template_2)
 
-    # @pytest.mark.skip(reason="")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # Reason: preproc is not able to resolve references to deployed resources' physical id
