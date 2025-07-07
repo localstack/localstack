@@ -27,6 +27,7 @@ SAMLProviderNameType = str
 accessKeyIdType = str
 accessKeySecretType = str
 accountAliasType = str
+allUsers = bool
 arnType = str
 attachmentCountType = int
 authenticationCodeType = str
@@ -36,6 +37,7 @@ certificateBodyType = str
 certificateChainType = str
 certificateIdType = str
 clientIDType = str
+credentialAgeDays = int
 credentialReportExpiredExceptionMessage = str
 credentialReportNotPresentExceptionMessage = str
 credentialReportNotReadyExceptionMessage = str
@@ -93,6 +95,8 @@ roleMaxSessionDurationType = int
 roleNameType = str
 serialNumberType = str
 serverCertificateNameType = str
+serviceCredentialAlias = str
+serviceCredentialSecret = str
 serviceFailureExceptionMessage = str
 serviceName = str
 serviceNameType = str
@@ -241,6 +245,7 @@ class sortKeyType(StrEnum):
 class statusType(StrEnum):
     Active = "Active"
     Inactive = "Inactive"
+    Expired = "Expired"
 
 
 class summaryKeyType(StrEnum):
@@ -770,13 +775,17 @@ class CreateServiceLinkedRoleResponse(TypedDict, total=False):
 class CreateServiceSpecificCredentialRequest(ServiceRequest):
     UserName: userNameType
     ServiceName: serviceName
+    CredentialAgeDays: Optional[credentialAgeDays]
 
 
 class ServiceSpecificCredential(TypedDict, total=False):
     CreateDate: dateType
+    ExpirationDate: Optional[dateType]
     ServiceName: serviceName
-    ServiceUserName: serviceUserName
-    ServicePassword: servicePassword
+    ServiceUserName: Optional[serviceUserName]
+    ServicePassword: Optional[servicePassword]
+    ServiceCredentialAlias: Optional[serviceCredentialAlias]
+    ServiceCredentialSecret: Optional[serviceCredentialSecret]
     ServiceSpecificCredentialId: serviceSpecificCredentialId
     UserName: userNameType
     Status: statusType
@@ -1979,13 +1988,18 @@ class ListServerCertificatesResponse(TypedDict, total=False):
 class ListServiceSpecificCredentialsRequest(ServiceRequest):
     UserName: Optional[userNameType]
     ServiceName: Optional[serviceName]
+    AllUsers: Optional[allUsers]
+    Marker: Optional[markerType]
+    MaxItems: Optional[maxItemsType]
 
 
 class ServiceSpecificCredentialMetadata(TypedDict, total=False):
     UserName: userNameType
     Status: statusType
-    ServiceUserName: serviceUserName
+    ServiceUserName: Optional[serviceUserName]
+    ServiceCredentialAlias: Optional[serviceCredentialAlias]
     CreateDate: dateType
+    ExpirationDate: Optional[dateType]
     ServiceSpecificCredentialId: serviceSpecificCredentialId
     ServiceName: serviceName
 
@@ -1995,6 +2009,8 @@ ServiceSpecificCredentialsListType = List[ServiceSpecificCredentialMetadata]
 
 class ListServiceSpecificCredentialsResponse(TypedDict, total=False):
     ServiceSpecificCredentials: Optional[ServiceSpecificCredentialsListType]
+    Marker: Optional[responseMarkerType]
+    IsTruncated: Optional[booleanType]
 
 
 class ListSigningCertificatesRequest(ServiceRequest):
@@ -2576,7 +2592,12 @@ class IamApi:
 
     @handler("CreateServiceSpecificCredential")
     def create_service_specific_credential(
-        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        service_name: serviceName,
+        credential_age_days: credentialAgeDays | None = None,
+        **kwargs,
     ) -> CreateServiceSpecificCredentialResponse:
         raise NotImplementedError
 
@@ -3381,6 +3402,9 @@ class IamApi:
         context: RequestContext,
         user_name: userNameType | None = None,
         service_name: serviceName | None = None,
+        all_users: allUsers | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
         raise NotImplementedError
