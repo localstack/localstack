@@ -389,6 +389,46 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
                 patch_op["value"] = value
 
+            elif patch_op_path.startswith("/endpointConfiguration/types"):
+                if patch_op["op"] not in ("add", "remove", "move", "test", "replace", "copy"):
+                    raise CommonServiceException(
+                        code="ValidationException",
+                        message=f"1 validation error detected: Value '{patch_op['op']}' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]",
+                    )
+
+                if patch_op["op"] != "replace":
+                    raise BadRequestException(
+                        "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
+                    )
+                if patch_op.get("value") not in ("REGIONAL", "EDGE", "PRIVATE"):
+                    raise BadRequestException(
+                        "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE"
+                    )
+                if patch_op.get("value") == "PRIVATE":
+                    fixed_patch_ops.append(patch_op)
+                    patch_op = {'op': 'replace', 'path': '/endpointConfiguration/ipAddressType', 'value': 'dualstack'}
+                    fixed_patch_ops.append(patch_op)
+                    continue
+
+            elif patch_op_path.startswith("/endpointConfiguration/ipAddressType"):
+                if patch_op["op"] not in ("add", "remove", "move", "test", "replace", "copy"):
+                    raise CommonServiceException(
+                        code="ValidationException",
+                        message=f"1 validation error detected: Value '{patch_op['op']}' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]",
+                    )
+                if patch_op["op"] != "replace":
+                    raise BadRequestException(
+                        "Invalid patch operation specified. Must be one of: [replace]"
+                    )
+                if (ipAddressType := patch_op.get("value")) not in ("ipv4", "dualstack"):
+                    raise BadRequestException(
+                        "ipAddressType must be either ipv4 or dualstack."
+                    )
+                if rest_api.endpoint_configuration["types"] == ["PRIVATE"] and ipAddressType == "ipv4":
+                    raise BadRequestException(
+                        "Only dualstack ipAddressType is supported for Private APIs."
+                    )
+
             fixed_patch_ops.append(patch_op)
 
         patch_api_gateway_entity(rest_api, fixed_patch_ops)

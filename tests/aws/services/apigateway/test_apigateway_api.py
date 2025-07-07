@@ -369,6 +369,113 @@ class TestApiGatewayApiRestApi:
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
     @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Validation behavior not yet implemented"
+    )
+    def test_update_rest_api_concatenation_of_errors(self, apigw_create_rest_api, snapshot, aws_client):
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+
+        patch_operations = [
+            {"op": "wrong", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+            {"op": "wrong", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-operations-on-ipAddressType", e.value.response)
+
+        patch_operations = [
+            {"op": "wrong", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+            {"op": "wrong", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-operations-on-type", e.value.response)
+
+        patch_operations = [
+            {"op": "wrong", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+            {"op": "wrong", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+            {"op": "wrong", "path": "/binaryMediaTypes", "value": "image/gif"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-operations-on-type-and-on-ip-address-type", e.value.response)
+
+    @markers.aws.validated
+    def test_update_rest_api_ip_address_type(self, apigw_create_rest_api, snapshot, aws_client):
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "REGIONAL"},
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "PRIVATE"},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-rest-api-replace-type", response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/ipAddressType", "value": "ipv4"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-replace-to-ipv4-within-private-type", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/ipAddressType", "value": "wrong"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-ipAddressType", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "wrong"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-type", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-invalid-operation-on-ipAddressType", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-invalid-operation-on-type", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-rest-api-replace-ip-address-type", response)
+
+    @markers.aws.validated
     def test_create_rest_api_with_endpoint_configuration(self, apigw_create_rest_api, snapshot):
         with pytest.raises(ClientError) as e:
             apigw_create_rest_api(

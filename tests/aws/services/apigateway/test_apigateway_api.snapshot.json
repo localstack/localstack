@@ -4448,5 +4448,138 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_ip_address_type": {
+    "recorded-date": "07-07-2025, 12:54:02",
+    "recorded-content": {
+      "update-rest-api-replace-type": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "PRIVATE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rest-api-replace-to-ipv4-within-private-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Only dualstack ipAddressType is supported for Private APIs."
+        },
+        "message": "Only dualstack ipAddressType is supported for Private APIs.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-ipAddressType": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "ipAddressType must be either ipv4 or dualstack."
+        },
+        "message": "ipAddressType must be either ipv4 or dualstack.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE"
+        },
+        "message": "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-invalid-operation-on-ipAddressType": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be one of: [replace]"
+        },
+        "message": "Invalid patch operation specified. Must be one of: [replace]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-invalid-operation-on-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
+        },
+        "message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-replace-ip-address-type": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "PRIVATE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_concatenation_of_errors": {
+    "recorded-date": "07-07-2025, 12:54:34",
+    "recorded-content": {
+      "update-rest-api-wrong-operations-on-ipAddressType": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-operations-on-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-operations-on-type-and-on-ip-address-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "3 validation errors detected: Value 'wrong' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.3.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
