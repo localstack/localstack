@@ -162,7 +162,13 @@
     "last_validated_date": "2025-01-21T18:09:40+00:00"
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_range": {
-    "last_validated_date": "2025-01-21T18:09:59+00:00"
+    "last_validated_date": "2025-07-07T17:50:04+00:00",
+    "durations_in_seconds": {
+      "setup": 1.13,
+      "call": 6.21,
+      "teardown": 0.99,
+      "total": 8.33
+    }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3ObjectCRUD::test_get_object_with_version_unversioned_bucket": {
     "last_validated_date": "2025-01-21T18:09:42+00:00"

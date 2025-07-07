@@ -429,6 +429,11 @@ class TestS3ObjectCRUD:
         resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=0-8")
         snapshot.match("get-0-8", resp)
 
+        resp = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key, Range="bytes=0-8", ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-0-8-checksum", resp)
+
         resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, Range="bytes=1-1")
         snapshot.match("get-1-1", resp)
 
