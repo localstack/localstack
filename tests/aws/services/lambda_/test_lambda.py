@@ -456,6 +456,7 @@ class TestLambdaBehavior:
     )
     @markers.aws.validated
     @markers.only_on_amd64
+    @pytest.mark.requires_in_docker  # required due to environment mismatch
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
@@ -479,6 +480,7 @@ class TestLambdaBehavior:
     )
     @markers.aws.validated
     @markers.only_on_arm64
+    @pytest.mark.requires_in_docker  # required due to environment mismatch
     def test_runtime_introspection_arm(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
@@ -493,6 +495,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
 
     @markers.aws.validated
+    @pytest.mark.requires_in_docker  # also requires in process, but the docker part is more important here by design
     def test_runtime_ulimits(self, create_lambda_function, snapshot, monkeypatch, aws_client):
         """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
         optimized production deployments."""
@@ -513,6 +516,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_ulimits", invoke_result)
 
     @markers.aws.only_localstack
+    @pytest.mark.requires_in_process
     def test_ignore_architecture(self, create_lambda_function, monkeypatch, aws_client):
         """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
         monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
@@ -545,6 +549,7 @@ class TestLambdaBehavior:
     # Special case requiring both architectures
     @markers.only_on_amd64
     @markers.only_on_arm64
+    @pytest.mark.requires_in_docker
     def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
         """Test emulation of a lambda function changing architectures.
         Limitation: only works on hosts that support both ARM and AMD64 architectures.
@@ -803,6 +808,7 @@ class TestLambdaBehavior:
             "$..Payload.environment._X_AMZN_TRACE_ID",
         ]
     )
+    @pytest.mark.requires_in_process
     def test_lambda_init_environment(
         self, aws_client, create_lambda_function, snapshot, monkeypatch
     ):
@@ -3525,6 +3531,7 @@ class TestRequestIdHandling:
         snapshot.match("end_log_entries", end_log_entries)
 
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_request_id_async_invoke_with_retry(
         self, aws_client, create_lambda_function, monkeypatch, snapshot
     ):

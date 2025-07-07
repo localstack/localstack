@@ -240,6 +240,7 @@ class TestLambdaDestinationSqs:
 
     @markers.snapshot.skip_snapshot_verify(paths=["$..Body.requestContext.functionArn"])
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_retries(
         self,
         snapshot,
