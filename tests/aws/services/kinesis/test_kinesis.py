@@ -499,6 +499,7 @@ class TestKinesis:
 
     @markers.aws.validated
     @patch.object(kinesis_provider, "MAX_SUBSCRIPTION_SECONDS", 3)
+    @pytest.mark.requires_in_process
     def test_subscribe_to_shard_timeout(
         self,
         kinesis_create_stream,
@@ -762,6 +763,7 @@ class TestKinesisJavaSDK:
     condition=is_aws_cloud(),
     reason="Duplicate of all tests in TestKinesis. Since we cannot unmark test cases, only run against LocalStack.",
 )
+@pytest.mark.requires_in_process  # monkeypatching, it's quite nonsensical to execute these tests, although they work
 class TestKinesisMockScala(TestKinesis):
     @pytest.fixture(autouse=True)
     def set_kinesis_mock_scala_engine(self, monkeypatch):

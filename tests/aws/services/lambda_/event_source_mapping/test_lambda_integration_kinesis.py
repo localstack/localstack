@@ -1078,6 +1078,7 @@ class TestKinesisSource:
             pytest.param(60 if is_aws_cloud() else 5, 0, id="expire-before-ingestion"),
         ],
     )
+    @pytest.mark.requires_in_process
     def test_kinesis_maximum_record_age_exceeded(
         self,
         create_lambda_function,
@@ -1178,6 +1179,7 @@ class TestKinesisSource:
             "$..Messages..MessageId",  # Skip while no requestContext generated in StreamPoller due to transformation issues
         ]
     )
+    @pytest.mark.requires_in_process
     def test_kinesis_maximum_record_age_exceeded_discard_records(
         self,
         create_lambda_function,
