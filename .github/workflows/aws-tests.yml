@@ -427,7 +427,14 @@ jobs:
           path: |
             target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml
             target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}
-            target/metric_reports
+          retention-days: 30
+
+      - name: Archive Parity Metric Results
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-metric-raw-${{ env.PLATFORM }}-${{ matrix.group }}
+          path: target/metric_reports
           retention-days: 30
 
   test-bootstrap:
