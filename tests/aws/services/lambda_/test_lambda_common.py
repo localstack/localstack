@@ -149,6 +149,7 @@ class TestLambdaRuntimesCommon:
     )
     @markers.aws.validated
     @markers.multiruntime(scenario="introspection")
+    @pytest.mark.requires_in_docker
     def test_introspection_invoke(self, multiruntime_lambda, snapshot, aws_client):
         create_function_result = multiruntime_lambda.create_function(
             MemorySize=1024, Environment={"Variables": {"TEST_KEY": "TEST_VAL"}}
@@ -267,6 +268,7 @@ class TestLambdaCallingLocalstack:
         runtimes=list(set(TESTED_RUNTIMES) - set(RUNTIMES_AGGREGATED.get("provided"))),
     )
     @markers.aws.validated
+    @pytest.mark.requires_in_docker
     def test_manual_endpoint_injection(self, multiruntime_lambda, tmp_path, aws_client):
         """Test calling SQS from Lambda using manual AWS SDK client configuration via AWS_ENDPOINT_URL.
         This must work for all runtimes.
