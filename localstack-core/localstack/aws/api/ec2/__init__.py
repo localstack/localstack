@@ -14605,6 +14605,7 @@ class SecurityGroupVpcAssociation(TypedDict, total=False):
     VpcOwnerId: Optional[String]
     State: Optional[SecurityGroupVpcAssociationState]
     StateReason: Optional[String]
+    GroupOwnerId: Optional[String]
 
 
 SecurityGroupVpcAssociationList = List[SecurityGroupVpcAssociation]
@@ -17244,6 +17245,7 @@ class GetInstanceTypesFromInstanceRequirementsRequest(ServiceRequest):
     InstanceRequirements: InstanceRequirementsRequest
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
+    Context: Optional[String]
 
 
 class InstanceTypeInfoFromInstanceRequirements(TypedDict, total=False):
@@ -26579,16 +26581,11 @@ class Ec2Api:
     ) -> GetInstanceTpmEkPubResult:
         raise NotImplementedError
 
-    @handler("GetInstanceTypesFromInstanceRequirements")
+    @handler("GetInstanceTypesFromInstanceRequirements", expand=False)
     def get_instance_types_from_instance_requirements(
         self,
         context: RequestContext,
-        architecture_types: ArchitectureTypeSet,
-        virtualization_types: VirtualizationTypeSet,
-        instance_requirements: InstanceRequirementsRequest,
-        dry_run: Boolean | None = None,
-        max_results: Integer | None = None,
-        next_token: String | None = None,
+        request: GetInstanceTypesFromInstanceRequirementsRequest,
         **kwargs,
     ) -> GetInstanceTypesFromInstanceRequirementsResult:
         raise NotImplementedError
