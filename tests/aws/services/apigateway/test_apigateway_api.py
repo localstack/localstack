@@ -372,7 +372,9 @@ class TestApiGatewayApiRestApi:
     @pytest.mark.skipif(
         condition=not is_aws_cloud(), reason="Validation behavior not yet implemented"
     )
-    def test_update_rest_api_concatenation_of_errors(self, apigw_create_rest_api, snapshot, aws_client):
+    def test_update_rest_api_concatenation_of_errors(
+        self, apigw_create_rest_api, snapshot, aws_client
+    ):
         response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
         api_id = response["id"]
 
@@ -405,7 +407,9 @@ class TestApiGatewayApiRestApi:
             aws_client.apigateway.update_rest_api(
                 restApiId=api_id, patchOperations=patch_operations
             )
-        snapshot.match("update-rest-api-wrong-operations-on-type-and-on-ip-address-type", e.value.response)
+        snapshot.match(
+            "update-rest-api-wrong-operations-on-type-and-on-ip-address-type", e.value.response
+        )
 
     @markers.aws.validated
     def test_update_rest_api_ip_address_type(self, apigw_create_rest_api, snapshot, aws_client):

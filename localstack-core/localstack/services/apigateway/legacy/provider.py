@@ -406,7 +406,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     )
                 if patch_op.get("value") == "PRIVATE":
                     fixed_patch_ops.append(patch_op)
-                    patch_op = {'op': 'replace', 'path': '/endpointConfiguration/ipAddressType', 'value': 'dualstack'}
+                    patch_op = {
+                        "op": "replace",
+                        "path": "/endpointConfiguration/ipAddressType",
+                        "value": "dualstack",
+                    }
                     fixed_patch_ops.append(patch_op)
                     continue
 
@@ -421,10 +425,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                         "Invalid patch operation specified. Must be one of: [replace]"
                     )
                 if (ipAddressType := patch_op.get("value")) not in ("ipv4", "dualstack"):
-                    raise BadRequestException(
-                        "ipAddressType must be either ipv4 or dualstack."
-                    )
-                if rest_api.endpoint_configuration["types"] == ["PRIVATE"] and ipAddressType == "ipv4":
+                    raise BadRequestException("ipAddressType must be either ipv4 or dualstack.")
+                if (
+                    rest_api.endpoint_configuration["types"] == ["PRIVATE"]
+                    and ipAddressType == "ipv4"
+                ):
                     raise BadRequestException(
                         "Only dualstack ipAddressType is supported for Private APIs."
                     )
