@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_domain_lifecycle": {
+    "last_validated_date": "2025-07-07T23:26:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 839.91,
+      "teardown": 0.25,
+      "total": 840.69
+    }
+  },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
     "last_validated_date": "2024-07-16T13:05:15+00:00"
   },
