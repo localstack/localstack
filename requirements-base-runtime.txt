@@ -34,7 +34,7 @@ click==8.2.1
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==45.0.4
+cryptography==45.0.5
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -166,7 +166,7 @@ rich==14.0.0
     # via localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core (pyproject.toml)
-rpds-py==0.25.1
+rpds-py==0.26.0
     # via
     #   jsonschema
     #   referencing
@@ -180,7 +180,7 @@ six==1.17.0
     #   rfc3339-validator
 tailer==0.4.1
     # via localstack-core (pyproject.toml)
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   localstack-twisted
     #   pyopenssl

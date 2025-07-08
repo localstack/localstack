@@ -25,13 +25,13 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-cdk-asset-awscli-v1==2.2.240
+aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==44.8.0
+aws-cdk-cloud-assembly-schema==45.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.202.0
+aws-cdk-lib==2.204.0
     # via localstack-core
 aws-sam-translator==1.99.0
     # via
@@ -80,7 +80,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.36.1
+cfn-lint==1.37.2
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.9.1
+coverage==7.9.2
     # via
     #   coveralls
     #   localstack-core
@@ -102,7 +102,7 @@ coveralls==4.0.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.4
     # via localstack-core
-cryptography==45.0.4
+cryptography==45.0.5
     # via
     #   joserfc
     #   localstack-core
@@ -191,7 +191,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.1.0
+joserfc==1.2.0
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -425,7 +425,7 @@ rich==14.0.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core
-rpds-py==0.25.1
+rpds-py==0.26.0
     # via
     #   jsonschema
     #   referencing
@@ -433,7 +433,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.1
+ruff==0.12.2
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.0
     # via
@@ -465,7 +465,7 @@ typeguard==2.13.3
     #   aws-cdk-lib
     #   constructs
     #   jsii
-typing-extensions==4.14.0
+typing-extensions==4.14.1
     # via
     #   anyio
     #   aws-sam-translator
