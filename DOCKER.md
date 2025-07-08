@@ -1,10 +1,10 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/localstack/localstack/master/docs/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
+  <img src="https://raw.githubusercontent.com/localstack/localstack/main/docs/localstack-readme-banner.svg" alt="LocalStack - A fully functional local cloud stack">
 </p>
 
 <p align="center">
-  <a href="https://github.com/localstack/localstack/actions/workflows/aws-main.yml?query=branch%3Amaster"><img alt="GitHub Actions" src="https://github.com/localstack/localstack/actions/workflows/aws-main.yml/badge.svg?branch=master"></a>
-  <a href="https://coveralls.io/github/localstack/localstack?branch=master"><img alt="Coverage Status" src="https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=master"></a>
+  <a href="https://github.com/localstack/localstack/actions/workflows/aws-main.yml?query=branch%3Amaster"><img alt="GitHub Actions" src="https://github.com/localstack/localstack/actions/workflows/aws-main.yml/badge.svg?branch=main"></a>
+  <a href="https://coveralls.io/github/localstack/localstack?branch=main"><img alt="Coverage Status" src="https://coveralls.io/repos/github/localstack/localstack/badge.svg?branch=main"></a>
   <a href="https://pypi.org/project/localstack/"><img alt="PyPI Version" src="https://img.shields.io/pypi/v/localstack?color=blue"></a>
   <a href="https://hub.docker.com/r/localstack/localstack"><img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/localstack/localstack"></a>
   <a href="https://pypi.org/project/localstack"><img alt="PyPi downloads" src="https://static.pepy.tech/badge/localstack"></a>
@@ -49,7 +49,7 @@ $ awslocal s3api list-buckets
 
 - This command reuses the image if it’s already on your machine, i.e. it will **not** pull the latest image automatically from Docker Hub.
 
-- This command does not bind all ports that are potentially used by LocalStack, nor does it mount any volumes. When using Docker to manually start LocalStack, you will have to configure the container on your own (see [`docker-compose.yml`](https://github.com/localstack/localstack/blob/master/docker-compose.yml) and [Configuration](https://docs.localstack.cloud/references/configuration/)). This could be seen as the “expert mode” of starting LocalStack. If you are looking for a simpler method of starting LocalStack, please use the [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli).
+- This command does not bind all ports that are potentially used by LocalStack, nor does it mount any volumes. When using Docker to manually start LocalStack, you will have to configure the container on your own (see [`docker-compose.yml`](https://github.com/localstack/localstack/blob/main/docker-compose.yml) and [Configuration](https://docs.localstack.cloud/references/configuration/)). This could be seen as the “expert mode” of starting LocalStack. If you are looking for a simpler method of starting LocalStack, please use the [LocalStack CLI](https://docs.localstack.cloud/getting-started/installation/#localstack-cli).
 
 ### Docker Compose
 
@@ -88,7 +88,7 @@ $ awslocal sqs list-queues
 
 **Notes**
 
-- This command pulls the current nightly build from the `master` branch (if you don’t have the image locally) and **not** the latest supported version. If you want to use a specific version, set the appropriate localstack image tag at `services.localstack.image` in the `docker-compose.yml` file (for example `localstack/localstack:<version>`).
+- This command pulls the current nightly build from the `main` branch (if you don’t have the image locally) and **not** the latest supported version. If you want to use a specific version, set the appropriate localstack image tag at `services.localstack.image` in the `docker-compose.yml` file (for example `localstack/localstack:<version>`).
 
 - This command reuses the image if it’s already on your machine, i.e. it will **not** pull the latest image automatically from Docker Hub.
 
@@ -141,4 +141,4 @@ Copyright (c) 2017-2024 LocalStack maintainers and contributors.
 
 Copyright (c) 2016 Atlassian and others.
 
-This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](https://github.com/localstack/localstack/blob/master/LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](https://github.com/localstack/localstack/blob/master/doc/end_user_license_agreement).
+This version of LocalStack is released under the Apache License, Version 2.0 (see [LICENSE](https://github.com/localstack/localstack/blob/main/LICENSE.txt)). By downloading and using this software you agree to the [End-User License Agreement (EULA)](https://github.com/localstack/localstack/blob/main/doc/end_user_license_agreement).

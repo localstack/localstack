@@ -85,7 +85,7 @@ on:
       - '!LICENSE.txt'
       - '!README.md'
     branches:
-      - master
+      - main
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -101,9 +101,9 @@ env:
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-  # report to tinybird if executed on master on community AND pro (targetRef not set)
-  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/master' && inputs.targetRef == '' && '--report-to-tinybird ' || '' }}"
-  # enable test selection if  not running on master and test selection is not explicitly disabled
+  # report to tinybird if executed on main on community AND pro (targetRef not set)
+  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/main' && inputs.targetRef == '' && '--report-to-tinybird ' || '' }}"
+  # enable test selection if  not running on main and test selection is not explicitly disabled
   TESTSELECTION_PYTEST_ARGS: "${{ !inputs.disableTestSelection && '--path-filter=../../localstack/target/testselection/test-selection.txt ' || '' }}"
 
 jobs:
@@ -152,7 +152,7 @@ jobs:
               return context.payload.inputs.targetRef
             }
 
-            const DEFAULT_REF = "refs/heads/master"
+            const DEFAULT_REF = "refs/heads/main"
 
             async function isCompanionRefExisting(refName) {
               try {
@@ -241,7 +241,7 @@ jobs:
           # include the matrix group (to re-use the venv)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-refs/heads/master
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-refs/heads/main
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
@@ -252,7 +252,7 @@ jobs:
           # include the matrix group (to re-use the var-libs used in the specific test group)
           key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-${{steps.determine-companion-ref.outputs.result}}-group-${{ matrix.group }}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-refs/heads/master-group-${{ matrix.group }}
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-libs-${{ hashFiles('**/packages.py', '**/packages/*') }}-refs/heads/main-group-${{ matrix.group }}
 
       - name: Restore Lambda common runtime packages
         id: cached-lambda-common-restore
@@ -399,7 +399,7 @@ jobs:
           action_fail_on_inconclusive: true
 
   push-to-tinybird:
-    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs: publish-pro-test-results
     steps:

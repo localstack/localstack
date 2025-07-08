@@ -1,6 +1,6 @@
 # 🚀 ASF Update Report 🚀
 This PR has been automatically generated to update the generated API stubs for our ASF services.
-It uses the latest code-generator from the _master_ branch ([scaffold.py](https://github.com/localstack/localstack/blob/master/localstack/aws/scaffold.py)) and the latest _published_ version of [botocore](https://github.com/boto/botocore) to re-generate all API stubs which are already present in the `localstack.aws.api` module of the _master_ branch.
+It uses the latest code-generator from the _main_ branch ([scaffold.py](https://github.com/localstack/localstack/blob/main/localstack/aws/scaffold.py)) and the latest _published_ version of [botocore](https://github.com/boto/botocore) to re-generate all API stubs which are already present in the `localstack.aws.api` module of the _main_ branch.
 
 ## 🔄 Updated Services
 This PR updates the following services:
