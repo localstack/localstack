@@ -2,6 +2,7 @@ import logging
 import os
 import re
 import threading
+from copy import deepcopy
 from datetime import datetime, timezone
 from random import randint
 from typing import Dict, Optional
@@ -12,15 +13,11 @@ from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.opensearch import (
     ARN,
     AccessPoliciesStatus,
-    AdvancedOptions,
     AdvancedOptionsStatus,
     AdvancedSecurityOptions,
-    AdvancedSecurityOptionsInput,
     AdvancedSecurityOptionsStatus,
-    AIMLOptionsInput,
     AutoTuneDesiredState,
     AutoTuneOptions,
-    AutoTuneOptionsInput,
     AutoTuneOptionsOutput,
     AutoTuneOptionsStatus,
     AutoTuneState,
@@ -30,6 +27,7 @@ from localstack.aws.api.opensearch import (
     CognitoOptions,
     CognitoOptionsStatus,
     ColdStorageOptions,
+    CreateDomainRequest,
     CreateDomainResponse,
     DeleteDomainResponse,
     DeploymentStatus,
@@ -50,30 +48,24 @@ from localstack.aws.api.opensearch import (
     EncryptionAtRestOptionsStatus,
     EngineType,
     GetCompatibleVersionsResponse,
-    IdentityCenterOptionsInput,
-    IPAddressType,
     ListDomainNamesResponse,
     ListTagsResponse,
     ListVersionsResponse,
-    LogPublishingOptions,
     LogPublishingOptionsStatus,
     MaxResults,
     NextToken,
     NodeToNodeEncryptionOptions,
     NodeToNodeEncryptionOptionsStatus,
-    OffPeakWindowOptions,
     OpensearchApi,
     OpenSearchPartitionInstanceType,
     OptionState,
     OptionStatus,
-    PolicyDocument,
     ResourceAlreadyExistsException,
     ResourceNotFoundException,
     RollbackOnDisable,
     ServiceSoftwareOptions,
     SnapshotOptions,
     SnapshotOptionsStatus,
-    SoftwareUpdateOptions,
     StringList,
     TagList,
     TLSSecurityPolicy,
@@ -81,10 +73,8 @@ from localstack.aws.api.opensearch import (
     UpdateDomainConfigResponse,
     ValidationException,
     VersionStatus,
-    VersionString,
     VolumeType,
     VPCDerivedInfoStatus,
-    VPCOptions,
 )
 from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
@@ -310,7 +300,9 @@ def get_domain_config_status() -> OptionStatus:
     )
 
 
-def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
+def get_domain_status(
+    domain_key: DomainKey, deleted=False, request: CreateDomainRequest | None = None
+) -> DomainStatus:
     parsed_arn = parse_arn(domain_key.arn)
     store = OpensearchProvider.get_store(parsed_arn["account"], parsed_arn["region"])
     stored_status: DomainStatus = (
@@ -318,6 +310,10 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
     )
     cluster_cfg = stored_status.get("ClusterConfig") or {}
     default_cfg = DEFAULT_OPENSEARCH_CLUSTER_CONFIG
+    if request:
+        stored_status = deepcopy(stored_status)
+        stored_status.update(request)
+        default_cfg.update(request.get("ClusterConfig", {}))
 
     domain_processing_status = stored_status.get("DomainProcessingStatus", None)
     processing = stored_status.get("Processing", True)
@@ -353,7 +349,8 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
         ),
         EngineVersion=stored_status.get("EngineVersion") or OPENSEARCH_DEFAULT_VERSION,
         Endpoint=stored_status.get("Endpoint", None),
-        EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
+        EBSOptions=stored_status.get("EBSOptions")
+        or EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
         CognitoOptions=CognitoOptions(Enabled=False),
         UpgradeProcessing=False,
         AccessPolicies=stored_status.get("AccessPolicies", ""),
@@ -363,6 +360,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
         AdvancedOptions={
             "override_main_response_version": "false",
             "rest.action.multi.allow_explicit_index": "true",
+            **stored_status.get("AdvancedOptions", {}),
         },
         ServiceSoftwareOptions=ServiceSoftwareOptions(
             CurrentVersion="",
@@ -486,41 +484,19 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             for domain_name in store.opensearch_domains.keys():
                 cluster_manager().remove(DomainKey(domain_name, region, account_id).arn)
 
+    @handler("CreateDomain", expand=False)
     def create_domain(
-        self,
-        context: RequestContext,
-        domain_name: DomainName,
-        engine_version: VersionString = None,
-        cluster_config: ClusterConfig = None,
-        ebs_options: EBSOptions = None,
-        access_policies: PolicyDocument = None,
-        ip_address_type: IPAddressType = None,
-        snapshot_options: SnapshotOptions = None,
-        vpc_options: VPCOptions = None,
-        cognito_options: CognitoOptions = None,
-        encryption_at_rest_options: EncryptionAtRestOptions = None,
-        node_to_node_encryption_options: NodeToNodeEncryptionOptions = None,
-        advanced_options: AdvancedOptions = None,
-        log_publishing_options: LogPublishingOptions = None,
-        domain_endpoint_options: DomainEndpointOptions = None,
-        advanced_security_options: AdvancedSecurityOptionsInput = None,
-        identity_center_options: IdentityCenterOptionsInput = None,
-        tag_list: TagList = None,
-        auto_tune_options: AutoTuneOptionsInput = None,
-        off_peak_window_options: OffPeakWindowOptions = None,
-        software_update_options: SoftwareUpdateOptions = None,
-        aiml_options: AIMLOptionsInput = None,
-        **kwargs,
+        self, context: RequestContext, request: CreateDomainRequest
     ) -> CreateDomainResponse:
         store = self.get_store(context.account_id, context.region)
 
-        if not is_valid_domain_name(domain_name):
+        if not (domain_name := request.get("DomainName")) or not is_valid_domain_name(domain_name):
             # TODO: this should use the server-side validation framework at some point.
             raise ValidationException(
                 "Member must satisfy regular expression pattern: [a-z][a-z0-9\\-]+"
             )
 
-        if domain_endpoint_options:
+        if domain_endpoint_options := request.get("DomainEndpointOptions", {}):
             validate_endpoint_options(domain_endpoint_options)
 
         with _domain_mutex:
@@ -533,10 +509,10 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                 region=context.region,
                 account=context.account_id,
             )
-            security_options = SecurityOptions.from_input(advanced_security_options)
+            security_options = SecurityOptions.from_input(request.get("AdvancedSecurityOptions"))
 
             # "create" domain data
-            store.opensearch_domains[domain_name] = get_domain_status(domain_key)
+            store.opensearch_domains[domain_name] = get_domain_status(domain_key, request=request)
             if domain_endpoint_options:
                 store.opensearch_domains[domain_name]["DomainEndpointOptions"] = (
                     DEFAULT_OPENSEARCH_DOMAIN_ENDPOINT_OPTIONS | domain_endpoint_options
@@ -544,10 +520,12 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
 
             # lazy-init the cluster (sets the Endpoint and Processing flag of the domain status)
             # TODO handle additional parameters (cluster config,...)
-            create_cluster(domain_key, engine_version, domain_endpoint_options, security_options)
+            create_cluster(
+                domain_key, request.get("EngineVersion"), domain_endpoint_options, security_options
+            )
 
             # set the tags
-            self.add_tags(context, domain_key.arn, tag_list)
+            self.add_tags(context, domain_key.arn, request.get("TagList"))
 
             # get the (updated) status
             status = get_domain_status(domain_key)
