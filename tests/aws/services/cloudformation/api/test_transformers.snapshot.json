@@ -724,5 +724,186 @@
       },
       "array-value": "[\"a\",\"b\",\"c\"]"
     }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_outputs_position_example": {
+    "recorded-date": "08-07-2025, 11:36:27",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "S3BucketA",
+            "PhysicalResourceId": "<physical-resource-id:1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::S3::Bucket",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/bc896e40-5bef-11f0-b17c-06a4f35ce45f",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "S3BucketB",
+            "PhysicalResourceId": "<physical-resource-id:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::S3::Bucket",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/bc896e40-5bef-11f0-b17c-06a4f35ce45f",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "S3BucketC",
+            "PhysicalResourceId": "<physical-resource-id:3>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::S3::Bucket",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/bc896e40-5bef-11f0-b17c-06a4f35ce45f",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Outputs": {
+          "S3BucketAArn": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketA",
+                "Arn"
+              ]
+            }
+          },
+          "S3BucketADomainName": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketA",
+                "DomainName"
+              ]
+            }
+          },
+          "S3BucketAWebsiteURL": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketA",
+                "WebsiteURL"
+              ]
+            }
+          },
+          "S3BucketBArn": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketB",
+                "Arn"
+              ]
+            }
+          },
+          "S3BucketBDomainName": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketB",
+                "DomainName"
+              ]
+            }
+          },
+          "S3BucketBWebsiteURL": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketB",
+                "WebsiteURL"
+              ]
+            }
+          },
+          "S3BucketCArn": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketC",
+                "Arn"
+              ]
+            }
+          },
+          "S3BucketCDomainName": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketC",
+                "DomainName"
+              ]
+            }
+          },
+          "S3BucketCWebsiteURL": {
+            "Value": {
+              "Fn::GetAtt": [
+                "S3BucketC",
+                "WebsiteURL"
+              ]
+            }
+          }
+        },
+        "Resources": {
+          "S3BucketA": {
+            "DeletionPolicy": "Delete",
+            "Type": "AWS::S3::Bucket",
+            "UpdateReplacePolicy": "Delete"
+          },
+          "S3BucketB": {
+            "DeletionPolicy": "Delete",
+            "Type": "AWS::S3::Bucket",
+            "UpdateReplacePolicy": "Delete"
+          },
+          "S3BucketC": {
+            "DeletionPolicy": "Delete",
+            "Type": "AWS::S3::Bucket",
+            "UpdateReplacePolicy": "Delete"
+          }
+        }
+      },
+      "stack-outputs": [
+        {
+          "OutputKey": "S3BucketAArn",
+          "OutputValue": "arn:<partition>:s3:::<physical-resource-id:1>"
+        },
+        {
+          "OutputKey": "S3BucketADomainName",
+          "OutputValue": "<physical-resource-id:1>.s3.amazonaws.com"
+        },
+        {
+          "OutputKey": "S3BucketAWebsiteURL",
+          "OutputValue": "http://<physical-resource-id:1>.s3-website.<region>.amazonaws.com"
+        },
+        {
+          "OutputKey": "S3BucketBArn",
+          "OutputValue": "arn:<partition>:s3:::<physical-resource-id:2>"
+        },
+        {
+          "OutputKey": "S3BucketBDomainName",
+          "OutputValue": "<physical-resource-id:2>.s3.amazonaws.com"
+        },
+        {
+          "OutputKey": "S3BucketBWebsiteURL",
+          "OutputValue": "http://<physical-resource-id:2>.s3-website.<region>.amazonaws.com"
+        },
+        {
+          "OutputKey": "S3BucketCArn",
+          "OutputValue": "arn:<partition>:s3:::<physical-resource-id:3>"
+        },
+        {
+          "OutputKey": "S3BucketCDomainName",
+          "OutputValue": "<physical-resource-id:3>.s3.amazonaws.com"
+        },
+        {
+          "OutputKey": "S3BucketCWebsiteURL",
+          "OutputValue": "http://<physical-resource-id:3>.s3-website.<region>.amazonaws.com"
+        }
+      ]
+    }
   }
 }

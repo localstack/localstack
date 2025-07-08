@@ -431,6 +431,15 @@ def expand_fn_foreach(
                         )
                         separator, items = arguments
                         return separator.join(items)
+                    elif isinstance(obj, str):
+                        new_value = obj
+                        if "${" + iteration_name + "}" in new_value:
+                            new_value = new_value.replace(f"${{{iteration_name}}}", variable)
+                        for key, value in (extra_replace_mapping or {}).items():
+                            target_replace_key = "${" + key + "}"
+                            if target_replace_key in obj:
+                                new_value = new_value.replace(target_replace_key, value)
+                        return new_value
                     return obj
 
                 return _visit

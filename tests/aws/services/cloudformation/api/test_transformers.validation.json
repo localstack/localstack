@@ -35,6 +35,15 @@
       "total": 10.0
     }
   },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_outputs_position_example": {
+    "last_validated_date": "2025-07-08T11:36:27+00:00",
+    "durations_in_seconds": {
+      "setup": 1.29,
+      "call": 21.02,
+      "teardown": 0.18,
+      "total": 22.49
+    }
+  },
   "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_to_json_string": {
     "last_validated_date": "2025-07-04T21:24:07+00:00",
     "durations_in_seconds": {

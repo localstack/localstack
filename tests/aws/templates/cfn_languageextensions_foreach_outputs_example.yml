@@ -1,0 +1,20 @@
+# Taken from https://docs.aws.amazon.com/AWSCloudFormation/latest/TemplateReference/intrinsic-function-reference-foreach-example-outputs.html
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::LanguageExtensions'
+Resources:
+  'Fn::ForEach::Buckets':
+    - Identifier
+    - [A, B, C]
+    - 'S3Bucket${Identifier}':
+        Type: 'AWS::S3::Bucket'
+        DeletionPolicy: Delete
+        UpdateReplacePolicy: Delete
+Outputs:
+  'Fn::ForEach::BucketOutputs':
+    - Identifier
+    - [A, B, C]
+    - 'Fn::ForEach::GetAttLoop':
+        - Property
+        - [Arn, DomainName, WebsiteURL]
+        - 'S3Bucket${Identifier}${Property}':
+            Value: !GetAtt [!Sub 'S3Bucket${Identifier}', !Ref Property]

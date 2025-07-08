@@ -328,6 +328,40 @@ class TestLanguageExtensionsTransform:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            "$..StackResources..StackId",
+            "$..OutputValue",
+        ]
+    )
+    def test_transform_outputs_position_example(self, aws_client, transform_template, snapshot):
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
+        )
+        snapshot.add_transformer(
+            SortingTransformer("stack-outputs", lambda output: output["OutputKey"])
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+        with open(
+            os.path.realpath(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "../../../templates/cfn_languageextensions_foreach_outputs_example.yml",
+                )
+            )
+        ) as infile:
+            transform_result = transform_template(
+                infile.read(),
+            )
+        snapshot.match("transformed", transform_result.template)
+
+        # check that the resources have been created correctly
+        outputs = aws_client.cloudformation.describe_stacks(StackName=transform_result.stack_id)[
+            "Stacks"
+        ][0]["Outputs"]
+        snapshot.match("stack-outputs", outputs)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
             "$..StackResources..PhysicalResourceId",
             "$..StackResources..StackId",
         ]
