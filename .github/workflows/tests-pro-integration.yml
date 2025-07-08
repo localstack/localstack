@@ -159,7 +159,7 @@ jobs:
                 // strip the leading "refs/" for the API call
                 const apiRef = refName.substr(5)
                 console.log("Checking if companion repo has ref: ", apiRef)
-                await github.rest.git.getRef({owner: "localstack", repo: "localstack-ext", ref: apiRef})
+                await github.rest.git.getRef({owner: "localstack", repo: "localstack-pro", ref: apiRef})
                 return true
               } catch (error) {
                   if (error.status == 404) {
@@ -200,10 +200,10 @@ jobs:
       - name: Checkout Pro
         uses: actions/checkout@v4
         with:
-          repository: localstack/localstack-ext
+          repository: localstack/localstack-pro
           ref: ${{steps.determine-companion-ref.outputs.result}}
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
-          path: localstack-ext
+          path: localstack-pro
 
       - name: Set up Python 3.11
         id: setup-python
@@ -237,11 +237,11 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            localstack-ext/.venv
+            localstack-pro/.venv
           # include the matrix group (to re-use the venv)
-          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
+          key: community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-pro/localstack-pro-core/requirements-test.txt') }}-${{steps.determine-companion-ref.outputs.result}}
           restore-keys: |
-            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-ext/localstack-pro-core/requirements-test.txt') }}-refs/heads/main
+            community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-pro/localstack-pro-core/requirements-test.txt') }}-refs/heads/main
 
       - name: Cache Ext Dependencies (libs)
         if: inputs.disableCaching != true
@@ -276,11 +276,11 @@ jobs:
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Install Python Dependencies for Pro
-        working-directory: localstack-ext
+        working-directory: localstack-pro
         run: make install-ci
 
       - name: Link Community into Pro venv
-        working-directory: localstack-ext
+        working-directory: localstack-pro
         run: |
           source .venv/bin/activate
           pip install -e ../localstack[runtime,test]
@@ -289,11 +289,11 @@ jobs:
         working-directory: localstack
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
-          VENV_DIR="../localstack-ext/.venv" make entrypoints
-          ../localstack-ext/.venv/bin/python -m plux show
+          VENV_DIR="../localstack-pro/.venv" make entrypoints
+          ../localstack-pro/.venv/bin/python -m plux show
 
       - name: Create Pro Entrypoints
-        working-directory: localstack-ext
+        working-directory: localstack-pro
         # Entrypoints need to be generated _after_ the community edition has been linked into the venv
         run: |
           make entrypoints
@@ -305,7 +305,7 @@ jobs:
           DEBUG: 1
           DNS_ADDRESS: 0
           LOCALSTACK_AUTH_TOKEN: "test"
-        working-directory: localstack-ext
+        working-directory: localstack-pro
         run: |
           source .venv/bin/activate
           bin/test_localstack_pro.sh
@@ -320,7 +320,7 @@ jobs:
             echo "Do test selection based on Pull Request event"
             SCRIPT_OPTS="--base-commit-sha ${{ github.event.pull_request.base.sha }} --head-commit-sha ${{ github.event.pull_request.head.sha }}"
           fi
-          . ../localstack-ext/.venv/bin/activate
+          . ../localstack-pro/.venv/bin/activate
           python -m localstack.testing.testselection.scripts.generate_test_selection $(pwd) target/testselection/test-selection.txt $SCRIPT_OPTS || (mkdir -p target/testselection && echo "SENTINEL_ALL_TESTS" >> target/testselection/test-selection.txt)
           echo "Resulting Test Selection file:"
           cat target/testselection/test-selection.txt
@@ -340,7 +340,7 @@ jobs:
           JUNIT_REPORTS_FILE: "pytest-junit-community-${{ matrix.group }}.xml"
           TEST_PATH: "../../localstack/tests/aws/"  # TODO: run tests in tests/integration
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path ../../localstack/.test_durations --store-durations"
-        working-directory: localstack-ext
+        working-directory: localstack-pro
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
           sudo rm -rf ../localstack/localstack-core/.filesystem/var/lib/localstack/tmp
@@ -361,7 +361,7 @@ jobs:
         with:
           name: test-results-community-${{ matrix.group }}
           path: |
-            localstack-ext/localstack-pro-core/pytest-junit-community-${{ matrix.group }}.xml
+            localstack-pro/localstack-pro-core/pytest-junit-community-${{ matrix.group }}.xml
           retention-days: 30
 
   publish-pro-test-results:
