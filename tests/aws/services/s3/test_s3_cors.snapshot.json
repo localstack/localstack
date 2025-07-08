@@ -340,7 +340,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_cors.py::TestS3Cors::test_cors_match_headers": {
-    "recorded-date": "02-01-2024, 16:08:41",
+    "recorded-date": "07-07-2025, 17:12:03",
     "recorded-content": {
       "opt-get": {
         "Body": "",
@@ -474,6 +474,23 @@
         },
         "StatusCode": 200
       },
+      "opt-get-allowed-no-space": {
+        "Body": "",
+        "Headers": {
+          "Access-Control-Allow-Credentials": "true",
+          "Access-Control-Allow-Headers": "x-amz-expected-bucket-owner, x-amz-server-side-encryption",
+          "Access-Control-Allow-Methods": "GET",
+          "Access-Control-Allow-Origin": "https://localhost:4200",
+          "Access-Control-Max-Age": "3000",
+          "Content-Length": "0",
+          "Vary": "Origin, Access-Control-Request-Headers, Access-Control-Request-Method",
+          "date": "date",
+          "server": "<server:1>",
+          "x-amz-id-2": "<x-amz-id-2:8>",
+          "x-amz-request-id": "<x-amz-request-id:8>"
+        },
+        "StatusCode": 200
+      },
       "get-non-allowed-with-acl": {
         "Body": "test-cors",
         "Headers": {
@@ -484,8 +501,8 @@
           "accept-ranges": "bytes",
           "date": "date",
           "server": "<server:1>",
-          "x-amz-id-2": "<x-amz-id-2:8>",
-          "x-amz-request-id": "<x-amz-request-id:8>",
+          "x-amz-id-2": "<x-amz-id-2:9>",
+          "x-amz-request-id": "<x-amz-request-id:9>",
           "x-amz-server-side-encryption": "AES256"
         },
         "StatusCode": 200
@@ -505,8 +522,8 @@
           "accept-ranges": "bytes",
           "date": "date",
           "server": "<server:1>",
-          "x-amz-id-2": "<x-amz-id-2:9>",
-          "x-amz-request-id": "<x-amz-request-id:9>",
+          "x-amz-id-2": "<x-amz-id-2:10>",
+          "x-amz-request-id": "<x-amz-request-id:10>",
           "x-amz-server-side-encryption": "AES256"
         },
         "StatusCode": 200

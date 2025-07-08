@@ -205,7 +205,12 @@ class S3CorsHandler(Handler):
 
         if requested_headers := request.headers.get("Access-Control-Request-Headers"):
             # if the rule matched, it means all Requested Headers are allowed
-            response.headers["Access-Control-Allow-Headers"] = requested_headers.lower()
+            requested_headers_formatted = [
+                header.strip().lower() for header in requested_headers.split(",")
+            ]
+            response.headers["Access-Control-Allow-Headers"] = ", ".join(
+                requested_headers_formatted
+            )
 
         if expose_headers := rule.get("ExposeHeaders"):
             response.headers["Access-Control-Expose-Headers"] = ", ".join(expose_headers)
@@ -266,8 +271,8 @@ class S3CorsHandler(Handler):
 
             lower_case_allowed_headers = {header.lower() for header in allowed_headers}
             if "*" not in allowed_headers and not all(
-                header in lower_case_allowed_headers
-                for header in request_headers.lower().split(", ")
+                header.strip() in lower_case_allowed_headers
+                for header in request_headers.lower().split(",")
             ):
                 return
 
