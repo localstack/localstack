@@ -104,6 +104,10 @@ class Stack:
         self.template_original = clone_safe(self.template)
         # initialize resources
         for resource_id, resource in self.template_resources.items():
+            # HACK: if the resource is a Fn::ForEach intrinsic call from the LanguageExtensions transform, then it is not a dictionary but a list
+            if resource_id.startswith("Fn::ForEach"):
+                # we are operating on an untransformed template, so ignore for now
+                continue
             resource["LogicalResourceId"] = self.template_original["Resources"][resource_id][
                 "LogicalResourceId"
             ] = resource.get("LogicalResourceId") or resource_id
