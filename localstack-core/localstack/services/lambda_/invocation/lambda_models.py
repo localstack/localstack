@@ -66,6 +66,7 @@ class Invocation:
     # = invocation_id
     request_id: str
     trace_context: dict
+    user_agent: Optional[str]
 
 
 InitializationType = Literal["on-demand", "provisioned-concurrency"]

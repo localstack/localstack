@@ -193,7 +193,7 @@ class LambdaVersionManager:
             raise ServiceException(message)
 
         if debug_execution_environment := LDM.get_execution_environment(
-            qualified_lambda_arn=self.function_version.qualified_arn
+            qualified_lambda_arn=self.function_version.qualified_arn, user_agent=invocation.user_agent
         ):
             try:
                 invocation_result = debug_execution_environment.invoke(invocation)

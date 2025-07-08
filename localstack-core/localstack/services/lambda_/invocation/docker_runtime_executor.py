@@ -23,7 +23,7 @@ from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
 )
-from localstack.services.lambda_.lambda_debug_mode.ldm import LDM
+from localstack.services.lambda_.lambda_debug_mode.ldm import LDM_ENV_VAR_DEBUG_PORT
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.networking import (
     get_all_container_networks_for_lambda,
@@ -321,7 +321,8 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             platform=docker_platform(self.function_version.config.architectures[0]),
             additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
-        if debug_port := LDM.get_debug_port_for(self.function_version.qualified_arn):
+        if debug_port := env_vars.get(LDM_ENV_VAR_DEBUG_PORT):
+            debug_port = int(debug_port)
             container_config.ports.add(debug_port, debug_port)
 
         if self.function_version.config.package_type == PackageType.Zip:

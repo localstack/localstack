@@ -1078,6 +1078,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     function_name,
                 )
 
+        # Enable the LDM configuration for this qualified lambda arn, iff a configuration exists.
+        LDM.enable_configuration(qualified_lambda_arn=version.qualified_arn)
+
         return api_utils.map_config_out(
             version, return_qualified_arn=False, return_update_status=False
         )
@@ -1594,6 +1597,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name, qualifier, context
         )
 
+        user_agent = None
+        if user_agent_obj := context.request.user_agent:
+            user_agent = user_agent_obj.string
+
         time_before = time.perf_counter()
         try:
             invocation_result = self.lambda_service.invoke(
@@ -1606,6 +1613,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 request_id=context.request_id,
                 trace_context=context.trace_context,
                 payload=payload.read() if payload else None,
+                user_agent=user_agent,
             )
         except ServiceException:
             raise

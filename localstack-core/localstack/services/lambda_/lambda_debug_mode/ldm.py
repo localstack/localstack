@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 import os
+import threading
 import time
 from threading import Event, RLock, Thread
 from typing import Callable, Dict, Final, Optional
@@ -16,6 +17,7 @@ from localstack.config import LAMBDA_DEBUG_MODE, LAMBDA_DEBUG_MODE_CONFIG_PATH
 from localstack.services.lambda_.invocation.execution_environment import (
     ExecutionEnvironment,
     InvalidStatusException,
+    RuntimeStatus,
 )
 from localstack.services.lambda_.lambda_debug_mode.ldm_config_file import parse_ldm_config
 from localstack.services.lambda_.provider_utils import get_function_version
@@ -29,17 +31,26 @@ LOG = logging.getLogger(__name__)
 # Debug Mode is enabled. The value is set to one hour to ensure eventual termination of
 # long-running processes.
 DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS: int = 3_600
+LDM_ENV_VAR_DEBUG_PORT: str = "LDM_DEBUG_PORT"
 
 
 class LambdaFunctionDebugConfig:
     qualified_lambda_arn: Final[Arn]
     port: Final[int]
     enforce_timeouts: Final[bool]
+    user_agent: Final[Optional[str]]
 
-    def __init__(self, qualified_lambda_arn: Arn, port: int, enforce_timeouts: bool = False):
+    def __init__(
+        self,
+        qualified_lambda_arn: Arn,
+        port: int,
+        enforce_timeouts: bool = False,
+        user_agent: Optional[str] = None,
+    ):
         self.qualified_lambda_arn = qualified_lambda_arn
         self.port = port
         self.enforce_timeouts = enforce_timeouts
+        self.user_agent = user_agent
 
 
 class DebugEnabledExecutionEnvironment(ExecutionEnvironment):
@@ -61,6 +72,7 @@ class DebugEnabledExecutionEnvironment(ExecutionEnvironment):
 
     def get_environment_variables(self) -> Dict[str, str]:
         environment_variables = super().get_environment_variables()
+        environment_variables[LDM_ENV_VAR_DEBUG_PORT] = str(self._lambda_function_debug_config.port)
         if not self._lambda_function_debug_config.enforce_timeouts:
             environment_variables["AWS_LAMBDA_FUNCTION_TIMEOUT"] = str(
                 DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
@@ -85,48 +97,48 @@ class LambdaDebugTarget:
 
     def start_debug_enabled_execution_environment(self):
         # Attempt to create the debug environment now if the function exists.
-        try:
-            self._start_debug_enabled_execution_environment()
-        except ResourceNotFoundException:
-            LOG.info(
-                "Lambda Debug Mode cannot create a debug environment for '%s' at this time "
-                "as the lambda function is not yet created, the debugging server will be available "
-                "upon lambda function creation.",
-                self._lambda_qualified_arn,
-            )
-
-    def _start_debug_enabled_execution_environment(self):
         with self._mutex:
             if self._debug_execution_environment is not None:
                 return
             self.stop_debug_enabled_execution_environment()
-            lambda_parsed_arn = parse_arn(self._lambda_qualified_arn)
-            lambda_account_id = lambda_parsed_arn["account"]
-            lambda_region_name = lambda_parsed_arn["region"]
-            _, lambda_function_name, lambda_function_qualifier = lambda_parsed_arn[
-                "resource"
-            ].split(":")
-            function_version = get_function_version(
-                function_name=lambda_function_name,
-                qualifier=lambda_function_qualifier,
-                account_id=lambda_account_id,
-                region=lambda_region_name,
-            )
+
+            try:
+                lambda_parsed_arn = parse_arn(self._lambda_qualified_arn)
+                lambda_account_id = lambda_parsed_arn["account"]
+                lambda_region_name = lambda_parsed_arn["region"]
+                _, lambda_function_name, lambda_function_qualifier = lambda_parsed_arn[
+                    "resource"
+                ].split(":")
+                function_version = get_function_version(
+                    function_name=lambda_function_name,
+                    qualifier=lambda_function_qualifier,
+                    account_id=lambda_account_id,
+                    region=lambda_region_name,
+                )
+            except ResourceNotFoundException:
+                # The lambda function has not being created yet.
+                return
+
             self._debug_execution_environment = DebugEnabledExecutionEnvironment(
                 function_version=function_version,
                 lambda_function_debug_config=self.lambda_function_debug_config,
                 on_timeout=self._on_execution_environment_timeout,
             )
-            self._debug_execution_environment.start()
             LOG.info(
-                "LDM is ready for debugger connections for '%s'.",
-                self._lambda_qualified_arn,
+                "LDM is ready for debugger connections for '%s' on port %i.",
+                self.lambda_function_debug_config.qualified_lambda_arn,
+                self.lambda_function_debug_config.port,
             )
+            self._debug_execution_environment.start()
+            if self._debug_execution_environment.status != RuntimeStatus.READY:
+                LOG.error(
+                    "LDM could not create a debug environment for '%s'", self._lambda_qualified_arn
+                )
+                self._debug_execution_environment = None
 
     def stop_debug_enabled_execution_environment(self):
         with self._mutex:
-            environment = self._debug_execution_environment
-            if environment is not None:
+            if environment := self._debug_execution_environment:
                 environment.stop()
             self._debug_execution_environment = None
 
@@ -148,9 +160,6 @@ class LambdaDebugTarget:
                     Reason="SingleLeaseEnforcement",
                     Type="User",
                 )
-
-    def is_for_config(self, lambda_function_debug_config: LambdaFunctionDebugConfig):
-        return self.lambda_function_debug_config.port == lambda_function_debug_config.port
 
     def _on_execution_environment_timeout(
         self, version_manager_id: str, environment_id: str
@@ -248,6 +257,7 @@ class LDMConfigFileWatch:
                         enforce_timeouts=ldm_config.enforce_timeouts,
                     )
                 )
+                LDM.enable_configuration(qualified_lambda_arn=qualified_lambda_arn)
             LOG.info(
                 "LDM is now enforcing the latest configuration from the LDM configuration file"
             )
@@ -304,10 +314,10 @@ class LambdaDebugMode:
     def is_enabled(self) -> bool:
         return self._is_enabled
 
-    def add_configuration(self, config: LambdaFunctionDebugConfig) -> bool:
+    def add_configuration(self, config: LambdaFunctionDebugConfig) -> None:
         with self._mutex:
             if not self._is_enabled:
-                return False
+                return
 
             arn = config.qualified_lambda_arn
             if existing_target := self._debug_targets.get(arn):
@@ -315,8 +325,16 @@ class LambdaDebugMode:
 
             target = LambdaDebugTarget(lambda_function_debug_config=config)
             self._debug_targets[arn] = target
-            target.start_debug_enabled_execution_environment()
-            return True
+
+    def enable_configuration(self, qualified_lambda_arn: Arn) -> None:
+        with self._mutex:
+            if target := self._debug_targets.get(qualified_lambda_arn):
+                threading.Thread(
+                    target=target.start_debug_enabled_execution_environment,
+                    args=(),
+                    name=f"LambdaDebugTarget-start_debug_enabled_execution_environment-{qualified_lambda_arn}",
+                    daemon=True,
+                ).start()
 
     def remove_configuration(self, qualified_lambda_arn: Arn) -> None:
         with self._mutex:
@@ -329,31 +347,14 @@ class LambdaDebugMode:
                 target.stop_debug_enabled_execution_environment()
             self._debug_targets.clear()
 
-    def get_debug_config(self, qualified_lambda_arn: Arn) -> Optional[LambdaFunctionDebugConfig]:
-        if not self._is_enabled:
-            return None
-        target = self._debug_targets.get(qualified_lambda_arn)
-        return target.lambda_function_debug_config if target else None
-
     def get_execution_environment(
-        self, qualified_lambda_arn: Arn
+        self, qualified_lambda_arn: Arn, user_agent: Optional[str]
     ) -> Optional[DebugEnabledExecutionEnvironment]:
-        target = self._debug_targets.get(qualified_lambda_arn)
-        return target.get_execution_environment() if target else None
-
-    def is_enabled_for(self, qualified_lambda_arn: Arn) -> bool:
-        return qualified_lambda_arn in self._debug_targets
-
-    def get_debug_port_for(self, qualified_lambda_arn: Arn) -> Optional[int]:
-        if config := self.get_debug_config(qualified_lambda_arn=qualified_lambda_arn):
-            return config.port
+        if target := self._debug_targets.get(qualified_lambda_arn):
+            target_user_agent = target.lambda_function_debug_config.user_agent
+            if target_user_agent is None or target_user_agent == user_agent:
+                return target.get_execution_environment()
         return None
-
-    def is_timeout_enabled_for(self, qualified_lambda_arn: Arn) -> bool:
-        config = self.get_debug_config(qualified_lambda_arn=qualified_lambda_arn)
-        if config is None:
-            return False
-        return not config.enforce_timeouts
 
 
 LDM: Final[LambdaDebugMode] = LambdaDebugMode.get()
