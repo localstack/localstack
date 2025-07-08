@@ -12,6 +12,7 @@ from abc import ABCMeta, abstractmethod
 from enum import Enum, unique
 from pathlib import Path
 from typing import (
+    Callable,
     Dict,
     List,
     Literal,
@@ -750,8 +751,17 @@ class ContainerClient(metaclass=ABCMeta):
         """Copy contents of the given container to the host"""
 
     @abstractmethod
-    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
-        """Pulls an image with a given name from a Docker registry"""
+    def pull_image(
+        self,
+        docker_image: str,
+        platform: Optional[DockerPlatform] = None,
+        log_handler: Optional[Callable[[str], None]] = None,
+    ) -> None:
+        """
+        Pulls an image with a given name from a Docker registry
+
+        :log_handler: Optional parameter that can be used to process the logs. Logs will be streamed if possible, but this is not guaranteed.
+        """
 
     @abstractmethod
     def push_image(self, docker_image: str) -> None:
