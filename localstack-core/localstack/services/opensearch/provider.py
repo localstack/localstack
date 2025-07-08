@@ -42,6 +42,7 @@ from localstack.aws.api.opensearch import (
     DomainInfo,
     DomainName,
     DomainNameList,
+    DomainProcessingStatusType,
     DomainStatus,
     EBSOptions,
     EBSOptionsStatus,
@@ -146,6 +147,7 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
         status = store.opensearch_domains.get(domain_name)
         if status is not None:
             status["Processing"] = False
+        status["DomainProcessingStatus"] = DomainProcessingStatusType.Active
 
 
 def create_cluster(
@@ -180,9 +182,11 @@ def create_cluster(
     # access from another device on the network.
     status["Endpoint"] = cluster.url.split("://")[-1].replace("0.0.0.0", localstack_host().host)
     status["EngineVersion"] = engine_version
+    status["DomainProcessingStatus"] = DomainProcessingStatusType.Creating
 
     if cluster.is_up():
         status["Processing"] = False
+        status["DomainProcessingStatus"] = DomainProcessingStatusType.Active
     else:
         # run a background thread that will update all domains that use this cluster to set
         # the cluster state once it is started, or the CLUSTER_STARTUP_TIMEOUT is reached
@@ -211,7 +215,7 @@ def _status_to_config(status: DomainStatus) -> DomainConfig:
     config_status = get_domain_config_status()
     return DomainConfig(
         AccessPolicies=AccessPoliciesStatus(
-            Options=PolicyDocument(""),
+            Options=status.get("AccessPolicies", ""),
             Status=config_status,
         ),
         AdvancedOptions=AdvancedOptionsStatus(
@@ -315,11 +319,18 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
     cluster_cfg = stored_status.get("ClusterConfig") or {}
     default_cfg = DEFAULT_OPENSEARCH_CLUSTER_CONFIG
 
+    domain_processing_status = stored_status.get("DomainProcessingStatus", None)
+    processing = stored_status.get("Processing", True)
+    if deleted:
+        domain_processing_status = DomainProcessingStatusType.Deleting
+        processing = True
+
     new_status = DomainStatus(
         ARN=domain_key.arn,
         Created=True,
         Deleted=deleted,
-        Processing=stored_status.get("Processing", True),
+        DomainProcessingStatus=domain_processing_status,
+        Processing=processing,
         DomainId=f"{domain_key.account}/{domain_key.domain_name}",
         DomainName=domain_key.domain_name,
         ClusterConfig=ClusterConfig(
@@ -345,7 +356,7 @@ def get_domain_status(domain_key: DomainKey, deleted=False) -> DomainStatus:
         EBSOptions=EBSOptions(EBSEnabled=True, VolumeType=VolumeType.gp2, VolumeSize=10, Iops=0),
         CognitoOptions=CognitoOptions(Enabled=False),
         UpgradeProcessing=False,
-        AccessPolicies="",
+        AccessPolicies=stored_status.get("AccessPolicies", ""),
         SnapshotOptions=SnapshotOptions(AutomatedSnapshotStartHour=0),
         EncryptionAtRestOptions=EncryptionAtRestOptions(Enabled=False),
         NodeToNodeEncryptionOptions=NodeToNodeEncryptionOptions(Enabled=False),

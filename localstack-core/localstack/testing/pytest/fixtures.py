@@ -936,7 +936,7 @@ def opensearch_wait_for_cluster(aws_client):
     def _wait_for_cluster(domain_name: str):
         def finished_processing():
             status = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
-            return status["Processing"] is False and "Endpoint" in status
+            return status["DomainProcessingStatus"] == "Active" and "Endpoint" in status
 
         assert poll_condition(
             finished_processing, timeout=25 * 60, **({"interval": 10} if is_aws_cloud() else {})
