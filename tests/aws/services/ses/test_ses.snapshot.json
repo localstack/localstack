@@ -915,5 +915,16 @@
         }
       }
     }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled": {
+    "recorded-date": "30-06-2025, 08:17:14",
+    "recorded-content": {
+      "set-headers-in-notifications-enabled": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
