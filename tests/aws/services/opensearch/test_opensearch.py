@@ -8,6 +8,7 @@ from urllib.parse import urlparse
 
 import botocore.exceptions
 import pytest
+from botocore.auth import SigV4Auth
 from opensearchpy import OpenSearch
 from opensearchpy.exceptions import AuthorizationException
 
@@ -39,6 +40,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.packages import opensearch_package
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry, short_uid, start_worker_thread
 from localstack.utils.common import safe_requests as requests
@@ -138,31 +140,135 @@ class TestOpensearchProvider:
         # Just check if 1.1 is contained (not equality) to avoid breaking the test if new versions are supported
         assert "OpenSearch_1.3" in compatibility["TargetVersions"]
 
-    @markers.aws.needs_fixing
-    def test_create_domain(self, opensearch_wait_for_cluster, aws_client):
-        domain_name = f"opensearch-domain-{short_uid()}"
-        try:
-            domain_status = aws_client.opensearch.create_domain(DomainName=domain_name)[
-                "DomainStatus"
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..AIMLOptions",
+            "$..AccessPolicies.Status.State",
+            "$..AccessPolicies.Status.UpdateVersion",
+            "$..AdvancedOptions.Status.UpdateVersion",
+            "$..AdvancedSecurityOptions..AnonymousAuthEnabled",
+            "$..AdvancedSecurityOptions.Status.UpdateVersion",
+            "$..AutoTuneOptions..State",
+            "$..AutoTuneOptions..UseOffPeakWindow",
+            "$..AutoTuneOptions.Options.DesiredState",
+            "$..AutoTuneOptions.Status.UpdateVersion",
+            "$..ChangeProgressDetails",
+            "$..ClusterConfig..DedicatedMasterCount",
+            "$..ClusterConfig..DedicatedMasterEnabled",
+            "$..ClusterConfig..DedicatedMasterType",
+            "$..ClusterConfig..InstanceType",
+            "$..ClusterConfig..MultiAZWithStandbyEnabled",
+            "$..ClusterConfig.Options.ColdStorageOptions",
+            "$..ClusterConfig.Options.WarmEnabled",
+            "$..ClusterConfig.Status.UpdateVersion",
+            "$..CognitoOptions.Status.UpdateVersion",
+            "$..DomainEndpointOptions..TLSSecurityPolicy",
+            "$..DomainEndpointOptions.Status.UpdateVersion",
+            "$..EBSOptions.Iops",
+            "$..EBSOptions.Options.VolumeSize",
+            "$..EBSOptions.Status.UpdateVersion",
+            "$..EncryptionAtRestOptions.Status.UpdateVersion",
+            "$..Endpoint",
+            "$..EngineVersion.Status.UpdateVersion",
+            "$..IPAddressType",
+            "$..IdentityCenterOptions",
+            "$..LogPublishingOptions.Status.UpdateVersion",
+            "$..ModifyingProperties",
+            "$..NodeToNodeEncryptionOptions.Status.UpdateVersion",
+            "$..OffPeakWindowOptions",
+            "$..ServiceSoftwareOptions.CurrentVersion",
+            "$..SnapshotOptions.Options.AutomatedSnapshotStartHour",
+            "$..SnapshotOptions.Status.UpdateVersion",
+            "$..SoftwareUpdateOptions",
+            "$..VPCOptions.Status.UpdateVersion",
+        ]
+    )
+    def test_domain_lifecycle(
+        self, opensearch_wait_for_cluster, aws_client, snapshot, aws_http_client_factory, cleanups
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("DomainName"),
+                snapshot.transform.key_value("account-arn"),
             ]
+        )
+        snapshot.add_transformer(snapshot.transform.key_value("Endpoint"), priority=-1)
 
-            response = aws_client.opensearch.list_domain_names(EngineType="OpenSearch")
-            domain_names = [domain["DomainName"] for domain in response["DomainNames"]]
+        domain_name = f"opensearch-domain-{short_uid()}"
+        account_arn = aws_client.sts.get_caller_identity()["Arn"]
+        snapshot.match("account-arn", account_arn)
 
-            assert domain_name in domain_names
-            # wait for the cluster
-            opensearch_wait_for_cluster(domain_name=domain_name)
+        http_client = aws_http_client_factory(service="es", signer_factory=SigV4Auth)
+        create_response = aws_client.opensearch.create_domain(
+            DomainName=domain_name,
+            EngineVersion="Elasticsearch_7.10",
+            ClusterConfig={
+                "InstanceType": "t2.small.search",
+                "InstanceCount": 1,
+            },
+            EBSOptions={
+                "EBSEnabled": True,
+                "VolumeSize": 10,
+                "VolumeType": "gp2",
+            },
+        )
+        snapshot.match("create-response", create_response["DomainStatus"])
+        cleanups.append(lambda: aws_client.opensearch.delete_domain(DomainName=domain_name))
 
-            # make sure the plugins are installed (Sort and display component)
-            plugins_url = (
-                f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
-            )
+        list_response = aws_client.opensearch.list_domain_names(EngineType="Elasticsearch")
+        domain_names = [domain["DomainName"] for domain in list_response["DomainNames"]]
+
+        assert domain_name in domain_names
+        # wait for the cluster
+        opensearch_wait_for_cluster(domain_name=domain_name)
+
+        domain_status = aws_client.opensearch.describe_domain(DomainName=domain_name)[
+            "DomainStatus"
+        ]
+        snapshot.match("created-domain", domain_status)
+
+        # updating domain to add iam permission
+        update_response = aws_client.opensearch.update_domain_config(
+            DomainName=domain_name,
+            AccessPolicies=json.dumps(
+                {
+                    "Version": "2012-10-17",
+                    "Statement": [
+                        {
+                            "Effect": "Allow",
+                            "Principal": {"AWS": account_arn},
+                            "Action": "es:*",
+                            "Resource": f"{domain_status['ARN']}/*",
+                        }
+                    ],
+                }
+            ),
+        )
+        snapshot.match("update-response", update_response["DomainConfig"])
+
+        # wait for the cluster
+        opensearch_wait_for_cluster(domain_name=domain_name)
+        domain_status = aws_client.opensearch.describe_domain(DomainName=domain_name)[
+            "DomainStatus"
+        ]
+        snapshot.match("updated-domain", domain_status)
+
+        # make sure the plugins are installed (Sort and display component)
+        plugins_url = f"https://{domain_status['Endpoint']}/_cat/plugins?s=component&h=component"
+
+        if is_aws_cloud():
+            plugins_response = http_client.get(plugins_url, headers={"Accept": "application/json"})
+        else:
+            # TODO fix ssl validation error when using the signed request for the elastic search domain
             plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
-            installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
-            requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
-            assert requested_plugins.issubset(installed_plugins)
-        finally:
-            aws_client.opensearch.delete_domain(DomainName=domain_name)
+
+        installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
+        requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
+        assert requested_plugins.issubset(installed_plugins)
+
+        delete_response = aws_client.opensearch.delete_domain(DomainName=domain_name)
+        snapshot.match("delete-response", delete_response["DomainStatus"])
 
     @markers.aws.only_localstack
     def test_security_plugin(self, opensearch_create_domain, aws_client):
