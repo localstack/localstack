@@ -150,6 +150,7 @@ ResponseContentType = str
 Restore = str
 RestoreOutputPath = str
 Role = str
+S3RegionalOrS3ExpressBucketArnString = str
 S3TablesArn = str
 S3TablesBucketArn = str
 S3TablesName = str
@@ -1154,6 +1155,7 @@ class Bucket(TypedDict, total=False):
     Name: Optional[BucketName]
     CreationDate: Optional[CreationDate]
     BucketRegion: Optional[BucketRegion]
+    BucketArn: Optional[S3RegionalOrS3ExpressBucketArnString]
 
 
 class BucketInfo(TypedDict, total=False):
@@ -1497,6 +1499,7 @@ class CreateBucketConfiguration(TypedDict, total=False):
     LocationConstraint: Optional[BucketLocationConstraint]
     Location: Optional[LocationInfo]
     Bucket: Optional[BucketInfo]
+    Tags: Optional[TagSet]
 
 
 class S3TablesDestination(TypedDict, total=False):
@@ -1518,6 +1521,7 @@ class CreateBucketMetadataTableConfigurationRequest(ServiceRequest):
 
 class CreateBucketOutput(TypedDict, total=False):
     Location: Optional[Location]
+    BucketArn: Optional[S3RegionalOrS3ExpressBucketArnString]
 
 
 class CreateBucketRequest(ServiceRequest):

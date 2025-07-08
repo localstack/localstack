@@ -165,6 +165,7 @@ class CloudWatchRegion(StrEnum):
     us_isof_east_1 = "us-isof-east-1"
     ap_southeast_7 = "ap-southeast-7"
     ap_east_2 = "ap-east-2"
+    eu_isoe_west_1 = "eu-isoe-west-1"
 
 
 class ComparisonOperator(StrEnum):
@@ -343,6 +344,7 @@ class VPCRegion(StrEnum):
     us_isof_east_1 = "us-isof-east-1"
     ap_southeast_7 = "ap-southeast-7"
     ap_east_2 = "ap-east-2"
+    eu_isoe_west_1 = "eu-isoe-west-1"
 
 
 class CidrBlockInUseException(ServiceException):

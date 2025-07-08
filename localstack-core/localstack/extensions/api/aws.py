@@ -7,6 +7,7 @@ from localstack.aws.api import (
 )
 from localstack.aws.chain import (
     CompositeExceptionHandler,
+    CompositeFinalizer,
     CompositeHandler,
     CompositeResponseHandler,
     ExceptionHandler,
@@ -28,4 +29,5 @@ __all__ = [
     "ExceptionHandler",
     "CompositeResponseHandler",
     "CompositeExceptionHandler",
+    "CompositeFinalizer",
 ]

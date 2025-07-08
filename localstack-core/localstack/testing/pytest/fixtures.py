@@ -1106,6 +1106,8 @@ def deploy_cfn_template(
 
         if template_path is not None:
             template = load_template_file(template_path)
+            if template is None:
+                raise RuntimeError(f"Could not find file {os.path.realpath(template_path)}")
         template_rendered = render_template(template, **(template_mapping or {}))
 
         kwargs = dict(

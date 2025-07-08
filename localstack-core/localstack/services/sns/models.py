@@ -11,6 +11,7 @@ from localstack.aws.api.sns import (
     topicARN,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 
@@ -23,6 +24,38 @@ SnsApplicationPlatforms = Literal[
 ]
 
 SnsMessageProtocols = Literal[SnsProtocols, SnsApplicationPlatforms]
+
+
+def create_default_sns_topic_policy(topic_arn: str) -> dict:
+    """
+    Creates the default SNS topic policy for the given topic ARN.
+
+    :param topic_arn: The topic arn
+    :return: A policy document
+    """
+    return {
+        "Version": "2008-10-17",
+        "Id": "__default_policy_ID",
+        "Statement": [
+            {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": [
+                    "SNS:GetTopicAttributes",
+                    "SNS:SetTopicAttributes",
+                    "SNS:AddPermission",
+                    "SNS:RemovePermission",
+                    "SNS:DeleteTopic",
+                    "SNS:Subscribe",
+                    "SNS:ListSubscriptionsByTopic",
+                    "SNS:Publish",
+                ],
+                "Resource": topic_arn,
+                "Condition": {"StringEquals": {"AWS:SourceOwner": parse_arn(topic_arn)["account"]}},
+            }
+        ],
+    }
 
 
 @singleton_factory
