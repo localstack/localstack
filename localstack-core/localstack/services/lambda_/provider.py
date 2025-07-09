@@ -280,16 +280,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(lambda_stores)
 
-    def on_before_start(self):
-        # Attempt to start the Lambda Debug Mode session object.
-        try:
-            LDM.start_debug_mode()
-        except Exception as ex:
-            LOG.error(
-                "Unexpected error encountered when attempting to initialise Lambda Debug Mode '%s'.",
-                ex,
-            )
-
     def on_before_state_reset(self):
         self.lambda_service.stop()
 

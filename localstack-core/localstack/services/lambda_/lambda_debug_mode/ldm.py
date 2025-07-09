@@ -328,6 +328,9 @@ class LambdaDebugMode:
 
     def enable_configuration(self, qualified_lambda_arn: Arn) -> None:
         with self._mutex:
+            if not self._is_enabled:
+                return
+
             if target := self._debug_targets.get(qualified_lambda_arn):
                 threading.Thread(
                     target=target.start_debug_enabled_execution_environment,
@@ -338,6 +341,9 @@ class LambdaDebugMode:
 
     def remove_configuration(self, qualified_lambda_arn: Arn) -> None:
         with self._mutex:
+            if not self._is_enabled:
+                return
+
             if target := self._debug_targets.pop(qualified_lambda_arn, None):
                 target.stop_debug_enabled_execution_environment()
 
@@ -350,6 +356,9 @@ class LambdaDebugMode:
     def get_execution_environment(
         self, qualified_lambda_arn: Arn, user_agent: Optional[str]
     ) -> Optional[DebugEnabledExecutionEnvironment]:
+        if not self._is_enabled:
+            return None
+
         if target := self._debug_targets.get(qualified_lambda_arn):
             target_user_agent = target.lambda_function_debug_config.user_agent
             if target_user_agent is None or target_user_agent == user_agent:
