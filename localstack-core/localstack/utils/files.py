@@ -179,7 +179,11 @@ def idempotent_chmod(path: str, mode: int):
     try:
         os.chmod(path, mode)
     except Exception:
-        existing_mode = os.stat(path)
+        try:
+            existing_mode = os.stat(path)
+        except FileNotFoundError:
+            # file deleted in the meantime, or otherwise not accessible (socket)
+            return
         if mode in (existing_mode.st_mode, stat.S_IMODE(existing_mode.st_mode)):
             # file already has the desired permissions -> return
             return
