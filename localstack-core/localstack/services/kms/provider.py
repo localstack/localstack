@@ -1215,7 +1215,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_material_id: BackingKeyIdType | None = None,
         **kwargs,
     ) -> DeleteImportedKeyMaterialResponse:
-        # TODO add support for key_material_id
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1227,6 +1226,19 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Enabled"] = False
         key.metadata["KeyState"] = KeyState.PendingImport
         key.metadata.pop("ExpirationModel", None)
+        if key.metadata["Origin"] == "EXTERNAL":
+            if "CurrentKeyMaterialId" in key.metadata:
+                if key_material_id is None:
+                    if bytes.fromhex(key.metadata["CurrentKeyMaterialId"]) in key.previous_keys:
+                        key.previous_keys.remove(
+                            bytes.fromhex(key.metadata["CurrentKeyMaterialId"])
+                        )
+                    key.metadata.pop("CurrentKeyMaterialId")
+                else:
+                    if key_material_id in key.previous_keys:
+                        key.previous_keys.remove(key_material_id)
+                    if key.metadata["CurrentKeyMaterialId"] == key_material_id:
+                        key.metadata.pop("CurrentKeyMaterialId")
 
         # TODO populate DeleteImportedKeyMaterialResponse
         return DeleteImportedKeyMaterialResponse()

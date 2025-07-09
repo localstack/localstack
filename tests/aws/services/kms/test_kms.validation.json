@@ -168,12 +168,12 @@
     "last_validated_date": "2024-04-11T15:54:16+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
-    "last_validated_date": "2025-07-03T18:36:54+00:00",
+    "last_validated_date": "2025-07-09T18:24:08+00:00",
     "durations_in_seconds": {
-      "setup": 0.5,
-      "call": 64.31,
-      "teardown": 0.15,
-      "total": 64.96
+      "setup": 0.61,
+      "call": 64.02,
+      "teardown": 0.13,
+      "total": 64.76
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[180]": {

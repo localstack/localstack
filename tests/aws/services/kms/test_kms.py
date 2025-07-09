@@ -1048,6 +1048,11 @@ class TestKMS:
     @markers.aws.validated
     def test_import_key_symmetric(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                key="CurrentKeyMaterialId", value_replacement="current-key-material-id"
+            )
+        )
         key = kms_create_key(Origin="EXTERNAL")
         snapshot.match("created-key", key)
         key_id = key["KeyId"]
@@ -1116,6 +1121,11 @@ class TestKMS:
     @markers.aws.validated
     def test_import_key_asymmetric(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        snapshot.add_transformer(
+            snapshot.transform.key_value(
+                key="CurrentKeyMaterialId", value_replacement="current-key-material-id"
+            )
+        )
         key = kms_create_key(Origin="EXTERNAL", KeySpec="ECC_NIST_P256", KeyUsage="SIGN_VERIFY")
         snapshot.match("created-key", key)
         key_id = key["KeyId"]
@@ -1472,19 +1482,19 @@ class TestKMS:
     def test_key_before_and_after_rotations_on_imported_key(
         self, kms_create_key, aws_client, snapshot
     ):
-        snapshot.add_transformer(
-            snapshot.transform.key_value(
-                key="CurrentKeyMaterialId", value_replacement="<current-key-material-id>"
-            )
+        snapshot.add_transformers_list(
+            transformer_list=[
+                snapshot.transform.key_value("KeyId"),
+                snapshot.transform.key_value("CurrentKeyMaterialId"),
+            ]
         )
         # Create key and import first material
-        key = kms_create_key(
+        key_id = kms_create_key(
             Origin="EXTERNAL",
             KeySpec="SYMMETRIC_DEFAULT",
             KeyUsage="ENCRYPT_DECRYPT",
             Description="test key",
-        )
-        key_id = key["KeyId"]
+        )["KeyId"]
         param = aws_client.kms.get_parameters_for_import(
             KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_4096"
         )
@@ -1538,6 +1548,9 @@ class TestKMS:
             ImportType="NEW_KEY_MATERIAL",
         )
         response = aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+        response["KeyId"] = (
+            key_id  # AWS returns an ARN here and if using a transformer is won't regex the ARN for the key id, until I figure out a better regex here to handle it
+        )
         snapshot.match("rotate-on-demand-response", response)
         retry(
             function=_rotate_key_status,

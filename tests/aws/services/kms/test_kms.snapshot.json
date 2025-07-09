@@ -1272,6 +1272,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
           "Enabled": true,
@@ -1380,6 +1381,7 @@
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "ECC_NIST_P256",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "Description": "<description:1>",
           "Enabled": true,
           "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
@@ -2068,7 +2070,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
-    "recorded-date": "26-06-2025, 19:19:22",
+    "recorded-date": "09-07-2025, 18:57:29",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
@@ -2090,13 +2092,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
-    "recorded-date": "03-07-2025, 18:36:54",
+    "recorded-date": "09-07-2025, 18:24:08",
     "recorded-content": {
       "describe_before_rotation": {
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
-        "CurrentKeyMaterialId": "<<current-key-material-id>:1>",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test key",
         "Enabled": true,
@@ -2113,7 +2115,7 @@
         "Origin": "EXTERNAL"
       },
       "rotate-on-demand-response": {
-        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "KeyId": "<key-id:1>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2123,7 +2125,7 @@
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
-        "CurrentKeyMaterialId": "<<current-key-material-id>:2>",
+        "CurrentKeyMaterialId": "<current-key-material-id:2>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test key",
         "Enabled": true,
