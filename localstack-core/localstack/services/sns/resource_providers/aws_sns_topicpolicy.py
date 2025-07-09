@@ -14,6 +14,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProvider,
     ResourceRequest,
 )
+from localstack.services.sns.models import create_default_sns_topic_policy
 
 
 class SNSTopicPolicyProperties(TypedDict):
@@ -96,14 +97,17 @@ class SNSTopicPolicyProvider(ResourceProvider[SNSTopicPolicyProperties]):
         for topic_arn in model["Topics"]:
             try:
                 sns.set_topic_attributes(
-                    TopicArn=topic_arn, AttributeName="Policy", AttributeValue=""
+                    TopicArn=topic_arn,
+                    AttributeName="Policy",
+                    AttributeValue=json.dumps(create_default_sns_topic_policy(topic_arn)),
                 )
+
             except ClientError as err:
                 if "NotFound" not in err.response["Error"]["Code"]:
                     raise
 
         return ProgressEvent(
-            status=OperationStatus.IN_PROGRESS,
+            status=OperationStatus.SUCCESS,
             resource_model=model,
             custom_context=request.custom_context,
         )

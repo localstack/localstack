@@ -9,8 +9,8 @@ Resources:
         DedicatedMasterEnabled: true
         InstanceCount: '2'
         ZoneAwarenessEnabled: true
-        InstanceType: 'm3.medium.search'
-        DedicatedMasterType: 'm3.medium.search'
+        InstanceType: 't3.small.search'
+        DedicatedMasterType: 't3.small.search'
         DedicatedMasterCount: '3'
       EBSOptions:
         EBSEnabled: true

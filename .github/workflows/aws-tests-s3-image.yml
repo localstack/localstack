@@ -1,4 +1,4 @@
-name: S3 Image Integration Tests
+name: AWS / S3 Image Integration Tests
 
 on:
   push:

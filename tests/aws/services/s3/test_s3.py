@@ -3894,6 +3894,11 @@ class TestS3:
         get_object_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=2)
         snapshot.match("get-object-part", get_object_part)
 
+        get_object_part = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key, PartNumber=2, ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-object-part-with-checksum", get_object_part)
+
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=10)
         snapshot.match("part-doesnt-exist", e.value.response)
@@ -3913,8 +3918,64 @@ class TestS3:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=2)
         snapshot.match("part-no-multipart", e.value.response)
 
-        get_obj_no_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=1)
+        get_obj_no_part = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_no_part, PartNumber=1, ChecksumMode="ENABLED"
+        )
         snapshot.match("get-obj-no-multipart", get_obj_no_part)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("checksum_type", ("COMPOSITE", "FULL_OBJECT"))
+    def test_get_object_part_checksum(self, s3_bucket, snapshot, aws_client, checksum_type):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+                snapshot.transform.key_value("UploadId"),
+            ]
+        )
+        content = "test content 123"
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC32C", ChecksumType=checksum_type
+        )
+        snapshot.match("create-mpu-checksum", response)
+        upload_id = response["UploadId"]
+
+        part_number = 1
+        response = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=content,
+            PartNumber=part_number,
+            UploadId=upload_id,
+            ChecksumAlgorithm="CRC32C",
+        )
+        snapshot.match("upload-part", response)
+        multipart_upload_parts = [
+            {
+                "ETag": response["ETag"],
+                "PartNumber": part_number,
+                "ChecksumCRC32C": response["ChecksumCRC32C"],
+            }
+        ]
+
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        head_object_part = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, PartNumber=1, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-part", head_object_part)
+
+        get_object_part = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, PartNumber=1, ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-object-part", get_object_part)
 
     @markers.aws.validated
     def test_set_external_hostname(
@@ -12460,6 +12521,14 @@ class TestS3MultipartUploadChecksum:
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
 
+        get_object_part_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            PartNumber=3,
+            ChecksumMode="ENABLED",
+        )
+        snapshot.match("get-object-part-checksum", get_object_part_checksum)
+
     @markers.aws.validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
     @pytest.mark.parametrize("checksum_type", ["COMPOSITE", "FULL_OBJECT"])
@@ -12756,6 +12825,14 @@ class TestS3MultipartUploadChecksum:
             ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
+
+        get_object_part_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            PartNumber=3,
+            ChecksumMode="ENABLED",
+        )
+        snapshot.match("get-object-part-checksum", get_object_part_checksum)
 
     @markers.aws.validated
     def test_multipart_parts_checksum_exceptions_full_object(self, s3_bucket, snapshot, aws_client):
