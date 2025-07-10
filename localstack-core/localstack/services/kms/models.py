@@ -743,12 +743,11 @@ class KmsKey:
                 f"The on-demand rotations limit has been reached for the given keyId. "
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
             )
+        if self.metadata["Origin"] == "EXTERNAL":
+            self.metadata["CurrentKeyMaterialId"] = self.crypto_key.key_material.hex()
         else:
-            if self.metadata["Origin"] == "EXTERNAL":
-                self.metadata["CurrentKeyMaterialId"] = self.crypto_key.key_material.hex()
-            else:
-                self.previous_keys.append(self.crypto_key.key_material)
-                self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+            self.previous_keys.append(self.crypto_key.key_material)
+            self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
 class KmsGrant:
