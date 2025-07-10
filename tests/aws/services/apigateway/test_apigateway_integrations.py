@@ -186,6 +186,7 @@ def apigw_echo_http_server_post(apigw_echo_http_server):
 
 
 @markers.aws.validated
+@pytest.mark.requires_in_process  # uses pytest httpserver
 def test_http_integration_status_code_selection(
     create_rest_apigw, aws_client, status_code_http_server
 ):
@@ -269,6 +270,7 @@ def test_http_integration_status_code_selection(
 
 
 @markers.aws.validated
+@pytest.mark.requires_in_process  # uses pytest httpserver
 def test_put_integration_responses(create_rest_apigw, aws_client, echo_http_server_post, snapshot):
     snapshot.add_transformers_list(
         [
@@ -1309,6 +1311,7 @@ class TestApiGatewayHeaderRemapping:
     )
     @pytest.mark.parametrize("integration", [IntegrationType.HTTP, IntegrationType.HTTP_PROXY])
     @markers.aws.validated
+    @pytest.mark.requires_in_process  # uses pytest httpserver
     def test_apigateway_header_remapping_http(
         self,
         snapshot,
