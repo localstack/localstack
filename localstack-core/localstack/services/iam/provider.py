@@ -54,7 +54,9 @@ from localstack.aws.api.iam import (
     SimulatePolicyResponse,
     SimulationPolicyListType,
     User,
+    allUsers,
     arnType,
+    credentialAgeDays,
     customSuffixType,
     existingUserNameType,
     groupNameType,
@@ -693,8 +695,14 @@ class IamProvider(IamApi):
         return {k: v for k, v in data.items() if k in key_set}
 
     def create_service_specific_credential(
-        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        service_name: serviceName,
+        credential_age_days: credentialAgeDays | None = None,
+        **kwargs,
     ) -> CreateServiceSpecificCredentialResponse:
+        # TODO add support for credential_age_days
         moto_user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         credential = self._new_service_specific_credential(user_name, service_name, context)
@@ -704,10 +712,14 @@ class IamProvider(IamApi):
     def list_service_specific_credentials(
         self,
         context: RequestContext,
-        user_name: userNameType = None,
-        service_name: serviceName = None,
+        user_name: userNameType | None = None,
+        service_name: serviceName | None = None,
+        all_users: allUsers | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
+        # TODO add support for all_users, marker, max_items
         moto_user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         result = [

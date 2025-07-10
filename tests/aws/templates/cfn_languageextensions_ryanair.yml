@@ -1,0 +1,98 @@
+Transform: AWS::LanguageExtensions
+Parameters:
+  AppSyncSubscriptionFilterNames:
+    Type: CommaDelimitedList
+  AppSyncServerEventNames:
+    Type: CommaDelimitedList
+Resources:
+  GraphQLApi:
+    Type: AWS::AppSync::GraphQLApi
+    Properties:
+      Name: !Sub ${AWS::StackName}_api
+      AuthenticationType: API_KEY
+
+  GraphQLNoneDataSource:
+    Type: AWS::AppSync::DataSource
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Name: noneds
+      Type: NONE
+
+  GraphQLApiSchema:
+    Type: AWS::AppSync::GraphQLSchema
+    Properties:
+      ApiId: !GetAtt GraphQLApi.ApiId
+      Definition: |
+        
+        input PublishServerEvent1Input {
+          value: String!
+        }
+        
+        input PublishServerEvent2Input {
+          value: String!
+        }
+        
+        type Query {
+          _empty: String
+        }
+        
+        type Subscription {
+          onEvent1: String
+          @aws_subscribe(mutations: ["publishServerEvent1"])
+          onEvent2: String
+          @aws_subscribe(mutations: ["publishServerEvent2"])
+        }
+        
+        type Mutation {
+          publishServerEvent1(input: PublishServerEvent1Input!): String
+          publishServerEvent2(input: PublishServerEvent2Input!): String
+        }
+        
+        schema {
+          query: Query
+          mutation: Mutation
+          subscription: Subscription
+        }
+
+  Fn::ForEach::Subscriptions:
+    - EventName
+    - !Ref AppSyncSubscriptionFilterNames
+    - GraphQLResolverPublish${EventName}Subscription:
+        Type: AWS::AppSync::Resolver
+        DependsOn:
+          - GraphQLApiSchema
+        Properties:
+          ApiId: !GetAtt GraphQLApi.ApiId
+          DataSourceName: !GetAtt GraphQLNoneDataSource.Name
+          TypeName: Subscription
+          FieldName: !Sub "on${EventName}"
+          Runtime:
+            Name: APPSYNC_JS
+            RuntimeVersion: 1.0.0
+          Code: |
+            export function request(ctx) {}
+            
+            export function response(ctx) {}
+
+  Fn::ForEach::Mutations:
+    - EventName
+    - !Ref AppSyncServerEventNames
+    - GraphQLResolverPublish${EventName}Mutation:
+        Type: AWS::AppSync::Resolver
+        DependsOn:
+          - GraphQLApiSchema
+        Properties:
+          ApiId: !GetAtt GraphQLApi.ApiId
+          DataSourceName: !GetAtt GraphQLNoneDataSource.Name
+          TypeName: Mutation
+          FieldName: !Sub "publish${EventName}"
+          RequestMappingTemplate: |
+            {
+              "version": "2017-02-28",
+              "payload": $util.toJson($context.arguments)
+            }
+          ResponseMappingTemplate: |
+            $util.toJson($context.result)
+Outputs:
+  GraphQLApiArn:
+    Value: !Ref GraphQLApi

@@ -1155,6 +1155,19 @@ class TestDockerClient:
         )
 
     @markers.skip_offline
+    def test_pull_docker_image_with_log_handler(self, docker_client: ContainerClient):
+        log_result: list[str] = []
+
+        def _process(line: str):
+            log_result.append(line)
+
+        docker_client.pull_image("alpine", log_handler=_process)
+
+        assert any("Pulling from library/alpine" in log for log in log_result), (
+            f"Should display useful logs in {log_result}"
+        )
+
+    @markers.skip_offline
     def test_run_container_automatic_pull(self, docker_client: ContainerClient):
         try:
             docker_client.remove_image("alpine")

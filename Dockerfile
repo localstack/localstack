@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.13-slim-bookworm@sha256:9e1912aab0a30bbd9488eb79063f68f42a68ab0946cbe98fecf197fe5b085506 AS base
+FROM python:3.11.13-slim-bookworm@sha256:139020233cc412efe4c8135b0efe1c7569dc8b28ddd88bddb109b764f8977e30 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
