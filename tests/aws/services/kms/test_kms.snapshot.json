@@ -1,6 +1,6 @@
 {
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[None]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:52",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -15,7 +15,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[0]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:53",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -30,7 +30,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random_invalid_number_of_bytes[1025]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:54",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -45,7 +45,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "26-06-2025, 19:19:17",
+    "recorded-date": "13-04-2023, 11:30:27",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -60,7 +60,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:17",
+    "recorded-date": "13-04-2023, 11:30:28",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -75,7 +75,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "26-06-2025, 19:19:17",
+    "recorded-date": "13-04-2023, 11:30:29",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -90,7 +90,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_3072-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:17",
+    "recorded-date": "13-04-2023, 11:30:30",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -105,7 +105,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "26-06-2025, 19:19:19",
+    "recorded-date": "13-04-2023, 11:30:31",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -120,7 +120,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_4096-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:20",
+    "recorded-date": "13-04-2023, 11:30:32",
     "recorded-content": {
       "generate-random-exc": {
         "Error": {
@@ -135,37 +135,37 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[12]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:50",
     "recorded-content": {
       "result_length": 12
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[44]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:50",
     "recorded-content": {
       "result_length": 44
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[91]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:51",
     "recorded-content": {
       "result_length": 91
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[1]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:51",
     "recorded-content": {
       "result_length": 1
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_random[1024]": {
-    "recorded-date": "26-06-2025, 19:18:57",
+    "recorded-date": "13-04-2023, 11:29:51",
     "recorded-content": {
       "result_length": 1024
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
-    "recorded-date": "26-06-2025, 19:18:53",
+    "recorded-date": "13-04-2023, 11:29:30",
     "recorded-content": {
       "describe-key": {
         "AWSAccountId": "111111111111",
@@ -188,7 +188,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "recorded-date": "26-06-2025, 19:18:55",
+    "recorded-date": "14-06-2024, 13:34:43",
     "recorded-content": {
       "describe-key-diff-region-with-id": {
         "Error": {
@@ -263,7 +263,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_does_not_exist": {
-    "recorded-date": "26-06-2025, 19:18:56",
+    "recorded-date": "13-04-2023, 11:29:34",
     "recorded-content": {
       "describe-nonexistent-key-with-id": {
         "Error": {
@@ -301,7 +301,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
-    "recorded-date": "26-06-2025, 19:18:56",
+    "recorded-date": "07-11-2023, 14:05:57",
     "recorded-content": {
       "describe-key-with-invalid-uuid": {
         "Error": {
@@ -339,7 +339,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
-    "recorded-date": "26-06-2025, 19:19:21",
+    "recorded-date": "11-04-2024, 15:51:52",
     "recorded-content": {
       "describe-key-from-different-region": {
         "Error": {
@@ -359,14 +359,14 @@
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
-          "Enabled": true,
+          "Enabled": false,
           "EncryptionAlgorithms": [
             "SYMMETRIC_DEFAULT"
           ],
           "KeyId": "<key-id:1>",
           "KeyManager": "CUSTOMER",
           "KeySpec": "SYMMETRIC_DEFAULT",
-          "KeyState": "Enabled",
+          "KeyState": "Creating",
           "KeyUsage": "ENCRYPT_DECRYPT",
           "MultiRegion": true,
           "MultiRegionConfiguration": {
@@ -383,6 +383,21 @@
             ]
           },
           "Origin": "AWS_KMS"
+        },
+        "ReplicaPolicy": {
+          "Version": "2012-10-17",
+          "Id": "key-default-1",
+          "Statement": [
+            {
+              "Sid": "Enable IAM User Permissions",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::111111111111:root"
+              },
+              "Action": "kms:*",
+              "Resource": "*"
+            }
+          ]
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -433,14 +448,14 @@
           "CreationDate": "datetime",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
-          "Enabled": true,
+          "Enabled": false,
           "EncryptionAlgorithms": [
             "SYMMETRIC_DEFAULT"
           ],
           "KeyId": "<key-id:1>",
           "KeyManager": "CUSTOMER",
           "KeySpec": "SYMMETRIC_DEFAULT",
-          "KeyState": "Enabled",
+          "KeyState": "Creating",
           "KeyUsage": "ENCRYPT_DECRYPT",
           "MultiRegion": true,
           "MultiRegionConfiguration": {
@@ -466,7 +481,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_alias": {
-    "recorded-date": "26-06-2025, 19:18:53",
+    "recorded-date": "13-04-2023, 11:29:27",
     "recorded-content": {
       "create_alias": {
         "Error": {
@@ -481,7 +496,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:18:58",
+    "recorded-date": "13-04-2023, 11:29:59",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -504,7 +519,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm RSASSA_PSS_SHA_256."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -516,7 +531,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -525,7 +539,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_384]": {
-    "recorded-date": "26-06-2025, 19:18:59",
+    "recorded-date": "13-04-2023, 11:30:02",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -548,7 +562,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm RSASSA_PSS_SHA_384."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -560,7 +574,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -569,7 +582,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_2048-RSASSA_PSS_SHA_512]": {
-    "recorded-date": "26-06-2025, 19:18:59",
+    "recorded-date": "13-04-2023, 11:30:05",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -592,7 +605,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm RSASSA_PSS_SHA_512."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -604,7 +617,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -613,7 +625,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:04",
+    "recorded-date": "13-04-2023, 11:30:09",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -636,7 +648,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm RSASSA_PKCS1_V1_5_SHA_256."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -648,7 +660,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -657,7 +668,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
-    "recorded-date": "26-06-2025, 19:19:08",
+    "recorded-date": "13-04-2023, 11:30:12",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -680,7 +691,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm RSASSA_PKCS1_V1_5_SHA_512."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -692,7 +703,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -701,7 +711,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P256-ECDSA_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:08",
+    "recorded-date": "13-04-2023, 11:30:15",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -724,7 +734,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm ECDSA_SHA_256."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -736,7 +746,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -749,7 +758,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_SECG_P256K1-ECDSA_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:08",
+    "recorded-date": "13-04-2023, 11:30:22",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -772,7 +781,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm ECDSA_SHA_256."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -784,7 +793,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -797,7 +805,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_sign_verify[ECC_NIST_P384-ECDSA_SHA_384]": {
-    "recorded-date": "26-06-2025, 19:19:08",
+    "recorded-date": "13-04-2023, 11:30:19",
     "recorded-content": {
       "signature": {
         "KeyId": "<key-id:1>",
@@ -820,7 +828,7 @@
       "bad-digest": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "The provided data must be the same length as the hash algorithm's digest size."
+          "Message": "Digest is invalid length for algorithm ECDSA_SHA_384."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -832,7 +840,6 @@
           "Code": "KMSInvalidSignatureException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -841,7 +848,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:34:18",
     "recorded-content": {
       "create-hmac-key": {
         "AWSAccountId": "111111111111",
@@ -882,7 +889,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:31:06",
     "recorded-content": {
       "create-hmac-key-without-key-usage": {
         "Error": {
@@ -917,7 +924,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_224-HMAC_SHA_224]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "07-11-2023, 14:06:46",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -962,7 +969,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_256-HMAC_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "07-11-2023, 14:06:48",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1007,7 +1014,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_384-HMAC_SHA_384]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "07-11-2023, 14:06:51",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1052,7 +1059,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_generate_and_verify_mac[HMAC_512-HMAC_SHA_512]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "07-11-2023, 14:06:52",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1097,7 +1104,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:31:14",
     "recorded-content": {
       "generate-mac": {
         "Error": {
@@ -1113,7 +1120,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_256-INVALID]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:31:15",
     "recorded-content": {
       "generate-mac": {
         "Error": {
@@ -1128,7 +1135,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_256-some different important message]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:31:17",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1144,7 +1151,6 @@
           "Code": "KMSInvalidMacException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1153,7 +1159,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-HMAC_SHA_512-some important message]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:31:18",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1178,7 +1184,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
-    "recorded-date": "26-06-2025, 19:19:24",
+    "recorded-date": "13-04-2023, 11:31:19",
     "recorded-content": {
       "generate-mac": {
         "KeyId": "<key-id:1>",
@@ -1202,7 +1208,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
-    "recorded-date": "26-06-2025, 19:19:20",
+    "recorded-date": "10-07-2025, 15:28:44",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1331,7 +1337,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
-    "recorded-date": "26-06-2025, 19:19:20",
+    "recorded-date": "10-07-2025, 15:29:07",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1380,8 +1386,8 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
-          "CustomerMasterKeySpec": "ECC_NIST_P256",
           "CurrentKeyMaterialId": "<current-key-material-id:1>",
+          "CustomerMasterKeySpec": "ECC_NIST_P256",
           "Description": "<description:1>",
           "Enabled": true,
           "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
@@ -1428,7 +1434,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_error_messaging_for_invalid_keys": {
-    "recorded-date": "26-06-2025, 19:19:25",
+    "recorded-date": "13-04-2023, 11:31:23",
     "recorded-content": {
       "generate-mac-invalid-key-id": {
         "Error": {
@@ -1488,7 +1494,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_plaintext_size_for_encrypt": {
-    "recorded-date": "26-06-2025, 19:19:25",
+    "recorded-date": "13-04-2023, 11:31:24",
     "recorded-content": {
       "invalid-plaintext-size-encrypt": {
         "Error": {
@@ -1503,7 +1509,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "11-05-2023, 14:40:23",
     "recorded-content": {
       "generate-data-key-pair-without-plaintext": {
         "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
@@ -1518,7 +1524,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "11-05-2023, 14:40:23",
     "recorded-content": {
       "generate-data-key-pair": {
         "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<resource:1>",
@@ -1534,7 +1540,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "11-05-2023, 14:40:24",
     "recorded-content": {
       "generate-data-key-result": {
         "CiphertextBlob": "ciphertext-blob",
@@ -1548,7 +1554,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_without_plaintext": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "11-05-2023, 14:40:24",
     "recorded-content": {
       "generate-data-key-without-plaintext": {
         "CiphertextBlob": "ciphertext-blob",
@@ -1561,7 +1567,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "recorded-date": "26-06-2025, 19:19:25",
+    "recorded-date": "11-05-2023, 22:46:49",
     "recorded-content": {
       "encrypt_response": {
         "CiphertextBlob": "ciphertext-blob",
@@ -1586,7 +1592,6 @@
           "Code": "InvalidCiphertextException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1595,14 +1600,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "16-06-2023, 12:47:28",
     "recorded-content": {
       "decrypt-without-encryption-context": {
         "Error": {
           "Code": "InvalidCiphertextException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1611,14 +1615,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_without_plaintext": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "16-06-2023, 12:47:45",
     "recorded-content": {
       "decrypt-without-encryption-context": {
         "Error": {
           "Code": "InvalidCiphertextException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1627,14 +1630,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "16-06-2023, 17:51:27",
     "recorded-content": {
       "decrypt-without-encryption-context": {
         "Error": {
           "Code": "InvalidCiphertextException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1643,14 +1645,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_encryption_context_generate_data_key_pair_without_plaintext": {
-    "recorded-date": "26-06-2025, 19:19:30",
+    "recorded-date": "16-06-2023, 17:51:43",
     "recorded-content": {
       "decrypt-without-encryption-context": {
         "Error": {
           "Code": "InvalidCiphertextException",
           "Message": ""
         },
-        "message": "",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -1659,7 +1660,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import": {
-    "recorded-date": "26-06-2025, 19:19:25",
+    "recorded-date": "25-10-2023, 12:29:27",
     "recorded-content": {
       "response-error": {
         "Error": {
@@ -1675,7 +1676,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_multi_region_key": {
-    "recorded-date": "26-06-2025, 19:19:21",
+    "recorded-date": "11-04-2024, 14:46:26",
     "recorded-content": {
       "create_multi_region_key": {
         "AWSAccountId": "111111111111",
@@ -1706,7 +1707,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_non_multi_region_keys_should_not_have_multi_region_properties": {
-    "recorded-date": "26-06-2025, 19:19:21",
+    "recorded-date": "11-04-2024, 15:47:59",
     "recorded-content": {
       "non_multi_region_keys_should_not_have_multi_region_properties": {
         "AWSAccountId": "111111111111",
@@ -1729,7 +1730,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret": {
-    "recorded-date": "26-06-2025, 19:19:25",
+    "recorded-date": "25-12-2024, 14:45:02",
     "recorded-content": {
       "response": {
         "KeyAgreementAlgorithm": "ECDH",
@@ -1796,7 +1797,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_and_untag": {
-    "recorded-date": "26-06-2025, 19:18:53",
+    "recorded-date": "10-01-2025, 09:39:48",
     "recorded-content": {
       "list-resource-tags": [
         {
@@ -1812,7 +1813,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_tag_and_untag": {
-    "recorded-date": "26-06-2025, 19:18:54",
+    "recorded-date": "10-01-2025, 09:40:40",
     "recorded-content": {
       "list-resource-tags": [
         {
@@ -1828,7 +1829,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_untag_key_partially": {
-    "recorded-date": "26-06-2025, 19:18:54",
+    "recorded-date": "10-01-2025, 09:41:02",
     "recorded-content": {
       "list-resource-tags": [
         {
@@ -1857,7 +1858,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_update_and_add_tags_on_tagged_key": {
-    "recorded-date": "26-06-2025, 19:18:54",
+    "recorded-date": "17-01-2025, 12:25:39",
     "recorded-content": {
       "list-resource-tags": [
         {
@@ -1898,7 +1899,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_key_with_duplicate_tag_keys_raises_error": {
-    "recorded-date": "26-06-2025, 19:18:54",
+    "recorded-date": "17-01-2025, 13:35:08",
     "recorded-content": {
       "duplicate-tag-keys": {
         "Error": {
@@ -1914,7 +1915,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_too_many_tags_raises_error": {
-    "recorded-date": "26-06-2025, 19:18:54",
+    "recorded-date": "21-01-2025, 17:15:38",
     "recorded-content": {
       "invalid-tag-key": {
         "Error": {
@@ -1930,7 +1931,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_tag_existing_key_with_invalid_tag_key": {
-    "recorded-date": "26-06-2025, 19:18:55",
+    "recorded-date": "21-01-2025, 17:17:25",
     "recorded-content": {
       "invalid-tag-key": {
         "Error": {
@@ -1946,7 +1947,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_with_long_tag_value_raises_error": {
-    "recorded-date": "26-06-2025, 19:18:55",
+    "recorded-date": "21-01-2025, 17:18:18",
     "recorded-content": {
       "too-long-tag-value": {
         "Error": {
@@ -1961,7 +1962,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[lowercase_prefix]": {
-    "recorded-date": "26-06-2025, 19:18:54",
+    "recorded-date": "22-01-2025, 13:37:31",
     "recorded-content": {
       "invalid-tag-key": {
         "Error": {
@@ -1977,7 +1978,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[uppercase_prefix]": {
-    "recorded-date": "26-06-2025, 19:18:55",
+    "recorded-date": "22-01-2025, 13:37:32",
     "recorded-content": {
       "invalid-tag-key": {
         "Error": {
@@ -1993,7 +1994,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[too_long_key]": {
-    "recorded-date": "26-06-2025, 19:18:55",
+    "recorded-date": "22-01-2025, 13:37:32",
     "recorded-content": {
       "invalid-tag-key": {
         "Error": {
@@ -2008,7 +2009,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[90]": {
-    "recorded-date": "26-06-2025, 19:19:23",
+    "recorded-date": "02-03-2025, 13:34:02",
     "recorded-content": {
       "match_response": {
         "KeyId": "<key-id:1>",
@@ -2023,7 +2024,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[180]": {
-    "recorded-date": "26-06-2025, 19:19:23",
+    "recorded-date": "02-03-2025, 13:34:03",
     "recorded-content": {
       "match_response": {
         "KeyId": "<key-id:1>",
@@ -2038,7 +2039,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_modifies_key_material": {
-    "recorded-date": "26-06-2025, 19:19:21",
+    "recorded-date": "08-03-2025, 09:24:16",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
@@ -2050,7 +2051,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
-    "recorded-date": "26-06-2025, 19:19:22",
+    "recorded-date": "12-03-2025, 19:05:50",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
@@ -2070,7 +2071,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
-    "recorded-date": "26-06-2025, 19:19:22",
+    "recorded-date": "12-03-2025, 19:07:01",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
@@ -2091,8 +2092,205 @@
       }
     }
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
+    "recorded-date": "08-03-2025, 09:26:50",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "DisabledException",
+          "Message": "<key-arn> is disabled."
+        },
+        "message": "<key-arn> is disabled.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist": {
+    "recorded-date": "08-03-2025, 09:27:10",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Key '<key-arn>' does not exist"
+        },
+        "message": "Key '<key-arn>' does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_non_symmetric_key": {
+    "recorded-date": "08-03-2025, 09:27:44",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material": {
+    "recorded-date": "08-03-2025, 09:28:13",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<key-arn> origin is EXTERNAL which is not valid for this operation."
+        },
+        "message": "<key-arn> origin is EXTERNAL which is not valid for this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:06:52",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_384]": {
+    "recorded-date": "02-04-2025, 06:06:54",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_512]": {
+    "recorded-date": "02-04-2025, 06:06:57",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:06:59",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
+    "recorded-date": "02-04-2025, 06:07:01",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P256-ECDSA_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:07:03",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P384-ECDSA_SHA_384]": {
+    "recorded-date": "02-04-2025, 06:07:06",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_SECG_P256K1-ECDSA_SHA_256]": {
+    "recorded-date": "02-04-2025, 06:07:08",
+    "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
+    "recorded-date": "03-04-2025, 09:34:48",
+    "recorded-content": {
+      "bad-ciphertext": "An error occurred (InvalidCiphertextException) when calling the Decrypt operation: "
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_limits": {
+    "recorded-date": "03-04-2025, 11:10:33",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "LimitExceededException",
+          "Message": "The on-demand rotations limit has been reached for the given keyId. No more on-demand rotations can be performed for this key: <key-arn>"
+        },
+        "message": "The on-demand rotations limit has been reached for the given keyId. No more on-demand rotations can be performed for this key: <key-arn>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_dry_run": {
+    "recorded-date": "06-04-2025, 11:54:20",
+    "recorded-content": {
+      "dryrun_exception": {
+        "Error": {
+          "Code": "DryRunOperationException",
+          "Message": "The request would have succeeded, but the DryRun option is set."
+        },
+        "message": "The request would have succeeded, but the DryRun option is set.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext_dry_run": {
+    "recorded-date": "07-04-2025, 17:12:37",
+    "recorded-content": {
+      "dryrun_exception": {
+        "Error": {
+          "Code": "DryRunOperationException",
+          "Message": "The request would have succeeded, but the DryRun option is set."
+        },
+        "message": "The request would have succeeded, but the DryRun option is set.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
+    "recorded-date": "09-06-2025, 12:52:58",
+    "recorded-content": {
+      "test_re_encrypt": {
+        "CiphertextBlob": "ciphertext-blob",
+        "DestinationEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "<key-id:1>",
+        "SourceEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "SourceKeyId": "<key-arn>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
+    "recorded-date": "09-06-2025, 12:53:00",
+    "recorded-content": {
+      "test_re_encrypt": {
+        "CiphertextBlob": "ciphertext-blob",
+        "DestinationEncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+        "KeyId": "<key-id:1>",
+        "SourceEncryptionAlgorithm": "RSAES_OAEP_SHA_256",
+        "SourceKeyId": "<key-arn>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key": {
+    "recorded-date": "09-06-2025, 12:53:24",
+    "recorded-content": {
+      "incorrect-source-key": {
+        "Error": {
+          "Code": "IncorrectKeyException",
+          "Message": "The key ID in the request does not identify a CMK that can perform this operation."
+        },
+        "message": "The key ID in the request does not identify a CMK that can perform this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
-    "recorded-date": "03-07-2025, 18:36:54",
+    "recorded-date": "10-07-2025, 15:26:44",
     "recorded-content": {
       "describe_before_rotation": {
         "AWSAccountId": "111111111111",
@@ -2142,331 +2340,5 @@
         "Origin": "EXTERNAL"
       }
     }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
-    "recorded-date": "26-06-2025, 19:19:22",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "DisabledException",
-          "Message": "<key-arn> is disabled."
-        },
-        "message": "<key-arn> is disabled.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist": {
-    "recorded-date": "26-06-2025, 19:19:22",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "NotFoundException",
-          "Message": "Key '<key-arn>' does not exist"
-        },
-        "message": "Key '<key-arn>' does not exist",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_non_symmetric_key": {
-    "recorded-date": "26-06-2025, 19:19:22",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "UnsupportedOperationException",
-          "Message": ""
-        },
-        "message": "",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:08",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_384]": {
-    "recorded-date": "26-06-2025, 19:19:08",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_2048-RSASSA_PSS_SHA_512]": {
-    "recorded-date": "26-06-2025, 19:19:09",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:10",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[RSA_4096-RSASSA_PKCS1_V1_5_SHA_512]": {
-    "recorded-date": "26-06-2025, 19:19:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P256-ECDSA_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_NIST_P384-ECDSA_SHA_384]": {
-    "recorded-date": "26-06-2025, 19:19:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_verify_salt_length[ECC_SECG_P256K1-ECDSA_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:12",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_encryption_decryption": {
-    "recorded-date": "26-06-2025, 19:19:21",
-    "recorded-content": {
-      "bad-ciphertext": "An error occurred (InvalidCiphertextException) when calling the Decrypt operation: "
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotations_limits": {
-    "recorded-date": "26-06-2025, 19:19:21",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "LimitExceededException",
-          "Message": "The on-demand rotations limit has been reached for the given keyId. No more on-demand rotations can be performed for this key: <key-arn>"
-        },
-        "message": "The on-demand rotations limit has been reached for the given keyId. No more on-demand rotations can be performed for this key: <key-arn>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_dry_run": {
-    "recorded-date": "26-06-2025, 19:19:30",
-    "recorded-content": {
-      "dryrun_exception": {
-        "Error": {
-          "Code": "DryRunOperationException",
-          "Message": "The request would have succeeded, but the DryRun option is set."
-        },
-        "message": "The request would have succeeded, but the DryRun option is set.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMSGenerateKeys::test_generate_data_key_pair_without_plaintext_dry_run": {
-    "recorded-date": "26-06-2025, 19:19:30",
-    "recorded-content": {
-      "dryrun_exception": {
-        "Error": {
-          "Code": "DryRunOperationException",
-          "Message": "The request would have succeeded, but the DryRun option is set."
-        },
-        "message": "The request would have succeeded, but the DryRun option is set.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {
-      "test_re_encrypt": {
-        "CiphertextBlob": "ciphertext-blob",
-        "DestinationEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
-        "KeyId": "<key-id:1>",
-        "SourceEncryptionAlgorithm": "SYMMETRIC_DEFAULT",
-        "SourceKeyId": "<key-arn>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {
-      "test_re_encrypt": {
-        "CiphertextBlob": "ciphertext-blob",
-        "DestinationEncryptionAlgorithm": "RSAES_OAEP_SHA_256",
-        "KeyId": "<key-id:1>",
-        "SourceEncryptionAlgorithm": "RSAES_OAEP_SHA_256",
-        "SourceKeyId": "<key-arn>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_incorrect_source_key": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {
-      "incorrect-source-key": {
-        "Error": {
-          "Code": "IncorrectKeyException",
-          "Message": "The key ID in the request does not identify a CMK that can perform this operation."
-        },
-        "message": "The key ID in the request does not identify a CMK that can perform this operation.",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_custom_id": {
-    "recorded-date": "26-06-2025, 19:18:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_custom_key_material_hmac": {
-    "recorded-date": "26-06-2025, 19:18:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_custom_key_material_symmetric_decrypt": {
-    "recorded-date": "26-06-2025, 19:18:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_custom_key_asymmetric": {
-    "recorded-date": "26-06-2025, 19:18:55",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_keys": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_schedule_and_cancel_key_deletion": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_disable_and_enable_key": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_grant_with_invalid_key": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_grants_with_invalid_key": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_grant_with_valid_key": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_grant_with_same_name_two_keys": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_revoke_grant": {
-    "recorded-date": "26-06-2025, 19:18:56",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_retire_grant_with_grant_token": {
-    "recorded-date": "26-06-2025, 19:18:57",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_retire_grant_with_grant_id_and_key_id": {
-    "recorded-date": "26-06-2025, 19:18:57",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_retirable_grants": {
-    "recorded-date": "26-06-2025, 19:18:57",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_key_usage": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt[SYMMETRIC_DEFAULT-SYMMETRIC_DEFAULT]": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_re_encrypt_invalid_destination_key": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_symmetric_encrypt_offline_decrypt_online[RSA_2048-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "26-06-2025, 19:19:13",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_symmetric_encrypt_offline_decrypt_online[RSA_2048-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_symmetric_encrypt_offline_decrypt_online[RSA_3072-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "26-06-2025, 19:19:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_symmetric_encrypt_offline_decrypt_online[RSA_3072-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:14",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_symmetric_encrypt_offline_decrypt_online[RSA_4096-RSAES_OAEP_SHA_1]": {
-    "recorded-date": "26-06-2025, 19:19:15",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_symmetric_encrypt_offline_decrypt_online[RSA_4096-RSAES_OAEP_SHA_256]": {
-    "recorded-date": "26-06-2025, 19:19:17",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_public_key": {
-    "recorded-date": "26-06-2025, 19:19:20",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_and_list_sign_key": {
-    "recorded-date": "26-06-2025, 19:19:20",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_aliases_of_key": {
-    "recorded-date": "26-06-2025, 19:19:21",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_all_types_of_key_id_can_be_used_for_encryption": {
-    "recorded-date": "26-06-2025, 19:19:21",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_update_key_description": {
-    "recorded-date": "26-06-2025, 19:19:21",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_rotation_status": {
-    "recorded-date": "26-06-2025, 19:19:21",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_create_list_delete_alias": {
-    "recorded-date": "26-06-2025, 19:19:23",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_update_alias": {
-    "recorded-date": "26-06-2025, 19:19:23",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_put_list_key_policies": {
-    "recorded-date": "26-06-2025, 19:19:24",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_cant_use_disabled_or_deleted_keys": {
-    "recorded-date": "26-06-2025, 19:19:24",
-    "recorded-content": {}
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_cant_delete_deleted_key": {
-    "recorded-date": "26-06-2025, 19:19:24",
-    "recorded-content": {}
   }
 }
