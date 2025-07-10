@@ -211,6 +211,7 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_debug_mode.ldm import LDM
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.provider_utils import (
@@ -241,7 +242,6 @@ from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
 from localstack.utils.collections import PaginatedList
 from localstack.utils.event_matcher import validate_event_pattern
-from localstack.utils.lambda_debug_mode.lambda_debug_mode_session import LambdaDebugModeSession
 from localstack.utils.strings import get_random_hex, short_uid, to_bytes, to_str
 from localstack.utils.sync import poll_condition
 from localstack.utils.urls import localstack_host
@@ -279,17 +279,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
     def accept_state_visitor(self, visitor: StateVisitor):
         visitor.visit(lambda_stores)
-
-    def on_before_start(self):
-        # Attempt to start the Lambda Debug Mode session object.
-        try:
-            lambda_debug_mode_session = LambdaDebugModeSession.get()
-            lambda_debug_mode_session.ensure_running()
-        except Exception as ex:
-            LOG.error(
-                "Unexpected error encountered when attempting to initialise Lambda Debug Mode '%s'.",
-                ex,
-            )
 
     def on_before_state_reset(self):
         self.lambda_service.stop()
@@ -404,8 +393,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self.lambda_service.stop()
         # Attempt to signal to the Lambda Debug Mode session object to stop.
         try:
-            lambda_debug_mode_session = LambdaDebugModeSession.get()
-            lambda_debug_mode_session.signal_stop()
+            LDM.stop_debug_mode()
         except Exception as ex:
             LOG.error(
                 "Unexpected error encountered when attempting to signal Lambda Debug Mode to stop '%s'.",
@@ -1080,6 +1068,9 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     function_name,
                 )
 
+        # Enable the LDM configuration for this qualified lambda arn, iff a configuration exists.
+        LDM.enable_configuration(qualified_lambda_arn=version.qualified_arn)
+
         return api_utils.map_config_out(
             version, return_qualified_arn=False, return_update_status=False
         )
@@ -1436,6 +1427,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if version:
                 self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
+                # Notify the LDM about the version deletion.
+                LDM.remove_configuration(qualified_lambda_arn=version.qualified_arn)
         else:
             # delete the whole function
             # TODO: introduce locking for safe deletion: We could create a new version at the API layer before
@@ -1446,6 +1439,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # we can safely destroy the code here
                 if version.config.code:
                     version.config.code.destroy()
+                # Notify the LDM about the version deletion.
+                LDM.remove_configuration(qualified_lambda_arn=version.qualified_arn)
 
     def list_functions(
         self,
@@ -1592,6 +1587,10 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name, qualifier, context
         )
 
+        user_agent = None
+        if user_agent_obj := context.request.user_agent:
+            user_agent = user_agent_obj.string
+
         time_before = time.perf_counter()
         try:
             invocation_result = self.lambda_service.invoke(
@@ -1604,6 +1603,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 request_id=context.request_id,
                 trace_context=context.trace_context,
                 payload=payload.read() if payload else None,
+                user_agent=user_agent,
             )
         except ServiceException:
             raise

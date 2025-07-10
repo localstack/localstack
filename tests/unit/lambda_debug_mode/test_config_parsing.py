@@ -1,8 +1,6 @@
 import pytest
 
-from localstack.utils.lambda_debug_mode.lambda_debug_mode_config import (
-    load_lambda_debug_mode_config,
-)
+from localstack.services.lambda_.lambda_debug_mode.ldm_config_file import parse_ldm_config
 
 DEBUG_CONFIG_EMPTY = ""
 
@@ -105,11 +103,11 @@ functions:
     ],
 )
 def test_debug_config_invalid(yaml_config: str):
-    assert load_lambda_debug_mode_config(yaml_config) is None
+    assert parse_ldm_config(yaml_config) is None
 
 
 def test_debug_config_null_debug_port():
-    config = load_lambda_debug_mode_config(DEBUG_CONFIG_NULL_DEBUG_PORT)
+    config = parse_ldm_config(DEBUG_CONFIG_NULL_DEBUG_PORT)
     assert list(config.functions.values())[0].debug_port is None
 
 
@@ -125,7 +123,7 @@ def test_debug_config_null_debug_port():
     ],
 )
 def test_debug_config_base(yaml_config):
-    config = load_lambda_debug_mode_config(yaml_config)
+    config = parse_ldm_config(yaml_config)
     assert len(config.functions) == 1
     assert (
         "arn:aws:lambda:eu-central-1:000000000000:function:functionname:$LATEST" in config.functions

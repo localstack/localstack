@@ -230,6 +230,7 @@ class LambdaService:
         request_id: str,
         payload: bytes | None,
         trace_context: dict | None = None,
+        user_agent: Optional[str] = None,
     ) -> InvocationResult | None:
         """
         Invokes a specific version of a lambda
@@ -352,6 +353,7 @@ class LambdaService:
                     invoke_time=datetime.now(),
                     request_id=request_id,
                     trace_context=trace_context,
+                    user_agent=user_agent,
                 )
             )
 
@@ -364,6 +366,7 @@ class LambdaService:
                 invoke_time=datetime.now(),
                 request_id=request_id,
                 trace_context=trace_context,
+                user_agent=user_agent,
             )
         )
         status = (
