@@ -25,6 +25,7 @@ from localstack.aws.api.lambda_ import (
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.analytics import (
     FunctionOperation,
     FunctionStatus,
@@ -130,6 +131,7 @@ class LambdaService:
         if not version_manager:
             raise ValueError(f"Unable to find version manager for {qualified_arn}")
         self.task_executor.submit(version_manager.stop)
+        lambda_hooks.delete_function_version.run(qualified_arn)
 
     def get_lambda_version_manager(self, function_arn: str) -> LambdaVersionManager:
         """
@@ -185,6 +187,7 @@ class LambdaService:
                 assignment_service=self.assignment_service,
             )
             self.lambda_starting_versions[qualified_arn] = version_manager
+            lambda_hooks.create_function_version.run(function_version.qualified_arn)
         return self.task_executor.submit(self._start_lambda_version, version_manager)
 
     def publish_version(self, function_version: FunctionVersion):
