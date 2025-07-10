@@ -1584,10 +1584,6 @@ class TestKMS:
             key_after_rotation_encryption_content["Plaintext"]
             == second_deciphered_text["Plaintext"]
         )
-        assert (
-            key_after_rotation_encryption_content["Plaintext"]
-            == second_deciphered_text["Plaintext"]
-        )
         # Check we can still use the first Material to decrypt data
         first_deciphered_text = aws_client.kms.decrypt(
             KeyId=key_id,
