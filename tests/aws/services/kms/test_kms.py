@@ -1466,19 +1466,77 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
+    def test_list_key_rotations_after_on_demand_rotation(
+        self, kms_create_key, aws_client, snapshot
+    ):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+
+        response_initial_rotation = aws_client.kms.list_key_rotations(KeyId=key_id)
+        snapshot.match("initial-rotations", response_initial_rotation)
+
+        aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+
+        def _rotation_completed():
+            status = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+            return "OnDemandRotationStartDate" not in status
+
+        assert poll_condition(condition=_rotation_completed, timeout=10, interval=1)
+
+        response_after_on_demand_rotation = aws_client.kms.list_key_rotations(KeyId=key_id)
+        snapshot.match("after-on-demand-rotation", response_after_on_demand_rotation)
+
+        assert len(response_after_on_demand_rotation["Rotations"]) > len(
+            response_initial_rotation["Rotations"]
+        )
+
+    @markers.aws.validated
     def test_list_key_rotations_different_key_states(self, kms_create_key, aws_client, snapshot):
         key_id = kms_create_key(KeySpec="SYMMETRIC_DEFAULT", KeyUsage="ENCRYPT_DECRYPT")["KeyId"]
 
-        response_enabled_key = aws_client.kms.list_key_rotations(KeyId=key_id)
+        response_enabled_key = aws_client.kms.list_key_rotations(
+            KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL"
+        )
         snapshot.match("enabled-key-rotations", response_enabled_key)
 
         aws_client.kms.disable_key(KeyId=key_id)
-        response_disabled_key = aws_client.kms.list_key_rotations(KeyId=key_id)
+        response_disabled_key = aws_client.kms.list_key_rotations(
+            KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL"
+        )
         snapshot.match("disabled-key-rotations", response_disabled_key)
 
-        aws_client.kms.schedule_key_deletion(KeyId=key_id)
-        response_pending_deletion_key = aws_client.kms.list_key_rotations(KeyId=key_id)
+        aws_client.kms.schedule_key_deletion(KeyId=key_id, PendingWindowInDays=7)
+        response_pending_deletion_key = aws_client.kms.list_key_rotations(
+            KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL"
+        )
         snapshot.match("pending-deletion-key-rotations", response_pending_deletion_key)
+
+    @markers.aws.validated
+    def test_list_key_rotations_content(self, kms_create_key, aws_client, snapshot):
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+
+        for _ in range(3):
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+
+            def _rotation_completed():
+                response_status = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+                return "OnDemandRotationStartDate" not in response_status
+
+            assert poll_condition(condition=_rotation_completed, timeout=10, interval=1)
+
+        response_after_rotations = aws_client.kms.list_key_rotations(KeyId=key_id)
+        snapshot.match("multiple-rotations", response_after_rotations)
+
+        rotations = response_after_rotations["Rotations"]
+        assert len(rotations) >= 4  # 1 initial + 3 on-demand
+
+        for rotation in rotations:
+            assert "KeyId" in rotation
+            assert "RotationDate" in rotation
+            assert (
+                "RotationType" in rotation or rotation.get("RotationType") is None
+            )  # Initial rotation might have None
+            assert "KeyMaterialId" in rotation
+            assert "KeyMaterialState" in rotation
 
     @markers.aws.validated
     @pytest.mark.parametrize(
@@ -1490,7 +1548,7 @@ class TestKMS:
             ("HMAC_256", "GENERATE_VERIFY_MAC", "UnsupportedOperationException"),
         ],
     )
-    def test_list_key_rotations_different_key_types(
+    def test_list_key_rotations_unsupported_key_types(
         self, kms_create_key, aws_client, snapshot, key_spec, key_usage, expected_error
     ):
         key_id = kms_create_key(KeyUsage=key_usage, KeySpec=key_spec)["KeyId"]
@@ -1499,7 +1557,9 @@ class TestKMS:
             aws_client.kms.list_key_rotations(KeyId=key_id)
 
         assert expected_error in str(e.value)
-        snapshot.match(f"{key_spec.lower()}-{key_usage.lower()}-error", e.value.response)
+        error_response = e.value.response
+        assert error_response["Error"]["Code"] == expected_error
+        snapshot.match(f"{key_spec.lower()}-{key_usage.lower()}-error", error_response)
 
     @markers.aws.validated
     def test_list_key_rotations_include_key_material(self, kms_create_key, aws_client, snapshot):
@@ -1507,16 +1567,27 @@ class TestKMS:
 
         aws_client.kms.rotate_key_on_demand(KeyId=key_id)
 
-        response_all_key_material = aws_client.kms.list_key_rotations(
+        def _rotation_completed():
+            response_status = aws_client.kms.get_key_rotation_status(KeyId=key_id)
+            return "OnDemandRotationStartDate" not in response_status
+
+        assert poll_condition(condition=_rotation_completed, timeout=10, interval=1)
+
+        response_default = aws_client.kms.list_key_rotations(KeyId=key_id)
+        snapshot.match("default-key-material", response_default)
+
+        response_all_material = aws_client.kms.list_key_rotations(
             KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL"
         )
-        snapshot.match("all-key-material", response_all_key_material)
-        assert len(response_all_key_material["Rotations"]) >= 2  # Initial + on-demand
+        snapshot.match("all-key-material", response_all_material)
+        assert len(response_all_material["Rotations"]) >= 2  # Initial + on-demand
 
         response_rotations_only = aws_client.kms.list_key_rotations(
             KeyId=key_id, IncludeKeyMaterial="ROTATIONS_ONLY"
         )
         snapshot.match("rotations-only", response_rotations_only)
+
+        assert len(response_rotations_only["Rotations"]) < len(response_all_material["Rotations"])
         assert all(
             r["RotationType"] in ["AUTOMATIC", "ON_DEMAND"]
             for r in response_rotations_only["Rotations"]
@@ -1524,7 +1595,7 @@ class TestKMS:
 
         with pytest.raises(ClientError) as e:
             aws_client.kms.list_key_rotations(KeyId=key_id, IncludeKeyMaterial="INVALID_VALUE")
-        snapshot.match("invalid-include-key-material", e.value.response)
+        snapshot.match("invalid-key-material", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
