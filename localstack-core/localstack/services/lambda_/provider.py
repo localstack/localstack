@@ -211,7 +211,6 @@ from localstack.services.lambda_.invocation.lambda_service import (
 )
 from localstack.services.lambda_.invocation.models import LambdaStore
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_debug_mode.ldm import LDM
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.layerfetcher.layer_fetcher import LayerFetcher
 from localstack.services.lambda_.provider_utils import (
@@ -391,14 +390,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
 
         # TODO: should probably unregister routes?
         self.lambda_service.stop()
-        # Attempt to signal to the Lambda Debug Mode session object to stop.
-        try:
-            LDM.stop_debug_mode()
-        except Exception as ex:
-            LOG.error(
-                "Unexpected error encountered when attempting to signal Lambda Debug Mode to stop '%s'.",
-                ex,
-            )
 
     @staticmethod
     def _get_function(function_name: str, account_id: str, region: str) -> Function:
@@ -1068,9 +1059,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                     function_name,
                 )
 
-        # Enable the LDM configuration for this qualified lambda arn, iff a configuration exists.
-        LDM.enable_configuration(qualified_lambda_arn=version.qualified_arn)
-
         return api_utils.map_config_out(
             version, return_qualified_arn=False, return_update_status=False
         )
@@ -1427,8 +1415,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             if version:
                 self.lambda_service.stop_version(version.id.qualified_arn())
                 destroy_code_if_not_used(code=version.config.code, function=function)
-                # Notify the LDM about the version deletion.
-                LDM.remove_configuration(qualified_lambda_arn=version.qualified_arn)
         else:
             # delete the whole function
             # TODO: introduce locking for safe deletion: We could create a new version at the API layer before
@@ -1439,8 +1425,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 # we can safely destroy the code here
                 if version.config.code:
                     version.config.code.destroy()
-                # Notify the LDM about the version deletion.
-                LDM.remove_configuration(qualified_lambda_arn=version.qualified_arn)
 
     def list_functions(
         self,
