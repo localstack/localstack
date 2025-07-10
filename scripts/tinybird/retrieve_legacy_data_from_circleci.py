@@ -1,6 +1,6 @@
 """Helper script to retrieve historical data and load into tinybird parity dashboard
 
-The script is intended to be run locally. It was executed once, to retrieve the data from the past successful master builds
+The script is intended to be run locally. It was executed once, to retrieve the data from the past successful main builds
 in order to get more data into the parity dashboard for a hackathon project.
 
 """
@@ -17,7 +17,7 @@ from scripts.tinybird.upload_raw_test_metrics_and_coverage import (
 )
 
 PROJECT_SLUG = "github/localstack/localstack"
-MASTER_BRANCH = "master"
+MASTER_BRANCH = "main"
 
 
 def send_request_to_connection(conn, url):
@@ -48,7 +48,7 @@ def extract_artifacts_url_for_path(artifacts, path):
 
 def collect_workflows_past_30_days():
     """
-    Retrieves the workflows run from the past 30 days from circecli on 'master' branch,
+    Retrieves the workflows run from the past 30 days from circecli on 'main' branch,
     and retrieves the artifacts for each successful workflow run, that are collected in the 'report' job.
     The artifacts for coverage implementation, and raw-data collection are downloaded, and then processed and sent to
     tinybird backend.
@@ -147,7 +147,7 @@ def collect_workflows_past_30_days():
             "3c9c12e5-0fe7-4b1a-b224-7570808f8e19",
         ]
         # TODO check "next_page_token"
-        #  -> wasn't required for the initial run, as on master everything was on one page for the past 30 days
+        #  -> wasn't required for the initial run, as on main everything was on one page for the past 30 days
         workflows = json.loads(data.decode("utf-8"))
         count = 0
         for item in workflows.get("items"):
@@ -189,10 +189,12 @@ def collect_workflows_past_30_days():
 
                 # extract the required urls for metric-data-raw, and coverage data for community/pro
                 metric_data_url = extract_artifacts_url_for_path(
-                    artifacts=artifacts, path="parity_metrics/metric-report-raw-data-all"
+                    artifacts=artifacts,
+                    path="parity_metrics/metric-report-raw-data-all",
                 )
                 community_cov_url = extract_artifacts_url_for_path(
-                    artifacts=artifacts, path="community/implementation_coverage_full.csv"
+                    artifacts=artifacts,
+                    path="community/implementation_coverage_full.csv",
                 )
                 pro_cov_url = extract_artifacts_url_for_path(
                     artifacts=artifacts, path="pro/implementation_coverage_full.csv"
@@ -224,7 +226,9 @@ def collect_workflows_past_30_days():
 
                 # trigger the tinybird_upload
                 send_metric_report(
-                    metric_report_file_path, source_type="community", timestamp=timestamp
+                    metric_report_file_path,
+                    source_type="community",
+                    timestamp=timestamp,
                 )
                 send_implemented_coverage(
                     community_coverage_file_path, timestamp=timestamp, type="community"

@@ -31,7 +31,7 @@ jobs:
             latest_workflow_id=$(curl -s https://api.github.com/repos/localstack/localstack/actions/workflows \
               | jq '.workflows[] | select(.path==".github/workflows/aws-main.yml").id')
             latest_run_id=$(curl -s \
-              "https://api.github.com/repos/localstack/localstack/actions/workflows/${latest_workflow_id}/runs?branch=master&status=success&per_page=30" \
+              "https://api.github.com/repos/localstack/localstack/actions/workflows/${latest_workflow_id}/runs?branch=main&status=success&per_page=30" \
                 | jq '[.workflow_runs[] | select(.event == "schedule")][0].id')
             echo "Latest run: https://github.com/localstack/localstack/actions/runs/${latest_run_id}"
             echo "AWS_MAIN_LATEST_SCHEDULED_RUN_ID=${latest_run_id}" >> $GITHUB_ENV
@@ -64,7 +64,7 @@ jobs:
           if: ${{ success() && inputs.publishMethod != 'UPLOAD_ARTIFACT' }}
           with:
             title: "[Testing] Update test durations"
-            body: "This PR includes an updated `.test_durations` file, generated based on latest test durations from master"
+            body: "This PR includes an updated `.test_durations` file, generated based on latest test durations from main"
             branch: "test-durations-auto-updates"
             author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
             committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"

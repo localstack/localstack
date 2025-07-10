@@ -58,15 +58,15 @@ jobs:
         id: check-for-changes
         run: |
           # Check if there are changed files and store the result in target/diff-check.log
-          # Check against the PR branch if it exists, otherwise against the master
+          # Check against the PR branch if it exists, otherwise against the main
           # Store the result in target/diff-check.log and store the diff count in the GitHub Action output "diff-count"
           mkdir -p target
-          (git diff --name-only origin/asf-auto-updates localstack-core/localstack/aws/api/ 2>/dev/null || git diff --name-only origin/master localstack-core/localstack/aws/api/ 2>/dev/null) | tee target/diff-check.log
+          (git diff --name-only origin/asf-auto-updates localstack-core/localstack/aws/api/ 2>/dev/null || git diff --name-only origin/main localstack-core/localstack/aws/api/ 2>/dev/null) | tee target/diff-check.log
           echo "diff-count=$(cat target/diff-check.log | wc -l)" >> $GITHUB_OUTPUT
 
-          # Store a (multiline-sanitized) list of changed services (compared to the master) in the GitHub Action output "changed-services"
+          # Store a (multiline-sanitized) list of changed services (compared to the main) in the GitHub Action output "changed-services"
           echo "changed-services<<EOF" >> $GITHUB_OUTPUT
-          echo "$(git diff --name-only origin/master localstack-core/localstack/aws/api/ | sed 's#localstack-core/localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
+          echo "$(git diff --name-only origin/main localstack-core/localstack/aws/api/ | sed 's#localstack-core/localstack/aws/api/#- #g' | sed 's#/__init__.py##g' | sed 's/_/-/g')" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Update botocore and transitive pins

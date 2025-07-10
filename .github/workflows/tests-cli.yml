@@ -47,7 +47,7 @@ on:
       - '!LICENSE.txt'
       - '!README.md'
     branches:
-      - master
+      - main
       - release/*
 
 concurrency:
@@ -64,8 +64,8 @@ env:
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-  # report to tinybird if executed on master
-  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  # report to tinybird if executed on main
+  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/main' && '--report-to-tinybird ' || '' }}"
 
 permissions:
   contents: read # checkout the repository
@@ -103,7 +103,7 @@ jobs:
         run: make test
 
   push-to-tinybird:
-    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs: cli-tests
     permissions:

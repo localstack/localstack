@@ -131,8 +131,8 @@ env:
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-  # report to tinybird if executed on master
-  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  # report to tinybird if executed on main
+  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/main' && '--report-to-tinybird ' || '' }}"
   DOCKER_PULL_SECRET_AVAILABLE: ${{ secrets.DOCKERHUB_PULL_USERNAME != '' && secrets.DOCKERHUB_PULL_TOKEN != '' && 'true' || 'false' }}
 
 
@@ -148,9 +148,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     steps:
@@ -166,7 +166,7 @@ jobs:
           fetch-depth: 0
 
       - name: Build Image
-        uses: localstack/localstack/.github/actions/build-image@master
+        uses: localstack/localstack/.github/actions/build-image@main
         with:
           disableCaching: ${{ inputs.disableCaching == true && 'true' || 'false' }}
           dockerhubPullUsername: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -336,9 +336,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -495,9 +495,9 @@ jobs:
           - amd64
           - arm64
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
+          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
     needs:
       - test-integration
       - test-bootstrap
@@ -541,9 +541,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -616,9 +616,9 @@ jobs:
           - amd64
           - arm64
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
+          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
     needs:
       - test-acceptance
     runs-on: ubuntu-latest
@@ -647,7 +647,7 @@ jobs:
 
   test-cloudwatch-v1:
     name: Test CloudWatch V1
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudwatch-v1 == 'true') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || needs.test-preflight.outputs.cloudwatch-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -697,7 +697,7 @@ jobs:
 
   test-ddb-v2:
     name: Test DynamoDB(Streams) v2
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.dynamodb-v2 == 'true') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || needs.test-preflight.outputs.dynamodb-v2 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -746,7 +746,7 @@ jobs:
 
   test-events-v1:
     name: Test EventBridge v1
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.events-v1 == 'true') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || needs.test-preflight.outputs.events-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -795,7 +795,7 @@ jobs:
 
   test-cfn-v2-engine:
     name: Test CloudFormation Engine v2
-    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudformation-v2 == 'true' )}}
+    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/main' || needs.test-preflight.outputs.cloudformation-v2 == 'true' )}}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -890,7 +890,7 @@ jobs:
 
   capture-not-implemented:
     name: "Capture Not Implemented"
-    if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/master' }}
+    if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/main' }}
     runs-on: ubuntu-latest
     needs: build
     env:

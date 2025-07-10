@@ -12,7 +12,7 @@ on:
       - '.github/workflows/tests-bin.yml'
       - 'tests/bin/*.bats'
     branches:
-      - master
+      - main
       - release/*
 
 jobs:

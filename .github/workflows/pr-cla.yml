@@ -24,7 +24,7 @@ jobs:
           remote-organization-name: "localstack"
           remote-repository-name: "localstack"
           path-to-signatures: "etc/cla-signatures/signatures.json"
-          path-to-document: "https://github.com/localstack/localstack/blob/master/.github/CLA.md"
+          path-to-document: "https://github.com/localstack/localstack/blob/main/.github/CLA.md"
           branch: "cla-signatures"
           allowlist: "localstack-bot,*[bot]"
           lock-pullrequest-aftermerge: false

@@ -1,6 +1,6 @@
 # Integration tests
 
-LocalStack has an extensive set of [integration tests](https://github.com/localstack/localstack/tree/master/tests/integration). This document describes how to run and write integration tests.
+LocalStack has an extensive set of [integration tests](https://github.com/localstack/localstack/tree/main/tests/integration). This document describes how to run and write integration tests.
 
 ## Writing integration tests
 
@@ -72,7 +72,7 @@ def test_something_on_multiple_buckets(s3_create_bucket):
   # both buckets will be deleted after the test returns
 ```
 
-You can find the list of available fixtures in the [fixtures.py](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/testing/pytest/fixtures.py) file.
+You can find the list of available fixtures in the [fixtures.py](https://github.com/localstack/localstack/blob/main/localstack-core/localstack/testing/pytest/fixtures.py) file.
 
 
 ## Running the test suite
@@ -99,7 +99,7 @@ TEST_PATH="tests/integration/docker_utils/test_docker.py::TestDockerClient" make
 
 ### Test against a running LocalStack instance
 
-When you run the integration tests, LocalStack is automatically started (via the pytest conftest mechanism in [tests/integration/conftest.py](https://github.com/localstack/localstack/blob/master/tests/integration/conftest.py)).
+When you run the integration tests, LocalStack is automatically started (via the pytest conftest mechanism in [tests/integration/conftest.py](https://github.com/localstack/localstack/blob/main/tests/integration/conftest.py)).
 You can disable this behavior by setting the environment variable `TEST_SKIP_LOCALSTACK_START=1`.
 
 ### Test against Amazon Web Services

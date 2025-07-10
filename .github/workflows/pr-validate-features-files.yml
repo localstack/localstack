@@ -5,7 +5,7 @@ on:
     paths:
       - localstack-core/localstack/services/**
     branches:
-      - master
+      - main
 
 jobs:
   validate-features-files:

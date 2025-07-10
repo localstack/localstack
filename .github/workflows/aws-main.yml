@@ -16,7 +16,7 @@ on:
       - '!.git-blame-ignore-revs'
       - '!docs/**'
     branches:
-      - master
+      - main
   pull_request:
     paths:
       - '**'
@@ -187,8 +187,8 @@ jobs:
   push:
     name: "Push images"
     runs-on: ubuntu-latest
-    # push image on master, target branch not set, and the dependent steps were either successful or skipped
-    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
+    # push image on main, target branch not set, and the dependent steps were either successful or skipped
+    if: github.ref == 'refs/heads/main' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
     needs:
       # all tests need to be successful for the image to be pushed
       - test
@@ -267,7 +267,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs:
       - test

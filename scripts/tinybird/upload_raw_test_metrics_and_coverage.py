@@ -140,7 +140,7 @@ def send_metadata_for_build(build_id: str, timestamp: str):
     CIRCLE_WORKFLOW_ID=b86a4bc4-bcd1-4170-94d6-4af66846c1c1
 
     GitHub env examples:
-    GITHUB_REF=ref/heads/master or ref/pull/<pr_number>/merge (will be used for 'pull_requests')
+    GITHUB_REF=ref/heads/main or ref/pull/<pr_number>/merge (will be used for 'pull_requests')
     GITHUB_HEAD_REF=tinybird_data (used for 'branch', set only for pull_requests)
     GITHUB_REF_NAME=feature-branch-1 (will be used for 'branch' if GITHUB_HEAD_REF is not set)
     GITHUB_RUN_ID=1658821493 (will be used for 'workflow_id')

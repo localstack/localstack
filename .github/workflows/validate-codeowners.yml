@@ -3,10 +3,10 @@ name: LocalStack - Validate Codeowners
 on:
   push:
     branches:
-      - master
+      - main
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   validate-codeowners:

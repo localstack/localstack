@@ -67,7 +67,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
+    if: always() && github.ref == 'refs/heads/main' && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs:
       - test-ma-mr
