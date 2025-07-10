@@ -1190,8 +1190,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise ValidationException(
                 "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
             )
-
-            # TODO actually set validTo and make the key expire
+        # TODO actually set validTo and make the key expire
         key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         if key_to_import_material_to.metadata["Origin"] == "EXTERNAL":
