@@ -6,7 +6,7 @@ import os
 import re
 import shlex
 import subprocess
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Dict, List, Optional, Tuple, Union
 
 from localstack import config
 from localstack.utils.collections import ensure_list
@@ -354,7 +354,12 @@ class CmdDockerClient(ContainerClient):
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
 
-    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
+    def pull_image(
+        self,
+        docker_image: str,
+        platform: Optional[DockerPlatform] = None,
+        log_handler: Optional[Callable[[str], None]] = None,
+    ) -> None:
         cmd = self._docker_cmd()
         docker_image = self.registry_resolver_strategy.resolve(docker_image)
         cmd += ["pull", docker_image]
@@ -362,7 +367,11 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--platform", platform]
         LOG.debug("Pulling image with cmd: %s", cmd)
         try:
-            run(cmd)
+            result = run(cmd)
+            # note: we could stream the results, but we'll just process everything at the end for now
+            if log_handler:
+                for line in result.split("\n"):
+                    log_handler(to_str(line))
         except subprocess.CalledProcessError as e:
             stdout_str = to_str(e.stdout)
             if "pull access denied" in stdout_str:
