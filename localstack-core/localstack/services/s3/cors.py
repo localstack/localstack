@@ -97,12 +97,6 @@ class S3CorsHandler(Handler):
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/cors.html
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/ManageCorsUsing.html
         """
-
-        # this is used with the new ASF S3 provider
-        # although, we could use it to pre-parse the request and set the context to move the service name parser
-        if config.DISABLE_CUSTOM_CORS_S3:
-            return
-
         request = context.request
         is_s3, bucket_name = self.pre_parse_s3_request(context.request)
 
@@ -111,7 +105,13 @@ class S3CorsHandler(Handler):
             return
 
         # set the service so that the regular CORS enforcer knows it needs to ignore this request
+        # we always want to set the service early, because the `ContentDecoder` is very early in the chain and
+        # depends on S3
         context.service = self._service
+
+        if config.DISABLE_CUSTOM_CORS_S3:
+            # we do not apply S3 specific headers if this config flag is set
+            return
 
         is_options_request = request.method == "OPTIONS"
 
