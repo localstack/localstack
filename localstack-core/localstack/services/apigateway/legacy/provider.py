@@ -251,7 +251,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         ip_address_type = endpoint_configuration.get("ipAddressType")
 
         if not types:
-            raise BadRequestException("REGIONAL Configuration and EDGE Configuration cannot be both DISABLED.")
+            raise BadRequestException(
+                "REGIONAL Configuration and EDGE Configuration cannot be both DISABLED."
+            )
         elif len(types) > 1:
             raise BadRequestException("Cannot create an api with multiple Endpoint Types.")
         endpoint_type = types[0]
@@ -405,7 +407,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     raise BadRequestException(
                         "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
                     )
-                if patch_op.get("value") not in (EndpointType.REGIONAL, EndpointType.EDGE, EndpointType.PRIVATE):
+                if patch_op.get("value") not in (
+                    EndpointType.REGIONAL,
+                    EndpointType.EDGE,
+                    EndpointType.PRIVATE,
+                ):
                     raise BadRequestException(
                         "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE"
                     )
@@ -424,7 +430,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     raise BadRequestException(
                         "Invalid patch operation specified. Must be one of: [replace]"
                     )
-                if (ipAddressType := patch_op.get("value")) not in (IpAddressType.ipv4, IpAddressType.dualstack):
+                if (ipAddressType := patch_op.get("value")) not in (
+                    IpAddressType.ipv4,
+                    IpAddressType.dualstack,
+                ):
                     raise BadRequestException("ipAddressType must be either ipv4 or dualstack.")
                 if (
                     rest_api.endpoint_configuration["types"] == [EndpointType.PRIVATE]
