@@ -277,6 +277,16 @@ class KmsCryptoKey:
         )
 
 
+@dataclass
+class KeyRotationEntry:
+    key_id: str
+    key_material: bytes
+    key_material_id: str
+    key_material_state: str
+    rotation_date: datetime.datetime
+    rotation_type: str | None = None
+
+
 class KmsKey:
     metadata: KeyMetadata
     crypto_key: KmsCryptoKey
@@ -285,7 +295,7 @@ class KmsKey:
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
     next_rotation_date: datetime.datetime
-    previous_keys = [str]
+    key_rotations: list[KeyRotationEntry]
 
     def __init__(
         self,
@@ -294,7 +304,7 @@ class KmsKey:
         region: str = None,
     ):
         create_key_request = create_key_request or CreateKeyRequest()
-        self.previous_keys = []
+        self.key_rotations = []
 
         # Please keep in mind that tags of a key could be present in the request, they are not a part of metadata. At
         # least in the sense of DescribeKey not returning them with the rest of the metadata. Instead, tags are more
@@ -322,6 +332,16 @@ class KmsKey:
         self.crypto_key = KmsCryptoKey(self.metadata.get("KeySpec"), custom_key_material)
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
+
+        if self._supports_rotation():
+            initial_rotation = KeyRotationEntry(
+                key_id=self.metadata["Arn"],
+                rotation_date=datetime.datetime.now(),
+                key_material_state="CURRENT",
+                key_material_id=long_uid(),
+                key_material=bytes(self.crypto_key.key_material),
+            )
+            self.key_rotations.append(initial_rotation)
 
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
@@ -357,7 +377,11 @@ class KmsKey:
         self, ciphertext: Ciphertext, encryption_context: EncryptionContextType = None
     ) -> bytes:
         aad = _serialize_encryption_context(encryption_context=encryption_context)
-        keys_to_try = [self.crypto_key.key_material] + self.previous_keys
+        keys_to_try = [self.crypto_key.key_material]
+
+        for rotation in sorted(self.key_rotations, key=lambda r: r.rotation_date, reverse=True):
+            if rotation.key_material not in keys_to_try:
+                keys_to_try.append(rotation.key_material)
 
         for key in keys_to_try:
             try:
@@ -738,13 +762,39 @@ class KmsKey:
             return request_key_usage or "ENCRYPT_DECRYPT"
 
     def rotate_key_on_demand(self):
-        if len(self.previous_keys) >= ON_DEMAND_ROTATION_LIMIT:
+        on_demand_count = sum(
+            1 for rotation in self.key_rotations if rotation.rotation_type == "ON_DEMAND"
+        )
+
+        if on_demand_count >= ON_DEMAND_ROTATION_LIMIT:
             raise LimitExceededException(
                 f"The on-demand rotations limit has been reached for the given keyId. "
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
             )
-        self.previous_keys.append(self.crypto_key.key_material)
-        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+
+        for rotation in self.key_rotations:
+            rotation.key_material_state = "NON_CURRENT"
+
+        new_key_material = os.urandom(SYMMETRIC_DEFAULT_MATERIAL_LENGTH)
+
+        rotation_entry = KeyRotationEntry(
+            key_id=self.metadata["Arn"],
+            rotation_date=datetime.datetime.now(),
+            rotation_type="ON_DEMAND",
+            key_material_state="CURRENT",
+            key_material_id=long_uid(),
+            key_material=new_key_material,
+        )
+        self.key_rotations.append(rotation_entry)
+
+        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT, new_key_material)
+
+    def _supports_rotation(self) -> bool:
+        return (
+            self.metadata.get("KeySpec") == KeySpec.SYMMETRIC_DEFAULT
+            and self.metadata.get("Origin") == OriginType.AWS_KMS
+            and self.metadata.get("KeyUsage") == KeyUsageType.ENCRYPT_DECRYPT
+        )
 
 
 class KmsGrant:

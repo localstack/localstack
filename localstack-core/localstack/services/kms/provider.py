@@ -60,6 +60,7 @@ from localstack.aws.api.kms import (
     GrantTokenType,
     ImportKeyMaterialResponse,
     ImportType,
+    IncludeKeyMaterial,
     IncorrectKeyException,
     InvalidCiphertextException,
     InvalidGrantIdException,
@@ -78,6 +79,8 @@ from localstack.aws.api.kms import (
     ListGrantsResponse,
     ListKeyPoliciesRequest,
     ListKeyPoliciesResponse,
+    ListKeyRotationsRequest,
+    ListKeyRotationsResponse,
     ListKeysRequest,
     ListKeysResponse,
     ListResourceTagsRequest,
@@ -1354,6 +1357,62 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             key.rotation_period_in_days = request.get("RotationPeriodInDays")
         key._update_key_rotation_date()
 
+    @handler("ListKeyRotations", expand=False)
+    def list_key_rotations(
+        self, context: RequestContext, request: ListKeyRotationsRequest
+    ) -> ListKeyRotationsResponse:
+        # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
+        # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
+        # We do not model that here, though.
+        key = self._get_kms_key(
+            context.account_id,
+            context.region,
+            request.get("KeyId"),
+            disabled_key_allowed=True,
+            pending_deletion_key_allowed=True,
+        )
+
+        self._validate_key_supports_rotation(key)
+
+        include_key_material = request.get("IncludeKeyMaterial")
+        if include_key_material:
+            if include_key_material not in ["ALL_KEY_MATERIAL", "ROTATIONS_ONLY"]:
+                raise ValidationException(
+                    f"1 validation error detected: Value '{include_key_material}' at 'includeKeyMaterial' "
+                    f"failed to satisfy constraint: Member must satisfy enum value set: [ALL_KEY_MATERIAL, ROTATIONS_ONLY]"
+                )
+
+        rotation_history = []
+        for rotation in key.key_rotations:
+            rotation_entry = {
+                "KeyId": rotation.key_id,
+                "KeyMaterialId": rotation.key_material_id,
+                "KeyMaterialState": rotation.key_material_state,
+                "RotationDate": rotation.rotation_date,
+                "RotationType": rotation.rotation_type,
+            }
+
+            if include_key_material == IncludeKeyMaterial.ALL_KEY_MATERIAL:
+                rotation_history.append(rotation_entry)
+            else:
+                if rotation.rotation_type in ["AUTOMATIC", "ON_DEMAND"]:
+                    rotation_history.append(rotation_entry)
+
+        rotation_history = sorted(
+            rotation_history,
+            key=lambda x: x.get("RotationDate", datetime.datetime.min),
+            reverse=True,
+        )
+
+        rotations_list = PaginatedList(rotation_history)
+        page, next_token = rotations_list.get_page(
+            lambda rotation: rotation.get("RotationDate"),
+            next_token=request.get("Marker"),
+            page_size=request.get("Limit", 100),
+        )
+        kwargs = {"NextMarker": next_token, "Truncated": True} if next_token else {}
+        return ListKeyRotationsResponse(Rotations=page, **kwargs)
+
     @handler("ListKeyPolicies", expand=False)
     def list_key_policies(
         self, context: RequestContext, request: ListKeyPoliciesRequest
@@ -1603,6 +1662,20 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if len(plaintext) > max_size_bytes:
             raise ValidationException(
                 f"Algorithm {encryption_algorithm} and key spec {key.metadata['KeySpec']} cannot encrypt data larger than {max_size_bytes} bytes."
+            )
+
+    def _validate_key_supports_rotation(self, key: KmsKey):
+        if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
+            raise UnsupportedOperationException(
+                f"The key spec {key.metadata['KeySpec']} is not valid for this operation."
+            )
+        if key.metadata["Origin"] != OriginType.AWS_KMS:
+            raise UnsupportedOperationException(
+                f"{key.metadata['Arn']} origin is {key.metadata.get('Origin')} which is not valid for this operation."
+            )
+        if key.metadata["KeyUsage"] != KeyUsageType.ENCRYPT_DECRYPT:
+            raise UnsupportedOperationException(
+                f"The key usage {key.metadata.get('KeyUsage')} is not valid for this operation."
             )
 
 
