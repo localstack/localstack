@@ -78,7 +78,7 @@ base-runtime = [
 runtime = [
     "localstack-core[base-runtime]",
     # pinned / updated by ASF update action
-    "awscli>=1.37.0",
+    "awscli>=1.41.0",
     "airspeed-ext>=0.6.3",
     # version that has a built wheel
     "kclpy-ext>=3.0.0",
