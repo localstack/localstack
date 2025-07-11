@@ -485,6 +485,15 @@ class TestApiGatewayApiRestApi:
             apigw_create_rest_api(
                 name=f"test-api-{short_uid()}",
                 endpointConfiguration={
+                    "types": [],
+                },
+            )
+        snapshot.match("create-with-empty-types", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
                     "ipAddressType": "wrong",
                     "types": ["EDGE"],
                 },

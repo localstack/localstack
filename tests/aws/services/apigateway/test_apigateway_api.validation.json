@@ -132,12 +132,12 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_endpoint_configuration": {
-    "last_validated_date": "2025-07-04T16:09:34+00:00",
+    "last_validated_date": "2025-07-11T18:28:50+00:00",
     "durations_in_seconds": {
-      "setup": 0.01,
-      "call": 50.53,
-      "teardown": 9.93,
-      "total": 60.47
+      "setup": 1.38,
+      "call": 46.71,
+      "teardown": 34.6,
+      "total": 82.69
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_optional_params": {

@@ -43,6 +43,7 @@ from localstack.aws.api.apigateway import (
     DomainNames,
     DomainNameStatus,
     EndpointConfiguration,
+    EndpointType,
     ExportResponse,
     GatewayResponse,
     GatewayResponses,
@@ -51,6 +52,7 @@ from localstack.aws.api.apigateway import (
     Integration,
     IntegrationResponse,
     IntegrationType,
+    IpAddressType,
     ListOfApiStage,
     ListOfPatchOperation,
     ListOfStageKeys,
@@ -245,23 +247,27 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
     @handler("CreateRestApi", expand=False)
     def create_rest_api(self, context: RequestContext, request: CreateRestApiRequest) -> RestApi:
         endpoint_configuration = request.get("endpointConfiguration", {})
-        types = endpoint_configuration.get("types", ["EDGE"])
+        types = endpoint_configuration.get("types", [EndpointType.EDGE])
         ip_address_type = endpoint_configuration.get("ipAddressType")
-        if len(types) > 1:
+
+        if not types:
+            raise BadRequestException("REGIONAL Configuration and EDGE Configuration cannot be both DISABLED.")
+        elif len(types) > 1:
             raise BadRequestException("Cannot create an api with multiple Endpoint Types.")
+        endpoint_type = types[0]
 
         error_messages = []
-        if types not in (["PRIVATE"], ["EDGE"], ["REGIONAL"]):
+        if endpoint_type not in (EndpointType.PRIVATE, EndpointType.EDGE, EndpointType.REGIONAL):
             error_messages.append(
-                f"Value '[{types[0]}]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]",
+                f"Value '[{endpoint_type}]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]",
             )
         elif not ip_address_type:
-            if types in (["EDGE"], ["REGIONAL"]):
-                ip_address_type = "ipv4"
+            if endpoint_type in (EndpointType.EDGE, EndpointType.REGIONAL):
+                ip_address_type = IpAddressType.ipv4
             else:
-                ip_address_type = "dualstack"
+                ip_address_type = IpAddressType.dualstack
 
-        if ip_address_type not in ("ipv4", "dualstack", None):
+        if ip_address_type not in (IpAddressType.ipv4, IpAddressType.dualstack, None):
             error_messages.append(
                 f"Value '{ip_address_type}' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]",
             )
@@ -273,7 +279,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             )
         if request.get("description") == "":
             raise BadRequestException("Description cannot be an empty string")
-        if types == ["PRIVATE"] and ip_address_type == "ipv4":
+        if types == [EndpointType.PRIVATE] and ip_address_type == IpAddressType.ipv4:
             raise BadRequestException("Only dualstack ipAddressType is supported for Private APIs.")
 
         minimum_compression_size = request.get("minimumCompressionSize")
@@ -342,6 +348,11 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         binary_media_types_path = "/binaryMediaTypes"
         # TODO: validate a bit more patch operations
         for patch_op in patch_operations:
+            if patch_op["op"] not in ("add", "remove", "move", "test", "replace", "copy"):
+                raise CommonServiceException(
+                    code="ValidationException",
+                    message=f"1 validation error detected: Value '{patch_op['op']}' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]",
+                )
             patch_op_path = patch_op.get("path", "")
             # binaryMediaTypes has a specific way of being set
             # see https://docs.aws.amazon.com/apigateway/latest/api/API_PatchOperation.html
@@ -390,45 +401,34 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                 patch_op["value"] = value
 
             elif patch_op_path.startswith("/endpointConfiguration/types"):
-                if patch_op["op"] not in ("add", "remove", "move", "test", "replace", "copy"):
-                    raise CommonServiceException(
-                        code="ValidationException",
-                        message=f"1 validation error detected: Value '{patch_op['op']}' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]",
-                    )
-
                 if patch_op["op"] != "replace":
                     raise BadRequestException(
                         "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
                     )
-                if patch_op.get("value") not in ("REGIONAL", "EDGE", "PRIVATE"):
+                if patch_op.get("value") not in (EndpointType.REGIONAL, EndpointType.EDGE, EndpointType.PRIVATE):
                     raise BadRequestException(
                         "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE"
                     )
-                if patch_op.get("value") == "PRIVATE":
+                if patch_op.get("value") == EndpointType.PRIVATE:
                     fixed_patch_ops.append(patch_op)
                     patch_op = {
                         "op": "replace",
                         "path": "/endpointConfiguration/ipAddressType",
-                        "value": "dualstack",
+                        "value": IpAddressType.dualstack,
                     }
                     fixed_patch_ops.append(patch_op)
                     continue
 
             elif patch_op_path.startswith("/endpointConfiguration/ipAddressType"):
-                if patch_op["op"] not in ("add", "remove", "move", "test", "replace", "copy"):
-                    raise CommonServiceException(
-                        code="ValidationException",
-                        message=f"1 validation error detected: Value '{patch_op['op']}' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]",
-                    )
                 if patch_op["op"] != "replace":
                     raise BadRequestException(
                         "Invalid patch operation specified. Must be one of: [replace]"
                     )
-                if (ipAddressType := patch_op.get("value")) not in ("ipv4", "dualstack"):
+                if (ipAddressType := patch_op.get("value")) not in (IpAddressType.ipv4, IpAddressType.dualstack):
                     raise BadRequestException("ipAddressType must be either ipv4 or dualstack.")
                 if (
-                    rest_api.endpoint_configuration["types"] == ["PRIVATE"]
-                    and ipAddressType == "ipv4"
+                    rest_api.endpoint_configuration["types"] == [EndpointType.PRIVATE]
+                    and ipAddressType == IpAddressType.ipv4
                 ):
                     raise BadRequestException(
                         "Only dualstack ipAddressType is supported for Private APIs."

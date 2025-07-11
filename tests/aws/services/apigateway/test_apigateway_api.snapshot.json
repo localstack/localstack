@@ -4213,8 +4213,19 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_endpoint_configuration": {
-    "recorded-date": "02-07-2025, 15:12:26",
+    "recorded-date": "11-07-2025, 18:28:50",
     "recorded-content": {
+      "create-with-empty-types": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "REGIONAL Configuration and EDGE Configuration cannot be both DISABLED."
+        },
+        "message": "REGIONAL Configuration and EDGE Configuration cannot be both DISABLED.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
       "create-with-invalid-ip-address-type": {
         "Error": {
           "Code": "ValidationException",
