@@ -1571,9 +1571,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name, qualifier, context
         )
 
-        user_agent = None
-        if user_agent_obj := context.request.user_agent:
-            user_agent = user_agent_obj.string
+        user_agent = context.request.user_agent.string
 
         time_before = time.perf_counter()
         try:
