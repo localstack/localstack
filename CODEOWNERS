@@ -197,10 +197,10 @@
 /tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
 
 # s3
-/localstack-core/localstack/aws/api/s3/ @bentsku
-/localstack-core/localstack/services/s3/ @bentsku
-/tests/aws/services/s3/ @bentsku
-/tests/unit/services/s3/ @bentsku
+/localstack-core/localstack/aws/api/s3/ @bentsku @k-a-il
+/localstack-core/localstack/services/s3/ @bentsku @k-a-il
+/tests/aws/services/s3/ @bentsku @k-a-il
+/tests/unit/services/s3/ @bentsku @k-a-il
 
 # s3control
 /localstack-core/localstack/aws/api/s3control/ @bentsku
