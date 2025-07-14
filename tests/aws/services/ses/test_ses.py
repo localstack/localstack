@@ -289,6 +289,37 @@ class TestSES:
         # snapshot.match('get-quota-3', _)
 
     @markers.aws.validated
+    def test_describe_config_set_event_destinations(
+        self,
+        aws_client,
+        sns_topic,
+        ses_configuration_set,
+        ses_configuration_set_sns_event_destination,
+        snapshot,
+    ):
+        config_set_name = f"config-set-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(config_set_name, "<config-set-name>"))
+
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+        snapshot.add_transformer(snapshot.transform.regex(topic_arn, "<arn>"))
+
+        ses_configuration_set(config_set_name)
+        event_destination_name = f"config-set-event-destination-{short_uid()}"
+        snapshot.add_transformer(
+            snapshot.transform.regex(event_destination_name, "<event-destination-name>")
+        )
+
+        ses_configuration_set_sns_event_destination(
+            config_set_name, event_destination_name, topic_arn
+        )
+
+        response = aws_client.ses.describe_configuration_set(
+            ConfigurationSetName=config_set_name,
+            ConfigurationSetAttributeNames=["eventDestinations"],
+        )
+        snapshot.match("event_destinations", response)
+
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Rules..Actions..AddHeaderAction",
