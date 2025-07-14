@@ -250,6 +250,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         transform_after: Maybe[list[GlobalTransform]] = transform_delta.after
 
         transformed_before_template = self._before_template
+        transformed_before_template = self._execute_embedded_transformations(
+            template=transformed_before_template, resolved_parameters=parameters_before
+        )
         if transform_before and not is_nothing(self._before_template):
             transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
             if not transformed_before_template:
@@ -264,6 +267,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
+        transformed_after_template = self._execute_embedded_transformations(
+            template=transformed_after_template, resolved_parameters=parameters_after
+        )
         if transform_after and not is_nothing(self._after_template):
             transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
             if not transformed_after_template:
@@ -279,14 +285,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         self._save_runtime_cache()
 
-        ### Handle Embedded Fn::Transform
-        transformed_before_template = self._execute_embedded_transformations(
-            template=transformed_before_template, resolved_parameters=parameters_before
-        )
-        transformed_after_template = self._execute_embedded_transformations(
-            template=transformed_after_template, resolved_parameters=parameters_after
-        )
-
         return transformed_before_template, transformed_after_template
 
     def _execute_embedded_transformations(
@@ -296,46 +294,65 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         region_name = self._change_set.region_name
         stack_name = self._change_set.change_set_name
 
+        def _normalize_transform(obj):
+            transforms = []
+
+            if isinstance(obj, str):
+                transforms.append({"Name": obj, "Parameters": {}})
+
+            if isinstance(obj, dict):
+                transforms.append(obj)
+
+            if isinstance(obj, list):
+                for v in obj:
+                    if isinstance(v, str):
+                        transforms.append({"Name": v, "Parameters": {}})
+
+                    if isinstance(v, dict):
+                        transforms.append(v)
+
+            return transforms
+
         def _visit(obj, path, **_):
             if isinstance(obj, dict) and "Fn::Transform" in obj:
-                transform = (
-                    obj["Fn::Transform"]
-                    if isinstance(obj["Fn::Transform"], dict)
-                    else {"Name": obj["Fn::Transform"]}
-                )
-                transform_name = transform.get("Name")
-                transformer_class = transformers.get(transform_name)
-                macro_store = get_cloudformation_store(
-                    account_id=account_id, region_name=region_name
-                ).macros
-                parameters = transform.get("Parameters") or {}
-                stack_parameters = resolved_parameters
+                transforms = _normalize_transform(obj["Fn::Transform"])
 
-                if transformer_class:
-                    transformer = transformer_class()
-                    transformed = transformer.transform(account_id, region_name, parameters)
-                    obj_copy = copy.deepcopy(obj)
-                    obj_copy.pop("Fn::Transform")
-                    obj_copy.update(transformed)
-                    return obj_copy
+                for transform in transforms:
+                    transform_name = transform.get("Name")
+                    transformer_class = transformers.get(transform_name)
+                    macro_store = get_cloudformation_store(
+                        account_id=account_id, region_name=region_name
+                    ).macros
+                    parameters = transform.get("Parameters") or {}
+                    stack_parameters = resolved_parameters
 
-                elif transform_name in macro_store:
-                    obj_copy = copy.deepcopy(obj)
-                    obj_copy.pop("Fn::Transform")
-                    result = execute_macro(
-                        account_id,
-                        region_name,
-                        obj_copy,
-                        transform,
-                        stack_parameters,
-                        parameters,
-                        True,
-                    )
-                    return result
-                else:
-                    LOG.warning(
-                        "Unsupported transform function '%s' used in %s", transform_name, stack_name
-                    )
+                    if transformer_class:
+                        transformer = transformer_class()
+                        transformed = transformer.transform(account_id, region_name, parameters)
+                        obj_copy = copy.deepcopy(obj)
+                        obj_copy.pop("Fn::Transform", "")
+                        obj_copy.update(transformed)
+                        obj = obj_copy
+
+                    elif transform_name in macro_store:
+                        obj_copy = copy.deepcopy(obj)
+                        obj_copy.pop("Fn::Transform", "")
+                        result = execute_macro(
+                            account_id,
+                            region_name,
+                            obj_copy,
+                            transform,
+                            stack_parameters,
+                            parameters,
+                            True,
+                        )
+                        obj = result
+                    else:
+                        LOG.warning(
+                            "Unsupported transform function '%s' used in %s",
+                            transform_name,
+                            stack_name,
+                        )
             return obj
 
         return recurse_object(template, _visit)
