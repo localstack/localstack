@@ -7,7 +7,7 @@ In the LocalStack codebase we differentiate between the following test types:
 - Integration Tests
 
 Depending on the workflow and its trigger not all of those tests are executed at once.
-For ordinary pushes to `master` we only want to execute the Unit and Acceptance tests.
+For ordinary pushes to `main` we only want to execute the Unit and Acceptance tests.
 On a regular schedule, however, we want to execute all tests to have as big of a coverage of our logic as possible.
 This differentiation also educates what we expect from the different types of tests.
 
@@ -19,18 +19,18 @@ These tests should be able to complete their execution very quickly, so they nev
 If you need some kind of waiting mechanism in your unit test, it is most likely that you are not writing a unit test.
 
 A good example for a unit test is `tests.unit.testing.testselection.test_matching.test_service_dependency_resolving_with_dependencies`.
-It tests whether an algorithm implemented inside of a bigger implementation performs as it is expected of it. 
+It tests whether an algorithm implemented inside of a bigger implementation performs as it is expected of it.
 
 ## Acceptance tests
 
-We use acceptance tests to gain a quick understanding of whether the recently pushed commit to `master` fulfils minimally viable quality criteria.
+We use acceptance tests to gain a quick understanding of whether the recently pushed commit to `main` fulfils minimally viable quality criteria.
 This means that these tests do not aim at maximum coverage but instead should test that the most important functionality works.
 This in general is the entire serving infrastructure and the main features of the most used services.
 
 As these tests are executed very often we need them to be as stable, fast and relevant as possible.
 We ensure this by the following criteria:
 
-- It shows some kind of real-world usage. This is usually a scenario or architectural pattern with multiple services. 
+- It shows some kind of real-world usage. This is usually a scenario or architectural pattern with multiple services.
     - When composing these scenarios, the services should not overlap too much with already existing acceptance tests. We want to avoid redundancy where possible. At the same time we want to have our primary services and typical use-cases being covered.
     - Existing samples (from [our samples organization](https://github.com/localstack-samples)) might serve as a starting point for constructing such a scenario.
     However, keep in mind that we want to use many interacting resources in these tests, so the samples might need further expansion.
