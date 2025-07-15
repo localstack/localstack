@@ -19,7 +19,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameter,
     NodeResolvableParameter,
     NodeResource,
-    ResolvedParameter,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -47,7 +46,7 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 @dataclass
 class ChangeSetModelExecutorResult:
     resources: dict
-    parameters: dict[str, ResolvedParameter]
+    parameters: dict
     outputs: dict
 
 
@@ -55,7 +54,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict]
     outputs: Final[dict]
-    resolved_parameters: Final[dict[str, ResolvedParameter]]
+    resolved_parameters: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)

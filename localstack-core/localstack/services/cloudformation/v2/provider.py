@@ -55,6 +55,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_describer imp
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_parameter_resolver import (
+    ChangeSetModelParameterResolver,
+)
 from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
     ChangeSetModelTransform,
 )
@@ -149,6 +152,14 @@ class CloudformationProviderV2(CloudformationProvider):
             raw_update_model.before_runtime_cache.clear()
             raw_update_model.before_runtime_cache.update(previous_update_model.after_runtime_cache)
         change_set.set_update_model(raw_update_model)
+
+        # Resolve parameters
+        parameter_resolver = ChangeSetModelParameterResolver(
+            change_set=change_set,
+            before_parameters=before_parameters,
+            after_parameters=after_parameters,
+        )
+        change_set.stack.resolved_parameters = parameter_resolver.resolve_parameters()
 
         # Apply global transforms.
         # TODO: skip this process iff both versions of the template don't specify transform blocks.

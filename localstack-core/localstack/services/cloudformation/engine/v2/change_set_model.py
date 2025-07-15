@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import abc
 import enum
-from dataclasses import dataclass
 from itertools import zip_longest
 from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
 
@@ -226,15 +225,6 @@ class NodeParameter(ChangeSetNode):
 
 class NodeResolvableParameter(NodeParameter):
     pass
-
-
-@dataclass
-class ResolvedParameter:
-    value: str
-    resolved_value: str | None = None
-
-    def resolve(self) -> str:
-        return self.resolved_value or self.value
 
 
 class NodeParameters(ChangeSetNode):

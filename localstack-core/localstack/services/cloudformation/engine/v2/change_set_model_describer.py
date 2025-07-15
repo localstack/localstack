@@ -7,7 +7,6 @@ import localstack.aws.api.cloudformation as cfn_api
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeProperty,
-    NodeResolvableParameter,
     NodeResource,
     NodeResources,
     PropertiesKey,
@@ -214,12 +213,3 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         if not is_nothing(after_resource) and after_resource.physical_resource_id is None:
             after_resource.physical_resource_id = CHANGESET_KNOWN_AFTER_APPLY
         return delta
-
-    def visit_node_resolvable_parameter(self, node_parameter: NodeResolvableParameter):
-        delta = super().visit_node_resolvable_parameter(node_parameter)
-        if not is_nothing(delta.before):
-            delta.before = delta.before.resolve()
-        if not is_nothing(delta.after):
-            delta.after = delta.after.resolve()
-        return delta
-

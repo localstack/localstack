@@ -37,7 +37,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeTemplate,
     Nothing,
     NothingType,
-    ResolvedParameter,
     Scope,
     TerminalValue,
     TerminalValueCreated,
@@ -961,7 +960,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     region_name=self._change_set.region_name,
                     stack_parameter_value=delta.before,
                 )
-                delta.before = ResolvedParameter(delta.before, resolved_value)
+                delta.before = resolved_value
 
             if not is_nothing(delta.after):
                 resolved_value = resolve_ssm_parameter(
@@ -969,7 +968,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     region_name=self._change_set.region_name,
                     stack_parameter_value=delta.after,
                 )
-                delta.after = ResolvedParameter(delta.after, resolved_value)
+                delta.after = resolved_value
         else:
             raise Exception(f"Unsupported stack parameter type: {parameter_type}")
 
@@ -1020,10 +1019,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             arguments_delta=arguments_delta,
             resolver=_compute_fn_ref,
         )
-        if isinstance(delta.before, ResolvedParameter):
-            delta.before = delta.before.resolve()
-        if isinstance(delta.after, ResolvedParameter):
-            delta.after = delta.after.resolve()
         return delta
 
     def visit_node_intrinsic_function_condition(

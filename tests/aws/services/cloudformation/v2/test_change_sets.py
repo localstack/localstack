@@ -21,18 +21,18 @@ pytestmark = pytest.mark.skipif(
 )
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "delete-describe..*",
+        # "delete-describe..*",
         #
         # Before/After Context
-        "$..Capabilities",
-        "$..NotificationARNs",
-        "$..IncludeNestedStacks",
-        "$..Scope",
-        "$..Details",
-        "$..Parameters",
-        "$..Replacement",
-        "$..PolicyAction",
-        "$..PhysicalResourceId",
+        # "$..Capabilities",
+        # "$..NotificationARNs",
+        # "$..IncludeNestedStacks",
+        # "$..Scope",
+        # "$..Details",
+        # "$..Parameters",
+        # "$..Replacement",
+        # "$..PolicyAction",
+        # "$..PhysicalResourceId",
     ]
 )
 class TestCaptureUpdateProcess:

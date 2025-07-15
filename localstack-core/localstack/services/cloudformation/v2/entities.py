@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
@@ -24,7 +25,6 @@ from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
-    ResolvedParameter,
     UpdateModel,
 )
 from localstack.utils.aws import arns
@@ -34,6 +34,14 @@ from localstack.utils.strings import long_uid, short_uid
 class ResolvedResource(TypedDict):
     Type: str
     Properties: dict
+
+
+@dataclass
+class ResolvedParameter:
+    name: str
+    value: str
+    resolved_value: str | None = None
+    default: str | None = None
 
 
 class Stack:
@@ -48,7 +56,7 @@ class Stack:
     events = list[StackEvent]
 
     # state after deploy
-    resolved_parameters: dict[str, str]
+    resolved_parameters: list[ResolvedParameter]
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: dict[str, str]
     resource_states: dict[str, StackResource]
@@ -87,7 +95,7 @@ class Stack:
         self.request_payload = request_payload
 
         # state after deploy
-        self.resolved_parameters = {}
+        self.resolved_parameters = []
         self.resolved_resources = {}
         self.resolved_outputs = {}
         self.resource_states = {}
@@ -180,22 +188,23 @@ class Stack:
 
         if self.resolved_parameters:
             parameters = []
-            for key, value in self.resolved_parameters.items():
-                if isinstance(value, ResolvedParameter):
-                    parameters.append(
-                        Parameter(
-                            ParameterKey=key,
-                            ParameterValue=value.value,
-                            ResolvedValue=value.resolved_value,
-                        )
+            for parameter in self.resolved_parameters:
+                #  TODO: resolvable parameters
+                # if isinstance(value, ResolvedParameter):
+                #     parameters.append(
+                #         Parameter(
+                #             ParameterKey=key,
+                #             ParameterValue=value.value,
+                #             ResolvedValue=value.resolved_value,
+                #         )
+                #     )
+                # else:
+                parameters.append(
+                    Parameter(
+                        ParameterKey=parameter.name,
+                        ParameterValue=parameter.value,
                     )
-                else:
-                    parameters.append(
-                        Parameter(
-                            ParameterKey=key,
-                            ParameterValue=value,
-                        )
-                    )
+                )
             result["Parameters"] = parameters
 
         if self.resolved_outputs:
