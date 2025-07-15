@@ -155,7 +155,7 @@ def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
     if is_sqs_queue_url(path):
         return ServiceModelIdentifier("sqs", protocol="query")
 
-    if path.startswith("/2015-03-31/functions/"):
+    if path.startswith("/2015-03-31/functions"):
         return ServiceModelIdentifier("lambda")
 
 
