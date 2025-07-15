@@ -12,7 +12,7 @@ from localstack.services.cloudformation.engine.policy_loader import create_polic
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
-    Transformer,
+    ResolveRefsRecursivelyContext,
     execute_macro,
     transformers,
 )
@@ -249,9 +249,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         transform_before: Maybe[list[GlobalTransform]] = transform_delta.before
         transform_after: Maybe[list[GlobalTransform]] = transform_delta.after
 
-        transformed_before_template = self._before_template
         transformed_before_template = self._execute_embedded_transformations(
-            template=transformed_before_template, resolved_parameters=parameters_before
+            template=self._before_template, resolved_parameters=parameters_before
         )
         if transform_before and not is_nothing(self._before_template):
             transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
@@ -266,9 +265,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                         )
                 self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
-        transformed_after_template = self._after_template
         transformed_after_template = self._execute_embedded_transformations(
-            template=transformed_after_template, resolved_parameters=parameters_after
+            template=self._after_template, resolved_parameters=parameters_after
         )
         if transform_after and not is_nothing(self._after_template):
             transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
@@ -313,6 +311,25 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
             return transforms
 
+        def _resolve_macro_parameters(macro_parameters: dict, stack_parameters):
+            resolved_parameters = {}
+            resolve_refs_recursively = ResolveRefsRecursivelyContext(
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+                stack_name=self._change_set.change_set_name,
+                resources=self._change_set.template.get("Resources", {}),
+                mappings=self._change_set.template.get("Mappings", {}),
+                conditions=self._change_set.template.get("Conditions", {}),
+                parameters=stack_parameters,
+            )
+
+            for parameter_key, parameter_value in macro_parameters.items():
+                if isinstance(parameter_value, dict):
+                    parameter_value = resolve_refs_recursively.resolve(parameter_value)
+                resolved_parameters[parameter_key] = parameter_value
+
+            return resolved_parameters
+
         def _visit(obj, path, **_):
             if isinstance(obj, dict) and "Fn::Transform" in obj:
                 transforms = _normalize_transform(obj["Fn::Transform"])
@@ -343,7 +360,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                             obj_copy,
                             transform,
                             stack_parameters,
-                            parameters,
+                            _resolve_macro_parameters(parameters, stack_parameters),
                             True,
                         )
                         obj = result
@@ -356,117 +373,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             return obj
 
         return recurse_object(template, _visit)
-
-    @staticmethod
-    def _normalize_transform_definitions(
-        transform_definitions: list[(any, str)],
-    ) -> dict:
-        def _normalize_individual_transform(transform_def: str | dict):
-            # TODO: validate parameters, imports, refs to resources or conditionals are not supported.
-            #      only literals, refs to parameters and basic intrinsic functions like sub and join, posibly select
-            if isinstance(transform_def, str):
-                return {"Name": transform_def, "Parameters": {}}
-
-            if isinstance(transform_def, dict):
-                return {
-                    "Name": transform_def["Name"],
-                    "Parameters": transform_def.get("Parameters", {}),
-                }
-
-            raise FailedTransformationException("Invalid Definition of transformation")
-
-        normalized_transforms = []
-        for path, value in transform_definitions:
-            if isinstance(value, list):
-                for transform in value:
-                    normalized_transforms.append((_normalize_individual_transform(transform), path))
-            else:
-                normalized_transforms.append((_normalize_individual_transform(value), path))
-
-        return normalized_transforms
-
-    def _execute_embedded_transformation(
-        self, transformation: (dict, str), template: dict, resolved_parameters: dict
-    ) -> dict:
-        macros_store = get_cloudformation_store(
-            account_id=self._change_set.account_id, region_name=self._change_set.region_name
-        ).macros
-
-        def _apply_transform_on_template(scope, template, transformation_result, include=False):
-            # node = template
-            # prev_node = node
-            # for key in scope.split("/")[:-1]:
-            #     prev_node = node
-            #     node = node[key]
-            #
-            # if include and isinstance(prev_node, dict):
-            #     del node["Fn::Transform"]
-            #     prev_node[key].update(transformation_result)
-            # else:
-            #     prev_node[key] = transformation_result
-            #
-            # return template
-            scope = scope.replace("/", ".")
-
-            def _visit(obj, path):
-                if path == scope:
-                    return transformation_result
-                return obj
-
-            t = recurse_object(template, _visit)
-            return t
-
-        scope = transformation[1]
-        transform_name = transformation[0]["Name"]
-        transform_parameters = transformation[0]["Parameters"]
-
-        if transform_name in transformers:
-            builtin_transformer_class = transformers[transform_name]
-            builtin_transformer: Transformer = builtin_transformer_class()
-            transform_output: Any = builtin_transformer.transform(
-                account_id=self._change_set.account_id,
-                region_name=self._change_set.region_name,
-                parameters=transform_parameters,
-            )
-            return _apply_transform_on_template(scope, template, transform_output, True)
-
-        if transform_name in macros_store:
-            # A macro is only able to access their node parent and siblings
-            parent_node = template
-            for key in scope.split("/")[:-1]:
-                parent_node = parent_node.get(key)
-
-            transform_output: Any = execute_macro(
-                account_id=self._change_set.account_id,
-                region_name=self._change_set.region_name,
-                parsed_template=parent_node,
-                macro=transformation[0],
-                stack_parameters=resolved_parameters,
-                transformation_parameters=transform_parameters,
-                is_intrinsic=True,
-            )
-            return _apply_transform_on_template(scope, template, transform_output)
-        raise FailedTransformationException("Macro not found")
-
-    def _find_fn_transforms(self, obj, path=None) -> list[(any, str)]:
-        if path is None:
-            path = []
-
-        results = []
-
-        if isinstance(obj, dict):
-            for key, value in obj.items():
-                current_path = path + [key]
-                if key == "Fn::Transform":
-                    results.append(("/".join(current_path), value))
-                results.extend(self._find_fn_transforms(value, current_path))
-
-        elif isinstance(obj, list):
-            for idx, item in enumerate(obj):
-                current_path = path + [f"{idx}"]
-                results.extend(self._find_fn_transforms(item, current_path))
-
-        return results
 
     def visit_node_global_transform(
         self, node_global_transform: NodeGlobalTransform
