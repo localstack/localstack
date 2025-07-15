@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
@@ -63,6 +64,7 @@ class Stack:
         self.account_id = account_id
         self.region_name = region_name
         self.template = template
+        self.template_original = copy.deepcopy(self.template)
         self.template_body = template_body
         self.status = StackStatus.CREATE_IN_PROGRESS
         self.status_reason = None
