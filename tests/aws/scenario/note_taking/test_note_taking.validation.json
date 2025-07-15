@@ -1,5 +1,20 @@
 {
+  "tests/aws/scenario/note_taking/test_note_taking.py::TestNoteTakingScenario::test_notes_rest_api": {
+    "last_validated_date": "2025-07-15T19:26:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.05,
+      "teardown": 30.29,
+      "total": 42.34
+    }
+  },
   "tests/aws/scenario/note_taking/test_note_taking.py::TestNoteTakingScenario::test_validate_infra_setup": {
-    "last_validated_date": "2024-04-16T08:42:29+00:00"
+    "last_validated_date": "2025-07-15T19:26:03+00:00",
+    "durations_in_seconds": {
+      "setup": 72.68,
+      "call": 2.59,
+      "teardown": 0.0,
+      "total": 75.27
+    }
   }
 }

@@ -45,7 +45,13 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
-    "last_validated_date": "2024-04-15T22:51:13+00:00"
+    "last_validated_date": "2025-07-15T19:27:45+00:00",
+    "durations_in_seconds": {
+      "setup": 1.03,
+      "call": 13.37,
+      "teardown": 5.79,
+      "total": 20.19
+    }
   },
   "tests/aws/services/cloudformation/api/test_transformers.py::test_language_extensions": {
     "last_validated_date": "2025-06-27T16:00:28+00:00",
