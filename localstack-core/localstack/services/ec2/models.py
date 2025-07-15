@@ -25,3 +25,18 @@ def get_state(self):
 
 Subnet.__setstate__ = set_state
 Subnet.__getstate__ = get_state
+
+
+def reserve_cidr_block(self, subnet_id: str, cidr_block: str):
+    subnet = self.get_subnet(subnet_id)
+    if not subnet:
+        raise ValueError(f"Subnet with ID {subnet_id} not found")
+    if not subnet.cidr_block:
+        raise ValueError(f"Subnet with ID {subnet_id} does not have a CIDR block")
+    if cidr_block in subnet.reserved_cidr_blocks:
+        raise ValueError(f"CIDR block {cidr_block} is already reserved in subnet {subnet_id}")
+    subnet.reserved_cidr_blocks.append(cidr_block)
+    return {"SubnetId": subnet_id, "CidrBlock": cidr_block}
+
+
+Subnet.reserve_cidr_block = reserve_cidr_block
