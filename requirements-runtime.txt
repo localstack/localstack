@@ -56,13 +56,13 @@ cachetools==6.1.0
     #   localstack-core (pyproject.toml)
 cbor2==5.6.5
     # via localstack-core
-certifi==2025.6.15
+certifi==2025.7.14
     # via
     #   opensearch-py
     #   requests
 cffi==1.17.1
     # via cryptography
-cfn-lint==1.37.2
+cfn-lint==1.38.0
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
@@ -74,7 +74,7 @@ colorama==0.4.6
     # via awscli
 constantly==23.10.4
     # via localstack-twisted
-crontab==1.0.4
+crontab==1.0.5
     # via localstack-core (pyproject.toml)
 cryptography==45.0.5
     # via
@@ -139,7 +139,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.2.0
+joserfc==1.2.2
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core (pyproject.toml)

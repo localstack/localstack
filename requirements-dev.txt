@@ -70,7 +70,7 @@ cattrs==24.1.3
     # via jsii
 cbor2==5.6.5
     # via localstack-core
-certifi==2025.6.15
+certifi==2025.7.14
     # via
     #   httpcore
     #   httpx
@@ -80,7 +80,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.37.2
+cfn-lint==1.38.0
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
@@ -100,7 +100,7 @@ coverage==7.9.2
     #   localstack-core
 coveralls==4.0.1
     # via localstack-core (pyproject.toml)
-crontab==1.0.4
+crontab==1.0.5
     # via localstack-core
 cryptography==45.0.5
     # via
@@ -191,7 +191,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.2.0
+joserfc==1.2.2
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
@@ -256,7 +256,7 @@ mpmath==1.3.0
     # via sympy
 multipart==1.2.1
     # via moto-ext
-mypy==1.16.1
+mypy==1.17.0
     # via localstack-core (pyproject.toml)
 mypy-extensions==1.1.0
     # via mypy
@@ -279,7 +279,7 @@ openapi-spec-validator==0.7.2
     #   openapi-core
 opensearch-py==3.0.0
     # via localstack-core
-orderly-set==5.4.1
+orderly-set==5.5.0
     # via deepdiff
 packaging==25.0
     # via
@@ -433,7 +433,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.2
+ruff==0.12.3
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.0
     # via
