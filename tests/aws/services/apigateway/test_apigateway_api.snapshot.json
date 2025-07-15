@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_list_and_delete_apis": {
-    "recorded-date": "15-04-2024, 15:09:48",
+    "recorded-date": "02-07-2025, 13:13:23",
     "recorded-content": {
       "create-rest-api-1": {
         "apiKeySource": "HEADER",
@@ -8,6 +8,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -26,6 +27,7 @@
         "description": "this is my api2",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -46,6 +48,7 @@
             "description": "this is my api",
             "disableExecuteApiEndpoint": false,
             "endpointConfiguration": {
+              "ipAddressType": "ipv4",
               "types": [
                 "EDGE"
               ]
@@ -60,6 +63,7 @@
             "description": "this is my api2",
             "disableExecuteApiEndpoint": false,
             "endpointConfiguration": {
+              "ipAddressType": "ipv4",
               "types": [
                 "EDGE"
               ]
@@ -88,6 +92,7 @@
             "description": "this is my api2",
             "disableExecuteApiEndpoint": false,
             "endpointConfiguration": {
+              "ipAddressType": "ipv4",
               "types": [
                 "EDGE"
               ]
@@ -139,13 +144,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_optional_params": {
-    "recorded-date": "15-04-2024, 15:11:50",
+    "recorded-date": "02-07-2025, 13:25:33",
     "recorded-content": {
       "create-only-name": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -174,6 +180,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -192,6 +199,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -218,7 +226,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_tags": {
-    "recorded-date": "15-04-2024, 15:12:32",
+    "recorded-date": "02-07-2025, 13:17:34",
     "recorded-content": {
       "create-rest-api-w-tags": {
         "apiKeySource": "HEADER",
@@ -226,6 +234,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -247,6 +256,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -270,6 +280,7 @@
             "description": "this is my api",
             "disableExecuteApiEndpoint": false,
             "endpointConfiguration": {
+              "ipAddressType": "ipv4",
               "types": [
                 "EDGE"
               ]
@@ -290,7 +301,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_operation_add_remove": {
-    "recorded-date": "15-04-2024, 15:12:34",
+    "recorded-date": "02-07-2025, 13:18:05",
     "recorded-content": {
       "update-rest-api-add": {
         "apiKeySource": "HEADER",
@@ -302,6 +313,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -325,6 +337,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -346,6 +359,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -362,7 +376,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_compression": {
-    "recorded-date": "15-04-2024, 15:13:28",
+    "recorded-date": "02-07-2025, 13:18:40",
     "recorded-content": {
       "enable-compression": {
         "apiKeySource": "HEADER",
@@ -370,6 +384,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -390,6 +405,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -409,6 +425,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -459,7 +476,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_behaviour": {
-    "recorded-date": "15-04-2024, 15:14:15",
+    "recorded-date": "02-07-2025, 13:18:55",
     "recorded-content": {
       "update-rest-api-array": {
         "apiKeySource": "HEADER",
@@ -470,6 +487,7 @@
         "description": "this is my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -519,7 +537,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_invalid_api_id": {
-    "recorded-date": "15-04-2024, 15:14:15",
+    "recorded-date": "02-07-2025, 13:19:07",
     "recorded-content": {
       "not-found-update-rest-api": {
         "Error": {
@@ -1966,7 +1984,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_request_validator_lifecycle": {
-    "recorded-date": "15-04-2024, 20:44:21",
+    "recorded-date": "02-07-2025, 15:14:17",
     "recorded-content": {
       "create-rest-api": {
         "apiKeySource": "HEADER",
@@ -1974,6 +1992,7 @@
         "description": "my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -2163,7 +2182,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRequestValidator::test_invalid_update_request_validator_operations": {
-    "recorded-date": "15-04-2024, 20:46:01",
+    "recorded-date": "02-07-2025, 15:15:40",
     "recorded-content": {
       "create-rest-api": {
         "apiKeySource": "HEADER",
@@ -2171,6 +2190,7 @@
         "description": "my api",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -3606,7 +3626,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_binary_media_types": {
-    "recorded-date": "11-03-2025, 22:33:05",
+    "recorded-date": "02-07-2025, 13:16:59",
     "recorded-content": {
       "create-with-binary-media": {
         "apiKeySource": "HEADER",
@@ -3616,6 +3636,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -4187,6 +4208,387 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_with_endpoint_configuration": {
+    "recorded-date": "11-07-2025, 18:28:50",
+    "recorded-content": {
+      "create-with-empty-types": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "REGIONAL Configuration and EDGE Configuration cannot be both DISABLED."
+        },
+        "message": "REGIONAL Configuration and EDGE Configuration cannot be both DISABLED.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-invalid-ip-address-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-invalid-types": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[wrong]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-invalid-ip-address-type-and-types": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value '[wrong]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]; Value 'wrong' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-invalid-types-and-ip-address-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value '[wrong]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]; Value 'wrong' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-multiple-errors-1": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value '[wrong]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]; Value 'wrong' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-multiple-errors-2": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Description cannot be an empty string"
+        },
+        "message": "Description cannot be an empty string",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-two-types": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Cannot create an api with multiple Endpoint Types."
+        },
+        "message": "Cannot create an api with multiple Endpoint Types.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-endpoint-config-dualstack": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-endpoint-config-regional": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "REGIONAL"
+          ]
+        },
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_private_type": {
+    "recorded-date": "03-07-2025, 18:17:19",
+    "recorded-content": {
+      "create-with-private-type-and-ipv4-ip-address-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Only dualstack ipAddressType is supported for Private APIs."
+        },
+        "message": "Only dualstack ipAddressType is supported for Private APIs.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-private-type-and-wrong-ip-address-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'wrong' at 'createRestApiInput.endpointConfiguration.ipAddressType' failed to satisfy constraint: Member must satisfy enum value set: [ipv4, dualstack]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-with-private-type-and-ipv4-ip-address-type-and-empty-description": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Description cannot be an empty string"
+        },
+        "message": "Description cannot be an empty string",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_create_rest_api_verify_defaults": {
+    "recorded-date": "04-07-2025, 09:55:21",
+    "recorded-content": {
+      "create-with-edge-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-regional-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "REGIONAL"
+          ]
+        },
+        "id": "<id:2>",
+        "name": "<name:2>",
+        "rootResourceId": "<root-resource-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-private-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "PRIVATE"
+          ]
+        },
+        "id": "<id:3>",
+        "name": "<name:3>",
+        "rootResourceId": "<root-resource-id:3>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-empty-default": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:4>",
+        "name": "<name:4>",
+        "rootResourceId": "<root-resource-id:4>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-with-empty-ip-address-type-and-wrong-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value '[wrong]' at 'createRestApiInput.endpointConfiguration.types' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [PRIVATE, EDGE, REGIONAL]]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_ip_address_type": {
+    "recorded-date": "07-07-2025, 12:54:02",
+    "recorded-content": {
+      "update-rest-api-replace-type": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "PRIVATE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-rest-api-replace-to-ipv4-within-private-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Only dualstack ipAddressType is supported for Private APIs."
+        },
+        "message": "Only dualstack ipAddressType is supported for Private APIs.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-ipAddressType": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "ipAddressType must be either ipv4 or dualstack."
+        },
+        "message": "ipAddressType must be either ipv4 or dualstack.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE"
+        },
+        "message": "Invalid EndpointTypes specified. Valid options are REGIONAL,EDGE,PRIVATE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-invalid-operation-on-ipAddressType": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be one of: [replace]"
+        },
+        "message": "Invalid patch operation specified. Must be one of: [replace]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-invalid-operation-on-type": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'"
+        },
+        "message": "Invalid patch operation specified. Must be 'add'|'remove'|'replace'",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-replace-ip-address-type": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "dualstack",
+          "types": [
+            "PRIVATE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiRestApi::test_update_rest_api_concatenation_of_errors": {
+    "recorded-date": "07-07-2025, 12:54:34",
+    "recorded-content": {
+      "update-rest-api-wrong-operations-on-ipAddressType": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-operations-on-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "2 validation errors detected: Value 'wrong' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-rest-api-wrong-operations-on-type-and-on-ip-address-type": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "3 validation errors detected: Value 'wrong' at 'updateRestApiInput.patchOperations.1.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.2.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]; Value 'wrong' at 'updateRestApiInput.patchOperations.3.member.op' failed to satisfy constraint: Member must satisfy enum value set: [add, remove, move, test, replace, copy]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
