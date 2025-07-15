@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -41,6 +42,45 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackStatus,
+    UpdateStackInput,
+    UpdateStackOutput,
+)
+from localstack.aws.api.cloudformation import (
+    Changes,
+    ChangeSetNameOrId,
+    ChangeSetNotFoundException,
+    ChangeSetStatus,
+    ChangeSetType,
+    ClientRequestToken,
+    CreateChangeSetInput,
+    CreateChangeSetOutput,
+    CreateStackInput,
+    CreateStackOutput,
+    DeletionMode,
+    DescribeChangeSetOutput,
+    DescribeStackEventsOutput,
+    DescribeStackResourcesOutput,
+    DescribeStacksOutput,
+    DisableRollback,
+    ExecuteChangeSetOutput,
+    ExecutionStatus,
+    GetTemplateOutput,
+    GetTemplateSummaryInput,
+    GetTemplateSummaryOutput,
+    IncludePropertyValues,
+    InvalidChangeSetStatusException,
+    LogicalResourceId,
+    NextToken,
+    Parameter,
+    PhysicalResourceId,
+    RetainExceptOnCreate,
+    RetainResources,
+    RoleARN,
+    RollbackConfiguration,
+    StackName,
+    StackNameOrId,
+    StackStatus,
+    TemplateStage,
     UpdateStackInput,
     UpdateStackOutput,
 )
@@ -629,6 +669,49 @@ class CloudformationProviderV2(CloudformationProvider):
         if not stack:
             raise StackWithIdNotFoundError(stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
+
+    @handler("GetTemplate")
+    def get_template(
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        change_set_name: ChangeSetNameOrId = None,
+        template_stage: TemplateStage = None,
+        **kwargs,
+    ) -> GetTemplateOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        if change_set_name:
+            change_set = find_change_set_v2(state, change_set_name, stack_name=stack_name)
+            stack = change_set.stack
+        elif stack_name:
+            stack = find_stack_v2(state, stack_name)
+        else:
+            raise StackNotFoundError(stack_name)
+
+        if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
+            copy_template = copy.deepcopy(stack.template_original)
+            for key in [
+                "ChangeSetName",
+                "StackName",
+                "StackId",
+                "Transform",
+                "Conditions",
+                "Mappings",
+            ]:
+                copy_template.pop(key, None)
+            for key in ["Parameters", "Outputs"]:
+                if key in copy_template and not copy_template[key]:
+                    copy_template.pop(key)
+            for resource in copy_template.get("Resources", {}).values():
+                resource.pop("LogicalResourceId", None)
+            template_body = json.dumps(copy_template)
+        else:
+            template_body = stack.template_body
+
+        return GetTemplateOutput(
+            TemplateBody=template_body,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
