@@ -313,11 +313,8 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     paths=[
         "$.resources.items..resourceMethods.GET",  # TODO: after importing, AWS returns them empty?
         # TODO: missing from LS response
-        "$.get-stage.createdDate",
-        "$.get-stage.lastUpdatedDate",
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
-        "$..binaryMediaTypes",
     ]
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(

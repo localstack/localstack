@@ -18,7 +18,13 @@
     "last_validated_date": "2025-05-05T14:23:13+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "last_validated_date": "2025-05-06T18:31:53+00:00"
+    "last_validated_date": "2025-07-15T20:30:33+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 18.79,
+      "teardown": 8.1,
+      "total": 27.91
+    }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
     "last_validated_date": "2025-07-15T19:28:58+00:00",
