@@ -1471,6 +1471,10 @@ class TestKMS:
     ):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
 
+        snapshot.add_transformer(
+            snapshot.transform.key_value("KeyMaterialId", reference_replacement=False)
+        )
+
         response_initial_rotation = aws_client.kms.list_key_rotations(KeyId=key_id)
         snapshot.match("initial-rotations", response_initial_rotation)
 
@@ -1485,13 +1489,18 @@ class TestKMS:
         response_after_on_demand_rotation = aws_client.kms.list_key_rotations(KeyId=key_id)
         snapshot.match("after-on-demand-rotation", response_after_on_demand_rotation)
 
-        assert len(response_after_on_demand_rotation["Rotations"]) > len(
-            response_initial_rotation["Rotations"]
+        assert (
+            len(response_after_on_demand_rotation["Rotations"])
+            == len(response_initial_rotation["Rotations"]) + 1
         )
 
     @markers.aws.validated
     def test_list_key_rotations_different_key_states(self, kms_create_key, aws_client, snapshot):
-        key_id = kms_create_key(KeySpec="SYMMETRIC_DEFAULT", KeyUsage="ENCRYPT_DECRYPT")["KeyId"]
+        key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+
+        snapshot.add_transformer(
+            snapshot.transform.key_value("KeyMaterialId", reference_replacement=False)
+        )
 
         response_enabled_key = aws_client.kms.list_key_rotations(
             KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL"
@@ -1514,6 +1523,10 @@ class TestKMS:
     def test_list_key_rotations_content(self, kms_create_key, aws_client, snapshot):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
 
+        snapshot.add_transformer(
+            snapshot.transform.key_value("KeyMaterialId", reference_replacement=False)
+        )
+
         for _ in range(3):
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
 
@@ -1523,7 +1536,9 @@ class TestKMS:
 
             assert poll_condition(condition=_rotation_completed, timeout=10, interval=1)
 
-        response_after_rotations = aws_client.kms.list_key_rotations(KeyId=key_id)
+        response_after_rotations = aws_client.kms.list_key_rotations(
+            KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL"
+        )
         snapshot.match("multiple-rotations", response_after_rotations)
 
         rotations = response_after_rotations["Rotations"]
@@ -1531,10 +1546,12 @@ class TestKMS:
 
         for rotation in rotations:
             assert "KeyId" in rotation
-            assert "RotationDate" in rotation
+            assert (
+                "RotationDate" in rotation or rotation.get("RotationDate") is None
+            )  # None in initial
             assert (
                 "RotationType" in rotation or rotation.get("RotationType") is None
-            )  # Initial rotation might have None
+            )  # None in initial
             assert "KeyMaterialId" in rotation
             assert "KeyMaterialState" in rotation
 
@@ -1542,10 +1559,10 @@ class TestKMS:
     @pytest.mark.parametrize(
         "key_spec,key_usage,expected_error",
         [
-            ("RSA_2048", "SIGN_VERIFY", "UnsupportedOperationException"),
-            ("RSA_4096", "ENCRYPT_DECRYPT", "UnsupportedOperationException"),
-            ("ECC_NIST_P256", "SIGN_VERIFY", "UnsupportedOperationException"),
-            ("HMAC_256", "GENERATE_VERIFY_MAC", "UnsupportedOperationException"),
+            ("RSA_2048", "SIGN_VERIFY", "ValidationException"),
+            ("RSA_4096", "ENCRYPT_DECRYPT", "ValidationException"),
+            ("ECC_NIST_P256", "SIGN_VERIFY", "ValidationException"),
+            ("HMAC_256", "GENERATE_VERIFY_MAC", "ValidationException"),
         ],
     )
     def test_list_key_rotations_unsupported_key_types(
@@ -1554,7 +1571,7 @@ class TestKMS:
         key_id = kms_create_key(KeyUsage=key_usage, KeySpec=key_spec)["KeyId"]
 
         with pytest.raises(ClientError) as e:
-            aws_client.kms.list_key_rotations(KeyId=key_id)
+            aws_client.kms.list_key_rotations(KeyId=key_id, IncludeKeyMaterial="ALL_KEY_MATERIAL")
 
         assert expected_error in str(e.value)
         error_response = e.value.response
@@ -1564,6 +1581,10 @@ class TestKMS:
     @markers.aws.validated
     def test_list_key_rotations_include_key_material(self, kms_create_key, aws_client, snapshot):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
+
+        snapshot.add_transformer(
+            snapshot.transform.key_value("KeyMaterialId", reference_replacement=False)
+        )
 
         aws_client.kms.rotate_key_on_demand(KeyId=key_id)
 

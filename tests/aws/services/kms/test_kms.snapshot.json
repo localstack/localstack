@@ -2288,7 +2288,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_after_on_demand_rotation": {
-    "recorded-date": "10-07-2025, 23:03:36",
+    "recorded-date": "15-07-2025, 15:09:01",
     "recorded-content": {
       "initial-rotations": {
         "Rotations": [],
@@ -2302,7 +2302,7 @@
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "6d631900e769898b2808d19755fdaa2fe6e6c19a61c33fbb7bc6d251475a6c03",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT",
             "RotationDate": "datetime",
             "RotationType": "ON_DEMAND"
@@ -2317,13 +2317,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_different_key_states": {
-    "recorded-date": "10-07-2025, 23:23:30",
+    "recorded-date": "16-07-2025, 15:50:18",
     "recorded-content": {
       "enabled-key-rotations": {
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "da6fd345ea8e40601730aa8d2b92ceebb7c950f8e09b9802c57ac0f2045a8c35",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT"
           }
         ],
@@ -2337,7 +2337,7 @@
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "da6fd345ea8e40601730aa8d2b92ceebb7c950f8e09b9802c57ac0f2045a8c35",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT"
           }
         ],
@@ -2351,7 +2351,7 @@
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "da6fd345ea8e40601730aa8d2b92ceebb7c950f8e09b9802c57ac0f2045a8c35",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT"
           }
         ],
@@ -2364,29 +2364,29 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_2048-SIGN_VERIFY-UnsupportedOperationException]": {
-    "recorded-date": "10-07-2025, 23:04:26",
+    "recorded-date": "16-07-2025, 15:59:30",
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_4096-ENCRYPT_DECRYPT-UnsupportedOperationException]": {
-    "recorded-date": "10-07-2025, 23:04:27",
+    "recorded-date": "16-07-2025, 15:59:31",
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[ECC_NIST_P256-SIGN_VERIFY-UnsupportedOperationException]": {
-    "recorded-date": "10-07-2025, 23:04:27",
+    "recorded-date": "16-07-2025, 15:59:31",
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[HMAC_256-GENERATE_VERIFY_MAC-UnsupportedOperationException]": {
-    "recorded-date": "10-07-2025, 23:04:28",
+    "recorded-date": "16-07-2025, 15:59:32",
     "recorded-content": {}
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_include_key_material": {
-    "recorded-date": "10-07-2025, 23:04:47",
+    "recorded-date": "16-07-2025, 16:01:30",
     "recorded-content": {
       "default-key-material": {
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "60fe0d1221f11a75768cf445505fc100331e14a46eb948071fd1207a95dce6b8",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT",
             "RotationDate": "datetime",
             "RotationType": "ON_DEMAND"
@@ -2402,12 +2402,12 @@
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "79d2a0ed3517f5e9e9c7a4c17d6f2ba4ac8702973755d9f8fb487b5bee3aba21",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "NON_CURRENT"
           },
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "60fe0d1221f11a75768cf445505fc100331e14a46eb948071fd1207a95dce6b8",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT",
             "RotationDate": "datetime",
             "RotationType": "ON_DEMAND"
@@ -2423,7 +2423,7 @@
         "Rotations": [
           {
             "KeyId": "<key-id:1>",
-            "KeyMaterialId": "60fe0d1221f11a75768cf445505fc100331e14a46eb948071fd1207a95dce6b8",
+            "KeyMaterialId": "key-material-id",
             "KeyMaterialState": "CURRENT",
             "RotationDate": "datetime",
             "RotationType": "ON_DEMAND"
@@ -2439,6 +2439,106 @@
         "Error": {
           "Code": "ValidationException",
           "Message": "1 validation error detected: Value 'INVALID_VALUE' at 'includeKeyMaterial' failed to satisfy constraint: Member must satisfy enum value set: [ALL_KEY_MATERIAL, ROTATIONS_ONLY]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_content": {
+    "recorded-date": "16-07-2025, 15:57:40",
+    "recorded-content": {
+      "multiple-rotations": {
+        "Rotations": [
+          {
+            "KeyId": "<key-id:1>",
+            "KeyMaterialId": "key-material-id",
+            "KeyMaterialState": "NON_CURRENT"
+          },
+          {
+            "KeyId": "<key-id:1>",
+            "KeyMaterialId": "key-material-id",
+            "KeyMaterialState": "NON_CURRENT",
+            "RotationDate": "datetime",
+            "RotationType": "ON_DEMAND"
+          },
+          {
+            "KeyId": "<key-id:1>",
+            "KeyMaterialId": "key-material-id",
+            "KeyMaterialState": "NON_CURRENT",
+            "RotationDate": "datetime",
+            "RotationType": "ON_DEMAND"
+          },
+          {
+            "KeyId": "<key-id:1>",
+            "KeyMaterialId": "key-material-id",
+            "KeyMaterialState": "CURRENT",
+            "RotationDate": "datetime",
+            "RotationType": "ON_DEMAND"
+          }
+        ],
+        "Truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_2048-SIGN_VERIFY-ValidationException]": {
+    "recorded-date": "16-07-2025, 16:00:00",
+    "recorded-content": {
+      "rsa_2048-sign_verify-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Input parameter includeKeyMaterial can only be used with symmetric keys."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_4096-ENCRYPT_DECRYPT-ValidationException]": {
+    "recorded-date": "16-07-2025, 16:00:01",
+    "recorded-content": {
+      "rsa_4096-encrypt_decrypt-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Input parameter includeKeyMaterial can only be used with symmetric keys."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[ECC_NIST_P256-SIGN_VERIFY-ValidationException]": {
+    "recorded-date": "16-07-2025, 16:00:01",
+    "recorded-content": {
+      "ecc_nist_p256-sign_verify-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Input parameter includeKeyMaterial can only be used with symmetric keys."
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[HMAC_256-GENERATE_VERIFY_MAC-ValidationException]": {
+    "recorded-date": "16-07-2025, 16:00:02",
+    "recorded-content": {
+      "hmac_256-generate_verify_mac-error": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Input parameter includeKeyMaterial can only be used with symmetric keys."
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

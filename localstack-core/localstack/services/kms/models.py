@@ -283,8 +283,12 @@ class KeyRotationEntry:
     key_material: bytes
     key_material_id: str
     key_material_state: str
-    rotation_date: datetime.datetime
+    rotation_date: datetime.datetime | None = None
     rotation_type: str | None = None
+    key_material_description: str | None = None
+    expiration_model: str | None = None
+    import_state: str | None = None
+    valid_to: str | None = None
 
 
 class KmsKey:
@@ -333,12 +337,12 @@ class KmsKey:
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
 
-        if self._supports_rotation():
+        if self.supports_rotation():
             initial_rotation = KeyRotationEntry(
                 key_id=self.metadata["Arn"],
                 rotation_date=datetime.datetime.now(),
                 key_material_state="CURRENT",
-                key_material_id=long_uid(),
+                key_material_id=long_uid(),  # FIXME: a more appropriate KMS output
                 key_material=bytes(self.crypto_key.key_material),
             )
             self.key_rotations.append(initial_rotation)
@@ -789,10 +793,10 @@ class KmsKey:
 
         self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT, new_key_material)
 
-    def _supports_rotation(self) -> bool:
+    def supports_rotation(self) -> bool:
         return (
             self.metadata.get("KeySpec") == KeySpec.SYMMETRIC_DEFAULT
-            and self.metadata.get("Origin") == OriginType.AWS_KMS
+            and self.metadata.get("Origin") in [OriginType.AWS_KMS, OriginType.EXTERNAL]
             and self.metadata.get("KeyUsage") == KeyUsageType.ENCRYPT_DECRYPT
         )
 

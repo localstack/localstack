@@ -192,31 +192,28 @@
     "last_validated_date": "2024-04-11T15:52:39+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_after_on_demand_rotation": {
-    "last_validated_date": "2025-07-10T23:03:36+00:00",
-    "durations_in_seconds": {
-      "setup": 0.55,
-      "call": 4.41,
-      "teardown": 0.13,
-      "total": 5.09
-    }
+    "last_validated_date": "2025-07-15T15:09:01+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_content": {
+    "last_validated_date": "2025-07-16T15:57:40+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_different_key_states": {
-    "last_validated_date": "2025-07-10T23:23:30+00:00",
-    "durations_in_seconds": {
-      "setup": 0.59,
-      "call": 1.17,
-      "teardown": 0.12,
-      "total": 1.88
-    }
+    "last_validated_date": "2025-07-16T15:50:18+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_include_key_material": {
-    "last_validated_date": "2025-07-10T23:04:47+00:00",
-    "durations_in_seconds": {
-      "setup": 0.53,
-      "call": 3.49,
-      "teardown": 0.13,
-      "total": 4.15
-    }
+    "last_validated_date": "2025-07-16T16:01:30+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[ECC_NIST_P256-SIGN_VERIFY-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:01+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[HMAC_256-GENERATE_VERIFY_MAC-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:02+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_2048-SIGN_VERIFY-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:00+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_4096-ENCRYPT_DECRYPT-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:01+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_keys": {
     "last_validated_date": "2024-04-11T15:52:34+00:00"
