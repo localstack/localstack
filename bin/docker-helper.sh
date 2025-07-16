@@ -70,7 +70,7 @@ function _enforce_image_name() {
 }
 
 function _enforce_main_branch() {
-    MAIN_BRANCH=${MAIN_BRANCH-"master"}
+    MAIN_BRANCH=${MAIN_BRANCH-"main"}
     CURRENT_BRANCH=$(_get_current_branch)
     echo "Current git branch: '$CURRENT_BRANCH'"
     test "$CURRENT_BRANCH" == "$MAIN_BRANCH" || _fail "Current branch ($CURRENT_BRANCH) is not $MAIN_BRANCH."

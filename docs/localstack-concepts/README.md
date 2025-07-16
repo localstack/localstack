@@ -18,7 +18,7 @@ AWS is essentially a Remote Procedure Call (RPC) system, and ASF is our server-s
 
 AWS developed a specification language, [Smithy](https://awslabs.github.io/smithy/), which they use internally to define their APIs in a declarative way. They use these specs to generate client SDKs and client documentation. All these specifications are available, among other repositories, in the [botocore repository](https://github.com/boto/botocore/tree/develop/botocore/data). Botocore are the internals of the AWS Python SDK, which allows ASF to interpret and operate on the service specifications. Take a look at an example, [the `Invoke` operation of the `lambda` API](https://github.com/boto/botocore/blob/474e7a23d0fd178790579638cec9123d7e92d10b/botocore/data/lambda/2015-03-31/service-2.json#L564-L573):
 
-```bash 
+```bash
 	"Invoke":{
     "name":"Invoke",
     "http":{
@@ -52,8 +52,8 @@ A service provider is an implementation of an AWS service API. Service providers
 
 A server-side protocol implementation requires a marshaller (a parser for incoming requests, and a serializer for outgoing responses).
 
-- Our [protocol parser](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/aws/protocol/parser.py) translates AWS HTTP requests into objects that can be used to call the respective function of the service provider.
-- Our [protocol serializer](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/aws/protocol/serializer.py) translates response objects coming from service provider functions into HTTP responses.
+- Our [protocol parser](https://github.com/localstack/localstack/blob/main/localstack-core/localstack/aws/protocol/parser.py) translates AWS HTTP requests into objects that can be used to call the respective function of the service provider.
+- Our [protocol serializer](https://github.com/localstack/localstack/blob/main/localstack-core/localstack/aws/protocol/serializer.py) translates response objects coming from service provider functions into HTTP responses.
 
 ## Service
 
@@ -85,13 +85,13 @@ Sometimes we also use `moto` code directly, for example importing and accessing 
 
 ## `@patch`
 
-[The patch utility](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/utils/patch.py) enables easy [monkey patching](https://en.wikipedia.org/wiki/Monkey_patch) of external functionality. We often use this to modify internal moto functionality. Sometimes it is easier to patch internals than to wrap the entire API method with the custom functionality.
+[The patch utility](https://github.com/localstack/localstack/blob/main/localstack-core/localstack/utils/patch.py) enables easy [monkey patching](https://en.wikipedia.org/wiki/Monkey_patch) of external functionality. We often use this to modify internal moto functionality. Sometimes it is easier to patch internals than to wrap the entire API method with the custom functionality.
 
 ### Server
 
-[Server](<https://github.com/localstack/localstack/blob/master/localstack-core/localstack/utils/serving.py>) is an abstract class that provides a basis for serving other backends that run in a separate process. For example, our Kinesis implementation uses [kinesis-mock](https://github.com/etspaceman/kinesis-mock/) as a backend that implements the Kinesis AWS API and also emulates its behavior. 
+[Server](<https://github.com/localstack/localstack/blob/main/localstack-core/localstack/utils/serving.py>) is an abstract class that provides a basis for serving other backends that run in a separate process. For example, our Kinesis implementation uses [kinesis-mock](https://github.com/etspaceman/kinesis-mock/) as a backend that implements the Kinesis AWS API and also emulates its behavior.
 
-The provider [starts the kinesis-mock binary in a `Server`](https://github.com/localstack/localstack/blob/2e1e8b4e3e98965a7e99cd58ccdeaa6350a2a414/localstack/services/kinesis/kinesis_mock_server.py), and then forwards all incoming requests to it using `forward_request`. This is a similar construct to `call_moto`, only generalized to arbitrary HTTP AWS backends. 
+The provider [starts the kinesis-mock binary in a `Server`](https://github.com/localstack/localstack/blob/2e1e8b4e3e98965a7e99cd58ccdeaa6350a2a414/localstack/services/kinesis/kinesis_mock_server.py), and then forwards all incoming requests to it using `forward_request`. This is a similar construct to `call_moto`, only generalized to arbitrary HTTP AWS backends.
 
 A server is reachable through some URL (not necessarily HTTP), and the abstract class implements the lifecycle of the process (start, stop, is_started, is_running, etc). To create a new server, you only need to overwrite either `do_run`, or `do_start_thread`, with custom logic to start the binary.
 
@@ -99,7 +99,7 @@ There are some existing useful utilities and specializations of `Server` which c
 
 ### External service ports
 
-Some services create additional user-facing resources. For example, the RDS service starts a PostgreSQL server, and the ElastiCache service starts a Redis server, that users then directly connect to. 
+Some services create additional user-facing resources. For example, the RDS service starts a PostgreSQL server, and the ElastiCache service starts a Redis server, that users then directly connect to.
 
 These resources are not hidden behind the service API, and need to be exposed through an available network port. This is what the [external service port range](https://docs.localstack.cloud/references/external-ports/) is for. We expose this port range by default in the docker-compose template, or via the CLI.
 
@@ -214,7 +214,7 @@ The `static_libs` directory should not be modified at container runtime, as it w
 This is the default target if a package is installed in the aforementioned way via `python -m localstack.cli.lpm install`.
 
 `var_libs` is the main and default location used for packages installed at runtime.
-When starting the docker container, a host-volume is mounted at `var_libs`. 
+When starting the docker container, a host-volume is mounted at `var_libs`.
 The content of the directory will persist across multiple containers.
 
 ### Installation life-cycle
@@ -237,7 +237,7 @@ For help with the specific commands, use `python -m localstack.cli.lpm <command>
 
 The codebase contains a wealth of utility functions for various common tasks like handling strings, JSON/XML, threads/processes, collections, date/time conversions, and much more.
 
-The utilities are grouped into multiple util modules inside the [localstack.utils](<https://github.com/localstack/localstack/tree/master/localstack-core/localstack/utils>) package. Some of the most commonly used utils modules include:
+The utilities are grouped into multiple util modules inside the [localstack.utils](<https://github.com/localstack/localstack/tree/main/localstack-core/localstack/utils>) package. Some of the most commonly used utils modules include:
 
 -   `.files` - file handling utilities (e.g., `load_file`, `save_file`, or `mkdir`)
 -   `.json` - handle JSON content (e.g., `json_safe`, or `canonical_json`)

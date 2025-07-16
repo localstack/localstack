@@ -66,7 +66,7 @@ from .paths import HOST_PATH_MAPPINGS, HostPaths
     "--mount-source/--no-mount-source",
     is_flag=True,
     default=True,
-    help="Mount source files from localstack and localstack-ext. Use --local-packages for optional dependencies such as moto.",
+    help="Mount source files from localstack and localstack-pro. Use --local-packages for optional dependencies such as moto.",
 )
 @click.option(
     "--mount-dependencies/--no-mount-dependencies",
@@ -143,7 +143,7 @@ def run(
 ):
     """
     A tool for localstack developers to start localstack containers. Run this in your localstack or
-    localstack-ext source tree to mount local source files or dependencies into the container.
+    localstack-pro source tree to mount local source files or dependencies into the container.
     Here are some examples::
 
     \b
@@ -153,7 +153,7 @@ def run(
 
     Explanations and more examples:
 
-    Start a normal container localstack container. If you run this from the localstack-ext repo,
+    Start a normal container localstack container. If you run this from the localstack-pro repo,
     it will start localstack-pro::
 
         python -m localstack.dev.run
@@ -191,7 +191,7 @@ def run(
             -v $PWD/tests:/opt/code/localstack/tests \\
             -- .venv/bin/python -m pytest tests/unit/http_/
 
-    The script generally assumes that you are executing in either localstack or localstack-ext source
+    The script generally assumes that you are executing in either localstack or localstack-pro source
     repositories that are organized like this::
 
     \b
@@ -204,7 +204,7 @@ def run(
         │   ├── pyproject.toml
         │   ├── tests
         │   └── ...
-        ├── localstack-ext                   <- or execute script in here
+        ├── localstack-pro                   <- or execute script in here
         │   ├── ...
         │   ├── localstack-pro-core
         │   │   ├── localstack
@@ -254,7 +254,7 @@ def run(
 
         # auto-set pro flag
         if pro is None:
-            if os.getcwd().endswith("localstack-ext"):
+            if os.getcwd().endswith("localstack-pro"):
                 pro = True
             else:
                 pro = False

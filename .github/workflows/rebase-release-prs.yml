@@ -32,4 +32,4 @@ jobs:
         with:
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           head: ${{ matrix.head }}
-          base: master
+          base: main
