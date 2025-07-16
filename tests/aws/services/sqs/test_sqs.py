@@ -212,6 +212,7 @@ class TestSqsProvider:
         assert int(attrs["VisibilityTimeout"]) == 30, "visibility timeout is not the default value"
 
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_create_queue_recently_deleted(self, sqs_create_queue, monkeypatch, aws_sqs_client):
         monkeypatch.setattr(config, "SQS_DELAY_RECENTLY_DELETED", True)
 
@@ -1252,6 +1253,7 @@ class TestSqsProvider:
         assert len(response["Messages"]) == 1
 
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_message_retention(self, sqs_create_queue, aws_client, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
         # in AWS, message retention is at least 60 seconds
@@ -1275,6 +1277,7 @@ class TestSqsProvider:
         assert not result.get("Messages")
 
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_message_retention_fifo(self, sqs_create_queue, aws_client, monkeypatch):
         monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
         # in AWS, message retention is at least 60 seconds
@@ -1304,6 +1307,7 @@ class TestSqsProvider:
         assert not result.get("Messages")
 
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_message_retention_with_inflight(self, sqs_create_queue, aws_client, monkeypatch):
         # tests whether an inflight message is correctly removed after it expires
         monkeypatch.setattr(config, "SQS_ENABLE_MESSAGE_RETENTION_PERIOD", True)
@@ -3896,6 +3900,7 @@ class TestSqsProvider:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
+    @pytest.mark.requires_in_process
     def test_successive_purge_calls_fail(
         self, sqs_create_queue, monkeypatch, snapshot, aws_sqs_client, aws_client
     ):
@@ -3991,6 +3996,7 @@ class TestSqsProvider:
         assert queue2_url in region2_client.list_queues().get("QueueUrls", [])
 
     @markers.aws.validated
+    @pytest.mark.requires_in_process
     def test_list_queues_multi_region_with_endpoint_strategy_domain(
         self, aws_client_factory, cleanups, monkeypatch
     ):
@@ -5063,7 +5069,10 @@ class TestSqsQueryApi:
         assert response.status_code == 200
 
     @markers.aws.validated
-    @pytest.mark.parametrize("strategy", ["standard", "domain", "path", "off"])
+    @pytest.mark.parametrize(
+        "strategy",
+        ["standard", "domain", "path", pytest.param("off", marks=pytest.mark.requires_in_process)],
+    )
     def test_endpoint_strategy_with_multi_region(
         self,
         strategy,
