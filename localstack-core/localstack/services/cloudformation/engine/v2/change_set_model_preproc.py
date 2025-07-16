@@ -610,7 +610,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             raise RuntimeError("Invalid or missing Fn::Transform 'Parameters' argument")
 
         if transform_name in transformers:
-            # TODO: port and refactor this 'transformers' logic to this package.https://lmstudio.ai/
+            # TODO: port and refactor this 'transformers' logic to this package.
             builtin_transformer_class = transformers[transform_name]
             builtin_transformer: Transformer = builtin_transformer_class()
             transform_output: Any = builtin_transformer.transform(
