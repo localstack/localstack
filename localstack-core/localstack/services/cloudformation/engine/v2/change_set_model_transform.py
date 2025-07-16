@@ -324,9 +324,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             )
 
             for parameter_key, parameter_value in macro_parameters.items():
-                if isinstance(parameter_value, dict):
-                    parameter_value = resolve_refs_recursively.resolve(parameter_value)
-                resolved_parameters[parameter_key] = parameter_value
+                resolved_parameters[parameter_key] = resolve_refs_recursively.resolve(
+                    parameter_value
+                )
 
             return resolved_parameters
 
@@ -345,7 +345,13 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
                     if transformer_class:
                         transformer = transformer_class()
-                        transformed = transformer.transform(account_id, region_name, parameters)
+                        transformed = transformer.transform(
+                            account_id,
+                            region_name,
+                            _resolve_macro_parameters(
+                                macro_parameters=parameters, stack_parameters=stack_parameters
+                            ),
+                        )
                         obj_copy = copy.deepcopy(obj)
                         obj_copy.pop("Fn::Transform", "")
                         obj_copy.update(transformed)
