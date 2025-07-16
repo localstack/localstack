@@ -90,6 +90,7 @@ KMSContext = str
 KeyCount = int
 KeyMarker = str
 KeyPrefixEquals = str
+KmsKeyArn = str
 LambdaFunctionArn = str
 Location = str
 LocationNameAsString = str
@@ -133,6 +134,7 @@ QuoteCharacter = str
 QuoteEscapeCharacter = str
 Range = str
 RecordDelimiter = str
+RecordExpirationDays = int
 Region = str
 RenameSource = str
 RenameSourceIfMatch = str
@@ -347,6 +349,11 @@ class ExistingObjectReplicationStatus(StrEnum):
     Disabled = "Disabled"
 
 
+class ExpirationState(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
 class ExpirationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -375,6 +382,11 @@ class IntelligentTieringAccessTier(StrEnum):
 class IntelligentTieringStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
+
+
+class InventoryConfigurationState(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
 
 
 class InventoryFormat(StrEnum):
@@ -574,6 +586,11 @@ class RestoreRequestType(StrEnum):
     SELECT = "SELECT"
 
 
+class S3TablesBucketType(StrEnum):
+    aws = "aws"
+    customer = "customer"
+
+
 class ServerSideEncryption(StrEnum):
     AES256 = "AES256"
     aws_fsx = "aws:fsx"
@@ -608,6 +625,11 @@ class StorageClass(StrEnum):
 
 class StorageClassAnalysisSchemaVersion(StrEnum):
     V_1 = "V_1"
+
+
+class TableSseAlgorithm(StrEnum):
+    aws_kms = "aws:kms"
+    AES256 = "AES256"
 
 
 class TaggingDirective(StrEnum):
@@ -1502,6 +1524,39 @@ class CreateBucketConfiguration(TypedDict, total=False):
     Tags: Optional[TagSet]
 
 
+class MetadataTableEncryptionConfiguration(TypedDict, total=False):
+    SseAlgorithm: TableSseAlgorithm
+    KmsKeyArn: Optional[KmsKeyArn]
+
+
+class InventoryTableConfiguration(TypedDict, total=False):
+    ConfigurationState: InventoryConfigurationState
+    EncryptionConfiguration: Optional[MetadataTableEncryptionConfiguration]
+
+
+class RecordExpiration(TypedDict, total=False):
+    Expiration: ExpirationState
+    Days: Optional[RecordExpirationDays]
+
+
+class JournalTableConfiguration(TypedDict, total=False):
+    RecordExpiration: RecordExpiration
+    EncryptionConfiguration: Optional[MetadataTableEncryptionConfiguration]
+
+
+class MetadataConfiguration(TypedDict, total=False):
+    JournalTableConfiguration: JournalTableConfiguration
+    InventoryTableConfiguration: Optional[InventoryTableConfiguration]
+
+
+class CreateBucketMetadataConfigurationRequest(ServiceRequest):
+    Bucket: BucketName
+    ContentMD5: Optional[ContentMD5]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    MetadataConfiguration: MetadataConfiguration
+    ExpectedBucketOwner: Optional[AccountId]
+
+
 class S3TablesDestination(TypedDict, total=False):
     TableBucketArn: S3TablesBucketArn
     TableName: S3TablesName
@@ -1674,6 +1729,11 @@ class DeleteBucketLifecycleRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class DeleteBucketMetadataConfigurationRequest(ServiceRequest):
+    Bucket: BucketName
+    ExpectedBucketOwner: Optional[AccountId]
+
+
 class DeleteBucketMetadataTableConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
@@ -1831,6 +1891,12 @@ class Destination(TypedDict, total=False):
     EncryptionConfiguration: Optional[EncryptionConfiguration]
     ReplicationTime: Optional[ReplicationTime]
     Metrics: Optional[Metrics]
+
+
+class DestinationResult(TypedDict, total=False):
+    TableBucketType: Optional[S3TablesBucketType]
+    TableBucketArn: Optional[S3TablesBucketArn]
+    TableNamespace: Optional[S3TablesNamespace]
 
 
 class Encryption(TypedDict, total=False):
@@ -2076,6 +2142,41 @@ class GetBucketLoggingOutput(TypedDict, total=False):
 
 
 class GetBucketLoggingRequest(ServiceRequest):
+    Bucket: BucketName
+    ExpectedBucketOwner: Optional[AccountId]
+
+
+class InventoryTableConfigurationResult(TypedDict, total=False):
+    ConfigurationState: InventoryConfigurationState
+    TableStatus: Optional[MetadataTableStatus]
+    Error: Optional[ErrorDetails]
+    TableName: Optional[S3TablesName]
+    TableArn: Optional[S3TablesArn]
+
+
+class JournalTableConfigurationResult(TypedDict, total=False):
+    TableStatus: MetadataTableStatus
+    Error: Optional[ErrorDetails]
+    TableName: S3TablesName
+    TableArn: Optional[S3TablesArn]
+    RecordExpiration: RecordExpiration
+
+
+class MetadataConfigurationResult(TypedDict, total=False):
+    DestinationResult: DestinationResult
+    JournalTableConfigurationResult: Optional[JournalTableConfigurationResult]
+    InventoryTableConfigurationResult: Optional[InventoryTableConfigurationResult]
+
+
+class GetBucketMetadataConfigurationResult(TypedDict, total=False):
+    MetadataConfigurationResult: MetadataConfigurationResult
+
+
+class GetBucketMetadataConfigurationOutput(TypedDict, total=False):
+    GetBucketMetadataConfigurationResult: Optional[GetBucketMetadataConfigurationResult]
+
+
+class GetBucketMetadataConfigurationRequest(ServiceRequest):
     Bucket: BucketName
     ExpectedBucketOwner: Optional[AccountId]
 
@@ -2634,8 +2735,17 @@ IntelligentTieringConfigurationList = List[IntelligentTieringConfiguration]
 InventoryConfigurationList = List[InventoryConfiguration]
 
 
+class InventoryTableConfigurationUpdates(TypedDict, total=False):
+    ConfigurationState: InventoryConfigurationState
+    EncryptionConfiguration: Optional[MetadataTableEncryptionConfiguration]
+
+
 class JSONOutput(TypedDict, total=False):
     RecordDelimiter: Optional[RecordDelimiter]
+
+
+class JournalTableConfigurationUpdates(TypedDict, total=False):
+    RecordExpiration: RecordExpiration
 
 
 class S3KeyFilter(TypedDict, total=False):
@@ -3496,6 +3606,22 @@ class SelectObjectContentRequest(ServiceRequest):
     ExpectedBucketOwner: Optional[AccountId]
 
 
+class UpdateBucketMetadataInventoryTableConfigurationRequest(ServiceRequest):
+    Bucket: BucketName
+    ContentMD5: Optional[ContentMD5]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    InventoryTableConfiguration: InventoryTableConfigurationUpdates
+    ExpectedBucketOwner: Optional[AccountId]
+
+
+class UpdateBucketMetadataJournalTableConfigurationRequest(ServiceRequest):
+    Bucket: BucketName
+    ContentMD5: Optional[ContentMD5]
+    ChecksumAlgorithm: Optional[ChecksumAlgorithm]
+    JournalTableConfiguration: JournalTableConfigurationUpdates
+    ExpectedBucketOwner: Optional[AccountId]
+
+
 class UploadPartCopyOutput(TypedDict, total=False):
     CopySourceVersionId: Optional[CopySourceVersionId]
     CopyPartResult: Optional[CopyPartResult]
@@ -3750,6 +3876,19 @@ class S3Api:
     ) -> CreateBucketOutput:
         raise NotImplementedError
 
+    @handler("CreateBucketMetadataConfiguration")
+    def create_bucket_metadata_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        metadata_configuration: MetadataConfiguration,
+        content_md5: ContentMD5 | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
     @handler("CreateBucketMetadataTableConfiguration")
     def create_bucket_metadata_table_configuration(
         self,
@@ -3881,6 +4020,16 @@ class S3Api:
 
     @handler("DeleteBucketLifecycle")
     def delete_bucket_lifecycle(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("DeleteBucketMetadataConfiguration")
+    def delete_bucket_metadata_configuration(
         self,
         context: RequestContext,
         bucket: BucketName,
@@ -4127,6 +4276,16 @@ class S3Api:
         expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> GetBucketLoggingOutput:
+        raise NotImplementedError
+
+    @handler("GetBucketMetadataConfiguration")
+    def get_bucket_metadata_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> GetBucketMetadataConfigurationOutput:
         raise NotImplementedError
 
     @handler("GetBucketMetadataTableConfiguration")
@@ -5040,6 +5199,32 @@ class S3Api:
         expected_bucket_owner: AccountId | None = None,
         **kwargs,
     ) -> SelectObjectContentOutput:
+        raise NotImplementedError
+
+    @handler("UpdateBucketMetadataInventoryTableConfiguration")
+    def update_bucket_metadata_inventory_table_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        inventory_table_configuration: InventoryTableConfigurationUpdates,
+        content_md5: ContentMD5 | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateBucketMetadataJournalTableConfiguration")
+    def update_bucket_metadata_journal_table_configuration(
+        self,
+        context: RequestContext,
+        bucket: BucketName,
+        journal_table_configuration: JournalTableConfigurationUpdates,
+        content_md5: ContentMD5 | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        expected_bucket_owner: AccountId | None = None,
+        **kwargs,
+    ) -> None:
         raise NotImplementedError
 
     @handler("UploadPart")
