@@ -1,5 +1,4 @@
 import copy
-import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -1264,7 +1263,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=json.loads(stack.template_body or "{}"),
+            before_template=template_preparer.parse_template(template=stack.template_body),
             after_template=None,
             before_parameters=stack.resolved_parameters,
             after_parameters=None,
