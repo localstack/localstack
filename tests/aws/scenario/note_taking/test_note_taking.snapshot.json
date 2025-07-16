@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/note_taking/test_note_taking.py::TestNoteTakingScenario::test_validate_infra_setup": {
-    "recorded-date": "16-04-2024, 08:42:29",
+    "recorded-date": "15-07-2025, 19:26:03",
     "recorded-content": {
       "describe_stack_resources": {
         "StackResources": [
@@ -504,7 +504,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 5,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 5
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -806,6 +811,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]

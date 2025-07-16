@@ -22,13 +22,14 @@
     }
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_sam.py::test_cfn_handle_serverless_api_resource": {
-    "recorded-date": "20-06-2024, 20:16:01",
+    "recorded-date": "15-07-2025, 19:33:25",
     "recorded-content": {
       "get_rest_api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -56,7 +57,7 @@
           "Architectures": [
             "x86_64"
           ],
-          "CodeSha256": "+xvKfGS3ENINs/yK7dLJgId2fDM+vv9OP03rJ9mLflU=",
+          "CodeSha256": "W479VjWcFpBg+yx255glPq1ZLEq5WjlmjJi7CmxLFio=",
           "CodeSize": "<code-size>",
           "Description": "",
           "EphemeralStorage": {
