@@ -38,6 +38,7 @@ from tests.aws.services.stepfunctions.templates.callbacks.callback_templates imp
         "$..events..taskSubmittedEventDetails.output",
     ]
 )
+@pytest.mark.requires_in_process
 class TestBaseScenarios:
     @markers.aws.validated
     @pytest.mark.parametrize(
