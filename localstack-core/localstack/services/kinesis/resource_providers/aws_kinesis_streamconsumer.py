@@ -66,7 +66,7 @@ class KinesisStreamConsumerProvider(ResourceProvider[KinesisStreamConsumerProper
             response = kinesis.register_stream_consumer(
                 StreamARN=model["StreamARN"], ConsumerName=model["ConsumerName"]
             )
-            model["ConsumerARN"] = response["Consumer"]["ConsumerARN"]
+            model["Id"] = model["ConsumerARN"] = response["Consumer"]["ConsumerARN"]
             model["ConsumerStatus"] = response["Consumer"]["ConsumerStatus"]
             request.custom_context[REPEATED_INVOCATION] = True
             return ProgressEvent(

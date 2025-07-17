@@ -167,9 +167,6 @@ def test_dynamodb_stream_response_with_cf(deploy_cfn_template, aws_client, snaps
     snapshot.add_transformer(snapshot.transform.key_value("TableName"))
 
 
-@pytest.mark.skip(
-    reason="CFNV2:Other resource provider returns NULL physical resource id for StreamConsumer thus later references to this resource fail to compute"
-)
 @markers.aws.validated
 def test_kinesis_stream_consumer_creations(deploy_cfn_template, aws_client):
     consumer_name = f"{short_uid()}"
