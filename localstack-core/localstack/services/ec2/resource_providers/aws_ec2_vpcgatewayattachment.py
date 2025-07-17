@@ -50,13 +50,22 @@ class EC2VPCGatewayAttachmentProvider(ResourceProvider[EC2VPCGatewayAttachmentPr
         """
         model = request.desired_state
         ec2 = request.aws_client_factory.ec2
-        # TODO: validations
-        if model.get("InternetGatewayId"):
-            ec2.attach_internet_gateway(
-                InternetGatewayId=model["InternetGatewayId"], VpcId=model["VpcId"]
+
+        if not model.get("InternetGatewayId") and not model.get("VpnGatewayId"):
+            return ProgressEvent(
+                status=OperationStatus.FAILED,
+                resource_model=model,
+                message="Either 'InternetGatewayId' or 'VpnGatewayId' is required but neither specified",
             )
+
+        if ig_id := model.get("InternetGatewayId"):
+            model["Id"] = ig_id
+            ec2.attach_internet_gateway(InternetGatewayId=ig_id, VpcId=model["VpcId"])
+        elif vpn_id := model.get("VpnGatewayId"):
+            model["Id"] = vpn_id
+            ec2.attach_vpn_gateway(VpnGatewayId=vpn_id, VpcId=model["VpcId"])
         else:
-            ec2.attach_vpn_gateway(VpnGatewayId=model["VpnGatewayId"], VpcId=model["VpcId"])
+            raise RuntimeError("Unreachable due to validations above")
 
         # TODO: idempotency
         return ProgressEvent(
