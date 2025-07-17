@@ -93,6 +93,16 @@ class StackWithIdNotFoundError(ValidationError):
         super().__init__("Stack with id <stack-name> does not exist")
 
 
+class StackNotFoundErrorWhenDescribing(ValidationError):
+    """
+    Raised when describing a change set, slightly different to the normal error message
+    """
+
+    # TODO: is this difference real or can this type be unified with StackNotFoundError?
+    def __init__(self, stack_name: str):
+        super().__init__(f"Stack [{stack_name}] does not exist")
+
+
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
     if stack_name:
         if is_stack_arn(stack_name):
@@ -446,7 +456,12 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO add support for include_property_values
         # only relevant if change_set_name isn't an ARN
         state = get_cloudformation_store(context.account_id, context.region)
-        change_set = find_change_set_v2(state, change_set_name, stack_name)
+        try:
+            change_set = find_change_set_v2(state, change_set_name, stack_name)
+        except StackNotFoundError:
+            # this method returns a different error message
+            raise StackNotFoundErrorWhenDescribing(stack_name)
+
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         result = self._describe_change_set(
@@ -616,6 +631,10 @@ class CloudformationProviderV2(CloudformationProvider):
         next_token: NextToken = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
+        if not stack_name:
+            raise ValidationError(
+                "1 validation error detected: Value null at 'stackName' failed to satisfy constraint: Member must not be null"
+            )
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:

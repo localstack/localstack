@@ -855,7 +855,7 @@ def test_name_conflicts(aws_client, snapshot, cleanups):
     snapshot.match("deleted_second_stack_desc", deleted_stack_desc)
 
 
-@pytest.mark.skip(reason="CFNV2:Validation")
+# @pytest.mark.skip(reason="CFNV2:Validation")
 @markers.aws.validated
 def test_describe_stack_events_errors(aws_client, snapshot):
     with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
