@@ -181,15 +181,15 @@ jobs:
             }
 
             if (ref == DEFAULT_REF) {
-              console.log("Current ref is default ref. Using the same for ext repo: ", DEFAULT_REF)
+              console.log("Current ref is default ref. Using the same for pro repo: ", DEFAULT_REF)
               return DEFAULT_REF
             }
 
             if (await isCompanionRefExisting(ref)) {
-              console.log("Using companion ref in ext repo: ", ref)
+              console.log("Using companion ref in pro repo: ", ref)
               return ref
             } else if (baseRef && baseRef != DEFAULT_REF && (await isCompanionRefExisting(baseRef))) {
-              console.log("Using PR base companion ref in ext repo: ", baseRef)
+              console.log("Using PR base companion ref in pro repo: ", baseRef)
               return baseRef
             }
 
@@ -232,7 +232,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --allow-downgrades libsnappy-dev jq libvirt-dev
 
-      - name: Cache Ext Dependencies (venv)
+      - name: Cache Pro Dependencies (venv)
         if: inputs.disableCaching != true
         uses: actions/cache@v4
         with:
@@ -243,7 +243,7 @@ jobs:
           restore-keys: |
             community-it-${{ runner.os }}-python-${{ steps.setup-python.outputs.python-version }}-venv-${{ hashFiles('localstack-pro/localstack-pro-core/requirements-test.txt') }}-refs/heads/main
 
-      - name: Cache Ext Dependencies (libs)
+      - name: Cache Pro Dependencies (libs)
         if: inputs.disableCaching != true
         uses: actions/cache@v4
         with:
