@@ -574,6 +574,7 @@ class CloudformationProviderV2(CloudformationProvider):
         stack = find_stack_v2(state, stack_name)
         if not stack:
             raise StackNotFoundError(stack_name)
+        # TODO: move describe_details method to provider
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
 
     @handler("DescribeStackResources")

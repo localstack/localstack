@@ -178,6 +178,9 @@ class Stack:
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
+            "NotificationARNs": [],
+            "Capabilities": self.capabilities,
+            "Parameters": self.parameters,
         }
         # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
