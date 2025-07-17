@@ -228,7 +228,6 @@ def test_cfn_function_url(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("response_headers", lowered_headers)
 
 
-@pytest.mark.skip(reason="CFNV2:Other Function already exists error")
 @markers.aws.validated
 def test_lambda_alias(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
