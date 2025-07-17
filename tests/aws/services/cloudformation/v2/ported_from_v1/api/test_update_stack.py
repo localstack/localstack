@@ -19,7 +19,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skip(reason="CFNV2:UpdateStack")
 @markers.aws.validated
 def test_basic_update(deploy_cfn_template, snapshot, aws_client):
     stack = deploy_cfn_template(
@@ -45,7 +44,6 @@ def test_basic_update(deploy_cfn_template, snapshot, aws_client):
     aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
-@pytest.mark.skip(reason="CFNV2:UpdateStack")
 @markers.aws.validated
 def test_update_using_template_url(deploy_cfn_template, s3_create_bucket, aws_client):
     stack = deploy_cfn_template(
@@ -249,7 +247,6 @@ def test_no_template_error(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("error", ex.value.response)
 
 
-@pytest.mark.skip(reason="CFNV2:UpdateStack")
 @markers.aws.validated
 def test_no_parameters_update(deploy_cfn_template, aws_client):
     template = load_file(
@@ -423,7 +420,7 @@ def test_update_with_rollback_configuration(deploy_cfn_template, aws_client):
     aws_client.cloudwatch.delete_alarms(AlarmNames=["HighResourceUsage"])
 
 
-@pytest.mark.skip(reason="CFNV2:UpdateStack")
+@pytest.mark.skip("CFNV2:GetTemplate")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(["$..Stacks..ChangeSetId"])
 def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
