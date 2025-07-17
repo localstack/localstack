@@ -340,7 +340,6 @@ class KmsKey:
         if self.supports_rotation():
             initial_rotation = KeyRotationEntry(
                 key_id=self.metadata["Arn"],
-                rotation_date=datetime.datetime.now(),
                 key_material_state="CURRENT",
                 key_material_id=long_uid(),  # FIXME: a more appropriate KMS output
                 key_material=bytes(self.crypto_key.key_material),
@@ -383,8 +382,8 @@ class KmsKey:
         aad = _serialize_encryption_context(encryption_context=encryption_context)
         keys_to_try = [self.crypto_key.key_material]
 
-        for rotation in sorted(self.key_rotations, key=lambda r: r.rotation_date, reverse=True):
-            if rotation.key_material not in keys_to_try:
+        for rotation in self.key_rotations:
+            if rotation.key_material and rotation.key_material not in keys_to_try:
                 keys_to_try.append(rotation.key_material)
 
         for key in keys_to_try:
@@ -796,7 +795,7 @@ class KmsKey:
     def supports_rotation(self) -> bool:
         return (
             self.metadata.get("KeySpec") == KeySpec.SYMMETRIC_DEFAULT
-            and self.metadata.get("Origin") in [OriginType.AWS_KMS, OriginType.EXTERNAL]
+            and self.metadata.get("Origin") == OriginType.AWS_KMS
             and self.metadata.get("KeyUsage") == KeyUsageType.ENCRYPT_DECRYPT
         )
 

@@ -1364,6 +1364,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # https://docs.aws.amazon.com/kms/latest/developerguide/key-state.html
         # "If the KMS key has imported key material or is in a custom key store: UnsupportedOperationException."
         # We do not model that here, though.
+        # TODO: Add support for single-region EXTERNAL key origins
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1414,12 +1415,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 else:  # Default ROTATIONS_ONLY
                     if rotation.rotation_type in ["AUTOMATIC", "ON_DEMAND"]:
                         rotation_history.append(rotation_entry)
-
-        rotation_history = sorted(
-            rotation_history,
-            key=lambda x: x.get("RotationDate", datetime.datetime.min),
-            reverse=True,
-        )
 
         rotations_list = PaginatedList(rotation_history)
         page, next_token = rotations_list.get_page(
@@ -1682,7 +1677,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             )
 
     def _validate_key_supports_include_key_material(self, key: KmsKey):
-        if key.metadata["Origin"] not in [OriginType.AWS_KMS, OriginType.EXTERNAL]:
+        if key.metadata["Origin"] != OriginType.AWS_KMS:
             raise UnsupportedOperationException(
                 f"{key.metadata['Arn']} origin is {key.metadata.get('Origin')} which is not valid for this operation."
             )

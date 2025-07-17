@@ -2292,7 +2292,6 @@
     "recorded-content": {
       "initial-rotations": {
         "Rotations": [],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2308,7 +2307,6 @@
             "RotationType": "ON_DEMAND"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2327,7 +2325,6 @@
             "KeyMaterialState": "CURRENT"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2341,7 +2338,6 @@
             "KeyMaterialState": "CURRENT"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2355,7 +2351,6 @@
             "KeyMaterialState": "CURRENT"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2392,7 +2387,6 @@
             "RotationType": "ON_DEMAND"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2413,7 +2407,6 @@
             "RotationType": "ON_DEMAND"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2429,7 +2422,6 @@
             "RotationType": "ON_DEMAND"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -2479,7 +2471,6 @@
             "RotationType": "ON_DEMAND"
           }
         ],
-        "Truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
