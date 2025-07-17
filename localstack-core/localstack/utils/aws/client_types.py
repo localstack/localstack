@@ -285,6 +285,7 @@ class ServicePrincipal(str):
     cloudformation = "cloudformation"
     dms = "dms"
     edgelambda = "edgelambda"
+    elasticloadbalancing = "elasticloadbalancing"
     events = "events"
     firehose = "firehose"
     lambda_ = "lambda"
