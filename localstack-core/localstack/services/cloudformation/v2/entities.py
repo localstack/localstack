@@ -59,12 +59,13 @@ class Stack:
         request_payload: CreateChangeSetInput | CreateStackInput,
         template: dict | None = None,
         template_body: str | None = None,
+        initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
     ):
         self.account_id = account_id
         self.region_name = region_name
         self.template = template
         self.template_body = template_body
-        self.status = StackStatus.CREATE_IN_PROGRESS
+        self.status = initial_status
         self.status_reason = None
         self.change_set_ids = []
         self.creation_time = datetime.now(tz=timezone.utc)
