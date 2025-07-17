@@ -620,9 +620,6 @@ def test_rest_api_serverless_ref_resolving(
 
 
 class TestServerlessApigwLambda:
-    @pytest.mark.skip(
-        reason="Requires investigation into the stack not being available in the v2 provider"
-    )
     @markers.aws.validated
     def test_serverless_like_deployment_with_update(
         self, deploy_cfn_template, aws_client, cleanups
