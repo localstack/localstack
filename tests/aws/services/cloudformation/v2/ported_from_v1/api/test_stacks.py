@@ -26,9 +26,14 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestStacksApi:
-    @pytest.mark.skip(reason="CFNV2:Other")
+    @pytest.mark.skip("CFNV2:DescribeStacks")
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
+        paths=[
+            "$..ChangeSetId",
+            "$..EnableTerminationProtection",
+            # V2
+            "$..Parameters",
+        ]
     )
     @markers.aws.validated
     def test_stack_lifecycle(self, deploy_cfn_template, snapshot, aws_client):
@@ -141,7 +146,7 @@ class TestStacksApi:
         )
         snapshot.match("template_processed", template_processed)
 
-    @pytest.mark.skip(reason="CFNV2:Other")
+    @pytest.mark.skip(reason="CFNV2:GetTemplate")
     @markers.aws.validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
     def test_get_template_using_changesets(
@@ -444,7 +449,6 @@ class TestStacksApi:
         ]
         assert len(updated_resources) == length_expected
 
-    @pytest.mark.skip(reason="CFNV2:Other")
     @markers.aws.only_localstack
     def test_create_stack_with_custom_id(
         self, aws_client, cleanups, account_id, region_name, set_resource_custom_id

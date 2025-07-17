@@ -981,9 +981,16 @@ def test_create_while_in_review(aws_client, snapshot, cleanups):
     snapshot.match("describe_change_set", describe_change_set)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..Capabilities", "$..IncludeNestedStacks", "$..NotificationARNs", "$..Parameters"]
+    paths=[
+        "$..Capabilities",
+        "$..IncludeNestedStacks",
+        "$..NotificationARNs",
+        "$..Parameters",
+        # V2 parity
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    ]
 )
 @markers.aws.validated
 def test_multiple_create_changeset(aws_client, snapshot, cleanups):
@@ -1088,7 +1095,6 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
     snapshot.match("recreate_deleted_with_id_exception", e.value.response)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # gotta skip quite a lot unfortunately
@@ -1103,6 +1109,9 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
         "$..StackId",
         "$..StatusReason",
         "$..StackStatusReason",
+        # V2 parity
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
     ]
 )
 @markers.aws.validated
