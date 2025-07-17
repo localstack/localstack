@@ -23,6 +23,7 @@ from localstack.services.lambda_.invocation.runtime_executor import (
     LambdaRuntimeException,
     RuntimeExecutor,
 )
+from localstack.services.lambda_.lambda_debug_mode.ldm import LDM_ENV_VAR_DEBUG_PORT
 from localstack.services.lambda_.lambda_utils import HINT_LOG
 from localstack.services.lambda_.networking import (
     get_all_container_networks_for_lambda,
@@ -43,7 +44,6 @@ from localstack.utils.container_utils.container_client import (
 )
 from localstack.utils.docker_utils import DOCKER_CLIENT as CONTAINER_CLIENT
 from localstack.utils.files import chmod_r, rm_rf
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import lambda_debug_port_for
 from localstack.utils.net import get_free_tcp_port
 from localstack.utils.strings import short_uid, truncate
 
@@ -321,9 +321,6 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             platform=docker_platform(self.function_version.config.architectures[0]),
             additional_flags=config.LAMBDA_DOCKER_FLAGS,
         )
-        debug_port = lambda_debug_port_for(self.function_version.qualified_arn)
-        if debug_port is not None:
-            container_config.ports.add(debug_port, debug_port)
 
         if self.function_version.config.package_type == PackageType.Zip:
             if self.function_version.config.code.is_hot_reloading():
@@ -378,6 +375,10 @@ class DockerRuntimeExecutor(RuntimeExecutor):
             if not container_config.ports:
                 container_config.ports = PortMappings()
             container_config.ports.add(config.LAMBDA_INIT_DELVE_PORT, config.LAMBDA_INIT_DELVE_PORT)
+
+        if ldm_debug_port := env_vars.get(LDM_ENV_VAR_DEBUG_PORT):
+            ldm_debug_port = int(ldm_debug_port)
+            container_config.ports.add(ldm_debug_port, ldm_debug_port)
 
         if (
             self.function_version.config.layers
