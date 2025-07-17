@@ -328,12 +328,19 @@ class CloudformationProviderV2(CloudformationProvider):
             previous_update_model=previous_update_model,
         )
 
-        if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-            stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
+        # TODO: handle the empty change set case
+        if not change_set.has_changes():
+            change_set.set_change_set_status(ChangeSetStatus.FAILED)
+            change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
+            change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
         else:
-            stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
+            if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
+                stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
+            else:
+                stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
-        change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+            change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+
         stack.change_set_id = change_set.change_set_id
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
@@ -441,6 +448,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 for (key, value) in change_set.stack.resolved_parameters.items()
             ],
             Changes=changes,
+            Capabilities=change_set.stack.capabilities,
+            StatusReason=change_set.status_reason,
         )
         return result
 
