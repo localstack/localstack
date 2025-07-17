@@ -574,7 +574,6 @@ def test_delete_change_set_exception(snapshot, aws_client):
     snapshot.match("e2", e2.value.response)
 
 
-@pytest.mark.skip("CFNV2:Other")
 @markers.aws.validated
 def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
     """test the re-use of a changeset name with a re-used stack name"""
@@ -765,12 +764,14 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
     poll_condition(condition=assert_bucket_gone, timeout=20, interval=5)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Parameters",
+        # For V2
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
     ]
 )
 @markers.aws.validated
