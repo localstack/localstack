@@ -27,9 +27,9 @@ from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
 
-# Specifies the fault timeout value in seconds to be used by time restricted workflows when
-# Debug Mode is enabled. The value is set to one hour to ensure eventual termination of
-# long-running processes.
+# Specifies the default timeout value in seconds to be used by time restricted workflows
+# when Debug Mode is enabled. The value is set to one hour to ensure eventual termination
+# of long-running processes.
 DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS: int = 3_600
 LDM_ENV_VAR_DEBUG_PORT: str = "LDM_DEBUG_PORT"
 
@@ -124,6 +124,9 @@ class LambdaDebugTarget:
                 lambda_function_debug_config=self.lambda_function_debug_config,
                 on_timeout=self._on_execution_environment_timeout,
             )
+            # FIXME: this log should take place after RuntimeStatus.READY, however the debug-enabled
+            #        docker container will not notify LS about it starting up until the user has
+            #        connected a debug client. Future work should resolve this notification issue.
             LOG.info(
                 "LDM is ready for debugger connections for '%s' on port %i.",
                 self.lambda_function_debug_config.qualified_lambda_arn,
@@ -164,7 +167,10 @@ class LambdaDebugTarget:
     def _on_execution_environment_timeout(
         self, version_manager_id: str, environment_id: str
     ) -> None:
-        # TODO: add support
+        # This function is run by the ExecutionEnvironment when the
+        # release of on-demand container times-out whilst waiting for
+        # invokes. However, DebugEnabledExecutionEnvironment are
+        # provisioned-concurrency ExecutionEnvironments.
         LOG.warning(
             "Lambda Debug Mode function '%s' timed out ('%s', '%s')",
             self._lambda_qualified_arn,

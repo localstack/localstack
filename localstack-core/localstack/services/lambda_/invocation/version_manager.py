@@ -192,6 +192,8 @@ class LambdaVersionManager:
             LOG.warning(message)
             raise ServiceException(message)
 
+        # If the environment has debugging enabled, route the invocation there;
+        # debug environments bypass Lambda service quotas.
         if debug_execution_environment := LDM.get_execution_environment(
             qualified_lambda_arn=self.function_version.qualified_arn,
             user_agent=invocation.user_agent,
