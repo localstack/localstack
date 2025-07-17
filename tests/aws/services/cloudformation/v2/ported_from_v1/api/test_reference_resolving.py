@@ -100,6 +100,7 @@ def test_reference_unsupported_resource(deploy_cfn_template, aws_client):
     This test verifies that templates can be deployed even when unsupported resources are references
     Make sure to update the template as coverage of resources increases.
     """
+    # TODO: do we really want to keep this behaviour?
 
     deployment = deploy_cfn_template(
         template_path=os.path.join(
