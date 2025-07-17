@@ -175,6 +175,7 @@ class Stack:
             "RollbackConfiguration": {},
             "Tags": [],
         }
+        # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
             result["ChangeSetId"] = change_set_id
 

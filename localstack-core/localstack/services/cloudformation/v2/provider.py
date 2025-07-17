@@ -252,17 +252,13 @@ class CloudformationProviderV2(CloudformationProvider):
                     request_payload=request,
                     template=structured_template,
                     template_body=template_body,
+                    initial_status=StackStatus.REVIEW_IN_PROGRESS,
                 )
                 state.stacks_v2[stack.stack_id] = stack
             else:
                 if not active_stack_candidates:
                     raise ValidationError(f"Stack '{stack_name}' does not exist.")
                 stack = active_stack_candidates[0]
-
-        if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-            stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
-        else:
-            stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
         # TODO: test if rollback status is allowed as well
         if (
@@ -331,6 +327,11 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
             previous_update_model=previous_update_model,
         )
+
+        if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
+            stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
+        else:
+            stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
         change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
         stack.change_set_id = change_set.change_set_id
