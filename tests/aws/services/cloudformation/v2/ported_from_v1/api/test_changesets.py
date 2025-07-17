@@ -394,7 +394,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
-@pytest.mark.skip("CFNV2:Other")
+@pytest.mark.skip("CFNV2:Resolve")
 @markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
@@ -855,7 +855,7 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
-@pytest.mark.skip(reason="CFNV2:Other delete change set not implemented yet")
+@pytest.mark.skip(reason="CFNV2:DeleteChangeSet")
 @markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
@@ -1019,7 +1019,7 @@ def test_multiple_create_changeset(aws_client, snapshot, cleanups):
     )
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
+@pytest.mark.skip(reason="CFNV2:DescribeStacks")
 @markers.snapshot.skip_snapshot_verify(paths=["$..LastUpdatedTime", "$..StackStatusReason"])
 @markers.aws.validated
 def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
