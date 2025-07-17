@@ -155,9 +155,11 @@ jsonpath-ng==1.7.0
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
+jsonpickle==4.1.1
+    # via localstack-core
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.24.0
+jsonschema==4.24.1
     # via
     #   aws-sam-translator
     #   moto-ext
