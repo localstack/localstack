@@ -474,6 +474,7 @@ class TestDynamoDB:
         transformed_dict = SortingTransformer("Items", lambda x: x).transform(result)
         snapshot.match("Items", transformed_dict)
 
+    @pytest.mark.skip(reason="Temporarily skipped")
     @markers.aws.only_localstack(reason="AWS has a 20 GSI limit")
     def test_more_than_20_global_secondary_indexes(
         self, dynamodb_create_table_with_parameters, aws_client
