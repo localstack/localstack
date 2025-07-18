@@ -58,12 +58,13 @@ class EC2VPCGatewayAttachmentProvider(ResourceProvider[EC2VPCGatewayAttachmentPr
                 message="Either 'InternetGatewayId' or 'VpnGatewayId' is required but neither specified",
             )
 
+        vpc_id = model["VpcId"]
         if ig_id := model.get("InternetGatewayId"):
-            model["Id"] = ig_id
-            ec2.attach_internet_gateway(InternetGatewayId=ig_id, VpcId=model["VpcId"])
+            model["Id"] = f"IGW|{vpc_id}"
+            ec2.attach_internet_gateway(InternetGatewayId=ig_id, VpcId=vpc_id)
         elif vpn_id := model.get("VpnGatewayId"):
-            model["Id"] = vpn_id
-            ec2.attach_vpn_gateway(VpnGatewayId=vpn_id, VpcId=model["VpcId"])
+            model["Id"] = f"VGW|{vpc_id}"
+            ec2.attach_vpn_gateway(VpnGatewayId=vpn_id, VpcId=vpc_id)
         else:
             raise RuntimeError("Unreachable due to validations above")
 

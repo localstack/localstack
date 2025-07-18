@@ -204,6 +204,24 @@ def test_transit_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
+def test_vpc_gateway_attachment(deploy_cfn_template, aws_client, snapshot):
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/vpc_gateway_attachment.yml"
+        )
+    )
+    vpc_id = stack.outputs["VpcId"]
+    # fetch the internet gateway id so we can transform the GW attachment id, as
+    # it's of the form "IGW|<vpc-id>" (for internet gateways) and "VGW|<vpc-id>" for
+    # VPN gateways
+    snapshot.add_transformer(snapshot.transform.regex(vpc_id, "<vpc-id>"))
+
+    snapshot.match("attachment-1-ref", stack.outputs["GatewayAttachment1Ref"])
+    # TODO: vpn gateway not supported by LocalStack yet
+    # snapshot.match("attachment-2-ref", stack.outputs["GatewayAttachment2Ref"])
+
+
+@markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..RouteTables..PropagatingVgws", "$..RouteTables..Tags"]
 )
