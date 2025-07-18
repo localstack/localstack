@@ -30,6 +30,9 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.state import pickle
+from localstack.state.json import JsonDecoder, JsonEncoder
+from localstack.state.pickle import PickleDecoder, PickleEncoder
 from localstack.testing.aws.cloudformation_utils import load_template_file, render_template
 from localstack.testing.aws.util import get_lambda_logs, is_aws_cloud
 from localstack.testing.config import (
@@ -2616,3 +2619,14 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture(
+    params=[(PickleEncoder(), PickleDecoder()), (JsonEncoder(), JsonDecoder())],
+    ids=["dill", "jsonpickle"],
+)
+def patch_default_encoder(request, monkeypatch):
+    encoder, decoder = request.param
+    monkeypatch.setattr(pickle, "_default_encoder", encoder)
+    monkeypatch.setattr(pickle, "_default_decoder", decoder)
+    return encoder, decoder
