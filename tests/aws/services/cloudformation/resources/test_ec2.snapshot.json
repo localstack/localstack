@@ -299,5 +299,12 @@
         "ImportedKeyPairName": "<imported-key-name>"
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_ec2.py::test_vpc_gateway_attachment": {
+    "recorded-date": "18-07-2025, 20:52:38",
+    "recorded-content": {
+      "attachment-1-ref": "IGW|<vpc-id>",
+      "attachment-2-ref": "VGW|<vpc-id>"
+    }
   }
 }
