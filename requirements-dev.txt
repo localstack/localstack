@@ -31,7 +31,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==45.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.204.0
+aws-cdk-lib==2.206.0
     # via localstack-core
 aws-sam-translator==1.99.0
     # via
@@ -121,7 +121,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-distlib==0.3.9
+distlib==0.4.0
     # via virtualenv
 dnslib==0.9.26
     # via
@@ -215,9 +215,13 @@ jsonpath-ng==1.7.0
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core
+jsonpickle==4.1.1
+    # via
+    #   aws-xray-sdk
+    #   localstack-core
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.24.0
+jsonschema==4.24.1
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -433,7 +437,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.3
+ruff==0.12.4
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.0
     # via
