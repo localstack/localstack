@@ -1193,8 +1193,18 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # TODO actually set validTo and make the key expire
         key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
-        key_to_import_material_to.crypto_key.load_key_material(key_material)
-
+        if key_to_import_material_to.metadata["Origin"] == "EXTERNAL":
+            if "CurrentKeyMaterialId" not in key_to_import_material_to.metadata:
+                key_to_import_material_to.metadata["CurrentKeyMaterialId"] = key_material.hex()
+            if key_material != key_to_import_material_to.crypto_key.key_material:
+                key_to_import_material_to.previous_keys.append(
+                    key_to_import_material_to.crypto_key.key_material
+                )
+            key_to_import_material_to.crypto_key.load_key_material(key_material)
+            return ImportKeyMaterialResponse(
+                KeyId=key_to_import_material_to.metadata["KeyId"],
+                KeyMaterialId=key_material.hex(),
+            )
         return ImportKeyMaterialResponse()
 
     def delete_imported_key_material(
@@ -1204,7 +1214,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_material_id: BackingKeyIdType | None = None,
         **kwargs,
     ) -> DeleteImportedKeyMaterialResponse:
-        # TODO add support for key_material_id
         key = self._get_kms_key(
             context.account_id,
             context.region,
@@ -1216,6 +1225,19 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.metadata["Enabled"] = False
         key.metadata["KeyState"] = KeyState.PendingImport
         key.metadata.pop("ExpirationModel", None)
+        if key.metadata["Origin"] == "EXTERNAL":
+            if "CurrentKeyMaterialId" in key.metadata:
+                if key_material_id is None:
+                    if bytes.fromhex(key.metadata["CurrentKeyMaterialId"]) in key.previous_keys:
+                        key.previous_keys.remove(
+                            bytes.fromhex(key.metadata["CurrentKeyMaterialId"])
+                        )
+                    key.metadata.pop("CurrentKeyMaterialId")
+                else:
+                    if key_material_id in key.previous_keys:
+                        key.previous_keys.remove(key_material_id)
+                    if key.metadata["CurrentKeyMaterialId"] == key_material_id:
+                        key.metadata.pop("CurrentKeyMaterialId")
 
         # TODO populate DeleteImportedKeyMaterialResponse
         return DeleteImportedKeyMaterialResponse()
@@ -1414,10 +1436,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException()
-        if key.metadata["Origin"] == OriginType.EXTERNAL:
-            raise UnsupportedOperationException(
-                f"{key.metadata['Arn']} origin is EXTERNAL which is not valid for this operation."
-            )
+            # TODO Update the key material ID so it show in ListKeyRotation'
 
         key.rotate_key_on_demand()
 
