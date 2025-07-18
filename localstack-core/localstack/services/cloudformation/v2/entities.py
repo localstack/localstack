@@ -2,6 +2,7 @@ from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
 from localstack.aws.api.cloudformation import (
+    Capability,
     ChangeSetStatus,
     ChangeSetType,
     CreateChangeSetInput,
@@ -24,6 +25,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeType,
     UpdateModel,
 )
 from localstack.utils.aws import arns
@@ -45,6 +47,7 @@ class Stack:
     creation_time: datetime
     deletion_time: datetime | None
     events = list[StackEvent]
+    capabilities: list[Capability]
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -59,12 +62,13 @@ class Stack:
         request_payload: CreateChangeSetInput | CreateStackInput,
         template: dict | None = None,
         template_body: str | None = None,
+        initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
     ):
         self.account_id = account_id
         self.region_name = region_name
         self.template = template
         self.template_body = template_body
-        self.status = StackStatus.CREATE_IN_PROGRESS
+        self.status = initial_status
         self.status_reason = None
         self.change_set_ids = []
         self.creation_time = datetime.now(tz=timezone.utc)
@@ -81,6 +85,7 @@ class Stack:
             account_id=self.account_id,
             region_name=self.region_name,
         )
+        self.capabilities = request_payload.get("Capabilities", []) or []
 
         # TODO: only kept for v1 compatibility
         self.request_payload = request_payload
@@ -173,7 +178,11 @@ class Stack:
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
+            "NotificationARNs": [],
+            "Capabilities": self.capabilities,
+            "Parameters": self.parameters,
         }
+        # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
             result["ChangeSetId"] = change_set_id
 
@@ -206,6 +215,7 @@ class ChangeSet:
     change_set_type: ChangeSetType
     update_model: Optional[UpdateModel]
     status: ChangeSetStatus
+    status_reason: str | None
     execution_status: ExecutionStatus
     creation_time: datetime
 
@@ -218,6 +228,7 @@ class ChangeSet:
         self.stack = stack
         self.template = template
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
+        self.status_reason = None
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_model = None
         self.creation_time = datetime.now(tz=timezone.utc)
@@ -239,6 +250,9 @@ class ChangeSet:
 
     def set_execution_status(self, execution_status: ExecutionStatus):
         self.execution_status = execution_status
+
+    def has_changes(self) -> bool:
+        return self.update_model.node_template.change_type != ChangeType.UNCHANGED
 
     @property
     def account_id(self) -> str:

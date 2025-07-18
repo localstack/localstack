@@ -412,9 +412,6 @@ def test_account(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
-@pytest.mark.skip(
-    reason="CFNV2:Other ApiDeployment creation fails due to the REST API not having a method set"
-)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..tags.'aws:cloudformation:logical-id'",
@@ -465,9 +462,6 @@ def test_update_usage_plan(deploy_cfn_template, aws_client, snapshot):
     assert usage_plan["quota"]["limit"] == 7000
 
 
-@pytest.mark.skip(
-    reason="CFNV2:Other ApiDeployment creation fails due to the REST API not having a method set"
-)
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..createdDate", "$..description", "$..lastUpdatedDate", "$..tags"]
 )
@@ -620,9 +614,6 @@ def test_rest_api_serverless_ref_resolving(
 
 
 class TestServerlessApigwLambda:
-    @pytest.mark.skip(
-        reason="Requires investigation into the stack not being available in the v2 provider"
-    )
     @markers.aws.validated
     def test_serverless_like_deployment_with_update(
         self, deploy_cfn_template, aws_client, cleanups

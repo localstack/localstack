@@ -87,6 +87,16 @@ class StackNotFoundError(ValidationError):
         super().__init__(f"Stack with id {stack_name} does not exist")
 
 
+class StackNotFoundErrorWhenDescribing(ValidationError):
+    """
+    Raised when describing a change set, slightly different to the normal error message
+    """
+
+    # TODO: is this difference real or can this type be unified with StackNotFoundError?
+    def __init__(self, stack_name: str):
+        super().__init__(f"Stack [{stack_name}] does not exist")
+
+
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
     if stack_name:
         if is_stack_arn(stack_name):
@@ -236,17 +246,13 @@ class CloudformationProviderV2(CloudformationProvider):
                     request_payload=request,
                     template=structured_template,
                     template_body=template_body,
+                    initial_status=StackStatus.REVIEW_IN_PROGRESS,
                 )
                 state.stacks_v2[stack.stack_id] = stack
             else:
                 if not active_stack_candidates:
                     raise ValidationError(f"Stack '{stack_name}' does not exist.")
                 stack = active_stack_candidates[0]
-
-        if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-            stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
-        else:
-            stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
         # TODO: test if rollback status is allowed as well
         if (
@@ -316,7 +322,19 @@ class CloudformationProviderV2(CloudformationProvider):
             previous_update_model=previous_update_model,
         )
 
-        change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+        # TODO: handle the empty change set case
+        if not change_set.has_changes():
+            change_set.set_change_set_status(ChangeSetStatus.FAILED)
+            change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
+            change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
+        else:
+            if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
+                stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
+            else:
+                stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
+
+            change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+
         stack.change_set_id = change_set.change_set_id
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
@@ -424,6 +442,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 for (key, value) in change_set.stack.resolved_parameters.items()
             ],
             Changes=changes,
+            Capabilities=change_set.stack.capabilities,
+            StatusReason=change_set.status_reason,
         )
         return result
 
@@ -440,7 +460,12 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO add support for include_property_values
         # only relevant if change_set_name isn't an ARN
         state = get_cloudformation_store(context.account_id, context.region)
-        change_set = find_change_set_v2(state, change_set_name, stack_name)
+        try:
+            change_set = find_change_set_v2(state, change_set_name, stack_name)
+        except StackNotFoundError:
+            # this method returns a different error message
+            raise StackNotFoundErrorWhenDescribing(stack_name)
+
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         result = self._describe_change_set(
@@ -549,6 +574,7 @@ class CloudformationProviderV2(CloudformationProvider):
         stack = find_stack_v2(state, stack_name)
         if not stack:
             raise StackNotFoundError(stack_name)
+        # TODO: move describe_details method to provider
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
 
     @handler("DescribeStackResources")
@@ -583,10 +609,14 @@ class CloudformationProviderV2(CloudformationProvider):
         next_token: NextToken = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
+        if not stack_name:
+            raise ValidationError(
+                "1 validation error detected: Value null at 'stackName' failed to satisfy constraint: Member must not be null"
+            )
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackNotFoundError(stack_name)
+            raise StackNotFoundErrorWhenDescribing(stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
 
     @handler("GetTemplateSummary", expand=False)
@@ -719,8 +749,9 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template = structured_template
 
         previous_update_model = None
-        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-            previous_update_model = previous_change_set.update_model
+        if stack.change_set_id:
+            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+                previous_update_model = previous_change_set.update_model
 
         change_set = ChangeSet(
             stack,
