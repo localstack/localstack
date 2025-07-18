@@ -1043,7 +1043,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             account_id, region_name, key_id = self._parse_key_id(key_id, context)
             try:
                 ciphertext = deserialize_ciphertext_blob(ciphertext_blob=ciphertext_blob)
-            except Exception:
+            except Exception as e:
+                logging.error("Error deserializing ciphertext blob: %s", e)
                 ciphertext = None
                 pass
         else:
@@ -1072,6 +1073,9 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             if self._is_rsa_spec(key.crypto_key.key_spec) and not ciphertext:
                 plaintext = key.decrypt_rsa(ciphertext_blob)
             else:
+                # if symmetric encryption then ciphertext must not be None
+                if ciphertext is None:
+                    raise InvalidCiphertextException()
                 plaintext = key.decrypt(ciphertext, encryption_context)
         except InvalidTag:
             raise InvalidCiphertextException()
