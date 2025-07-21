@@ -1,6 +1,7 @@
 import logging
+import re
 
-from localstack.aws.api import RequestContext, ServiceException
+from localstack.aws.api import CommonServiceException, RequestContext, ServiceException
 from localstack.aws.api.sts import (
     AssumeRoleResponse,
     GetCallerIdentityResponse,
@@ -34,6 +35,17 @@ class InvalidParameterValueError(ServiceException):
     sender_fault = True
 
 
+# allows for arn:a:a:::aaaaaaaaaa which would pass the check
+ROLE_ARN_REGEX = re.compile(r"^arn:[^:]+:[^:]+:[^:]*:[^:]*:[^:]+$")
+# Session name regex as specified in the error response from AWS
+SESSION_NAME_REGEX = re.compile(r"^[\w+=,.@-]*$")
+
+
+class ValidationError(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("ValidationError", message, 400, True)
+
+
 class StsProvider(StsApi, ServiceLifecycleHook):
     def __init__(self):
         apply_iam_patches()
@@ -61,7 +73,16 @@ class StsProvider(StsApi, ServiceLifecycleHook):
         provided_contexts: ProvidedContextsListType = None,
         **kwargs,
     ) -> AssumeRoleResponse:
-        target_account_id = extract_account_id_from_arn(role_arn)
+        # verify role arn
+        if not ROLE_ARN_REGEX.match(role_arn):
+            raise ValidationError(f"{role_arn} is invalid")
+
+        if not SESSION_NAME_REGEX.match(role_session_name):
+            raise ValidationError(
+                f"1 validation error detected: Value '{role_session_name}' at 'roleSessionName' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w+=,.@-]*"
+            )
+
+        target_account_id = extract_account_id_from_arn(role_arn) or context.account_id
         access_key_id = extract_access_key_id_from_auth_header(context.request.headers)
         store = sts_stores[target_account_id]["us-east-1"]
         existing_session_config = store.sessions.get(access_key_id, {})
