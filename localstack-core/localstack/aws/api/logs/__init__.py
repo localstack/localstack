@@ -47,6 +47,7 @@ EntityKeyAttributesValue = str
 EventId = str
 EventMessage = str
 EventsLimit = int
+ExpectedRevisionId = str
 ExportDestinationBucket = str
 ExportDestinationPrefix = str
 ExportTaskId = str
@@ -87,6 +88,7 @@ LogGroupIdentifier = str
 LogGroupName = str
 LogGroupNamePattern = str
 LogGroupNameRegexPattern = str
+LogObjectPointer = str
 LogRecordPointer = str
 LogStreamName = str
 LogStreamSearchedCompletely = bool
@@ -172,6 +174,7 @@ class DeliveryDestinationType(StrEnum):
     S3 = "S3"
     CWL = "CWL"
     FH = "FH"
+    XRAY = "XRAY"
 
 
 class Distribution(StrEnum):
@@ -268,11 +271,17 @@ class OutputFormat(StrEnum):
     parquet = "parquet"
 
 
+class PolicyScope(StrEnum):
+    ACCOUNT = "ACCOUNT"
+    RESOURCE = "RESOURCE"
+
+
 class PolicyType(StrEnum):
     DATA_PROTECTION_POLICY = "DATA_PROTECTION_POLICY"
     SUBSCRIPTION_FILTER_POLICY = "SUBSCRIPTION_FILTER_POLICY"
     FIELD_INDEX_POLICY = "FIELD_INDEX_POLICY"
     TRANSFORMER_POLICY = "TRANSFORMER_POLICY"
+    METRIC_EXTRACTION_POLICY = "METRIC_EXTRACTION_POLICY"
 
 
 class QueryLanguage(StrEnum):
@@ -371,6 +380,12 @@ class DataAlreadyAcceptedException(ServiceException):
     sender_fault: bool = False
     status_code: int = 400
     expectedSequenceToken: Optional[SequenceToken]
+
+
+class InternalStreamingException(ServiceException):
+    code: str = "InternalStreamingException"
+    sender_fault: bool = False
+    status_code: int = 400
 
 
 class InvalidOperationException(ServiceException):
@@ -730,6 +745,7 @@ class CreateLogStreamRequest(ServiceRequest):
 
 
 DashboardViewerPrincipals = List[Arn]
+Data = bytes
 MatchPatterns = List[MatchPattern]
 
 
@@ -824,6 +840,8 @@ class DeleteQueryDefinitionResponse(TypedDict, total=False):
 
 class DeleteResourcePolicyRequest(ServiceRequest):
     policyName: Optional[PolicyName]
+    resourceArn: Optional[Arn]
+    expectedRevisionId: Optional[ExpectedRevisionId]
 
 
 class DeleteRetentionPolicyRequest(ServiceRequest):
@@ -1208,12 +1226,17 @@ class DescribeQueryDefinitionsResponse(TypedDict, total=False):
 class DescribeResourcePoliciesRequest(ServiceRequest):
     nextToken: Optional[NextToken]
     limit: Optional[DescribeLimit]
+    resourceArn: Optional[Arn]
+    policyScope: Optional[PolicyScope]
 
 
 class ResourcePolicy(TypedDict, total=False):
     policyName: Optional[PolicyName]
     policyDocument: Optional[PolicyDocument]
     lastUpdatedTime: Optional[Timestamp]
+    policyScope: Optional[PolicyScope]
+    resourceArn: Optional[Arn]
+    revisionId: Optional[ExpectedRevisionId]
 
 
 ResourcePolicies = List[ResourcePolicy]
@@ -1266,6 +1289,12 @@ class Entity(TypedDict, total=False):
 
 EventNumber = int
 ExtractedValues = Dict[Token, Value]
+
+
+class FieldsData(TypedDict, total=False):
+    data: Optional[Data]
+
+
 InputLogStreamNames = List[LogStreamName]
 
 
@@ -1487,6 +1516,20 @@ LogGroupFieldList = List[LogGroupField]
 
 class GetLogGroupFieldsResponse(TypedDict, total=False):
     logGroupFields: Optional[LogGroupFieldList]
+
+
+class GetLogObjectRequest(ServiceRequest):
+    unmask: Optional[Unmask]
+    logObjectPointer: LogObjectPointer
+
+
+class GetLogObjectResponseStream(TypedDict, total=False):
+    fields: Optional[FieldsData]
+    InternalStreamingException: Optional[InternalStreamingException]
+
+
+class GetLogObjectResponse(TypedDict, total=False):
+    fieldStream: Iterator[GetLogObjectResponseStream]
 
 
 class GetLogRecordRequest(ServiceRequest):
@@ -1901,7 +1944,8 @@ class PutDeliveryDestinationPolicyResponse(TypedDict, total=False):
 class PutDeliveryDestinationRequest(ServiceRequest):
     name: DeliveryDestinationName
     outputFormat: Optional[OutputFormat]
-    deliveryDestinationConfiguration: DeliveryDestinationConfiguration
+    deliveryDestinationConfiguration: Optional[DeliveryDestinationConfiguration]
+    deliveryDestinationType: Optional[DeliveryDestinationType]
     tags: Optional[Tags]
 
 
@@ -2009,10 +2053,13 @@ class PutQueryDefinitionResponse(TypedDict, total=False):
 class PutResourcePolicyRequest(ServiceRequest):
     policyName: Optional[PolicyName]
     policyDocument: Optional[PolicyDocument]
+    resourceArn: Optional[Arn]
+    expectedRevisionId: Optional[ExpectedRevisionId]
 
 
 class PutResourcePolicyResponse(TypedDict, total=False):
     resourcePolicy: Optional[ResourcePolicy]
+    revisionId: Optional[ExpectedRevisionId]
 
 
 class PutRetentionPolicyRequest(ServiceRequest):
@@ -2335,7 +2382,12 @@ class LogsApi:
 
     @handler("DeleteResourcePolicy")
     def delete_resource_policy(
-        self, context: RequestContext, policy_name: PolicyName | None = None, **kwargs
+        self,
+        context: RequestContext,
+        policy_name: PolicyName | None = None,
+        resource_arn: Arn | None = None,
+        expected_revision_id: ExpectedRevisionId | None = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 
@@ -2536,6 +2588,8 @@ class LogsApi:
         context: RequestContext,
         next_token: NextToken | None = None,
         limit: DescribeLimit | None = None,
+        resource_arn: Arn | None = None,
+        policy_scope: PolicyScope | None = None,
         **kwargs,
     ) -> DescribeResourcePoliciesResponse:
         raise NotImplementedError
@@ -2649,6 +2703,16 @@ class LogsApi:
         log_group_identifier: LogGroupIdentifier | None = None,
         **kwargs,
     ) -> GetLogGroupFieldsResponse:
+        raise NotImplementedError
+
+    @handler("GetLogObject")
+    def get_log_object(
+        self,
+        context: RequestContext,
+        log_object_pointer: LogObjectPointer,
+        unmask: Unmask | None = None,
+        **kwargs,
+    ) -> GetLogObjectResponse:
         raise NotImplementedError
 
     @handler("GetLogRecord")
@@ -2772,8 +2836,9 @@ class LogsApi:
         self,
         context: RequestContext,
         name: DeliveryDestinationName,
-        delivery_destination_configuration: DeliveryDestinationConfiguration,
         output_format: OutputFormat | None = None,
+        delivery_destination_configuration: DeliveryDestinationConfiguration | None = None,
+        delivery_destination_type: DeliveryDestinationType | None = None,
         tags: Tags | None = None,
         **kwargs,
     ) -> PutDeliveryDestinationResponse:
@@ -2891,6 +2956,8 @@ class LogsApi:
         context: RequestContext,
         policy_name: PolicyName | None = None,
         policy_document: PolicyDocument | None = None,
+        resource_arn: Arn | None = None,
+        expected_revision_id: ExpectedRevisionId | None = None,
         **kwargs,
     ) -> PutResourcePolicyResponse:
         raise NotImplementedError
