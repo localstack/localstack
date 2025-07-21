@@ -115,6 +115,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.aws.api.dynamodbstreams import StreamStatus
 from localstack.aws.connect import connect_to
+from localstack.config import is_persistence_enabled
 from localstack.constants import (
     AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
@@ -158,6 +159,7 @@ from localstack.utils.aws.request_context import (
 )
 from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
+from localstack.utils.files import cp_r, rm_rf
 from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import long_uid, md5, to_str
@@ -519,6 +521,10 @@ class ExpiredItemsWorker:
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     server: DynamodbServer
     """The instance of the server managing the instance of DynamoDB local"""
+    asset_directory = f"{config.dirs.data}/dynamodb"
+    """The directory that contains the .db files saved by DynamoDB Local"""
+    tmp_asset_directory = f"{config.dirs.tmp}/dynamodb"
+    """Temporary directory for the .db files saved by DynamoDB Local when MANUAL snapshot persistence is enabled"""
 
     def __init__(self):
         self.server = self._new_dynamodb_server()
@@ -527,6 +533,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self._event_forwarder = EventForwarder()
 
     def on_before_start(self):
+        # We must copy back whatever state is saved to the temporary location to avoid to start always from a blank
+        # state. See the `on_before_state_save` hook.
+        if is_persistence_enabled() and config.SNAPSHOT_SAVE_STRATEGY == "MANUAL":
+            if os.path.exists(self.asset_directory):
+                LOG.debug("Copying %s to %s", self.tmp_asset_directory, self.asset_directory)
+                cp_r(self.asset_directory, self.tmp_asset_directory, rm_dest_on_conflict=True)
+
         self.server.start_dynamodb()
         if config.DYNAMODB_REMOVE_EXPIRED_ITEMS:
             self._expired_items_worker.start()
@@ -544,6 +557,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_before_state_reset(self):
         self.server.stop_dynamodb()
+        rm_rf(self.tmp_asset_directory)
 
     def on_before_state_load(self):
         self.server.stop_dynamodb()
@@ -557,6 +571,21 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_after_state_load(self):
         self.server.start_dynamodb()
+
+    def on_before_state_save(self) -> None:
+        # When the save strategy is MANUAL, we do not save the DB path to the usual ``confid.dirs.data`` folder.
+        # With the MANUAL strategy, we want to take a snapshot on-demand but this is not possible if the DB files
+        # are already in ``config.dirs.data``. For instance, the set of operation below will result in both tables
+        # being implicitly saved.
+        # - awslocal dynamodb create-table table1
+        # - curl -X POST http://localhost:4566/_localstack/state/save
+        # - awslocal dynamodb create-table table2
+        # To avoid this problem, we start the DDBLocal server in a temporary directory that is then copied over
+        # ``config.dirs.data`` when the save needs to be saved.
+        # The ideal solution to the problem would be to always start the server in memory and have a dump capability.
+        if is_persistence_enabled() and config.SNAPSHOT_SAVE_STRATEGY == "MANUAL":
+            LOG.debug("Copying %s to %s", self.tmp_asset_directory, self.asset_directory)
+            cp_r(self.tmp_asset_directory, self.asset_directory, rm_dest_on_conflict=True)
 
     def on_after_init(self):
         # add response processor specific to ddblocal
