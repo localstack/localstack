@@ -60,12 +60,12 @@
     "last_validated_date": "2023-11-22T07:49:15+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-    "last_validated_date": "2025-07-18T20:15:37+00:00",
+    "last_validated_date": "2025-07-21T18:04:27+00:00",
     "durations_in_seconds": {
-      "setup": 0.32,
-      "call": 0.42,
+      "setup": 0.31,
+      "call": 0.4,
       "teardown": 0.0,
-      "total": 0.74
+      "total": 0.71
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_deleted_changeset": {
