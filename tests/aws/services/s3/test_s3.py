@@ -7,6 +7,7 @@ import io
 import json
 import logging
 import os
+import re
 import shutil
 import tempfile
 import time
@@ -2641,57 +2642,59 @@ class TestS3:
         snapshot.match("put-object-two-type-acl-acp", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Restore"])
-    def test_s3_object_expiry(self, s3_bucket, snapshot, aws_client):
-        # AWS only cleans up S3 expired object once a day usually
-        # the object stays accessible for quite a while after being expired
-        # https://stackoverflow.com/questions/38851456/aws-s3-object-expiration-less-than-24-hours
-        # handle s3 object expiry
-        # https://github.com/localstack/localstack/issues/1685
-        # TODO: should we have a config var to not deleted immediately in the new provider? and schedule it?
+    def test_s3_object_expires(self, s3_bucket, snapshot, aws_client):
+        """
+        `Expires` header indicates the date and time at which the object is no longer cacheable, and is not linked to
+        Object Expiration.
+        https://www.rfc-editor.org/rfc/rfc7234#section-5.3
+        """
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "ExpiresString", reference_replacement=False, value_replacement="<expires>"
             )
         )
-        # put object
-        short_expire = datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(seconds=1)
-        object_key_expired = "key-object-expired"
-        object_key_not_expired = "key-object-not-expired"
 
-        aws_client.s3.put_object(
+        now = datetime.datetime.now(tz=datetime.UTC)
+        expires_in_future = now + datetime.timedelta(days=1)
+        object_key_expires_future = "key-object-future"
+        object_key_expires_past = "key-object-past"
+
+        put_obj_future = aws_client.s3.put_object(
             Bucket=s3_bucket,
-            Key=object_key_expired,
+            Key=object_key_expires_future,
             Body="foo",
-            Expires=short_expire,
+            Expires=expires_in_future,
         )
-        # sleep so it expires
-        time.sleep(3)
-        # head_object does not raise an error for now in LS
-        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_expired)
-        assert response["Expires"] < datetime.datetime.now(ZoneInfo("GMT"))
-        snapshot.match("head-object-expired", response)
+        snapshot.match("put-object-expires-future", put_obj_future)
 
-        # try to fetch an object which is already expired
-        if not is_aws_cloud():  # fixme for now behaviour differs, have a look at it and discuss
-            with pytest.raises(Exception) as e:  # this does not raise in AWS
-                aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_expired)
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_expires_future)
+        assert response["Expires"] > now
+        assert re.match(
+            r"^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$",
+            response["ExpiresString"],
+        )
+        snapshot.match("head-object-expires-future", response)
 
-            e.match("NoSuchKey")
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_expires_future)
+        assert response["Expires"] > now
+        snapshot.match("get-object-expires-future", get_object)
 
-        aws_client.s3.put_object(
+        put_obj_past = aws_client.s3.put_object(
             Bucket=s3_bucket,
-            Key=object_key_not_expired,
+            Key=object_key_expires_past,
             Body="foo",
-            Expires=datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(hours=1),
+            Expires=now - datetime.timedelta(days=1),
         )
+        snapshot.match("put-object-expires-past", put_obj_past)
 
-        # try to fetch has not been expired yet.
-        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_not_expired)
-        assert "Expires" in resp
-        assert resp["Expires"] > datetime.datetime.now(ZoneInfo("GMT"))
-        snapshot.match("get-object-not-yet-expired", resp)
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_expires_past)
+        assert response["Expires"] < now
+        snapshot.match("head-object-expires-past", response)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_expires_past)
+        assert response["Expires"] < now
+        snapshot.match("get-object-expires-past", get_object)
 
     @markers.aws.validated
     def test_upload_file_with_xml_preamble(self, s3_bucket, snapshot, aws_client):
