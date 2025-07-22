@@ -23,6 +23,11 @@
 /bin/release-dev.sh @thrau @alexrashed
 /bin/release-helper.sh @thrau @alexrashed
 
+# Python project, packaging, and dependencies
+/pyproject.toml @alexrashed @silv-io
+/requirements-*.txt @alexrashed @silv-io
+/.pre-commit-config.yaml @alexrashed @silv-io
+
 # ASF
 /localstack-core/localstack/aws/ @thrau
 /tests/unit/aws/ @thrau
