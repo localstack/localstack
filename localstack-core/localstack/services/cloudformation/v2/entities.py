@@ -127,7 +127,10 @@ class Stack:
         if not resource_status_reason:
             resource_description.pop("ResourceStatusReason")
 
-        self.resource_states[logical_resource_id] = resource_description
+        if status == ResourceStatus.DELETE_COMPLETE:
+            self.resource_states.pop(logical_resource_id)
+        else:
+            self.resource_states[logical_resource_id] = resource_description
         self._store_event(logical_resource_id, physical_resource_id, status, resource_status_reason)
 
     def _store_event(
