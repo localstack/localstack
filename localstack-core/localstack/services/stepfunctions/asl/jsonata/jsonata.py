@@ -17,13 +17,19 @@ VariableReference = str
 VariableDeclarations = str
 
 
-# TODO: move the extraction logic to a formal ANTLR-base
-#       parser, as done with legacy Intrinsic Functions.
+# TODO: move the extraction logic to a formal ANTLR-base parser, as done with legacy
+#       Intrinsic Functions in package localstack.services.stepfunctions.asl.antlr
+#       with grammars ASLIntrinsicLexer and ASLIntrinsicParser, later used by upstream
+#       logics such as in:
+#       localstack.services.stepfunctions.asl.parse.intrinsic.preprocessor.Preprocessor
 _PATTERN_VARIABLE_REFERENCE = re.compile(
-    # 1) Non-capturing branch for JSONata regex literal /.../, allowing escaped \/
+    # 1) Non-capturing branch for JSONata regex literal
+    #    /.../ (slash delimited), allowing escaped slashes \/
     r"(?:\/(?:\\.|[^\\/])*\/[a-zA-Z]*)"
     r"|"
-    # 2) Non-capturing branch for JSONata string literal: "..." or '...', allowing escapes
+    # 2) Non-capturing branch for JSONata string literal:
+    #    "..." (double quotes) or '...' (single quotes),
+    #    allowing escapes
     r"(?:\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\')"
     r"|"
     # 3) Capturing branch for $$, $identifier[.prop…], or lone $
