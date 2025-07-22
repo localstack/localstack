@@ -171,7 +171,6 @@ class TestStacksApi:
         )
         snapshot.match("template_processed", template_processed)
 
-    @pytest.mark.skip(reason="CFNV2:Other, CFNV2:DescribeStack")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ParameterValue", "$..PhysicalResourceId", "$..Capabilities"]
@@ -225,46 +224,6 @@ class TestStacksApi:
         # describe stack resources
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
-
-    @pytest.mark.skip(reason="CFNV2:Other, CFNV2:DescribeStack")
-    @markers.aws.needs_fixing
-    def test_list_stack_resources_for_removed_resource(self, deploy_cfn_template, aws_client):
-        template_path = os.path.join(
-            os.path.dirname(__file__), "../../../../../templates/eventbridge_policy.yaml"
-        )
-        event_bus_name = f"bus-{short_uid()}"
-        stack = deploy_cfn_template(
-            template_path=template_path,
-            parameters={"EventBusName": event_bus_name},
-        )
-
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        resources_before = len(resources)
-        assert resources_before == 3
-        statuses = {res["ResourceStatus"] for res in resources}
-        assert statuses == {"CREATE_COMPLETE"}
-
-        # remove one resource from the template, then update stack (via change set)
-        template_dict = parse_yaml(load_file(template_path))
-        template_dict["Resources"].pop("eventPolicy2")
-        template2 = yaml.dump(template_dict)
-
-        deploy_cfn_template(
-            stack_name=stack.stack_name,
-            is_update=True,
-            template=template2,
-            parameters={"EventBusName": event_bus_name},
-        )
-
-        # get list of stack resources, again - make sure that deleted resource is not contained in result
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        assert len(resources) == resources_before - 1
-        statuses = {res["ResourceStatus"] for res in resources}
-        assert statuses == {"UPDATE_COMPLETE"}
 
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange(
@@ -563,7 +522,6 @@ def test_notifications(
     retry(_assert_messages, retries=10, sleep=2)
 
 
-@pytest.mark.skip(reason="CFNV2:Other, CFNV2:Describe")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -639,7 +597,6 @@ def test_updating_an_updated_stack_sets_status(deploy_cfn_template, snapshot, aw
     snapshot.match("describe-result", res)
 
 
-@pytest.mark.skip(reason="CFNV2:Other, CFNV2:Describe")
 @markers.aws.validated
 def test_update_termination_protection(deploy_cfn_template, snapshot, aws_client):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -667,7 +624,6 @@ def test_update_termination_protection(deploy_cfn_template, snapshot, aws_client
     snapshot.match("describe-stack-2", res)
 
 
-@pytest.mark.skip(reason="CFNV2:Other, CFNV2:Describe")
 @markers.aws.validated
 def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     template_path = os.path.join(

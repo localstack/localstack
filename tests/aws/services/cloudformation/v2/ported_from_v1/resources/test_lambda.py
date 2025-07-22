@@ -728,7 +728,7 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-    @pytest.mark.skip(reason="CFNV2:Other")
+    @pytest.mark.skip(reason="CFNV2:DescribeStackResources")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # Lambda
