@@ -157,7 +157,7 @@ jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.24.0
+jsonschema==4.25.0
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -312,7 +312,7 @@ rpds-py==0.26.0
     #   referencing
 rsa==4.7.2
     # via awscli
-s3transfer==0.13.0
+s3transfer==0.13.1
     # via
     #   awscli
     #   boto3
