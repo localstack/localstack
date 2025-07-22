@@ -62,6 +62,15 @@
       "total": 42.17
     }
   },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_embedded_macro_for_attribute_fn_transform_with_updates": {
+    "last_validated_date": "2025-07-22T14:50:57+00:00",
+    "durations_in_seconds": {
+      "setup": 12.29,
+      "call": 93.66,
+      "teardown": 6.07,
+      "total": 112.02
+    }
+  },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[json]": {
     "last_validated_date": "2025-06-03T21:30:48+00:00",
     "durations_in_seconds": {

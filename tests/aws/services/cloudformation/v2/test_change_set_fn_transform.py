@@ -326,6 +326,46 @@ class TestChangeSetFnTransform:
         capture_update_process(snapshot, template_1, template_2, p2={"Input": "test"})
 
     @markers.aws.validated
+    def test_embedded_macro_for_attribute_fn_transform_with_updates(
+        self,
+        snapshot,
+        capture_update_process,
+        create_macro,
+    ):
+        name1 = f"parameter-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+        )
+        macro_name = "GenerateRandom"
+        create_macro(macro_name, macro_function_path)
+
+        template_1 = {
+            "Parameters": {"Input": {"Type": "String"}},
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": {
+                            "Fn::Transform": {
+                                "Name": "GenerateRandom",
+                                "Parameters": {"Prefix": {"Ref": "Input"}},
+                            },
+                        },
+                    },
+                }
+            },
+        }
+
+        capture_update_process(
+            snapshot, template_1, template_1.copy(), p1={"Input": "test"}, p2={"Input": "test"}
+        )
+
+    @markers.aws.validated
     def test_multiple_fn_transform_order(
         self,
         snapshot,

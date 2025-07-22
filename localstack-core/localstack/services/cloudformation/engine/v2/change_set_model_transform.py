@@ -20,6 +20,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     Maybe,
     NodeGlobalTransform,
+    NodeIntrinsicFunction,
     NodeParameter,
     NodeTransform,
     Nothing,
@@ -243,6 +244,10 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         parameters_before = parameters_delta.before
         parameters_after = parameters_delta.after
 
+        # TODO: using Fn::Transform in the top level scope
+        # visit the resources to resolve local transforms
+        self.visit(node_template.resources)
+
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
         )
@@ -284,6 +289,11 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self._save_runtime_cache()
 
         return transformed_before_template, transformed_after_template
+
+    def visit_node_intrinsic_function_fn_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        return super().visit_node_intrinsic_function_fn_transform(node_intrinsic_function)
 
     def _execute_embedded_transformations(
         self, template, resolved_parameters
