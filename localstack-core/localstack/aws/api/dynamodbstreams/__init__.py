@@ -31,6 +31,10 @@ class OperationType(StrEnum):
     REMOVE = "REMOVE"
 
 
+class ShardFilterType(StrEnum):
+    CHILD_SHARDS = "CHILD_SHARDS"
+
+
 class ShardIteratorType(StrEnum):
     TRIM_HORIZON = "TRIM_HORIZON"
     LATEST = "LATEST"
@@ -105,10 +109,16 @@ AttributeMap = Dict[AttributeName, AttributeValue]
 Date = datetime
 
 
+class ShardFilter(TypedDict, total=False):
+    Type: Optional[ShardFilterType]
+    ShardId: Optional[ShardId]
+
+
 class DescribeStreamInput(ServiceRequest):
     StreamArn: StreamArn
     Limit: Optional[PositiveIntegerObject]
     ExclusiveStartShardId: Optional[ShardId]
+    ShardFilter: Optional[ShardFilter]
 
 
 class SequenceNumberRange(TypedDict, total=False):
@@ -232,6 +242,7 @@ class DynamodbstreamsApi:
         stream_arn: StreamArn,
         limit: PositiveIntegerObject | None = None,
         exclusive_start_shard_id: ShardId | None = None,
+        shard_filter: ShardFilter | None = None,
         **kwargs,
     ) -> DescribeStreamOutput:
         raise NotImplementedError

@@ -19000,5 +19000,58 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3_errors": {
+    "recorded-date": "21-07-2025, 17:45:01",
+    "recorded-content": {
+      "create-error-wrong-bucket": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while GetObject. S3 Error Code: NoSuchBucket. S3 Error Message: The specified bucket does not exist"
+        },
+        "Type": "User",
+        "message": "Error occurred while GetObject. S3 Error Code: NoSuchBucket. S3 Error Message: The specified bucket does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-error-wrong-key": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while GetObject. S3 Error Code: NoSuchKey. S3 Error Message: The specified key does not exist."
+        },
+        "Type": "User",
+        "message": "Error occurred while GetObject. S3 Error Code: NoSuchKey. S3 Error Message: The specified key does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-error-wrong-bucket": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while GetObject. S3 Error Code: NoSuchBucket. S3 Error Message: The specified bucket does not exist"
+        },
+        "Type": "User",
+        "message": "Error occurred while GetObject. S3 Error Code: NoSuchBucket. S3 Error Message: The specified bucket does not exist",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-error-wrong-key": {
+        "Error": {
+          "Code": "InvalidParameterValueException",
+          "Message": "Error occurred while GetObject. S3 Error Code: NoSuchKey. S3 Error Message: The specified key does not exist."
+        },
+        "Type": "User",
+        "message": "Error occurred while GetObject. S3 Error Code: NoSuchKey. S3 Error Message: The specified key does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

@@ -371,6 +371,15 @@
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3": {
     "last_validated_date": "2024-09-12T11:29:56+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_s3_errors": {
+    "last_validated_date": "2025-07-21T17:45:02+00:00",
+    "durations_in_seconds": {
+      "setup": 13.8,
+      "call": 2.63,
+      "teardown": 1.73,
+      "total": 18.16
+    }
+  },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_lambda_code_location_zipfile": {
     "last_validated_date": "2024-09-12T11:29:52+00:00"
   },

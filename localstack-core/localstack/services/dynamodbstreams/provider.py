@@ -15,6 +15,7 @@ from localstack.aws.api.dynamodbstreams import (
     PositiveIntegerObject,
     ResourceNotFoundException,
     SequenceNumber,
+    ShardFilter,
     ShardId,
     ShardIteratorType,
     Stream,
@@ -60,10 +61,12 @@ class DynamoDBStreamsProvider(DynamodbstreamsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         stream_arn: StreamArn,
-        limit: PositiveIntegerObject = None,
-        exclusive_start_shard_id: ShardId = None,
+        limit: PositiveIntegerObject | None = None,
+        exclusive_start_shard_id: ShardId | None = None,
+        shard_filter: ShardFilter | None = None,
         **kwargs,
     ) -> DescribeStreamOutput:
+        # TODO add support for shard_filter
         og_region = get_original_region(context=context, stream_arn=stream_arn)
         store = get_dynamodbstreams_store(context.account_id, og_region)
         kinesis = get_kinesis_client(account_id=context.account_id, region_name=og_region)

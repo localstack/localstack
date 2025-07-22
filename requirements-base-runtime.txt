@@ -11,9 +11,9 @@ attrs==25.3.0
     #   referencing
 awscrt==0.27.4
     # via localstack-core (pyproject.toml)
-boto3==1.39.4
+boto3==1.39.9
     # via localstack-core (pyproject.toml)
-botocore==1.39.4
+botocore==1.39.9
     # via
     #   boto3
     #   localstack-core (pyproject.toml)
@@ -79,7 +79,7 @@ jsonpatch==1.33
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.24.0
+jsonschema==4.25.0
     # via
     #   openapi-core
     #   openapi-schema-validator
@@ -170,7 +170,7 @@ rpds-py==0.26.0
     # via
     #   jsonschema
     #   referencing
-s3transfer==0.13.0
+s3transfer==0.13.1
     # via boto3
 semver==3.0.4
     # via localstack-core (pyproject.toml)

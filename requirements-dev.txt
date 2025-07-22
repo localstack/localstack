@@ -31,7 +31,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==45.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.204.0
+aws-cdk-lib==2.206.0
     # via localstack-core
 aws-sam-translator==1.99.0
     # via
@@ -39,17 +39,17 @@ aws-sam-translator==1.99.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.41.4
+awscli==1.41.9
     # via localstack-core
 awscrt==0.27.4
     # via localstack-core
-boto3==1.39.4
+boto3==1.39.9
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.39.4
+botocore==1.39.9
     # via
     #   aws-xray-sdk
     #   awscli
@@ -121,7 +121,7 @@ dill==0.3.6
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-distlib==0.3.9
+distlib==0.4.0
     # via virtualenv
 dnslib==0.9.26
     # via
@@ -217,7 +217,7 @@ jsonpath-rw==1.4.0
     # via localstack-core
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.24.0
+jsonschema==4.25.0
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -433,9 +433,9 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.3
+ruff==0.12.4
     # via localstack-core (pyproject.toml)
-s3transfer==0.13.0
+s3transfer==0.13.1
     # via
     #   awscli
     #   boto3
@@ -489,7 +489,7 @@ urllib3==2.5.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.31.2
+virtualenv==20.32.0
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core

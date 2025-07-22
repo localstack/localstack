@@ -25,6 +25,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             # Exclude all operations for the following, currently _not_ supported services
             if service.service_name in [
                 "bedrock-agent",
+                "bedrock-agentcore",
+                "bedrock-agentcore-control",
                 "bedrock-agent-runtime",
                 "bedrock-data-automation",
                 "bedrock-data-automation-runtime",

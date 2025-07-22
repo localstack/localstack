@@ -1571,8 +1571,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
             function_name, qualifier, context
         )
 
-        user_agent = context.request.user_agent.string
-
         time_before = time.perf_counter()
         try:
             invocation_result = self.lambda_service.invoke(
@@ -1585,7 +1583,6 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 request_id=context.request_id,
                 trace_context=context.trace_context,
                 payload=payload.read() if payload else None,
-                user_agent=user_agent,
             )
         except ServiceException:
             raise

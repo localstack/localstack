@@ -1273,6 +1273,11 @@ class ImdsSupportValues(StrEnum):
     v2_0 = "v2.0"
 
 
+class InitializationType(StrEnum):
+    default = "default"
+    provisioned_rate = "provisioned-rate"
+
+
 class InstanceAttributeName(StrEnum):
     instanceType = "instanceType"
     kernel = "kernel"
@@ -3814,6 +3819,7 @@ class VolumeStatusInfoStatus(StrEnum):
 class VolumeStatusName(StrEnum):
     io_enabled = "io-enabled"
     io_performance = "io-performance"
+    initialization_state = "initialization-state"
 
 
 class VolumeType(StrEnum):
@@ -7429,6 +7435,7 @@ class CreateInstanceConnectEndpointRequest(ServiceRequest):
     PreserveClientIp: Optional[Boolean]
     ClientToken: Optional[String]
     TagSpecifications: Optional[TagSpecificationList]
+    IpAddressType: Optional[IpAddressType]
 
 
 SecurityGroupIdSet = List[SecurityGroupId]
@@ -7451,6 +7458,7 @@ class Ec2InstanceConnectEndpoint(TypedDict, total=False):
     PreserveClientIp: Optional[Boolean]
     SecurityGroupIds: Optional[SecurityGroupIdSet]
     Tags: Optional[TagList]
+    IpAddressType: Optional[IpAddressType]
 
 
 class CreateInstanceConnectEndpointResult(TypedDict, total=False):
@@ -12556,6 +12564,7 @@ class Image(TypedDict, total=False):
     ImageAllowed: Optional[Boolean]
     SourceImageId: Optional[String]
     SourceImageRegion: Optional[String]
+    FreeTierEligible: Optional[Boolean]
     ImageId: Optional[String]
     ImageLocation: Optional[String]
     State: Optional[ImageState]
@@ -15737,6 +15746,12 @@ class DescribeVolumeStatusRequest(ServiceRequest):
     Filters: Optional[FilterList]
 
 
+class InitializationStatusDetails(TypedDict, total=False):
+    InitializationType: Optional[InitializationType]
+    Progress: Optional[Long]
+    EstimatedTimeToCompleteInSeconds: Optional[Long]
+
+
 class VolumeStatusAttachmentStatus(TypedDict, total=False):
     IoPerformance: Optional[String]
     InstanceId: Optional[String]
@@ -15788,6 +15803,7 @@ class VolumeStatusItem(TypedDict, total=False):
     VolumeId: Optional[String]
     VolumeStatus: Optional[VolumeStatusInfo]
     AttachmentStatuses: Optional[VolumeStatusAttachmentStatusList]
+    InitializationStatusDetails: Optional[InitializationStatusDetails]
     AvailabilityZoneId: Optional[String]
 
 
@@ -21729,6 +21745,7 @@ class Ec2Api:
         preserve_client_ip: Boolean | None = None,
         client_token: String | None = None,
         tag_specifications: TagSpecificationList | None = None,
+        ip_address_type: IpAddressType | None = None,
         **kwargs,
     ) -> CreateInstanceConnectEndpointResult:
         raise NotImplementedError

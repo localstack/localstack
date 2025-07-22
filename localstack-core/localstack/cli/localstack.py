@@ -209,12 +209,12 @@ def cmd_config_show(format_: str) -> None:
     assert config
 
     try:
-        # only load the ext config if it's available
-        from localstack.pro.core import config as ext_config
+        # only load the pro config if it's available
+        from localstack.pro.core import config as pro_config
 
-        assert ext_config
+        assert pro_config
     except ImportError:
-        # the ext package is not available
+        # the pro package is not available
         return None
 
     if format_ == "table":

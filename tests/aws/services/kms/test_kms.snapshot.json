@@ -1565,7 +1565,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "recorded-date": "11-05-2023, 22:46:49",
+    "recorded-date": "08-07-2025, 05:53:27",
     "recorded-content": {
       "encrypt_response": {
         "CiphertextBlob": "ciphertext-blob",
@@ -1579,6 +1579,7 @@
       "decrypt_response_with_encryption_context": {
         "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
         "KeyId": "<key-id:1>",
+        "KeyMaterialId": "e2333676b9bf055cb0caa2bec3957d7f3e60b7545a3706314e397746cd26122e",
         "Plaintext": "plaintext",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1586,6 +1587,16 @@
         }
       },
       "decrypt_response_without_encryption_context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "decrypt_response_with_invalid_ciphertext": {
         "Error": {
           "Code": "InvalidCiphertextException",
           "Message": ""
