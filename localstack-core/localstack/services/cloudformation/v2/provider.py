@@ -473,9 +473,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 "StackName must be specified if ChangeSetName is not specified as an ARN."
             )
 
-        state.stacks_v2.get(change_set.stack.stack_id).change_set_ids.remove(
-            change_set.change_set_id
-        )
+        if not change_set:
+            return DeleteChangeSetOutput()
+
         change_set.stack.change_set_ids.remove(change_set.change_set_id)
         state.change_sets.pop(change_set.change_set_id)
 
