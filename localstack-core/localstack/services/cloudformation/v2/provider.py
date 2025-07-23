@@ -85,24 +85,12 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
 
 
-class StackWithNameNotFoundError(ValidationError):
-    def __init__(self, stack_name: str):
-        super().__init__(f"Stack [{stack_name}] does not exist")
-
-
-class StackWithIdNotFoundError(ValidationError):
-    def __init__(self, stack_id: str):
-        super().__init__("Stack with id <stack-name> does not exist")
-
-
-class StackNotFoundErrorWhenDescribing(ValidationError):
-    """
-    Raised when describing a change set, slightly different to the normal error message
-    """
-
-    # TODO: is this difference real or can this type be unified with StackNotFoundError?
-    def __init__(self, stack_name: str):
-        super().__init__(f"Stack [{stack_name}] does not exist")
+class StackNotFoundError(ValidationError):
+    def __init__(self, stack_name_or_id: str):
+        if is_stack_arn(stack_name_or_id):
+            super().__init__(f"Stack with id {stack_name_or_id} does not exist")
+        else:
+            super().__init__(f"Stack [{stack_name_or_id}] does not exist")
 
 
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
@@ -133,14 +121,14 @@ def find_change_set_v2(
         if stack_name is not None:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackWithNameNotFoundError(stack_name)
+                raise StackNotFoundError(stack_name)
 
             for change_set_id in stack.change_set_ids:
                 change_set_candidate = state.change_sets[change_set_id]
                 if change_set_candidate.change_set_name == change_set_name:
                     return change_set_candidate
-        else:
-            raise NotImplementedError
+
+    raise NotImplementedError
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -468,11 +456,7 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO add support for include_property_values
         # only relevant if change_set_name isn't an ARN
         state = get_cloudformation_store(context.account_id, context.region)
-        try:
-            change_set = find_change_set_v2(state, change_set_name, stack_name)
-        except StackNotFoundError:
-            # this method returns a different error message
-            raise StackNotFoundErrorWhenDescribing(stack_name)
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
 
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
@@ -608,7 +592,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackWithIdNotFoundError(stack_name)
+            raise StackNotFoundError(stack_name)
         # TODO: move describe_details method to provider
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
 
@@ -626,7 +610,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackWithIdNotFoundError(stack_name)
+            raise StackNotFoundError(stack_name)
         # TODO: filter stack by PhysicalResourceId!
         statuses = []
         for resource_id, resource_status in stack.resource_states.items():
@@ -651,7 +635,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackWithIdNotFoundError(stack_name)
+            raise StackNotFoundError(stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
 
     @handler("GetTemplateSummary", expand=False)
@@ -666,7 +650,7 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack_name:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackWithIdNotFoundError(stack_name)
+                raise StackNotFoundError(stack_name)
             template = stack.template
         else:
             template_body = request.get("TemplateBody")
@@ -727,6 +711,7 @@ class CloudformationProviderV2(CloudformationProvider):
         stack = find_stack_v2(state, stack_name)
         if not stack:
             raise StackNotFoundError(stack_name)
+
         stack.enable_termination_protection = enable_termination_protection
         return UpdateTerminationProtectionOutput(StackId=stack.stack_id)
 
