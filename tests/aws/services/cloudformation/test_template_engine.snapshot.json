@@ -112,7 +112,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_scope_order_and_parameters": {
-    "recorded-date": "07-12-2022, 09:08:26",
+    "recorded-date": "23-07-2025, 18:18:33",
     "recorded-content": {
       "processed_template": {
         "StagesAvailable": [
@@ -124,7 +124,7 @@
             "Parameter": {
               "Properties": {
                 "Type": "String",
-                "Value": "snippet-transform second-snippet-transform global-transform second-global-transform <replace-this>"
+                "Value": "snippet-transform second-snippet-transform snippet-transform-upper global-transform second-global-transform <replace-this>"
               },
               "Type": "AWS::SSM::Parameter"
             }

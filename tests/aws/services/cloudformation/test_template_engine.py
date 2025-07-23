@@ -781,7 +781,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
+    # @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -814,7 +814,7 @@ class TestMacros:
             template_path=os.path.join(
                 os.path.dirname(__file__),
                 "../../templates/transformation_multiple_scope_parameter.yml",
-            ),
+            )
         )
 
         processed_template = aws_client.cloudformation.get_template(

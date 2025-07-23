@@ -101,7 +101,19 @@ class Scope(str):
         return self.split(self._SEPARATOR)
 
     def to_jsonpath(self) -> str:
-        pass
+        parts = self.split("/")
+        json_parts = []
+
+        for part in parts:
+            if not part:  # Skip empty strings from leading/trailing slashes
+                continue
+            # Wrap keys with special characters (e.g., colon) in quotes
+            if ":" in part:
+                json_parts.append(f'"{part}"')
+            else:
+                json_parts.append(part)
+
+        return f"$.{'.'.join(json_parts)}"
 
 
 class ChangeType(enum.Enum):
@@ -605,7 +617,7 @@ class ChangeSetModel:
                 change_type = arguments.change_type
 
         if intrinsic_function == FnTransform:
-            if scope_has_component_component("Fn::Transform"):
+            if scope.count(FnTransform) > 1:
                 raise RuntimeError("Nested Fn::Transforms are bad")
 
             path = "$" + ".".join(scope.split("/")[:-1])

@@ -12,9 +12,7 @@ from localstack.services.cloudformation.engine.policy_loader import create_polic
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
-    ResolveRefsRecursivelyContext,
     execute_macro,
-    transformers,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -34,7 +32,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils import testutil
-from localstack.utils.objects import recurse_object
 
 LOG = logging.getLogger(__name__)
 
@@ -250,13 +247,13 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self.visit(node_template.outputs)
 
         # now visit global transforms
-
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
         )
         transform_before: Maybe[list[GlobalTransform]] = transform_delta.before
         transform_after: Maybe[list[GlobalTransform]] = transform_delta.after
 
+        transformed_before_template = self._before_template
         if transform_before and not is_nothing(self._before_template):
             transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
             if not transformed_before_template:
@@ -270,6 +267,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                         )
                 self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
+        transformed_after_template = self._after_template
         if transform_after and not is_nothing(self._after_template):
             transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
             if not transformed_after_template:
@@ -297,121 +295,44 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         # TODO: caching
 
+        def _replace_at_jsonpath(template, node, result):
+            path = node.scope.to_jsonpath()
+            parent_path = ".".join(path.split(".")[:-1])
+            import jsonpath_ng
+
+            pattern = jsonpath_ng.parse(parent_path)
+            result_template = pattern.update(template, result)
+
+            return result_template
+
         if not is_nothing(arguments_delta.before):
             before = self._compute_fn_transform(
                 arguments_delta.before,
                 node_intrinsic_function.before_siblings,
                 parameters_delta.before,
             )
-            replace_at_jsonpath(self._before_template, node_intrinsic_function, before)
+            updated_before_template = _replace_at_jsonpath(
+                self._before_template, node_intrinsic_function, before
+            )
+            self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = updated_before_template
         else:
             before = Nothing
+
         if not is_nothing(arguments_delta.after):
             after = self._compute_fn_transform(
                 arguments_delta.after,
                 node_intrinsic_function.after_siblings,
                 parameters_delta.after,
             )
-            replace_at_jsonpath(self._before_template, node_intrinsic_function, before)
+            updated_after_template = _replace_at_jsonpath(
+                self._after_template, node_intrinsic_function, after
+            )
+            self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = updated_after_template
         else:
             after = Nothing
 
+        self._save_runtime_cache()
         return PreprocEntityDelta(before=before, after=after)
-
-    def _execute_embedded_transformations(
-        self, template, resolved_parameters
-    ) -> PreprocEntityDelta:
-        account_id = self._change_set.account_id
-        region_name = self._change_set.region_name
-        stack_name = self._change_set.change_set_name
-
-        def _normalize_transform(obj):
-            transforms = []
-
-            if isinstance(obj, str):
-                transforms.append({"Name": obj, "Parameters": {}})
-
-            if isinstance(obj, dict):
-                transforms.append(obj)
-
-            if isinstance(obj, list):
-                for v in obj:
-                    if isinstance(v, str):
-                        transforms.append({"Name": v, "Parameters": {}})
-
-                    if isinstance(v, dict):
-                        transforms.append(v)
-
-            return transforms
-
-        def _resolve_macro_parameters(macro_parameters: dict, stack_parameters):
-            resolved_parameters = {}
-            resolve_refs_recursively = ResolveRefsRecursivelyContext(
-                account_id=self._change_set.account_id,
-                region_name=self._change_set.region_name,
-                stack_name=self._change_set.change_set_name,
-                resources=self._change_set.template.get("Resources", {}),
-                mappings=self._change_set.template.get("Mappings", {}),
-                conditions=self._change_set.template.get("Conditions", {}),
-                parameters=stack_parameters,
-            )
-
-            for parameter_key, parameter_value in macro_parameters.items():
-                resolved_parameters[parameter_key] = resolve_refs_recursively.resolve(
-                    parameter_value
-                )
-
-            return resolved_parameters
-
-        def _visit(obj, path, **_):
-            if isinstance(obj, dict) and "Fn::Transform" in obj:
-                transforms = _normalize_transform(obj["Fn::Transform"])
-
-                for transform in transforms:
-                    transform_name = transform.get("Name")
-                    transformer_class = transformers.get(transform_name)
-                    macro_store = get_cloudformation_store(
-                        account_id=account_id, region_name=region_name
-                    ).macros
-                    parameters = transform.get("Parameters") or {}
-                    stack_parameters = resolved_parameters
-
-                    if transformer_class:
-                        transformer = transformer_class()
-                        transformed = transformer.transform(
-                            account_id,
-                            region_name,
-                            _resolve_macro_parameters(
-                                macro_parameters=parameters, stack_parameters=stack_parameters
-                            ),
-                        )
-                        obj_copy = copy.deepcopy(obj)
-                        obj_copy.pop("Fn::Transform", "")
-                        obj_copy.update(transformed)
-                        obj = obj_copy
-
-                    elif transform_name in macro_store:
-                        obj_copy = copy.deepcopy(obj)
-                        obj_copy.pop("Fn::Transform", "")
-                        result = execute_macro(
-                            account_id,
-                            region_name,
-                            obj_copy,
-                            transform,
-                            stack_parameters,
-                            _resolve_macro_parameters(parameters, stack_parameters),
-                            True,
-                        )
-                        obj = result
-                    else:
-                        LOG.warning(
-                            "Unsupported transform function '%s' used in %s",
-                            transform_name,
-                            stack_name,
-                        )
-            return obj
-
-        return recurse_object(template, _visit)
 
     def visit_node_global_transform(
         self, node_global_transform: NodeGlobalTransform
