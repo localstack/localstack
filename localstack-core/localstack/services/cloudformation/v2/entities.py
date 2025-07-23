@@ -48,6 +48,7 @@ class Stack:
     deletion_time: datetime | None
     events: list[StackEvent]
     capabilities: list[Capability]
+    enable_termination_protection: bool
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -74,6 +75,7 @@ class Stack:
         self.creation_time = datetime.now(tz=timezone.utc)
         self.deletion_time = None
         self.change_set_id = None
+        self.enable_termination_protection = False
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
@@ -177,7 +179,7 @@ class Stack:
             "DriftInformation": StackDriftInformation(
                 StackDriftStatus=StackDriftStatus.NOT_CHECKED
             ),
-            "EnableTerminationProtection": False,
+            "EnableTerminationProtection": self.enable_termination_protection,
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],

@@ -23,6 +23,7 @@ from localstack.aws.api.cloudformation import (
     DescribeStackResourcesOutput,
     DescribeStacksOutput,
     DisableRollback,
+    EnableTerminationProtection,
     ExecuteChangeSetOutput,
     ExecutionStatus,
     GetTemplateSummaryInput,
@@ -42,6 +43,7 @@ from localstack.aws.api.cloudformation import (
     StackStatus,
     UpdateStackInput,
     UpdateStackOutput,
+    UpdateTerminationProtectionOutput,
 )
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
@@ -712,6 +714,21 @@ class CloudformationProviderV2(CloudformationProvider):
         )
 
         return result
+
+    @handler("UpdateTerminationProtection")
+    def update_termination_protection(
+        self,
+        context: RequestContext,
+        enable_termination_protection: EnableTerminationProtection,
+        stack_name: StackNameOrId,
+        **kwargs,
+    ) -> UpdateTerminationProtectionOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack = find_stack_v2(state, stack_name)
+        if not stack:
+            raise StackNotFoundError(stack_name)
+        stack.enable_termination_protection = enable_termination_protection
+        return UpdateTerminationProtectionOutput(StackId=stack.stack_id)
 
     @handler("UpdateStack", expand=False)
     def update_stack(
