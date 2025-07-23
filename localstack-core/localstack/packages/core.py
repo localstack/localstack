@@ -13,7 +13,7 @@ from localstack import config
 from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
-from ..utils.http import download
+from ..utils.http import download, get_proxies
 from ..utils.run import is_root, run
 from ..utils.venv import VirtualEnvironment
 from .api import InstallTarget, PackageException, PackageInstaller
@@ -155,7 +155,7 @@ class GitHubReleaseInstaller(PermissionDownloadInstaller):
         gh_token = os.environ.get("GITHUB_API_TOKEN")
         if gh_token:
             headers = {"authorization": f"Bearer {gh_token}"}
-        response = requests.get(self.github_tag_url, headers=headers)
+        response = requests.get(self.github_tag_url, headers=headers, proxies=get_proxies())
         if not response.ok:
             raise PackageException(
                 f"Could not get list of releases from {self.github_tag_url}: {response.text}"
