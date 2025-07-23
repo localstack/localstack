@@ -16,6 +16,7 @@ from localstack.aws.api.cloudformation import (
     CreateChangeSetOutput,
     CreateStackInput,
     CreateStackOutput,
+    DeleteChangeSetOutput,
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
@@ -82,9 +83,14 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
 
 
-class StackNotFoundError(ValidationError):
+class StackWithNameNotFoundError(ValidationError):
     def __init__(self, stack_name: str):
-        super().__init__(f"Stack with id {stack_name} does not exist")
+        super().__init__(f"Stack [{stack_name}] does not exist")
+
+
+class StackWithIdNotFoundError(ValidationError):
+    def __init__(self, stack_id: str):
+        super().__init__("Stack with id <stack-name> does not exist")
 
 
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
@@ -115,7 +121,7 @@ def find_change_set_v2(
         if stack_name is not None:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackNotFoundError(stack_name)
+                raise StackWithNameNotFoundError(stack_name)
 
             for change_set_id in stack.change_set_ids:
                 change_set_candidate = state.change_sets[change_set_id]
@@ -448,6 +454,33 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         return result
 
+    @handler("DeleteChangeSet")
+    def delete_change_set(
+        self,
+        context: RequestContext,
+        change_set_name: ChangeSetNameOrId,
+        stack_name: StackNameOrId = None,
+        **kwargs,
+    ) -> DeleteChangeSetOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        if is_changeset_arn(change_set_name):
+            change_set = state.change_sets.get(change_set_name)
+        elif not is_changeset_arn(change_set_name) and stack_name:
+            change_set = find_change_set_v2(state, change_set_name, stack_name)
+        else:
+            raise ValidationError(
+                "StackName must be specified if ChangeSetName is not specified as an ARN."
+            )
+
+        if not change_set:
+            return DeleteChangeSetOutput()
+
+        change_set.stack.change_set_ids.remove(change_set.change_set_id)
+        state.change_sets.pop(change_set.change_set_id)
+
+        return DeleteChangeSetOutput()
+
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
         try:
@@ -548,7 +581,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackNotFoundError(stack_name)
+            raise StackWithIdNotFoundError(stack_name)
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
 
     @handler("DescribeStackResources")
@@ -565,7 +598,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackNotFoundError(stack_name)
+            raise StackWithIdNotFoundError(stack_name)
         # TODO: filter stack by PhysicalResourceId!
         statuses = []
         for resource_id, resource_status in stack.resource_states.items():
@@ -586,7 +619,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackNotFoundError(stack_name)
+            raise StackWithIdNotFoundError(stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
 
     @handler("GetTemplateSummary", expand=False)
@@ -601,7 +634,7 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack_name:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackNotFoundError(stack_name)
+                raise StackWithIdNotFoundError(stack_name)
             template = stack.template
         else:
             template_body = request.get("TemplateBody")
