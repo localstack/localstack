@@ -142,5 +142,23 @@
       "teardown": 1.26,
       "total": 7.84
     }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetStepFunctions::test_put_events_with_target_stepfunction_state_machine": {
+    "last_validated_date": "2025-07-23T17:34:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 200.18,
+      "teardown": 0.02,
+      "total": 200.21
+    }
+  },
+  "tests/aws/services/events/test_events_targets.py::TestEventsTargetStepFunctions::test_put_events_with_target_stepfunction_state_machine_and_input_transformer": {
+    "last_validated_date": "2025-07-23T16:58:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.53,
+      "call": 219.32,
+      "teardown": 0.01,
+      "total": 219.86
+    }
   }
 }
