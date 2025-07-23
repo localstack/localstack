@@ -77,6 +77,8 @@ jmespath==1.0.1
     #   botocore
 jsonpatch==1.33
     # via localstack-core (pyproject.toml)
+jsonpickle==4.1.1
+    # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.25.0
