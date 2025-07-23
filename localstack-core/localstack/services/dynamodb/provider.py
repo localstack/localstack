@@ -1739,7 +1739,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return UpdateKinesisStreamingDestinationOutput(
             TableName=table_name,
             StreamArn=stream_arn,
-            DestinationStatus="UPDATING",
+            DestinationStatus=DestinationStatus.UPDATING,
             UpdateKinesisStreamingConfiguration=UpdateKinesisStreamingConfiguration(
                 ApproximateCreationDateTimePrecision=time_precision,
             ),
