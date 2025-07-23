@@ -46,7 +46,7 @@ class Stack:
     stack_id: str
     creation_time: datetime
     deletion_time: datetime | None
-    events = list[StackEvent]
+    events: list[StackEvent]
     capabilities: list[Capability]
 
     # state after deploy
