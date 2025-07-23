@@ -29,10 +29,13 @@ https://dill.readthedocs.io/en/latest/index.html?highlight=register#dill.Pickler
 """
 
 import inspect
-from typing import Any, BinaryIO, Callable, Generic, Type, TypeVar
+from typing import IO, Any, BinaryIO, Callable, Generic, Type, TypeVar
 
 import dill
+import jsonpickle
 from dill._dill import MetaCatchingDict
+
+from localstack import config
 
 from .core import Decoder, Encoder
 
@@ -136,42 +139,42 @@ def remove_dispatch_entry(cls: Type):
 
 def dumps(obj: Any) -> bytes:
     """
-    Pickle an object into bytes using a ``PickleEncoder``.
+    Pickle an object into bytes using a ``Encoder``.
 
     :param obj: the object to pickle
     :return: the pickled object
     """
-    return PickleEncoder().encodes(obj)
+    return get_default_encoder().encodes(obj)
 
 
 def dump(obj: Any, file: BinaryIO):
     """
-    Pickle an object into a buffer using a ``PickleEncoder``.
+    Pickle an object into a buffer using a ``Encoder``.
 
     :param obj: the object to pickle
     :param file: the IO buffer
     """
-    return PickleEncoder().encode(obj, file)
+    return get_default_encoder().encode(obj, file)
 
 
 def loads(data: bytes) -> Any:
     """
-    Unpickle am object from bytes using a ``PickleDecoder``.
+    Unpickle am object from bytes using a ``Decoder``.
 
     :param data: the pickled object
     :return: the unpickled object
     """
-    return PickleDecoder().decodes(data)
+    return get_default_decoder().decodes(data)
 
 
 def load(file: BinaryIO) -> Any:
     """
-    Unpickle am object from a buffer using a ``PickleDecoder``.
+    Unpickle am object from a buffer using a ``Decoder``.
 
     :param file: the buffer containing the pickled object
     :return: the unpickled object
     """
-    return PickleDecoder().decode(file)
+    return get_default_decoder().decode(file)
 
 
 class _SuperclassMatchingTypeDict(MetaCatchingDict):
@@ -253,6 +256,42 @@ class PickleDecoder(Decoder):
 
     def decode(self, file: BinaryIO) -> Any:
         return self.unpickler_class(file).load()
+
+
+class JsonEncoder(Encoder):
+    """
+    An Encoder that uses ``jsonpickle`` under the hood.
+    """
+
+    def __init__(self, pickler_class: Type[jsonpickle.Pickler] = None):
+        self.pickler_class = pickler_class or jsonpickle.Pickler()
+
+    def encode(self, obj: Any, file: IO[bytes]):
+        json_str = jsonpickle.encode(obj, context=self.pickler_class)
+        file.write(json_str.encode("utf-8"))
+
+
+class JsonDecoder(Decoder):
+    """
+    A Decoder that uses ``jsonpickle`` under the hood.
+    """
+
+    unpickler_class: Type[jsonpickle.Unpickler]
+
+    def __init__(self, unpickler_class: Type[jsonpickle.Unpickler] = None):
+        self.unpickler_class = unpickler_class or jsonpickle.Unpickler()
+
+    def decode(self, file: IO[bytes]) -> Any:
+        json_str = file.read().decode("utf-8")
+        return jsonpickle.decode(json_str, context=self.unpickler_class)
+
+
+def get_default_encoder() -> Encoder:
+    return JsonEncoder() if config.ENABLE_JSON_EXPERIMENTAL_BACKEND else PickleEncoder()
+
+
+def get_default_decoder() -> Decoder:
+    return JsonDecoder() if config.ENABLE_JSON_EXPERIMENTAL_BACKEND else PickleDecoder()
 
 
 class ObjectStateReducer(Generic[_T]):

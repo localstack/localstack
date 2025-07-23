@@ -2616,3 +2616,12 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture(
+    params=[False, True],
+    ids=["dill", "jsonpickle"],
+)
+def patch_default_encoder(request, monkeypatch):
+    enable_json = request.param
+    monkeypatch.setattr(config, "ENABLE_JSON_EXPERIMENTAL_BACKEND", enable_json)
