@@ -129,6 +129,43 @@ class TestBaseEvaluateJsonata:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
+        "expression_string",
+        [
+            EJT.JSONATA_REGEX_EXPRESSION_BASE,
+            EJT.JSONATA_REGEX_EXPRESSION_BASE_FALSE,
+            EJT.JSONATA_REGEX_EXPRESSION_BASE_SINGLE_QUOTE,
+            EJT.JSONATA_REGEX_EXPRESSION_BASE_SINGLE_QUOTE_FALSE,
+        ],
+        ids=[
+            "BASE",
+            "BASE_FALSE",
+            "BASE_SINGLE_QUOTE",
+            "BASE_SINGLE_QUOTE_FALSE",
+        ],
+    )
+    def test_base_jsonata_regular_expressions(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        expression_string,
+    ):
+        template = EJT.load_sfn_template(EJT.BASE_PASS)
+        template["States"]["Start"]["Output"] = expression_string
+        definition = json.dumps(template)
+        exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role=create_state_machine_iam_role,
+            create_state_machine=create_state_machine,
+            sfn_snapshot=sfn_snapshot,
+            definition=definition,
+            execution_input=exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
         "field,input_value",
         [
             pytest.param(

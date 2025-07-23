@@ -1,41 +1,146 @@
 {
+  "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_jsonata_regular_expressions[BASE]": {
+    "last_validated_date": "2025-07-22T13:32:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.58,
+      "teardown": 1.63,
+      "total": 15.21
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_jsonata_regular_expressions[BASE_FALSE]": {
+    "last_validated_date": "2025-07-22T13:32:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.51,
+      "teardown": 1.73,
+      "total": 14.24
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_jsonata_regular_expressions[BASE_SINGLE_QUOTE]": {
+    "last_validated_date": "2025-07-22T13:33:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.03,
+      "teardown": 1.72,
+      "total": 14.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_jsonata_regular_expressions[BASE_SINGLE_QUOTE_FALSE]": {
+    "last_validated_date": "2025-07-22T13:33:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.63,
+      "teardown": 1.72,
+      "total": 14.35
+    }
+  },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map[ITEMS]": {
-    "last_validated_date": "2024-11-18T09:18:25+00:00"
+    "last_validated_date": "2025-07-22T13:31:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.55,
+      "teardown": 1.77,
+      "total": 15.32
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map[ITEMS_DOUBLE_QUOTES]": {
-    "last_validated_date": "2024-11-18T09:18:48+00:00"
+    "last_validated_date": "2025-07-22T13:31:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.63,
+      "teardown": 1.6,
+      "total": 15.23
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map[MAX_CONCURRENCY]": {
-    "last_validated_date": "2024-11-18T09:19:10+00:00"
+    "last_validated_date": "2025-07-22T13:31:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.37,
+      "teardown": 1.5,
+      "total": 13.87
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map[TOLERATED_FAILURE_COUNT]": {
-    "last_validated_date": "2024-11-18T09:19:39+00:00"
+    "last_validated_date": "2025-07-22T13:32:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.56,
+      "teardown": 1.57,
+      "total": 14.13
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map[TOLERATED_FAILURE_PERCENTAGE]": {
-    "last_validated_date": "2024-11-18T09:19:28+00:00"
+    "last_validated_date": "2025-07-22T13:32:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.51,
+      "teardown": 2.79,
+      "total": 16.3
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map_from_input[ITEMS]": {
-    "last_validated_date": "2024-11-13T15:39:11+00:00"
+    "last_validated_date": "2025-07-22T13:34:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 20.48,
+      "teardown": 2.42,
+      "total": 22.9
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map_from_input[MAX_CONCURRENCY]": {
-    "last_validated_date": "2024-11-13T15:39:37+00:00"
+    "last_validated_date": "2025-07-22T13:34:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.56,
+      "teardown": 2.54,
+      "total": 18.1
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map_from_input[TOLERATED_FAILURE_COUNT]": {
-    "last_validated_date": "2024-11-13T15:40:15+00:00"
+    "last_validated_date": "2025-07-22T13:35:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.69,
+      "teardown": 3.73,
+      "total": 19.42
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_map_from_input[TOLERATED_FAILURE_PERCENTAGE]": {
-    "last_validated_date": "2024-11-13T15:39:58+00:00"
+    "last_validated_date": "2025-07-22T13:34:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.04,
+      "teardown": 2.58,
+      "total": 17.62
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_task[HEARTBEAT_SECONDS]": {
-    "last_validated_date": "2024-11-13T15:37:13+00:00"
+    "last_validated_date": "2025-07-22T13:31:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.0,
+      "teardown": 2.43,
+      "total": 18.43
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_task[TIMEOUT_SECONDS]": {
-    "last_validated_date": "2024-11-13T15:36:51+00:00"
+    "last_validated_date": "2025-07-22T13:30:51+00:00",
+    "durations_in_seconds": {
+      "setup": 11.8,
+      "call": 11.98,
+      "teardown": 2.73,
+      "total": 26.51
+    }
   },
   "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_task_from_input[HEARTBEAT_SECONDS]": {
-    "last_validated_date": "2024-11-13T15:53:13+00:00"
-  },
-  "tests/aws/services/stepfunctions/v2/evaluate_jsonata/test_base_evaluate_expressions.py::TestBaseEvaluateJsonata::test_base_task_from_input[TIMEOUT_SECONDS]": {
-    "last_validated_date": "2024-11-13T15:38:29+00:00"
+    "last_validated_date": "2025-07-22T13:33:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 17.12,
+      "teardown": 2.73,
+      "total": 19.85
+    }
   }
 }

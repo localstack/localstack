@@ -1,0 +1,12 @@
+{
+  "Comment": "BASE_PASS",
+  "QueryLanguage": "JSONata",
+  "StartAt": "Start",
+  "States": {
+    "Start": {
+      "Type": "Pass",
+      "Output": "__tbd__",
+      "End": true
+    }
+  }
+}
