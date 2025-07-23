@@ -1,8 +1,12 @@
+import sys
 from queue import PriorityQueue
 
 import pytest
 
+from localstack.services.stores import AccountRegionBundle, BaseStore, CrossRegionAttribute
 from localstack.state import pickle
+from localstack.state.json import JsonDecoder, JsonEncoder
+from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
 
 
 def test_pickle_priority_queue(patch_default_encoder):
@@ -105,3 +109,37 @@ def test_object_state_reducer():
 
     with pytest.raises(TypeError):
         pickle.dumps(ClassWithGenerator(0))
+
+
+class Attribute:
+    def __init__(self, value: str):
+        self.value = value
+
+
+class NewAttribute:
+    def __init__(self, value: str):
+        self.value = value
+
+
+class DummyStore(BaseStore):
+    strings: dict[str, str] = CrossRegionAttribute(default=dict)
+    attributes: dict[str, Attribute] = CrossRegionAttribute(default=dict)
+
+
+@pytest.mark.skip("This is what we need to solve")
+def test_json_pickle_evolution():
+    store = AccountRegionBundle("sqs", DummyStore, validate=False)
+    store[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME].strings["foo"] = "baz"
+    store[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME].attributes["foo"] = Attribute("baz")
+
+    blob = pickle.dumps(store, encoder=JsonEncoder())
+
+    # simulate class evolution by removing the class from the scope and changing the store annotations
+    module = sys.modules[__name__]
+    if hasattr(module, "Attribute"):
+        delattr(module, "Attribute")
+    DummyStore.__annotations__["attributes"] = dict[str, NewAttribute]
+    obj = pickle.loads(blob, decoder=JsonDecoder())
+
+    assert obj[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME].strings["foo"] == "baz"
+    assert obj[TEST_AWS_ACCOUNT_ID][TEST_AWS_REGION_NAME].attributes["foo"].value == "baz"
