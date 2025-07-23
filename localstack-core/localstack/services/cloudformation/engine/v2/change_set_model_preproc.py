@@ -596,13 +596,83 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         )
         return delta
 
-    def _compute_fn_transform(self, macro_definition: list[Any] | dict[str, Any]) -> Any:
+    def _compute_fn_transform(
+        self, macro_definition: Any, siblings: Any, resolved_parameters: Any
+    ) -> Any:
         # TODO: add typing to arguments before this level.
         # TODO: add schema validation
         # TODO: add support for other transform types
 
         account_id = self._change_set.account_id
         region_name = self._change_set.region_name
+
+        def _normalize_transform(obj):
+            transforms = []
+
+            if isinstance(obj, str):
+                transforms.append({"Name": obj, "Parameters": {}})
+
+            if isinstance(obj, dict):
+                transforms.append(obj)
+
+            if isinstance(obj, list):
+                for v in obj:
+                    if isinstance(v, str):
+                        transforms.append({"Name": v, "Parameters": {}})
+
+                    if isinstance(v, dict):
+                        transforms.append(v)
+
+            return transforms
+
+        transforms = _normalize_transform(macro_definition)
+        for transform in transforms:
+            transform_name = transform["Name"]
+            if transform_name in transforms:
+                builtin_transformer_class = transformers[transform_name]
+                builtin_transformer: Transformer = builtin_transformer_class()
+                transform_output: Any = builtin_transformer.transform(
+                    account_id=account_id, region_name=region_name, parameters=transform_parameters
+                )
+                raise RuntimeError("TODO")
+            else:
+                macros_store = get_cloudformation_store(
+                    account_id=account_id, region_name=region_name
+                ).macros
+
+                resolved_parameters = {
+                    **self._change_set.stack.resolved_parameters,
+                    **self.visit_node_parameters(
+                        self._change_set.update_model.node_template.parameters
+                    ).after,
+                }
+
+                template_parameters = {
+                    **self._change_set.stack.template.get("Parameters", {}),
+                    **(self._change_set.template or {}).get("Parameters", {}),
+                }
+
+                for key, value in resolved_parameters.items():
+                    template_parameters[key]["ParameterValue"] = value
+
+                # -2 removes: divergence/Fn::transform, -3 returns the path until the parent
+                scope = macro_definition.get("Scope").split("/")[:-3]
+                template = self._change_set.template or {}
+                for key in scope:
+                    if key:
+                        template = template.get(key)
+
+                transform_output: Any = execute_macro(
+                    account_id=account_id,
+                    region_name=region_name,
+                    parsed_template=template,  # TODO: review the requirements for this argument.
+                    macro=macro_definition,  # TODO: review support for non dict bindings (v1).
+                    stack_parameters=template_parameters,
+                    transformation_parameters=macro_definition.get("Parameters"),
+                    is_intrinsic=True,
+                )
+
+                return transform_output
 
         def _invoke_macro(defn: dict) -> Any:
             transform_name: str = defn.get("Name")
@@ -676,14 +746,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_transform(
         self, node_intrinsic_function: NodeIntrinsicFunctionTransform
     ) -> PreprocEntityDelta:
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=self._compute_fn_transform,
-        )
-        return delta
+        raise RuntimeError("Transforms should have been resolved before preprocessing the template")
 
     def visit_node_intrinsic_function_fn_sub(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -1055,18 +1118,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_change_type = node_properties.change_type
         before_bindings = dict() if node_change_type != ChangeType.CREATED else Nothing
         after_bindings = dict() if node_change_type != ChangeType.REMOVED else Nothing
-
-        # TODO: handle transforms first
-        transform_node = next(
-            (
-                property
-                for property in node_properties.properties
-                if isinstance(property, NodeIntrinsicFunctionTransform)
-            ),
-            None,
-        )
-        if transform_node:
-            delta = self.visit_node_intrinsic_function_fn_transform(transform_node)
 
         for node_property in node_properties.properties:
             delta = self.visit(node_property)

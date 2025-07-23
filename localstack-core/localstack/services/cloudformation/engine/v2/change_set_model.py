@@ -7,6 +7,7 @@ from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
 
 from typing_extensions import TypeVar
 
+from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -98,6 +99,9 @@ class Scope(str):
 
     def unwrap(self) -> list[str]:
         return self.split(self._SEPARATOR)
+
+    def to_jsonpath(self) -> str:
+        pass
 
 
 class ChangeType(enum.Enum):
@@ -274,7 +278,7 @@ class NodeOutput(ChangeSetNode):
 
 
 class NodeOutputs(ChangeSetNode):
-    outputs: Final[list[NodeOutput]]
+    outputs: Final[list[NodeOutput | NodeIntrinsicFunctionTransform]]
 
     def __init__(self, scope: Scope, outputs: list[NodeOutput]):
         change_type = parent_change_type_of(outputs)
@@ -402,14 +406,13 @@ class NodeIntrinsicFunction(ChangeSetNode):
 
 
 class NodeIntrinsicFunctionTransform(NodeIntrinsicFunction):
-    siblings: Final[list[ChangeSetEntity]]
-
     def __init__(
         self,
         scope: Scope,
         change_type: ChangeType,
         arguments: ChangeSetEntity,
-        siblings: list[ChangeSetEntity],
+        before_siblings: list[Any],
+        after_siblings: list[Any],
     ):
         super().__init__(
             scope=scope,
@@ -417,7 +420,8 @@ class NodeIntrinsicFunctionTransform(NodeIntrinsicFunction):
             intrinsic_function=FnTransform,
             arguments=arguments,
         )
-        self.siblings = siblings
+        self.before_siblings = before_siblings
+        self.after_siblings = after_siblings
 
 
 class NodeObject(ChangeSetNode):
@@ -599,12 +603,21 @@ class ChangeSetModel:
                 change_type = resolve_function(arguments)
             else:
                 change_type = arguments.change_type
+
         if intrinsic_function == FnTransform:
+            if scope_has_component_component("Fn::Transform"):
+                raise RuntimeError("Nested Fn::Transforms are bad")
+
+            path = "$" + ".".join(scope.split("/")[:-1])
+            before_siblings = extract_jsonpath(self._before_template, path)
+            after_siblings = extract_jsonpath(self._after_template, path)
+
             node_intrinsic_function = NodeIntrinsicFunctionTransform(
                 scope=scope,
                 change_type=change_type,
                 arguments=arguments,
-                siblings=[],
+                before_siblings=before_siblings,
+                after_siblings=after_siblings,
             )
         else:
             node_intrinsic_function = NodeIntrinsicFunction(
@@ -1184,18 +1197,26 @@ class ChangeSetModel:
     def _visit_outputs(
         self, scope: Scope, before_outputs: Maybe[dict], after_outputs: Maybe[dict]
     ) -> NodeOutputs:
-        outputs: list[NodeOutput] = list()
+        outputs: list[NodeOutput | NodeIntrinsicFunctionTransform] = list()
         output_names: list[str] = self._safe_keys_of(before_outputs, after_outputs)
         for output_name in output_names:
             scope_output, (before_output, after_output) = self._safe_access_in(
                 scope, output_name, before_outputs, after_outputs
             )
-            output = self._visit_output(
-                scope=scope_output,
-                name=output_name,
-                before_output=before_output,
-                after_output=after_output,
-            )
+            if output_name == FnTransform:
+                output = self._visit_intrinsic_function(
+                    scope=scope_output,
+                    intrinsic_function=output_name,
+                    before_arguments=before_output,
+                    after_arguments=after_output,
+                )
+            else:
+                output = self._visit_output(
+                    scope=scope_output,
+                    name=output_name,
+                    before_output=before_output,
+                    after_output=after_output,
+                )
             outputs.append(output)
         return NodeOutputs(scope=scope, outputs=outputs)
 

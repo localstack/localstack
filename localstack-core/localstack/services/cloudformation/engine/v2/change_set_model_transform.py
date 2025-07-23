@@ -20,7 +20,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     Maybe,
     NodeGlobalTransform,
-    NodeIntrinsicFunction,
+    NodeIntrinsicFunctionTransform,
     NodeParameter,
     NodeTransform,
     Nothing,
@@ -91,6 +91,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         # Enable compatability with v1 util.
         # TODO: port v1's SSM parameter resolution
 
+        # TODO: port
         parameter_value_delta = super().visit_node_parameter(node_parameter=node_parameter)
         parameter_value_before = parameter_value_delta.before
         parameter_value_after = parameter_value_delta.after
@@ -244,9 +245,11 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         parameters_before = parameters_delta.before
         parameters_after = parameters_delta.after
 
-        # TODO: using Fn::Transform in the top level scope
-        # visit the resources to resolve local transforms
+        # Visit any nodes that can contain transforms
         self.visit(node_template.resources)
+        self.visit(node_template.outputs)
+
+        # now visit global transforms
 
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
@@ -254,9 +257,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         transform_before: Maybe[list[GlobalTransform]] = transform_delta.before
         transform_after: Maybe[list[GlobalTransform]] = transform_delta.after
 
-        transformed_before_template = self._execute_embedded_transformations(
-            template=self._before_template, resolved_parameters=parameters_before
-        )
         if transform_before and not is_nothing(self._before_template):
             transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
             if not transformed_before_template:
@@ -270,9 +270,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                         )
                 self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
-        transformed_after_template = self._execute_embedded_transformations(
-            template=self._after_template, resolved_parameters=parameters_after
-        )
         if transform_after and not is_nothing(self._after_template):
             transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
             if not transformed_after_template:
@@ -290,10 +287,36 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         return transformed_before_template, transformed_after_template
 
-    def visit_node_intrinsic_function_fn_transform(
-        self, node_intrinsic_function: NodeIntrinsicFunction
+    def visit_node_intrinsic_function_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunctionTransform
     ) -> PreprocEntityDelta:
-        return super().visit_node_intrinsic_function_fn_transform(node_intrinsic_function)
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        parameters_delta = self.visit_node_parameters(
+            self._change_set.update_model.node_template.parameters
+        )
+
+        # TODO: caching
+
+        if not is_nothing(arguments_delta.before):
+            before = self._compute_fn_transform(
+                arguments_delta.before,
+                node_intrinsic_function.before_siblings,
+                parameters_delta.before,
+            )
+            replace_at_jsonpath(self._before_template, node_intrinsic_function, before)
+        else:
+            before = Nothing
+        if not is_nothing(arguments_delta.after):
+            after = self._compute_fn_transform(
+                arguments_delta.after,
+                node_intrinsic_function.after_siblings,
+                parameters_delta.after,
+            )
+            replace_at_jsonpath(self._before_template, node_intrinsic_function, before)
+        else:
+            after = Nothing
+
+        return PreprocEntityDelta(before=before, after=after)
 
     def _execute_embedded_transformations(
         self, template, resolved_parameters
