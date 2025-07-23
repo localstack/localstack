@@ -126,6 +126,9 @@ class ApiGatewayDeploymentProvider(ResourceProvider[ApiGatewayDeploymentProperti
         if model.get("Description"):
             params["description"] = model["Description"]
 
+        if model.get("DeploymentCanarySettings"):
+            params["canarySettings"] = model["DeploymentCanarySettings"]
+
         response = api.create_deployment(**params)
 
         model["DeploymentId"] = response["id"]
