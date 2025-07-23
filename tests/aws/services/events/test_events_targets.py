@@ -1340,7 +1340,9 @@ class TestEventsTargetSqs:
 class TestEventsTargetStepFunctions:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
-    def test_put_events_with_target_statefunction_machine(self, infrastructure_setup, aws_client):
+    def test_put_events_with_target_stepfunction_state_machine(
+        self, infrastructure_setup, aws_client
+    ):
         infra = infrastructure_setup(namespace="EventsTests")
         stack_name = "stack-events-target-stepfunctions"
         stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
@@ -1431,7 +1433,7 @@ class TestEventsTargetStepFunctions:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
-    def test_put_events_with_target_statefunction_machine_and_input_transformer(
+    def test_put_events_with_target_stepfunction_state_machine_and_input_transformer(
         self, infrastructure_setup, aws_client, snapshot
     ):
         infra = infrastructure_setup(namespace="EventsTests")
