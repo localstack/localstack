@@ -167,6 +167,8 @@ def tests_create_schedule_with_valid_schedule_expression(
     cleanups.append(lambda: aws_client.scheduler.delete_schedule(Name=scheduler_name))
 
     snapshot.match("valid-schedule-expression", response)
+
+
 class TestSchedule:
     @markers.aws.validated
     @pytest.mark.parametrize("with_client_token", [True, False])
