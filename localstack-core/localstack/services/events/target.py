@@ -216,7 +216,11 @@ class TargetSender(ABC):
             if input_transformer := self.target.get("InputTransformer"):
                 event = self.transform_event_with_target_input_transformer(input_transformer, event)
         if event:
-            self.send_event(event, input_event, trace_header)
+            self.send_event(
+                event,
+                trace_header,
+                input_event,
+            )
         else:
             LOG.info("No event to send to target %s", self.target.get("Id"))
 
