@@ -477,9 +477,8 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
-        if (
-            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
-            and "Transform" in structured_template.keys()
+        if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
+            "Transform" in structured_template.keys() or "Fn::Transform" in template_body
         ):
             raise InsufficientCapabilitiesException(
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
@@ -689,9 +688,8 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
-        if (
-            "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", [])
-            and "Transform" in structured_template.keys()
+        if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
+            "Transform" in structured_template.keys() or "Fn::Transform" in template_body
         ):
             raise InsufficientCapabilitiesException(
                 "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
