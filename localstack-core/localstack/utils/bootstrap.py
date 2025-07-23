@@ -66,6 +66,8 @@ API_DEPENDENCIES = {
     "transcribe": ["s3"],
     # secretsmanager uses lambda for rotation
     "secretsmanager": ["kms", "lambda"],
+    # ssm uses secretsmanager for get_parameter
+    "ssm": ["secretsmanager"],
 }
 
 # Optional dependencies of services on other services
