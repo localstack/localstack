@@ -1568,6 +1568,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             error_message=f"Requested resource not found: Table: {table_name} not found",
         )
 
+        # TODO: Use the time precision in config if set
+        enable_kinesis_streaming_configuration = enable_kinesis_streaming_configuration or {}
+
         stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
             raise ValidationException("User does not have a permission to use kinesis stream")
@@ -1601,7 +1604,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
         table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.ACTIVE
         return KinesisStreamingDestinationOutput(
-            DestinationStatus=DestinationStatus.ACTIVE, StreamArn=stream_arn, TableName=table_name
+            DestinationStatus=DestinationStatus.ENABLING,
+            StreamArn=stream_arn,
+            TableName=table_name,
+            EnableKinesisStreamingConfiguration=enable_kinesis_streaming_configuration,
         )
 
     def disable_kinesis_streaming_destination(
@@ -1643,7 +1649,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         dest["DestinationStatusDescription"] = ("Stream is disabled",)
                         table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.DISABLED
                         return KinesisStreamingDestinationOutput(
-                            DestinationStatus=DestinationStatus.DISABLED,
+                            DestinationStatus=DestinationStatus.DISABLING,
                             StreamArn=stream_arn,
                             TableName=table_name,
                         )
@@ -1662,8 +1668,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
+        stream_destinations = copy.deepcopy(stream_destinations)
+
+        for destination in stream_destinations:
+            destination.pop("ApproximateCreationDateTimePrecision", None)
+            destination.pop("DestinationStatusDescription", None)
+
         return DescribeKinesisStreamingDestinationOutput(
-            KinesisDataStreamDestinations=stream_destinations, TableName=table_name
+            KinesisDataStreamDestinations=stream_destinations,
+            TableName=table_name,
         )
 
     def update_kinesis_streaming_destination(
@@ -1678,7 +1691,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         if not update_kinesis_streaming_configuration:
             raise ValidationException(
-                "Streaming destination cannot be updated with given parameters: '"
+                "Streaming destination cannot be updated with given parameters: "
                 "UpdateKinesisStreamingConfiguration cannot be null or contain only null values"
             )
 
@@ -1700,6 +1713,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         table_def = store.table_definitions.get(table_name) or {}
         table_def.setdefault("KinesisDataStreamDestinations", [])
 
+        table_id = table_def["TableId"]
+
         destination = None
         for stream in table_def["KinesisDataStreamDestinations"]:
             if stream["StreamArn"] == stream_arn:
@@ -1712,12 +1727,11 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             )
 
         if (
-            destination["ApproximateCreationDateTimePrecision"]
-            == update_kinesis_streaming_configuration["ApproximateCreationDateTimePrecision"]
-        ):
+            existing_precision := destination["ApproximateCreationDateTimePrecision"]
+        ) == update_kinesis_streaming_configuration["ApproximateCreationDateTimePrecision"]:
             raise ValidationException(
-                "Invalid Request: Precision is already set to the desired value of MILLISECOND "
-                "for tableId: {table_name}, kdsArn: {stream_arn}"
+                f"Invalid Request: Precision is already set to the desired value of {existing_precision} "
+                f"for tableId: {table_id}, kdsArn: {stream_arn}"
             )
 
         destination["ApproximateCreationDateTimePrecision"] = time_precision
