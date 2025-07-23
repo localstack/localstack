@@ -1,398 +1,893 @@
 {
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-07T14:29:37+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-07T14:29:25+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-07T14:29:13+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-07T14:29:01+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-07T14:28:49+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-07T14:28:37+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-07T14:28:25+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-DISABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-07T14:28:13+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-07T14:28:01+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-07T14:27:49+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-07T14:27:37+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-07T14:27:25+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-07T14:27:12+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-07T14:27:00+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-07T14:26:48+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[FLEXIBLE-ENABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-07T14:26:36+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-07T14:26:24+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-07T14:26:12+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-07T14:26:00+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-07T14:25:48+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-07T14:25:36+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-07T14:25:24+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-07T14:25:12+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-DISABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-07T14:25:00+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-07T14:24:48+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-07T14:24:36+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-07T14:24:23+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-07T14:24:11+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-07T14:23:59+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-07T14:23:47+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-07T14:23:35+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_create_schedule[OFF-ENABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-07T14:23:23+00:00"
-  },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_delete_schedule": {
-    "last_validated_date": "2025-01-08T11:27:57+00:00"
+    "last_validated_date": "2025-07-23T09:41:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.56,
+      "teardown": 0.85,
+      "total": 12.41
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_delete_schedule_not_found": {
-    "last_validated_date": "2025-01-08T11:28:59+00:00"
+    "last_validated_date": "2025-07-23T09:41:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.01,
+      "total": 0.14
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-08T10:01:15+00:00"
+    "last_validated_date": "2025-07-23T09:28:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.35,
+      "teardown": 0.78,
+      "total": 12.13
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-08T10:01:03+00:00"
+    "last_validated_date": "2025-07-23T09:28:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.23,
+      "teardown": 0.79,
+      "total": 12.02
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-08T10:00:51+00:00"
+    "last_validated_date": "2025-07-23T09:28:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.22,
+      "teardown": 0.85,
+      "total": 12.07
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-08T10:00:39+00:00"
+    "last_validated_date": "2025-07-23T09:27:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.22,
+      "teardown": 0.77,
+      "total": 11.99
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-08T10:00:27+00:00"
+    "last_validated_date": "2025-07-23T09:27:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.18,
+      "teardown": 0.75,
+      "total": 11.93
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-08T10:00:15+00:00"
+    "last_validated_date": "2025-07-23T09:27:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.26,
+      "teardown": 0.76,
+      "total": 12.02
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-08T10:00:03+00:00"
+    "last_validated_date": "2025-07-23T09:27:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.55,
+      "teardown": 0.79,
+      "total": 12.34
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-08T09:59:51+00:00"
+    "last_validated_date": "2025-07-23T09:26:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.17,
+      "teardown": 0.8,
+      "total": 11.97
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-08T09:59:39+00:00"
+    "last_validated_date": "2025-07-23T09:26:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.2,
+      "teardown": 0.83,
+      "total": 12.03
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-08T09:59:27+00:00"
+    "last_validated_date": "2025-07-23T09:26:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.24,
+      "teardown": 0.78,
+      "total": 12.02
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-08T09:59:15+00:00"
+    "last_validated_date": "2025-07-23T09:26:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.22,
+      "teardown": 0.82,
+      "total": 12.04
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-08T09:59:03+00:00"
+    "last_validated_date": "2025-07-23T09:26:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 11.24,
+      "teardown": 0.77,
+      "total": 12.02
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-08T09:58:50+00:00"
+    "last_validated_date": "2025-07-23T09:25:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 11.66,
+      "teardown": 0.81,
+      "total": 12.48
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-08T09:58:38+00:00"
+    "last_validated_date": "2025-07-23T09:25:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.26,
+      "teardown": 1.01,
+      "total": 12.27
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-08T09:58:26+00:00"
+    "last_validated_date": "2025-07-23T09:25:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.47,
+      "teardown": 0.79,
+      "total": 12.26
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-08T09:58:14+00:00"
+    "last_validated_date": "2025-07-23T09:25:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.31,
+      "teardown": 0.97,
+      "total": 12.28
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-08T09:58:02+00:00"
+    "last_validated_date": "2025-07-23T09:25:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.33,
+      "teardown": 0.86,
+      "total": 12.19
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-08T09:57:50+00:00"
+    "last_validated_date": "2025-07-23T09:24:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.43,
+      "teardown": 0.86,
+      "total": 12.29
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-08T09:57:38+00:00"
+    "last_validated_date": "2025-07-23T09:24:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.28,
+      "teardown": 0.85,
+      "total": 12.13
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-08T09:57:26+00:00"
+    "last_validated_date": "2025-07-23T09:24:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.22,
+      "teardown": 0.94,
+      "total": 12.16
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-08T09:57:14+00:00"
+    "last_validated_date": "2025-07-23T09:24:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 11.27,
+      "teardown": 0.81,
+      "total": 12.09
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-08T09:57:02+00:00"
+    "last_validated_date": "2025-07-23T09:24:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.3,
+      "teardown": 0.81,
+      "total": 12.11
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-08T09:56:51+00:00"
+    "last_validated_date": "2025-07-23T09:23:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.27,
+      "teardown": 0.81,
+      "total": 12.08
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-08T09:56:39+00:00"
+    "last_validated_date": "2025-07-23T09:23:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.23,
+      "teardown": 0.82,
+      "total": 12.05
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-False-False]": {
-    "last_validated_date": "2025-01-08T09:56:27+00:00"
+    "last_validated_date": "2025-07-23T09:23:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 11.25,
+      "teardown": 0.79,
+      "total": 12.05
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-False-True]": {
-    "last_validated_date": "2025-01-08T09:56:15+00:00"
+    "last_validated_date": "2025-07-23T09:23:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.22,
+      "teardown": 0.82,
+      "total": 12.04
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-True-False]": {
-    "last_validated_date": "2025-01-08T09:56:03+00:00"
+    "last_validated_date": "2025-07-23T09:23:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.27,
+      "teardown": 0.8,
+      "total": 12.07
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-True-True]": {
-    "last_validated_date": "2025-01-08T09:55:51+00:00"
+    "last_validated_date": "2025-07-23T09:22:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.23,
+      "teardown": 0.78,
+      "total": 12.01
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-False-False]": {
-    "last_validated_date": "2025-01-08T09:55:39+00:00"
+    "last_validated_date": "2025-07-23T09:22:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.29,
+      "teardown": 0.81,
+      "total": 12.1
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-False-True]": {
-    "last_validated_date": "2025-01-08T09:55:27+00:00"
+    "last_validated_date": "2025-07-23T09:22:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.16,
+      "teardown": 0.91,
+      "total": 12.07
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-True-False]": {
-    "last_validated_date": "2025-01-08T09:55:15+00:00"
+    "last_validated_date": "2025-07-23T09:22:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.2,
+      "teardown": 0.8,
+      "total": 12.0
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-True-True]": {
-    "last_validated_date": "2025-01-08T09:55:03+00:00"
+    "last_validated_date": "2025-07-23T09:22:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.97,
+      "teardown": 0.88,
+      "total": 12.85
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule_not_found": {
-    "last_validated_date": "2025-01-08T10:18:19+00:00"
+    "last_validated_date": "2025-07-23T09:28:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.01,
+      "total": 0.14
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules": {
-    "last_validated_date": "2025-01-08T14:39:00+00:00"
+    "last_validated_date": "2025-07-23T09:28:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.32,
+      "teardown": 1.02,
+      "total": 12.34
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules_non": {
-    "last_validated_date": "2025-01-08T10:18:02+00:00"
+    "last_validated_date": "2025-07-23T09:28:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.12,
+      "teardown": 0.0,
+      "total": 0.12
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-False-False]": {
-    "last_validated_date": "2025-01-08T11:17:18+00:00"
+    "last_validated_date": "2025-07-23T09:36:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.3,
+      "teardown": 1.43,
+      "total": 23.73
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-False-True]": {
-    "last_validated_date": "2025-01-08T11:16:54+00:00"
+    "last_validated_date": "2025-07-23T09:36:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.23,
+      "teardown": 1.51,
+      "total": 23.74
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-True-False]": {
-    "last_validated_date": "2025-01-08T11:16:31+00:00"
+    "last_validated_date": "2025-07-23T09:35:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.18,
+      "teardown": 1.3,
+      "total": 23.48
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-True-True]": {
-    "last_validated_date": "2025-01-08T11:16:07+00:00"
+    "last_validated_date": "2025-07-23T09:35:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.22,
+      "teardown": 1.59,
+      "total": 23.81
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-False-False]": {
-    "last_validated_date": "2025-01-08T11:18:53+00:00"
+    "last_validated_date": "2025-07-23T09:38:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 22.38,
+      "teardown": 1.32,
+      "total": 23.71
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-False-True]": {
-    "last_validated_date": "2025-01-08T11:18:29+00:00"
+    "last_validated_date": "2025-07-23T09:37:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.49,
+      "teardown": 1.95,
+      "total": 24.44
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-True-False]": {
-    "last_validated_date": "2025-01-08T11:18:05+00:00"
+    "last_validated_date": "2025-07-23T09:37:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 23.01,
+      "teardown": 1.77,
+      "total": 24.78
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-True-True]": {
-    "last_validated_date": "2025-01-08T11:17:42+00:00"
+    "last_validated_date": "2025-07-23T09:36:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.31,
+      "teardown": 1.4,
+      "total": 23.71
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-False-False]": {
-    "last_validated_date": "2025-01-08T11:20:27+00:00"
+    "last_validated_date": "2025-07-23T09:39:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.29,
+      "teardown": 1.33,
+      "total": 23.62
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-False-True]": {
-    "last_validated_date": "2025-01-08T11:20:03+00:00"
+    "last_validated_date": "2025-07-23T09:39:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.14,
+      "teardown": 1.43,
+      "total": 23.57
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-True-False]": {
-    "last_validated_date": "2025-01-08T11:19:40+00:00"
+    "last_validated_date": "2025-07-23T09:38:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.22,
+      "teardown": 1.32,
+      "total": 23.54
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-True-True]": {
-    "last_validated_date": "2025-01-08T11:19:16+00:00"
+    "last_validated_date": "2025-07-23T09:38:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.16,
+      "teardown": 1.33,
+      "total": 23.49
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-False-False]": {
-    "last_validated_date": "2025-01-08T11:22:01+00:00"
+    "last_validated_date": "2025-07-23T09:41:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.14,
+      "teardown": 1.33,
+      "total": 23.47
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-False-True]": {
-    "last_validated_date": "2025-01-08T11:21:37+00:00"
+    "last_validated_date": "2025-07-23T09:40:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.27,
+      "teardown": 1.3,
+      "total": 23.57
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-True-False]": {
-    "last_validated_date": "2025-01-08T11:21:14+00:00"
+    "last_validated_date": "2025-07-23T09:40:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.06,
+      "call": 22.34,
+      "teardown": 1.38,
+      "total": 23.78
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-True-True]": {
-    "last_validated_date": "2025-01-08T11:20:50+00:00"
+    "last_validated_date": "2025-07-23T09:40:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.94,
+      "teardown": 1.55,
+      "total": 24.49
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-False-False]": {
-    "last_validated_date": "2025-01-08T11:11:02+00:00"
+    "last_validated_date": "2025-07-23T09:30:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.18,
+      "teardown": 1.32,
+      "total": 23.5
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-False-True]": {
-    "last_validated_date": "2025-01-08T11:10:38+00:00"
+    "last_validated_date": "2025-07-23T09:29:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.5,
+      "teardown": 1.8,
+      "total": 24.3
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-True-False]": {
-    "last_validated_date": "2025-01-08T11:10:15+00:00"
+    "last_validated_date": "2025-07-23T09:29:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.1,
+      "teardown": 1.29,
+      "total": 23.39
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-True-True]": {
-    "last_validated_date": "2025-01-08T11:09:52+00:00"
+    "last_validated_date": "2025-07-23T09:29:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.3,
+      "teardown": 1.29,
+      "total": 23.59
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-False-False]": {
-    "last_validated_date": "2025-01-08T11:12:36+00:00"
+    "last_validated_date": "2025-07-23T09:31:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.24,
+      "teardown": 1.44,
+      "total": 23.68
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-False-True]": {
-    "last_validated_date": "2025-01-08T11:25:47+00:00"
+    "last_validated_date": "2025-07-23T09:31:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 22.26,
+      "teardown": 1.3,
+      "total": 23.57
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-True-False]": {
-    "last_validated_date": "2025-01-08T11:25:10+00:00"
+    "last_validated_date": "2025-07-23T09:30:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.19,
+      "teardown": 1.47,
+      "total": 23.66
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-True-True]": {
-    "last_validated_date": "2025-01-08T11:11:25+00:00"
+    "last_validated_date": "2025-07-23T09:30:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.17,
+      "teardown": 1.37,
+      "total": 23.54
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-False-False]": {
-    "last_validated_date": "2025-01-08T11:14:10+00:00"
+    "last_validated_date": "2025-07-23T09:33:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.3,
+      "teardown": 1.46,
+      "total": 23.76
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-False-True]": {
-    "last_validated_date": "2025-01-08T11:13:46+00:00"
+    "last_validated_date": "2025-07-23T09:32:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.2,
+      "teardown": 1.56,
+      "total": 23.76
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-True-False]": {
-    "last_validated_date": "2025-01-08T11:13:22+00:00"
+    "last_validated_date": "2025-07-23T09:32:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.13,
+      "teardown": 1.39,
+      "total": 23.52
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-True-True]": {
-    "last_validated_date": "2025-01-08T11:12:59+00:00"
+    "last_validated_date": "2025-07-23T09:32:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 22.19,
+      "teardown": 1.7,
+      "total": 23.9
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-False-False]": {
-    "last_validated_date": "2025-01-08T11:15:44+00:00"
+    "last_validated_date": "2025-07-23T09:34:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.18,
+      "teardown": 1.48,
+      "total": 23.66
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-False-True]": {
-    "last_validated_date": "2025-01-08T11:15:20+00:00"
+    "last_validated_date": "2025-07-23T09:34:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.37,
+      "teardown": 1.35,
+      "total": 23.72
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-True-False]": {
-    "last_validated_date": "2025-01-08T11:14:57+00:00"
+    "last_validated_date": "2025-07-23T09:34:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 22.25,
+      "teardown": 1.37,
+      "total": 23.63
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-True-True]": {
-    "last_validated_date": "2025-01-08T11:14:33+00:00"
+    "last_validated_date": "2025-07-23T09:33:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 22.35,
+      "teardown": 2.18,
+      "total": 24.53
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[ rate(10 minutes)]": {
+    "last_validated_date": "2025-07-23T09:41:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.4,
+      "teardown": 0.01,
+      "total": 0.41
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31)]": {
+    "last_validated_date": "2025-07-23T09:41:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.39,
+      "teardown": 0.01,
+      "total": 0.4
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31T23:59:59Z)]": {
+    "last_validated_date": "2025-07-23T09:41:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.37,
+      "teardown": 0.01,
+      "total": 0.38
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron()]": {
+    "last_validated_date": "2025-07-23T09:41:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.39,
+      "teardown": 0.02,
+      "total": 0.41
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(0 1 * * * *)]": {
+    "last_validated_date": "2025-07-23T09:41:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.01,
+      "total": 0.14
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(0 dummy ? * MON-FRI *)]": {
+    "last_validated_date": "2025-07-23T09:41:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.4,
+      "teardown": 0.01,
+      "total": 0.41
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(7 20 * * NOT *)]": {
+    "last_validated_date": "2025-07-23T09:41:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.39,
+      "teardown": 0.02,
+      "total": 0.41
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(71 8 1 * ? *)]": {
+    "last_validated_date": "2025-07-23T09:41:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.4,
+      "teardown": 0.01,
+      "total": 0.41
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(INVALID)]": {
+    "last_validated_date": "2025-07-23T09:41:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.41,
+      "teardown": 0.01,
+      "total": 0.42
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate( 10 minutes )]": {
+    "last_validated_date": "2025-07-23T09:41:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.36,
+      "teardown": 0.01,
+      "total": 0.37
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate()]": {
+    "last_validated_date": "2025-07-23T09:41:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.42,
+      "teardown": 0.01,
+      "total": 0.43
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(-10 minutes)]": {
+    "last_validated_date": "2025-07-23T09:41:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.37,
+      "teardown": 0.01,
+      "total": 0.38
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10 minutess)]": {
+    "last_validated_date": "2025-07-23T09:41:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.41,
+      "teardown": 0.01,
+      "total": 0.42
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10 seconds)]": {
+    "last_validated_date": "2025-07-23T09:41:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.39,
+      "teardown": 0.01,
+      "total": 0.4
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10 years)]": {
+    "last_validated_date": "2025-07-23T09:41:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.37,
+      "teardown": 0.02,
+      "total": 0.39
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10)]": {
+    "last_validated_date": "2025-07-23T09:41:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.4,
+      "teardown": 0.01,
+      "total": 0.41
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
+    "last_validated_date": "2025-07-23T09:41:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.39,
+      "teardown": 0.01,
+      "total": 0.4
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_valid_schedule_expression": {
+    "last_validated_date": "2025-07-23T09:21:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.2,
+      "teardown": 0.43,
+      "total": 11.63
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-False]": {
-    "last_validated_date": "2025-01-08T14:58:19+00:00"
+    "last_validated_date": "2025-07-23T10:26:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.14,
+      "teardown": 13.04,
+      "total": 13.18
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-True]": {
-    "last_validated_date": "2025-01-08T14:58:06+00:00"
+    "last_validated_date": "2025-07-23T10:26:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.19,
+      "teardown": 13.05,
+      "total": 13.24
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-False]": {
-    "last_validated_date": "2025-01-08T14:57:52+00:00"
+    "last_validated_date": "2025-07-23T10:25:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.14,
+      "teardown": 13.02,
+      "total": 13.16
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-True]": {
-    "last_validated_date": "2025-01-08T14:57:39+00:00"
+    "last_validated_date": "2025-07-23T10:25:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.64,
+      "call": 0.47,
+      "teardown": 13.05,
+      "total": 14.16
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[False]": {
-    "last_validated_date": "2025-01-07T13:07:22+00:00"
+    "last_validated_date": "2025-07-23T10:26:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.25,
+      "teardown": 13.11,
+      "total": 13.36
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[True]": {
-    "last_validated_date": "2025-01-07T13:07:09+00:00"
+    "last_validated_date": "2025-07-23T10:26:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.29,
+      "teardown": 13.03,
+      "total": 13.32
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group_not_found": {
-    "last_validated_date": "2025-01-07T13:07:35+00:00"
+    "last_validated_date": "2025-07-23T10:26:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.01,
+      "total": 0.14
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups[False]": {
-    "last_validated_date": "2025-01-07T13:08:02+00:00"
+    "last_validated_date": "2025-07-23T10:27:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.4,
+      "teardown": 26.19,
+      "total": 26.59
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups[True]": {
-    "last_validated_date": "2025-01-07T13:07:36+00:00"
+    "last_validated_date": "2025-07-23T10:27:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.49,
+      "teardown": 26.14,
+      "total": 26.63
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups_not_found": {
-    "last_validated_date": "2025-01-07T13:08:28+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::test_list_schedules": {
-    "last_validated_date": "2024-06-11T22:50:50+00:00"
+    "last_validated_date": "2025-07-23T10:27:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.12,
+      "teardown": 0.02,
+      "total": 0.14
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::test_tag_resource": {
-    "last_validated_date": "2024-12-04T10:07:28+00:00"
+    "last_validated_date": "2025-07-23T09:21:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.67,
+      "call": 0.7,
+      "teardown": 13.34,
+      "total": 14.71
+    }
   },
   "tests/aws/services/scheduler/test_scheduler.py::test_untag_resource": {
-    "last_validated_date": "2024-12-04T10:08:11+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[ rate(10 minutes)]": {
-    "last_validated_date": "2025-01-26T15:45:58+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31)]": {
-    "last_validated_date": "2025-01-26T15:45:59+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31T23:59:59Z)]": {
-    "last_validated_date": "2025-01-26T15:45:59+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron()]": {
-    "last_validated_date": "2025-01-26T15:45:55+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 1 * * * *)]": {
-    "last_validated_date": "2025-01-26T15:45:53+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 dummy ? * MON-FRI *)]": {
-    "last_validated_date": "2025-01-26T15:45:54+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(7 20 * * NOT *)]": {
-    "last_validated_date": "2025-01-26T15:45:53+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(71 8 1 * ? *)]": {
-    "last_validated_date": "2025-01-26T15:45:54+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(INVALID)]": {
-    "last_validated_date": "2025-01-26T15:45:54+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate( 10 minutes )]": {
-    "last_validated_date": "2025-01-26T15:45:58+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate()]": {
-    "last_validated_date": "2025-01-26T15:45:56+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(-10 minutes)]": {
-    "last_validated_date": "2025-01-26T15:45:57+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 minutess)]": {
-    "last_validated_date": "2025-01-26T15:45:57+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 seconds)]": {
-    "last_validated_date": "2025-01-26T15:45:55+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 years)]": {
-    "last_validated_date": "2025-01-26T15:45:56+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10)]": {
-    "last_validated_date": "2025-01-26T15:45:56+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
-    "last_validated_date": "2025-01-26T15:45:57+00:00"
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_valid_schedule_expression": {
-    "last_validated_date": "2025-02-02T00:22:13+00:00"
+    "last_validated_date": "2025-07-23T09:21:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.42,
+      "teardown": 13.03,
+      "total": 13.45
+    }
   }
 }
