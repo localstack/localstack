@@ -167,7 +167,9 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             f"os={self.os_name}&architecture={self.arch}&image_type=jdk"
         )
         # Override user-agent because Adoptium API denies service to `requests` library
-        response = requests.get(endpoint, headers={"user-agent": USER_AGENT_STRING}, proxies=get_proxies()).json()
+        response = requests.get(
+            endpoint, headers={"user-agent": USER_AGENT_STRING}, proxies=get_proxies()
+        ).json()
         return response[0]["binary"]["package"]["link"]
 
     def _download_url_fallback(self) -> str:
