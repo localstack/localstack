@@ -423,7 +423,6 @@ def test_update_with_rollback_configuration(deploy_cfn_template, aws_client):
     aws_client.cloudwatch.delete_alarms(AlarmNames=["HighResourceUsage"])
 
 
-@pytest.mark.skip(reason="CFNV2:UpdateStack")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(["$..Stacks..ChangeSetId"])
 def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):

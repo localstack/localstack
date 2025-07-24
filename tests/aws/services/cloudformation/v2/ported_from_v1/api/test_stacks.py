@@ -113,7 +113,6 @@ class TestStacksApi:
 
             snapshot.match("stack_response", e.value.response)
 
-    @pytest.mark.skip(reason="CFNV2:Other")
     @markers.aws.validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
     def test_get_template_using_create_stack(self, snapshot, fileformat, aws_client):
@@ -141,7 +140,6 @@ class TestStacksApi:
         )
         snapshot.match("template_processed", template_processed)
 
-    @pytest.mark.skip(reason="CFNV2:Other")
     @markers.aws.validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
     def test_get_template_using_changesets(
@@ -679,7 +677,6 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("resource_types", resource_types)
 
 
-@pytest.mark.skip(reason="CFNV2:Deletion")
 @markers.aws.validated
 def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups):
     stack_name = f"test-stack-{short_uid()}"

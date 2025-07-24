@@ -8,6 +8,7 @@ from localstack.utils.analytics import log
 LOG = logging.getLogger(__name__)
 
 TRACKED_ENV_VAR = [
+    "ACTIVATE_PRO",
     "ALLOW_NONSTANDARD_REGIONS",
     "BEDROCK_PREWARM",
     "CLOUDFRONT_LAMBDA_EDGE",
