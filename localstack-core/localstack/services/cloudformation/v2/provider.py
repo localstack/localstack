@@ -26,48 +26,11 @@ from localstack.aws.api.cloudformation import (
     DisableRollback,
     ExecuteChangeSetOutput,
     ExecutionStatus,
-    GetTemplateSummaryInput,
-    GetTemplateSummaryOutput,
-    IncludePropertyValues,
-    InsufficientCapabilitiesException,
-    InvalidChangeSetStatusException,
-    LogicalResourceId,
-    NextToken,
-    Parameter,
-    PhysicalResourceId,
-    RetainExceptOnCreate,
-    RetainResources,
-    RoleARN,
-    RollbackConfiguration,
-    StackName,
-    StackNameOrId,
-    StackStatus,
-    UpdateStackInput,
-    UpdateStackOutput,
-)
-from localstack.aws.api.cloudformation import (
-    Changes,
-    ChangeSetNameOrId,
-    ChangeSetNotFoundException,
-    ChangeSetStatus,
-    ChangeSetType,
-    ClientRequestToken,
-    CreateChangeSetInput,
-    CreateChangeSetOutput,
-    CreateStackInput,
-    CreateStackOutput,
-    DeletionMode,
-    DescribeChangeSetOutput,
-    DescribeStackEventsOutput,
-    DescribeStackResourcesOutput,
-    DescribeStacksOutput,
-    DisableRollback,
-    ExecuteChangeSetOutput,
-    ExecutionStatus,
     GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
     IncludePropertyValues,
+    InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
     LogicalResourceId,
     NextToken,
@@ -687,7 +650,7 @@ class CloudformationProviderV2(CloudformationProvider):
         elif stack_name:
             stack = find_stack_v2(state, stack_name)
         else:
-            raise StackNotFoundError(stack_name)
+            raise StackWithIdNotFoundError(stack_name)
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
             template_body = json.dumps(stack.processed_template)
