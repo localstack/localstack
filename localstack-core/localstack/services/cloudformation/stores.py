@@ -52,6 +52,18 @@ class CloudFormationStore(BaseStore):
                 output_keys[export_name] = stack.stack_id
         return exports
 
+    def exports_v2(self) -> dict:
+        stacks = self.stacks_v2.values()
+        exports = {}
+        for stack in stacks:
+            for export_name, export_value in stack.resolved_exports.items():
+                exports[export_name] = {
+                    "ExportingStackId": stack.stack_id,
+                    "Name": export_name,
+                    "Value": export_value,
+                }
+        return exports
+
 
 cloudformation_stores = AccountRegionBundle("cloudformation", CloudFormationStore)
 
@@ -134,3 +146,8 @@ def exports_map(account_id: str, region_name: str):
     for export in store.exports:
         result[export["Name"]] = export
     return result
+
+
+def exports_map_v2(account_id: str, region_name: str):
+    store = get_cloudformation_store(account_id, region_name)
+    return store.exports_v2()
