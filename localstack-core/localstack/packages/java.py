@@ -8,6 +8,7 @@ from localstack.constants import USER_AGENT_STRING
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
 from localstack.utils.files import rm_rf
+from localstack.utils.http import get_proxies
 from localstack.utils.platform import Arch, get_arch, is_linux, is_mac_os
 from localstack.utils.run import run
 
@@ -166,7 +167,7 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             f"os={self.os_name}&architecture={self.arch}&image_type=jdk"
         )
         # Override user-agent because Adoptium API denies service to `requests` library
-        response = requests.get(endpoint, headers={"user-agent": USER_AGENT_STRING}).json()
+        response = requests.get(endpoint, headers={"user-agent": USER_AGENT_STRING}, proxies=get_proxies()).json()
         return response[0]["binary"]["package"]["link"]
 
     def _download_url_fallback(self) -> str:
