@@ -150,7 +150,7 @@ def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack |
             else:
                 return stack_candidates[0]
     else:
-        raise NotImplementedError
+        raise ValueError("No stack name specified when finding stack")
 
 
 def find_change_set_v2(
@@ -169,7 +169,7 @@ def find_change_set_v2(
                 if change_set_candidate.change_set_name == change_set_name:
                     return change_set_candidate
         else:
-            raise NotImplementedError
+            raise ValueError("No stack name specified when finding change set")
 
 
 class CloudformationProviderV2(CloudformationProvider):
