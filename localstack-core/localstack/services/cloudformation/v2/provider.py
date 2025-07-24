@@ -225,6 +225,7 @@ class CloudformationProviderV2(CloudformationProvider):
         update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
         update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
         change_set.set_update_model(update_model)
+        change_set.stack.processed_template = transformed_after_template
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
@@ -689,22 +690,7 @@ class CloudformationProviderV2(CloudformationProvider):
             raise StackNotFoundError(stack_name)
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
-            copy_template = copy.deepcopy(stack.template_original)
-            for key in [
-                "ChangeSetName",
-                "StackName",
-                "StackId",
-                "Transform",
-                "Conditions",
-                "Mappings",
-            ]:
-                copy_template.pop(key, None)
-            for key in ["Parameters", "Outputs"]:
-                if key in copy_template and not copy_template[key]:
-                    copy_template.pop(key)
-            for resource in copy_template.get("Resources", {}).values():
-                resource.pop("LogicalResourceId", None)
-            template_body = json.dumps(copy_template)
+            template_body = json.dumps(stack.processed_template)
         else:
             template_body = stack.template_body
 

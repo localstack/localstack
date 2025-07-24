@@ -46,6 +46,7 @@ class Stack:
     creation_time: datetime
     deletion_time: datetime | None
     events = list[StackEvent]
+    processed_template: dict | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -72,6 +73,7 @@ class Stack:
         self.creation_time = datetime.now(tz=timezone.utc)
         self.deletion_time = None
         self.change_set_id = None
+        self.processed_template = None
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
