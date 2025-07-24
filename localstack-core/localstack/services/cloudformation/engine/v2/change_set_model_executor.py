@@ -395,13 +395,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
         elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             LOG.warning(
-                "Resource of type %s is not supported but configuration is set to ignore it",
+                "Resource of type %s is not supported but CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is set to ignore it",
                 resource_type,
             )
             event = ProgressEvent(
                 OperationStatus.SUCCESS,
                 resource_model={},
-                message=f"Resource type {resource_type} not supported but deployed anyways",
+                message=f"Resource type {resource_type} is not supported but was deployed as a fallback",
             )
         else:
             event = ProgressEvent(
