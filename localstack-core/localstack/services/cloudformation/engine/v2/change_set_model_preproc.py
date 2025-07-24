@@ -250,14 +250,15 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         properties = resolved_resource.get("Properties", dict())
         property_value: Optional[Any] = properties.get(property_name)
 
-        if property_value is None and config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+        if property_value:
+            return property_value
+
+        elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             return MOCKED_REFERENCE
 
-        elif property_value:
-            raise RuntimeError(
-                f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
-            )
-        return property_value
+        raise RuntimeError(
+            f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
+        )
 
     def _before_deployed_property_value_of(
         self, resource_logical_id: str, property_name: str
