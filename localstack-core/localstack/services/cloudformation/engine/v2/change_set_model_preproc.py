@@ -47,7 +47,10 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
-from localstack.services.cloudformation.stores import get_cloudformation_store
+from localstack.services.cloudformation.stores import (
+    exports_map_v2,
+    get_cloudformation_store,
+)
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.objects import get_value_from_path
@@ -898,6 +901,29 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,
             resolver=_compute_fn_base_64,
+        )
+        return delta
+
+    def visit_node_intrinsic_function_fn_import_value(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        def _compute_fn_import_value(string) -> Any:
+            if not isinstance(string, str):
+                raise RuntimeError(f"Invalid parameter for import: '{string}'")
+
+            exports = exports_map_v2(
+                account_id=self._change_set.account_id, region_name=self._change_set.region_name
+            )
+            if not exports.get(string):
+                raise RuntimeError(f"Value not found for import: '{string}'")
+
+            return exports.get(string)["Value"]
+
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        delta = self._cached_apply(
+            scope=node_intrinsic_function.scope,
+            arguments_delta=arguments_delta,
+            resolver=_compute_fn_import_value,
         )
         return delta
 

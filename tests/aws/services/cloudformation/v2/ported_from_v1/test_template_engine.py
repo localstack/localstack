@@ -284,7 +284,6 @@ class TestIntrinsicFunctions:
         snapshot.match("join-output", stack.outputs)
 
 
-@pytest.mark.skip(reason="CFNV2:Imports unsupported")
 class TestImports:
     @markers.aws.validated
     def test_stack_imports(self, deploy_cfn_template, aws_client):
@@ -558,7 +557,6 @@ class TestPreviousValues:
         assert len(stack_describe_response["Outputs"]) == 2
 
 
-@pytest.mark.skip(reason="CFNV2:Imports unsupported")
 class TestImportValues:
     @markers.aws.validated
     def test_cfn_with_exports(self, deploy_cfn_template, aws_client, snapshot):
