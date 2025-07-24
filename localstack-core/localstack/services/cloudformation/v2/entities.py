@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
@@ -49,6 +50,7 @@ class Stack:
     events: list[StackEvent]
     capabilities: list[Capability]
     enable_termination_protection: bool
+    processed_template: dict | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -68,6 +70,7 @@ class Stack:
         self.account_id = account_id
         self.region_name = region_name
         self.template = template
+        self.template_original = copy.deepcopy(self.template)
         self.template_body = template_body
         self.status = initial_status
         self.status_reason = None
@@ -76,6 +79,7 @@ class Stack:
         self.deletion_time = None
         self.change_set_id = None
         self.enable_termination_protection = False
+        self.processed_template = None
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])

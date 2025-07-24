@@ -11,6 +11,15 @@
       "total": 16.99
     }
   },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_apigateway_deployment_canary_settings": {
+    "last_validated_date": "2025-07-23T23:07:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.44,
+      "call": 22.5,
+      "teardown": 11.11,
+      "total": 34.05
+    }
+  },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
     "last_validated_date": "2025-05-05T14:50:14+00:00"
   },
