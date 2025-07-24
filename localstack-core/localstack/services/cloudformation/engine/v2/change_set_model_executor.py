@@ -22,6 +22,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    MOCKED_REFERENCE,
     ChangeSetModelPreproc,
     PreprocEntityDelta,
     PreprocOutput,
@@ -30,7 +31,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
-    NoResourceProvider,
     OperationStatus,
     ProgressEvent,
     ResourceProviderExecutor,
@@ -177,7 +177,18 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         Overrides the default preprocessing for NodeResource objects by annotating the
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
-        delta = super().visit_node_resource(node_resource=node_resource)
+        try:
+            delta = super().visit_node_resource(node_resource=node_resource)
+        except Exception as e:
+            self._process_event(
+                node_resource.change_type.to_change_action(),
+                node_resource.name,
+                OperationStatus.FAILED,
+                reason=str(e),
+                resource_type=node_resource.type_.value,
+            )
+            raise e
+
         before = delta.before
         after = delta.after
 
@@ -355,18 +366,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
         track_resource_operation(action, resource_type, missing=resource_provider is not None)
-        if resource_provider is None:
-            log_not_available_message(
-                resource_type,
-                f'No resource provider found for "{resource_type}"',
-            )
-            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-                raise NoResourceProvider
 
         extra_resource_properties = {}
-        event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
         if resource_provider is not None:
-            # TODO: stack events
             try:
                 event = resource_provider_executor.deploy_loop(
                     resource_provider, extra_resource_properties, payload
@@ -378,22 +380,34 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason,
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
-                stack = self._change_set.stack
-                stack.set_resource_status(
-                    logical_resource_id=logical_resource_id,
-                    # TODO,
-                    physical_resource_id="",
-                    resource_type=resource_type,
-                    status=ResourceStatus.CREATE_FAILED
-                    if action == ChangeAction.Add
-                    else ResourceStatus.UPDATE_FAILED,
-                    resource_status_reason=reason,
-                )
                 event = ProgressEvent(
                     OperationStatus.FAILED,
                     resource_model={},
                     message=f"Resource provider operation failed: {reason}",
                 )
+        elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+            LOG.warning(
+                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES"
+            )
+            event = ProgressEvent(
+                OperationStatus.SUCCESS,
+                resource_model={},
+                message=f"Resource type {resource_type} is not supported but was deployed as a fallback",
+            )
+        else:
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+            event = ProgressEvent(
+                OperationStatus.FAILED,
+                resource_model={},
+                message=f"Resource type {resource_type} not supported",
+            )
 
         self.resources.setdefault(logical_resource_id, {"Properties": {}})
         match event.status:
@@ -414,7 +428,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
                 self.resources[logical_resource_id]["Type"] = resource_type
 
-                physical_resource_id = self._get_physical_id(logical_resource_id)
+                physical_resource_id = (
+                    self._get_physical_id(logical_resource_id)
+                    if resource_provider
+                    else MOCKED_REFERENCE
+                )
                 self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
 
             case OperationStatus.FAILED:

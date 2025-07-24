@@ -33,6 +33,7 @@ from localstack.aws.api.cloudformation import (
     IncludePropertyValues,
     InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
+    ListStacksOutput,
     LogicalResourceId,
     NextToken,
     Parameter,
@@ -44,6 +45,7 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackStatus,
+    StackStatusFilter,
     TemplateStage,
     UpdateStackInput,
     UpdateStackOutput,
@@ -76,6 +78,7 @@ from localstack.services.cloudformation.stores import (
     get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, Stack
+from localstack.utils.collections import select_attributes
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -607,6 +610,38 @@ class CloudformationProviderV2(CloudformationProvider):
             raise StackNotFoundError(stack_name)
         # TODO: move describe_details method to provider
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
+
+    @handler("ListStacks")
+    def list_stacks(
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        stack_status_filter: StackStatusFilter = None,
+        **kwargs,
+    ) -> ListStacksOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        stacks = [
+            s.describe_details()
+            for s in state.stacks_v2.values()
+            if not stack_status_filter or s.status in stack_status_filter
+        ]
+
+        attrs = [
+            "StackId",
+            "StackName",
+            "TemplateDescription",
+            "CreationTime",
+            "LastUpdatedTime",
+            "DeletionTime",
+            "StackStatus",
+            "StackStatusReason",
+            "ParentId",
+            "RootId",
+            "DriftInformation",
+        ]
+        stacks = [select_attributes(stack, attrs) for stack in stacks]
+        return ListStacksOutput(StackSummaries=stacks)
 
     @handler("DescribeStackResources")
     def describe_stack_resources(
