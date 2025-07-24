@@ -31,7 +31,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
-    NoResourceProvider,
     OperationStatus,
     ProgressEvent,
     ResourceProviderExecutor,
@@ -367,13 +366,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         )
         resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
         track_resource_operation(action, resource_type, missing=resource_provider is not None)
-        if resource_provider is None:
-            log_not_available_message(
-                resource_type,
-                f'No resource provider found for "{resource_type}"',
-            )
-            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-                raise NoResourceProvider
 
         extra_resource_properties = {}
         if resource_provider is not None:
@@ -404,6 +396,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 message=f"Resource type {resource_type} is not supported but was deployed as a fallback",
             )
         else:
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
             event = ProgressEvent(
                 OperationStatus.FAILED,
                 resource_model={},
