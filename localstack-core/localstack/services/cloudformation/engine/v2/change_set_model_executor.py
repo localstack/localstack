@@ -180,9 +180,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         try:
             delta = super().visit_node_resource(node_resource=node_resource)
         except Exception as e:
-            # TODO: change action may not match the change type
             self._process_event(
-                ChangeAction.Modify,
+                node_resource.change_type.to_change_action(),
                 node_resource.name,
                 OperationStatus.FAILED,
                 reason=str(e),
