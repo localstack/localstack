@@ -666,7 +666,7 @@ class CloudformationProviderV2(CloudformationProvider):
         elif stack_name:
             stack = find_stack_v2(state, stack_name)
         else:
-            raise StackWithIdNotFoundError(stack_name)
+            raise StackNotFoundError(stack_name)
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
             template_body = json.dumps(stack.processed_template)
