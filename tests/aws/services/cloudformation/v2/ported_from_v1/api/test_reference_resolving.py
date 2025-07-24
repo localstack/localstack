@@ -93,7 +93,6 @@ def test_sub_resolving(deploy_cfn_template, aws_client, snapshot):
     assert topic_arn in topic_arns
 
 
-@pytest.mark.skip(reason="CFNV2:Validation")
 @markers.aws.only_localstack
 def test_reference_unsupported_resource(deploy_cfn_template, aws_client):
     """

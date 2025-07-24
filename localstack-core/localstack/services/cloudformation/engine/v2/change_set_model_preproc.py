@@ -7,6 +7,7 @@ from typing import Any, Callable, Final, Generic, Optional, TypeVar
 
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.transformers import (
@@ -68,6 +69,8 @@ _PSEUDO_PARAMETERS: Final[set[str]] = {
 
 TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
+
+MOCKED_REFERENCE = "unknown"
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
@@ -246,7 +249,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
         properties = resolved_resource.get("Properties", dict())
         property_value: Optional[Any] = properties.get(property_name)
-        if property_value is None:
+
+        if property_value is None and config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            return MOCKED_REFERENCE
+
+        elif property_value:
             raise RuntimeError(
                 f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
             )
