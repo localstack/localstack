@@ -1088,44 +1088,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_object_expiry": {
-    "recorded-date": "21-01-2025, 18:30:37",
-    "recorded-content": {
-      "head-object-expired": {
-        "AcceptRanges": "bytes",
-        "ContentLength": 3,
-        "ContentType": "binary/octet-stream",
-        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
-        "Expires": "datetime",
-        "ExpiresString": "<expires>",
-        "LastModified": "datetime",
-        "Metadata": {},
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "get-object-not-yet-expired": {
-        "AcceptRanges": "bytes",
-        "Body": "foo",
-        "ChecksumCRC32": "jHNlIQ==",
-        "ChecksumType": "FULL_OBJECT",
-        "ContentLength": 3,
-        "ContentType": "binary/octet-stream",
-        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
-        "Expires": "datetime",
-        "ExpiresString": "<expires>",
-        "LastModified": "datetime",
-        "Metadata": {},
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_upload_file_with_xml_preamble": {
     "recorded-date": "21-01-2025, 18:30:40",
     "recorded-content": {
@@ -18225,6 +18187,97 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 206
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_s3_object_expires": {
+    "recorded-date": "22-07-2025, 14:00:54",
+    "recorded-content": {
+      "put-object-expires-future": {
+        "ChecksumCRC32": "jHNlIQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expires-future": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "Expires": "datetime",
+        "ExpiresString": "<expires>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-expires-future": {
+        "AcceptRanges": "bytes",
+        "Body": "foo",
+        "ChecksumCRC32": "jHNlIQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "Expires": "datetime",
+        "ExpiresString": "<expires>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put-object-expires-past": {
+        "ChecksumCRC32": "jHNlIQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-object-expires-past": {
+        "AcceptRanges": "bytes",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "Expires": "datetime",
+        "ExpiresString": "<expires>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-expires-past": {
+        "AcceptRanges": "bytes",
+        "Body": "foo",
+        "ChecksumCRC32": "jHNlIQ==",
+        "ChecksumType": "FULL_OBJECT",
+        "ContentLength": 3,
+        "ContentType": "binary/octet-stream",
+        "ETag": "\"acbd18db4cc2f85cedef654fccc4a4d8\"",
+        "Expires": "datetime",
+        "ExpiresString": "<expires>",
+        "LastModified": "datetime",
+        "Metadata": {},
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -1069,3 +1069,12 @@ def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
 
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
     snapshot.match("Error", ex.value.response)
+
+
+@markers.aws.validated
+def test_non_existing_stack_message(aws_client, snapshot):
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        aws_client.cloudformation.describe_stacks(StackName="non-existing")
+
+    snapshot.add_transformer(snapshot.transform.regex("non-existing", "<stack-name>"))
+    snapshot.match("Error", ex.value.response)

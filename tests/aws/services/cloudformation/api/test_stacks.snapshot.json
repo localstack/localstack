@@ -2286,5 +2286,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_non_existing_stack_message": {
+    "recorded-date": "21-07-2025, 18:00:27",
+    "recorded-content": {
+      "Error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack with id <stack-name> does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

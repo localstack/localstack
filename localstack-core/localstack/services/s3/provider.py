@@ -909,15 +909,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             http_method="GET",
         )
-        if s3_object.expires and s3_object.expires < datetime.datetime.now(
-            tz=s3_object.expires.tzinfo
-        ):
-            # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
-            #  you can still HeadObject on it and you get the expiry time until scheduled deletion
-            kwargs = {"Key": object_key}
-            if version_id:
-                kwargs["VersionId"] = version_id
-            raise NoSuchKey("The specified key does not exist.", **kwargs)
 
         if s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not s3_object.restore:
             raise InvalidObjectState(
