@@ -933,6 +933,19 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         before = dynamic_delta.before or default_delta.before
         after = dynamic_delta.after or default_delta.after
 
+        parameter_type = self.visit(node_parameter.type_)
+
+        def _resolve_parameter_type(value: str, type_: str) -> Any:
+            match type_:
+                case "List<String>":
+                    return [item.strip() for item in value.split(",")]
+            return value
+
+        if not is_nothing(before):
+            before = _resolve_parameter_type(before, parameter_type.before)
+        if not is_nothing(after):
+            after = _resolve_parameter_type(after, parameter_type.after)
+
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:

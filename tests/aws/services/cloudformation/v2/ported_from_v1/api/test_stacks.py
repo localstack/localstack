@@ -677,7 +677,6 @@ def test_events_resource_types(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("resource_types", resource_types)
 
 
-@pytest.mark.skip(reason="CFNV2:Deletion")
 @markers.aws.validated
 def test_list_parameter_type(aws_client, deploy_cfn_template, cleanups):
     stack_name = f"test-stack-{short_uid()}"
