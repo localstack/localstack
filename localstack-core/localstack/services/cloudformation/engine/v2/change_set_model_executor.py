@@ -386,9 +386,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     message=f"Resource provider operation failed: {reason}",
                 )
         elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-            LOG.warning(
-                "Resource of type %s is not supported but CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is set to ignore it",
+            log_not_available_message(
                 resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+            LOG.warning(
+                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES"
             )
             event = ProgressEvent(
                 OperationStatus.SUCCESS,
