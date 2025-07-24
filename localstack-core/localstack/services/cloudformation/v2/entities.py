@@ -1,3 +1,4 @@
+import copy
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
@@ -45,6 +46,7 @@ class Stack:
     creation_time: datetime
     deletion_time: datetime | None
     events = list[StackEvent]
+    processed_template: dict | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -63,6 +65,7 @@ class Stack:
         self.account_id = account_id
         self.region_name = region_name
         self.template = template
+        self.template_original = copy.deepcopy(self.template)
         self.template_body = template_body
         self.status = StackStatus.CREATE_IN_PROGRESS
         self.status_reason = None
@@ -70,6 +73,7 @@ class Stack:
         self.creation_time = datetime.now(tz=timezone.utc)
         self.deletion_time = None
         self.change_set_id = None
+        self.processed_template = None
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
