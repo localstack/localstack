@@ -850,8 +850,9 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template = structured_template
 
         previous_update_model = None
-        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-            previous_update_model = previous_change_set.update_model
+        if stack.change_set_id:
+            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+                previous_update_model = previous_change_set.update_model
 
         change_set = ChangeSet(
             stack,
@@ -920,8 +921,9 @@ class CloudformationProviderV2(CloudformationProvider):
             return
 
         previous_update_model = None
-        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-            previous_update_model = previous_change_set.update_model
+        if stack.change_set_id:
+            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+                previous_update_model = previous_change_set.update_model
 
         # create a dummy change set
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
