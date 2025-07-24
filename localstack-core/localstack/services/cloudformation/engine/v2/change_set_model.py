@@ -7,6 +7,7 @@ from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
 
 from typing_extensions import TypeVar
 
+from localstack.aws.api.cloudformation import ChangeAction
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -108,6 +109,14 @@ class ChangeType(enum.Enum):
 
     def __str__(self):
         return self.value
+
+    def to_change_action(self) -> ChangeAction:
+        # Convert this change type into the change action used throughout the CFn API
+        return {
+            ChangeType.CREATED: ChangeAction.Add,
+            ChangeType.MODIFIED: ChangeAction.Modify,
+            ChangeType.REMOVED: ChangeAction.Remove,
+        }.get(self, ChangeAction.Add)
 
 
 class ChangeSetEntity(abc.ABC):

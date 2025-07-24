@@ -177,7 +177,18 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         Overrides the default preprocessing for NodeResource objects by annotating the
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
-        delta = super().visit_node_resource(node_resource=node_resource)
+        try:
+            delta = super().visit_node_resource(node_resource=node_resource)
+        except Exception as e:
+            self._process_event(
+                node_resource.change_type.to_change_action(),
+                node_resource.name,
+                OperationStatus.FAILED,
+                reason=str(e),
+                resource_type=node_resource.type_.value,
+            )
+            raise e
+
         before = delta.before
         after = delta.after
 
