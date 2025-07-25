@@ -37,7 +37,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
 
 LOG = logging.getLogger(__name__)
 
@@ -46,14 +46,14 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 
 @dataclass
 class ChangeSetModelExecutorResult:
-    resources: dict
+    resources: dict[str, ResolvedResource]
     parameters: dict
     outputs: dict
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
-    resources: Final[dict]
+    resources: Final[dict[str, ResolvedResource]]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
 
