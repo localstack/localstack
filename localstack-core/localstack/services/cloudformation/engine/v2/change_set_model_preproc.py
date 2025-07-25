@@ -48,7 +48,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
     ChangeSetModelVisitor,
 )
 from localstack.services.cloudformation.stores import (
-    exports_map_v2,
+    exports_map,
     get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
@@ -907,11 +907,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_import_value(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_fn_import_value(string) -> Any:
+        def _compute_fn_import_value(string) -> str:
             if not isinstance(string, str):
                 raise RuntimeError(f"Invalid parameter for import: '{string}'")
 
-            exports = exports_map_v2(
+            exports = exports_map(
                 account_id=self._change_set.account_id, region_name=self._change_set.region_name
             )
             if not exports.get(string):

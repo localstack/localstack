@@ -1,7 +1,7 @@
 import logging
 from typing import Optional
 
-from localstack.aws.api.cloudformation import StackStatus
+from localstack.aws.api.cloudformation import Export, Exports, StackStatus
 from localstack.services.cloudformation.engine.entities import Stack, StackChangeSet, StackSet
 from localstack.services.cloudformation.v2.entities import ChangeSet as ChangeSetV2
 from localstack.services.cloudformation.v2.entities import Stack as StackV2
@@ -25,12 +25,15 @@ class CloudFormationStore(BaseStore):
     # maps macro ID to macros
     macros: dict[str, dict] = LocalAttribute(default=dict)
 
-    # exports: dict[str, str]
     @property
-    def exports(self):
+    def exports(self) -> Exports:
         exports = []
         output_keys = {}
+
         for stack_id, stack in self.stacks.items():
+            if stack.status == StackStatus.DELETE_COMPLETE:
+                continue
+
             for output in stack.resolved_outputs:
                 export_name = output.get("ExportName")
                 if not export_name:
@@ -43,25 +46,21 @@ class CloudFormationStore(BaseStore):
                         output_keys[export_name],
                         stack.stack_id,
                     )
-                entry = {
-                    "ExportingStackId": stack.stack_id,
-                    "Name": export_name,
-                    "Value": output["OutputValue"],
-                }
+                entry = Export(
+                    ExportingStackId=stack.stack_id, Name=export_name, Value=output["OutputValue"]
+                )
                 exports.append(entry)
                 output_keys[export_name] = stack.stack_id
-        return exports
 
-    def exports_v2(self) -> dict:
-        stacks = self.stacks_v2.values()
-        exports = {}
-        for stack in stacks:
+        # Handle V2 stacks
+        stacks_v2 = self.stacks_v2.values()
+        for stack in stacks_v2:
+            if stack.status == StackStatus.DELETE_COMPLETE:
+                continue
             for export_name, export_value in stack.resolved_exports.items():
-                exports[export_name] = {
-                    "ExportingStackId": stack.stack_id,
-                    "Name": export_name,
-                    "Value": export_value,
-                }
+                exports.append(
+                    Export(ExportingStackId=stack.stack_id, Name=export_name, Value=export_value)
+                )
         return exports
 
 
@@ -140,14 +139,9 @@ def find_change_set(
     return None
 
 
-def exports_map(account_id: str, region_name: str):
+def exports_map(account_id: str, region_name: str) -> dict[str, Export]:
     result = {}
     store = get_cloudformation_store(account_id, region_name)
     for export in store.exports:
         result[export["Name"]] = export
     return result
-
-
-def exports_map_v2(account_id: str, region_name: str):
-    store = get_cloudformation_store(account_id, region_name)
-    return store.exports_v2()

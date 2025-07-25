@@ -99,7 +99,6 @@ from localstack.services.cloudformation.provider import (
 )
 from localstack.services.cloudformation.stores import (
     CloudFormationStore,
-    exports_map_v2,
     get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, Stack, StackInstance, StackSet
@@ -1295,6 +1294,6 @@ class CloudformationProviderV2(CloudformationProvider):
     def list_exports(
         self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
-        exports = exports_map_v2(account_id=context.account_id, region_name=context.region)
+        store = get_cloudformation_store(account_id=context.account_id, region_name=context.region)
 
-        return ListExportsOutput(Exports=exports.values())
+        return ListExportsOutput(Exports=store.exports)
