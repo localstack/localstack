@@ -1,8 +1,38 @@
 {
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_describe_parameters": {
+    "last_validated_date": "2025-01-28T12:43:49+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_inexistent_maintenance_window": {
+    "last_validated_date": "2025-01-28T12:43:53+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_inexistent_secret": {
+    "last_validated_date": "2025-01-28T12:43:51+00:00"
+  },
   "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameter_by_arn": {
-    "last_validated_date": "2024-07-16T17:17:40+00:00"
+    "last_validated_date": "2025-01-28T12:43:53+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameter_history": {
+    "last_validated_date": "2025-01-28T12:43:53+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameters_and_secrets": {
+    "last_validated_date": "2025-01-28T12:43:51+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_parameters_by_path_and_filter_by_labels": {
+    "last_validated_date": "2025-01-28T12:43:52+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_get_secret_parameter": {
+    "last_validated_date": "2025-01-28T12:43:51+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_hierarchical_parameter[/<param>//b//c]": {
+    "last_validated_date": "2025-01-28T12:43:50+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_hierarchical_parameter[<param>/b/c]": {
+    "last_validated_date": "2025-01-28T12:43:50+00:00"
   },
   "tests/aws/services/ssm/test_ssm.py::TestSSM::test_parameters_with_path": {
-    "last_validated_date": "2025-01-08T17:04:53+00:00"
+    "last_validated_date": "2025-01-28T12:43:55+00:00"
+  },
+  "tests/aws/services/ssm/test_ssm.py::TestSSM::test_put_parameters": {
+    "last_validated_date": "2025-01-28T12:43:50+00:00"
   }
 }
