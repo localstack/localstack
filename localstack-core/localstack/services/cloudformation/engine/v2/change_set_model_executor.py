@@ -15,11 +15,13 @@ from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
     NodeParameter,
     NodeResource,
+    TerminalValueCreated,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -38,6 +40,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -506,3 +509,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             },
         }
         return resource_provider_payload
+
+    def visit_terminal_value_created(self, value: TerminalValueCreated):
+        if not isinstance(value.value, str):
+            return PreprocEntityDelta(after=value.value)
+
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(value.value)
+        if api_match and value.value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+            prefix = api_match[1]
+            host = api_match[2]
+            path = api_match[3]
+            port = localstack_host().port
+            value.value = f"{prefix}{host}:{port}/{path}"
+
+        return PreprocEntityDelta(after=value.value)
