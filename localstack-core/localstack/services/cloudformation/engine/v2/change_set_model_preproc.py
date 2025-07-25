@@ -7,7 +7,6 @@ from typing import Any, Callable, Final, Generic, Optional, TypeVar
 
 from botocore.exceptions import ClientError
 
-from localstack import config
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.transformers import (
