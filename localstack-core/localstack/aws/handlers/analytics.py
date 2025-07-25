@@ -42,6 +42,7 @@ class ServiceRequestCounter:
         err_type = self._get_err_type(context, response) if response.status_code >= 400 else None
         service_name = context.operation.service_model.service_name
         operation_name = context.operation.name
+        provider = config.SERVICE_PROVIDER_CONFIG.get_provider(service_name)
 
         self.aggregator.add_request(
             ServiceRequestInfo(
@@ -49,6 +50,7 @@ class ServiceRequestCounter:
                 operation_name,
                 response.status_code,
                 err_type=err_type,
+                provider=provider,
             )
         )
 
