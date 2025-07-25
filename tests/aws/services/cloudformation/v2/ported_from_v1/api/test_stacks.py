@@ -1044,7 +1044,6 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
     snapshot.match("describe_updated_stacks_no_echo_false", describe_stacks)
 
 
-@pytest.mark.skip(reason="CFNV2:Validation")
 @markers.aws.validated
 def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
@@ -1069,5 +1068,5 @@ def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
         os.path.dirname(__file__), "../../../../../templates/ssm_parameter_defaultname.yaml"
     )
     with pytest.raises(ClientError) as exc_info:
-        deploy_cfn_template(template_path=template_path, parameters={"Input": "Foo"})
+        deploy_cfn_template(template_path=template_path)
     snapshot.match("deploy-error", exc_info.value)

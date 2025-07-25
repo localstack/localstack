@@ -45,6 +45,7 @@ from localstack.aws.api.cloudformation import (
     RollbackConfiguration,
     StackName,
     StackNameOrId,
+    StackResourceDetail,
     StackStatus,
     StackStatusFilter,
     TemplateStage,
@@ -669,14 +670,21 @@ class CloudformationProviderV2(CloudformationProvider):
 
         try:
             resource = stack.resolved_resources[logical_resource_id]
-        except KeyError as e:
-            if "Unable to find details" in str(e):
-                raise ValidationError(
-                    f"Resource {logical_resource_id} does not exist for stack {stack_name}"
-                )
-            raise
+        except KeyError:
+            raise ValidationError(
+                f"Resource {logical_resource_id} does not exist for stack {stack_name}"
+            )
 
-        return DescribeStackResourceOutput(StackResourceDetail=details)
+        resource_detail = StackResourceDetail(
+            StackName=stack.stack_name,
+            StackId=stack.stack_id,
+            LogicalResourceId=logical_resource_id,
+            PhysicalResourceId=resource["PhysicalResourceId"],
+            ResourceType=resource["Type"],
+            LastUpdatedTimestamp=resource["LastUpdatedTimestamp"],
+            ResourceStatus=resource["ResourceStatus"],
+        )
+        return DescribeStackResourceOutput(StackResourceDetail=resource_detail)
 
     @handler("DescribeStackResources")
     def describe_stack_resources(
