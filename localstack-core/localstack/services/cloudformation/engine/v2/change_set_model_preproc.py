@@ -955,8 +955,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     return [item.strip() for item in value.split(",")]
             return value
 
-        if not is_nothing(before):
-            before = _resolve_parameter_type(before, parameter_type.before)
         if not is_nothing(after):
             after = _resolve_parameter_type(after, parameter_type.after)
 
