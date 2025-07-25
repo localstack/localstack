@@ -173,6 +173,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_verify_mac[HMAC_256-INVALID-some important message]": {
     "last_validated_date": "2024-04-11T15:54:16+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
+    "last_validated_date": "2025-07-09T18:24:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.61,
+      "call": 64.02,
+      "teardown": 0.13,
+      "total": 64.76
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_key_enable_rotation_status[180]": {
     "last_validated_date": "2025-03-02T13:34:03+00:00"
   },
@@ -232,9 +241,6 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_that_does_not_exist": {
     "last_validated_date": "2025-03-08T09:27:10+00:00"
-  },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material": {
-    "last_validated_date": "2025-03-08T09:28:13+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_non_symmetric_key": {
     "last_validated_date": "2025-03-08T09:27:44+00:00"

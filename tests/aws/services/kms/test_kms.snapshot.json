@@ -1208,7 +1208,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
-    "recorded-date": "24-01-2024, 10:44:12",
+    "recorded-date": "10-07-2025, 15:28:44",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1278,6 +1278,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
           "Enabled": true,
@@ -1336,7 +1337,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
-    "recorded-date": "24-01-2024, 10:44:14",
+    "recorded-date": "10-07-2025, 15:29:07",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1385,6 +1386,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "ECC_NIST_P256",
           "Description": "<description:1>",
           "Enabled": true,
@@ -2295,6 +2297,58 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_key_before_and_after_rotations_on_imported_key": {
+    "recorded-date": "10-07-2025, 15:26:44",
+    "recorded-content": {
+      "describe_before_rotation": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "rotate-on-demand-response": {
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_after_rotation": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:2>",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test key",
+        "Enabled": true,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "Enabled",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
       }
     }
   }
