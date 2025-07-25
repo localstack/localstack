@@ -198,8 +198,6 @@ class CloudformationProviderV2(CloudformationProvider):
         # perform validations
         validator = ChangeSetModelValidator(
             change_set=change_set,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
         )
         validator.validate()
 
