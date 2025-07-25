@@ -910,7 +910,6 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     snapshot.match("events", filtered_events)
 
 
-@pytest.mark.skip(reason="CFNV2:DescribeStack")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when

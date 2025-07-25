@@ -47,7 +47,6 @@ def test_cfn_event_api_destination_resource(deploy_cfn_template, region_name, aw
     _assert(0)
 
 
-@pytest.mark.skip(reason="CFNV2:Describe")
 @markers.aws.validated
 def test_eventbus_policies(deploy_cfn_template, aws_client):
     event_bus_name = f"event-bus-{short_uid()}"
