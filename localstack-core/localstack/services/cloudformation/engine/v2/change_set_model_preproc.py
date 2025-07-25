@@ -7,6 +7,7 @@ from typing import Any, Callable, Final, Generic, Optional, TypeVar
 
 from botocore.exceptions import ClientError
 
+from localstack import config
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.transformers import (
@@ -251,16 +252,18 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         # support structured properties, e.g. NestedStack.Outputs.OutputName
         property_value: Optional[Any] = get_value_from_path(properties, property_name)
 
-        if property_value is None:
-            raise RuntimeError(
-                f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
-            )
+        if property_value:
+            if not isinstance(property_value, str):
+                # TODO: is this correct? If there is a bug in the logic here, it's probably
+                #  better to know about it with a clear error message than to receive some form
+                #  of message about trying to use a dictionary in place of a string
+                raise RuntimeError(
+                    f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value"
+                )
+            return property_value
+        elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            return MOCKED_REFERENCE
 
-        if not isinstance(property_value, str):
-            # TODO: is this correct?
-            raise RuntimeError(
-                f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value",  #: {property_value}",
-            )
         return property_value
 
     def _before_deployed_property_value_of(
