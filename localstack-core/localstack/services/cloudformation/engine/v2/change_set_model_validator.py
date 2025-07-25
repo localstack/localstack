@@ -1,5 +1,8 @@
+import re
+
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameters,
+    NodeResource,
     NodeTemplate,
     is_nothing,
 )
@@ -9,14 +12,16 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
 
+VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
+
 
 class ChangeSetModelValidator(ChangeSetModelPreproc):
     def validate(self):
-        # validate parameters are all given
-        self.visit(self._change_set.update_model.node_template.parameters)
+        self.visit(self._change_set.update_model.node_template)
 
     def visit_node_template(self, node_template: NodeTemplate):
-        self.visit_node_parameters(node_template.parameters)
+        self.visit(node_template.parameters)
+        self.visit(node_template.resources)
 
     def visit_node_parameters(self, node_parameters: NodeParameters) -> PreprocEntityDelta:
         # check that all parameters have values
@@ -33,3 +38,10 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
 
         # continue visiting
         return super().visit_node_parameters(node_parameters)
+
+    def visit_node_resource(self, node_resource: NodeResource) -> PreprocEntityDelta:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
+            raise ValidationError(
+                f"Template format error: Resource name {node_resource.name} is non alphanumeric."
+            )
+        return super().visit_node_resource(node_resource)

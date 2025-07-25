@@ -16,5 +16,14 @@
       "teardown": 0.0,
       "total": 1.24
     }
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_resources.py::test_invalid_logical_resource_id": {
+    "last_validated_date": "2025-07-25T22:21:31+00:00",
+    "durations_in_seconds": {
+      "setup": 1.31,
+      "call": 0.35,
+      "teardown": 0.0,
+      "total": 1.66
+    }
   }
 }

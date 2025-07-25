@@ -1,3 +1,4 @@
+import json
 import os
 
 import pytest
@@ -28,5 +29,24 @@ def test_describe_non_existent_resource(aws_client, deploy_cfn_template, snapsho
         aws_client.cloudformation.describe_stack_resource(
             StackName=stack.stack_id, LogicalResourceId="not-a-valid-resource"
         )
+
+    snapshot.match("error", err.value)
+
+
+@markers.aws.validated
+def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
+    template = {
+        "Resources": {
+            "my-bad-resource-id": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "Foo",
+                },
+            }
+        }
+    }
+    with pytest.raises(ClientError) as err:
+        deploy_cfn_template(template=json.dumps(template))
 
     snapshot.match("error", err.value)
