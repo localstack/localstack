@@ -394,7 +394,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 4 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 4 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap --ignore=tests/aws/services/cloudformation/v2"
           COVERAGE_FILE: "target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}

@@ -190,7 +190,9 @@ class NodeTemplate(ChangeSetNode):
         resources: NodeResources,
         outputs: NodeOutputs,
     ):
-        change_type = parent_change_type_of([transform, resources, outputs])
+        change_type = parent_change_type_of(
+            [transform, mappings, parameters, conditions, resources, outputs]
+        )
         super().__init__(scope=scope, change_type=change_type)
         self.transform = transform
         self.mappings = mappings

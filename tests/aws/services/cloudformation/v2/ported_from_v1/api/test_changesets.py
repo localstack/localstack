@@ -394,7 +394,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
-@pytest.mark.skip("CFNV2:Other")
+@pytest.mark.skip("CFNV2:Resolve")
 @markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
@@ -478,7 +478,6 @@ def test_create_change_set_with_ssm_parameter(
         cleanup_stacks([stack_id])
 
 
-@pytest.mark.skip("CFNV2:Validation")
 @markers.aws.validated
 def test_describe_change_set_nonexisting(snapshot, aws_client):
     with pytest.raises(Exception) as ex:
@@ -575,7 +574,6 @@ def test_delete_change_set_exception(snapshot, aws_client):
     snapshot.match("e2", e2.value.response)
 
 
-@pytest.mark.skip("CFNV2:Other")
 @markers.aws.validated
 def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
     """test the re-use of a changeset name with a re-used stack name"""
@@ -766,12 +764,14 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
     poll_condition(condition=assert_bucket_gone, timeout=20, interval=5)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Parameters",
+        # For V2
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
     ]
 )
 @markers.aws.validated
@@ -856,7 +856,7 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
-@pytest.mark.skip(reason="CFNV2:Other delete change set not implemented yet")
+@pytest.mark.skip(reason="CFNV2:DeleteChangeSet")
 @markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
@@ -980,9 +980,16 @@ def test_create_while_in_review(aws_client, snapshot, cleanups):
     snapshot.match("describe_change_set", describe_change_set)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
-    paths=["$..Capabilities", "$..IncludeNestedStacks", "$..NotificationARNs", "$..Parameters"]
+    paths=[
+        "$..Capabilities",
+        "$..IncludeNestedStacks",
+        "$..NotificationARNs",
+        "$..Parameters",
+        # V2 parity
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    ]
 )
 @markers.aws.validated
 def test_multiple_create_changeset(aws_client, snapshot, cleanups):
@@ -1019,7 +1026,7 @@ def test_multiple_create_changeset(aws_client, snapshot, cleanups):
     )
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
+@pytest.mark.skip(reason="CFNV2:DescribeStacks")
 @markers.snapshot.skip_snapshot_verify(paths=["$..LastUpdatedTime", "$..StackStatusReason"])
 @markers.aws.validated
 def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
@@ -1087,7 +1094,6 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
     snapshot.match("recreate_deleted_with_id_exception", e.value.response)
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # gotta skip quite a lot unfortunately
@@ -1102,6 +1108,9 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
         "$..StackId",
         "$..StatusReason",
         "$..StackStatusReason",
+        # V2 parity
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
     ]
 )
 @markers.aws.validated

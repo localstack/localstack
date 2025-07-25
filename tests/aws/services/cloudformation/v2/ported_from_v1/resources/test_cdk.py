@@ -16,9 +16,6 @@ pytestmark = pytest.mark.skipif(
 
 
 class TestCdkInit:
-    @pytest.mark.skip(
-        reason="CFNV2:Destroy each test passes individually but because we don't delete resources, running all parameterized options fails"
-    )
     @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
     @markers.aws.validated
     def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
@@ -102,7 +99,7 @@ class TestCdkInit:
 
 
 class TestCdkSampleApp:
-    @pytest.mark.skip(reason="CFNV2:Provider")
+    @pytest.mark.skip(reason="CFNV2:Describe")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Attributes.Policy.Statement..Condition",

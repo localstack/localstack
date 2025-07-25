@@ -50,6 +50,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
+from localstack.utils.objects import get_value_from_path
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
@@ -248,17 +249,22 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 f"No deployed instances of resource '{resource_logical_id}' were found"
             )
         properties = resolved_resource.get("Properties", dict())
-        property_value: Optional[Any] = properties.get(property_name)
+        # support structured properties, e.g. NestedStack.Outputs.OutputName
+        property_value: Optional[Any] = get_value_from_path(properties, property_name)
 
         if property_value:
+            if not isinstance(property_value, str):
+                # TODO: is this correct? If there is a bug in the logic here, it's probably
+                #  better to know about it with a clear error message than to receive some form
+                #  of message about trying to use a dictionary in place of a string
+                raise RuntimeError(
+                    f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value"
+                )
             return property_value
-
         elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
             return MOCKED_REFERENCE
 
-        raise RuntimeError(
-            f"No '{property_name}' found for deployed resource '{resource_logical_id}' was found"
-        )
+        return property_value
 
     def _before_deployed_property_value_of(
         self, resource_logical_id: str, property_name: str
@@ -949,8 +955,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     return [item.strip() for item in value.split(",")]
             return value
 
-        if not is_nothing(before):
-            before = _resolve_parameter_type(before, parameter_type.before)
         if not is_nothing(after):
             after = _resolve_parameter_type(after, parameter_type.after)
 
