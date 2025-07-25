@@ -8,8 +8,7 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
-from localstack.services.cloudformation.v2.utils import is_v2_engine
-from localstack.testing.aws.util import in_default_partition, is_aws_cloud
+from localstack.testing.aws.util import in_default_partition
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.common import short_uid
@@ -19,10 +18,10 @@ from localstack.utils.strings import to_bytes, to_str
 from localstack.utils.sync import retry, wait_until
 from localstack.utils.testutil import create_lambda_archive, get_lambda_log_events
 
-pytestmark = pytest.mark.skipif(
-    condition=not is_v2_engine() and not is_aws_cloud(),
-    reason="Only targeting the new engine",
-)
+# pytestmark = pytest.mark.skipif(
+#     condition=not is_v2_engine() and not is_aws_cloud(),
+#     reason="Only targeting the new engine",
+# )
 
 
 @markers.aws.validated
@@ -470,7 +469,6 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.only_localstack(reason="This is functionality specific to Localstack")
 def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     deploy_cfn_template, aws_client, monkeypatch
@@ -505,7 +503,6 @@ def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     )
 
 
-@pytest.mark.skip(reason="CFNV2:Other")
 @markers.aws.only_localstack(reason="This is functionality specific to Localstack")
 def test_lambda_cfn_run_with_non_empty_string_replacement_deny_list(
     deploy_cfn_template, aws_client, monkeypatch
