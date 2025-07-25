@@ -26,6 +26,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils import testutil
 from localstack.utils.aws import arns, queries, resources
+from localstack.utils.aws.arns import kinesis_stream_arn
 from localstack.utils.aws.resources import create_dynamodb_table
 from localstack.utils.common import json_safe, long_uid, retry, short_uid
 from localstack.utils.sync import poll_condition, wait_until
@@ -905,6 +906,144 @@ class TestDynamoDB:
 
         retry(lambda: _get_records_amount(6), sleep=1, retries=3)
         snapshot.match("get-records", {"Records": records})
+
+    @markers.aws.validated
+    def test_kinesis_streaming_destination_crud(
+        self,
+        aws_client,
+        dynamodb_create_table,
+        kinesis_create_stream,
+        snapshot,
+        account_id,
+        region_name,
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("TableName"),
+                snapshot.transform.key_value("StreamArn"),
+            ]
+        )
+
+        table_name = f"table-{short_uid()}"
+
+        dynamodb_create_table(
+            table_name=table_name,
+            partition_key=PARTITION_KEY,
+        )
+
+        # Transform table ID which appears in some error messages
+        table_id = aws_client.dynamodb.describe_table(TableName=table_name)["Table"]["TableId"]
+        snapshot.add_transformer(snapshot.transform.regex(table_id, "<table-id>"))
+
+        stream_name = kinesis_create_stream()
+        stream_arn = aws_client.kinesis.describe_stream(StreamName=stream_name)[
+            "StreamDescription"
+        ]["StreamARN"]
+
+        # EnableKinesisStreamingDestination: Invalid table must raise
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.enable_kinesis_streaming_destination(
+                TableName="bad-table",
+                StreamArn=stream_arn,
+            )
+        snapshot.match("enable-bad-table", exc.value.response)
+
+        # EnableKinesisStreamingDestination: Happy path
+        response = aws_client.dynamodb.enable_kinesis_streaming_destination(
+            TableName=table_name,
+            StreamArn=stream_arn,
+        )
+        snapshot.match("enable", response)
+
+        def _is_stream_active():
+            assert (
+                aws_client.dynamodb.describe_kinesis_streaming_destination(TableName=table_name)[
+                    "KinesisDataStreamDestinations"
+                ][0]["DestinationStatus"]
+                == "ACTIVE"
+            )
+
+        retry(_is_stream_active, retries=90, sleep=3)
+
+        # DescribeKinesisStreamingDestination: Happy path
+        response = aws_client.dynamodb.describe_kinesis_streaming_destination(
+            TableName=table_name,
+        )
+        snapshot.match("describe", response)
+
+        # UpdateKinesisStreamingDestination: Missing params
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.update_kinesis_streaming_destination(
+                TableName=table_name,
+                StreamArn=stream_arn,
+            )
+        snapshot.match("update-missing-params", exc.value.response)
+
+        # UpdateKinesisStreamingDestination: Bad precision
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.update_kinesis_streaming_destination(
+                TableName=table_name,
+                StreamArn=stream_arn,
+                UpdateKinesisStreamingConfiguration={
+                    "ApproximateCreationDateTimePrecision": "SECOND",
+                },
+            )
+        snapshot.match("update-bad-precision", exc.value.response)
+
+        # UpdateKinesisStreamingDestination: Bad stream ARN
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.update_kinesis_streaming_destination(
+                TableName=table_name,
+                StreamArn=kinesis_stream_arn("bad-stream", account_id, region_name),
+                UpdateKinesisStreamingConfiguration={
+                    "ApproximateCreationDateTimePrecision": "MICROSECOND",
+                },
+            )
+        snapshot.match("update-bad-stream-arn", exc.value.response)
+
+        response = aws_client.dynamodb.update_kinesis_streaming_destination(
+            TableName=table_name,
+            StreamArn=stream_arn,
+            UpdateKinesisStreamingConfiguration={
+                "ApproximateCreationDateTimePrecision": "MICROSECOND",
+            },
+        )
+        snapshot.match("update", response)
+
+        retry(_is_stream_active, retries=90, sleep=3)
+
+        # TODO: Describe... after Update...
+
+        # UpdateKinesisStreamingDestination: Ensure not idempotent
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.update_kinesis_streaming_destination(
+                TableName=table_name,
+                StreamArn=stream_arn,
+                UpdateKinesisStreamingConfiguration={
+                    "ApproximateCreationDateTimePrecision": "MICROSECOND",
+                },
+            )
+        snapshot.match("update-no-idempotency", exc.value.response)
+
+        # DisableKinesisStreamingDestination: Invalid table must raise
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.disable_kinesis_streaming_destination(
+                TableName="bad-table",
+                StreamArn=stream_arn,
+            )
+        snapshot.match("disable-bad-table", exc.value.response)
+
+        # TODO: DisableKinesisStreamingDestination: Invoking before stream is ACTIVE must raise
+        # TODO: DisableKinesisStreamingDestination: Bad stream must raise
+
+        # DisableKinesisStreamingDestination: Happy path
+        response = aws_client.dynamodb.disable_kinesis_streaming_destination(
+            TableName=table_name,
+            StreamArn=stream_arn,
+        )
+        snapshot.match("disable", response)
+
+        # TODO: Describe... after Disable...
 
     @markers.aws.only_localstack
     @pytest.mark.skipif(

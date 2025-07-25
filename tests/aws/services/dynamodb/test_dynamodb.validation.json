@@ -68,6 +68,15 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PROVISIONED]": {
     "last_validated_date": "2025-01-08T18:17:21+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_kinesis_streaming_destination_crud": {
+    "last_validated_date": "2025-07-23T13:31:04+00:00",
+    "durations_in_seconds": {
+      "setup": 1.29,
+      "call": 238.19,
+      "teardown": 1.53,
+      "total": 241.01
+    }
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
     "last_validated_date": "2023-08-23T14:32:21+00:00"
   },
