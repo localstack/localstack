@@ -4,5 +4,11 @@
     "recorded-content": {
       "error": "An error occurred (ValidationError) when calling the DescribeStackResource operation: Resource not-a-valid-resource does not exist for stack <stack-id>"
     }
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_resources.py::test_describe_non_existent_stack": {
+    "recorded-date": "25-07-2025, 22:02:38",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the DescribeStackResource operation: Stack 'not-a-valid-stack' does not exist"
+    }
   }
 }

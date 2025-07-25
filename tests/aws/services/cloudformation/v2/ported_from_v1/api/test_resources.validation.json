@@ -7,5 +7,14 @@
       "teardown": 4.37,
       "total": 15.81
     }
+  },
+  "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_resources.py::test_describe_non_existent_stack": {
+    "last_validated_date": "2025-07-25T22:02:38+00:00",
+    "durations_in_seconds": {
+      "setup": 1.04,
+      "call": 0.2,
+      "teardown": 0.0,
+      "total": 1.24
+    }
   }
 }

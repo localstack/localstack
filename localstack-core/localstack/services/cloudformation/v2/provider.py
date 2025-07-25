@@ -98,11 +98,14 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
 
 
 class StackNotFoundError(ValidationError):
-    def __init__(self, stack_name_or_id: str):
-        if is_stack_arn(stack_name_or_id):
-            super().__init__(f"Stack with id {stack_name_or_id} does not exist")
+    def __init__(self, stack_name_or_id: str, message_override: str | None = None):
+        if message_override:
+            super().__init__(message_override)
         else:
-            super().__init__(f"Stack [{stack_name_or_id}] does not exist")
+            if is_stack_arn(stack_name_or_id):
+                super().__init__(f"Stack with id {stack_name_or_id} does not exist")
+            else:
+                super().__init__(f"Stack [{stack_name_or_id}] does not exist")
 
 
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
@@ -666,7 +669,9 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
-            raise StackNotFoundError(stack_name)
+            raise StackNotFoundError(
+                stack_name, message_override=f"Stack '{stack_name}' does not exist"
+            )
 
         try:
             resource = stack.resolved_resources[logical_resource_id]
