@@ -128,7 +128,6 @@ def test_cfn_with_multiple_route_table_associations(deploy_cfn_template, aws_cli
     snapshot.add_transformer(snapshot.transform.key_value("VpcId"))
 
 
-@pytest.mark.skip(reason="CFNV2:Describe")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 def test_internet_gateway_ref_and_attr(deploy_cfn_template, snapshot, aws_client):

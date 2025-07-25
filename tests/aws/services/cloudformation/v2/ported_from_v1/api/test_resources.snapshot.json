@@ -1,0 +1,6 @@
+{
+  "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_resources.py::test_describe_non_existent_resource": {
+    "recorded-date": "25-07-2025, 15:24:21",
+    "recorded-content": {}
+  }
+}

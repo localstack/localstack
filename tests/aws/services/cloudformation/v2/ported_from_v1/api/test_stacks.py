@@ -6,7 +6,7 @@ from itertools import permutations
 import botocore.exceptions
 import pytest
 import yaml
-from botocore.exceptions import WaiterError
+from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.cloudformation import Capability
@@ -1061,3 +1061,13 @@ def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
 
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
     snapshot.match("Error", ex.value.response)
+
+
+@markers.aws.validated
+def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../../../templates/ssm_parameter_defaultname.yaml"
+    )
+    with pytest.raises(ClientError) as exc_info:
+        deploy_cfn_template(template_path=template_path, parameters={"Input": "Foo"})
+    snapshot.match("deploy-error", exc_info.value)

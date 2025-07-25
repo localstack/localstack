@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
     NodeParameter,
+    NodeParameters,
     NodeResource,
     is_nothing,
 )
@@ -68,6 +69,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return ChangeSetModelExecutorResult(
             resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
         )
+
+    def visit_node_parameters(self, node_parameters: NodeParameters) -> PreprocEntityDelta:
+        delta = super().visit_node_parameters(node_parameters)
+        return delta
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
         delta = super().visit_node_parameter(node_parameter)
