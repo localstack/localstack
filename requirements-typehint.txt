@@ -49,7 +49,7 @@ boto3==1.39.9
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-boto3-stubs==1.39.10
+boto3-stubs==1.39.11
     # via localstack-core (pyproject.toml)
 botocore==1.39.9
     # via
@@ -219,6 +219,8 @@ jsonpath-ng==1.7.0
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core
+jsonpickle==4.1.1
+    # via localstack-core
 jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.25.0
@@ -326,7 +328,7 @@ mypy-boto3-dynamodbstreams==1.39.5
     # via boto3-stubs
 mypy-boto3-ec2==1.39.10
     # via boto3-stubs
-mypy-boto3-ecr==1.39.0
+mypy-boto3-ecr==1.39.11
     # via boto3-stubs
 mypy-boto3-ecs==1.39.6
     # via boto3-stubs
@@ -340,7 +342,7 @@ mypy-boto3-elasticbeanstalk==1.39.0
     # via boto3-stubs
 mypy-boto3-elbv2==1.39.0
     # via boto3-stubs
-mypy-boto3-emr==1.39.0
+mypy-boto3-emr==1.39.11
     # via boto3-stubs
 mypy-boto3-emr-serverless==1.39.0
     # via boto3-stubs
@@ -380,7 +382,7 @@ mypy-boto3-kms==1.39.0
     # via boto3-stubs
 mypy-boto3-lakeformation==1.39.0
     # via boto3-stubs
-mypy-boto3-lambda==1.39.0
+mypy-boto3-lambda==1.39.11
     # via boto3-stubs
 mypy-boto3-logs==1.39.9
     # via boto3-stubs

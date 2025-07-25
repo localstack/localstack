@@ -34,7 +34,10 @@ from typing import Any, BinaryIO, Callable, Generic, Type, TypeVar
 import dill
 from dill._dill import MetaCatchingDict
 
+from localstack import config
+
 from .core import Decoder, Encoder
+from .json import JsonDecoder, JsonEncoder
 
 _T = TypeVar("_T")
 
@@ -134,44 +137,52 @@ def remove_dispatch_entry(cls: Type):
         pass
 
 
-def dumps(obj: Any) -> bytes:
+def dumps(obj: Any, encoder: Encoder | None = None) -> bytes:
     """
-    Pickle an object into bytes using a ``PickleEncoder``.
+    Pickle an object into bytes using an ``Encoder``.
 
     :param obj: the object to pickle
+    :param encoder: the encoder
     :return: the pickled object
     """
-    return PickleEncoder().encodes(obj)
+    encoder = encoder or _default_encoder
+    return encoder.encodes(obj)
 
 
-def dump(obj: Any, file: BinaryIO):
+def dump(obj: Any, file: BinaryIO, encoder: Encoder | None = None):
     """
-    Pickle an object into a buffer using a ``PickleEncoder``.
+    Pickle an object into a buffer using an ``Encoder``.
 
     :param obj: the object to pickle
+    :param encoder: the encoder
     :param file: the IO buffer
     """
-    return PickleEncoder().encode(obj, file)
+    encoder = encoder or _default_encoder
+    return encoder.encode(obj, file)
 
 
-def loads(data: bytes) -> Any:
+def loads(data: bytes, decoder: Decoder | None = None) -> Any:
     """
-    Unpickle am object from bytes using a ``PickleDecoder``.
+    Unpickle am object from bytes using a ``Decoder``.
 
     :param data: the pickled object
+    :param decoder: the decoder
     :return: the unpickled object
     """
-    return PickleDecoder().decodes(data)
+    decoder = decoder or _default_decoder
+    return decoder.decodes(data)
 
 
-def load(file: BinaryIO) -> Any:
+def load(file: BinaryIO, decoder: Decoder | None = None) -> Any:
     """
-    Unpickle am object from a buffer using a ``PickleDecoder``.
+    Unpickle am object from a buffer using a ``Decoder``.
 
     :param file: the buffer containing the pickled object
+    :param decoder: the decoder
     :return: the unpickled object
     """
-    return PickleDecoder().decode(file)
+    decoder = decoder or _default_decoder
+    return decoder.decode(file)
 
 
 class _SuperclassMatchingTypeDict(MetaCatchingDict):
@@ -253,6 +264,14 @@ class PickleDecoder(Decoder):
 
     def decode(self, file: BinaryIO) -> Any:
         return self.unpickler_class(file).load()
+
+
+_default_encoder = (
+    PickleEncoder() if config.STATE_SERIALIZATION_BACKEND == "dill" else JsonEncoder()
+)
+_default_decoder = (
+    PickleDecoder() if config.STATE_SERIALIZATION_BACKEND == "dill" else JsonDecoder()
+)
 
 
 class ObjectStateReducer(Generic[_T]):

@@ -29,16 +29,20 @@ All Pro attributes must be declared within.
 While not recommended, store classes may define member helper functions and properties.
 """
 
+import builtins
 import re
+import types
+import typing
 from collections.abc import Callable
 from threading import RLock
-from typing import Any, Generic, Iterator, Type, TypeVar, Union
+from typing import Any, Generic, Iterator, Type, TypeVar, Union, get_args
 
 from localstack import config
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
 
 LOCAL_ATTR_PREFIX = "attr_"
 
+TypeHint = types.GenericAlias | type
 BaseStoreType = TypeVar("BaseStoreType")
 
 
@@ -183,6 +187,19 @@ class BaseStore:
             )
         except AttributeError:
             return super().__repr__()
+
+    @property
+    def schema(self) -> dict[str, typing.Any]:
+        skip_attributes = ["_account_id", "_global", "_region_name", "_service_name", "_universal"]
+        class_var_hints = typing.get_type_hints(self)
+        class_var_hints = {k: v for k, v in class_var_hints.items() if k not in skip_attributes}
+
+        schema = {"store": get_fqn(self), "attributes": {}}
+
+        for name, type_hint in class_var_hints.items():
+            schema["attributes"][name] = serialize_hint(type_hint)
+
+        return schema
 
 
 #
@@ -344,3 +361,41 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
         for account_id, region_stores in self.items():
             for region_name, store in region_stores.items():
                 yield account_id, region_name, store
+
+
+def get_fqn(obj: type) -> str:
+    """Get the fully qualified name of a type/class"""
+    if hasattr(obj, "__module__") and hasattr(obj, "__qualname__"):
+        return f"{obj.__module__}.{obj.__qualname__}"
+    elif hasattr(obj, "__name__"):
+        return obj.__name__
+    else:
+        return str(obj)
+
+
+def serialize_hint(type_hint: TypeHint) -> dict[str, typing.Any]:
+    origin = typing.get_origin(type_hint)
+
+    if not origin:
+        return get_fqn(type_hint)
+
+    match origin:
+        case builtins.dict:
+            args = get_args(type_hint)
+            if len(args) == 2:
+                return {serialize_hint(args[0]): serialize_hint(args[1])}
+            return {"typing.Any"}
+        case builtins.list:
+            args = get_args(type_hint)
+            return [serialize_hint(args[0])] if args else ["typing.Any"]
+        case builtins.set:
+            args = get_args(type_hint)
+            return {serialize_hint(args[0])} if args else {"typing.Any"}
+        case builtins.tuple | typing.Union:
+            # todo: handle this case. Not a seen pattern in stores
+            pass
+        case _:
+            # todo: we might want to serialize the args as well for generics
+            return get_fqn(origin)
+
+    return get_fqn(type_hint)
