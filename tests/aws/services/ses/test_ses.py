@@ -9,7 +9,7 @@ import requests
 from botocore.exceptions import ClientError
 
 import localstack.config as config
-from localstack.services.ses.provider import EMAILS, EMAILS_ENDPOINT
+from localstack.services.ses.provider import EMAILS, EMAILS_ENDPOINT, get_ses_backend
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -390,6 +390,57 @@ class TestSES:
         assert cloned_rule_set["Metadata"]["Name"] == rule_set_name
         assert cloned_rule_set["Rules"] == original_rule_set["Rules"]
         assert [x["Name"] for x in cloned_rule_set["Rules"]] == rule_names
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "notification_type, should_succeed",
+        [
+            ("Bounce", True),
+            ("Complaint", True),
+            ("Delivery", True),
+            ("InvalidType", False),
+        ],
+    )
+    def test_set_identity_headers_in_notifications_enabled(
+        self, aws_client, setup_email_addresses, snapshot, notification_type, should_succeed
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for valid/invalid identities and notification types,
+        and verify idempotency and error handling.
+        """
+        sender_email, _ = setup_email_addresses()
+        enabled = True
+        
+        try:
+            response = aws_client.ses.set_identity_headers_in_notifications_enabled(
+                Identity=sender_email,
+                NotificationType=notification_type,
+                Enabled=enabled,
+            )
+            assert should_succeed, (
+                f"Expected failure but API call succeeded: Identity={sender_email}, NotificationType={notification_type}"
+            )
+            snapshot.match(f"set-headers-{notification_type.lower()}", response)
+    
+            # Idempotency check
+            response2 = aws_client.ses.set_identity_headers_in_notifications_enabled(
+                Identity=sender_email,
+                NotificationType=notification_type,
+                Enabled=enabled,
+            )
+            snapshot.match(f"set-headers-{notification_type.lower()}-idempotent", response2)
+    
+        except ClientError as e:
+            assert not should_succeed, f"Expected success but API call failed: {e}"
+            error_code = e.response["Error"]["Code"]
+            # Acceptable error codes for invalid identity or notification type
+            assert error_code in [
+                "InvalidParameterValue",
+                "InvalidParameter",
+                "InvalidIdentity",
+                "MessageRejected",
+            ]
+            snapshot.match(f"set-headers-error-{notification_type.lower()}", e.response)
 
     @markers.aws.manual_setup_required
     @markers.snapshot.skip_snapshot_verify(

@@ -30,6 +30,7 @@ from localstack.aws.api.ses import (
     EventDestinationDoesNotExistException,
     EventDestinationName,
     GetIdentityVerificationAttributesResponse,
+    Identity,
     IdentityList,
     IdentityVerificationAttributes,
     InvalidSNSDestinationException,
@@ -46,6 +47,7 @@ from localstack.aws.api.ses import (
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
     SesApi,
+    SetIdentityHeadersInNotificationsEnabledResponse,
     TemplateData,
     TemplateName,
     VerificationAttributes,
@@ -524,6 +526,35 @@ class SesProvider(SesApi, ServiceLifecycleHook):
 
         return CloneReceiptRuleSetResponse()
 
+    @handler("SetIdentityHeadersInNotificationsEnabled")
+    def set_identity_headers_in_notifications_enabled(
+        self,
+        context: RequestContext,
+        identity: Identity,
+        notification_type: str,
+        enabled: bool,
+        **kwargs,
+    ) -> SetIdentityHeadersInNotificationsEnabledResponse:
+        """
+        Sets whether Amazon SES includes the original email headers in the Amazon SNS notifications 
+        for a specified identity and notification type.
+        """
+        # Validate notification_type
+        if notification_type not in ("Bounce", "Complaint", "Delivery"):
+            raise InvalidParameterValue(
+                f"Invalid notification type: {notification_type}. "
+                "Valid values are: Bounce, Complaint, Delivery."
+            )
+
+        backend = get_ses_backend(context)
+        if identity not in backend.addresses:
+            raise MessageRejected(f"Identity {identity} is not verified or does not exist.")
+
+        # Store the setting in the backend 
+        if not hasattr(backend, "identity_headers_in_notifications_enabled"):
+            backend.identity_headers_in_notifications_enabled = {}
+        backend.identity_headers_in_notifications_enabled.setdefault(identity, {})[notification_type] = enabled
+        return SetIdentityHeadersInNotificationsEnabledResponse()
 
 @dataclasses.dataclass(frozen=True)
 class SNSPayload:
