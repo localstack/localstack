@@ -539,8 +539,18 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         Sets whether Amazon SES includes the original email headers in the Amazon SNS notifications 
         for a specified identity and notification type.
         """
+        # Validate notification_type
+        if notification_type not in ("Bounce", "Complaint", "Delivery"):
+            raise InvalidParameterValue(
+                f"Invalid notification type: {notification_type}. "
+                "Valid values are: Bounce, Complaint, Delivery."
+            )
+
         backend = get_ses_backend(context)
-        # Store the setting in the backend (moto may not support this, so we use a custom attribute)
+        if identity not in backend.addresses:
+            raise MessageRejected(f"Identity {identity} is not verified or does not exist.")
+
+        # Store the setting in the backend 
         if not hasattr(backend, "identity_headers_in_notifications_enabled"):
             backend.identity_headers_in_notifications_enabled = {}
         backend.identity_headers_in_notifications_enabled.setdefault(identity, {})[notification_type] = enabled

@@ -916,13 +916,69 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled": {
-    "recorded-date": "30-06-2025, 08:17:14",
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[Bounce-True]": {
+    "recorded-date": "26-07-2025, 14:37:43",
     "recorded-content": {
-      "set-headers-in-notifications-enabled": {
+      "set-headers-bounce": {
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-bounce-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[Complaint-True]": {
+    "recorded-date": "26-07-2025, 14:37:43",
+    "recorded-content": {
+      "set-headers-complaint": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-complaint-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[Delivery-True]": {
+    "recorded-date": "26-07-2025, 14:37:43",
+    "recorded-content": {
+      "set-headers-delivery": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-delivery-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[InvalidType-False]": {
+    "recorded-date": "26-07-2025, 14:37:43",
+    "recorded-content": {
+      "set-headers-error-invalidtype": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid notification type: InvalidType. Valid values are: Bounce, Complaint, Delivery.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
