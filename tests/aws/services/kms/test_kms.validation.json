@@ -197,6 +197,30 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_grants_with_invalid_key": {
     "last_validated_date": "2024-04-11T15:52:39+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_after_on_demand_rotation": {
+    "last_validated_date": "2025-07-15T15:09:01+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_content": {
+    "last_validated_date": "2025-07-16T15:57:40+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_different_key_states": {
+    "last_validated_date": "2025-07-16T15:50:18+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_include_key_material": {
+    "last_validated_date": "2025-07-16T16:01:30+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[ECC_NIST_P256-SIGN_VERIFY-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:01+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[HMAC_256-GENERATE_VERIFY_MAC-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:02+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_2048-SIGN_VERIFY-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:00+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_list_key_rotations_unsupported_key_types[RSA_4096-ENCRYPT_DECRYPT-ValidationException]": {
+    "last_validated_date": "2025-07-16T16:00:01+00:00"
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_list_keys": {
     "last_validated_date": "2024-04-11T15:52:34+00:00"
   },
