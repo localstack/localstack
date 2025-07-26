@@ -7,15 +7,21 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
-    ChangeSetModelPreproc,
     PreprocEntityDelta,
 )
+from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
+    ChangeSetModelVisitor,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
+from localstack.services.cloudformation.v2.entities import ChangeSet
 
 VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
 
 
-class ChangeSetModelValidator(ChangeSetModelPreproc):
+class ChangeSetModelValidator(ChangeSetModelVisitor):
+    def __init__(self, change_set: ChangeSet):
+        self._change_set = change_set
+
     def validate(self):
         self.visit(self._change_set.update_model.node_template)
 
