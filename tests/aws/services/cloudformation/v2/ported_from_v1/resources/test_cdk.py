@@ -99,7 +99,6 @@ class TestCdkInit:
 
 
 class TestCdkSampleApp:
-    @pytest.mark.skip(reason="CFNV2:Describe")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Attributes.Policy.Statement..Condition",

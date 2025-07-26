@@ -34,8 +34,12 @@ from localstack.utils.strings import long_uid, short_uid
 
 
 class ResolvedResource(TypedDict):
+    LogicalResourceId: str
     Type: str
     Properties: dict
+    ResourceStatus: ResourceStatus
+    PhysicalResourceId: str | None
+    LastUpdatedTimestamp: datetime | None
 
 
 class Stack:

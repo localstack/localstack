@@ -2,6 +2,7 @@ import copy
 import logging
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Final, Optional
 
 from localstack import config
@@ -36,7 +37,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
 
 LOG = logging.getLogger(__name__)
 
@@ -45,14 +46,14 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 
 @dataclass
 class ChangeSetModelExecutorResult:
-    resources: dict
+    resources: dict[str, ResolvedResource]
     parameters: dict
     outputs: dict
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
-    resources: Final[dict]
+    resources: Final[dict[str, ResolvedResource]]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
 
@@ -409,7 +410,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 message=f"Resource type {resource_type} not supported",
             )
 
-        self.resources.setdefault(logical_resource_id, {"Properties": {}})
         match event.status:
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
@@ -422,18 +422,24 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # TODO: avoid the use of setdefault (debuggability/readability)
                 # TODO: review the use of merge
 
-                self.resources[logical_resource_id]["Properties"].update(event.resource_model)
-                self.resources[logical_resource_id].update(extra_resource_properties)
-                # XXX for legacy delete_stack compatibility
-                self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
-                self.resources[logical_resource_id]["Type"] = resource_type
-
+                status_from_action = EventOperationFromAction[action.value]
                 physical_resource_id = (
-                    self._get_physical_id(logical_resource_id)
+                    extra_resource_properties["PhysicalResourceId"]
                     if resource_provider
                     else MOCKED_REFERENCE
                 )
-                self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
+                resolved_resource = ResolvedResource(
+                    Properties=event.resource_model,
+                    LogicalResourceId=logical_resource_id,
+                    Type=resource_type,
+                    LastUpdatedTimestamp=datetime.now(timezone.utc),
+                    ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
+                    PhysicalResourceId=physical_resource_id,
+                )
+                # TODO: do we actually need this line?
+                resolved_resource.update(extra_resource_properties)
+
+                self.resources[logical_resource_id] = resolved_resource
 
             case OperationStatus.FAILED:
                 reason = event.message
