@@ -822,7 +822,7 @@ jobs:
           path: dist/testselection/
 
       - name: Run CloudFormation Engine v2 Tests
-        timeout-minutes: 60
+        timeout-minutes: 30
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
