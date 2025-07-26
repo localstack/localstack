@@ -1561,32 +1561,35 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         algo = import_state.wrapping_algo
         decrypt_key = import_state.key.crypto_key.key
 
-        if algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
-            padding_scheme = padding.PKCS1v15()
-        elif algo == AlgorithmSpec.RSAES_OAEP_SHA_1:
-            padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
-        elif algo == AlgorithmSpec.RSAES_OAEP_SHA_256:
-            padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
-        elif algo == AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256:
-            rsa_key_size_bytes = decrypt_key.key_size // 8
-            wrapped_aes_key = encrypted_key_material[:rsa_key_size_bytes]
-            wrapped_key_material = encrypted_key_material[rsa_key_size_bytes:]
+        match algo:
+            case AlgorithmSpec.RSAES_PKCS1_V1_5:
+                padding_scheme = padding.PKCS1v15()
+            case AlgorithmSpec.RSAES_OAEP_SHA_1:
+                padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
+            case AlgorithmSpec.RSAES_OAEP_SHA_256:
+                padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+            case AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256:
+                rsa_key_size_bytes = decrypt_key.key_size // 8
+                wrapped_aes_key = encrypted_key_material[:rsa_key_size_bytes]
+                wrapped_key_material = encrypted_key_material[rsa_key_size_bytes:]
 
-            aes_key = decrypt_key.decrypt(
-                wrapped_aes_key,
-                padding.OAEP(
-                    mgf=padding.MGF1(algorithm=hashes.SHA256()),
-                    algorithm=hashes.SHA256(),
-                    label=None,
-                ),
-            )
-            return keywrap.aes_key_unwrap_with_padding(
-                aes_key, wrapped_key_material, default_backend()
-            )
-        else:
-            raise KMSInvalidStateException(
-                f"Unsupported padding, requested wrapping algorithm: '{algo}'"
-            )
+                aes_key = decrypt_key.decrypt(
+                    wrapped_aes_key,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None,
+                    ),
+                )
+
+                return keywrap.aes_key_unwrap_with_padding(
+                    aes_key, wrapped_key_material, default_backend()
+                )
+
+            case _:
+                raise KMSInvalidStateException(
+                    f"Unsupported padding, requested wrapping algorithm: '{algo}'"
+                )
 
         return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
 
