@@ -34,6 +34,7 @@ from localstack.aws.api.cloudformation import (
     IncludePropertyValues,
     InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
+    ListStackResourcesOutput,
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
@@ -46,6 +47,7 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackResourceDetail,
+    StackResourceSummary,
     StackStatus,
     StackStatusFilter,
     TemplateStage,
@@ -657,6 +659,29 @@ class CloudformationProviderV2(CloudformationProvider):
         ]
         stacks = [select_attributes(stack, attrs) for stack in stacks]
         return ListStacksOutput(StackSummaries=stacks)
+
+    @handler("ListStackResources")
+    def list_stack_resources(
+        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
+    ) -> ListStackResourcesOutput:
+        result = self.describe_stack_resources(context, stack_name)
+
+        resources = []
+        for resource in result.get("StackResources", []):
+            resources.append(
+                StackResourceSummary(
+                    LogicalResourceId=resource["LogicalResourceId"],
+                    PhysicalResourceId=resource["PhysicalResourceId"],
+                    ResourceType=resource["ResourceType"],
+                    LastUpdatedTimestamp=resource["Timestamp"],
+                    ResourceStatus=resource["ResourceStatus"],
+                    ResourceStatusReason=resource.get("ResourceStatusReason"),
+                    DriftInformation=resource.get("DriftInformation"),
+                    ModuleInfo=resource.get("ModuleInfo"),
+                )
+            )
+
+        return ListStackResourcesOutput(StackResourceSummaries=resources)
 
     @handler("DescribeStackResource")
     def describe_stack_resource(
