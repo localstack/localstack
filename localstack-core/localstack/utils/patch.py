@@ -1,5 +1,6 @@
 import functools
 import inspect
+import threading
 import types
 from typing import Any, Callable
 
@@ -72,6 +73,7 @@ def create_patch_proxy(target: Callable, new: Callable):
 
 class Patch:
     applied_patches: list["Patch"] = []
+    _lock: threading.RLock = threading.RLock()
     """Bookkeeping for patches that are applied. You can use this to debug patches. For instance,
     you could write something like::
 
@@ -97,19 +99,27 @@ class Patch:
         self.is_applied = False
 
     def apply(self):
-        if self.old and self.name == "__getattr__":
-            raise Exception("You can't patch class types implementing __getattr__")
-        if not self.old and self.name != "__getattr__":
-            raise AttributeError(f"`{self.obj.__name__}` object has no attribute `{self.name}`")
-        setattr(self.obj, self.name, self.new)
-        self.is_applied = True
-        Patch.applied_patches.append(self)
+        with self._lock:
+            if self.is_applied:
+                return
+
+            if self.old and self.name == "__getattr__":
+                raise Exception("You can't patch class types implementing __getattr__")
+            if not self.old and self.name != "__getattr__":
+                raise AttributeError(f"`{self.obj.__name__}` object has no attribute `{self.name}`")
+            setattr(self.obj, self.name, self.new)
+            Patch.applied_patches.append(self)
+            self.is_applied = True
 
     def undo(self):
-        # If we added a method to a class type, we don't have a self.old. We just delete __getattr__
-        setattr(self.obj, self.name, self.old) if self.old else delattr(self.obj, self.name)
-        self.is_applied = False
-        Patch.applied_patches.remove(self)
+        with self._lock:
+            if not self.is_applied:
+                return
+
+            # If we added a method to a class type, we don't have a self.old. We just delete __getattr__
+            setattr(self.obj, self.name, self.old) if self.old else delattr(self.obj, self.name)
+            Patch.applied_patches.remove(self)
+            self.is_applied = False
 
     def __enter__(self):
         self.apply()
