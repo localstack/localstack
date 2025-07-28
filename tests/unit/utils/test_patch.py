@@ -254,7 +254,7 @@ def test_multiple_patches_same_target_sequentially():
     assert echo("foo") == "echo: foo"
 
 
-@pytest.mark.xfail("Not yet working: it removes all patches")
+@pytest.mark.xfail(reason="Not yet working: it removes all patches")
 def test_multiple_patches_same_target_sequentially_undone():
     def _new_echo(fn, *args):
         return fn(*args) + " new"
@@ -274,7 +274,7 @@ def test_multiple_patches_same_target_sequentially_undone():
     assert echo("foo") == "echo: foo newer"
 
 
-@pytest.mark.xfail("Not yet working: it only applies latest")
+@pytest.mark.xfail(reason="Not yet working: it only applies latest")
 def test_multiple_patches_same_target_apply_concurrently():
     def test_echo(arg):
         return f"echo: {arg}"
