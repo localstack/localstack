@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
-    "recorded-date": "28-07-2025, 21:37:27",
+    "recorded-date": "28-07-2025, 21:51:09",
     "recorded-content": {
       "create_stack_set": {
         "StackSetId": "<stack-set-id:1>",
@@ -15,6 +15,21 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "describe-stack-instance": {
+        "Account": "111111111111",
+        "DriftStatus": "NOT_CHECKED",
+        "LastOperationId": "<uuid:2>",
+        "OrganizationalUnitId": "",
+        "ParameterOverrides": [],
+        "Region": "<region>",
+        "StackId": "<stack-id:1>",
+        "StackInstanceStatus": {
+          "DetailedStatus": "SUCCEEDED"
+        },
+        "StackSetId": "<stack-set-id:1>",
+        "Status": "CURRENT",
+        "StatusReason": "No updates are to be performed."
       }
     }
   },

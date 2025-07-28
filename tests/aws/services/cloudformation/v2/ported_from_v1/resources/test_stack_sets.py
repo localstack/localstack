@@ -70,8 +70,16 @@ def setup_account_for_stack_sets(aws_client):
     )
 
 
-@markers.aws.manual_setup_required
+@markers.aws.validated
 @pytest.mark.usefixtures("setup_account_for_stack_sets")
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..LastOperationId",
+        "$..OrganizationalUnitId",
+        "$..ParameterOverrides",
+        "$..StatusReason",
+    ]
+)
 def test_create_stack_set_with_stack_instances(
     account_id,
     region_name,
@@ -79,8 +87,8 @@ def test_create_stack_set_with_stack_instances(
     snapshot,
     wait_stack_set_operation,
 ):
-    """ "Account <...> should have 'AWSCloudFormationStackSetAdministrationRole' role with trust relationship to CloudFormation service."""
-    snapshot.add_transformer(snapshot.transform.key_value("StackSetId", "stack-set-id"))
+    snapshot.add_transformer(snapshot.transform.key_value("StackSetId"))
+    snapshot.add_transformer(snapshot.transform.key_value("StackId"))
 
     stack_set_name = f"StackSet-{short_uid()}"
 
@@ -118,11 +126,14 @@ def test_create_stack_set_with_stack_instances(
     wait_stack_set_operation(stack_set_name, create_instances_result["OperationId"])
 
     # check the resources actually exist
-    stack_instance_stack_id = aws_client.cloudformation.describe_stack_instance(
+    stack_instance = aws_client.cloudformation.describe_stack_instance(
         StackSetName=stack_set_name,
         StackInstanceAccount=account_id,
         StackInstanceRegion=region_name,
-    )["StackInstance"]["StackId"]
+    )["StackInstance"]
+    snapshot.match("describe-stack-instance", stack_instance)
+
+    stack_instance_stack_id = stack_instance["StackId"]
     aws_client.cloudformation.get_waiter("stack_create_complete").wait(
         StackName=stack_instance_stack_id,
         WaiterConfig={

@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    Account,
     CallAs,
     Changes,
     ChangeSetNameOrId,
@@ -29,6 +30,7 @@ from localstack.aws.api.cloudformation import (
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
+    DescribeStackInstanceOutput,
     DescribeStackResourcesOutput,
     DescribeStackSetOperationOutput,
     DescribeStacksOutput,
@@ -47,10 +49,14 @@ from localstack.aws.api.cloudformation import (
     NextToken,
     Parameter,
     PhysicalResourceId,
+    Region,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
     RollbackConfiguration,
+    StackDriftStatus,
+    StackInstanceComprehensiveStatus,
+    StackInstanceDetailedStatus,
     StackName,
     StackNameOrId,
     StackSetName,
@@ -64,6 +70,9 @@ from localstack.aws.api.cloudformation import (
     UpdateStackInput,
     UpdateStackOutput,
     UpdateTerminationProtectionOutput,
+)
+from localstack.aws.api.cloudformation import (
+    StackInstance as ApiStackInstance,
 )
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
@@ -825,6 +834,49 @@ class CloudformationProviderV2(CloudformationProvider):
             )
 
         return DescribeStackSetOperationOutput(StackSetOperation=result)
+
+    @handler("DescribeStackInstance")
+    def describe_stack_instance(
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        stack_instance_account: Account,
+        stack_instance_region: Region,
+        call_as: CallAs | None = None,
+        **kwargs,
+    ) -> DescribeStackInstanceOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack_set = find_stack_set_v2(state, stack_set_name)
+        if not stack_set:
+            # TODO: message parity
+            raise RuntimeError(f"Could not find stack set '{stack_set_name}'")
+
+        for instance in stack_set.stack_instances:
+            if instance.account_id != stack_instance_account:
+                continue
+            if instance.region_name != stack_instance_region:
+                continue
+
+            return DescribeStackInstanceOutput(
+                StackInstance=ApiStackInstance(
+                    StackSetId=stack_set.stack_set_id,
+                    Region=instance.region_name,
+                    Account=instance.account_id,
+                    StackId=instance.stack_id,
+                    DriftStatus=StackDriftStatus.NOT_CHECKED,
+                    LastOperationId=instance.operation_id,
+                    # TODO: fixed
+                    StackInstanceStatus=StackInstanceComprehensiveStatus(
+                        DetailedStatus=StackInstanceDetailedStatus.SUCCEEDED
+                    ),
+                    Status=instance.status,
+                )
+            )
+
+        # TODO: message parity
+        raise RuntimeError(
+            f"Could not find stack instance for account '{stack_instance_account}' and region '{stack_instance_region}'"
+        )
 
     @handler("DeleteStackInstances", expand=False)
     def delete_stack_instances(
