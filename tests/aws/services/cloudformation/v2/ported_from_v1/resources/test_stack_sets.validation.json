@@ -1,6 +1,12 @@
 {
   "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
-    "last_validated_date": "2023-05-24T13:32:47+00:00"
+    "last_validated_date": "2025-07-28T21:37:55+00:00",
+    "durations_in_seconds": {
+      "setup": 44.93,
+      "call": 85.45,
+      "teardown": 27.96,
+      "total": 158.34
+    }
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_stack_sets.py::test_delete_nonexistent_stack_set": {
     "last_validated_date": "2025-07-25T14:57:22+00:00",

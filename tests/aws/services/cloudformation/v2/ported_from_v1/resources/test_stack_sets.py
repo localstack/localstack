@@ -32,7 +32,46 @@ def wait_stack_set_operation(aws_client):
     return waiter
 
 
+@pytest.fixture(scope="session")
+def setup_account_for_stack_sets(aws_client):
+    template_path = os.path.join(
+        os.path.dirname(__file__),
+        "../../../../../templates/AWSCloudFormationStackSetAdministrationRole.yml",
+    )
+    assert os.path.isfile(template_path)
+
+    # replicating deploy_cfn_template since it's a function scoped fixture
+    stack_name = f"stack-{short_uid()}"
+    with open(template_path) as infile:
+        template_body = infile.read()
+    stack = aws_client.cloudformation.create_stack(
+        StackName=stack_name,
+        TemplateBody=template_body,
+        Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
+    )
+    stack_id = stack["StackId"]
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+        StackName=stack_id,
+        WaiterConfig={
+            # 5 minutes
+            "Delay": 3,
+            "MaxAttempts": 100,
+        },
+    )
+    yield
+    aws_client.cloudformation.delete_stack(StackName=stack_id)
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
+        StackName=stack_id,
+        WaiterConfig={
+            # 5 minutes
+            "Delay": 3,
+            "MaxAttempts": 100,
+        },
+    )
+
+
 @markers.aws.manual_setup_required
+@pytest.mark.usefixtures("setup_account_for_stack_sets")
 def test_create_stack_set_with_stack_instances(
     account_id,
     region_name,
@@ -77,6 +116,30 @@ def test_create_stack_set_with_stack_instances(
     assert "OperationId" in create_instances_result
 
     wait_stack_set_operation(stack_set_name, create_instances_result["OperationId"])
+
+    # check the resources actually exist
+    stack_instance_stack_id = aws_client.cloudformation.describe_stack_instance(
+        StackSetName=stack_set_name,
+        StackInstanceAccount=account_id,
+        StackInstanceRegion=region_name,
+    )["StackInstance"]["StackId"]
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(
+        StackName=stack_instance_stack_id,
+        WaiterConfig={
+            "Delay": 3,
+            "MaxAttempts": 100,
+        },
+    )
+    outputs = aws_client.cloudformation.describe_stacks(StackName=stack_instance_stack_id)[
+        "Stacks"
+    ][0]["Outputs"]
+    bucket_names = [
+        output["OutputValue"]
+        for output in outputs
+        if output["OutputKey"] in {"BucketNameAllParameters", "BucketNameOnlyRequired"}
+    ]
+    for bucket_name in bucket_names:
+        aws_client.s3.head_bucket(Bucket=bucket_name)
 
     delete_instances_result = aws_client.cloudformation.delete_stack_instances(
         StackSetName=stack_set_name,
