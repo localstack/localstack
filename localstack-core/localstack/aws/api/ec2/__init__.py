@@ -2337,6 +2337,20 @@ class InstanceType(StrEnum):
     r8gd_48xlarge = "r8gd.48xlarge"
     r8gd_metal_24xl = "r8gd.metal-24xl"
     r8gd_metal_48xl = "r8gd.metal-48xl"
+    c8gn_medium = "c8gn.medium"
+    c8gn_large = "c8gn.large"
+    c8gn_xlarge = "c8gn.xlarge"
+    c8gn_2xlarge = "c8gn.2xlarge"
+    c8gn_4xlarge = "c8gn.4xlarge"
+    c8gn_8xlarge = "c8gn.8xlarge"
+    c8gn_12xlarge = "c8gn.12xlarge"
+    c8gn_16xlarge = "c8gn.16xlarge"
+    c8gn_24xlarge = "c8gn.24xlarge"
+    c8gn_48xlarge = "c8gn.48xlarge"
+    c8gn_metal_24xl = "c8gn.metal-24xl"
+    c8gn_metal_48xl = "c8gn.metal-48xl"
+    f2_6xlarge = "f2.6xlarge"
+    p6e_gb200_36xlarge = "p6e-gb200.36xlarge"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -3596,6 +3610,7 @@ class TransitGatewayAttachmentResourceType(StrEnum):
     connect = "connect"
     peering = "peering"
     tgw_peering = "tgw-peering"
+    network_function = "network-function"
 
 
 class TransitGatewayAttachmentState(StrEnum):
@@ -7135,7 +7150,7 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[String]
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[PlacementResponse]
@@ -7280,7 +7295,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[SubnetId]
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[Placement]
@@ -20630,6 +20645,7 @@ class StartVpcEndpointServicePrivateDnsVerificationResult(TypedDict, total=False
 class StopInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
     Hibernate: Optional[Boolean]
+    SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
     Force: Optional[Boolean]
 
@@ -20662,6 +20678,7 @@ class TerminateClientVpnConnectionsResult(TypedDict, total=False):
 
 class TerminateInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
+    SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
 
 
@@ -29075,6 +29092,7 @@ class Ec2Api:
         context: RequestContext,
         instance_ids: InstanceIdStringList,
         hibernate: Boolean | None = None,
+        skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         force: Boolean | None = None,
         **kwargs,
@@ -29098,6 +29116,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         instance_ids: InstanceIdStringList,
+        skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> TerminateInstancesResult:
