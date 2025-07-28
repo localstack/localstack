@@ -3,7 +3,7 @@
 ######################
 
 # CODEOWNERS
-/CODEOWNERS @thrau @dominikschubert @alexrashed
+/CODEOWNERS @dominikschubert @alexrashed
 
 # README / Docs
 /docs/ @thrau @HarshCasper
