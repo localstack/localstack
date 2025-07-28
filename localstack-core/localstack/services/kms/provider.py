@@ -1564,10 +1564,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         match algo:
             case AlgorithmSpec.RSAES_PKCS1_V1_5:
                 padding_scheme = padding.PKCS1v15()
+                return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
             case AlgorithmSpec.RSAES_OAEP_SHA_1:
                 padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
+                return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
             case AlgorithmSpec.RSAES_OAEP_SHA_256:
                 padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+                return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
             case AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256:
                 rsa_key_size_bytes = decrypt_key.key_size // 8
                 wrapped_aes_key = encrypted_key_material[:rsa_key_size_bytes]
@@ -1590,8 +1593,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 raise KMSInvalidStateException(
                     f"Unsupported padding, requested wrapping algorithm: '{algo}'"
                 )
-
-        return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
 
     def _validate_plaintext_key_type_based(
         self,
