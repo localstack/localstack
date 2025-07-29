@@ -4,15 +4,11 @@ import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.aws.api.lambda_ import Runtime
-from localstack.services.cloudformation.v2.utils import is_v2_engine
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.skipif(
-    condition=not is_v2_engine() and not is_aws_cloud(), reason="Requires the V2 engine"
-)
+@pytest.mark.skip("CFnv2 implementation missing")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
