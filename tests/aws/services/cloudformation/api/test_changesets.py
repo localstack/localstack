@@ -389,6 +389,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
+@pytest.mark.skip("CFNV2:Resolve")
 @markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,

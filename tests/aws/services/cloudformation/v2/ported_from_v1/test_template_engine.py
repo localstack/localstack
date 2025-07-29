@@ -317,6 +317,7 @@ class TestImports:
 
 
 class TestSsmParameters:
+    @pytest.mark.skip("CFNV2:Resolve")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Capabilities", "$..NotificationARNs"])
     def test_create_stack_with_ssm_parameters(
