@@ -916,8 +916,8 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[Bounce-True]": {
-    "recorded-date": "26-07-2025, 14:37:43",
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[Bounce]": {
+    "recorded-date": "29-07-2025, 13:17:58",
     "recorded-content": {
       "set-headers-bounce": {
         "ResponseMetadata": {
@@ -933,8 +933,8 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[Complaint-True]": {
-    "recorded-date": "26-07-2025, 14:37:43",
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[Complaint]": {
+    "recorded-date": "29-07-2025, 13:17:58",
     "recorded-content": {
       "set-headers-complaint": {
         "ResponseMetadata": {
@@ -950,8 +950,8 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[Delivery-True]": {
-    "recorded-date": "26-07-2025, 14:37:43",
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[Delivery]": {
+    "recorded-date": "29-07-2025, 13:17:58",
     "recorded-content": {
       "set-headers-delivery": {
         "ResponseMetadata": {
@@ -967,13 +967,61 @@
       }
     }
   },
-  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled[InvalidType-False]": {
-    "recorded-date": "26-07-2025, 14:37:43",
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_invalid_type[InvalidType]": {
+    "recorded-date": "29-07-2025, 13:17:58",
     "recorded-content": {
       "set-headers-error-invalidtype": {
         "Error": {
           "Code": "InvalidParameterValue",
           "Message": "Invalid notification type: InvalidType. Valid values are: Bounce, Complaint, Delivery.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_unknown_identity[Bounce]": {
+    "recorded-date": "29-07-2025, 13:17:58",
+    "recorded-content": {
+      "set-headers-error-unknown-identity-bounce": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Identity <unknown-email> is not verified or does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_unknown_identity[Complaint]": {
+    "recorded-date": "29-07-2025, 13:17:58",
+    "recorded-content": {
+      "set-headers-error-unknown-identity-complaint": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Identity <unknown-email> is not verified or does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_unknown_identity[Delivery]": {
+    "recorded-date": "29-07-2025, 13:17:58",
+    "recorded-content": {
+      "set-headers-error-unknown-identity-delivery": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Identity <unknown-email> is not verified or does not exist.",
           "Type": "Sender"
         },
         "ResponseMetadata": {

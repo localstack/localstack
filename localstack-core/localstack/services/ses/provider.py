@@ -41,6 +41,7 @@ from localstack.aws.api.ses import (
     MessageRejected,
     MessageTagList,
     NextToken,
+    NotificationType,
     RawMessage,
     ReceiptRuleSetName,
     SendEmailResponse,
@@ -540,7 +541,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         for a specified identity and notification type.
         """
         # Validate notification_type
-        if notification_type not in ("Bounce", "Complaint", "Delivery"):
+        if notification_type not in (NotificationType.Bounce, NotificationType.Complaint, NotificationType.Delivery):
             raise InvalidParameterValue(
                 f"Invalid notification type: {notification_type}. "
                 "Valid values are: Bounce, Complaint, Delivery."
