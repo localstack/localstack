@@ -77,3 +77,62 @@ class TestSSMParameterValues:
             p2={"MyValue": param_name},
             custom_update_step=update_parameter_value,
         )
+
+    @pytest.mark.skip("CFNV2:resolve")
+    @markers.aws.validated
+    def test_change_parameter_type(
+        self, aws_client, snapshot, create_parameter, capture_update_process
+    ):
+        param_name = f"param-{short_uid()}"
+        param_value = f"param-value-{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(param_name, "<param-name>"),
+                snapshot.transform.regex(param_value, "<param-value>"),
+                snapshot.transform.key_value("PhysicalResourceId"),
+            ]
+        )
+
+        create_parameter(Name=param_name, Value=param_value, Type="String")
+
+        template1 = {
+            "Parameters": {
+                "MyValue": {
+                    "Type": "String",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "MyValue"},
+                    },
+                },
+            },
+        }
+        template2 = {
+            "Parameters": {
+                "MyValue": {
+                    "Type": "AWS::SSM::Parameter::Value<String>",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "MyValue"},
+                    },
+                },
+            },
+        }
+
+        capture_update_process(
+            snapshot=snapshot,
+            t1=template1,
+            t2=template2,
+            p1={"MyValue": param_name},
+            p2={"MyValue": param_name},
+        )
