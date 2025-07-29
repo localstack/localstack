@@ -904,29 +904,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         )
         return delta
 
-    def visit_node_intrinsic_function_fn_import_value(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        def _compute_fn_import_value(string) -> str:
-            if not isinstance(string, str):
-                raise RuntimeError(f"Invalid parameter for import: '{string}'")
-
-            exports = exports_map(
-                account_id=self._change_set.account_id, region_name=self._change_set.region_name
-            )
-            if not exports.get(string):
-                raise RuntimeError(f"Value not found for import: '{string}'")
-
-            return exports.get(string)["Value"]
-
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=_compute_fn_import_value,
-        )
-        return delta
-
     def visit_node_intrinsic_function_fn_find_in_map(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
@@ -1226,3 +1203,26 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if not is_nothing(output_after):
                 after.append(output_after)
         return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_import_value(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        def _compute_fn_import_value(string) -> str:
+            if not isinstance(string, str):
+                raise RuntimeError(f"Invalid parameter for import: '{string}'")
+
+            exports = exports_map(
+                account_id=self._change_set.account_id, region_name=self._change_set.region_name
+            )
+            if not exports.get(string):
+                raise RuntimeError(f"Value not found for import: '{string}'")
+
+            return exports.get(string)["Value"]
+
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        delta = self._cached_apply(
+            scope=node_intrinsic_function.scope,
+            arguments_delta=arguments_delta,
+            resolver=_compute_fn_import_value,
+        )
+        return delta
