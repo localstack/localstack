@@ -22,6 +22,7 @@ repos:
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-json
 
   - repo: https://github.com/localstack/pre-commit-hooks
     rev: v1.2.1
