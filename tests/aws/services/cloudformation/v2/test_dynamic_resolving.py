@@ -1,0 +1,79 @@
+import pytest
+
+from localstack.services.cloudformation.v2.utils import is_v2_engine
+from localstack.testing.aws.util import is_aws_cloud
+from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
+
+pytestmark = pytest.mark.skipif(
+    condition=not is_v2_engine() and not is_aws_cloud(),
+    reason="Only targeting the new engine",
+)
+
+
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe..*",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..Replacement",
+        "$..PolicyAction",
+    ]
+)
+class TestSSMParameterValues:
+    @pytest.mark.skip("CFNV2:resolve")
+    @markers.aws.validated
+    def test_update_parameter_between_deployments(
+        self, aws_client, snapshot, create_parameter, capture_update_process
+    ):
+        param_name = f"param-{short_uid()}"
+        param_value_1 = f"param-value-1-{short_uid()}"
+        param_value_2 = f"param-value-2-{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(param_name, "<param-name>"),
+                snapshot.transform.regex(param_value_1, "<param-value-1>"),
+                snapshot.transform.regex(param_value_2, "<param-value-2>"),
+                snapshot.transform.key_value("PhysicalResourceId"),
+            ]
+        )
+
+        create_parameter(Name=param_name, Value=param_value_1, Type="String")
+
+        template1 = {
+            "Parameters": {
+                "MyValue": {
+                    "Type": "AWS::SSM::Parameter::Value<String>",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "MyValue"},
+                    },
+                },
+            },
+        }
+
+        def update_parameter_value():
+            aws_client.ssm.put_parameter(
+                Name=param_name, Value=param_value_2, Type="String", Overwrite=True
+            )
+
+        capture_update_process(
+            snapshot=snapshot,
+            t1=template1,
+            t2=template1,
+            p1={"MyValue": param_name},
+            p2={"MyValue": param_name},
+            custom_update_step=update_parameter_value,
+        )

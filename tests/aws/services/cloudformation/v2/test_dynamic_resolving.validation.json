@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_update_parameter_between_deployments": {
+    "last_validated_date": "2025-07-29T20:33:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 26.89,
+      "teardown": 0.35,
+      "total": 27.24
+    }
+  }
+}
