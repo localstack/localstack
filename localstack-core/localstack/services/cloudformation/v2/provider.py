@@ -7,6 +7,7 @@ from typing import Any, Optional
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    CallAs,
     Changes,
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
@@ -16,12 +17,20 @@ from localstack.aws.api.cloudformation import (
     CreateChangeSetInput,
     CreateChangeSetOutput,
     CreateStackInput,
+    CreateStackInstancesInput,
+    CreateStackInstancesOutput,
     CreateStackOutput,
+    CreateStackSetInput,
+    CreateStackSetOutput,
     DeleteChangeSetOutput,
+    DeleteStackInstancesInput,
+    DeleteStackInstancesOutput,
+    DeleteStackSetOutput,
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
     DescribeStackResourcesOutput,
+    DescribeStackSetOperationOutput,
     DescribeStacksOutput,
     DisableRollback,
     EnableTerminationProtection,
@@ -44,6 +53,11 @@ from localstack.aws.api.cloudformation import (
     RollbackConfiguration,
     StackName,
     StackNameOrId,
+    StackSetName,
+    StackSetNotFoundException,
+    StackSetOperation,
+    StackSetOperationAction,
+    StackSetOperationStatus,
     StackStatus,
     StackStatusFilter,
     TemplateStage,
@@ -51,6 +65,7 @@ from localstack.aws.api.cloudformation import (
     UpdateStackOutput,
     UpdateTerminationProtectionOutput,
 )
+from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.v2.change_set_model import (
@@ -71,14 +86,16 @@ from localstack.services.cloudformation.engine.validations import ValidationErro
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
     ARN_STACK_REGEX,
+    ARN_STACK_SET_REGEX,
     CloudformationProvider,
 )
 from localstack.services.cloudformation.stores import (
     CloudFormationStore,
     get_cloudformation_store,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet, Stack
+from localstack.services.cloudformation.v2.entities import ChangeSet, Stack, StackInstance, StackSet
 from localstack.utils.collections import select_attributes
+from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -92,12 +109,21 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
     return ARN_CHANGESET_REGEX.match(change_set_name_or_id) is not None
 
 
+def is_stack_set_arn(stack_set_name_or_id: str) -> bool:
+    return ARN_STACK_SET_REGEX.match(stack_set_name_or_id) is not None
+
+
 class StackNotFoundError(ValidationError):
     def __init__(self, stack_name_or_id: str):
         if is_stack_arn(stack_name_or_id):
             super().__init__(f"Stack with id {stack_name_or_id} does not exist")
         else:
             super().__init__(f"Stack [{stack_name_or_id}] does not exist")
+
+
+class StackSetNotFoundError(StackSetNotFoundException):
+    def __init__(self, stack_set_name: str):
+        super().__init__(f"StackSet {stack_set_name} not found")
 
 
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
@@ -136,6 +162,24 @@ def find_change_set_v2(
                     return change_set_candidate
         else:
             raise ValueError("No stack name specified when finding change set")
+
+
+def find_stack_set_v2(state: CloudFormationStore, stack_set_name: str) -> StackSet | None:
+    if is_stack_set_arn(stack_set_name):
+        return state.stack_sets.get(stack_set_name)
+
+    for stack_set in state.stack_sets_v2.values():
+        if stack_set.stack_set_name == stack_set_name:
+            return stack_set
+
+    return None
+
+
+def find_stack_instance(stack_set: StackSet, account: str, region: str) -> StackInstance | None:
+    for instance in stack_set.stack_instances:
+        if instance.account_id == account and instance.region_name == region:
+            return instance
+    return None
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -431,17 +475,6 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         changes: Changes = change_set_describer.get_changes()
 
-        # TODO: add masking support.
-        parameters = []
-        for key, resolved_parameter in change_set_describer.resolved_parameters.items():
-            parameters.append(
-                Parameter(
-                    ParameterKey=key,
-                    ParameterValue=resolved_parameter.value,
-                    ResolvedValue=resolved_parameter.resolved_value,
-                )
-            )
-
         result = DescribeChangeSetOutput(
             Status=change_set.status,
             ChangeSetId=change_set.change_set_id,
@@ -451,7 +484,11 @@ class CloudformationProviderV2(CloudformationProvider):
             StackId=change_set.stack.stack_id,
             StackName=change_set.stack.stack_name,
             CreationTime=change_set.creation_time,
-            Parameters=parameters,
+            Parameters=[
+                # TODO: add masking support.
+                Parameter(ParameterKey=key, ParameterValue=value)
+                for (key, value) in change_set.stack.resolved_parameters.items()
+            ],
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
             StatusReason=change_set.status_reason,
@@ -603,6 +640,16 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return CreateStackOutput(StackId=stack.stack_id)
 
+    @handler("CreateStackSet", expand=False)
+    def create_stack_set(
+        self, context: RequestContext, request: CreateStackSetInput
+    ) -> CreateStackSetOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack_set = StackSet(context.account_id, context.region, request)
+        state.stack_sets_v2[stack_set.stack_set_id] = stack_set
+
+        return CreateStackSetOutput(StackSetId=stack_set.stack_set_id)
+
     @handler("DescribeStacks")
     def describe_stacks(
         self,
@@ -673,6 +720,195 @@ class CloudformationProviderV2(CloudformationProvider):
                 status.setdefault("DriftInformation", {"StackResourceDriftStatus": "NOT_CHECKED"})
                 statuses.append(status)
         return DescribeStackResourcesOutput(StackResources=statuses)
+
+    @handler("CreateStackInstances", expand=False)
+    def create_stack_instances(
+        self,
+        context: RequestContext,
+        request: CreateStackInstancesInput,
+    ) -> CreateStackInstancesOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        stack_set_name = request["StackSetName"]
+        stack_set = find_stack_set_v2(state, stack_set_name)
+        if not stack_set:
+            raise StackSetNotFoundError(stack_set_name)
+
+        op_id = request.get("OperationId") or short_uid()
+        accounts = request["Accounts"]
+        regions = request["Regions"]
+
+        stacks_to_await = []
+        for account in accounts:
+            for region in regions:
+                # deploy new stack
+                LOG.debug(
+                    'Deploying instance for stack set "%s" in account: %s region %s',
+                    stack_set_name,
+                    account,
+                    region,
+                )
+                cf_client = connect_to(aws_access_key_id=account, region_name=region).cloudformation
+                if stack_set.template_body:
+                    kwargs = {
+                        "TemplateBody": stack_set.template_body,
+                    }
+                elif stack_set.template_url:
+                    kwargs = {
+                        "TemplateURL": stack_set.template_url,
+                    }
+                else:
+                    # TODO: wording
+                    raise ValueError("Neither StackSet Template URL nor TemplateBody provided")
+                stack_name = f"sset-{stack_set_name}-{account}-{region}"
+
+                # skip creation of existing stacks
+                if find_stack_v2(state, stack_name):
+                    continue
+
+                result = cf_client.create_stack(StackName=stack_name, **kwargs)
+                # store stack instance
+                stack_instance = StackInstance(
+                    account_id=account,
+                    region_name=region,
+                    stack_set_id=stack_set.stack_set_id,
+                    operation_id=op_id,
+                    stack_id=result["StackId"],
+                )
+                stack_set.stack_instances.append(stack_instance)
+
+                stacks_to_await.append((stack_name, account, region))
+
+        # wait for completion of stack
+        for stack_name, account_id, region_name in stacks_to_await:
+            client = connect_to(
+                aws_access_key_id=account_id, region_name=region_name
+            ).cloudformation
+            client.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+        # record operation
+        operation = StackSetOperation(
+            OperationId=op_id,
+            StackSetId=stack_set.stack_set_id,
+            Action=StackSetOperationAction.CREATE,
+            Status=StackSetOperationStatus.SUCCEEDED,
+        )
+        stack_set.operations[op_id] = operation
+
+        return CreateStackInstancesOutput(OperationId=op_id)
+
+    @handler("DescribeStackSetOperation")
+    def describe_stack_set_operation(
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        operation_id: ClientRequestToken,
+        call_as: CallAs = None,
+        **kwargs,
+    ) -> DescribeStackSetOperationOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack_set = find_stack_set_v2(state, stack_set_name)
+        if not stack_set:
+            raise StackSetNotFoundError(stack_set_name)
+
+        result = stack_set.operations.get(operation_id)
+        if not result:
+            LOG.debug(
+                'Unable to find operation ID "%s" for stack set "%s" in list: %s',
+                operation_id,
+                stack_set_name,
+                list(stack_set.operations.keys()),
+            )
+            # TODO: proper exception
+            raise ValueError(
+                f'Unable to find operation ID "{operation_id}" for stack set "{stack_set_name}"'
+            )
+
+        return DescribeStackSetOperationOutput(StackSetOperation=result)
+
+    @handler("DeleteStackInstances", expand=False)
+    def delete_stack_instances(
+        self,
+        context: RequestContext,
+        request: DeleteStackInstancesInput,
+    ) -> DeleteStackInstancesOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        stack_set_name = request["StackSetName"]
+        stack_set = find_stack_set_v2(state, stack_set_name)
+        if not stack_set:
+            raise StackSetNotFoundError(stack_set_name)
+
+        op_id = request.get("OperationId") or short_uid()
+
+        accounts = request["Accounts"]
+        regions = request["Regions"]
+
+        operations_to_await = []
+        for account in accounts:
+            for region in regions:
+                cf_client = connect_to(aws_access_key_id=account, region_name=region).cloudformation
+                instance = find_stack_instance(stack_set, account, region)
+
+                # TODO: check parity with AWS
+                # TODO: delete stack instance?
+                if not instance:
+                    continue
+
+                cf_client.delete_stack(StackName=instance.stack_id)
+                operations_to_await.append(instance)
+
+        for instance in operations_to_await:
+            cf_client = connect_to(
+                aws_access_key_id=instance.account_id, region_name=instance.region_name
+            ).cloudformation
+            cf_client.get_waiter("stack_delete_complete").wait(StackName=instance.stack_id)
+            stack_set.stack_instances.remove(instance)
+
+        # record operation
+        operation = StackSetOperation(
+            OperationId=op_id,
+            StackSetId=stack_set.stack_set_id,
+            Action=StackSetOperationAction.DELETE,
+            Status=StackSetOperationStatus.SUCCEEDED,
+        )
+        stack_set.operations[op_id] = operation
+
+        return DeleteStackInstancesOutput(OperationId=op_id)
+
+    @handler("DeleteStackSet")
+    def delete_stack_set(
+        self,
+        context: RequestContext,
+        stack_set_name: StackSetName,
+        call_as: CallAs = None,
+        **kwargs,
+    ) -> DeleteStackSetOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack_set = find_stack_set_v2(state, stack_set_name)
+        if not stack_set:
+            # operation is idempotent
+            return DeleteStackSetOutput()
+
+        # clean up any left-over instances
+        operations_to_await = []
+        for instance in stack_set.stack_instances:
+            cf_client = connect_to(
+                aws_access_key_id=instance.account_id, region_name=instance.region_name
+            ).cloudformation
+            cf_client.delete_stack(StackName=instance.stack_id)
+            operations_to_await.append(instance)
+
+        for instance in operations_to_await:
+            cf_client = connect_to(
+                aws_access_key_id=instance.account_id, region_name=instance.region_name
+            ).cloudformation
+            cf_client.get_waiter("stack_delete_complete").wait(StackName=instance.stack_id)
+            stack_set.stack_instances.remove(instance)
+
+        state.stack_sets_v2.pop(stack_set.stack_set_id)
+
+        return DeleteStackSetOutput()
 
     @handler("DescribeStackEvents")
     def describe_stack_events(

@@ -8,6 +8,7 @@ from localstack.aws.api.cloudformation import (
     ChangeSetType,
     CreateChangeSetInput,
     CreateStackInput,
+    CreateStackSetInput,
     ExecutionStatus,
     Output,
     Parameter,
@@ -15,7 +16,11 @@ from localstack.aws.api.cloudformation import (
     StackDriftInformation,
     StackDriftStatus,
     StackEvent,
+    StackInstanceComprehensiveStatus,
+    StackInstanceDetailedStatus,
+    StackInstanceStatus,
     StackResource,
+    StackSetOperation,
     StackStatus,
     StackStatusReason,
 )
@@ -27,7 +32,6 @@ from localstack.services.cloudformation.engine.entities import (
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
-    ResolvedParameter,
     UpdateModel,
 )
 from localstack.utils.aws import arns
@@ -54,7 +58,7 @@ class Stack:
     processed_template: dict | None
 
     # state after deploy
-    resolved_parameters: dict[str, ResolvedParameter]
+    resolved_parameters: dict[str, str]
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: dict[str, str]
     resource_states: dict[str, StackResource]
@@ -172,17 +176,6 @@ class Stack:
         self.events.insert(0, event)
 
     def describe_details(self) -> ApiStack:
-        # TODO: move this method into the provider
-        # TODO: add masking support.
-        parameters = []
-        for key, resolved_parameter in self.resolved_parameters.items():
-            parameters.append(
-                Parameter(
-                    ParameterKey=key,
-                    ParameterValue=resolved_parameter.value,
-                    ResolvedValue=resolved_parameter.resolved_value,
-                )
-            )
         result = {
             "CreationTime": self.creation_time,
             "DeletionTime": self.deletion_time,
@@ -199,9 +192,9 @@ class Stack:
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
-            "Parameters": parameters,
             "NotificationARNs": [],
             "Capabilities": self.capabilities,
+            "Parameters": self.parameters,
         }
         # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
@@ -282,3 +275,36 @@ class ChangeSet:
     @property
     def region_name(self) -> str:
         return self.stack.region_name
+
+
+class StackInstance:
+    def __init__(
+        self, account_id: str, region_name: str, stack_set_id: str, operation_id: str, stack_id: str
+    ):
+        self.account_id = account_id
+        self.region_name = region_name
+        self.stack_set_id = stack_set_id
+        self.operation_id = operation_id
+        self.stack_id = stack_id
+
+        self.status: StackInstanceStatus = StackInstanceStatus.CURRENT
+        self.stack_instance_status = StackInstanceComprehensiveStatus(
+            DetailedStatus=StackInstanceDetailedStatus.SUCCEEDED
+        )
+
+
+class StackSet:
+    stack_instances: list[StackInstance]
+    operations: dict[str, StackSetOperation]
+
+    def __init__(self, account_id: str, region_name: str, request_payload: CreateStackSetInput):
+        self.account_id = account_id
+        self.region_name = region_name
+
+        self.stack_set_name = request_payload["StackSetName"]
+        self.stack_set_id = f"{self.stack_set_name}:{long_uid()}"
+        self.template_body = request_payload.get("TemplateBody")
+        self.template_url = request_payload.get("TemplateURL")
+
+        self.stack_instances = []
+        self.operations = {}

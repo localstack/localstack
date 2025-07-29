@@ -257,11 +257,7 @@ def execute_macro(
     for key, value in stack_parameters.items():
         # TODO: we want to support other types of parameters
         if value.get("ParameterType") == "CommaDelimitedList":
-            parameter_value = value.get("ParameterValue", "")
-            # V2: we model parameters as classes so try to access the method that returns the resolved value
-            if resolve := getattr(parameter_value, "resolve", None):
-                parameter_value = resolve()
-            formatted_stack_parameters[key] = parameter_value.split(",")
+            formatted_stack_parameters[key] = value.get("ParameterValue").split(",")
         else:
             formatted_stack_parameters[key] = value.get("ParameterValue")
 
