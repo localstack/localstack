@@ -104,7 +104,9 @@ class SQSQueuePolicyProvider(ResourceProvider[SQSQueuePolicyProperties]):
             policy = json.dumps(model["PolicyDocument"])
             sqs.set_queue_attributes(QueueUrl=queue, Attributes={"Policy": policy})
 
+        model["Id"] = request.previous_state["Id"]
+
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=request.desired_state,
+            resource_model=model,
         )
