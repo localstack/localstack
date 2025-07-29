@@ -17,6 +17,7 @@ dependencies = [
     "cachetools>=5.0",
     "cryptography",
     "dill==0.3.6",
+    "jsonpickle==4.1.1",
     "dnslib>=0.9.10",
     "dnspython>=1.16.0",
     "plux>=1.10",
