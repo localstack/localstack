@@ -56,15 +56,6 @@
   "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
   },
-  "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_changesets.py::test_create_change_set_with_ssm_parameter": {
-    "last_validated_date": "2025-06-24T14:17:37+00:00",
-    "durations_in_seconds": {
-      "setup": 0.08,
-      "call": 64.46,
-      "teardown": 0.0,
-      "total": 64.54
-    }
-  },
   "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_changesets.py::test_create_changeset_with_stack_id": {
     "last_validated_date": "2023-11-28T06:48:23+00:00"
   },
