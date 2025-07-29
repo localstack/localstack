@@ -936,7 +936,7 @@ def opensearch_wait_for_cluster(aws_client):
     def _wait_for_cluster(domain_name: str):
         def finished_processing():
             status = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
-            return status["Processing"] is False and "Endpoint" in status
+            return status["DomainProcessingStatus"] == "Active" and "Endpoint" in status
 
         assert poll_condition(
             finished_processing, timeout=25 * 60, **({"interval": 10} if is_aws_cloud() else {})
@@ -1106,6 +1106,8 @@ def deploy_cfn_template(
 
         if template_path is not None:
             template = load_template_file(template_path)
+            if template is None:
+                raise RuntimeError(f"Could not find file {os.path.realpath(template_path)}")
         template_rendered = render_template(template, **(template_mapping or {}))
 
         kwargs = dict(

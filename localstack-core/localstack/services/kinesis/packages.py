@@ -7,7 +7,7 @@ from localstack.packages import InstallTarget, Package
 from localstack.packages.core import GitHubReleaseInstaller, NodePackageInstaller
 from localstack.packages.java import JavaInstallerMixin, java_package
 
-_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.12"
+_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.13"
 
 
 class KinesisMockEngine(StrEnum):

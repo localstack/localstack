@@ -1,12 +1,13 @@
 {
   "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_transformers.py::test_duplicate_resources": {
-    "recorded-date": "15-04-2024, 22:51:13",
+    "recorded-date": "15-07-2025, 19:28:05",
     "recorded-content": {
       "api-details": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]

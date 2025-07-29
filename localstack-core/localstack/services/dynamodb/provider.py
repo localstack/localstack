@@ -27,6 +27,7 @@ from localstack.aws.api import (
     handler,
 )
 from localstack.aws.api.dynamodb import (
+    ApproximateCreationDateTimePrecision,
     AttributeMap,
     BatchExecuteStatementOutput,
     BatchGetItemOutput,
@@ -92,6 +93,7 @@ from localstack.aws.api.dynamodb import (
     ScanInput,
     ScanOutput,
     StreamArn,
+    TableArn,
     TableDescription,
     TableName,
     TagKeyList,
@@ -108,6 +110,8 @@ from localstack.aws.api.dynamodb import (
     UpdateGlobalTableOutput,
     UpdateItemInput,
     UpdateItemOutput,
+    UpdateKinesisStreamingConfiguration,
+    UpdateKinesisStreamingDestinationOutput,
     UpdateTableInput,
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
@@ -115,6 +119,7 @@ from localstack.aws.api.dynamodb import (
 )
 from localstack.aws.api.dynamodbstreams import StreamStatus
 from localstack.aws.connect import connect_to
+from localstack.config import is_persistence_enabled
 from localstack.constants import (
     AUTH_CREDENTIAL_REGEX,
     AWS_REGION_US_EAST_1,
@@ -158,6 +163,7 @@ from localstack.utils.aws.request_context import (
 )
 from localstack.utils.collections import select_attributes, select_from_typed_dict
 from localstack.utils.common import short_uid, to_bytes
+from localstack.utils.files import cp_r, rm_rf
 from localstack.utils.json import BytesEncoder, canonical_json
 from localstack.utils.scheduler import Scheduler
 from localstack.utils.strings import long_uid, md5, to_str
@@ -519,6 +525,10 @@ class ExpiredItemsWorker:
 class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     server: DynamodbServer
     """The instance of the server managing the instance of DynamoDB local"""
+    asset_directory = f"{config.dirs.data}/dynamodb"
+    """The directory that contains the .db files saved by DynamoDB Local"""
+    tmp_asset_directory = f"{config.dirs.tmp}/dynamodb"
+    """Temporary directory for the .db files saved by DynamoDB Local when MANUAL snapshot persistence is enabled"""
 
     def __init__(self):
         self.server = self._new_dynamodb_server()
@@ -527,6 +537,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self._event_forwarder = EventForwarder()
 
     def on_before_start(self):
+        # We must copy back whatever state is saved to the temporary location to avoid to start always from a blank
+        # state. See the `on_before_state_save` hook.
+        if is_persistence_enabled() and config.SNAPSHOT_SAVE_STRATEGY == "MANUAL":
+            if os.path.exists(self.asset_directory):
+                LOG.debug("Copying %s to %s", self.tmp_asset_directory, self.asset_directory)
+                cp_r(self.asset_directory, self.tmp_asset_directory, rm_dest_on_conflict=True)
+
         self.server.start_dynamodb()
         if config.DYNAMODB_REMOVE_EXPIRED_ITEMS:
             self._expired_items_worker.start()
@@ -544,6 +561,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_before_state_reset(self):
         self.server.stop_dynamodb()
+        rm_rf(self.tmp_asset_directory)
 
     def on_before_state_load(self):
         self.server.stop_dynamodb()
@@ -557,6 +575,21 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
     def on_after_state_load(self):
         self.server.start_dynamodb()
+
+    def on_before_state_save(self) -> None:
+        # When the save strategy is MANUAL, we do not save the DB path to the usual ``confid.dirs.data`` folder.
+        # With the MANUAL strategy, we want to take a snapshot on-demand but this is not possible if the DB files
+        # are already in ``config.dirs.data``. For instance, the set of operation below will result in both tables
+        # being implicitly saved.
+        # - awslocal dynamodb create-table table1
+        # - curl -X POST http://localhost:4566/_localstack/state/save
+        # - awslocal dynamodb create-table table2
+        # To avoid this problem, we start the DDBLocal server in a temporary directory that is then copied over
+        # ``config.dirs.data`` when the save needs to be saved.
+        # The ideal solution to the problem would be to always start the server in memory and have a dump capability.
+        if is_persistence_enabled() and config.SNAPSHOT_SAVE_STRATEGY == "MANUAL":
+            LOG.debug("Copying %s to %s", self.tmp_asset_directory, self.asset_directory)
+            cp_r(self.tmp_asset_directory, self.asset_directory, rm_dest_on_conflict=True)
 
     def on_after_init(self):
         # add response processor specific to ddblocal
@@ -1557,7 +1590,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
-        self.ensure_table_exists(context.account_id, context.region, table_name)
+        self.ensure_table_exists(
+            context.account_id,
+            context.region,
+            table_name,
+            error_message=f"Requested resource not found: Table: {table_name} not found",
+        )
+
+        # TODO: Use the time precision in config if set
+        enable_kinesis_streaming_configuration = enable_kinesis_streaming_configuration or {}
 
         stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
@@ -1575,9 +1616,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "to perform ENABLE operation."
             )
 
-        table_def["KinesisDataStreamDestinations"] = (
-            table_def.get("KinesisDataStreamDestinations") or []
-        )
+        table_def.setdefault("KinesisDataStreamDestinations", [])
+
         # remove the stream destination if already present
         table_def["KinesisDataStreamDestinations"] = [
             t for t in table_def["KinesisDataStreamDestinations"] if t["StreamArn"] != stream_arn
@@ -1588,11 +1628,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "DestinationStatus": DestinationStatus.ACTIVE,
                 "DestinationStatusDescription": "Stream is active",
                 "StreamArn": stream_arn,
+                "ApproximateCreationDateTimePrecision": ApproximateCreationDateTimePrecision.MILLISECOND,
             }
         )
         table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.ACTIVE
         return KinesisStreamingDestinationOutput(
-            DestinationStatus=DestinationStatus.ACTIVE, StreamArn=stream_arn, TableName=table_name
+            DestinationStatus=DestinationStatus.ENABLING,
+            StreamArn=stream_arn,
+            TableName=table_name,
+            EnableKinesisStreamingConfiguration=enable_kinesis_streaming_configuration,
         )
 
     def disable_kinesis_streaming_destination(
@@ -1603,7 +1647,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
-        self.ensure_table_exists(context.account_id, context.region, table_name)
+        self.ensure_table_exists(
+            context.account_id,
+            context.region,
+            table_name,
+            error_message=f"Requested resource not found: Table: {table_name} not found",
+        )
+
+        # TODO: Must raise if invoked before KinesisStreamingDestination is ACTIVE
 
         stream = self._event_forwarder.is_kinesis_stream_exists(stream_arn=stream_arn)
         if not stream:
@@ -1627,7 +1678,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         dest["DestinationStatusDescription"] = ("Stream is disabled",)
                         table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.DISABLED
                         return KinesisStreamingDestinationOutput(
-                            DestinationStatus=DestinationStatus.DISABLED,
+                            DestinationStatus=DestinationStatus.DISABLING,
                             StreamArn=stream_arn,
                             TableName=table_name,
                         )
@@ -1646,8 +1697,81 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
+        stream_destinations = copy.deepcopy(stream_destinations)
+
+        for destination in stream_destinations:
+            destination.pop("ApproximateCreationDateTimePrecision", None)
+            destination.pop("DestinationStatusDescription", None)
+
         return DescribeKinesisStreamingDestinationOutput(
-            KinesisDataStreamDestinations=stream_destinations, TableName=table_name
+            KinesisDataStreamDestinations=stream_destinations,
+            TableName=table_name,
+        )
+
+    def update_kinesis_streaming_destination(
+        self,
+        context: RequestContext,
+        table_name: TableArn,
+        stream_arn: StreamArn,
+        update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration | None = None,
+        **kwargs,
+    ) -> UpdateKinesisStreamingDestinationOutput:
+        self.ensure_table_exists(context.account_id, context.region, table_name)
+
+        if not update_kinesis_streaming_configuration:
+            raise ValidationException(
+                "Streaming destination cannot be updated with given parameters: "
+                "UpdateKinesisStreamingConfiguration cannot be null or contain only null values"
+            )
+
+        time_precision = update_kinesis_streaming_configuration.get(
+            "ApproximateCreationDateTimePrecision"
+        )
+        if time_precision not in (
+            ApproximateCreationDateTimePrecision.MILLISECOND,
+            ApproximateCreationDateTimePrecision.MICROSECOND,
+        ):
+            raise ValidationException(
+                f"1 validation error detected: Value '{time_precision}' at "
+                "'updateKinesisStreamingConfiguration.approximateCreationDateTimePrecision' failed to satisfy constraint: "
+                "Member must satisfy enum value set: [MILLISECOND, MICROSECOND]"
+            )
+
+        store = get_store(context.account_id, context.region)
+
+        table_def = store.table_definitions.get(table_name) or {}
+        table_def.setdefault("KinesisDataStreamDestinations", [])
+
+        table_id = table_def["TableId"]
+
+        destination = None
+        for stream in table_def["KinesisDataStreamDestinations"]:
+            if stream["StreamArn"] == stream_arn:
+                destination = stream
+
+        if destination is None:
+            raise ValidationException(
+                "Table is not in a valid state to enable Kinesis Streaming Destination: "
+                f"No streaming destination with streamArn: {stream_arn} found for table with tableName: {table_name}"
+            )
+
+        if (
+            existing_precision := destination["ApproximateCreationDateTimePrecision"]
+        ) == update_kinesis_streaming_configuration["ApproximateCreationDateTimePrecision"]:
+            raise ValidationException(
+                f"Invalid Request: Precision is already set to the desired value of {existing_precision} "
+                f"for tableId: {table_id}, kdsArn: {stream_arn}"
+            )
+
+        destination["ApproximateCreationDateTimePrecision"] = time_precision
+
+        return UpdateKinesisStreamingDestinationOutput(
+            TableName=table_name,
+            StreamArn=stream_arn,
+            DestinationStatus=DestinationStatus.UPDATING,
+            UpdateKinesisStreamingConfiguration=UpdateKinesisStreamingConfiguration(
+                ApproximateCreationDateTimePrecision=time_precision,
+            ),
         )
 
     #
@@ -1725,7 +1849,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return dynamodb_table_exists(table_name, client)
 
     @staticmethod
-    def ensure_table_exists(account_id: str, region_name: str, table_name: str):
+    def ensure_table_exists(
+        account_id: str,
+        region_name: str,
+        table_name: str,
+        error_message: str = "Cannot do operations on a non-existent table",
+    ):
         """
         Raise ResourceNotFoundException if the given table does not exist.
 
@@ -1735,7 +1864,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         :raise: ResourceNotFoundException if table does not exist in DynamoDB Local
         """
         if not DynamoDBProvider.table_exists(account_id, region_name, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+            raise ResourceNotFoundException(error_message)
 
     @staticmethod
     def get_global_table_region(context: RequestContext, table_name: str) -> str:

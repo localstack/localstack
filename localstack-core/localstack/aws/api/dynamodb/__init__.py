@@ -270,6 +270,9 @@ class ReplicaStatus(StrEnum):
     ACTIVE = "ACTIVE"
     REGION_DISABLED = "REGION_DISABLED"
     INACCESSIBLE_ENCRYPTION_CREDENTIALS = "INACCESSIBLE_ENCRYPTION_CREDENTIALS"
+    ARCHIVING = "ARCHIVING"
+    ARCHIVED = "ARCHIVED"
+    REPLICATION_NOT_AUTHORIZED = "REPLICATION_NOT_AUTHORIZED"
 
 
 class ReturnConsumedCapacity(StrEnum):
@@ -347,6 +350,7 @@ class TableStatus(StrEnum):
     INACCESSIBLE_ENCRYPTION_CREDENTIALS = "INACCESSIBLE_ENCRYPTION_CREDENTIALS"
     ARCHIVING = "ARCHIVING"
     ARCHIVED = "ARCHIVED"
+    REPLICATION_NOT_AUTHORIZED = "REPLICATION_NOT_AUTHORIZED"
 
 
 class TimeToLiveStatus(StrEnum):
@@ -354,6 +358,12 @@ class TimeToLiveStatus(StrEnum):
     DISABLING = "DISABLING"
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+
+
+class WitnessStatus(StrEnum):
+    CREATING = "CREATING"
+    DELETING = "DELETING"
+    ACTIVE = "ACTIVE"
 
 
 class BackupInUseException(ServiceException):
@@ -1075,6 +1085,10 @@ class CreateGlobalTableOutput(TypedDict, total=False):
     GlobalTableDescription: Optional[GlobalTableDescription]
 
 
+class CreateGlobalTableWitnessGroupMemberAction(TypedDict, total=False):
+    RegionName: RegionName
+
+
 class CreateReplicaAction(TypedDict, total=False):
     RegionName: RegionName
 
@@ -1157,6 +1171,12 @@ class RestoreSummary(TypedDict, total=False):
     RestoreInProgress: RestoreInProgress
 
 
+class GlobalTableWitnessDescription(TypedDict, total=False):
+    RegionName: Optional[RegionName]
+    WitnessStatus: Optional[WitnessStatus]
+
+
+GlobalTableWitnessDescriptionList = List[GlobalTableWitnessDescription]
 NonNegativeLongObject = int
 
 
@@ -1216,6 +1236,7 @@ class TableDescription(TypedDict, total=False):
     LatestStreamArn: Optional[StreamArn]
     GlobalTableVersion: Optional[String]
     Replicas: Optional[ReplicaDescriptionList]
+    GlobalTableWitnesses: Optional[GlobalTableWitnessDescriptionList]
     RestoreSummary: Optional[RestoreSummary]
     SSEDescription: Optional[SSEDescription]
     ArchivalSummary: Optional[ArchivalSummary]
@@ -1257,6 +1278,10 @@ class DeleteBackupOutput(TypedDict, total=False):
 
 class DeleteGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
+
+
+class DeleteGlobalTableWitnessGroupMemberAction(TypedDict, total=False):
+    RegionName: RegionName
 
 
 class ExpectedAttributeValue(TypedDict, total=False):
@@ -1759,6 +1784,14 @@ GlobalTableGlobalSecondaryIndexSettingsUpdateList = List[
 GlobalTableList = List[GlobalTable]
 
 
+class GlobalTableWitnessGroupUpdate(TypedDict, total=False):
+    Create: Optional[CreateGlobalTableWitnessGroupMemberAction]
+    Delete: Optional[DeleteGlobalTableWitnessGroupMemberAction]
+
+
+GlobalTableWitnessGroupUpdateList = List[GlobalTableWitnessGroupUpdate]
+
+
 class ImportSummary(TypedDict, total=False):
     ImportArn: Optional[ImportArn]
     ImportStatus: Optional[ImportStatus]
@@ -2253,6 +2286,7 @@ class UpdateTableInput(ServiceRequest):
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
     MultiRegionConsistency: Optional[MultiRegionConsistency]
+    GlobalTableWitnessUpdates: Optional[GlobalTableWitnessGroupUpdateList]
     OnDemandThroughput: Optional[OnDemandThroughput]
     WarmThroughput: Optional[WarmThroughput]
 
@@ -2901,6 +2935,7 @@ class DynamodbApi:
         table_class: TableClass | None = None,
         deletion_protection_enabled: DeletionProtectionEnabled | None = None,
         multi_region_consistency: MultiRegionConsistency | None = None,
+        global_table_witness_updates: GlobalTableWitnessGroupUpdateList | None = None,
         on_demand_throughput: OnDemandThroughput | None = None,
         warm_throughput: WarmThroughput | None = None,
         **kwargs,

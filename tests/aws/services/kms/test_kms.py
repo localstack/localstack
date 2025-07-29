@@ -9,11 +9,14 @@ from random import getrandbits
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
+from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac, serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, utils
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.keywrap import aes_key_wrap_with_padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.services.kms.models import (
+    HEADER_LEN,
     IV_LEN,
     ON_DEMAND_ROTATION_LIMIT,
     Ciphertext,
@@ -1574,6 +1577,74 @@ class TestKMS:
         e.match("KMSInvalidStateException")
 
     @markers.aws.validated
+    def test_import_key_rsa_aes_wrap_sha256(self, kms_create_key, aws_client, snapshot):
+        key_id = kms_create_key(
+            Origin="EXTERNAL",
+            KeySpec="RSA_4096",
+            KeyUsage="ENCRYPT_DECRYPT",
+            Description="test-key",
+        )["KeyId"]
+
+        rsa_key = rsa.generate_private_key(public_exponent=65537, key_size=4096)
+        private_key_bytes = rsa_key.private_bytes(
+            encoding=serialization.Encoding.DER,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        public_key_bytes = rsa_key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+        # Wrap the Private Key with AES and RSA
+        aes_key = os.urandom(32)
+        encrypted_key_material = aes_key_wrap_with_padding(
+            aes_key, private_key_bytes, backend=default_backend()
+        )
+
+        params = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id,
+            WrappingAlgorithm="RSA_AES_KEY_WRAP_SHA_256",
+            WrappingKeySpec="RSA_4096",
+        )
+        public_key = load_der_public_key(params["PublicKey"])
+
+        # Wrap AES key using RSA public key
+        wrapped_aes_key = public_key.encrypt(
+            aes_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                algorithm=hashes.SHA256(),
+                label=None,
+            ),
+        )
+
+        final_wrapped_blob = wrapped_aes_key + encrypted_key_material
+
+        # Describe key before import
+        describe_before_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-before-import", describe_before_import)
+
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=params["ImportToken"],
+            EncryptedKeyMaterial=final_wrapped_blob,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+
+        # Describe key after import
+        describe_key_after_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("import-key-material-response", describe_key_after_import)
+
+        get_public_key_after_import = aws_client.kms.get_public_key(KeyId=key_id)
+
+        assert get_public_key_after_import["PublicKey"] == public_key_bytes
+
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
+
+    @markers.aws.validated
     def test_hmac_create_key(self, kms_client_for_region, kms_create_key, snapshot, region_name):
         kms_client = kms_client_for_region(region_name)
         key_ids_before = _get_all_key_ids(kms_client)
@@ -1787,7 +1858,7 @@ class TestKMS:
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..message", "$..KeyMaterialId"])
     def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
         key_id = kms_create_key()["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
@@ -1818,6 +1889,15 @@ class TestKMS:
                 EncryptionAlgorithm=algo,
             )
         snapshot.match("decrypt_response_without_encryption_context", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.decrypt(
+                KeyId=key_id,
+                CiphertextBlob=ciphertext[HEADER_LEN:],
+                EncryptionAlgorithm=algo,
+                EncryptionContext=encryption_context,
+            )
+        snapshot.match("decrypt_response_with_invalid_ciphertext", e.value.response)
 
     @markers.aws.validated
     def test_get_parameters_for_import(self, kms_create_key, snapshot, aws_client):

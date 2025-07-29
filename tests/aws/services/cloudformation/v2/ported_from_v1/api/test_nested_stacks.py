@@ -15,7 +15,7 @@ from localstack.utils.sync import retry
 #     reason="Only targeting the new engine",
 # )
 
-pytestmark = pytest.mark.skip(reason="CFNV2:NestedStack")
+# pytestmark = pytest.mark.skip(reason="CFNV2:NestedStack")
 
 
 @markers.aws.needs_fixing
@@ -183,6 +183,7 @@ def test_lifecycle_nested_stack(deploy_cfn_template, s3_create_bucket, aws_clien
         "$..Role.Description",
         "$..Role.MaxSessionDuration",
         "$..Role.AssumeRolePolicyDocument..Action",
+        "$..Role.Tags",  # Moto returns an empty list for no tags
     ]
 )
 @markers.aws.validated
@@ -306,6 +307,7 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
     assert ":" not in nested_stack["Stacks"][0]["StackName"]
 
 
+@pytest.mark.skip("CFNV2:Deletion")
 @markers.aws.validated
 def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name, snapshot):
     """

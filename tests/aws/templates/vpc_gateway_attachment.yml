@@ -1,0 +1,34 @@
+Resources:
+  Vpc:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+
+#  TODO: not supported by LocalStack yet
+#  VpnGateway:
+#    Type: AWS::EC2::VPNGateway
+#    Properties:
+#      Type: ipsec.1
+
+  GatewayAttachment1:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref Vpc
+      InternetGatewayId: !Ref InternetGateway
+
+#  GatewayAttachment2:
+#    Type: AWS::EC2::VPCGatewayAttachment
+#    Properties:
+#      VpcId: !Ref Vpc
+#      VpnGatewayId: !Ref VpnGateway
+
+Outputs:
+  VpcId:
+    Value: !Ref Vpc
+  GatewayAttachment1Ref:
+    Value: !Ref GatewayAttachment1
+#  GatewayAttachment2Ref:
+#    Value: !Ref GatewayAttachment2

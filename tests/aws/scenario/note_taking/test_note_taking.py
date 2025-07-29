@@ -162,11 +162,11 @@ class TestNoteTakingScenario:
         paths=[
             "$..Tags",
             "$..get_resources.items",  # TODO apigateway.get-resources
-            "$..rootResourceId",
             "$..Table.DeletionProtectionEnabled",
             "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
             "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
             "$..Table.Replicas",
+            "$..Table.WarmThroughput",
         ]
     )
     def test_validate_infra_setup(self, aws_client, infrastructure, snapshot):

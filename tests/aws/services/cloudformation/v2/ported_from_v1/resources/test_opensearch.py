@@ -60,23 +60,20 @@ def test_domain(deploy_cfn_template, aws_client, snapshot):
     snapshot.match("list_tags", tags_result)
 
 
-@pytest.mark.skip(reason="CFNV2:AdvancedOptions unsupported")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..DomainStatus.AccessPolicies",
-        "$..DomainStatus.AdvancedOptions.override_main_response_version",
+        "$..DomainStatus.AIMLOptions",
         "$..DomainStatus.AdvancedSecurityOptions.AnonymousAuthEnabled",
         "$..DomainStatus.AutoTuneOptions.State",
         "$..DomainStatus.AutoTuneOptions.UseOffPeakWindow",
         "$..DomainStatus.ChangeProgressDetails",
-        "$..DomainStatus.ClusterConfig.DedicatedMasterCount",
-        "$..DomainStatus.ClusterConfig.InstanceCount",
         "$..DomainStatus.ClusterConfig.MultiAZWithStandbyEnabled",
         "$..DomainStatus.ClusterConfig.ZoneAwarenessConfig",
-        "$..DomainStatus.ClusterConfig.ZoneAwarenessEnabled",
-        "$..DomainStatus.EBSOptions.VolumeSize",
-        "$..DomainStatus.Endpoint",
+        "$..DomainStatus.DomainEndpointOptions.TLSSecurityPolicy",
+        "$..DomainStatus.IPAddressType",
+        "$..DomainStatus.IdentityCenterOptions",
+        "$..DomainStatus.ModifyingProperties",
         "$..DomainStatus.OffPeakWindowOptions",
         "$..DomainStatus.ServiceSoftwareOptions.CurrentVersion",
         "$..DomainStatus.SoftwareUpdateOptions",
@@ -86,6 +83,7 @@ def test_domain_with_alternative_types(deploy_cfn_template, aws_client, snapshot
     """
     Test that the alternative types for the OpenSearch domain are accepted using the resource documentation example
     """
+    snapshot.add_transformer(snapshot.transform.key_value("Endpoint"))
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__),

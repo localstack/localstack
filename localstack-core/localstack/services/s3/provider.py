@@ -909,15 +909,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             version_id=version_id,
             http_method="GET",
         )
-        if s3_object.expires and s3_object.expires < datetime.datetime.now(
-            tz=s3_object.expires.tzinfo
-        ):
-            # TODO: old behaviour was deleting key instantly if expired. AWS cleans up only once a day generally
-            #  you can still HeadObject on it and you get the expiry time until scheduled deletion
-            kwargs = {"Key": object_key}
-            if version_id:
-                kwargs["VersionId"] = version_id
-            raise NoSuchKey("The specified key does not exist.", **kwargs)
 
         if s3_object.storage_class in ARCHIVES_STORAGE_CLASSES and not s3_object.restore:
             raise InvalidObjectState(
@@ -996,9 +987,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["Restore"] = s3_object.restore
 
         checksum_value = None
+        checksum_type = None
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
                 checksum_value = s3_object.checksum_value
+                checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
 
         if range_data:
             s3_stored_object.seek(range_data.begin)
@@ -1008,18 +1001,23 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ContentRange"] = range_data.content_range
             response["ContentLength"] = range_data.content_length
             response["StatusCode"] = 206
-            if range_data.content_length == s3_object.size and checksum_value:
-                response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
-                response["ChecksumType"] = getattr(
-                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
-                )
+            if checksum_value:
+                if s3_object.parts and part_number and checksum_type == ChecksumType.COMPOSITE:
+                    part_data = s3_object.parts[part_number]
+                    checksum_key = f"Checksum{checksum_algorithm.upper()}"
+                    response[checksum_key] = part_data.get(checksum_key)
+                    response["ChecksumType"] = ChecksumType.COMPOSITE
+
+                # it means either the range header means the whole object, or that a multipart upload with `FULL_OBJECT`
+                # only had one part
+                elif range_data.content_length == s3_object.size:
+                    response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+                    response["ChecksumType"] = checksum_type
         else:
             response["Body"] = s3_stored_object
             if checksum_value:
                 response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
-                response["ChecksumType"] = getattr(
-                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
-                )
+                response["ChecksumType"] = checksum_type
 
         add_encryption_to_response(response, s3_object=s3_object)
 
@@ -1104,12 +1102,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if s3_object.user_metadata:
             response["Metadata"] = s3_object.user_metadata
 
+        checksum_value = None
+        checksum_type = None
         if checksum_algorithm := s3_object.checksum_algorithm:
             if (request.get("ChecksumMode") or "").upper() == "ENABLED":
-                response[f"Checksum{checksum_algorithm.upper()}"] = s3_object.checksum_value
-                response["ChecksumType"] = getattr(
-                    s3_object, "checksum_type", ChecksumType.FULL_OBJECT
-                )
+                checksum_value = s3_object.checksum_value
+                checksum_type = getattr(s3_object, "checksum_type", ChecksumType.FULL_OBJECT)
 
         if s3_object.parts and request.get("PartNumber"):
             response["PartsCount"] = len(s3_object.parts)
@@ -1137,6 +1135,21 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             response["ContentLength"] = range_data.content_length
             response["ContentRange"] = range_data.content_range
             response["StatusCode"] = 206
+            if checksum_value:
+                if s3_object.parts and part_number and checksum_type == ChecksumType.COMPOSITE:
+                    part_data = s3_object.parts[part_number]
+                    checksum_key = f"Checksum{checksum_algorithm.upper()}"
+                    response[checksum_key] = part_data.get(checksum_key)
+                    response["ChecksumType"] = ChecksumType.COMPOSITE
+
+                # it means either the range header means the whole object, or that a multipart upload with `FULL_OBJECT`
+                # only had one part
+                elif range_data.content_length == s3_object.size:
+                    response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+                    response["ChecksumType"] = checksum_type
+        elif checksum_value:
+            response[f"Checksum{checksum_algorithm.upper()}"] = checksum_value
+            response["ChecksumType"] = checksum_type
 
         add_encryption_to_response(response, s3_object=s3_object)
 

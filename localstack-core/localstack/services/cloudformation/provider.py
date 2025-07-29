@@ -244,7 +244,6 @@ class CloudformationProvider(CloudformationApi):
             old_parameters={},
         )
 
-        # handle conditions
         stack = Stack(context.account_id, context.region, request, template)
 
         try:
@@ -269,11 +268,14 @@ class CloudformationProvider(CloudformationApi):
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
+        # HACK: recreate the stack (including all of its confusing processes in the __init__ method
+        # to set the stack template to be the transformed template, rather than the untransformed
+        # template
+        stack = Stack(context.account_id, context.region, request, template)
+
         # perform basic static analysis on the template
         for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
             validation_fn(template)
-
-        stack = Stack(context.account_id, context.region, request, template)
 
         # resolve conditions
         raw_conditions = template.get("Conditions", {})
@@ -512,8 +514,18 @@ class CloudformationProvider(CloudformationApi):
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
             copy_template = clone(stack.template_original)
-            copy_template.pop("ChangeSetName", None)
-            copy_template.pop("StackName", None)
+            for key in [
+                "ChangeSetName",
+                "StackName",
+                "StackId",
+                "Transform",
+                "Conditions",
+                "Mappings",
+            ]:
+                copy_template.pop(key, None)
+            for key in ["Parameters", "Outputs"]:
+                if key in copy_template and not copy_template[key]:
+                    copy_template.pop(key)
             for resource in copy_template.get("Resources", {}).values():
                 resource.pop("LogicalResourceId", None)
             template_body = json.dumps(copy_template)

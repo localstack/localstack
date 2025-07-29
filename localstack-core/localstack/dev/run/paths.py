@@ -8,7 +8,7 @@ from typing import Callable, Optional, Union
 class HostPaths:
     workspace_dir: Path
     """We assume all repositories live in a workspace directory, e.g., ``~/workspace/ls/localstack``,
-    ``~/workspace/ls/localstack-ext``, ..."""
+    ``~/workspace/ls/localstack-pro``, ..."""
 
     localstack_project_dir: Path
     localstack_pro_project_dir: Path
@@ -26,7 +26,7 @@ class HostPaths:
     ):
         self.workspace_dir = Path(workspace_dir or os.path.abspath(os.path.join(os.getcwd(), "..")))
         self.localstack_project_dir = self.workspace_dir / "localstack"
-        self.localstack_pro_project_dir = self.workspace_dir / "localstack-ext"
+        self.localstack_pro_project_dir = self.workspace_dir / "localstack-pro"
         self.moto_project_dir = self.workspace_dir / "moto"
         self.postgresql_proxy = self.workspace_dir / "postgresql-proxy"
         self.rolo_dir = self.workspace_dir / "rolo"

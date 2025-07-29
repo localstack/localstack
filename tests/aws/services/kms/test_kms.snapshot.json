@@ -1565,7 +1565,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "recorded-date": "11-05-2023, 22:46:49",
+    "recorded-date": "08-07-2025, 05:53:27",
     "recorded-content": {
       "encrypt_response": {
         "CiphertextBlob": "ciphertext-blob",
@@ -1579,6 +1579,7 @@
       "decrypt_response_with_encryption_context": {
         "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
         "KeyId": "<key-id:1>",
+        "KeyMaterialId": "e2333676b9bf055cb0caa2bec3957d7f3e60b7545a3706314e397746cd26122e",
         "Plaintext": "plaintext",
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1586,6 +1587,16 @@
         }
       },
       "decrypt_response_without_encryption_context": {
+        "Error": {
+          "Code": "InvalidCiphertextException",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "decrypt_response_with_invalid_ciphertext": {
         "Error": {
           "Code": "InvalidCiphertextException",
           "Message": ""
@@ -2283,6 +2294,87 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_rsa_aes_wrap_sha256": {
+    "recorded-date": "22-07-2025, 06:11:13",
+    "recorded-content": {
+      "describe-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "RSA_4096",
+          "Description": "test-key",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "RSAES_OAEP_SHA_1",
+            "RSAES_OAEP_SHA_256"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "RSA_4096",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "import-key-material-response": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "RSA_4096",
+          "Description": "test-key",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "RSAES_OAEP_SHA_1",
+            "RSAES_OAEP_SHA_256"
+          ],
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "RSA_4096",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "RSA_4096",
+          "Description": "test-key",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "RSAES_OAEP_SHA_1",
+            "RSAES_OAEP_SHA_256"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "RSA_4096",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

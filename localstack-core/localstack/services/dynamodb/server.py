@@ -5,7 +5,7 @@ import threading
 from localstack import config
 from localstack.aws.connect import connect_externally_to
 from localstack.aws.forwarder import AwsRequestProxy
-from localstack.config import is_env_true
+from localstack.config import is_env_true, is_persistence_enabled
 from localstack.constants import DEFAULT_AWS_ACCOUNT_ID
 from localstack.services.dynamodb.packages import dynamodblocal_package
 from localstack.utils.common import TMP_THREADS, ShellCommandThread, get_free_tcp_port, mkdir
@@ -56,6 +56,15 @@ class DynamodbServer(Server):
         self.db_path = (
             f"{config.dirs.data}/dynamodb" if not db_path and config.dirs.data else db_path
         )
+
+        # With persistence and MANUAL save strategy, we start DDBLocal from a temporary folder than gets copied over
+        # the "usual" data directory in the `on_before_state_save` hook (see the provider code for more details).
+        if is_persistence_enabled() and config.SNAPSHOT_SAVE_STRATEGY == "MANUAL":
+            self.db_path = f"{config.dirs.tmp}/dynamodb"
+            LOG.debug(
+                "Persistence save strategy set to MANUAL. The DB path is temporarily stored at: %s",
+                self.db_path,
+            )
 
         # the DYNAMODB_IN_MEMORY variable takes precedence and will set the DB path to None which forces inMemory=true
         if is_env_true("DYNAMODB_IN_MEMORY"):

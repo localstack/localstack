@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api": {
-    "recorded-date": "15-04-2024, 21:30:21",
+    "recorded-date": "02-07-2025, 16:22:33",
     "recorded-content": {
       "import_rest_api": {
         "apiKeySource": "HEADER",
@@ -10,6 +10,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -26,7 +27,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_swagger_api": {
-    "recorded-date": "15-04-2024, 21:31:02",
+    "recorded-date": "03-07-2025, 15:44:09",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -34,6 +35,7 @@
         "description": "Your first API with Amazon API Gateway. This is a sample API that integrates via HTTP with our demo Pet Store endpoints",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -772,13 +774,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_and_validate_rest_api[openapi.spec.tf.json]": {
-    "recorded-date": "15-04-2024, 21:31:22",
+    "recorded-date": "02-07-2025, 16:23:41",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -1008,13 +1011,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_and_validate_rest_api[swagger-mock-cors.json]": {
-    "recorded-date": "15-04-2024, 21:31:41",
+    "recorded-date": "02-07-2025, 16:24:04",
     "recorded-content": {
       "import_tf_rest_api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -1382,7 +1386,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[ignore]": {
-    "recorded-date": "06-05-2025, 18:24:25",
+    "recorded-date": "02-07-2025, 16:24:51",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
@@ -1766,7 +1770,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[prepend]": {
-    "recorded-date": "06-05-2025, 18:25:39",
+    "recorded-date": "02-07-2025, 16:26:15",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
@@ -2156,7 +2160,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_apis_with_base_path_swagger[split]": {
-    "recorded-date": "06-05-2025, 18:26:25",
+    "recorded-date": "02-07-2025, 16:27:02",
     "recorded-content": {
       "put-rest-api-swagger-json": {
         "apiKeySource": "HEADER",
@@ -2540,13 +2544,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[prepend]": {
-    "recorded-date": "12-12-2024, 22:45:00",
+    "recorded-date": "02-07-2025, 16:28:07",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -2784,6 +2789,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -3030,13 +3036,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[split]": {
-    "recorded-date": "12-12-2024, 22:45:36",
+    "recorded-date": "02-07-2025, 16:28:36",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -3268,6 +3275,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -3508,13 +3516,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_rest_api_with_base_path_oas30[ignore]": {
-    "recorded-date": "12-12-2024, 22:44:26",
+    "recorded-date": "02-07-2025, 16:27:32",
     "recorded-content": {
       "put-rest-api-oas30-srv-var": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -3746,6 +3755,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -3980,13 +3990,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_global_api_key_authorizer": {
-    "recorded-date": "15-04-2024, 21:37:12",
+    "recorded-date": "02-07-2025, 16:29:08",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "AUTHORIZER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -4213,13 +4224,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models": {
-    "recorded-date": "15-04-2024, 21:37:35",
+    "recorded-date": "02-07-2025, 16:29:44",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -4410,13 +4422,14 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_circular_models_and_request_validation": {
-    "recorded-date": "15-04-2024, 21:38:12",
+    "recorded-date": "02-07-2025, 16:30:34",
     "recorded-content": {
       "import-api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -4622,7 +4635,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_http_method_integration": {
-    "recorded-date": "15-04-2024, 21:39:47",
+    "recorded-date": "02-07-2025, 16:31:53",
     "recorded-content": {
       "resources": {
         "items": [
@@ -4810,7 +4823,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
-    "recorded-date": "12-08-2024, 13:42:20",
+    "recorded-date": "02-07-2025, 16:31:50",
     "recorded-content": {
       "get-resp-from-http": {
         "args": {
@@ -4828,7 +4841,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_cognito_auth_identity_source": {
-    "recorded-date": "11-12-2024, 13:10:45",
+    "recorded-date": "02-07-2025, 16:32:13",
     "recorded-content": {
       "import-swagger": {
         "apiKeySource": "HEADER",
@@ -4836,6 +4849,7 @@
         "description": "A Pet Store API.",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -5195,7 +5209,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_integer_http_status_code": {
-    "recorded-date": "14-01-2025, 14:09:57",
+    "recorded-date": "02-07-2025, 16:32:51",
     "recorded-content": {
       "resources": {
         "items": [
@@ -5314,7 +5328,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[merge]": {
-    "recorded-date": "06-05-2025, 18:14:29",
+    "recorded-date": "02-07-2025, 16:33:26",
     "recorded-content": {
       "create-rest-api": {
         "apiKeySource": "HEADER",
@@ -5387,7 +5401,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[overwrite]": {
-    "recorded-date": "06-05-2025, 18:15:09",
+    "recorded-date": "02-07-2025, 16:34:23",
     "recorded-content": {
       "create-rest-api": {
         "apiKeySource": "HEADER",

@@ -60,7 +60,13 @@
     "last_validated_date": "2024-04-11T15:53:18+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "last_validated_date": "2024-04-11T15:54:22+00:00"
+    "last_validated_date": "2025-07-08T05:53:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 1.08,
+      "teardown": 0.15,
+      "total": 1.97
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
     "last_validated_date": "2024-04-11T15:53:20+00:00"
@@ -145,6 +151,15 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
     "last_validated_date": "2024-04-11T15:53:35+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_rsa_aes_wrap_sha256": {
+    "last_validated_date": "2025-07-22T06:11:13+00:00",
+    "durations_in_seconds": {
+      "setup": 1.91,
+      "call": 4.8,
+      "teardown": 0.37,
+      "total": 7.08
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
     "last_validated_date": "2024-04-11T15:53:31+00:00"

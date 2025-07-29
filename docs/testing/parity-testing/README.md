@@ -85,7 +85,7 @@ The `snapshot` fixture uses some basic transformations by default, including:
 APIs for one service often require similar transformations. Therefore, we introduced some utilities that collect common transformations grouped by service.
 
 Ideally, the service-transformation already includes every transformation that is required.
-The [TransformerUtility](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/testing/snapshots/transformer_utility.py) already provides some collections of transformers for specific service APIs.
+The [TransformerUtility](https://github.com/localstack/localstack/blob/main/localstack-core/localstack/testing/snapshots/transformer_utility.py) already provides some collections of transformers for specific service APIs.
 
 For example, to add common transformers for lambda, you can use: `snapshot.add_transformer(snapshot.transform.lambda_api()`.
 
@@ -97,7 +97,7 @@ The Parity testing framework currently includes some basic transformer types:
 -   `JsonPathTransformer` replaces the JSON path value directly, or by reference. [jsonpath-ng](https://pypi.org/project/jsonpath-ng/) is used for the JSON path evaluation.
 -   `RegexTransformer` replaces the regex pattern globally. Please be aware that this will be applied on the json-string. The JSON will be transformed into a string, and the replacement happens globally - use it with care.
 
-Hint: There are also some simplified transformers in [TransformerUtility](https://github.com/localstack/localstack/blob/master/localstack-core/localstack/testing/snapshots/transformer_utility.py).
+Hint: There are also some simplified transformers in [TransformerUtility](https://github.com/localstack/localstack/blob/main/localstack-core/localstack/testing/snapshots/transformer_utility.py).
 
 ### Examples
 

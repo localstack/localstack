@@ -3,7 +3,22 @@
     "last_validated_date": "2024-02-19T08:55:12+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
-    "last_validated_date": "2024-04-15T22:59:53+00:00"
+    "last_validated_date": "2025-07-15T19:30:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 11.81,
+      "teardown": 4.71,
+      "total": 16.99
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_apigateway_deployment_canary_settings": {
+    "last_validated_date": "2025-07-23T23:07:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.44,
+      "call": 22.5,
+      "teardown": 11.11,
+      "total": 34.05
+    }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
     "last_validated_date": "2025-05-05T14:50:14+00:00"
@@ -12,10 +27,22 @@
     "last_validated_date": "2025-05-05T14:23:13+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "last_validated_date": "2025-05-06T18:31:53+00:00"
+    "last_validated_date": "2025-07-15T20:30:33+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 18.79,
+      "teardown": 8.1,
+      "total": 27.91
+    }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
-    "last_validated_date": "2024-02-21T12:54:34+00:00"
+    "last_validated_date": "2025-07-15T19:28:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 26.77,
+      "teardown": 13.21,
+      "total": 40.44
+    }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
     "last_validated_date": "2024-06-21T00:09:05+00:00"

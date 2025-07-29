@@ -20,10 +20,6 @@ from localstack.services.lambda_.invocation.runtime_executor import (
     RuntimeExecutor,
     get_runtime_executor,
 )
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
-    DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
-    is_lambda_debug_timeout_enabled_for,
-)
 from localstack.utils.strings import to_str
 from localstack.utils.xray.trace_header import TraceHeader
 
@@ -139,7 +135,7 @@ class ExecutionEnvironment:
             # AWS_LAMBDA_DOTNET_PREJIT
             "TZ": ":UTC",
             # 2) Public AWS RIE interface: https://github.com/aws/aws-lambda-runtime-interface-emulator
-            "AWS_LAMBDA_FUNCTION_TIMEOUT": self._get_execution_timeout_seconds(),
+            "AWS_LAMBDA_FUNCTION_TIMEOUT": self.function_version.config.timeout,
             # 3) Public LocalStack endpoint
             "LOCALSTACK_HOSTNAME": self.runtime_executor.get_endpoint_from_executor(),
             "EDGE_PORT": str(config.GATEWAY_LISTEN[0].port),
@@ -388,18 +384,5 @@ class ExecutionEnvironment:
             DurationSeconds=43200,
         )["Credentials"]
 
-    def _get_execution_timeout_seconds(self) -> int:
-        # Returns the timeout value in seconds to be enforced during the execution of the
-        # lambda function. This is the configured value or the DEBUG MODE default if this
-        # is enabled.
-        if is_lambda_debug_timeout_enabled_for(self.function_version.qualified_arn):
-            return DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
-        return self.function_version.config.timeout
-
     def _get_startup_timeout_seconds(self) -> int:
-        # Returns the timeout value in seconds to be enforced during lambda container startups.
-        # This is the value defined through LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT or the LAMBDA
-        # DEBUG MODE default if this is enabled.
-        if is_lambda_debug_timeout_enabled_for(self.function_version.qualified_arn):
-            return DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
         return STARTUP_TIMEOUT_SEC

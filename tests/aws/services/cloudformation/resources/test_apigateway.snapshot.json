@@ -1,12 +1,13 @@
 {
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
-    "recorded-date": "21-02-2024, 12:50:57",
+    "recorded-date": "15-07-2025, 19:28:45",
     "recorded-content": {
       "rest_api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -66,13 +67,14 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
-    "recorded-date": "15-04-2024, 22:59:53",
+    "recorded-date": "15-07-2025, 19:30:54",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -107,7 +109,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
-    "recorded-date": "06-05-2025, 18:31:54",
+    "recorded-date": "15-07-2025, 20:30:26",
     "recorded-content": {
       "rest-api": {
         "apiKeySource": "HEADER",
@@ -729,6 +731,63 @@
           "aws:cloudformation:logical-id": "<aws:cloudformation:logical-id:1>",
           "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
           "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_apigateway_deployment_canary_settings": {
+    "recorded-date": "23-07-2025, 23:07:05",
+    "recorded-content": {
+      "get-stages": {
+        "item": [
+          {
+            "cacheClusterEnabled": false,
+            "cacheClusterStatus": "NOT_AVAILABLE",
+            "canarySettings": {
+              "deploymentId": "<deployment-id:1>",
+              "percentTraffic": 50.0,
+              "stageVariableOverrides": {
+                "lambdaAlias": "Dev"
+              },
+              "useStageCache": false
+            },
+            "createdDate": "datetime",
+            "deploymentId": "<deployment-id:2>",
+            "lastUpdatedDate": "datetime",
+            "methodSettings": {},
+            "stageName": "prod",
+            "tags": {
+              "aws:cloudformation:logical-id": "Stage",
+              "aws:cloudformation:stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<aws:cloudformation:stack-name:1>/<resource:1>",
+              "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+            },
+            "tracingEnabled": false,
+            "variables": {
+              "lambdaAlias": "Prod"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-deployments": {
+        "items": [
+          {
+            "createdDate": "datetime",
+            "description": "basic deployment",
+            "id": "<deployment-id:2>"
+          },
+          {
+            "createdDate": "datetime",
+            "description": "canary description",
+            "id": "<deployment-id:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

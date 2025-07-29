@@ -23,7 +23,7 @@ def generate_mount_points(
     # host paths
     root_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
     localstack_code_path = os.path.join(root_path, "localstack-core", "localstack")
-    pro_path = os.path.join(root_path, "..", "localstack-ext")
+    pro_path = os.path.join(root_path, "..", "localstack-pro")
 
     # container paths
     target_path = "/opt/code/localstack/"

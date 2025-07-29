@@ -31,6 +31,7 @@ BundleId = str
 BurstablePerformanceFlag = bool
 CancelCapacityReservationFleetErrorCode = str
 CancelCapacityReservationFleetErrorMessage = str
+CapacityBlockId = str
 CapacityReservationFleetId = str
 CapacityReservationId = str
 CarrierGatewayId = str
@@ -67,6 +68,8 @@ DescribeAddressTransfersMaxResults = int
 DescribeByoipCidrsMaxResults = int
 DescribeCapacityBlockExtensionOfferingsMaxResults = int
 DescribeCapacityBlockOfferingsMaxResults = int
+DescribeCapacityBlockStatusMaxResults = int
+DescribeCapacityBlocksMaxResults = int
 DescribeCapacityReservationBillingRequestsRequestMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
 DescribeCapacityReservationsMaxResults = int
@@ -679,6 +682,23 @@ class CapacityBlockExtensionStatus(StrEnum):
     payment_succeeded = "payment-succeeded"
 
 
+class CapacityBlockInterconnectStatus(StrEnum):
+    ok = "ok"
+    impaired = "impaired"
+    insufficient_data = "insufficient-data"
+
+
+class CapacityBlockResourceState(StrEnum):
+    active = "active"
+    expired = "expired"
+    unavailable = "unavailable"
+    cancelled = "cancelled"
+    failed = "failed"
+    scheduled = "scheduled"
+    payment_pending = "payment-pending"
+    payment_failed = "payment-failed"
+
+
 class CapacityReservationBillingRequestStatus(StrEnum):
     pending = "pending"
     accepted = "accepted"
@@ -744,6 +764,7 @@ class CapacityReservationState(StrEnum):
     assessing = "assessing"
     delayed = "delayed"
     unsupported = "unsupported"
+    unavailable = "unavailable"
 
 
 class CapacityReservationTenancy(StrEnum):
@@ -1250,6 +1271,11 @@ class ImageTypeValues(StrEnum):
 
 class ImdsSupportValues(StrEnum):
     v2_0 = "v2.0"
+
+
+class InitializationType(StrEnum):
+    default = "default"
+    provisioned_rate = "provisioned-rate"
 
 
 class InstanceAttributeName(StrEnum):
@@ -2311,6 +2337,20 @@ class InstanceType(StrEnum):
     r8gd_48xlarge = "r8gd.48xlarge"
     r8gd_metal_24xl = "r8gd.metal-24xl"
     r8gd_metal_48xl = "r8gd.metal-48xl"
+    c8gn_medium = "c8gn.medium"
+    c8gn_large = "c8gn.large"
+    c8gn_xlarge = "c8gn.xlarge"
+    c8gn_2xlarge = "c8gn.2xlarge"
+    c8gn_4xlarge = "c8gn.4xlarge"
+    c8gn_8xlarge = "c8gn.8xlarge"
+    c8gn_12xlarge = "c8gn.12xlarge"
+    c8gn_16xlarge = "c8gn.16xlarge"
+    c8gn_24xlarge = "c8gn.24xlarge"
+    c8gn_48xlarge = "c8gn.48xlarge"
+    c8gn_metal_24xl = "c8gn.metal-24xl"
+    c8gn_metal_48xl = "c8gn.metal-48xl"
+    f2_6xlarge = "f2.6xlarge"
+    p6e_gb200_36xlarge = "p6e-gb200.36xlarge"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -3154,6 +3194,7 @@ class ResourceType(StrEnum):
     instance_connect_endpoint = "instance-connect-endpoint"
     verified_access_endpoint_target = "verified-access-endpoint-target"
     ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
+    capacity_block = "capacity-block"
     mac_modification_task = "mac-modification-task"
 
 
@@ -3569,6 +3610,7 @@ class TransitGatewayAttachmentResourceType(StrEnum):
     connect = "connect"
     peering = "peering"
     tgw_peering = "tgw-peering"
+    network_function = "network-function"
 
 
 class TransitGatewayAttachmentState(StrEnum):
@@ -3792,6 +3834,7 @@ class VolumeStatusInfoStatus(StrEnum):
 class VolumeStatusName(StrEnum):
     io_enabled = "io-enabled"
     io_performance = "io-performance"
+    initialization_state = "initialization-state"
 
 
 class VolumeType(StrEnum):
@@ -5992,6 +6035,20 @@ class CapacityAllocation(TypedDict, total=False):
 
 
 CapacityAllocations = List[CapacityAllocation]
+CapacityReservationIdSet = List[CapacityReservationId]
+
+
+class CapacityBlock(TypedDict, total=False):
+    CapacityBlockId: Optional[CapacityBlockId]
+    UltraserverType: Optional[String]
+    AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
+    CapacityReservationIds: Optional[CapacityReservationIdSet]
+    StartDate: Optional[MillisecondDateTime]
+    EndDate: Optional[MillisecondDateTime]
+    CreateDate: Optional[MillisecondDateTime]
+    State: Optional[CapacityBlockResourceState]
+    Tags: Optional[TagList]
 
 
 class CapacityBlockExtension(TypedDict, total=False):
@@ -6027,6 +6084,7 @@ class CapacityBlockExtensionOffering(TypedDict, total=False):
 
 CapacityBlockExtensionOfferingSet = List[CapacityBlockExtensionOffering]
 CapacityBlockExtensionSet = List[CapacityBlockExtension]
+CapacityBlockIds = List[CapacityBlockId]
 
 
 class CapacityBlockOffering(TypedDict, total=False):
@@ -6040,10 +6098,35 @@ class CapacityBlockOffering(TypedDict, total=False):
     UpfrontFee: Optional[String]
     CurrencyCode: Optional[String]
     Tenancy: Optional[CapacityReservationTenancy]
+    UltraserverType: Optional[String]
+    UltraserverCount: Optional[BoxedInteger]
     CapacityBlockDurationMinutes: Optional[Integer]
 
 
 CapacityBlockOfferingSet = List[CapacityBlockOffering]
+CapacityBlockSet = List[CapacityBlock]
+
+
+class CapacityReservationStatus(TypedDict, total=False):
+    CapacityReservationId: Optional[CapacityReservationId]
+    TotalCapacity: Optional[Integer]
+    TotalAvailableCapacity: Optional[Integer]
+    TotalUnavailableCapacity: Optional[Integer]
+
+
+CapacityReservationStatusSet = List[CapacityReservationStatus]
+
+
+class CapacityBlockStatus(TypedDict, total=False):
+    CapacityBlockId: Optional[CapacityBlockId]
+    InterconnectStatus: Optional[CapacityBlockInterconnectStatus]
+    TotalCapacity: Optional[Integer]
+    TotalAvailableCapacity: Optional[Integer]
+    TotalUnavailableCapacity: Optional[Integer]
+    CapacityReservationStatuses: Optional[CapacityReservationStatusSet]
+
+
+CapacityBlockStatusSet = List[CapacityBlockStatus]
 
 
 class CapacityReservationCommitmentInfo(TypedDict, total=False):
@@ -6079,6 +6162,7 @@ class CapacityReservation(TypedDict, total=False):
     UnusedReservationBillingOwnerId: Optional[AccountID]
     CommitmentInfo: Optional[CapacityReservationCommitmentInfo]
     DeliveryPreference: Optional[CapacityReservationDeliveryPreference]
+    CapacityBlockId: Optional[CapacityBlockId]
 
 
 class CapacityReservationInfo(TypedDict, total=False):
@@ -6143,7 +6227,6 @@ class CapacityReservationGroup(TypedDict, total=False):
 
 
 CapacityReservationGroupSet = List[CapacityReservationGroup]
-CapacityReservationIdSet = List[CapacityReservationId]
 
 
 class CapacityReservationOptions(TypedDict, total=False):
@@ -7067,7 +7150,7 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[String]
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[PlacementResponse]
@@ -7212,7 +7295,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[SubnetId]
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[Placement]
@@ -7367,6 +7450,7 @@ class CreateInstanceConnectEndpointRequest(ServiceRequest):
     PreserveClientIp: Optional[Boolean]
     ClientToken: Optional[String]
     TagSpecifications: Optional[TagSpecificationList]
+    IpAddressType: Optional[IpAddressType]
 
 
 SecurityGroupIdSet = List[SecurityGroupId]
@@ -7389,6 +7473,7 @@ class Ec2InstanceConnectEndpoint(TypedDict, total=False):
     PreserveClientIp: Optional[Boolean]
     SecurityGroupIds: Optional[SecurityGroupIdSet]
     Tags: Optional[TagList]
+    IpAddressType: Optional[IpAddressType]
 
 
 class CreateInstanceConnectEndpointResult(TypedDict, total=False):
@@ -11583,10 +11668,38 @@ class DescribeCapacityBlockOfferingsRequest(ServiceRequest):
     CapacityDurationHours: Integer
     NextToken: Optional[String]
     MaxResults: Optional[DescribeCapacityBlockOfferingsMaxResults]
+    UltraserverType: Optional[String]
+    UltraserverCount: Optional[Integer]
 
 
 class DescribeCapacityBlockOfferingsResult(TypedDict, total=False):
     CapacityBlockOfferings: Optional[CapacityBlockOfferingSet]
+    NextToken: Optional[String]
+
+
+class DescribeCapacityBlockStatusRequest(ServiceRequest):
+    CapacityBlockIds: Optional[CapacityBlockIds]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityBlockStatusMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class DescribeCapacityBlockStatusResult(TypedDict, total=False):
+    CapacityBlockStatuses: Optional[CapacityBlockStatusSet]
+    NextToken: Optional[String]
+
+
+class DescribeCapacityBlocksRequest(ServiceRequest):
+    CapacityBlockIds: Optional[CapacityBlockIds]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityBlocksMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class DescribeCapacityBlocksResult(TypedDict, total=False):
+    CapacityBlocks: Optional[CapacityBlockSet]
     NextToken: Optional[String]
 
 
@@ -12466,6 +12579,7 @@ class Image(TypedDict, total=False):
     ImageAllowed: Optional[Boolean]
     SourceImageId: Optional[String]
     SourceImageRegion: Optional[String]
+    FreeTierEligible: Optional[Boolean]
     ImageId: Optional[String]
     ImageLocation: Optional[String]
     State: Optional[ImageState]
@@ -12803,6 +12917,7 @@ class InstanceTopology(TypedDict, total=False):
     NetworkNodes: Optional[NetworkNodesList]
     AvailabilityZone: Optional[String]
     ZoneId: Optional[String]
+    CapacityBlockId: Optional[String]
 
 
 InstanceSet = List[InstanceTopology]
@@ -13296,6 +13411,7 @@ class Instance(TypedDict, total=False):
     Tags: Optional[TagList]
     VirtualizationType: Optional[VirtualizationType]
     CpuOptions: Optional[CpuOptions]
+    CapacityBlockId: Optional[String]
     CapacityReservationId: Optional[String]
     CapacityReservationSpecification: Optional[CapacityReservationSpecificationResponse]
     HibernationOptions: Optional[HibernationOptions]
@@ -14605,6 +14721,7 @@ class SecurityGroupVpcAssociation(TypedDict, total=False):
     VpcOwnerId: Optional[String]
     State: Optional[SecurityGroupVpcAssociationState]
     StateReason: Optional[String]
+    GroupOwnerId: Optional[String]
 
 
 SecurityGroupVpcAssociationList = List[SecurityGroupVpcAssociation]
@@ -15644,6 +15761,12 @@ class DescribeVolumeStatusRequest(ServiceRequest):
     Filters: Optional[FilterList]
 
 
+class InitializationStatusDetails(TypedDict, total=False):
+    InitializationType: Optional[InitializationType]
+    Progress: Optional[Long]
+    EstimatedTimeToCompleteInSeconds: Optional[Long]
+
+
 class VolumeStatusAttachmentStatus(TypedDict, total=False):
     IoPerformance: Optional[String]
     InstanceId: Optional[String]
@@ -15695,6 +15818,7 @@ class VolumeStatusItem(TypedDict, total=False):
     VolumeId: Optional[String]
     VolumeStatus: Optional[VolumeStatusInfo]
     AttachmentStatuses: Optional[VolumeStatusAttachmentStatusList]
+    InitializationStatusDetails: Optional[InitializationStatusDetails]
     AvailabilityZoneId: Optional[String]
 
 
@@ -17244,6 +17368,7 @@ class GetInstanceTypesFromInstanceRequirementsRequest(ServiceRequest):
     InstanceRequirements: InstanceRequirementsRequest
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
+    Context: Optional[String]
 
 
 class InstanceTypeInfoFromInstanceRequirements(TypedDict, total=False):
@@ -19690,6 +19815,7 @@ class PurchaseCapacityBlockRequest(ServiceRequest):
 
 class PurchaseCapacityBlockResult(TypedDict, total=False):
     CapacityReservation: Optional[CapacityReservation]
+    CapacityBlocks: Optional[CapacityBlockSet]
 
 
 class PurchaseHostReservationRequest(ServiceRequest):
@@ -20519,6 +20645,7 @@ class StartVpcEndpointServicePrivateDnsVerificationResult(TypedDict, total=False
 class StopInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
     Hibernate: Optional[Boolean]
+    SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
     Force: Optional[Boolean]
 
@@ -20551,6 +20678,7 @@ class TerminateClientVpnConnectionsResult(TypedDict, total=False):
 
 class TerminateInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
+    SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
 
 
@@ -21634,6 +21762,7 @@ class Ec2Api:
         preserve_client_ip: Boolean | None = None,
         client_token: String | None = None,
         tag_specifications: TagSpecificationList | None = None,
+        ip_address_type: IpAddressType | None = None,
         **kwargs,
     ) -> CreateInstanceConnectEndpointResult:
         raise NotImplementedError
@@ -23756,8 +23885,36 @@ class Ec2Api:
         end_date_range: MillisecondDateTime | None = None,
         next_token: String | None = None,
         max_results: DescribeCapacityBlockOfferingsMaxResults | None = None,
+        ultraserver_type: String | None = None,
+        ultraserver_count: Integer | None = None,
         **kwargs,
     ) -> DescribeCapacityBlockOfferingsResult:
+        raise NotImplementedError
+
+    @handler("DescribeCapacityBlockStatus")
+    def describe_capacity_block_status(
+        self,
+        context: RequestContext,
+        capacity_block_ids: CapacityBlockIds | None = None,
+        next_token: String | None = None,
+        max_results: DescribeCapacityBlockStatusMaxResults | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeCapacityBlockStatusResult:
+        raise NotImplementedError
+
+    @handler("DescribeCapacityBlocks")
+    def describe_capacity_blocks(
+        self,
+        context: RequestContext,
+        capacity_block_ids: CapacityBlockIds | None = None,
+        next_token: String | None = None,
+        max_results: DescribeCapacityBlocksMaxResults | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeCapacityBlocksResult:
         raise NotImplementedError
 
     @handler("DescribeCapacityReservationBillingRequests")
@@ -26579,16 +26736,11 @@ class Ec2Api:
     ) -> GetInstanceTpmEkPubResult:
         raise NotImplementedError
 
-    @handler("GetInstanceTypesFromInstanceRequirements")
+    @handler("GetInstanceTypesFromInstanceRequirements", expand=False)
     def get_instance_types_from_instance_requirements(
         self,
         context: RequestContext,
-        architecture_types: ArchitectureTypeSet,
-        virtualization_types: VirtualizationTypeSet,
-        instance_requirements: InstanceRequirementsRequest,
-        dry_run: Boolean | None = None,
-        max_results: Integer | None = None,
-        next_token: String | None = None,
+        request: GetInstanceTypesFromInstanceRequirementsRequest,
         **kwargs,
     ) -> GetInstanceTypesFromInstanceRequirementsResult:
         raise NotImplementedError
@@ -28940,6 +29092,7 @@ class Ec2Api:
         context: RequestContext,
         instance_ids: InstanceIdStringList,
         hibernate: Boolean | None = None,
+        skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         force: Boolean | None = None,
         **kwargs,
@@ -28963,6 +29116,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         instance_ids: InstanceIdStringList,
+        skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> TerminateInstancesResult:

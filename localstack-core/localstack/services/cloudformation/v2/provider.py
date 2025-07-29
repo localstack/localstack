@@ -1,4 +1,5 @@
 import copy
+import json
 import logging
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -16,18 +17,23 @@ from localstack.aws.api.cloudformation import (
     CreateChangeSetOutput,
     CreateStackInput,
     CreateStackOutput,
+    DeleteChangeSetOutput,
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
     DescribeStackResourcesOutput,
     DescribeStacksOutput,
     DisableRollback,
+    EnableTerminationProtection,
     ExecuteChangeSetOutput,
     ExecutionStatus,
+    GetTemplateOutput,
     GetTemplateSummaryInput,
     GetTemplateSummaryOutput,
     IncludePropertyValues,
+    InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
+    ListStacksOutput,
     LogicalResourceId,
     NextToken,
     Parameter,
@@ -39,8 +45,11 @@ from localstack.aws.api.cloudformation import (
     StackName,
     StackNameOrId,
     StackStatus,
+    StackStatusFilter,
+    TemplateStage,
     UpdateStackInput,
     UpdateStackOutput,
+    UpdateTerminationProtectionOutput,
 )
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
@@ -69,6 +78,7 @@ from localstack.services.cloudformation.stores import (
     get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, Stack
+from localstack.utils.collections import select_attributes
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
@@ -83,8 +93,11 @@ def is_changeset_arn(change_set_name_or_id: str) -> bool:
 
 
 class StackNotFoundError(ValidationError):
-    def __init__(self, stack_name: str):
-        super().__init__(f"Stack with id {stack_name} does not exist")
+    def __init__(self, stack_name_or_id: str):
+        if is_stack_arn(stack_name_or_id):
+            super().__init__(f"Stack with id {stack_name_or_id} does not exist")
+        else:
+            super().__init__(f"Stack [{stack_name_or_id}] does not exist")
 
 
 def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack | None:
@@ -103,7 +116,7 @@ def find_stack_v2(state: CloudFormationStore, stack_name: str | None) -> Stack |
             else:
                 return stack_candidates[0]
     else:
-        raise NotImplementedError
+        raise ValueError("No stack name specified when finding stack")
 
 
 def find_change_set_v2(
@@ -122,7 +135,7 @@ def find_change_set_v2(
                 if change_set_candidate.change_set_name == change_set_name:
                     return change_set_candidate
         else:
-            raise NotImplementedError
+            raise ValueError("No stack name specified when finding change set")
 
 
 class CloudformationProviderV2(CloudformationProvider):
@@ -178,6 +191,7 @@ class CloudformationProviderV2(CloudformationProvider):
         update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
         update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
         change_set.set_update_model(update_model)
+        change_set.stack.processed_template = transformed_after_template
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
@@ -236,17 +250,13 @@ class CloudformationProviderV2(CloudformationProvider):
                     request_payload=request,
                     template=structured_template,
                     template_body=template_body,
+                    initial_status=StackStatus.REVIEW_IN_PROGRESS,
                 )
                 state.stacks_v2[stack.stack_id] = stack
             else:
                 if not active_stack_candidates:
                     raise ValidationError(f"Stack '{stack_name}' does not exist.")
                 stack = active_stack_candidates[0]
-
-        if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-            stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
-        else:
-            stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
         # TODO: test if rollback status is allowed as well
         if (
@@ -316,7 +326,19 @@ class CloudformationProviderV2(CloudformationProvider):
             previous_update_model=previous_update_model,
         )
 
-        change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+        # TODO: handle the empty change set case
+        if not change_set.has_changes():
+            change_set.set_change_set_status(ChangeSetStatus.FAILED)
+            change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
+            change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
+        else:
+            if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
+                stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
+            else:
+                stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
+
+            change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+
         stack.change_set_id = change_set.change_set_id
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
@@ -431,6 +453,8 @@ class CloudformationProviderV2(CloudformationProvider):
             CreationTime=change_set.creation_time,
             Parameters=parameters,
             Changes=changes,
+            Capabilities=change_set.stack.capabilities,
+            StatusReason=change_set.status_reason,
         )
         return result
 
@@ -448,12 +472,40 @@ class CloudformationProviderV2(CloudformationProvider):
         # only relevant if change_set_name isn't an ARN
         state = get_cloudformation_store(context.account_id, context.region)
         change_set = find_change_set_v2(state, change_set_name, stack_name)
+
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
         result = self._describe_change_set(
             change_set=change_set, include_property_values=include_property_values or False
         )
         return result
+
+    @handler("DeleteChangeSet")
+    def delete_change_set(
+        self,
+        context: RequestContext,
+        change_set_name: ChangeSetNameOrId,
+        stack_name: StackNameOrId = None,
+        **kwargs,
+    ) -> DeleteChangeSetOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        if is_changeset_arn(change_set_name):
+            change_set = state.change_sets.get(change_set_name)
+        elif not is_changeset_arn(change_set_name) and stack_name:
+            change_set = find_change_set_v2(state, change_set_name, stack_name)
+        else:
+            raise ValidationError(
+                "StackName must be specified if ChangeSetName is not specified as an ARN."
+            )
+
+        if not change_set:
+            return DeleteChangeSetOutput()
+
+        change_set.stack.change_set_ids.remove(change_set.change_set_id)
+        state.change_sets.pop(change_set.change_set_id)
+
+        return DeleteChangeSetOutput()
 
     @handler("CreateStack", expand=False)
     def create_stack(self, context: RequestContext, request: CreateStackInput) -> CreateStackOutput:
@@ -482,6 +534,13 @@ class CloudformationProviderV2(CloudformationProvider):
 
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
+
+        if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
+            "Transform" in structured_template.keys() or "Fn::Transform" in template_body
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
 
         stack = Stack(
             account_id=context.account_id,
@@ -556,7 +615,40 @@ class CloudformationProviderV2(CloudformationProvider):
         stack = find_stack_v2(state, stack_name)
         if not stack:
             raise StackNotFoundError(stack_name)
+        # TODO: move describe_details method to provider
         return DescribeStacksOutput(Stacks=[stack.describe_details()])
+
+    @handler("ListStacks")
+    def list_stacks(
+        self,
+        context: RequestContext,
+        next_token: NextToken = None,
+        stack_status_filter: StackStatusFilter = None,
+        **kwargs,
+    ) -> ListStacksOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+
+        stacks = [
+            s.describe_details()
+            for s in state.stacks_v2.values()
+            if not stack_status_filter or s.status in stack_status_filter
+        ]
+
+        attrs = [
+            "StackId",
+            "StackName",
+            "TemplateDescription",
+            "CreationTime",
+            "LastUpdatedTime",
+            "DeletionTime",
+            "StackStatus",
+            "StackStatusReason",
+            "ParentId",
+            "RootId",
+            "DriftInformation",
+        ]
+        stacks = [select_attributes(stack, attrs) for stack in stacks]
+        return ListStacksOutput(StackSummaries=stacks)
 
     @handler("DescribeStackResources")
     def describe_stack_resources(
@@ -590,11 +682,43 @@ class CloudformationProviderV2(CloudformationProvider):
         next_token: NextToken = None,
         **kwargs,
     ) -> DescribeStackEventsOutput:
+        if not stack_name:
+            raise ValidationError(
+                "1 validation error detected: Value null at 'stackName' failed to satisfy constraint: Member must not be null"
+            )
         state = get_cloudformation_store(context.account_id, context.region)
         stack = find_stack_v2(state, stack_name)
         if not stack:
             raise StackNotFoundError(stack_name)
         return DescribeStackEventsOutput(StackEvents=stack.events)
+
+    @handler("GetTemplate")
+    def get_template(
+        self,
+        context: RequestContext,
+        stack_name: StackName = None,
+        change_set_name: ChangeSetNameOrId = None,
+        template_stage: TemplateStage = None,
+        **kwargs,
+    ) -> GetTemplateOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        if change_set_name:
+            change_set = find_change_set_v2(state, change_set_name, stack_name=stack_name)
+            stack = change_set.stack
+        elif stack_name:
+            stack = find_stack_v2(state, stack_name)
+        else:
+            raise StackNotFoundError(stack_name)
+
+        if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
+            template_body = json.dumps(stack.processed_template)
+        else:
+            template_body = stack.template_body
+
+        return GetTemplateOutput(
+            TemplateBody=template_body,
+            StagesAvailable=[TemplateStage.Original, TemplateStage.Processed],
+        )
 
     @handler("GetTemplateSummary", expand=False)
     def get_template_summary(
@@ -657,6 +781,22 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return result
 
+    @handler("UpdateTerminationProtection")
+    def update_termination_protection(
+        self,
+        context: RequestContext,
+        enable_termination_protection: EnableTerminationProtection,
+        stack_name: StackNameOrId,
+        **kwargs,
+    ) -> UpdateTerminationProtectionOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack = find_stack_v2(state, stack_name)
+        if not stack:
+            raise StackNotFoundError(stack_name)
+
+        stack.enable_termination_protection = enable_termination_protection
+        return UpdateTerminationProtectionOutput(StackId=stack.stack_id)
+
     @handler("UpdateStack", expand=False)
     def update_stack(
         self,
@@ -686,6 +826,13 @@ class CloudformationProviderV2(CloudformationProvider):
 
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
+
+        if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
+            "Transform" in structured_template.keys() or "Fn::Transform" in template_body
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
+            )
 
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
@@ -726,8 +873,9 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template = structured_template
 
         previous_update_model = None
-        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-            previous_update_model = previous_change_set.update_model
+        if stack.change_set_id:
+            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+                previous_update_model = previous_change_set.update_model
 
         change_set = ChangeSet(
             stack,
@@ -796,8 +944,9 @@ class CloudformationProviderV2(CloudformationProvider):
             return
 
         previous_update_model = None
-        if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-            previous_update_model = previous_change_set.update_model
+        if stack.change_set_id:
+            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
+                previous_update_model = previous_change_set.update_model
 
         # create a dummy change set
         change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa

@@ -29,6 +29,7 @@ from localstack.services.lambda_.invocation.metrics import (
     record_cw_metric_invocation,
 )
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
+from localstack.services.lambda_.lambda_debug_mode.ldm import LDM
 from localstack.utils.strings import long_uid, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
@@ -190,6 +191,30 @@ class LambdaVersionManager:
             message = f"Got an invocation with request_id {invocation.request_id} for a version shutting down"
             LOG.warning(message)
             raise ServiceException(message)
+
+        # If the environment has debugging enabled, route the invocation there;
+        # debug environments bypass Lambda service quotas.
+        if debug_execution_environment := LDM.get_execution_environment(
+            qualified_lambda_arn=self.function_version.qualified_arn,
+            user_agent=invocation.user_agent,
+        ):
+            try:
+                invocation_result = debug_execution_environment.invoke(invocation)
+                invocation_result.executed_version = self.function_version.id.qualifier
+                self.store_logs(
+                    invocation_result=invocation_result, execution_env=debug_execution_environment
+                )
+            except StatusErrorException as e:
+                invocation_result = InvocationResult(
+                    request_id="",
+                    payload=e.payload,
+                    is_error=True,
+                    logs="",
+                    executed_version=self.function_version.id.qualifier,
+                )
+            finally:
+                debug_execution_environment.release()
+            return invocation_result
 
         with self.counting_service.get_invocation_lease(
             self.function, self.function_version

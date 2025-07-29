@@ -3,7 +3,7 @@
 ######################
 
 # CODEOWNERS
-/CODEOWNERS @thrau @dominikschubert @alexrashed
+/CODEOWNERS @dominikschubert @alexrashed
 
 # README / Docs
 /docs/ @thrau @HarshCasper
@@ -22,6 +22,11 @@
 /.git-blame-ignore-revs @alexrashed @thrau
 /bin/release-dev.sh @thrau @alexrashed
 /bin/release-helper.sh @thrau @alexrashed
+
+# Python project, packaging, and dependencies
+/pyproject.toml @alexrashed @silv-io @k-a-il @bentsku @sannya-singal
+/requirements-*.txt @alexrashed @silv-io @k-a-il @bentsku @sannya-singal
+/.pre-commit-config.yaml @alexrashed @silv-io @k-a-il @bentsku @sannya-singal
 
 # ASF
 /localstack-core/localstack/aws/ @thrau
@@ -113,10 +118,10 @@
 /tests/aws/services/cloudcontrol/ @simonrw
 
 # cloudformation
-/localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
-/localstack-core/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack-core/localstack/aws/api/cloudformation/ @simonrw @pinzon @dominikschubert
+/localstack-core/localstack/services/cloudformation/ @simonrw @pinzon @dominikschubert
+/tests/aws/services/cloudformation/ @simonrw @pinzon @dominikschubert
+/tests/unit/services/cloudformation/ @simonrw @pinzon @dominikschubert
 
 # cloudwatch
 /localstack-core/localstack/aws/api/cloudwatch/ @pinzon @steffyP
@@ -197,10 +202,10 @@
 /tests/aws/services/route53resolver/ @macnev2013 @sannya-singal
 
 # s3
-/localstack-core/localstack/aws/api/s3/ @bentsku
-/localstack-core/localstack/services/s3/ @bentsku
-/tests/aws/services/s3/ @bentsku
-/tests/unit/services/s3/ @bentsku
+/localstack-core/localstack/aws/api/s3/ @bentsku @k-a-il
+/localstack-core/localstack/services/s3/ @bentsku @k-a-il
+/tests/aws/services/s3/ @bentsku @k-a-il
+/tests/unit/services/s3/ @bentsku @k-a-il
 
 # s3control
 /localstack-core/localstack/aws/api/s3control/ @bentsku

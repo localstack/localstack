@@ -230,6 +230,7 @@ class LambdaService:
         request_id: str,
         payload: bytes | None,
         trace_context: dict | None = None,
+        user_agent: Optional[str] = None,
     ) -> InvocationResult | None:
         """
         Invokes a specific version of a lambda
@@ -352,6 +353,7 @@ class LambdaService:
                     invoke_time=datetime.now(),
                     request_id=request_id,
                     trace_context=trace_context,
+                    user_agent=user_agent,
                 )
             )
 
@@ -364,6 +366,7 @@ class LambdaService:
                 invoke_time=datetime.now(),
                 request_id=request_id,
                 trace_context=trace_context,
+                user_agent=user_agent,
             )
         )
         status = (
@@ -642,9 +645,15 @@ def store_s3_bucket_archive(
         return create_hot_reloading_code(path=archive_key)
     s3_client: "S3Client" = connect_to().s3
     kwargs = {"VersionId": archive_version} if archive_version else {}
-    archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
-        "Body"
-    ].read()
+    try:
+        archive_file = s3_client.get_object(Bucket=archive_bucket, Key=archive_key, **kwargs)[
+            "Body"
+        ].read()
+    except s3_client.exceptions.ClientError as e:
+        raise InvalidParameterValueException(
+            f"Error occurred while GetObject. S3 Error Code: {e.response['Error']['Code']}. S3 Error Message: {e.response['Error']['Message']}",
+            Type="User",
+        )
     return store_lambda_archive(
         archive_file, function_name=function_name, region_name=region_name, account_id=account_id
     )

@@ -1,7 +1,9 @@
+import copy
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
 from localstack.aws.api.cloudformation import (
+    Capability,
     ChangeSetStatus,
     ChangeSetType,
     CreateChangeSetInput,
@@ -24,6 +26,7 @@ from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    ChangeType,
     ResolvedParameter,
     UpdateModel,
 )
@@ -45,7 +48,10 @@ class Stack:
     stack_id: str
     creation_time: datetime
     deletion_time: datetime | None
-    events = list[StackEvent]
+    events: list[StackEvent]
+    capabilities: list[Capability]
+    enable_termination_protection: bool
+    processed_template: dict | None
 
     # state after deploy
     resolved_parameters: dict[str, ResolvedParameter]
@@ -60,17 +66,21 @@ class Stack:
         request_payload: CreateChangeSetInput | CreateStackInput,
         template: dict | None = None,
         template_body: str | None = None,
+        initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
     ):
         self.account_id = account_id
         self.region_name = region_name
         self.template = template
+        self.template_original = copy.deepcopy(self.template)
         self.template_body = template_body
-        self.status = StackStatus.CREATE_IN_PROGRESS
+        self.status = initial_status
         self.status_reason = None
         self.change_set_ids = []
         self.creation_time = datetime.now(tz=timezone.utc)
         self.deletion_time = None
         self.change_set_id = None
+        self.enable_termination_protection = False
+        self.processed_template = None
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
@@ -82,6 +92,7 @@ class Stack:
             account_id=self.account_id,
             region_name=self.region_name,
         )
+        self.capabilities = request_payload.get("Capabilities", []) or []
 
         # TODO: only kept for v1 compatibility
         self.request_payload = request_payload
@@ -123,7 +134,10 @@ class Stack:
         if not resource_status_reason:
             resource_description.pop("ResourceStatusReason")
 
-        self.resource_states[logical_resource_id] = resource_description
+        if status == ResourceStatus.DELETE_COMPLETE:
+            self.resource_states.pop(logical_resource_id)
+        else:
+            self.resource_states[logical_resource_id] = resource_description
         self._store_event(logical_resource_id, physical_resource_id, status, resource_status_reason)
 
     def _store_event(
@@ -181,12 +195,15 @@ class Stack:
             "DriftInformation": StackDriftInformation(
                 StackDriftStatus=StackDriftStatus.NOT_CHECKED
             ),
-            "EnableTerminationProtection": False,
+            "EnableTerminationProtection": self.enable_termination_protection,
             "LastUpdatedTime": self.creation_time,
             "RollbackConfiguration": {},
             "Tags": [],
             "Parameters": parameters,
+            "NotificationARNs": [],
+            "Capabilities": self.capabilities,
         }
+        # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
             result["ChangeSetId"] = change_set_id
 
@@ -219,6 +236,7 @@ class ChangeSet:
     change_set_type: ChangeSetType
     update_model: Optional[UpdateModel]
     status: ChangeSetStatus
+    status_reason: str | None
     execution_status: ExecutionStatus
     creation_time: datetime
 
@@ -231,6 +249,7 @@ class ChangeSet:
         self.stack = stack
         self.template = template
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
+        self.status_reason = None
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_model = None
         self.creation_time = datetime.now(tz=timezone.utc)
@@ -252,6 +271,9 @@ class ChangeSet:
 
     def set_execution_status(self, execution_status: ExecutionStatus):
         self.execution_status = execution_status
+
+    def has_changes(self) -> bool:
+        return self.update_model.node_template.change_type != ChangeType.UNCHANGED
 
     @property
     def account_id(self) -> str:

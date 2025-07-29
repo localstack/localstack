@@ -394,6 +394,11 @@ class AccessRequestStatus(StrEnum):
     Pending = "Pending"
 
 
+class AccessType(StrEnum):
+    Standard = "Standard"
+    JustInTime = "JustInTime"
+
+
 class AssociationComplianceSeverity(StrEnum):
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
@@ -1104,6 +1109,7 @@ class SessionFilterKey(StrEnum):
     Owner = "Owner"
     Status = "Status"
     SessionId = "SessionId"
+    AccessType = "AccessType"
 
 
 class SessionState(StrEnum):
@@ -4228,6 +4234,7 @@ class Session(TypedDict, total=False):
     Details: Optional[SessionDetails]
     OutputUrl: Optional[SessionManagerOutputUrl]
     MaxSessionDuration: Optional[MaxSessionDuration]
+    AccessType: Optional[AccessType]
 
 
 SessionList = List[Session]

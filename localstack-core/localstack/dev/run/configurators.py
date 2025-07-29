@@ -189,8 +189,8 @@ class EntryPointMountConfigurator:
     """
     Mounts ``entry_points.txt`` files of localstack and dependencies into the venv in the container.
 
-    For example, when starting the pro container, the entrypoints of localstack-ext on the host would be in
-    ``~/workspace/localstack-ext/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
+    For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
+    ``~/workspace/localstack-pro/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
     which needs to be mounted into the distribution info of the installed dependency within the container:
     ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-2.1.0.dev0.dist-info/entry_points.txt``.
     """

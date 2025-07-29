@@ -329,11 +329,8 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     paths=[
         "$.resources.items..resourceMethods.GET",  # TODO: after importing, AWS returns them empty?
         # TODO: missing from LS response
-        "$.get-stage.createdDate",
-        "$.get-stage.lastUpdatedDate",
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
-        "$..endpointConfiguration.ipAddressType",
     ]
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
@@ -727,3 +724,30 @@ class TestServerlessApigwLambda:
         )
         get_fn_2 = aws_client.lambda_.get_function(FunctionName="test-service-local-api")
         assert get_fn_2["Configuration"]["Handler"] == "index.handler2"
+
+
+@markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
+@markers.aws.validated
+def test_apigateway_deployment_canary_settings(deploy_cfn_template, snapshot, aws_client):
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("deploymentId"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+            snapshot.transform.resource_name(),
+            SortingTransformer("items", itemgetter("description")),
+        ]
+    )
+
+    api_name = f"api-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/apigateway_canary_deployment.yml"
+        ),
+        parameters={"RestApiName": api_name},
+    )
+    api_id = stack.outputs["RestApiId"]
+    stage = aws_client.apigateway.get_stages(restApiId=api_id)
+    snapshot.match("get-stages", stage)
+
+    deployments = aws_client.apigateway.get_deployments(restApiId=api_id)
+    snapshot.match("get-deployments", deployments)

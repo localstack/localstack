@@ -481,7 +481,7 @@ class TestSsmParameters:
 
 
 class TestSecretsManagerParameters:
-    @pytest.mark.skip(reason="CFNV2:resolve")
+    @pytest.mark.skip(reason="CFNV2:Resolve")
     @pytest.mark.parametrize(
         "template_name",
         [
@@ -649,7 +649,7 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @pytest.mark.skip("CFNV2:GetTemplate")
+    @pytest.mark.skip("CFNV2:Macros")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

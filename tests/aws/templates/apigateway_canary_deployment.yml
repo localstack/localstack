@@ -1,0 +1,59 @@
+Parameters:
+  RestApiName:
+    Type: String
+
+Resources:
+  RestApi:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Ref RestApiName
+  Stage:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      DeploymentId:
+        Ref: ApiDeployment
+      StageName: prod
+      Variables:
+        lambdaAlias: Prod
+
+  MockMethod:
+    Type: 'AWS::ApiGateway::Method'
+    Properties:
+      RestApiId: !Ref RestApi
+      ResourceId: !GetAtt
+        - RestApi
+        - RootResourceId
+      HttpMethod: POST
+      AuthorizationType: NONE
+      Integration:
+        Type: MOCK
+
+  ApiDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      Description: "basic deployment"
+    DependsOn:
+      - MockMethod
+
+  ApiCanaryDeployment:
+    Type: AWS::ApiGateway::Deployment
+    Properties:
+      RestApiId:
+        Ref: RestApi
+      Description: "canary description"
+      DeploymentCanarySettings:
+        PercentTraffic: 50
+        StageVariableOverrides:
+          lambdaAlias: Dev
+      StageName: prod
+    DependsOn:
+      - MockMethod
+      - Stage
+
+Outputs:
+    RestApiId:
+        Value: !GetAtt RestApi.RestApiId
