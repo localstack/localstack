@@ -137,6 +137,9 @@ ARN_CHANGESET_REGEX = re.compile(
 ARN_STACK_REGEX = re.compile(
     r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
 )
+ARN_STACK_SET_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack-set/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
 
 
 def clone_stack_params(stack_params):

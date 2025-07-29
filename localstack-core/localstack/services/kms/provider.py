@@ -6,7 +6,8 @@ import os
 from typing import Dict, Tuple
 
 from cryptography.exceptions import InvalidTag
-from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes, keywrap
 from cryptography.hazmat.primitives.asymmetric import padding
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -1164,22 +1165,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             disabled_key_allowed=True,
         )
 
-        if import_state.wrapping_algo == AlgorithmSpec.RSAES_PKCS1_V1_5:
-            decrypt_padding = padding.PKCS1v15()
-        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_1:
-            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
-        elif import_state.wrapping_algo == AlgorithmSpec.RSAES_OAEP_SHA_256:
-            decrypt_padding = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
-        else:
-            raise KMSInvalidStateException(
-                f"Unsupported padding, requested wrapping algorithm:'{import_state.wrapping_algo}'"
-            )
-
         # TODO check if there was already a key imported for this kms key
         # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
-        key_material = import_state.key.crypto_key.key.decrypt(
-            encrypted_key_material, decrypt_padding
-        )
+        key_material = self._decrypt_wrapped_key_material(import_state, encrypted_key_material)
+
         if expiration_model:
             key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
         else:
@@ -1562,6 +1551,47 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 raise ValidationError(
                     f"Value {['Operations']} at 'operations' failed to satisfy constraint: Member must satisfy"
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
+                )
+
+    def _decrypt_wrapped_key_material(
+        self,
+        import_state: KeyImportState,
+        encrypted_key_material: CiphertextType,
+    ) -> bytes:
+        algo = import_state.wrapping_algo
+        decrypt_key = import_state.key.crypto_key.key
+
+        match algo:
+            case AlgorithmSpec.RSAES_PKCS1_V1_5:
+                padding_scheme = padding.PKCS1v15()
+                return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
+            case AlgorithmSpec.RSAES_OAEP_SHA_1:
+                padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA1()), hashes.SHA1(), None)
+                return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
+            case AlgorithmSpec.RSAES_OAEP_SHA_256:
+                padding_scheme = padding.OAEP(padding.MGF1(hashes.SHA256()), hashes.SHA256(), None)
+                return decrypt_key.decrypt(encrypted_key_material, padding_scheme)
+            case AlgorithmSpec.RSA_AES_KEY_WRAP_SHA_256:
+                rsa_key_size_bytes = decrypt_key.key_size // 8
+                wrapped_aes_key = encrypted_key_material[:rsa_key_size_bytes]
+                wrapped_key_material = encrypted_key_material[rsa_key_size_bytes:]
+
+                aes_key = decrypt_key.decrypt(
+                    wrapped_aes_key,
+                    padding.OAEP(
+                        mgf=padding.MGF1(algorithm=hashes.SHA256()),
+                        algorithm=hashes.SHA256(),
+                        label=None,
+                    ),
+                )
+
+                return keywrap.aes_key_unwrap_with_padding(
+                    aes_key, wrapped_key_material, default_backend()
+                )
+
+            case _:
+                raise KMSInvalidStateException(
+                    f"Unsupported padding, requested wrapping algorithm: '{algo}'"
                 )
 
     def _validate_plaintext_key_type_based(

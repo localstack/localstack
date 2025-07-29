@@ -8,6 +8,7 @@ from localstack.aws.api.cloudformation import (
     ChangeSetType,
     CreateChangeSetInput,
     CreateStackInput,
+    CreateStackSetInput,
     ExecutionStatus,
     Output,
     Parameter,
@@ -15,7 +16,11 @@ from localstack.aws.api.cloudformation import (
     StackDriftInformation,
     StackDriftStatus,
     StackEvent,
+    StackInstanceComprehensiveStatus,
+    StackInstanceDetailedStatus,
+    StackInstanceStatus,
     StackResource,
+    StackSetOperation,
     StackStatus,
     StackStatusReason,
 )
@@ -274,3 +279,36 @@ class ChangeSet:
     @property
     def region_name(self) -> str:
         return self.stack.region_name
+
+
+class StackInstance:
+    def __init__(
+        self, account_id: str, region_name: str, stack_set_id: str, operation_id: str, stack_id: str
+    ):
+        self.account_id = account_id
+        self.region_name = region_name
+        self.stack_set_id = stack_set_id
+        self.operation_id = operation_id
+        self.stack_id = stack_id
+
+        self.status: StackInstanceStatus = StackInstanceStatus.CURRENT
+        self.stack_instance_status = StackInstanceComprehensiveStatus(
+            DetailedStatus=StackInstanceDetailedStatus.SUCCEEDED
+        )
+
+
+class StackSet:
+    stack_instances: list[StackInstance]
+    operations: dict[str, StackSetOperation]
+
+    def __init__(self, account_id: str, region_name: str, request_payload: CreateStackSetInput):
+        self.account_id = account_id
+        self.region_name = region_name
+
+        self.stack_set_name = request_payload["StackSetName"]
+        self.stack_set_id = f"{self.stack_set_name}:{long_uid()}"
+        self.template_body = request_payload.get("TemplateBody")
+        self.template_url = request_payload.get("TemplateURL")
+
+        self.stack_instances = []
+        self.operations = {}

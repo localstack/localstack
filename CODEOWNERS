@@ -3,7 +3,7 @@
 ######################
 
 # CODEOWNERS
-/CODEOWNERS @thrau @dominikschubert @alexrashed
+/CODEOWNERS @dominikschubert @alexrashed
 
 # README / Docs
 /docs/ @thrau @HarshCasper
@@ -118,10 +118,10 @@
 /tests/aws/services/cloudcontrol/ @simonrw
 
 # cloudformation
-/localstack-core/localstack/aws/api/cloudformation/ @dominikschubert @pinzon @simonrw
-/localstack-core/localstack/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/aws/services/cloudformation/ @dominikschubert @pinzon @simonrw
-/tests/unit/services/cloudformation/ @dominikschubert @pinzon @simonrw
+/localstack-core/localstack/aws/api/cloudformation/ @simonrw @pinzon @dominikschubert
+/localstack-core/localstack/services/cloudformation/ @simonrw @pinzon @dominikschubert
+/tests/aws/services/cloudformation/ @simonrw @pinzon @dominikschubert
+/tests/unit/services/cloudformation/ @simonrw @pinzon @dominikschubert
 
 # cloudwatch
 /localstack-core/localstack/aws/api/cloudwatch/ @pinzon @steffyP
