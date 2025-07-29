@@ -1294,6 +1294,5 @@ class CloudformationProviderV2(CloudformationProvider):
     def list_exports(
         self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
-        store = get_cloudformation_store(account_id=context.account_id, region_name=context.region)
-
-        return ListExportsOutput(Exports=store.exports)
+        store = get_cloudformation_store()
+        return ListExportsOutput(Exports=store.exports_v2.values())
