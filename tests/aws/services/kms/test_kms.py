@@ -138,6 +138,21 @@ class TestKMS:
         assert f":{region_name}:" in response["Arn"]
         assert f":{account_id}:" in response["Arn"]
 
+    @markers.aws.only_localstack
+    def test_unsupported_rotate_key_on_demand_with_imported_key_material(
+        self, kms_create_key, aws_client, snapshot
+    ):
+        key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.rotate_key_on_demand(KeyId=key_id)
+
+        assert e.value.response["ResponseMetadata"]["HTTPStatusCode"] == 501
+        assert (
+            e.value.response["Error"]["Message"]
+            == "Rotation of imported keys is not supported yet."
+        )
+
     @markers.aws.validated
     def test_tag_existing_key_and_untag(
         self, kms_client_for_region, kms_create_key, snapshot, region_name

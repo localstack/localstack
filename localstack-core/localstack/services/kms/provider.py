@@ -1408,9 +1408,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException()
         if key.metadata["Origin"] == OriginType.EXTERNAL:
-            raise UnsupportedOperationException(
-                f"{key.metadata['Arn']} origin is EXTERNAL which is not valid for this operation."
-            )
+            raise NotImplementedError("Rotation of imported keys is not supported yet.")
 
         key.rotate_key_on_demand()
 
