@@ -69,10 +69,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.resolved_parameters = dict()
         self._deferred_actions = list()
 
-    # TODO: use a structured type for the return value
     def execute(self) -> ChangeSetModelExecutorResult:
+        # constructive process
         self.process()
 
+        # perform all deferred actions such as deletions. These must happen in reverse from their
+        # defined order so that resource dependencies are honoured
+        # TODO: errors will stop all rollbacks; get parity on this behaviour
         for action in self._deferred_actions[::-1]:
             action()
 
@@ -80,7 +83,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
         )
 
-    def _defer(self, action: DeferredAction):
+    def _defer_action(self, action: DeferredAction):
         self._deferred_actions.append(action)
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
@@ -279,7 +282,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         before_properties=before_properties,
                         after_properties=None,
                     )
-                    # Register a Create for the next type.
                     self._process_event(
                         ChangeAction.Modify,
                         name,
@@ -288,7 +290,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         resource_type=before.resource_type,
                     )
 
-                self._defer(perform_deletion)
+                self._defer_action(perform_deletion)
 
                 event = self._execute_resource_action(
                     action=ChangeAction.Add,
@@ -332,7 +334,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     resource_type=before.resource_type,
                 )
 
-            self._defer(perform_deletion)
+            self._defer_action(perform_deletion)
         elif not is_nothing(after):
             # Case: addition
             self._process_event(
