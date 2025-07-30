@@ -1474,6 +1474,9 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
+    @pytest.mark.skip(
+        reason="This needs to be fixed as AWS introduced support for on demand rotation of imported keys."
+    )
     def test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material(
         self, kms_create_key, aws_client, snapshot
     ):
