@@ -409,14 +409,16 @@ class TestSES:
             Enabled=enabled,
         )
         snapshot.match(f"set-headers-{notification_type.lower()}-enabled-{enabled}", response)
-        
+
         # Idempotency check
         response2 = aws_client.ses.set_identity_headers_in_notifications_enabled(
             Identity=sender_email,
             NotificationType=notification_type,
             Enabled=enabled,
         )
-        snapshot.match(f"set-headers-{notification_type.lower()}-enabled-{enabled}-idempotent", response2)
+        snapshot.match(
+            f"set-headers-{notification_type.lower()}-enabled-{enabled}-idempotent", response2
+        )
 
     @markers.aws.validated
     def test_set_identity_headers_in_notifications_enabled_failure_invalid_type(
@@ -435,7 +437,7 @@ class TestSES:
                 NotificationType=notification_type,
                 Enabled=enabled,
             )
-        snapshot.match(f"set-headers-error-invalidtype", exc.value.response)
+        snapshot.match("set-headers-error-invalidtype", exc.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("notification_type", ["Bounce", "Complaint", "Delivery"])
@@ -454,8 +456,10 @@ class TestSES:
                 NotificationType=notification_type,
                 Enabled=enabled,
             )
-        snapshot.match(f"set-headers-error-unknown-identity-{notification_type.lower()}", exc.value.response)
-    
+        snapshot.match(
+            f"set-headers-error-unknown-identity-{notification_type.lower()}", exc.value.response
+        )
+
     @markers.aws.manual_setup_required
     @markers.snapshot.skip_snapshot_verify(
         paths=[

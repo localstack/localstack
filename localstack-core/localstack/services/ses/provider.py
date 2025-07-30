@@ -537,11 +537,15 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         **kwargs,
     ) -> SetIdentityHeadersInNotificationsEnabledResponse:
         """
-        Sets whether Amazon SES includes the original email headers in the Amazon SNS notifications 
+        Sets whether Amazon SES includes the original email headers in the Amazon SNS notifications
         for a specified identity and notification type.
         """
         # Validate notification_type
-        if notification_type not in (NotificationType.Bounce, NotificationType.Complaint, NotificationType.Delivery):
+        if notification_type not in (
+            NotificationType.Bounce,
+            NotificationType.Complaint,
+            NotificationType.Delivery,
+        ):
             raise InvalidParameterValue(
                 f"Invalid notification type: {notification_type}. "
                 "Valid values are: Bounce, Complaint, Delivery."
@@ -551,11 +555,14 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         if identity not in backend.addresses:
             raise MessageRejected(f"Identity {identity} is not verified or does not exist.")
 
-        # Store the setting in the backend 
+        # Store the setting in the backend
         if not hasattr(backend, "identity_headers_in_notifications_enabled"):
             backend.identity_headers_in_notifications_enabled = {}
-        backend.identity_headers_in_notifications_enabled.setdefault(identity, {})[notification_type] = enabled
+        backend.identity_headers_in_notifications_enabled.setdefault(identity, {})[
+            notification_type
+        ] = enabled
         return SetIdentityHeadersInNotificationsEnabledResponse()
+
 
 @dataclasses.dataclass(frozen=True)
 class SNSPayload:
