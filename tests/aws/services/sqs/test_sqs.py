@@ -544,14 +544,22 @@ class TestSqsProvider:
 
         snapshot.match("send_oversized_message_batch", response)
 
+    @pytest.mark.parametrize(
+        "message_group_id",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("a" * 129, id="too_long"),
+            pytest.param("group 123", id="spaces"),
+        ],
+    )
     @markers.aws.validated
-    def test_send_message_to_standard_queue_with_empty_message_group_id(
-        self, sqs_create_queue, aws_client, snapshot
+    def test_send_message_to_standard_queue_with_invalid_message_group_id(
+        self, sqs_queue, aws_client, snapshot, message_group_id
     ):
-        queue = sqs_create_queue()
-
         with pytest.raises(ClientError) as e:
-            aws_client.sqs.send_message(QueueUrl=queue, MessageBody="message", MessageGroupId="")
+            aws_client.sqs.send_message(
+                QueueUrl=sqs_queue, MessageBody="message", MessageGroupId=message_group_id
+            )
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
@@ -786,9 +794,7 @@ class TestSqsProvider:
         assert message_sent_hash == message_received_hash
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
-    def test_message_deduplication_id_too_long(self, sqs_create_queue, aws_client, snapshot):
-        # see issue https://github.com/localstack/localstack/issues/6612
+    def test_message_deduplication_id_success(self, sqs_create_queue, aws_client, snapshot):
         queue_name = f"queue-{short_uid()}.fifo"
         attributes = {"FifoQueue": "true"}
         queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
@@ -800,36 +806,28 @@ class TestSqsProvider:
             MessageDeduplicationId="a" * 128,
         )
 
+    @pytest.mark.parametrize(
+        "deduplication_id",
+        [
+            pytest.param("", id="empty"),
+            pytest.param("a" * 129, id="too_long"),
+            pytest.param("group 123", id="spaces"),
+        ],
+    )
+    @markers.aws.validated
+    def test_message_deduplication_id_invalid(
+        self, sqs_create_queue, aws_client, snapshot, deduplication_id
+    ):
+        queue_name = f"queue-{short_uid()}.fifo"
+        attributes = {"FifoQueue": "true"}
+        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
+
         with pytest.raises(ClientError) as e:
             aws_client.sqs.send_message(
                 QueueUrl=queue_url,
                 MessageBody="Hello World!",
                 MessageGroupId="test",
-                MessageDeduplicationId="a" * 129,
-            )
-        snapshot.match("error-response", e.value.response)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Detail"])
-    def test_message_group_id_too_long(self, sqs_create_queue, aws_client, snapshot):
-        # see issue https://github.com/localstack/localstack/issues/6612
-        queue_name = f"queue-{short_uid()}.fifo"
-        attributes = {"FifoQueue": "true"}
-        queue_url = sqs_create_queue(QueueName=queue_name, Attributes=attributes)
-
-        aws_client.sqs.send_message(
-            QueueUrl=queue_url,
-            MessageBody="Hello World!",
-            MessageGroupId="a" * 128,
-            MessageDeduplicationId="1",
-        )
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sqs.send_message(
-                QueueUrl=queue_url,
-                MessageBody="Hello World!",
-                MessageGroupId="a" * 129,
-                MessageDeduplicationId="2",
+                MessageDeduplicationId=deduplication_id,
             )
         snapshot.match("error-response", e.value.response)
 
@@ -4740,6 +4738,13 @@ class TestSqsProvider:
         with pytest.raises(ClientError) as e:
             aws_client.sqs_query.get_queue_attributes(QueueUrl=queue_url)
         snapshot.match("queue-does-not-exist-query", e.value.response)
+
+    @markers.aws.validated
+    def test_fair_queue_with_message_group_id(self, sqs_queue, aws_sqs_client, snapshot):
+        send_result = aws_sqs_client.send_message(
+            QueueUrl=sqs_queue, MessageBody="message", MessageGroupId="test"
+        )
+        snapshot.match("send_message", send_result)
 
 
 @pytest.fixture()
