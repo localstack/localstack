@@ -5,10 +5,11 @@ import json
 import logging
 from datetime import datetime
 from http import HTTPStatus
+from json import JSONDecodeError
 
 from rolo.request import restore_payload
 
-from localstack.aws.api.lambda_ import InvocationType, InvokeMode
+from localstack.aws.api.lambda_ import InvocationType
 from localstack.aws.protocol.serializer import gen_amzn_requestid
 from localstack.http import Request, Response, Router
 from localstack.http.dispatcher import Handler
@@ -100,8 +101,6 @@ class FunctionUrlRouter:
         )
         if result.is_error:
             response = Response("Internal Server Error", HTTPStatus.BAD_GATEWAY)
-        elif url_config.invoke_mode == InvokeMode.RESPONSE_STREAM:
-            response = parse_lambda_stream_response(result)
         else:
             response = lambda_result_to_response(result)
         return response
@@ -194,7 +193,18 @@ def lambda_result_to_response(result: InvocationResult):
     )
 
     original_payload = to_str(result.payload)
-    parsed_result = json.loads(original_payload)
+    try:
+        parsed_result = json.loads(original_payload)
+    except JSONDecodeError:
+        # URL router must be able to parse a Streaming Response without necessary defining it in the URL Config
+        # And if the body is a simple string, it should be returned without issues
+        split_index = original_payload.find("\x00" * 8)
+        if split_index == -1:
+            parsed_result = {"body": original_payload}
+        else:
+            metadata = original_payload[:split_index]
+            body_str = original_payload[split_index + 8 :]
+            parsed_result = {**json.loads(metadata), "body": body_str}
 
     # patch to fix whitespaces
     # TODO: check if this is a downstream issue of invocation result serialization
@@ -203,6 +213,7 @@ def lambda_result_to_response(result: InvocationResult):
     if isinstance(parsed_result, str):
         # a string is a special case here and is returned as-is
         response.data = parsed_result
+
     elif isinstance(parsed_result, dict):
         # if it's a dict it might be a proper response
         if isinstance(parsed_result.get("headers"), dict):
@@ -224,30 +235,3 @@ def lambda_result_to_response(result: InvocationResult):
         response.data = original_payload
 
     return response
-
-
-def parse_lambda_stream_response(result: InvocationResult) -> Response:
-    # Split on the first 8 null bytes (separator between headers and body)
-    raw = result.payload
-    split_index = raw.find(b"\x00" * 8)
-    if split_index == -1:
-        raise ValueError("Invalid Lambda stream response: separator not found")
-
-    header_json = raw[:split_index]
-    body_bytes = raw[split_index + 8 :]
-
-    metadata = json.loads(header_json)
-
-    resp = Response()
-    resp.status_code = metadata.get("statusCode", 200)
-
-    resp.headers.update(
-        {
-            "Connection": "keep-alive",
-            "x-amzn-requestid": result.request_id,
-            "x-amzn-trace-id": long_uid(),
-        }
-    )
-    resp.headers.update(metadata.get("headers", {}))
-    resp.data = body_bytes
-    return resp
