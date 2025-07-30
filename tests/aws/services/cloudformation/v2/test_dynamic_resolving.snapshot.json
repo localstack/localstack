@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_update_parameter_between_deployments": {
-    "recorded-date": "29-07-2025, 20:33:15",
+    "recorded-date": "30-07-2025, 20:12:02",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -364,7 +364,7 @@
     }
   },
   "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_change_parameter_type": {
-    "recorded-date": "29-07-2025, 21:17:17",
+    "recorded-date": "30-07-2025, 20:12:29",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",

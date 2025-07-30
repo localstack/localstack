@@ -68,6 +68,7 @@ from localstack.aws.api.cloudformation import (
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
+from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
@@ -184,7 +185,30 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str) -> Stack
 
 class CloudformationProviderV2(CloudformationProvider):
     @staticmethod
+    def _resolve_parameters(
+        template: Optional[dict], parameters: Optional[dict], account_id: str, region_name: str
+    ) -> tuple[dict | None, dict | None]:
+        if not template:
+            return None, parameters
+
+        template_copy = template.copy()
+        parameters_copy = parameters.copy() if parameters else {}
+
+        template_parameters = template.get("Parameters", {})
+        for param_name, param_defn in template_parameters.items():
+            param_type = param_defn.get("Type")
+            if param_type == "AWS::SSM::Parameter::Value<String>":
+                if ssm_param_name := parameters.get(param_name):
+                    ssm_param_value = resolve_ssm_parameter(account_id, region_name, ssm_param_name)
+
+                    parameters_copy[param_name] = ssm_param_value
+                    template_copy["Parameters"][param_name]["Type"] = "String"
+
+        return template_copy, parameters_copy
+
+    @classmethod
     def _setup_change_set_model(
+        cls,
         change_set: ChangeSet,
         before_template: Optional[dict],
         after_template: Optional[dict],
@@ -192,6 +216,13 @@ class CloudformationProviderV2(CloudformationProvider):
         after_parameters: Optional[dict],
         previous_update_model: Optional[UpdateModel],
     ):
+        after_template, after_parameters = cls._resolve_parameters(
+            after_template,
+            after_parameters,
+            change_set.stack.account_id,
+            change_set.stack.region_name,
+        )
+
         # Create and preprocess the update graph for this template update.
         change_set_model = ChangeSetModel(
             before_template=before_template,

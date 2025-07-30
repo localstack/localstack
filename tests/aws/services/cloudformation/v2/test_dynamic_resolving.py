@@ -27,7 +27,6 @@ pytestmark = pytest.mark.skipif(
     ]
 )
 class TestSSMParameterValues:
-    @pytest.mark.skip("CFNV2:resolve")
     @markers.aws.validated
     def test_update_parameter_between_deployments(
         self, aws_client, snapshot, create_parameter, capture_update_process
@@ -78,7 +77,6 @@ class TestSSMParameterValues:
             custom_update_step=update_parameter_value,
         )
 
-    @pytest.mark.skip("CFNV2:resolve")
     @markers.aws.validated
     def test_change_parameter_type(
         self, aws_client, snapshot, create_parameter, capture_update_process

@@ -1,20 +1,20 @@
 {
   "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_change_parameter_type": {
-    "last_validated_date": "2025-07-29T21:17:17+00:00",
+    "last_validated_date": "2025-07-30T20:12:29+00:00",
     "durations_in_seconds": {
-      "setup": 1.62,
-      "call": 21.95,
-      "teardown": 0.31,
-      "total": 23.88
+      "setup": 0.0,
+      "call": 26.87,
+      "teardown": 0.38,
+      "total": 27.25
     }
   },
   "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_update_parameter_between_deployments": {
-    "last_validated_date": "2025-07-29T20:33:15+00:00",
+    "last_validated_date": "2025-07-30T20:12:02+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 26.89,
-      "teardown": 0.35,
-      "total": 27.24
+      "setup": 1.65,
+      "call": 27.54,
+      "teardown": 0.34,
+      "total": 29.53
     }
   }
 }
