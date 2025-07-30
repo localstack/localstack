@@ -287,11 +287,23 @@ class JsonDecoder(Decoder):
 
 
 def get_default_encoder() -> Encoder:
-    return JsonEncoder() if config.ENABLE_JSON_EXPERIMENTAL_BACKEND else PickleEncoder()
+    match config.STATE_SERIALIZATION_BACKEND:
+        case "jsonpickle":
+            return JsonEncoder()
+        case "dill":
+            return PickleEncoder()
+        case _:
+            return PickleEncoder()
 
 
 def get_default_decoder() -> Decoder:
-    return JsonDecoder() if config.ENABLE_JSON_EXPERIMENTAL_BACKEND else PickleDecoder()
+    match config.STATE_SERIALIZATION_BACKEND:
+        case "jsonpickle":
+            return JsonDecoder()
+        case "dill":
+            return PickleDecoder()
+        case _:
+            return PickleDecoder()
 
 
 class ObjectStateReducer(Generic[_T]):

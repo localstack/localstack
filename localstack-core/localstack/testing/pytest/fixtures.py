@@ -2618,10 +2618,7 @@ def clean_up(
     yield _clean_up
 
 
-@pytest.fixture(
-    params=[False, True],
-    ids=["dill", "jsonpickle"],
-)
+@pytest.fixture(params=["dill", "jsonpickle"])
 def patch_default_encoder(request, monkeypatch):
-    enable_json = request.param
-    monkeypatch.setattr(config, "ENABLE_JSON_EXPERIMENTAL_BACKEND", enable_json)
+    backend = request.param
+    monkeypatch.setattr(config, "STATE_SERIALIZATION_BACKEND", backend)

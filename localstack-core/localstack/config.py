@@ -1254,8 +1254,9 @@ IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 # This flag enables all responses from LocalStack to contain a `x-localstack` HTTP header.
 LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_not_false("LOCALSTACK_RESPONSE_HEADER_ENABLED")
 
-# Enable experimental JSON backend for serialization (`dill` is the default one)
-ENABLE_JSON_EXPERIMENTAL_BACKEND = is_env_true("ENABLE_JSON_EXPERIMENTAL_BACKEND")
+# Serialization backend for the LocalStack internal state (`dill` is used by default`).
+# `jsonpickle` enables the new experimental backend.
+STATE_SERIALIZATION_BACKEND = os.environ.get("STATE_SERIALIZATION_BACKEND", "").strip() or "dill"
 
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
@@ -1307,7 +1308,6 @@ CONFIG_ENV_VARS = [
     "DYNAMODB_WRITE_ERROR_PROBABILITY",
     "EAGER_SERVICE_LOADING",
     "ENABLE_CONFIG_UPDATES",
-    "ENABLE_JSON_EXPERIMENTAL_BACKEND",
     "EVENT_RULE_ENGINE",
     "EXTRA_CORS_ALLOWED_HEADERS",
     "EXTRA_CORS_ALLOWED_ORIGINS",
@@ -1394,6 +1394,7 @@ CONFIG_ENV_VARS = [
     "SQS_ENDPOINT_STRATEGY",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
+    "STATE_SERIALIZATION_BACKEND",
     "STRICT_SERVICE_LOADING",
     "TF_COMPAT_MODE",
     "USE_SSL",
