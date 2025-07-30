@@ -116,6 +116,24 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_delete_message_batch_with_too_large_batch[sqs_query]": {
     "last_validated_date": "2024-04-30T13:49:31+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs]": {
+    "last_validated_date": "2025-07-30T09:52:07+00:00",
+    "durations_in_seconds": {
+      "setup": 1.2,
+      "call": 0.17,
+      "teardown": 0.18,
+      "total": 1.55
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs_query]": {
+    "last_validated_date": "2025-07-30T09:52:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.18,
+      "call": 0.58,
+      "teardown": 0.19,
+      "total": 0.95
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
     "last_validated_date": "2024-05-24T10:00:47+00:00"
   },
@@ -209,8 +227,41 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_marker_serialization_query_protocol": {
     "last_validated_date": "2024-04-29T06:07:04+00:00"
   },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_too_long": {
-    "last_validated_date": "2024-04-30T13:35:34+00:00"
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_invalid[empty]": {
+    "last_validated_date": "2025-07-30T10:25:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 0.73,
+      "teardown": 0.18,
+      "total": 1.5
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_invalid[spaces]": {
+    "last_validated_date": "2025-07-30T10:25:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.38,
+      "teardown": 0.19,
+      "total": 0.57
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_invalid[too_long]": {
+    "last_validated_date": "2025-07-30T10:25:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.31,
+      "teardown": 0.19,
+      "total": 0.5
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_success": {
+    "last_validated_date": "2025-07-30T10:26:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.59,
+      "call": 0.75,
+      "teardown": 0.2,
+      "total": 1.54
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_group_id_too_long": {
     "last_validated_date": "2024-04-30T13:35:35+00:00"
@@ -314,8 +365,32 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size[sqs_query]": {
     "last_validated_date": "2024-04-30T13:33:10+00:00"
   },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_empty_message_group_id": {
-    "last_validated_date": "2024-11-08T12:08:17+00:00"
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_invalid_message_group_id[empty]": {
+    "last_validated_date": "2025-07-30T10:01:38+00:00",
+    "durations_in_seconds": {
+      "setup": 1.71,
+      "call": 0.23,
+      "teardown": 0.26,
+      "total": 2.2
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_invalid_message_group_id[spaces]": {
+    "last_validated_date": "2025-07-30T10:01:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.24,
+      "call": 0.22,
+      "teardown": 0.27,
+      "total": 0.73
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_invalid_message_group_id[too_long]": {
+    "last_validated_date": "2025-07-30T10:01:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.24,
+      "call": 0.22,
+      "teardown": 0.26,
+      "total": 0.72
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_with_binary_attributes[sqs]": {
     "last_validated_date": "2024-04-30T13:33:48+00:00"
