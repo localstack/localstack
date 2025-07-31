@@ -4,6 +4,8 @@ from operator import itemgetter
 
 import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider, skipped_v2_items
 
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
@@ -14,8 +16,6 @@ from localstack.utils.files import load_file
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.sync import retry
-from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
-from tests.aws.services.cloudformation.conftest import extra_v2_snapshot_skips, skip_if_v2_provider
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
@@ -166,12 +166,10 @@ def test_cfn_apigateway_swagger_import(
     assert content["url"].endswith("/post")
 
 
-skip_if_v2_provider(
+@skip_if_v2_provider(
     reason="The v2 provider appears to instead return the correct url: "
     "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/"
 )
-
-
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)

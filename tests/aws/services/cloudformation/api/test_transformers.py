@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -214,6 +215,7 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
         call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
 
 
+@skip_if_v2_provider(reason="CFNV2:LanguageExtensions")
 class TestLanguageExtensionsTransform:
     """
     Manual testing of the language extensions trasnform
