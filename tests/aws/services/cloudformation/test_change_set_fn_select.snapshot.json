@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_add_to_static_property": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_add_to_static_property": {
     "recorded-date": "28-05-2025, 13:14:01",
     "recorded-content": {
       "create-change-set-1": {
@@ -377,7 +377,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_remove_from_static_property": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_remove_from_static_property": {
     "recorded-date": "28-05-2025, 13:17:47",
     "recorded-content": {
       "create-change-set-1": {
@@ -755,7 +755,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_in_selection_list": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_in_selection_list": {
     "recorded-date": "28-05-2025, 13:21:34",
     "recorded-content": {
       "create-change-set-1": {
@@ -1133,7 +1133,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_in_selection_index_only": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_in_selection_index_only": {
     "recorded-date": "28-05-2025, 13:23:46",
     "recorded-content": {
       "create-change-set-1": {
@@ -1511,7 +1511,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_in_selected_element_type_ref": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_in_selected_element_type_ref": {
     "recorded-date": "28-05-2025, 13:32:24",
     "recorded-content": {
       "create-change-set-1": {
@@ -1889,11 +1889,11 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_index_select_from_parameter_list": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_index_select_from_parameter_list": {
     "recorded-date": "28-05-2025, 13:56:52",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_get_att_reference": {
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_fn_select_change_get_att_reference": {
     "recorded-date": "28-05-2025, 14:44:47",
     "recorded-content": {
       "create-change-set-1": {
