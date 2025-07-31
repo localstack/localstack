@@ -1,0 +1,38 @@
+{
+  "tests/aws/services/apigateway/resources/test_apigateway.py::TestServerlessApigwLambda::test_serverless_like_deployment_with_update": {
+    "last_validated_date": "2025-04-11T11:52:58+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_account": {
+    "last_validated_date": "2025-04-11T11:57:08+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
+    "last_validated_date": "2025-04-11T11:58:47+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
+    "last_validated_date": "2025-04-11T11:56:24+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_cfn_apigateway_swagger_import": {
+    "last_validated_date": "2025-04-11T11:53:14+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
+    "last_validated_date": "2025-04-11T11:55:38+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
+    "last_validated_date": "2025-04-11T11:55:07+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
+    "last_validated_date": "2025-04-11T11:54:34+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
+    "last_validated_date": "2025-04-11T11:54:13+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
+    "last_validated_date": "2025-04-11T11:59:45+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_update_apigateway_stage": {
+    "last_validated_date": "2025-04-11T11:58:28+00:00"
+  },
+  "tests/aws/services/apigateway/resources/test_apigateway.py::test_update_usage_plan": {
+    "last_validated_date": "2025-04-11T11:57:42+00:00"
+  }
+}

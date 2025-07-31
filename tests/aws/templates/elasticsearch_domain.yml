@@ -18,8 +18,8 @@ Resources:
         DedicatedMasterEnabled: true
         InstanceCount: '2'
         ZoneAwarenessEnabled: true
-        InstanceType: 'm3.medium.elasticsearch'
-        DedicatedMasterType: 'm3.medium.elasticsearch'
+        InstanceType: m5.large.elasticsearch
+        DedicatedMasterType: m5.large.elasticsearch
         DedicatedMasterCount: '3'
       EBSOptions:
         EBSEnabled: true

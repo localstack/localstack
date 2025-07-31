@@ -1,0 +1,14 @@
+{
+  "tests/aws/services/route53/resources/test_route53.py::test_create_health_check": {
+    "last_validated_date": "2025-04-11T15:12:56+00:00"
+  },
+  "tests/aws/services/route53/resources/test_route53.py::test_create_record_set_via_id": {
+    "last_validated_date": "2025-04-11T15:09:29+00:00"
+  },
+  "tests/aws/services/route53/resources/test_route53.py::test_create_record_set_via_name": {
+    "last_validated_date": "2025-04-11T15:10:48+00:00"
+  },
+  "tests/aws/services/route53/resources/test_route53.py::test_create_record_set_without_resource_record": {
+    "last_validated_date": "2025-04-11T15:12:07+00:00"
+  }
+}

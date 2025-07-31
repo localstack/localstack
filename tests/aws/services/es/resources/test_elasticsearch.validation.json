@@ -1,0 +1,5 @@
+{
+  "tests/aws/services/es/resources/test_elasticsearch.py::test_cfn_handle_elasticsearch_domain": {
+    "last_validated_date": "2025-04-11T13:26:11+00:00"
+  }
+}
