@@ -1,12 +1,12 @@
 import os
 
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 THIS_DIR = os.path.dirname(__file__)
 
