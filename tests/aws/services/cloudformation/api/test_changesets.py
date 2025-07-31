@@ -6,7 +6,6 @@ import pytest
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
     load_template_raw,
@@ -18,6 +17,10 @@ from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
+)
+from tests.aws.services.cloudformation.conftest import (
+    extra_v2_snapshot_skips,
+    skip_if_v2_provider,
 )
 
 
@@ -62,9 +65,6 @@ class TestUpdates:
 
         res.destroy()
 
-    @pytest.mark.skipif(
-        condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
-    )
     @markers.aws.validated
     def test_simple_update_two_resources(
         self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
@@ -111,9 +111,6 @@ class TestUpdates:
     # TODO: the error response is incorrect, however the test is otherwise validated and raises
     #  an error because the SSM parameter has been deleted (removed from the stack).
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
-    @pytest.mark.skipif(
-        condition=not is_v2_engine() and not is_aws_cloud(), reason="Test fails with the old engine"
-    )
     def test_deleting_resource(
         self, aws_client: ServiceLevelClientFactory, deploy_cfn_template, snapshot
     ):
@@ -285,11 +282,11 @@ def test_create_change_set_update_without_parameters(
         cleanup_stacks(stacks=[stack_id])
 
 
-# def test_create_change_set_with_template_url():
-#     pass
-
-
-@pytest.mark.skipif(condition=not is_aws_cloud(), reason="change set type not implemented")
+# TODO: Key error during deletion
+#   File "/Users/simon/work/localstack/localstack/localstack-core/localstack/services/cloudformation/v2/provider.py", line 162, in find_change_set_v2
+#     return state.change_sets[change_set_name]
+#            ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+# KeyError: 'arn:aws:cloudformation:us-east-1:000000000000:changeSet/change-set-926829fe/d065e78c'
 @markers.aws.validated
 def test_create_change_set_create_existing(cleanup_changesets, cleanup_stacks, aws_client):
     """tries to create an already existing stack"""
@@ -389,6 +386,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
+@skip_if_v2_provider(reason="CFNV2:Resolve")
 @markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
@@ -612,6 +610,7 @@ def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
     deploy()
 
 
+@skip_if_v2_provider(reason="CFNV2:Metadata, CFNV2:Other")
 @markers.aws.validated
 def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
@@ -763,6 +762,10 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         "$..IncludeNestedStacks",
         "$..Parameters",
     ]
+    + extra_v2_snapshot_skips(
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    )
 )
 @markers.aws.validated
 def test_empty_changeset(snapshot, cleanups, aws_client):
@@ -844,6 +847,7 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
+@skip_if_v2_provider(reason="CFNV2:DeleteChangeSet")
 @markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
@@ -967,6 +971,10 @@ def test_create_while_in_review(aws_client, snapshot, cleanups):
 
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..Capabilities", "$..IncludeNestedStacks", "$..NotificationARNs", "$..Parameters"]
+    + extra_v2_snapshot_skips(
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    )
 )
 @markers.aws.validated
 def test_multiple_create_changeset(aws_client, snapshot, cleanups):
@@ -1003,6 +1011,7 @@ def test_multiple_create_changeset(aws_client, snapshot, cleanups):
     )
 
 
+@skip_if_v2_provider(reason="CFNV2:DescribeStacks")
 @markers.snapshot.skip_snapshot_verify(paths=["$..LastUpdatedTime", "$..StackStatusReason"])
 @markers.aws.validated
 def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
@@ -1085,6 +1094,10 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
         "$..StatusReason",
         "$..StackStatusReason",
     ]
+    + extra_v2_snapshot_skips(
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    ),
 )
 @markers.aws.validated
 def test_name_conflicts(aws_client, snapshot, cleanups):
