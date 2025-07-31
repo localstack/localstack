@@ -83,7 +83,7 @@ jobs:
       # default "disableCaching" to `false` if it's a push or schedule event
       disableCaching: ${{ inputs.disableCaching == true }}
       # default "disableTestSelection" to `true` if it's a push or schedule event
-      disableTestSelection: ${{ (inputs.enableTestSelection != '' && inputs.enableTestSelection) || github.event_name == 'push' }}
+      disableTestSelection: ${{ (inputs.enableTestSelection != '' && !inputs.enableTestSelection) || github.event_name == 'push' }}
       PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
       forceARMTests: ${{ inputs.forceARMTests == true }}
     secrets:
@@ -96,7 +96,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test
-    if: ${{ inputs.onlyAcceptanceTests == false && inputs.enableTestSelection == false }}
+    # Do not push coverage data if only parts of the tests were executed
+    if: ${{ !(inputs.onlyAcceptanceTests == true || inputs.enableTestSelection == true || github.event_name == 'push') && !failure() && !cancelled() && github.repository == 'localstack/localstack' }}
     steps:
         - name: Checkout
           uses: actions/checkout@v4
