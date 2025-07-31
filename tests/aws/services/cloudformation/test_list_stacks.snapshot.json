@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_list_stacks.py::test_listing_stacks": {
+  "tests/aws/services/cloudformation/test_list_stacks.py::test_listing_stacks": {
     "recorded-date": "24-07-2025, 15:35:20",
     "recorded-content": {
       "stacks": [

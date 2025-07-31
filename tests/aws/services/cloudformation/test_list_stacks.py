@@ -2,6 +2,9 @@ import json
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+
+pytestmark = skip_if_v1_provider(reason="Requires the V2 engine")
 
 
 @markers.aws.validated

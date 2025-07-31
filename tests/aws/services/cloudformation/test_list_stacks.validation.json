@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_list_stacks.py::test_listing_stacks": {
+  "tests/aws/services/cloudformation/test_list_stacks.py::test_listing_stacks": {
     "last_validated_date": "2025-07-24T15:35:33+00:00",
     "durations_in_seconds": {
       "setup": 1.21,
