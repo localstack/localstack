@@ -40,5 +40,9 @@ class JSONataPackageInstaller(JavaInstallerMixin, MavenPackageInstaller):
         # override to install correct java version
         java_package.get_installer(self.java_version).install(target)
 
+    def get_java_home(self) -> str | None:
+        """Override to use the specific Java version"""
+        return java_package.get_installer(self.java_version).get_java_home()
+
 
 jpype_jsonata_package = JSONataPackage()
