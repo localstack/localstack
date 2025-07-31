@@ -468,3 +468,106 @@ class TestChangeSetFnTransform:
         }
 
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    def test_remove_transform_in_update_change_set(
+        self,
+        snapshot,
+        capture_update_process,
+        create_macro,
+    ):
+        name1 = f"parameter-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+        )
+        macro_name = "GenerateRandom"
+        create_macro(macro_name, macro_function_path)
+
+        template_1 = {
+            "Parameters": {"Input": {"Type": "String"}},
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": {
+                            "Fn::Transform": {
+                                "Name": "GenerateRandom",
+                            }
+                        },
+                    },
+                }
+            },
+        }
+
+        template_2 = {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Name": name1, "Type": "String", "Value": "foo"},
+                }
+            }
+        }
+
+        capture_update_process(snapshot, template_1, template_2, p1={"Input": "test"})
+
+    @markers.aws.validated
+    def test_update_parameter_transform_in_update_change_set(
+        self,
+        snapshot,
+        capture_update_process,
+        create_macro,
+    ):
+        name1 = f"parameter-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(name1, "parameter-name"))
+        snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
+
+        macro_function_path = os.path.join(
+            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+        )
+        macro_name = "GenerateRandom"
+        create_macro(macro_name, macro_function_path)
+
+        template_1 = {
+            "Parameters": {"Input": {"Type": "String"}},
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": {
+                            "Fn::Transform": {
+                                "Name": "GenerateRandom",
+                            }
+                        },
+                    },
+                }
+            },
+        }
+
+        template_2 = {
+            "Parameters": {"Input": {"Type": "String"}},
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Name": name1,
+                        "Type": "String",
+                        "Value": {
+                            "Fn::Transform": {
+                                "Name": "GenerateRandom",
+                            }
+                        },
+                    },
+                }
+            },
+        }
+
+        capture_update_process(
+            snapshot, template_1, template_2, p1={"Input": "test"}, p2={"Input": "test2"}
+        )

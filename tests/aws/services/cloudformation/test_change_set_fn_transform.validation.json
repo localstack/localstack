@@ -107,6 +107,15 @@
       "total": 44.89
     }
   },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_remove_transform_in_update_change_set": {
+    "last_validated_date": "2025-07-31T21:36:50+00:00",
+    "durations_in_seconds": {
+      "setup": 10.72,
+      "call": 36.7,
+      "teardown": 5.53,
+      "total": 52.95
+    }
+  },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_serverless_fn_transform": {
     "last_validated_date": "2025-06-03T21:32:10+00:00",
     "durations_in_seconds": {
@@ -114,6 +123,15 @@
       "call": 80.57,
       "teardown": 0.71,
       "total": 81.63
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_update_parameter_transform_in_update_change_set": {
+    "last_validated_date": "2025-07-31T21:38:55+00:00",
+    "durations_in_seconds": {
+      "setup": 10.84,
+      "call": 36.02,
+      "teardown": 5.42,
+      "total": 52.28
     }
   }
 }
