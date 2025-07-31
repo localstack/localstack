@@ -425,7 +425,10 @@ class TestEc2Integrations:
                 snapshot.transform.key_value("VpcId"),
                 snapshot.transform.key_value("HostedZoneId"),
                 snapshot.transform.key_value("subnet-id"),
-                snapshot.transform.key_value("network-interface-id"),
+                snapshot.transform.jsonpath(
+                    "$.available-endpoint.NetworkInterfaceIds[*]",
+                    value_replacement="network-interface-id",
+                ),
                 snapshot.transform.key_value("dns-suffix"),
                 snapshot.transform.key_value("host"),
             ]
@@ -455,7 +458,6 @@ class TestEc2Integrations:
         snapshot.match(
             "dns-suffix", vpc_endpoint["DnsEntries"][0]["DnsName"].split(".")[0].split("-")[-1]
         )
-        snapshot.match("network-interface-id", vpc_endpoint["NetworkInterfaceIds"][0])
         snapshot.match("available-endpoint", vpc_endpoint)
 
     @markers.aws.validated
