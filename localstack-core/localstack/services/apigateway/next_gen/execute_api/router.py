@@ -33,6 +33,7 @@ class RouteHostPathParameters(TypedDict, total=False):
     server: str | None
     stage: str | None
     vpce_suffix: str | None
+    vpce_dns: str | None
 
 
 class ApiGatewayEndpoint:
@@ -144,6 +145,13 @@ class ApiGatewayEndpoint:
         )
         return not_found
 
+    def vpc_endpoint_handler(
+        self, request: Request, **kwargs: Unpack[RouteHostPathParameters]
+    ) -> Response:
+        # TODO validate the vpc endpoint exists in the account/region before routing
+        kwargs["api_id"] = request.headers.get("x-apigw-api-id")
+        return self.__call__(request, **kwargs)
+
 
 class ApiGatewayRouter:
     router: Router[Handler]
@@ -158,6 +166,9 @@ class ApiGatewayRouter:
     def register_routes(self) -> None:
         LOG.debug("Registering API Gateway routes.")
         host_pattern = "<regex('.+?'):api_id><regex('(-vpce-[^.]+)?'):vpce_suffix>.execute-api.<regex('.*'):server>"
+        vpce_host_pattern = (
+            "<regex('vpce-.+'):vpce_dns>.execute-api.<regex('.*'):region>vpce.<regex('.*'):server>"
+        )
         deprecated_route_endpoint = deprecated_endpoint(
             endpoint=self.handler,
             previous_path="/restapis/<api_id>/<stage>/_user_request_",
@@ -212,6 +223,26 @@ class ApiGatewayRouter:
             self.router.add(
                 path=f"{self.EXECUTE_API_INTERNAL_PATH}/<api_id>/<stage>/<greedy_path:path>",
                 endpoint=self.handler,
+                strict_slashes=True,
+            ),
+            self.router.add(
+                path="/",
+                host=vpce_host_pattern,
+                endpoint=self.handler.vpc_endpoint_handler,
+                defaults={"path": "", "stage": None},
+                strict_slashes=True,
+            ),
+            self.router.add(
+                path="/<stage>/",
+                host=vpce_host_pattern,
+                endpoint=self.handler.vpc_endpoint_handler,
+                defaults={"path": ""},
+                strict_slashes=False,
+            ),
+            self.router.add(
+                path="/<stage>/<greedy_path:path>",
+                host=vpce_host_pattern,
+                endpoint=self.handler.vpc_endpoint_handler,
                 strict_slashes=True,
             ),
         ]

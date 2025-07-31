@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_integrations.py::test_create_execute_api_vpc_endpoint": {
-    "recorded-date": "15-04-2024, 23:07:07",
+    "recorded-date": "30-07-2025, 17:56:57",
     "recorded-content": {
       "endpoint-details": {
         "CreationTimestamp": "timestamp",
@@ -35,6 +35,7 @@
         "RequesterManaged": false,
         "RouteTableIds": [],
         "ServiceName": "com.amazonaws.<region>.execute-api",
+        "ServiceRegion": "<region>",
         "State": "available",
         "Tags": [],
         "VpcEndpointId": "<vpc-endpoint-id:1>",
@@ -46,6 +47,7 @@
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "dualstack",
           "types": [
             "PRIVATE"
           ],
