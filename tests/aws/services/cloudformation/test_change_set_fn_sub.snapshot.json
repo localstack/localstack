@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_string_pseudo": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_string_pseudo": {
     "recorded-date": "20-05-2025, 09:54:49",
     "recorded-content": {
       "create-change-set-1": {
@@ -385,7 +385,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_string_pseudo": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_string_pseudo": {
     "recorded-date": "20-05-2025, 09:59:44",
     "recorded-content": {
       "create-change-set-1": {
@@ -771,7 +771,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_delete_string_pseudo": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_delete_string_pseudo": {
     "recorded-date": "20-05-2025, 11:29:16",
     "recorded-content": {
       "create-change-set-1": {
@@ -1157,7 +1157,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter_literal": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter_literal": {
     "recorded-date": "20-05-2025, 11:54:12",
     "recorded-content": {
       "create-change-set-1": {
@@ -1543,7 +1543,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_parameter_literal": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_parameter_literal": {
     "recorded-date": "20-05-2025, 12:01:36",
     "recorded-content": {
       "create-change-set-1": {
@@ -1929,7 +1929,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_delete_parameter_literal": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_delete_parameter_literal": {
     "recorded-date": "20-05-2025, 12:05:00",
     "recorded-content": {
       "create-change-set-1": {
@@ -2315,7 +2315,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter_ref": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter_ref": {
     "recorded-date": "20-05-2025, 15:08:40",
     "recorded-content": {
       "create-change-set-1": {
@@ -2749,7 +2749,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_parameter_type": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_update_parameter_type": {
     "recorded-date": "20-05-2025, 15:10:16",
     "recorded-content": {
       "create-change-set-1": {
@@ -3183,7 +3183,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter": {
+  "tests/aws/services/cloudformation/test_change_set_fn_sub.py::TestChangeSetFnSub::test_fn_sub_addition_parameter": {
     "recorded-date": "20-05-2025, 15:26:13",
     "recorded-content": {
       "create-change-set-1": {
