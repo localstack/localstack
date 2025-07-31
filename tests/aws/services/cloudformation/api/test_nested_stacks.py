@@ -9,6 +9,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 
 @markers.aws.needs_fixing
@@ -294,6 +295,7 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
     assert ":" not in nested_stack["Stacks"][0]["StackName"]
 
 
+@skip_if_v2_provider(reason="CFNV2:Deletion")
 @markers.aws.validated
 def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name, snapshot):
     """
