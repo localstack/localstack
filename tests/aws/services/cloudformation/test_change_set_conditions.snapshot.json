@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_conditions.py::TestChangeSetConditions::test_condition_update_removes_resource": {
+  "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_condition_update_removes_resource": {
     "recorded-date": "15-04-2025, 13:51:50",
     "recorded-content": {
       "create-change-set-1": {
@@ -407,7 +407,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_conditions.py::TestChangeSetConditions::test_condition_update_adds_resource": {
+  "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_condition_update_adds_resource": {
     "recorded-date": "15-04-2025, 14:31:36",
     "recorded-content": {
       "create-change-set-1": {
@@ -766,7 +766,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_conditions.py::TestChangeSetConditions::test_condition_add_new_negative_condition_to_existent_resource": {
+  "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_condition_add_new_negative_condition_to_existent_resource": {
     "recorded-date": "15-04-2025, 15:11:48",
     "recorded-content": {
       "create-change-set-1": {
@@ -1174,7 +1174,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_conditions.py::TestChangeSetConditions::test_condition_add_new_positive_condition_to_existent_resource": {
+  "tests/aws/services/cloudformation/test_change_set_conditions.py::TestChangeSetConditions::test_condition_add_new_positive_condition_to_existent_resource": {
     "recorded-date": "15-04-2025, 16:00:40",
     "recorded-content": {
       "create-change-set-1": {
