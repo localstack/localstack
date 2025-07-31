@@ -2133,16 +2133,22 @@ class TestSqsProvider:
             },
         )
 
-        send_result = aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1", DelaySeconds=0)
+        send_result = aws_sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1", DelaySeconds=0
+        )
         snapshot.match("send_message_result", send_result)
 
-        response_initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=1)
+        response_initial_receive = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=1
+        )
         snapshot.match("receive_message_initial_result", response_initial_receive)
         assert response_initial_receive.get("Messages", []) == []
 
         time.sleep(delay_seconds + 1)
 
-        response_after_delay = aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
+        response_after_delay = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1
+        )
         snapshot.match("receive_message_after_delay_result", response_after_delay)
         messages = response_after_delay["Messages"]
         assert len(messages) == 1
