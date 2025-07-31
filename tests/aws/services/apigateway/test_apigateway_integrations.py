@@ -1099,7 +1099,7 @@ def test_create_execute_api_vpc_endpoint(
     # AWS
     #   url: https://{public-dns-hostname}.execute-api.{region}.vpce.amazonaws.com/{stage}
     #   x-apigw-api-id: {rest-api-id}
-    # LocalStack Not a clue
+    # LocalStack
     #   url: http://{public-dns-hostname}.execute-api.{region}.vpce.{localstack-host}/{stage}
     #   x-apigw-api-id: {rest-api-id}
     protocol = "https" if is_aws_cloud() else "http"
@@ -1115,7 +1115,7 @@ def test_create_execute_api_vpc_endpoint(
     # AWS
     #   url: https://{public-dns-hostname}.execute-api.{region}.vpce.amazonaws.com/{stage}
     #   host: {rest-api-id}.execute-api.{region}.amazonaws.com
-    # LocalStack Not a clue
+    # LocalStack
     #   url: http://{public-dns-hostname}.execute-api.{region}.vpce.{localstack_host}/{stage}
     #   host: {rest-api-id}.execute-api.{region}.{localstack-host}
     host = api_invoke_url(api_id).partition("//")[-1].strip("/")
