@@ -4,33 +4,6 @@ on:
   schedule:
     - cron: 0 2 * * MON-FRI
   push:
-    paths:
-      - '**'
-      - '!.github/**'
-      - '.github/actions/**'
-      - '.github/workflows/aws-main.yml'
-      - '.github/workflows/aws-tests.yml'
-      - '!CODEOWNERS'
-      - '!README.md'
-      - '!.gitignore'
-      - '!.git-blame-ignore-revs'
-      - '!docs/**'
-    branches:
-      - main
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
-  pull_request:
-    paths:
-      - '**'
-      - '!.github/**'
-      - '.github/actions/**'
-      - '.github/workflows/aws-main.yml'
-      - '.github/workflows/aws-tests.yml'
-      - '!CODEOWNERS'
-      - '!README.md'
-      - '!.gitignore'
-      - '!.git-blame-ignore-revs'
-      - '!docs/**'
   workflow_dispatch:
     inputs:
       onlyAcceptanceTests:
