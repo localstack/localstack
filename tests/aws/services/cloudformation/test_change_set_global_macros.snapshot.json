@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_base_global_macro": {
+  "tests/aws/services/cloudformation/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_base_global_macro": {
     "recorded-date": "24-06-2025, 15:16:22",
     "recorded-content": {
       "create-change-set-1": {
@@ -338,7 +338,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_update_after_macro_for_before_version_is_deleted": {
+  "tests/aws/services/cloudformation/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_update_after_macro_for_before_version_is_deleted": {
     "recorded-date": "26-06-2025, 11:59:06",
     "recorded-content": {
       "describe-change-set-1-prop-values": {
