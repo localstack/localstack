@@ -21,6 +21,7 @@ from localstack.services.stepfunctions.backend.store import SFNStore
 from localstack.services.stores import BaseStore, CrossRegionAttribute
 from localstack.services.sts.models import STSStore
 from localstack.services.transcribe.models import TranscribeStore
+from localstack.state import schema as ls_schema
 from localstack.state.schema import StoreSchemaBuilder, get_fully_qualified_name
 
 
@@ -69,4 +70,61 @@ def test_simple_store():
 
     build = StoreSchemaBuilder(MyStore)
     schema = build.build_schema()
-    print(json.dumps(schema, indent=2))
+    assert schema["attributes"]["field1"] == {
+        "LS/TYPE": "builtins.dict",
+        "LS/ARGS": ["builtins.str", "builtins.str"],
+    }
+    assert schema["attributes"]["field2"] == {
+        "LS/TYPE": "builtins.list",
+        "LS/ARGS": ["builtins.str"],
+    }
+    assert schema["attributes"]["field3"] == {
+        "LS/TYPE": "types.UnionType",
+        "LS/ARGS": ["builtins.str", "builtins.int"],
+    }
+    assert schema["attributes"]["field4"] == {
+        "LS/TYPE": "builtins.tuple",
+        "LS/ARGS": ["builtins.str", "builtins.int"],
+    }
+
+
+def test_nested_attributes():
+    class MyStore(BaseStore):
+        field1: dict[str, list[dict[str, str]]] = CrossRegionAttribute(default=dict)
+
+    build = StoreSchemaBuilder(MyStore)
+    schema = build.build_schema()
+    assert schema["attributes"]["field1"] == {
+        "LS/TYPE": "builtins.dict",
+        "LS/ARGS": [
+            "builtins.str",
+            {
+                "LS/TYPE": "builtins.list",
+                "LS/ARGS": [
+                    {"LS/TYPE": "builtins.dict", "LS/ARGS": ["builtins.str", "builtins.str"]}
+                ],
+            },
+        ],
+    }
+
+
+def test_additional_classes(monkeypatch):
+    monkeypatch.setattr(ls_schema, "INTERNAL_MODULE_PREFIXES", ["tests"])
+
+    class MessageMoveTask:
+        destination_arn: str
+        source_arn: str | None = None
+
+    class MyStore(BaseStore):
+        attribute1: dict[str, str] = CrossRegionAttribute(default=dict)
+        move_tasks: dict[str, MessageMoveTask] = CrossRegionAttribute(default=dict)
+
+    mmt_fqn = get_fully_qualified_name(MessageMoveTask)
+    build = StoreSchemaBuilder(MyStore)
+    schema = build.build_schema()
+    assert schema["attributes"]["move_tasks"]["LS/ARGS"][1] == mmt_fqn
+    assert mmt_fqn in schema["additional_classes"]
+    assert schema["additional_classes"][mmt_fqn]["source_arn"] == {
+        "LS/TYPE": "types.UnionType",
+        "LS/ARGS": ["builtins.str", "builtins.NoneType"],
+    }
