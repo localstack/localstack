@@ -255,7 +255,10 @@ def test_no_parameters_update(deploy_cfn_template, aws_client):
 
     aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
+
 skip_if_v2_provider(reason="CFNV2:UpdateStack")
+
+
 @skip_if_v2_provider(reason="CFNV2:UpdateStack")
 @markers.aws.validated
 def test_update_with_previous_parameter_value(deploy_cfn_template, snapshot, aws_client):
