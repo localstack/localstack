@@ -2,6 +2,7 @@ import os
 
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -31,6 +32,7 @@ class TestCdkInit:
         assert len(stack_res["StackResources"]) == 1
         assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"
 
+    @skip_if_v2_provider(reason="CFNV2:Provider")
     @markers.aws.validated
     def test_cdk_bootstrap_redeploy(self, aws_client, cleanup_stacks, cleanup_changesets, cleanups):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
