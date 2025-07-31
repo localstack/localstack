@@ -166,7 +166,7 @@ class StoreSchemaBuilder:
             additional_classes={},
         )
 
-    def build_schema(self):
+    def build_schema(self) -> StoreSchema:
         self.schema["attributes"] = self._attribute_schema(self.store_type, self.skip_attributes)
         return self.schema
 
