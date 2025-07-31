@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_values.py::TestChangeSetValues::test_property_empy_list": {
+  "tests/aws/services/cloudformation/test_change_set_values.py::TestChangeSetValues::test_property_empy_list": {
     "recorded-date": "23-05-2025, 17:56:06",
     "recorded-content": {
       "create-change-set-1": {
