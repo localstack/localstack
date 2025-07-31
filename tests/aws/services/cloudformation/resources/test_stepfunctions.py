@@ -6,6 +6,7 @@ import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
+from aws.services.cloudformation.conftest import skip_if_v2_provider
 from localstack import config
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
@@ -47,6 +48,9 @@ def test_statemachine_definitionsubstitution(deploy_cfn_template, aws_client):
     assert "hello from statemachine" in execution_desc["output"]
 
 
+skip_if_v2_provider(
+    reason="CFNV2:Engine During change set describe the a Ref to a not yet deployed resource returns null which is an invalid input for Fn::Split"
+)
 @skip_if_v2_provider(
     reason="CFNV2:Engine During change set describe the a Ref to a not yet deployed resource returns null which is an invalid input for Fn::Split"
 )
