@@ -6,11 +6,14 @@ import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
-from aws.services.cloudformation.conftest import skip_if_v2_provider
 from localstack import config
+
 from localstack.testing.pytest import markers
+
 from localstack.testing.pytest.stepfunctions.utils import await_execution_terminated
+
 from localstack.utils.strings import short_uid
+
 from localstack.utils.sync import wait_until
 
 
