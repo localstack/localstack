@@ -11,6 +11,7 @@ from localstack.aws.api.lambda_ import (
     State,
     StateReasonCode,
 )
+from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.invocation.assignment import AssignmentService
 from localstack.services.lambda_.invocation.counting_service import CountingService
 from localstack.services.lambda_.invocation.execution_environment import ExecutionEnvironment
@@ -29,7 +30,7 @@ from localstack.services.lambda_.invocation.metrics import (
     record_cw_metric_invocation,
 )
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.services.lambda_.lambda_debug_mode.ldm import LDM
+from localstack.services.lambda_.ldm import LDMProvisioner
 from localstack.utils.strings import long_uid, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
@@ -52,6 +53,8 @@ class LambdaVersionManager:
     log_handler: LogHandler
     counting_service: CountingService
     assignment_service: AssignmentService
+
+    ldm_provisioner: LDMProvisioner | None
 
     def __init__(
         self,
@@ -79,6 +82,9 @@ class LambdaVersionManager:
         self.provisioned_state_lock = threading.RLock()
         # https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
         self.state = VersionState(state=State.Pending)
+
+        self.ldm_provisioner = None
+        lambda_hooks.inject_ldm_provisioner.run(self)
 
     def start(self) -> VersionState:
         try:
@@ -194,15 +200,17 @@ class LambdaVersionManager:
 
         # If the environment has debugging enabled, route the invocation there;
         # debug environments bypass Lambda service quotas.
-        if debug_execution_environment := LDM.get_execution_environment(
-            qualified_lambda_arn=self.function_version.qualified_arn,
-            user_agent=invocation.user_agent,
+        if self.ldm_provisioner and (
+            ldm_execution_environment := self.ldm_provisioner.get_execution_environment(
+                qualified_lambda_arn=self.function_version.qualified_arn,
+                user_agent=invocation.user_agent,
+            )
         ):
             try:
-                invocation_result = debug_execution_environment.invoke(invocation)
+                invocation_result = ldm_execution_environment.invoke(invocation)
                 invocation_result.executed_version = self.function_version.id.qualifier
                 self.store_logs(
-                    invocation_result=invocation_result, execution_env=debug_execution_environment
+                    invocation_result=invocation_result, execution_env=ldm_execution_environment
                 )
             except StatusErrorException as e:
                 invocation_result = InvocationResult(
@@ -213,7 +221,7 @@ class LambdaVersionManager:
                     executed_version=self.function_version.id.qualifier,
                 )
             finally:
-                debug_execution_environment.release()
+                ldm_execution_environment.release()
             return invocation_result
 
         with self.counting_service.get_invocation_lease(

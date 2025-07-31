@@ -1759,5 +1759,116 @@
         }
       }
     }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_kinesis_streaming_destination_crud": {
+    "recorded-date": "23-07-2025, 13:31:04",
+    "recorded-content": {
+      "enable-bad-table": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested resource not found: Table: bad-table not found"
+        },
+        "message": "Requested resource not found: Table: bad-table not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "enable": {
+        "DestinationStatus": "ENABLING",
+        "EnableKinesisStreamingConfiguration": {},
+        "StreamArn": "<stream-arn:1>",
+        "TableName": "<table-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe": {
+        "KinesisDataStreamDestinations": [
+          {
+            "DestinationStatus": "ACTIVE",
+            "StreamArn": "<stream-arn:1>"
+          }
+        ],
+        "TableName": "<table-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-missing-params": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Streaming destination cannot be updated with given parameters: UpdateKinesisStreamingConfiguration cannot be null or contain only null values"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-bad-precision": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "1 validation error detected: Value 'SECOND' at 'updateKinesisStreamingConfiguration.approximateCreationDateTimePrecision' failed to satisfy constraint: Member must satisfy enum value set: [MILLISECOND, MICROSECOND]"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-bad-stream-arn": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Table is not in a valid state to enable Kinesis Streaming Destination: No streaming destination with streamArn: arn:<partition>:kinesis:<region>:111111111111:stream/bad-stream found for table with tableName: <table-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update": {
+        "DestinationStatus": "UPDATING",
+        "StreamArn": "<stream-arn:1>",
+        "TableName": "<table-name:1>",
+        "UpdateKinesisStreamingConfiguration": {
+          "ApproximateCreationDateTimePrecision": "MICROSECOND"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-no-idempotency": {
+        "Error": {
+          "Code": "ValidationException",
+          "Message": "Invalid Request: Precision is already set to the desired value of MICROSECOND for tableId: <table-id>, kdsArn: <stream-arn:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "disable-bad-table": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Requested resource not found: Table: bad-table not found"
+        },
+        "message": "Requested resource not found: Table: bad-table not found",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "disable": {
+        "DestinationStatus": "DISABLING",
+        "StreamArn": "<stream-arn:1>",
+        "TableName": "<table-name:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

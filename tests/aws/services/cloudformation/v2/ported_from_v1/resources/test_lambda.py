@@ -157,7 +157,6 @@ def test_update_lambda_function_name(s3_create_bucket, deploy_cfn_template, aws_
     aws_client.lambda_.get_function(FunctionName=function_name_2)
 
 
-@pytest.mark.skip(reason="CFNV2:Describe")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Metadata",
@@ -728,7 +727,6 @@ class TestCfnLambdaIntegrations:
 
         assert wait_until(wait_logs)
 
-    @pytest.mark.skip(reason="CFNV2:DescribeStackResources")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # Lambda
@@ -887,7 +885,6 @@ class TestCfnLambdaIntegrations:
         sleep = 10 if os.getenv("TEST_TARGET") == "AWS_CLOUD" else 1
         assert wait_until(_send_events, wait=sleep, max_retries=50)
 
-    @pytest.mark.skip(reason="CFNV2:Describe")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             # Lambda
@@ -1025,7 +1022,6 @@ class TestCfnLambdaIntegrations:
         with pytest.raises(aws_client.lambda_.exceptions.ResourceNotFoundException):
             aws_client.lambda_.get_event_source_mapping(UUID=esm_id)
 
-    @pytest.mark.skip(reason="CFNV2:Describe")
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..Role.Description",

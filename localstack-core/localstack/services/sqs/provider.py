@@ -621,17 +621,13 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
                 raise InvalidParameterValueException(e.args[0])
 
 
-def check_fifo_id(fifo_id, parameter):
-    if not fifo_id:
+def check_fifo_id(fifo_id: str | None, parameter: str):
+    if fifo_id is None:
         return
-    if len(fifo_id) > 128:
-        raise InvalidParameterValueException(
-            f"Value {fifo_id} for parameter {parameter} is invalid. Reason: {parameter} can only include alphanumeric and punctuation characters. 1 to 128 in length."
-        )
     if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
         raise InvalidParameterValueException(
-            "Invalid characters found. Deduplication ID and group ID can only contain"
-            "alphanumeric characters as well as TODO"
+            f"Value {fifo_id} for parameter {parameter} is invalid. "
+            f"Reason: {parameter} can only include alphanumeric and punctuation characters. 1 to 128 in length."
         )
 
 

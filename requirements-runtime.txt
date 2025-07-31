@@ -27,17 +27,17 @@ aws-sam-translator==1.99.0
     #   localstack-core (pyproject.toml)
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.41.9
+awscli==1.41.14
     # via localstack-core (pyproject.toml)
 awscrt==0.27.4
     # via localstack-core
-boto3==1.39.9
+boto3==1.39.14
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.39.9
+botocore==1.39.14
     # via
     #   aws-xray-sdk
     #   awscli
@@ -155,6 +155,10 @@ jsonpath-ng==1.7.0
     #   moto-ext
 jsonpath-rw==1.4.0
     # via localstack-core (pyproject.toml)
+jsonpickle==4.1.1
+    # via
+    #   localstack-core
+    #   localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.25.0
@@ -192,7 +196,7 @@ moto-ext==5.1.6.post2
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
-multipart==1.2.1
+multipart==1.3.0
     # via moto-ext
 networkx==3.5
     # via cfn-lint
@@ -300,7 +304,7 @@ responses==0.25.7
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==14.0.0
+rich==14.1.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)

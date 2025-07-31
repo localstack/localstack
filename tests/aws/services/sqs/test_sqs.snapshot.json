@@ -279,40 +279,6 @@
       }
     }
   },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_too_long": {
-    "recorded-date": "30-04-2024, 13:35:34",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "InvalidParameterValue",
-          "Message": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa for parameter MessageDeduplicationId is invalid. Reason: MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
-          "QueryErrorCode": "InvalidParameterValueException",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_group_id_too_long": {
-    "recorded-date": "30-04-2024, 13:35:35",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "InvalidParameterValue",
-          "Message": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa for parameter MessageGroupId is invalid. Reason: MessageGroupId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
-          "QueryErrorCode": "InvalidParameterValueException",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_queue_with_different_attributes_raises_exception[sqs]": {
     "recorded-date": "30-04-2024, 13:33:18",
     "recorded-content": {
@@ -964,23 +930,6 @@
         "Error": {
           "Code": "InvalidParameterValue",
           "Message": "The request must contain the parameter MessageGroupId.",
-          "QueryErrorCode": "InvalidParameterValueException",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_empty_message_group_id": {
-    "recorded-date": "08-11-2024, 12:04:39",
-    "recorded-content": {
-      "error-response": {
-        "Error": {
-          "Code": "InvalidParameterValue",
-          "Message": "Value  for parameter MessageGroupId is invalid. Reason: The request include parameter that is not valid for this queue type.",
           "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
@@ -4012,6 +3961,138 @@
         "ReceiptHandle": "<receipt-handle:1>"
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs]": {
+    "recorded-date": "30-07-2025, 09:52:06",
+    "recorded-content": {
+      "send_message": {
+        "MD5OfMessageBody": "78e731027d8fd50ed642340b7c9a63b3",
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs_query]": {
+    "recorded-date": "30-07-2025, 09:52:07",
+    "recorded-content": {
+      "send_message": {
+        "MD5OfMessageBody": "78e731027d8fd50ed642340b7c9a63b3",
+        "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_invalid_message_group_id[empty]": {
+    "recorded-date": "30-07-2025, 10:01:38",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value  for parameter MessageGroupId is invalid. Reason: MessageGroupId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_invalid_message_group_id[too_long]": {
+    "recorded-date": "30-07-2025, 10:01:39",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa for parameter MessageGroupId is invalid. Reason: MessageGroupId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_to_standard_queue_with_invalid_message_group_id[spaces]": {
+    "recorded-date": "30-07-2025, 10:01:39",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value group 123 for parameter MessageGroupId is invalid. Reason: MessageGroupId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_invalid[empty]": {
+    "recorded-date": "30-07-2025, 10:25:50",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value  for parameter MessageDeduplicationId is invalid. Reason: MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_invalid[too_long]": {
+    "recorded-date": "30-07-2025, 10:25:51",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa for parameter MessageDeduplicationId is invalid. Reason: MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_invalid[spaces]": {
+    "recorded-date": "30-07-2025, 10:25:51",
+    "recorded-content": {
+      "error-response": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Value group 123 for parameter MessageDeduplicationId is invalid. Reason: MessageDeduplicationId can only include alphanumeric and punctuation characters. 1 to 128 in length.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_message_deduplication_id_success": {
+    "recorded-date": "30-07-2025, 10:26:48",
+    "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_zero_delay_defaults_to_queue_delay[sqs]": {
     "recorded-date": "31-07-2025, 09:53:01",

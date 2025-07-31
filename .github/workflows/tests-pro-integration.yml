@@ -339,7 +339,7 @@ jobs:
           AWS_DEFAULT_REGION: "us-east-1"
           JUNIT_REPORTS_FILE: "pytest-junit-community-${{ matrix.group }}.xml"
           TEST_PATH: "../../localstack/tests/aws/"  # TODO: run tests in tests/integration
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path ../../localstack/.test_durations --store-durations"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }}--splits ${{ strategy.job-total }} --group ${{ matrix.group }} --durations-path ../../localstack/.test_durations --store-durations --ignore ../../localstack/tests/aws/services/cloudformation/v2"
         working-directory: localstack-pro
         run: |
           # Remove the host tmp folder (might contain remnant files with different permissions)
