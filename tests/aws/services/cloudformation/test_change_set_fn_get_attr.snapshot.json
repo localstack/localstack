@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_direct_attribute_value_change": {
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_direct_attribute_value_change": {
     "recorded-date": "08-04-2025, 11:24:14",
     "recorded-content": {
       "create-change-set-1": {
@@ -511,7 +511,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_immutable_property_update_causes_resource_replacement": {
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_immutable_property_update_causes_resource_replacement": {
     "recorded-date": "08-04-2025, 12:17:00",
     "recorded-content": {
       "create-change-set-1": {
@@ -1137,7 +1137,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_direct_attribute_value_change_with_dependent_addition": {
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_direct_attribute_value_change_with_dependent_addition": {
     "recorded-date": "08-04-2025, 12:20:19",
     "recorded-content": {
       "create-change-set-1": {
@@ -1596,7 +1596,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_addition": {
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_addition": {
     "recorded-date": "08-04-2025, 12:33:53",
     "recorded-content": {
       "create-change-set-1": {
@@ -1963,7 +1963,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_deletion": {
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_deletion": {
     "recorded-date": "08-04-2025, 12:36:41",
     "recorded-content": {
       "create-change-set-1": {
@@ -2380,7 +2380,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_direct_attribute_value_change_in_get_attr_chain": {
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_direct_attribute_value_change_in_get_attr_chain": {
     "recorded-date": "08-04-2025, 14:46:11",
     "recorded-content": {
       "create-change-set-1": {
