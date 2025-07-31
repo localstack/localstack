@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::test_single_resource_static_update": {
+  "tests/aws/services/cloudformation/test_change_sets.py::test_single_resource_static_update": {
     "recorded-date": "18-03-2025, 16:52:36",
     "recorded-content": {
       "describe-1": {
@@ -94,7 +94,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
     "recorded-date": "18-06-2025, 19:04:55",
     "recorded-content": {
       "create-change-set-1": {
@@ -408,7 +408,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_dynamic_update": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_dynamic_update": {
     "recorded-date": "18-06-2025, 19:06:59",
     "recorded-content": {
       "create-change-set-1": {
@@ -857,7 +857,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_parameter_changes": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_parameter_changes": {
     "recorded-date": "18-06-2025, 19:09:04",
     "recorded-content": {
       "create-change-set-1": {
@@ -1372,7 +1372,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_mappings_with_static_fields": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_mappings_with_static_fields": {
     "recorded-date": "18-06-2025, 19:11:09",
     "recorded-content": {
       "create-change-set-1": {
@@ -1821,7 +1821,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_mappings_with_parameter_lookup": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_mappings_with_parameter_lookup": {
     "recorded-date": "18-06-2025, 19:13:17",
     "recorded-content": {
       "create-change-set-1": {
@@ -2336,7 +2336,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_conditions": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_conditions": {
     "recorded-date": "18-06-2025, 19:13:55",
     "recorded-content": {
       "create-change-set-1": {
@@ -2654,7 +2654,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_dynamic]": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_dynamic]": {
     "recorded-date": "18-06-2025, 19:14:21",
     "recorded-content": {
       "create-change-set-1": {
@@ -3035,15 +3035,15 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_unrelated_property]": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_unrelated_property]": {
     "recorded-date": "18-06-2025, 19:14:21",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_unrelated_property_not_create_only]": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_unrelated_property_not_create_only]": {
     "recorded-date": "18-06-2025, 19:14:21",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_parameter_for_condition_create_resource]": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_base_dynamic_parameter_scenarios[change_parameter_for_condition_create_resource]": {
     "recorded-date": "18-06-2025, 19:14:47",
     "recorded-content": {
       "create-change-set-1": {
@@ -3364,14 +3364,14 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_execute_with_ref": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_execute_with_ref": {
     "recorded-date": "18-06-2025, 19:15:20",
     "recorded-content": {
       "before-value": "<name-1>",
       "after-value": "<name-2>"
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_sets.py::TestCaptureUpdateProcess::test_base_mapping_scenarios[update_string_referencing_resource]": {
+  "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_base_mapping_scenarios[update_string_referencing_resource]": {
     "recorded-date": "18-06-2025, 19:15:45",
     "recorded-content": {
       "create-change-set-1": {
