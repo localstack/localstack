@@ -1102,7 +1102,6 @@ def test_create_execute_api_vpc_endpoint(
     # LocalStack Not a clue
     #   url: http://{public-dns-hostname}.execute-api.{region}.vpce.{localstack-host}/{stage}
     #   x-apigw-api-id: {rest-api-id}
-
     protocol = "https" if is_aws_cloud() else "http"
     vpc_endpoint_public_dns = endpoint_details["DnsEntries"][0]["DnsName"]
     public_dns_url = f"{protocol}://{vpc_endpoint_public_dns}/{DEFAULT_STAGE_NAME}/test"
