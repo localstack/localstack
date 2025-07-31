@@ -65,15 +65,21 @@ function _get_current_branch() {
     git branch --show-current
 }
 
+function _get_current_tag() {
+    git describe --tags --exact-match 2> /dev/null
+}
+
 function _enforce_image_name() {
     if [ -z "$IMAGE_NAME" ]; then _fail "Mandatory parameter IMAGE_NAME missing."; fi
 }
 
-function _enforce_main_branch() {
+function _enforce_tagged_or_main_branch() {
     MAIN_BRANCH=${MAIN_BRANCH-"main"}
     CURRENT_BRANCH=$(_get_current_branch)
+    CURRENT_TAG=$(_get_current_tag)
     echo "Current git branch: '$CURRENT_BRANCH'"
-    test "$CURRENT_BRANCH" == "$MAIN_BRANCH" || _fail "Current branch ($CURRENT_BRANCH) is not $MAIN_BRANCH."
+    echo "Current tag: '$CURRENT_TAG'"
+    test -n "$CURRENT_TAG" || test "$CURRENT_BRANCH" == "$MAIN_BRANCH" || _fail "Current branch ($CURRENT_BRANCH) is not $MAIN_BRANCH and current tag ($CURRENT_TAG) is not set."
 }
 
 function _enforce_no_fork() {
@@ -158,7 +164,7 @@ function cmd-load() {
 
 function cmd-push() {
     _enforce_image_name
-    _enforce_main_branch
+    _enforce_tagged_or_main_branch
     _enforce_no_fork
     _enforce_docker_credentials
     _enforce_platform
@@ -213,7 +219,7 @@ function cmd-push() {
 
 function cmd-push-manifests() {
     _enforce_image_name
-    _enforce_main_branch
+    _enforce_tagged_or_main_branch
     _enforce_no_fork
     _enforce_docker_credentials
     _set_version_defaults
