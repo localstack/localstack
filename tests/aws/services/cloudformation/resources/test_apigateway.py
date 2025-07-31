@@ -5,7 +5,6 @@ from operator import itemgetter
 import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
-from aws.services.cloudformation.conftest import extra_v2_snapshot_skips, skip_if_v2_provider
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
@@ -16,6 +15,7 @@ from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.sync import retry
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
+from tests.aws.services.cloudformation.conftest import extra_v2_snapshot_skips, skip_if_v2_provider
 
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TEST_LAMBDA_PYTHON_ECHO = os.path.join(PARENT_DIR, "lambda_/functions/lambda_echo.py")
