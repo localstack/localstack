@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_update_depended_resource": {
+  "tests/aws/services/cloudformation/test_change_set_depends_on.py::TestChangeSetDependsOn::test_update_depended_resource": {
     "recorded-date": "19-05-2025, 12:55:10",
     "recorded-content": {
       "create-change-set-1": {
@@ -456,7 +456,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_update_depended_resource_list": {
+  "tests/aws/services/cloudformation/test_change_set_depends_on.py::TestChangeSetDependsOn::test_update_depended_resource_list": {
     "recorded-date": "19-05-2025, 13:01:35",
     "recorded-content": {
       "create-change-set-1": {
@@ -913,7 +913,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_multiple_dependencies_addition": {
+  "tests/aws/services/cloudformation/test_change_set_depends_on.py::TestChangeSetDependsOn::test_multiple_dependencies_addition": {
     "recorded-date": "19-05-2025, 18:10:11",
     "recorded-content": {
       "create-change-set-1": {
@@ -1349,7 +1349,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_depends_on.py::TestChangeSetDependsOn::test_multiple_dependencies_deletion": {
+  "tests/aws/services/cloudformation/test_change_set_depends_on.py::TestChangeSetDependsOn::test_multiple_dependencies_deletion": {
     "recorded-date": "19-05-2025, 18:13:11",
     "recorded-content": {
       "create-change-set-1": {
