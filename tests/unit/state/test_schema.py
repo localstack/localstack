@@ -18,6 +18,7 @@ from localstack.services.s3.models import S3Store
 from localstack.services.sns.models import SnsStore
 from localstack.services.sqs.models import SqsStore
 from localstack.services.stepfunctions.backend.store import SFNStore
+from localstack.services.stores import BaseStore, CrossRegionAttribute
 from localstack.services.sts.models import STSStore
 from localstack.services.transcribe.models import TranscribeStore
 from localstack.state.schema import StoreSchemaBuilder, get_fully_qualified_name
@@ -57,3 +58,15 @@ def test_smoke_schema_dumps():
         assert schema["attributes"], "A schema is missing attributes to be extracted"
         # Just making sure the returned schema can be serialized to JSON
         assert json.dumps(schema)
+
+
+def test_simple_store():
+    class MyStore(BaseStore):
+        field1: dict[str, str] = CrossRegionAttribute(default=dict)
+        field2: list[str] = CrossRegionAttribute(default=list)
+        field3: str | int = CrossRegionAttribute(default=str)
+        field4: tuple[str, int] = CrossRegionAttribute(default=tuple)
+
+    build = StoreSchemaBuilder(MyStore)
+    schema = build.build_schema()
+    print(json.dumps(schema, indent=2))
