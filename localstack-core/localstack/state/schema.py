@@ -15,13 +15,17 @@ INTERNAL_MODULE_PREFIXES = ["localstack", "moto"]
 
 AttributeName = str
 FQN = str
-SerializedHint = str | dict[str, typing.Any] | list[str]
+SerializedHint = str | dict[str, typing.Any]
 
 AttributeSchema = dict[AttributeName, SerializedHint]
 """Maps an attribute name its serialized hints"""
 
 AdditionalClasses = dict[FQN, AttributeSchema]
 """Maps the a FQN of a class to its Attribute Schema"""
+
+TAG_TYPE = "LS/TYPE"
+TAG_ARGS = "LS/ARGS"
+"""Tags for subscribed types and their args. See ``StoreSchemaBuilder`` for examples."""
 
 
 class StoreSchema(typing.TypedDict):
@@ -70,15 +74,39 @@ class StoreSchemaBuilder:
         ssb = StoreSchemaBuilder(SqsStore)
         schema = ssb.build_schema()
         pprint(schema)
-        >> {'additional_classes': {},
-            'attributes': {'attribute1': {'builtins.str': 'builtins.str'},
-            'attribute2': {'builtins.str': {'builtins.str': 'builtins.int'}}},
-            'localstack_version': '4.6.1.dev70',
-            'type': 'localstack.services.sqs.models.SqsStore'}
+        >>
+        {
+          "type": "localstack.services.sqs.models.SqsStore",
+          "localstack_version": "4.6.1.dev70",
+          "attributes": {
+            "attribute1": {
+              "LS/TYPE": "builtins.dict",
+              "LS/HINTS": [
+                "builtins.str",
+                "builtins.str"
+              ]
+            },
+            "attribute2": {
+              "LS/TYPE": "builtins.dict",
+              "LS/HINTS": [
+                "builtins.str",
+                {
+                  "LS/TYPE": "builtins.dict",
+                  "LS/HINTS": [
+                    "builtins.str",
+                    "builtins.int"
+                  ]
+                }
+              ]
+            }
+          },
+          "additional_classes": {}
+        }
+
 
     When a custom class if found as a type hint for store attribute, that class is also examined.
 
-    Example:
+    Examples::
 
         class MessageMoveTask:
             destination_arn: str
@@ -91,13 +119,39 @@ class StoreSchemaBuilder:
         ssb = StoreSchemaBuilder(SqsStore)
         schema = ssb.build_schema()
         pprint(schema)
-
-        >> {'additional_classes': {'localstack.services.sqs.models.MessageMoveTask':
-                {'destination_arn': 'builtins.str',
-                 'source_arn': ['builtins.str', 'builtins.NoneType']}},
-            'attributes': {'attribute1': {'builtins.str': 'builtins.str'},
-            'localstack_version': '4.6.1.dev70',
-            'type': 'localstack.services.sqs.models.SqsStore'}}
+        >>
+        {
+          "type": "localstack.services.sqs.models.SqsStore",
+          "localstack_version": "4.6.1.dev70",
+          "attributes": {
+            "attribute1": {
+              "LS/TYPE": "builtins.dict",
+              "LS/HINTS": [
+                "builtins.str",
+                "builtins.str"
+              ]
+            },
+            "move_tasks": {
+              "LS/TYPE": "builtins.dict",
+              "LS/HINTS": [
+                "builtins.str",
+                "localstack.services.sqs.models.MessageMoveTask"
+              ]
+            }
+          },
+          "additional_classes": {
+            "localstack.services.sqs.models.MessageMoveTask": {
+              "destination_arn": "builtins.str",
+              "source_arn": {
+                "LS/TYPE": "types.UnionType",
+                "LS/HINTS": [
+                  "builtins.str",
+                  "builtins.NoneType"
+                ]
+              }
+            }
+          }
+        }
     """
 
     skip_attributes = ["_account_id", "_global", "_region_name", "_service_name", "_universal"]
@@ -131,6 +185,10 @@ class StoreSchemaBuilder:
         return _attributes
 
     def _serialize_hint(self, type_hint: TypeHint) -> SerializedHint:
+        """
+        Tries to serialize type information for a given type. If the type is subscribed, it fetches its args and
+        recursively tries to serialize them.
+        """
         origin = typing.get_origin(type_hint)
 
         # If origin is None, we are dealing with a base type and we return its fully qualified name
@@ -148,28 +206,24 @@ class StoreSchemaBuilder:
 
         match origin:
             case builtins.dict:
+                _hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if len(args) == 2:
-                    return {self._serialize_hint(args[0]): self._serialize_hint(args[1])}
+                    _hint[TAG_ARGS] = [self._serialize_hint(args[0]), self._serialize_hint(args[1])]
                 # If the hints are incomplete, e.g., ``dict[str]``, we just return the FQN, i.e., ```builtins.dict```
-                return get_fully_qualified_name(origin)
+                return _hint
             case builtins.list | builtins.set:
+                _hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
-                return [self._serialize_hint(args[0])] if args else get_fully_qualified_name(origin)
-            case types.UnionType | typing.Union:
+                if args:
+                    _hint[TAG_ARGS] = [self._serialize_hint(args[0])]
+                return _hint
+            case types.UnionType | typing.Union | typing.Tuple | builtins.tuple:
+                _hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
-                return (
-                    [self._serialize_hint(_arg) for _arg in args]
-                    if args
-                    else get_fully_qualified_name(origin)
-                )
-            case typing.Tuple | builtins.tuple:
-                args = typing.get_args(type_hint)
-                return (
-                    [self._serialize_hint(_arg) for _arg in args]
-                    if args
-                    else get_fully_qualified_name(origin)
-                )
+                if args:
+                    _hint[TAG_ARGS] = [self._serialize_hint(_arg) for _arg in args]
+                return _hint
             case _:
                 # A few things that can end up here: generics, Union, or Literal. See ``get_origin`` for more.
                 return get_fully_qualified_name(origin)
