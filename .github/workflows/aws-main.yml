@@ -70,7 +70,7 @@ jobs:
     needs:
       - test
     # Do not push coverage data if only parts of the tests were executed
-    if: ${{ !(inputs.onlyAcceptanceTests == true || inputs.enableTestSelection == true || github.event_name == 'push') }}
+    if: ${{ !(inputs.onlyAcceptanceTests == true || inputs.enableTestSelection == true || github.event_name == 'push') && !failure() && !cancelled() && github.repository == 'localstack/localstack' }}
     steps:
         - name: Checkout
           uses: actions/checkout@v4
