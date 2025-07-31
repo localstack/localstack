@@ -1,7 +1,6 @@
 """A set of common handlers to parse and route AWS service requests."""
 
 import logging
-import traceback
 from collections import defaultdict
 from typing import Any
 
@@ -183,13 +182,6 @@ class ServiceExceptionSerializer(ExceptionHandler):
         elif not isinstance(exception, ServiceException):
             if not self.handle_internal_failures:
                 return
-
-            if config.DEBUG:
-                exception = "".join(
-                    traceback.format_exception(
-                        type(exception), value=exception, tb=exception.__traceback__
-                    )
-                )
 
             # wrap exception for serialization
             if operation:
