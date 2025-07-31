@@ -4012,5 +4012,73 @@
         "ReceiptHandle": "<receipt-handle:1>"
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_zero_delay_defaults_to_queue_delay[sqs]": {
+    "recorded-date": "31-07-2025, 09:53:01",
+    "recorded-content": {
+      "send_message_result": {
+        "MD5OfMessageBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+        "MessageId": "<uuid:1>",
+        "SequenceNumber": "<sequence-number:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_initial_result": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_after_delay_result": {
+        "Messages": [
+          {
+            "Body": "message-1",
+            "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_zero_delay_defaults_to_queue_delay[sqs_query]": {
+    "recorded-date": "31-07-2025, 09:53:08",
+    "recorded-content": {
+      "send_message_result": {
+        "MD5OfMessageBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+        "MessageId": "<uuid:1>",
+        "SequenceNumber": "<sequence-number:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_initial_result": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "receive_message_after_delay_result": {
+        "Messages": [
+          {
+            "Body": "message-1",
+            "MD5OfBody": "3d6b824fd8c1520e9a047d21fee6fb1f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
