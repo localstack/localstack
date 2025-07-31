@@ -532,8 +532,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         identity: Identity,
-        notification_type: str,
-        enabled: bool,
+        notification_type: NotificationType,
+        enabled: Enabled,
         **kwargs,
     ) -> SetIdentityHeadersInNotificationsEnabledResponse:
         """
