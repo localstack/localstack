@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_default_value": {
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_default_value": {
     "recorded-date": "17-04-2025, 15:35:43",
     "recorded-content": {
       "create-change-set-1": {
@@ -481,7 +481,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_with_added_default_value": {
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_with_added_default_value": {
     "recorded-date": "17-04-2025, 15:39:55",
     "recorded-content": {
       "create-change-set-1": {
@@ -963,7 +963,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_with_removed_default_value": {
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_with_removed_default_value": {
     "recorded-date": "17-04-2025, 15:44:25",
     "recorded-content": {
       "create-change-set-1": {
@@ -1445,7 +1445,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_default_value_with_dynamic_overrides": {
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_default_value_with_dynamic_overrides": {
     "recorded-date": "17-04-2025, 15:46:46",
     "recorded-content": {
       "create-change-set-1": {
