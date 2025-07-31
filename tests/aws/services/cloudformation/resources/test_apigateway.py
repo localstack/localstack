@@ -5,7 +5,7 @@ from operator import itemgetter
 import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
-from aws.services.cloudformation.conftest import skip_if_v2_provider, extra_v2_snapshot_skips
+from aws.services.cloudformation.conftest import extra_v2_snapshot_skips, skip_if_v2_provider
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.aws.util import is_aws_cloud
@@ -170,6 +170,8 @@ skip_if_v2_provider(
     reason="The v2 provider appears to instead return the correct url: "
     "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/"
 )
+
+
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)
@@ -336,8 +338,9 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         "$.resources.items..resourceMethods.GET",  # TODO: after importing, AWS returns them empty?
         # TODO: missing from LS response
         "$.get-stage.methodSettings",
-        "$.get-stage.tags"
-    ] + extra_v2_snapshot_skips(["$..binaryMediaTypes"])
+        "$.get-stage.tags",
+    ]
+    + extra_v2_snapshot_skips(["$..binaryMediaTypes"])
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
     deploy_cfn_template, snapshot, aws_client, s3_bucket
@@ -582,6 +585,8 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
 skip_if_v2_provider(
     reason="CFNV2:Other lambda function fails on creation due to invalid function name"
 )
+
+
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
