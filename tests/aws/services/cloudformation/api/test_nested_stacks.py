@@ -2,6 +2,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError, WaiterError
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack import config
 from localstack.testing.aws.util import is_aws_cloud
@@ -9,7 +10,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 
 @markers.aws.needs_fixing

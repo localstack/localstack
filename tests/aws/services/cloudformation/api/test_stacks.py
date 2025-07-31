@@ -8,6 +8,7 @@ import pytest
 import yaml
 from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider, skipped_v2_items
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.entities import StackIdentifier
@@ -17,14 +18,13 @@ from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry, wait_until
-from tests.aws.services.cloudformation.conftest import extra_v2_snapshot_skips, skip_if_v2_provider
 
 
 class TestStacksApi:
     @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
-        + extra_v2_snapshot_skips(
+        + skipped_v2_items(
             "$..Parameters",
         ),
     )

@@ -4,6 +4,13 @@ import os.path
 
 import pytest
 from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.api.test_stacks import (
+    MINIMAL_TEMPLATE,
+)
+from tests.aws.services.cloudformation.conftest import (
+    skip_if_v2_provider,
+    skipped_v2_items,
+)
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.aws.cloudformation_utils import (
@@ -15,13 +22,6 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
-from tests.aws.services.cloudformation.api.test_stacks import (
-    MINIMAL_TEMPLATE,
-)
-from tests.aws.services.cloudformation.conftest import (
-    extra_v2_snapshot_skips,
-    skip_if_v2_provider,
-)
 
 
 class TestUpdates:
@@ -762,7 +762,7 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         "$..IncludeNestedStacks",
         "$..Parameters",
     ]
-    + extra_v2_snapshot_skips(
+    + skipped_v2_items(
         "$..Changes..ResourceChange.Details",
         "$..Changes..ResourceChange.Scope",
     )
@@ -971,7 +971,7 @@ def test_create_while_in_review(aws_client, snapshot, cleanups):
 
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..Capabilities", "$..IncludeNestedStacks", "$..NotificationARNs", "$..Parameters"]
-    + extra_v2_snapshot_skips(
+    + skipped_v2_items(
         "$..Changes..ResourceChange.Details",
         "$..Changes..ResourceChange.Scope",
     )
@@ -1094,7 +1094,7 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
         "$..StatusReason",
         "$..StackStatusReason",
     ]
-    + extra_v2_snapshot_skips(
+    + skipped_v2_items(
         "$..Changes..ResourceChange.Details",
         "$..Changes..ResourceChange.Scope",
     ),

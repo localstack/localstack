@@ -1,9 +1,10 @@
-from functools import partial
+from typing import Iterable, TypeVar
 
 import pytest
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
+from localstack.utils.collections import optional_list
 
 
 def skip_if_v2_provider(reason: str):
@@ -14,11 +15,8 @@ def skip_if_v1_provider(*, reason: str):
     return pytest.mark.skipif(condition=not is_v2_engine() and not is_aws_cloud(), reason=reason)
 
 
-def optional_snapshot_skips(*skips: str, condition: bool) -> list[str]:
-    if condition:
-        return list(skips)
-    else:
-        return []
+_T = TypeVar("T")
 
 
-extra_v2_snapshot_skips = partial(optional_snapshot_skips, condition=is_v2_engine())
+def skipped_v2_items(*items: Iterable[_T]) -> list[_T]:
+    return optional_list(is_v2_engine(), items)

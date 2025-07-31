@@ -1,9 +1,9 @@
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 
 @skip_if_v1_provider(reason="Requires the V2 engine")

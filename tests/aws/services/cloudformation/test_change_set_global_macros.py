@@ -2,13 +2,13 @@ import json
 import os
 
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.cloudformation.fixtures import _normalise_describe_change_set_output
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 
 @skip_if_v1_provider(reason="Requires the V2 engine")

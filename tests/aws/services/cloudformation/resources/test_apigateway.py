@@ -340,7 +340,7 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
     ]
-    + extra_v2_snapshot_skips(["$..binaryMediaTypes"])
+    + skipped_v2_items(["$..binaryMediaTypes"])
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
     deploy_cfn_template, snapshot, aws_client, s3_bucket
