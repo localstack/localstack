@@ -9,14 +9,14 @@ def publish_provider_assignment():
     from datetime import datetime
 
     from localstack.config import SERVICE_PROVIDER_CONFIG
+    from localstack.services.plugins import SERVICE_PLUGINS
     from localstack.utils.analytics import get_session_id
     from localstack.utils.analytics.events import Event, EventMetadata
     from localstack.utils.analytics.publisher import AnalyticsClientPublisher
 
     provider_assignment = {
-        service: f"localstack.aws.provider/{service}:{provider}"
-        for service, provider in SERVICE_PROVIDER_CONFIG.items()
-        if provider
+        service: f"localstack.aws.provider/{service}:{SERVICE_PROVIDER_CONFIG[service]}"
+        for service in SERVICE_PLUGINS.list_available()
     }
     metadata = EventMetadata(
         session_id=get_session_id(),
