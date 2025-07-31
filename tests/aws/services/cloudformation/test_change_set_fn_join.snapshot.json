@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_argument": {
+  "tests/aws/services/cloudformation/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_argument": {
     "recorded-date": "05-05-2025, 13:10:55",
     "recorded-content": {
       "create-change-set-1": {
@@ -386,7 +386,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_delimiter": {
+  "tests/aws/services/cloudformation/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_delimiter": {
     "recorded-date": "05-05-2025, 13:15:58",
     "recorded-content": {
       "create-change-set-1": {
@@ -773,7 +773,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_refence_argument": {
+  "tests/aws/services/cloudformation/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_refence_argument": {
     "recorded-date": "05-05-2025, 13:24:03",
     "recorded-content": {
       "create-change-set-1": {
@@ -1285,7 +1285,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_join.py::TestChangeSetFnJoin::test_indirect_update_refence_argument": {
+  "tests/aws/services/cloudformation/test_change_set_fn_join.py::TestChangeSetFnJoin::test_indirect_update_refence_argument": {
     "recorded-date": "05-05-2025, 13:31:26",
     "recorded-content": {
       "create-change-set-1": {
@@ -1797,7 +1797,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_delimiter_empty": {
+  "tests/aws/services/cloudformation/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_delimiter_empty": {
     "recorded-date": "05-05-2025, 13:37:54",
     "recorded-content": {
       "create-change-set-1": {
@@ -2184,7 +2184,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_arguments_empty": {
+  "tests/aws/services/cloudformation/test_change_set_fn_join.py::TestChangeSetFnJoin::test_update_string_literal_arguments_empty": {
     "recorded-date": "05-05-2025, 13:42:26",
     "recorded-content": {
       "create-change-set-1": {
