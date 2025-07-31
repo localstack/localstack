@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_add_to_static_property": {
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_add_to_static_property": {
     "recorded-date": "02-06-2025, 11:19:05",
     "recorded-content": {
       "create-change-set-1": {
@@ -377,7 +377,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_remove_from_static_property": {
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_remove_from_static_property": {
     "recorded-date": "02-06-2025, 11:20:30",
     "recorded-content": {
       "create-change-set-1": {
@@ -755,7 +755,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_source_string_only": {
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_source_string_only": {
     "recorded-date": "02-06-2025, 11:22:03",
     "recorded-content": {
       "create-change-set-1": {
@@ -1133,7 +1133,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_with_ref_as_string_source": {
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_with_ref_as_string_source": {
     "recorded-date": "02-06-2025, 11:23:28",
     "recorded-content": {
       "create-change-set-1": {
@@ -1577,7 +1577,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_with_get_att": {
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_with_get_att": {
     "recorded-date": "02-06-2025, 11:26:00",
     "recorded-content": {
       "create-change-set-1": {
@@ -2074,7 +2074,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_delimiter": {
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_change_delimiter": {
     "recorded-date": "02-06-2025, 12:30:32",
     "recorded-content": {
       "create-change-set-1": {
