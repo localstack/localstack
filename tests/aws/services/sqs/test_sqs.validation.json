@@ -200,6 +200,24 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_delay_seconds_fails[sqs_query]": {
     "last_validated_date": "2024-04-30T13:33:34+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_zero_delay_defaults_to_queue_delay[sqs]": {
+    "last_validated_date": "2025-07-31T09:53:01+00:00",
+    "durations_in_seconds": {
+      "setup": 5.06,
+      "call": 6.23,
+      "teardown": 0.33,
+      "total": 11.62
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_queue_send_message_with_zero_delay_defaults_to_queue_delay[sqs_query]": {
+    "last_validated_date": "2025-07-31T09:53:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.03,
+      "call": 6.14,
+      "teardown": 0.34,
+      "total": 6.51
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs]": {
     "last_validated_date": "2024-04-30T13:47:39+00:00"
   },

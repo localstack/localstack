@@ -2118,6 +2118,42 @@ class TestSqsProvider:
         assert messages[2]["Body"] == "message-3"
 
     @markers.aws.validated
+    def test_fifo_queue_send_message_with_zero_delay_defaults_to_queue_delay(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        delay_seconds = 2
+        queue_url = sqs_create_queue(
+            QueueName=f"queue-{short_uid()}.fifo",
+            Attributes={
+                "FifoQueue": "true",
+                "ContentBasedDeduplication": "true",
+                "DelaySeconds": str(delay_seconds),
+            },
+        )
+
+        send_result = aws_sqs_client.send_message(
+            QueueUrl=queue_url, MessageBody="message-1", MessageGroupId="1", DelaySeconds=0
+        )
+        snapshot.match("send_message_result", send_result)
+
+        response_initial_receive = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, WaitTimeSeconds=1
+        )
+        snapshot.match("receive_message_initial_result", response_initial_receive)
+        assert response_initial_receive.get("Messages", []) == []
+
+        time.sleep(delay_seconds + 1)
+
+        response_after_delay = aws_sqs_client.receive_message(
+            QueueUrl=queue_url, MaxNumberOfMessages=1
+        )
+        snapshot.match("receive_message_after_delay_result", response_after_delay)
+        messages = response_after_delay["Messages"]
+        assert len(messages) == 1
+
+        assert messages[0]["Body"] == "message-1"
+
+    @markers.aws.validated
     def test_fifo_message_attributes(self, sqs_create_queue, snapshot, aws_sqs_client):
         snapshot.add_transformer(snapshot.transform.sqs_api())
 

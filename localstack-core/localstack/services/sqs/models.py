@@ -1062,10 +1062,8 @@ class FifoQueue(SqsQueue):
             # use the attribute from the queue
             fifo_message.visibility_timeout = self.visibility_timeout
 
-        if delay_seconds is not None:
-            fifo_message.delay_seconds = delay_seconds
-        else:
-            fifo_message.delay_seconds = self.delay_seconds
+        # FIFO queues always use the queue level setting for 'DelaySeconds'
+        fifo_message.delay_seconds = self.delay_seconds
 
         original_message = self.deduplication.get(dedup_id)
         if (
