@@ -26,6 +26,7 @@ from localstack.aws.api.ses import (
     DeleteConfigurationSetResponse,
     DeleteTemplateResponse,
     Destination,
+    Enabled,
     EventDestination,
     EventDestinationDoesNotExistException,
     EventDestinationName,
