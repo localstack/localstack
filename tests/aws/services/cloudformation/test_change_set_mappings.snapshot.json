@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_leaf_update": {
+  "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_leaf_update": {
     "recorded-date": "15-04-2025, 13:03:18",
     "recorded-content": {
       "create-change-set-1": {
@@ -386,7 +386,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_update": {
+  "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_update": {
     "recorded-date": "15-04-2025, 13:04:44",
     "recorded-content": {
       "create-change-set-1": {
@@ -773,7 +773,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_addition_with_resource": {
+  "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_addition_with_resource": {
     "recorded-date": "15-04-2025, 13:05:52",
     "recorded-content": {
       "create-change-set-1": {
@@ -1140,7 +1140,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_addition_with_resource": {
+  "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_addition_with_resource": {
     "recorded-date": "15-04-2025, 13:07:01",
     "recorded-content": {
       "create-change-set-1": {
@@ -1507,7 +1507,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_deletion_with_resource_remap": {
+  "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_deletion_with_resource_remap": {
     "recorded-date": "15-04-2025, 13:08:27",
     "recorded-content": {
       "create-change-set-1": {
@@ -1966,7 +1966,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_deletion_with_resource_remap": {
+  "tests/aws/services/cloudformation/test_change_set_mappings.py::TestChangeSetMappings::test_mapping_key_deletion_with_resource_remap": {
     "recorded-date": "15-04-2025, 13:15:54",
     "recorded-content": {
       "create-change-set-1": {
