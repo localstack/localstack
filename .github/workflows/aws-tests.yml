@@ -267,7 +267,7 @@ jobs:
             events-v1:
                - 'tests/aws/services/events/**'
             cloudformation-v2:
-               - 'tests/aws/services/cloudformation/v2/**'
+               - 'tests/aws/services/cloudformation/**'
 
       - name: Run Unit Tests
         timeout-minutes: 8
@@ -394,7 +394,7 @@ jobs:
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 4 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap --ignore=tests/aws/services/cloudformation/v2"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --splits 4 --group ${{ matrix.group }} --store-durations --clean-durations --ignore=tests/unit/ --ignore=tests/bootstrap"
           COVERAGE_FILE: "target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}"
           JUNIT_REPORTS_FILE: "target/pytest-junit-integration-${{ env.PLATFORM }}-${{ matrix.group }}.xml"
           DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -822,11 +822,11 @@ jobs:
           path: dist/testselection/
 
       - name: Run CloudFormation Engine v2 Tests
-        timeout-minutes: 30
+        timeout-minutes: 60
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TEST_PATH: "tests/aws/services/cloudformation/v2"
+          TEST_PATH: "tests/aws/services/cloudformation"
           PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
           PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
         run: make test-coverage
