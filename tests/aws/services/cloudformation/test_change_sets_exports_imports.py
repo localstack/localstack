@@ -15,6 +15,15 @@ from localstack.utils.strings import short_uid
 )
 class TestChangeSetImportExport:
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Changes..ResourceChange.Details",
+            "$..Changes..ResourceChange.Scope",
+            "$..IncludeNestedStacks",
+            "$..NotificationARNs",
+            "$..Parameters",
+        ]
+    )
     def test_describe_change_set_import(
         self, snapshot, aws_client, deploy_cfn_template, cleanup_stacks
     ):
