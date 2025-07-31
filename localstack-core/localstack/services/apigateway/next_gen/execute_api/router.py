@@ -145,7 +145,7 @@ class ApiGatewayEndpoint:
         )
         return not_found
 
-    def vpe_endpoint_handler(
+    def vpc_endpoint_handler(
         self, request: Request, **kwargs: Unpack[RouteHostPathParameters]
     ) -> Response:
         # TODO validate the vpc endpoint exists in the account/region before routing
@@ -228,21 +228,21 @@ class ApiGatewayRouter:
             self.router.add(
                 path="/",
                 host=vpce_host_pattern,
-                endpoint=self.handler.vpe_endpoint_handler,
+                endpoint=self.handler.vpc_endpoint_handler,
                 defaults={"path": "", "stage": None},
                 strict_slashes=True,
             ),
             self.router.add(
                 path="/<stage>/",
                 host=vpce_host_pattern,
-                endpoint=self.handler.vpe_endpoint_handler,
+                endpoint=self.handler.vpc_endpoint_handler,
                 defaults={"path": ""},
                 strict_slashes=False,
             ),
             self.router.add(
                 path="/<stage>/<greedy_path:path>",
                 host=vpce_host_pattern,
-                endpoint=self.handler.vpe_endpoint_handler,
+                endpoint=self.handler.vpc_endpoint_handler,
                 strict_slashes=True,
             ),
         ]
