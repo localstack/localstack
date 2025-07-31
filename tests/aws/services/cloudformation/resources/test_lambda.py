@@ -5,6 +5,7 @@ from io import BytesIO
 
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
@@ -461,6 +462,7 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
+@skip_if_v2_provider(reason="CFNV2:Other")
 @markers.aws.only_localstack(reason="This is functionality specific to Localstack")
 def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     deploy_cfn_template, aws_client, monkeypatch
@@ -495,6 +497,7 @@ def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     )
 
 
+@skip_if_v2_provider(reason="CFNV2:Other")
 @markers.aws.only_localstack(reason="This is functionality specific to Localstack")
 def test_lambda_cfn_run_with_non_empty_string_replacement_deny_list(
     deploy_cfn_template, aws_client, monkeypatch
