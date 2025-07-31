@@ -163,6 +163,13 @@ class StoreSchemaBuilder:
                     if args
                     else get_fully_qualified_name(origin)
                 )
+            case typing.Tuple | builtins.tuple:
+                args = typing.get_args(type_hint)
+                return (
+                    [self._serialize_hint(_arg) for _arg in args]
+                    if args
+                    else get_fully_qualified_name(origin)
+                )
             case _:
                 # A few things that can end up here: generics, Union, or Literal. See ``get_origin`` for more.
                 return get_fully_qualified_name(origin)
