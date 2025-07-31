@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_resource_addition": {
+  "tests/aws/services/cloudformation/test_change_set_ref.py::TestChangeSetRef::test_resource_addition": {
     "recorded-date": "08-04-2025, 15:22:38",
     "recorded-content": {
       "create-change-set-1": {
@@ -366,7 +366,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change": {
+  "tests/aws/services/cloudformation/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change": {
     "recorded-date": "08-04-2025, 15:36:44",
     "recorded-content": {
       "create-change-set-1": {
@@ -825,7 +825,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change_in_ref_chain": {
+  "tests/aws/services/cloudformation/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change_in_ref_chain": {
     "recorded-date": "08-04-2025, 15:45:54",
     "recorded-content": {
       "create-change-set-1": {
@@ -1356,7 +1356,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change_with_dependent_addition": {
+  "tests/aws/services/cloudformation/test_change_set_ref.py::TestChangeSetRef::test_direct_attribute_value_change_with_dependent_addition": {
     "recorded-date": "08-04-2025, 15:51:05",
     "recorded-content": {
       "create-change-set-1": {
@@ -1815,7 +1815,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_immutable_property_update_causes_resource_replacement": {
+  "tests/aws/services/cloudformation/test_change_set_ref.py::TestChangeSetRef::test_immutable_property_update_causes_resource_replacement": {
     "recorded-date": "08-04-2025, 16:00:20",
     "recorded-content": {
       "create-change-set-1": {
@@ -2441,7 +2441,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_ref.py::TestChangeSetRef::test_supported_pseudo_parameter": {
+  "tests/aws/services/cloudformation/test_change_set_ref.py::TestChangeSetRef::test_supported_pseudo_parameter": {
     "recorded-date": "19-05-2025, 10:22:18",
     "recorded-content": {
       "create-change-set-1": {
