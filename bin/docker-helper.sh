@@ -66,7 +66,7 @@ function _get_current_branch() {
 }
 
 function _get_current_tag() {
-    git describe --tags --exact-match 2> /dev/null
+    git describe --tags --exact-match 2> /dev/null || true
 }
 
 function _enforce_image_name() {

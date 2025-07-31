@@ -13,6 +13,9 @@ setup_file() {
     "branch")
       echo "main"
       ;;
+    "describe")
+            echo "$TEST_TAG"
+      ;;
     "remote")
       echo "origin	git@github.com:localstack/localstack.git (push)"
       ;;
@@ -117,10 +120,24 @@ setup_file() {
 @test "push fails on non-default branch" {
   export MAIN_BRANCH="non-existing-branch"
   export IMAGE_NAME="localstack/test"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
   export PLATFORM=amd64
   run bin/docker-helper.sh push
   [ "$status" -ne 0 ]
   [[ "$output" =~ "is not non-existing-branch" ]]
+}
+
+@test "push succeeds on tag without main branch" {
+  export MAIN_BRANCH="non-existing-branch"
+  export IMAGE_NAME="localstack/test"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
+  export PLATFORM=amd64
+  export TEST_TAG=v1.0.0
+  run bin/docker-helper.sh push
+  echo "$output"
+  [ "$status" -eq 0 ]
 }
 
 @test "push fails without PLATFORM" {
