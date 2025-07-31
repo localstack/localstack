@@ -1,15 +1,11 @@
-import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 
-from localstack.services.cloudformation.v2.utils import is_v2_engine
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 
-@pytest.mark.skipif(
-    condition=not is_v2_engine() and not is_aws_cloud(), reason="Requires the V2 engine"
-)
+@skip_if_v1_provider(reason="Requires the V2 engine")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",

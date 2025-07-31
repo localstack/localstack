@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_base64.py::TestChangeSetFnBase64::test_fn_base64_add_to_static_property": {
+  "tests/aws/services/cloudformation/test_change_set_fn_base64.py::TestChangeSetFnBase64::test_fn_base64_add_to_static_property": {
     "recorded-date": "02-06-2025, 17:27:21",
     "recorded-content": {
       "create-change-set-1": {
@@ -377,7 +377,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_base64.py::TestChangeSetFnBase64::test_fn_base64_remove_from_static_property": {
+  "tests/aws/services/cloudformation/test_change_set_fn_base64.py::TestChangeSetFnBase64::test_fn_base64_remove_from_static_property": {
     "recorded-date": "02-06-2025, 17:28:46",
     "recorded-content": {
       "create-change-set-1": {
@@ -755,7 +755,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/v2/test_change_set_fn_base64.py::TestChangeSetFnBase64::test_fn_base64_change_input_string": {
+  "tests/aws/services/cloudformation/test_change_set_fn_base64.py::TestChangeSetFnBase64::test_fn_base64_change_input_string": {
     "recorded-date": "02-06-2025, 17:30:12",
     "recorded-content": {
       "create-change-set-1": {
