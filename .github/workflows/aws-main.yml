@@ -96,7 +96,8 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test
-    if: ${{ inputs.onlyAcceptanceTests == false && inputs.enableTestSelection == false }}
+    # Do not push coverage data if only parts of the tests were executed
+    if: ${{ !(inputs.onlyAcceptanceTests == true || inputs.enableTestSelection == true || github.event_name == 'push') }}
     steps:
         - name: Checkout
           uses: actions/checkout@v4
