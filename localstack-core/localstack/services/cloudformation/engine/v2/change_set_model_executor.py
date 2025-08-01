@@ -73,11 +73,14 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         # constructive process
         self.process()
 
-        # perform all deferred actions such as deletions. These must happen in reverse from their
-        # defined order so that resource dependencies are honoured
-        # TODO: errors will stop all rollbacks; get parity on this behaviour
-        for action in self._deferred_actions[::-1]:
-            action()
+        if self._deferred_actions:
+            self._change_set.stack.set_stack_status(StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS)
+
+            # perform all deferred actions such as deletions. These must happen in reverse from their
+            # defined order so that resource dependencies are honoured
+            # TODO: errors will stop all rollbacks; get parity on this behaviour
+            for action in self._deferred_actions[::-1]:
+                action()
 
         return ChangeSetModelExecutorResult(
             resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
