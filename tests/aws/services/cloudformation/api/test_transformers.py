@@ -13,6 +13,8 @@ from localstack.testing.pytest import markers
 from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid, to_bytes
 
+skip_if_v2_provider(reason="Fn transform not implemented yet")
+
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
