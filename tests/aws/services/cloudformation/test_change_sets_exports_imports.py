@@ -30,7 +30,7 @@ class TestChangeSetImportExport:
         export_name = f"b-{short_uid()}"
         deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/cfn_function_export.yml"
+                os.path.dirname(__file__), "../../templates/cfn_function_export.yml"
             ),
             parameters={"BucketExportName": export_name},
         )
