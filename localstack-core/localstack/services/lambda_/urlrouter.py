@@ -5,6 +5,7 @@ import json
 import logging
 from datetime import datetime
 from http import HTTPStatus
+from json import JSONDecodeError
 
 from rolo.request import restore_payload
 
@@ -192,7 +193,18 @@ def lambda_result_to_response(result: InvocationResult):
     )
 
     original_payload = to_str(result.payload)
-    parsed_result = json.loads(original_payload)
+    try:
+        parsed_result = json.loads(original_payload)
+    except JSONDecodeError:
+        # URL router must be able to parse a Streaming Response without necessary defining it in the URL Config
+        # And if the body is a simple string, it should be returned without issues
+        split_index = original_payload.find("\x00" * 8)
+        if split_index == -1:
+            parsed_result = {"body": original_payload}
+        else:
+            metadata = original_payload[:split_index]
+            body_str = original_payload[split_index + 8 :]
+            parsed_result = {**json.loads(metadata), "body": body_str}
 
     # patch to fix whitespaces
     # TODO: check if this is a downstream issue of invocation result serialization
@@ -201,6 +213,7 @@ def lambda_result_to_response(result: InvocationResult):
     if isinstance(parsed_result, str):
         # a string is a special case here and is returned as-is
         response.data = parsed_result
+
     elif isinstance(parsed_result, dict):
         # if it's a dict it might be a proper response
         if isinstance(parsed_result.get("headers"), dict):

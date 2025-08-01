@@ -130,6 +130,7 @@ TEST_LAMBDA_NOTIFIER = os.path.join(THIS_FOLDER, "functions/lambda_notifier.py")
 TEST_LAMBDA_CLOUDWATCH_LOGS = os.path.join(THIS_FOLDER, "functions/lambda_cloudwatch_logs.py")
 TEST_LAMBDA_XRAY_TRACEID = os.path.join(THIS_FOLDER, "functions/xray_tracing_traceid.py")
 TEST_LAMBDA_HOST_PREFIX_OPERATION = os.path.join(THIS_FOLDER, "functions/host_prefix_operation.py")
+TEST_LAMBDA_RESPONSE_STREAMING = os.path.join(THIS_FOLDER, "functions/lambda_response_streaming.js")
 
 PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
 NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
@@ -950,6 +951,32 @@ class TestLambdaURL:
                 "content": to_str(result.content),
             },
         )
+
+    @markers.aws.validated
+    def test_function_url_with_response_streaming(
+        self, aws_client, create_lambda_function, snapshot
+    ):
+        function_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_RESPONSE_STREAMING,
+            handler="lambda_response_streaming.handler",
+            runtime=Runtime.nodejs18_x,
+        )
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name, AuthType="NONE", InvokeMode="RESPONSE_STREAM"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId=str(short_uid()),
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        result = safe_requests.post(url_config["FunctionUrl"], data=b"{'key':'value'}")
+        snapshot.match("response_status", result.status_code)
+        snapshot.match("response_data", result.text)
 
     @markers.aws.validated
     def test_lambda_url_invocation_custom_id(self, create_lambda_function, aws_client):

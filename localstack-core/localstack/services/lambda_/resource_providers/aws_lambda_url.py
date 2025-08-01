@@ -67,7 +67,7 @@ class LambdaUrlProvider(ResourceProvider[LambdaUrlProperties]):
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
-        params = util.select_attributes(model, ["Qualifier", "Cors", "AuthType"])
+        params = util.select_attributes(model, ["Qualifier", "Cors", "AuthType", "InvokeMode"])
         params["FunctionName"] = model["TargetFunctionArn"]
 
         response = lambda_client.create_function_url_config(**params)
