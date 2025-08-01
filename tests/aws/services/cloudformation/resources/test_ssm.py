@@ -117,9 +117,6 @@ def test_update_ssm_parameter_tag(deploy_cfn_template, aws_client):
     # assert ssm_tags == []
 
 
-skip_if_v2_provider(reason="CFNV2:DescribeStackResource")
-
-
 @skip_if_v2_provider(reason="CFNV2:DescribeStackResource")
 @markers.snapshot.skip_snapshot_verify(paths=["$..DriftInformation", "$..Metadata"])
 @markers.aws.validated
