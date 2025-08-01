@@ -490,6 +490,7 @@ FnSelect: Final[str] = "Fn::Select"
 FnSplit: Final[str] = "Fn::Split"
 FnGetAZs: Final[str] = "Fn::GetAZs"
 FnBase64: Final[str] = "Fn::Base64"
+FnImportValue: Final[str] = "Fn::ImportValue"
 INTRINSIC_FUNCTIONS: Final[set[str]] = {
     RefKey,
     RefConditionKey,
@@ -507,6 +508,7 @@ INTRINSIC_FUNCTIONS: Final[set[str]] = {
     FnSplit,
     FnGetAZs,
     FnBase64,
+    FnImportValue,
 }
 
 

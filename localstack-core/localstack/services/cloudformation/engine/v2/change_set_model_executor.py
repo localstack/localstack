@@ -49,6 +49,7 @@ class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
     parameters: dict
     outputs: dict
+    exports: dict
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
@@ -56,18 +57,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     resources: Final[dict[str, ResolvedResource]]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
+    exports: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
         self.resolved_parameters = dict()
+        self.exports = dict()
 
     # TODO: use a structured type for the return value
     def execute(self) -> ChangeSetModelExecutorResult:
         self.process()
         return ChangeSetModelExecutorResult(
-            resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
+            resources=self.resources,
+            parameters=self.resolved_parameters,
+            outputs=self.outputs,
+            exports=self.exports,
         )
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
@@ -221,6 +227,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         after = delta.after
         if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
+
+        # TODO validate export name duplication in same template and all exports
+        if delta.after.export:
+            self.exports[delta.after.export.get("Name")] = delta.after.value
+
         self.outputs[delta.after.name] = delta.after.value
         return delta
 
