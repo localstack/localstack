@@ -8,7 +8,11 @@ import pytest
 import yaml
 from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider, skipped_v2_items
+from tests.aws.services.cloudformation.conftest import (
+    skip_if_v1_provider,
+    skip_if_v2_provider,
+    skipped_v2_items,
+)
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.entities import StackIdentifier
@@ -1053,6 +1057,7 @@ def test_non_existing_stack_message(aws_client, snapshot):
     snapshot.match("Error", ex.value.response)
 
 
+@skip_if_v1_provider(reason="Not implemented for V1 provider")
 @markers.aws.validated
 def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
     template_path = os.path.join(

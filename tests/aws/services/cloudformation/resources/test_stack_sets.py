@@ -2,6 +2,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.config import SECONDARY_TEST_AWS_ACCOUNT_ID, SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
@@ -82,6 +83,7 @@ def test_create_stack_set_with_stack_instances(
     aws_client.cloudformation.delete_stack_set(StackSetName=stack_set_name)
 
 
+@skip_if_v1_provider(reason="Not implemented in V1 provider")
 @markers.aws.validated
 def test_delete_nonexistent_stack_set(aws_client, snapshot):
     # idempotent
@@ -97,6 +99,7 @@ def test_delete_nonexistent_stack_set(aws_client, snapshot):
     )
 
 
+@skip_if_v1_provider(reason="Not implemented in V1 provider")
 @markers.aws.validated
 def test_fetch_non_existent_stack_set_instances(aws_client, snapshot):
     with pytest.raises(ClientError) as e:
