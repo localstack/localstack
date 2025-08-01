@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from collections import OrderedDict
@@ -812,7 +813,6 @@ def test_describe_stack_events_errors(aws_client, snapshot):
 TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
 
 
-@skip_if_v2_provider(reason="CFNV2:Other stack events")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -895,6 +895,89 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     filtered_events.sort(key=lambda e: e["Timestamp"])
 
     snapshot.match("events", filtered_events)
+
+
+@skip_if_v1_provider(reason="Not supported with v1 provider")
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "deletions",
+    [
+        pytest.param(["C"], id="C"),
+        pytest.param(["B", "C"], id="B-C"),
+        pytest.param(["A", "B", "C"], id="A-B-C"),
+    ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe.ChangeSetId",
+        "$..EnableTerminationProtection",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+        "$..Changes..ResourceChange.BeforeContext.Properties.Value",
+        "$..StackEvents..EventId",
+        "$..StackEvents..ResourceStatusReason",
+        "$..StackEvents..ResourceProperties.Value",
+        "all-events..EventId",
+    ]
+)
+def test_stack_deletion_order(
+    aws_client, capture_update_process, capture_resource_state_changes, snapshot, deletions
+):
+    t1 = {
+        "Resources": {
+            "Dummy": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "dummy",
+                },
+            },
+            "A": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "root",
+                },
+                "DependsOn": ["Dummy"],
+            },
+            "B": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Ref": "A",
+                    },
+                },
+            },
+            "C": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Ref": "B",
+                    },
+                },
+            },
+        }
+    }
+    t2 = copy.deepcopy(t1)
+    for deletion in deletions:
+        del t2["Resources"][deletion]
+
+    stack_id = capture_update_process(snapshot, t1, t2)
+
+    # since resource deployments are serializable, we can capture events and check parity with them
+    events = list(capture_resource_state_changes(stack_id))
+    to_snapshot = [(every["LogicalResourceId"], every["ResourceStatus"]) for every in events[::-1]]
+    snapshot.match("all-events", to_snapshot)
 
 
 @skip_if_v2_provider(reason="CFNV2:DescribeStack")

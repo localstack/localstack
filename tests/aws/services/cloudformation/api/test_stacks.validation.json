@@ -80,6 +80,33 @@
       "total": 0.62
     }
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[A-B-C]": {
+    "last_validated_date": "2025-08-01T16:12:23+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 28.8,
+      "teardown": 0.17,
+      "total": 28.97
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[B-C]": {
+    "last_validated_date": "2025-08-01T16:11:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 28.69,
+      "teardown": 0.13,
+      "total": 28.82
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[C]": {
+    "last_validated_date": "2025-08-01T16:11:25+00:00",
+    "durations_in_seconds": {
+      "setup": 1.17,
+      "call": 31.29,
+      "teardown": 0.13,
+      "total": 32.59
+    }
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deploy_order2": {
     "last_validated_date": "2024-05-21T09:48:14+00:00"
   },
