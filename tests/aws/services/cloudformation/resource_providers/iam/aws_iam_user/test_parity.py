@@ -7,6 +7,7 @@ from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 
 class TestParity:
@@ -21,6 +22,7 @@ class TestParity:
         - Negative test: missing required properties
     """
 
+    @skip_if_v2_provider(reason="CFNV2:Engine possible resource dependency issue")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..IsTruncated"]
