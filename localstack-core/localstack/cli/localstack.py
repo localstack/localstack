@@ -3,6 +3,7 @@ import logging
 import os
 import sys
 import traceback
+from subprocess import CalledProcessError
 from typing import Dict, List, Optional, Tuple, TypedDict
 
 import click
@@ -44,6 +45,59 @@ class LocalStackCliGroup(click.Group):
         "ephemeral",
         "replicator",
     ]
+
+    def get_command(self, ctx: click.Context, cmd_name: str):
+        """
+        Look for an external plugin named `localstack-<cmd_name>` in the user's PATH
+        and invoke it if present.
+        """
+        # First try built-in commands
+        cmd = super(LocalStackCliGroup, self).get_command(ctx, cmd_name)
+        if cmd is not None:
+            return cmd
+
+        # Fallback to external plugin
+        from shutil import which
+
+        exe_name = f"localstack-{cmd_name}"
+        exe_path = which(exe_name)
+        if exe_path:
+            import os
+
+            from click.decorators import pass_context
+
+            # Callback to exec the external command with all args
+            def _run_external(ctx, args):
+                os.execvp(exe_path, [exe_path] + list(args))
+
+            _run_external = pass_context(_run_external)
+            return click.Command(
+                name=cmd_name,
+                params=[click.Argument(["args"], nargs=-1)],
+                callback=_run_external,
+                help=f"External plugin command for '{cmd_name}'",
+                add_help_option=False,
+            )
+
+        # If user tries 'aws' or 'tf' but tool isn't installed, show install hint
+        if cmd_name in ("aws", "tf"):
+            from click.decorators import pass_context
+
+            def _install_hint(ctx, args):
+                raise CLIError(
+                    f"Tool '{cmd_name}' not installed. "
+                    f"Run 'localstack tool install {cmd_name}' to install it."
+                )
+
+            _install_hint = pass_context(_install_hint)
+            return click.Command(
+                name=cmd_name,
+                params=[click.Argument(["args"], nargs=-1)],
+                callback=_install_hint,
+                help=f"Install the helper tool '{cmd_name}' via 'localstack tool install {cmd_name}'",
+                add_help_option=False,
+            )
+        return None
 
     def invoke(self, ctx: click.Context):
         try:
@@ -865,6 +919,173 @@ def update_images(image_list: List[str]) -> None:
     console.print(
         f"Images updated: {updated_count}, Images failed: {failed_count}, total images processed: {len(image_list)}."
     )
+
+
+@localstack.group(name="tool", short_help="Manage LocalStack helper tools")
+def localstack_tool() -> None:
+    """
+    Manage LocalStack helper tools.
+    """
+    pass
+
+
+@localstack_tool.command(name="install", short_help="Install a helper tool")
+@click.argument("tool", type=click.Choice(["aws", "tf"], case_sensitive=False))
+@publish_invocation
+def cmd_tool_install(tool: str) -> None:
+    """
+    Install a helper tool. Currently supported:
+      aws - installs 'awscli-local' via pip.
+    """
+    mapping = {
+        "aws": "https://github.com/localstack/awscli-local.git@localstack-aws-rename",
+        "tf": "https://github.com/localstack/terraform-local.git@localstack-tf-rename",
+    }
+    repo_url = mapping.get(tool.lower())
+    if not repo_url:
+        raise CLIError(f"Unknown tool: {tool}")
+
+    console.rule(f"Installing {tool}")
+    try:
+        import os
+        import subprocess
+
+        prefix = os.path.expanduser("~/.localstack")
+        os.makedirs(prefix, exist_ok=True)
+        python_bin = "/Users/silvio/.local/share/mise/installs/python/3.11.12/bin/python"
+        subprocess.check_call(
+            [
+                python_bin,
+                "-m",
+                "pip",
+                "install",
+                "--upgrade",
+                "--force-reinstall",
+                f"git+{repo_url}",
+                "--prefix",
+                prefix,
+            ]
+        )
+        console.print(f":heavy_check_mark: Installed {tool} from {repo_url} into {prefix}")
+    except CalledProcessError as e:
+        raise CLIError(f"Failed to install {tool} from {repo_url}") from e
+
+
+# Uninstall command for helper tools
+@localstack_tool.command(name="uninstall", short_help="Uninstall a helper tool")
+@click.argument("tool", type=click.Choice(["aws", "tf"], case_sensitive=False))
+@publish_invocation
+def cmd_tool_uninstall(tool: str) -> None:
+    """
+    Uninstall a helper tool by removing its installed files from ~/.localstack.
+    Supported:
+      aws - uninstalls 'awscli-local'
+      tf  - uninstalls 'terraform-local'
+    """
+    import glob
+    import os
+    import shutil
+    import sys
+
+    from localstack.cli.exceptions import CLIError
+
+    tool_map = {
+        "aws": {"pkg_name": "localstack_awscli", "scripts": ["localstack-aws"]},
+        "tf": {"pkg_name": "localstack_terraform", "scripts": ["localstack-tf"]},
+    }
+    info = tool_map.get(tool.lower())
+    if not info:
+        raise CLIError(f"Unknown tool: {tool}")
+
+    prefix = os.path.expanduser("~/.localstack")
+    bin_dir = os.path.join(prefix, "bin")
+    lib_dir = os.path.join(
+        prefix, "lib", f"python{sys.version_info.major}.{sys.version_info.minor}", "site-packages"
+    )
+
+    console.rule(f"Uninstalling {tool}")
+
+    # Remove executables
+    for script in info["scripts"]:
+        path = os.path.join(bin_dir, script)
+        if os.path.exists(path):
+            try:
+                os.remove(path)
+                os.remove(path + ".bat")
+                console.log(f"Removed script: {path}")
+            except OSError:
+                console.log(f"Failed to remove script: {path}")
+
+    # Remove package directories and metadata
+    patterns = [
+        f"{info['pkg_name']}*",
+        f"{info['pkg_name'].replace('_', '-')}-*.dist-info*",
+        f"{info['pkg_name']}-*.egg-info*",
+    ]
+    for pattern in patterns:
+        for item in glob.glob(os.path.join(lib_dir, pattern)):
+            try:
+                if os.path.isdir(item):
+                    shutil.rmtree(item)
+                    console.log(f"Removed directory: {item}")
+                else:
+                    os.remove(item)
+                    console.log(f"Removed file: {item}")
+            except OSError:
+                console.log(f"Failed to remove: {item}")
+
+    console.print(f":heavy_check_mark: Uninstalled {tool}")
+
+
+@localstack_tool.command(name="ls", short_help="List available helper tools")
+@publish_invocation
+def cmd_tool_ls() -> None:
+    """
+    List all external LocalStack helper tools found in the user's PATH.
+    """
+    import os
+
+    paths = os.environ.get("PATH", "").split(os.pathsep)
+    tools = set()
+    for dir_path in paths:
+        if not os.path.isdir(dir_path):
+            continue
+        try:
+            for entry in os.listdir(dir_path):
+                if entry.startswith("localstack-"):
+                    full_path = os.path.join(dir_path, entry)
+                    if os.access(full_path, os.X_OK) and not os.path.isdir(full_path):
+                        tools.add(entry)
+        except PermissionError:
+            continue
+
+    if tools:
+        console.print("Available external tools:")
+        for tool in sorted(tools):
+            console.print(f"  - {tool}")
+    else:
+        console.print("No external LocalStack tools found.")
+
+
+# --- new command: tool init ---
+@localstack_tool.command(name="init", short_help="Initialize environment for helper tools")
+@publish_invocation
+def cmd_tool_init() -> None:
+    """
+    Print shell commands to configure PATH and PYTHONPATH for LocalStack helper tools.
+    """
+    import os
+    import sys
+
+    prefix = os.path.expanduser("~/.localstack")
+    bin_dir = os.path.join(prefix, "bin")
+    py_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+    site_packages = os.path.join(prefix, "lib", f"python{py_version}", "site-packages")
+
+    console.print("To use LocalStack helper tools, add the following to your shell profile:")
+    console.print("")
+    console.print(f'  export PATH="{bin_dir}:$PATH"')
+    console.print(f'  export PYTHONPATH="{site_packages}:$PYTHONPATH"')
 
 
 @localstack.command(name="completion", short_help="CLI shell completion")
