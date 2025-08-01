@@ -2310,7 +2310,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[C]": {
-    "recorded-date": "01-08-2025, 15:12:25",
+    "recorded-date": "01-08-2025, 16:11:25",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -2508,7 +2508,7 @@
               },
               "Details": [],
               "LogicalResourceId": "C",
-              "PhysicalResourceId": "CFN-C-HnfenTw1YJHA",
+              "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -2539,7 +2539,7 @@
               "Action": "Remove",
               "Details": [],
               "LogicalResourceId": "C",
-              "PhysicalResourceId": "CFN-C-HnfenTw1YJHA",
+              "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -2601,15 +2601,29 @@
         "A": [
           {
             "LogicalResourceId": "A",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "A",
-            "PhysicalResourceId": "CFN-A-Q5X8VBHTK96u",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -2617,15 +2631,29 @@
         "B": [
           {
             "LogicalResourceId": "B",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "B",
-            "PhysicalResourceId": "CFN-B-NfXWapSQp1am",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -2633,15 +2661,29 @@
         "C": [
           {
             "LogicalResourceId": "C",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "C",
-            "PhysicalResourceId": "CFN-C-HnfenTw1YJHA",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -2649,15 +2691,29 @@
         "Dummy": [
           {
             "LogicalResourceId": "Dummy",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "Dummy",
-            "PhysicalResourceId": "CFN-Dummy-u0IVZGkmj3Kh",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -2697,13 +2753,121 @@
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Stack",
             "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
           }
         ]
-      }
+      },
+      "all-events": [
+        [
+          "<stack-name:1>",
+          "REVIEW_IN_PROGRESS"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "A",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "B",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "C",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "A",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "Dummy",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_COMPLETE"
+        ]
+      ]
     }
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[B-C]": {
-    "recorded-date": "01-08-2025, 15:12:54",
+    "recorded-date": "01-08-2025, 16:11:54",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -2901,7 +3065,7 @@
               },
               "Details": [],
               "LogicalResourceId": "B",
-              "PhysicalResourceId": "CFN-B-DlXUVpKJ7xQ1",
+              "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -2919,7 +3083,7 @@
               },
               "Details": [],
               "LogicalResourceId": "C",
-              "PhysicalResourceId": "CFN-C-lh3WvyGFi5yC",
+              "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -2950,7 +3114,7 @@
               "Action": "Remove",
               "Details": [],
               "LogicalResourceId": "B",
-              "PhysicalResourceId": "CFN-B-DlXUVpKJ7xQ1",
+              "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -2962,7 +3126,7 @@
               "Action": "Remove",
               "Details": [],
               "LogicalResourceId": "C",
-              "PhysicalResourceId": "CFN-C-lh3WvyGFi5yC",
+              "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3024,15 +3188,29 @@
         "A": [
           {
             "LogicalResourceId": "A",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "A",
-            "PhysicalResourceId": "CFN-A-IJ8jNLNvr2CJ",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3040,15 +3218,29 @@
         "B": [
           {
             "LogicalResourceId": "B",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "B",
-            "PhysicalResourceId": "CFN-B-DlXUVpKJ7xQ1",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3056,15 +3248,29 @@
         "C": [
           {
             "LogicalResourceId": "C",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "C",
-            "PhysicalResourceId": "CFN-C-lh3WvyGFi5yC",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3072,15 +3278,29 @@
         "Dummy": [
           {
             "LogicalResourceId": "Dummy",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "Dummy",
-            "PhysicalResourceId": "CFN-Dummy-pPq4itsMxBRD",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3120,13 +3340,121 @@
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Stack",
             "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
           }
         ]
-      }
+      },
+      "all-events": [
+        [
+          "<stack-name:1>",
+          "REVIEW_IN_PROGRESS"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "A",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "B",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "C",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "B",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "Dummy",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_COMPLETE"
+        ]
+      ]
     }
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[A-B-C]": {
-    "recorded-date": "01-08-2025, 15:13:23",
+    "recorded-date": "01-08-2025, 16:12:23",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -3324,7 +3652,7 @@
               },
               "Details": [],
               "LogicalResourceId": "A",
-              "PhysicalResourceId": "CFN-A-g6lKZtigpa4V",
+              "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3342,7 +3670,7 @@
               },
               "Details": [],
               "LogicalResourceId": "B",
-              "PhysicalResourceId": "CFN-B-3TZ4WOy9HGgt",
+              "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3360,7 +3688,7 @@
               },
               "Details": [],
               "LogicalResourceId": "C",
-              "PhysicalResourceId": "CFN-C-Jy4W2hH1uRR0",
+              "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3391,7 +3719,7 @@
               "Action": "Remove",
               "Details": [],
               "LogicalResourceId": "A",
-              "PhysicalResourceId": "CFN-A-g6lKZtigpa4V",
+              "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3403,7 +3731,7 @@
               "Action": "Remove",
               "Details": [],
               "LogicalResourceId": "B",
-              "PhysicalResourceId": "CFN-B-3TZ4WOy9HGgt",
+              "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3415,7 +3743,7 @@
               "Action": "Remove",
               "Details": [],
               "LogicalResourceId": "C",
-              "PhysicalResourceId": "CFN-C-Jy4W2hH1uRR0",
+              "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
               "PolicyAction": "Delete",
               "ResourceType": "AWS::SSM::Parameter",
               "Scope": []
@@ -3477,15 +3805,29 @@
         "A": [
           {
             "LogicalResourceId": "A",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "A",
-            "PhysicalResourceId": "CFN-A-g6lKZtigpa4V",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3493,15 +3835,29 @@
         "B": [
           {
             "LogicalResourceId": "B",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "B",
-            "PhysicalResourceId": "CFN-B-3TZ4WOy9HGgt",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3509,15 +3865,29 @@
         "C": [
           {
             "LogicalResourceId": "C",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "C",
-            "PhysicalResourceId": "CFN-C-Jy4W2hH1uRR0",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3525,15 +3895,29 @@
         "Dummy": [
           {
             "LogicalResourceId": "Dummy",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "Dummy",
-            "PhysicalResourceId": "CFN-Dummy-XOTBSV8XB9Ke",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -3573,9 +3957,117 @@
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Stack",
             "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
           }
         ]
-      }
+      },
+      "all-events": [
+        [
+          "<stack-name:1>",
+          "REVIEW_IN_PROGRESS"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "A",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "B",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "C",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "B",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "A",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_COMPLETE"
+        ]
+      ]
     }
   }
 }

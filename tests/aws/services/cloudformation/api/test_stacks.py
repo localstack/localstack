@@ -922,9 +922,15 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
         "$..PolicyAction",
         "$..PhysicalResourceId",
         "$..Changes..ResourceChange.BeforeContext.Properties.Value",
+        "$..StackEvents..EventId",
+        "$..StackEvents..ResourceStatusReason",
+        "$..StackEvents..ResourceProperties.Value",
+        "all-events..EventId",
     ]
 )
-def test_stack_deletion_order(capture_update_process, snapshot, deletions):
+def test_stack_deletion_order(
+    aws_client, capture_update_process, capture_resource_state_changes, snapshot, deletions
+):
     t1 = {
         "Resources": {
             "Dummy": {
@@ -940,6 +946,7 @@ def test_stack_deletion_order(capture_update_process, snapshot, deletions):
                     "Type": "String",
                     "Value": "root",
                 },
+                "DependsOn": ["Dummy"],
             },
             "B": {
                 "Type": "AWS::SSM::Parameter",
@@ -965,7 +972,12 @@ def test_stack_deletion_order(capture_update_process, snapshot, deletions):
     for deletion in deletions:
         del t2["Resources"][deletion]
 
-    capture_update_process(snapshot, t1, t2)
+    stack_id = capture_update_process(snapshot, t1, t2)
+
+    # since resource deployments are serializable, we can capture events and check parity with them
+    events = list(capture_resource_state_changes(stack_id))
+    to_snapshot = [(every["LogicalResourceId"], every["ResourceStatus"]) for every in events[::-1]]
+    snapshot.match("all-events", to_snapshot)
 
 
 @skip_if_v2_provider(reason="CFNV2:DescribeStack")
