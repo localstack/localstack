@@ -47,7 +47,7 @@ class TestChangeSetGlobalMacros:
             )
         )
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/format_template.py"
+            os.path.dirname(__file__), "../../templates/macros/format_template.py"
         )
         macro_name = "SubstitutionMacro"
         func_name = f"test_lambda_{short_uid()}"
@@ -60,7 +60,7 @@ class TestChangeSetGlobalMacros:
         )
         deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/macro_resource.yml"
+                os.path.dirname(__file__), "../../templates/macro_resource.yml"
             ),
             parameters={"FunctionName": func_name, "MacroName": macro_name},
         )
@@ -115,7 +115,7 @@ class TestChangeSetGlobalMacros:
         )
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/format_template.py"
+            os.path.dirname(__file__), "../../templates/macros/format_template.py"
         )
 
         # Create the macro to be used in the first version of the template.
@@ -131,7 +131,7 @@ class TestChangeSetGlobalMacros:
         )
         macro_stack_first = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/macro_resource.yml"
+                os.path.dirname(__file__), "../../templates/macro_resource.yml"
             ),
             parameters={"FunctionName": func_name, "MacroName": macro_name_first},
         )
@@ -212,7 +212,7 @@ class TestChangeSetGlobalMacros:
         )
         macro_stack_second = deploy_cfn_template(
             template_path=os.path.join(
-                os.path.dirname(__file__), "../../../templates/macro_resource.yml"
+                os.path.dirname(__file__), "../../templates/macro_resource.yml"
             ),
             parameters={"FunctionName": func_name, "MacroName": macro_name_second},
         )

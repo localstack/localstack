@@ -15,7 +15,7 @@ def skip_if_v1_provider(*, reason: str):
     return pytest.mark.skipif(condition=not is_v2_engine() and not is_aws_cloud(), reason=reason)
 
 
-_T = TypeVar("T")
+_T = TypeVar("_T")
 
 
 def skipped_v2_items(*items: Iterable[_T]) -> list[_T]:

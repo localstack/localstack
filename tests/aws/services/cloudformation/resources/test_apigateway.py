@@ -330,6 +330,7 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     # TODO: snapshot the authorizer too? it's not attached to the REST API
 
 
+# @skip_if_v2_provider(reason="")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -338,7 +339,7 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
         "$.get-stage.methodSettings",
         "$.get-stage.tags",
     ]
-    + skipped_v2_items(["$..binaryMediaTypes"])
+    + skipped_v2_items("$..binaryMediaTypes")
 )
 def test_cfn_deploy_apigateway_from_s3_swagger(
     deploy_cfn_template, snapshot, aws_client, s3_bucket
