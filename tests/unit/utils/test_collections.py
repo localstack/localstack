@@ -9,6 +9,7 @@ from localstack.utils.collections import (
     ImmutableList,
     convert_to_typed_dict,
     is_comma_delimited_list,
+    optional_list,
     select_from_typed_dict,
 )
 
@@ -193,3 +194,16 @@ def test_is_comma_limited_list():
     assert not is_comma_delimited_list("foo, bar baz")
     assert not is_comma_delimited_list("foo,")
     assert not is_comma_delimited_list("")
+
+
+@pytest.mark.parametrize(
+    "condition,input,expected",
+    [
+        (True, [1, 2, 3], [1, 2, 3]),
+        (False, [1, 2, 3], []),
+        (True, [], []),
+        (False, [], []),
+    ],
+)
+def test_optional_list(condition, input, expected):
+    assert optional_list(condition, input) == expected

@@ -1,5 +1,0 @@
-{
-  "tests/aws/services/cloudformation/v2/test_change_set_values.py::TestChangeSetValues::test_property_empy_list": {
-    "last_validated_date": "2025-05-23T17:56:06+00:00"
-  }
-}

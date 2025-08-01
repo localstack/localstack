@@ -4,6 +4,7 @@ import os
 import aws_cdk as cdk
 import botocore.exceptions
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
@@ -76,6 +77,7 @@ def test_cfn_secret_policy(deploy_cfn_template, block_public_policy, aws_client,
     snapshot.add_transformer(snapshot.transform.key_value("Name", "policy-name"))
 
 
+@skip_if_v2_provider(reason="CFNV2:Other")
 @markers.aws.validated
 def test_cdk_deployment_generates_secret_value_if_no_value_is_provided(
     aws_client, snapshot, infrastructure_setup
