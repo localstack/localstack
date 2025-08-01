@@ -756,6 +756,7 @@ class TestMacros:
         snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
+    @skip_if_v2_provider(reason="Fn::Transform")
     @markers.aws.validated
     def test_attribute_uses_macro(self, deploy_cfn_template, create_lambda_function, aws_client):
         macro_function_path = os.path.join(
