@@ -5,8 +5,10 @@ from operator import itemgetter
 import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
-from tests.aws.services.cloudformation.conftest import extra_v2_snapshot_skips, skipped_v2_items, skip_if_v2_provider
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider, skipped_v2_items
+from tests.aws.services.cloudformation.conftest import (
+    skip_if_v2_provider,
+    skipped_v2_items,
+)
 
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime

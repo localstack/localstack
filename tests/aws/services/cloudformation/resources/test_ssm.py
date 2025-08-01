@@ -6,7 +6,6 @@ from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
-
 from localstack.utils.common import short_uid
 
 

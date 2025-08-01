@@ -5,11 +5,8 @@ import pytest
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.aws.util import is_aws_cloud
-
 from localstack.testing.pytest import markers
-
 from localstack.utils.aws.arns import parse_arn
-
 from localstack.utils.common import short_uid
 
 
