@@ -80,9 +80,7 @@ def test_sns_subscription(deploy_cfn_template, aws_client):
     assert len(subscriptions["Subscriptions"]) > 0
 
 
-skip_if_v2_provider(reason="CFNV2:Engine")
-
-
+@skip_if_v2_provider(reason="CFNV2:Engine")
 @markers.aws.validated
 def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
