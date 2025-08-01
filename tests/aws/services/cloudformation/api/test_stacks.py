@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from collections import OrderedDict
@@ -894,6 +895,77 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     filtered_events.sort(key=lambda e: e["Timestamp"])
 
     snapshot.match("events", filtered_events)
+
+
+@skip_if_v1_provider(reason="Not supported with v1 provider")
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "deletions",
+    [
+        pytest.param(["C"], id="C"),
+        pytest.param(["B", "C"], id="B-C"),
+        pytest.param(["A", "B", "C"], id="A-B-C"),
+    ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe.ChangeSetId",
+        "$..EnableTerminationProtection",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+        "$..Changes..ResourceChange.BeforeContext.Properties.Value",
+    ]
+)
+def test_stack_deletion_order(capture_update_process, snapshot, deletions):
+    t1 = {
+        "Resources": {
+            "Dummy": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "dummy",
+                },
+            },
+            "A": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "root",
+                },
+            },
+            "B": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Ref": "A",
+                    },
+                },
+            },
+            "C": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Ref": "B",
+                    },
+                },
+            },
+        }
+    }
+    t2 = copy.deepcopy(t1)
+    for deletion in deletions:
+        del t2["Resources"][deletion]
+
+    capture_update_process(snapshot, t1, t2)
 
 
 @skip_if_v2_provider(reason="CFNV2:DescribeStack")
