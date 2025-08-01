@@ -3,6 +3,7 @@ from collections import defaultdict
 from typing import Callable, Optional, TypedDict
 
 import pytest
+from botocore.exceptions import WaiterError
 
 from localstack.aws.api.cloudformation import DescribeChangeSetOutput, StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
@@ -193,9 +194,15 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
         snapshot.match("create-change-set-2", change_set_details)
         stack_id = change_set_details["StackId"]
         change_set_id = change_set_details["Id"]
-        aws_client_no_retry.cloudformation.get_waiter("change_set_create_complete").wait(
-            ChangeSetName=change_set_id
-        )
+        try:
+            aws_client_no_retry.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
+        except WaiterError as e:
+            desc = aws_client_no_retry.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id
+            )
+            raise RuntimeError(f"Change set deployment failed: {desc}") from e
 
         describe_change_set_with_prop_values = (
             aws_client_no_retry.cloudformation.describe_change_set(
