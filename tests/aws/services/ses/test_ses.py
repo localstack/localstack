@@ -391,6 +391,75 @@ class TestSES:
         assert cloned_rule_set["Rules"] == original_rule_set["Rules"]
         assert [x["Name"] for x in cloned_rule_set["Rules"]] == rule_names
 
+    @markers.aws.validated
+    @pytest.mark.parametrize("notification_type", ["Bounce", "Complaint", "Delivery"])
+    @pytest.mark.parametrize("enabled", [True, False])
+    def test_set_identity_headers_in_notifications_enabled_success(
+        self, aws_client, setup_email_addresses, snapshot, notification_type, enabled
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for valid identities and notification types.
+        Also checks idempotency.
+        """
+        sender_email, _ = setup_email_addresses()
+
+        response = aws_client.ses.set_identity_headers_in_notifications_enabled(
+            Identity=sender_email,
+            NotificationType=notification_type,
+            Enabled=enabled,
+        )
+        snapshot.match(f"set-headers-{notification_type.lower()}-enabled-{enabled}", response)
+
+        # Idempotency check
+        response2 = aws_client.ses.set_identity_headers_in_notifications_enabled(
+            Identity=sender_email,
+            NotificationType=notification_type,
+            Enabled=enabled,
+        )
+        snapshot.match(
+            f"set-headers-{notification_type.lower()}-enabled-{enabled}-idempotent", response2
+        )
+
+    @markers.aws.validated
+    def test_set_identity_headers_in_notifications_enabled_failure_invalid_type(
+        self, aws_client, setup_email_addresses, snapshot
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for invalid notification types.
+        """
+        sender_email, _ = setup_email_addresses()
+        enabled = True
+        notification_type = "InvalidType"
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.ses.set_identity_headers_in_notifications_enabled(
+                Identity=sender_email,
+                NotificationType=notification_type,
+                Enabled=enabled,
+            )
+        snapshot.match("set-headers-error-invalidtype", exc.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("notification_type", ["Bounce", "Complaint", "Delivery"])
+    def test_set_identity_headers_in_notifications_enabled_failure_unknown_identity(
+        self, aws_client, snapshot, notification_type
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for unknown identity.
+        """
+        enabled = True
+        unknown_email = "unknown@example.com"
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.ses.set_identity_headers_in_notifications_enabled(
+                Identity=unknown_email,
+                NotificationType=notification_type,
+                Enabled=enabled,
+            )
+        snapshot.match(
+            f"set-headers-error-unknown-identity-{notification_type.lower()}", exc.value.response
+        )
+
     @markers.aws.manual_setup_required
     @markers.snapshot.skip_snapshot_verify(
         paths=[
