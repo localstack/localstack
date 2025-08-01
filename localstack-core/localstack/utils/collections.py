@@ -536,10 +536,10 @@ def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bo
     return True
 
 
-E = TypeVar("E")
+_E = TypeVar("_E")
 
 
-def optional_list(condition: bool, items: Iterable[E]) -> list[E]:
+def optional_list(condition: bool, items: Iterable[_E]) -> list[_E]:
     """
     Given an iterable, either create a list out of the entire iterable (if `condition` is `True`), or return the empty list.
     >>> print(optional_list(True, [1, 2, 3]))
