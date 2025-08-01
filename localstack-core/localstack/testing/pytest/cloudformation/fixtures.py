@@ -107,7 +107,12 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
     change_set_name = f"cs-{short_uid()}"
 
     def inner(
-        snapshot, t1: dict | str, t2: dict | str, p1: dict | None = None, p2: dict | None = None
+        snapshot,
+        t1: dict | str,
+        t2: dict | str,
+        p1: dict | None = None,
+        p2: dict | None = None,
+        custom_update_step: Callable[[], None] | None = None,
     ):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
@@ -181,6 +186,10 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             0
         ]
         snapshot.match("post-create-1-describe", describe)
+
+        # run any custom steps if present
+        if custom_update_step:
+            custom_update_step()
 
         # update stack
         change_set_details = aws_client_no_retry.cloudformation.create_change_set(

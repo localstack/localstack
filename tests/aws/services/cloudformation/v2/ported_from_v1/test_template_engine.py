@@ -316,9 +316,10 @@ class TestImports:
         assert stack2.outputs["MessageQueueArn2"] == queue_arn2
 
 
-@pytest.mark.skip(reason="CFNV2:Resolve")
 class TestSsmParameters:
+    @pytest.mark.skip("CFNV2:Resolve")
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Capabilities", "$..NotificationARNs"])
     def test_create_stack_with_ssm_parameters(
         self, create_parameter, deploy_cfn_template, snapshot, aws_client
     ):
@@ -351,6 +352,7 @@ class TestSsmParameters:
         snapshot.match("topic-tags", tags)
 
     @markers.aws.validated
+    @pytest.mark.skip("CFNV2:resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -366,6 +368,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @pytest.mark.skip("CFNV2:resolve")
     @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
@@ -393,6 +396,7 @@ class TestSsmParameters:
         assert topic_name == parameter_value_v1
 
     @markers.aws.needs_fixing
+    @pytest.mark.skip("CFNV2:resolve")
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -410,6 +414,7 @@ class TestSsmParameters:
         assert topic_name == parameter_value
 
     @markers.aws.validated
+    @pytest.mark.skip("CFNV2:nested attribute lookup")
     def test_ssm_nested_with_nested_stack(self, s3_create_bucket, deploy_cfn_template, aws_client):
         """
         When resolving the references in the cloudformation template for 'Fn::GetAtt' we need to consider the attribute subname.
@@ -445,6 +450,7 @@ class TestSsmParameters:
         assert ssm_parameter == key_value
 
     @markers.aws.validated
+    @pytest.mark.skip("CFNV2:resolve")
     def test_create_change_set_with_ssm_parameter_list(
         self, deploy_cfn_template, aws_client, region_name, account_id, snapshot
     ):

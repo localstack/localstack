@@ -16,9 +16,6 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-@pytest.mark.skipif(
-    condition=not is_v2_engine() and not is_aws_cloud(), reason="Requires the V2 engine"
-)
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "delete-describe..*",
