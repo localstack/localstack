@@ -812,7 +812,6 @@ def test_describe_stack_events_errors(aws_client, snapshot):
 TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
 
 
-@skip_if_v2_provider(reason="CFNV2:Other stack events")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
