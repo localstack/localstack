@@ -68,6 +68,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.outputs = dict()
         self.resolved_parameters = dict()
         self._deferred_actions = list()
+        self.resource_provider_executor = ResourceProviderExecutor(
+            stack_name=change_set.stack.stack_name,
+            stack_id=change_set.stack.stack_id,
+        )
 
     def execute(self) -> ChangeSetModelExecutorResult:
         # constructive process
@@ -381,9 +385,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         after_properties: Optional[PreprocProperties],
     ) -> ProgressEvent:
         LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
-        resource_provider_executor = ResourceProviderExecutor(
-            stack_name=self._change_set.stack.stack_name, stack_id=self._change_set.stack.stack_id
-        )
         payload = self.create_resource_provider_payload(
             action=action,
             logical_resource_id=logical_resource_id,
@@ -391,13 +392,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             before_properties=before_properties,
             after_properties=after_properties,
         )
-        resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
+        resource_provider = self.resource_provider_executor.try_load_resource_provider(
+            resource_type
+        )
         track_resource_operation(action, resource_type, missing=resource_provider is not None)
 
         extra_resource_properties = {}
         if resource_provider is not None:
             try:
-                event = resource_provider_executor.deploy_loop(
+                event = self.resource_provider_executor.deploy_loop(
                     resource_provider, extra_resource_properties, payload
                 )
             except Exception as e:
