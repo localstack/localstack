@@ -1195,6 +1195,54 @@ class TestKMS:
         assert _get_alias(aws_client.kms, alias_name, comparison_key_id) is None
 
     @markers.aws.validated
+    def test_import_key_hmac(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        key = kms_create_key(Origin="EXTERNAL", KeySpec="HMAC_512", KeyUsage="GENERATE_VERIFY_MAC")
+        key_id = key["KeyId"]
+
+        plaintext = os.urandom(64)
+
+        params = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_4096"
+        )
+
+        public_key = load_der_public_key(params["PublicKey"])
+        encrypted_key = public_key.encrypt(
+            plaintext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
+        describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-import", describe_key_before_import)
+
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=params["ImportToken"],
+            EncryptedKeyMaterial=encrypted_key,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+        describe_key_after_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-import", describe_key_after_import)
+
+        # Generate and verify MAC
+        message = b"test-mac-message"
+        generate_mac = aws_client.kms.generate_mac(
+            KeyId=key_id, Message=message, MacAlgorithm="HMAC_SHA_512"
+        )
+        snapshot.match("generate-mac-response", generate_mac)
+
+        verify_mac = aws_client.kms.verify_mac(
+            KeyId=key_id, Message=message, Mac=generate_mac["Mac"], MacAlgorithm="HMAC_SHA_512"
+        )
+        snapshot.match("verify-mac-response", verify_mac)
+        assert verify_mac["MacValid"]
+
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
+
+    @markers.aws.validated
     def test_all_types_of_key_id_can_be_used_for_encryption(
         self, kms_create_key, kms_create_alias, aws_client
     ):

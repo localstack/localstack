@@ -2427,5 +2427,101 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac": {
+    "recorded-date": "02-08-2025, 09:37:57",
+    "recorded-content": {
+      "describe-key-before-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "HMAC_512",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "HMAC_512",
+          "KeyState": "PendingImport",
+          "KeyUsage": "GENERATE_VERIFY_MAC",
+          "MacAlgorithms": [
+            "HMAC_SHA_512"
+          ],
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "HMAC_512",
+          "Description": "<description:1>",
+          "Enabled": true,
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "HMAC_512",
+          "KeyState": "Enabled",
+          "KeyUsage": "GENERATE_VERIFY_MAC",
+          "MacAlgorithms": [
+            "HMAC_SHA_512"
+          ],
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "generate-mac-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "Mac": "<mac>",
+        "MacAlgorithm": "HMAC_SHA_512",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "verify-mac-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "MacAlgorithm": "HMAC_SHA_512",
+        "MacValid": true,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-deleted-import": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "HMAC_512",
+          "Description": "<description:1>",
+          "Enabled": false,
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "HMAC_512",
+          "KeyState": "PendingImport",
+          "KeyUsage": "GENERATE_VERIFY_MAC",
+          "MacAlgorithms": [
+            "HMAC_SHA_512"
+          ],
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
