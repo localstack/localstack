@@ -15,13 +15,6 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 from cryptography.hazmat.primitives.keywrap import aes_key_wrap_with_padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
-from localstack.aws.api.kms import (
-    AlgorithmSpec,
-    KeySpec,
-    MacAlgorithmSpec,
-    SigningAlgorithmSpec,
-    WrappingKeySpec,
-)
 from localstack.services.kms.models import (
     HEADER_LEN,
     IV_LEN,
@@ -35,14 +28,6 @@ from localstack.testing.pytest import markers
 from localstack.utils.crypto import encrypt
 from localstack.utils.strings import short_uid, to_str
 from localstack.utils.sync import poll_condition
-
-# Map HMAC key specs with expected byte lengths and mac algo
-HMAC_KEY_SPECS = [
-    (KeySpec.HMAC_224, 28, MacAlgorithmSpec.HMAC_SHA_224),
-    (KeySpec.HMAC_256, 32, MacAlgorithmSpec.HMAC_SHA_256),
-    (KeySpec.HMAC_384, 48, MacAlgorithmSpec.HMAC_SHA_384),
-    (KeySpec.HMAC_512, 64, MacAlgorithmSpec.HMAC_SHA_512),
-]
 
 
 def create_tags(**kwargs):
@@ -1211,56 +1196,51 @@ class TestKMS:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "key_spec, curve, signing_algorithm, wrapping_key_spec, wrapping_algorithm, oaep_hash",
+        "key_spec, curve, oaep_hash, signing_algorithm, wrapping_key_spec, wrapping_algorithm",
         [
             (
-                KeySpec.ECC_NIST_P256,
+                "ECC_NIST_P256",
                 ec.SECP256R1(),
-                SigningAlgorithmSpec.ECDSA_SHA_256,
-                WrappingKeySpec.RSA_2048,
-                AlgorithmSpec.RSAES_OAEP_SHA_1,
                 hashes.SHA1(),
+                "ECDSA_SHA_256",
+                "RSA_2048",
+                "RSAES_OAEP_SHA_1",
             ),
             (
-                KeySpec.ECC_NIST_P384,
+                "ECC_NIST_P384",
                 ec.SECP384R1(),
-                SigningAlgorithmSpec.ECDSA_SHA_384,
-                WrappingKeySpec.RSA_2048,
-                AlgorithmSpec.RSAES_OAEP_SHA_1,
                 hashes.SHA1(),
+                "ECDSA_SHA_384",
+                "RSA_2048",
+                "RSAES_OAEP_SHA_1",
             ),
             (
-                KeySpec.ECC_NIST_P521,
+                "ECC_NIST_P521",
                 ec.SECP521R1(),
-                SigningAlgorithmSpec.ECDSA_SHA_512,
-                WrappingKeySpec.RSA_4096,
-                AlgorithmSpec.RSAES_OAEP_SHA_256,
                 hashes.SHA256(),
+                "ECDSA_SHA_512",
+                "RSA_4096",
+                "RSAES_OAEP_SHA_256",
             ),
             (
-                KeySpec.ECC_SECG_P256K1,
+                "ECC_SECG_P256K1",
                 ec.SECP256K1(),
-                SigningAlgorithmSpec.ECDSA_SHA_256,
-                WrappingKeySpec.RSA_2048,
-                AlgorithmSpec.RSAES_OAEP_SHA_1,
                 hashes.SHA1(),
+                "ECDSA_SHA_256",
+                "RSA_2048",
+                "RSAES_OAEP_SHA_1",
             ),
         ],
-        ids=[
-            KeySpec.ECC_NIST_P256,
-            KeySpec.ECC_NIST_P384,
-            KeySpec.ECC_NIST_P521,
-            KeySpec.ECC_SECG_P256K1,
-        ],
+        ids=["ECC_NIST_P256", "ECC_NIST_P384", "ECC_NIST_P521", "ECC_SECG_P256K1"],
     )
     def test_import_key_ecc_keys(
         self,
         key_spec,
         curve,
+        oaep_hash,
         signing_algorithm,
         wrapping_key_spec,
         wrapping_algorithm,
-        oaep_hash,
         kms_create_key,
         aws_client,
         snapshot,
@@ -1343,12 +1323,12 @@ class TestKMS:
     @pytest.mark.parametrize(
         "key_spec, key_length, mac_algo",
         [
-            (KeySpec.HMAC_224, 28, MacAlgorithmSpec.HMAC_SHA_224),
-            (KeySpec.HMAC_256, 32, MacAlgorithmSpec.HMAC_SHA_256),
-            (KeySpec.HMAC_384, 48, MacAlgorithmSpec.HMAC_SHA_384),
-            (KeySpec.HMAC_512, 64, MacAlgorithmSpec.HMAC_SHA_512),
+            ("HMAC_224", 28, "HMAC_SHA_224"),
+            ("HMAC_256", 32, "HMAC_SHA_256"),
+            ("HMAC_384", 48, "HMAC_SHA_384"),
+            ("HMAC_512", 64, "HMAC_SHA_512"),
         ],
-        ids=[KeySpec.HMAC_224, KeySpec.HMAC_256, KeySpec.HMAC_384, KeySpec.HMAC_512],
+        ids=["HMAC_224", "HMAC_256", "HMAC_384", "HMAC_512"],
     )
     def test_import_key_hmac_keys(
         self, key_spec, key_length, mac_algo, kms_create_key, aws_client, snapshot

@@ -2431,7 +2431,7 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac": {
     "recorded-date": "02-08-2025, 09:37:57",
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P256]": {
-    "recorded-date": "04-08-2025, 05:34:34",
+    "recorded-date": "04-08-2025, 08:10:22",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -2527,7 +2527,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P384]": {
-    "recorded-date": "04-08-2025, 05:34:37",
+    "recorded-date": "04-08-2025, 08:10:26",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -2623,7 +2623,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_SECG_P256K1]": {
-    "recorded-date": "04-08-2025, 05:34:44",
+    "recorded-date": "04-08-2025, 08:10:33",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -2719,7 +2719,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P521]": {
-    "recorded-date": "04-08-2025, 05:34:41",
+    "recorded-date": "04-08-2025, 08:10:29",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -2815,7 +2815,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_224]": {
-    "recorded-date": "04-08-2025, 05:34:11",
+    "recorded-date": "04-08-2025, 08:11:28",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -2911,7 +2911,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_256]": {
-    "recorded-date": "04-08-2025, 05:34:14",
+    "recorded-date": "04-08-2025, 08:11:32",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -3007,7 +3007,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_384]": {
-    "recorded-date": "04-08-2025, 05:34:17",
+    "recorded-date": "04-08-2025, 08:11:35",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
@@ -3103,7 +3103,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_512]": {
-    "recorded-date": "04-08-2025, 05:34:21",
+    "recorded-date": "04-08-2025, 08:11:38",
     "recorded-content": {
       "describe-key-before-import": {
         "KeyMetadata": {
