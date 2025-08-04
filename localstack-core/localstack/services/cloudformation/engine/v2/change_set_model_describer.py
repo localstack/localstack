@@ -4,6 +4,7 @@ import json
 from typing import Final, Optional
 
 import localstack.aws.api.cloudformation as cfn_api
+from localstack.aws.api.cloudformation import Replacement
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeProperty,
@@ -118,6 +119,8 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         physical_id: Optional[str],
         before_properties: Optional[PreprocProperties],
         after_properties: Optional[PreprocProperties],
+        # TODO: remove default
+        requires_replacement: bool = False,
     ) -> None:
         action = cfn_api.ChangeAction.Modify
         if before_properties is None:
@@ -139,6 +142,10 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             after_context_properties = {PropertiesKey: after_properties.properties}
             after_context_properties_json_str = json.dumps(after_context_properties)
             resource_change["AfterContext"] = after_context_properties_json_str
+        # TODO: handle "Conditional" case
+        resource_change["Replacement"] = (
+            Replacement.True_ if requires_replacement else Replacement.False_
+        )
         self._changes.append(
             cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
         )
@@ -159,6 +166,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                     type_=before.resource_type,
                     before_properties=before.properties,
                     after_properties=after.properties,
+                    requires_replacement=after.requires_replacement,
                 )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.

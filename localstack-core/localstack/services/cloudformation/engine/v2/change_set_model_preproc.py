@@ -107,6 +107,7 @@ class PreprocResource:
     resource_type: str
     properties: PreprocProperties
     depends_on: Optional[list[str]]
+    requires_replacement: bool
 
     def __init__(
         self,
@@ -116,6 +117,7 @@ class PreprocResource:
         resource_type: str,
         properties: PreprocProperties,
         depends_on: Optional[list[str]],
+        requires_replacement: bool,
     ):
         self.logical_id = logical_id
         self.physical_resource_id = physical_resource_id
@@ -123,6 +125,7 @@ class PreprocResource:
         self.resource_type = resource_type
         self.properties = properties
         self.depends_on = depends_on
+        self.requires_replacement = requires_replacement
 
     @staticmethod
     def _compare_conditions(c1: bool, c2: bool):
@@ -1127,6 +1130,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 resource_type=type_delta.before,
                 properties=properties_delta.before,
                 depends_on=depends_on_before,
+                requires_replacement=False,
             )
         if change_type != ChangeType.REMOVED and is_nothing(condition_after) or condition_after:
             logical_resource_id = node_resource.name
@@ -1143,6 +1147,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 resource_type=type_delta.after,
                 properties=properties_delta.after,
                 depends_on=depends_on_after,
+                requires_replacement=node_resource.requires_replacement,
             )
         return PreprocEntityDelta(before=before, after=after)
 
