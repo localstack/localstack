@@ -1,8 +1,37 @@
 {
   "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import": {
-    "recorded-date": "29-07-2025, 20:37:27",
+    "recorded-date": "04-08-2025, 20:50:24",
     "recorded-content": {
       "describe": {
+        "Capabilities": [],
+        "ChangeSetId": "<change-set-id:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "MyFoo",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "<stack-id:1>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_with_values": {
         "Capabilities": [],
         "ChangeSetId": "<change-set-id:1>",
         "ChangeSetName": "<change-set-name:1>",
@@ -32,6 +61,76 @@
         "StackId": "<stack-id:1>",
         "StackName": "<stack-name:1>",
         "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import_non_existent_export": {
+    "recorded-date": "04-08-2025, 22:57:57",
+    "recorded-content": {
+      "describe": {
+        "Capabilities": [],
+        "ChangeSetId": "<change-set-id:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "MyFoo",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "<stack-id:1>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_with_values": {
+        "Capabilities": [],
+        "ChangeSetId": "<change-set-id:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "MyFoo",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "<stack-id:1>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "StatusReason": "[WARN] --include-property-values option can return incomplete ChangeSet data because: ChangeSet creation failed for resource [MyFoo] because: No export named <export-name>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

@@ -1214,10 +1214,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             exports = exports_map(
                 account_id=self._change_set.account_id, region_name=self._change_set.region_name
             )
-            if not exports.get(string):
-                raise RuntimeError(f"Value not found for import: '{string}'")
 
-            return exports.get(string)["Value"]
+            return exports.get(string, {}).get("Value") or Nothing
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         delta = self._cached_apply(
