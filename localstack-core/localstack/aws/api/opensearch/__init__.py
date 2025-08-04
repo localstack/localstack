@@ -39,6 +39,8 @@ ErrorMessage = str
 ErrorType = str
 GUID = str
 HostedZoneId = str
+IAMFederationRolesKey = str
+IAMFederationSubjectKey = str
 Id = str
 IdentityCenterApplicationARN = str
 IdentityCenterInstanceARN = str
@@ -836,6 +838,12 @@ class AdvancedOptionsStatus(TypedDict, total=False):
 DisableTimestamp = datetime
 
 
+class IAMFederationOptionsOutput(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    SubjectKey: Optional[IAMFederationSubjectKey]
+    RolesKey: Optional[IAMFederationRolesKey]
+
+
 class JWTOptionsOutput(TypedDict, total=False):
     Enabled: Optional[Boolean]
     SubjectKey: Optional[String]
@@ -861,8 +869,15 @@ class AdvancedSecurityOptions(TypedDict, total=False):
     InternalUserDatabaseEnabled: Optional[Boolean]
     SAMLOptions: Optional[SAMLOptionsOutput]
     JWTOptions: Optional[JWTOptionsOutput]
+    IAMFederationOptions: Optional[IAMFederationOptionsOutput]
     AnonymousAuthDisableDate: Optional[DisableTimestamp]
     AnonymousAuthEnabled: Optional[Boolean]
+
+
+class IAMFederationOptionsInput(TypedDict, total=False):
+    Enabled: Optional[Boolean]
+    SubjectKey: Optional[IAMFederationSubjectKey]
+    RolesKey: Optional[IAMFederationRolesKey]
 
 
 class JWTOptionsInput(TypedDict, total=False):
@@ -894,6 +909,7 @@ class AdvancedSecurityOptionsInput(TypedDict, total=False):
     MasterUserOptions: Optional[MasterUserOptions]
     SAMLOptions: Optional[SAMLOptionsInput]
     JWTOptions: Optional[JWTOptionsInput]
+    IAMFederationOptions: Optional[IAMFederationOptionsInput]
     AnonymousAuthEnabled: Optional[Boolean]
 
 
