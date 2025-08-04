@@ -2604,7 +2604,7 @@ def sqs_as_events_target(aws_client, sqs_get_queue_arn):
         sqs_client.set_queue_attributes(
             QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
         )
-        return queue_url, queue_arn
+        return queue_url, queue_arn, queue_name
 
     yield _sqs_as_events_target
 

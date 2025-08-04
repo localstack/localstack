@@ -393,7 +393,7 @@ class TestReplay:
         rule_arn = response["RuleArn"]
 
         # setup sqs target
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,

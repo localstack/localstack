@@ -164,8 +164,8 @@ class TestInputPath:
         snapshot,
     ):
         # prepare target queues
-        queue_url_1, queue_arn_1 = sqs_as_events_target()
-        queue_url_2, queue_arn_2 = sqs_as_events_target()
+        queue_url_1, queue_arn_1, _ = sqs_as_events_target()
+        queue_url_2, queue_arn_2, _ = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
@@ -424,7 +424,7 @@ class TestInputTransformer:
         # https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-transform-target-input.html#eb-transform-input-predefined
 
         # prepare target queues
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)

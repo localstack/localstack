@@ -203,7 +203,7 @@ def put_events_with_filter_to_sqs(
             event_bus_name = f"test-bus-{short_uid()}"
             events_create_event_bus(Name=event_bus_name)
 
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         events_put_rule(
             Name=rule_name,
