@@ -1,18 +1,13 @@
 import json
 import os
 
-import pytest
-
+from aws.services.cloudformation.conftest import skip_if_v1_provider
 from localstack.aws.api.cloudformation import ChangeSetType
-from localstack.services.cloudformation.v2.utils import is_v2_engine
-from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.skipif(
-    condition=not is_v2_engine() and not is_aws_cloud(), reason="Requires the V2 engine"
-)
+@skip_if_v1_provider(reason="Not supported on V1")
 class TestChangeSetImportExport:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -25,7 +20,7 @@ class TestChangeSetImportExport:
         ]
     )
     def test_describe_change_set_import(
-        self, snapshot, aws_client, deploy_cfn_template, cleanup_stacks
+        self, snapshot, aws_client, deploy_cfn_template, cleanup_stacks, cleanups
     ):
         export_name = f"b-{short_uid()}"
         deploy_cfn_template(
@@ -36,8 +31,6 @@ class TestChangeSetImportExport:
         )
 
         empty_stack_name = f"stack-{short_uid()}"
-        cleanup_stacks([empty_stack_name])
-
         change_set_body = {
             "Resources": {
                 "MyFoo": {
@@ -54,6 +47,8 @@ class TestChangeSetImportExport:
             TemplateBody=json.dumps(change_set_body),
             ChangeSetType=ChangeSetType.CREATE,
         )
+        cleanups.append(lambda: cleanup_stacks([empty_stack_name]))
+
         aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
             ChangeSetName=change_set_name, StackName=empty_stack_name, WaiterConfig={"Delay": 2}
         )

@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/test_change_sets_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import": {
+  "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import": {
     "last_validated_date": "2025-07-29T20:37:27+00:00",
     "durations_in_seconds": {
       "setup": 0.26,

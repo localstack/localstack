@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/test_change_sets_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import": {
+  "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import": {
     "recorded-date": "29-07-2025, 20:37:27",
     "recorded-content": {
       "describe": {
