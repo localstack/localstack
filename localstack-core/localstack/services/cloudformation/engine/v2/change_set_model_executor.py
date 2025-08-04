@@ -22,6 +22,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeParameter,
     NodeResource,
     TerminalValueCreated,
+    TerminalValueModified,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -510,16 +511,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         }
         return resource_provider_payload
 
-    def visit_terminal_value_created(self, value: TerminalValueCreated):
-        if not isinstance(value.value, str):
-            return PreprocEntityDelta(after=value.value)
+    @staticmethod
+    def _process_value(value_obj) -> PreprocEntityDelta:
+        if not isinstance(value_obj.value, str):
+            return PreprocEntityDelta(after=value_obj.value)
 
-        api_match = REGEX_OUTPUT_APIGATEWAY.match(value.value)
-        if api_match and value.value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(value_obj.value)
+        if api_match and value_obj.value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
             port = localstack_host().port
-            value.value = f"{prefix}{host}:{port}/{path}"
+            value_obj.value = f"{prefix}{host}:{port}/{path}"
 
-        return PreprocEntityDelta(after=value.value)
+        return PreprocEntityDelta(after=value_obj.value)
+
+    def visit_terminal_value_created(self, value: TerminalValueCreated):
+        return self._process_value(value)
+
+    def visit_terminal_value_modified(self, value: TerminalValueModified):
+        return self._process_value(value)
