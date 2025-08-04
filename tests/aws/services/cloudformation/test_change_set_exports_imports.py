@@ -2,6 +2,7 @@ import json
 import os
 
 from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+
 from localstack.aws.api.cloudformation import ChangeSetType
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
