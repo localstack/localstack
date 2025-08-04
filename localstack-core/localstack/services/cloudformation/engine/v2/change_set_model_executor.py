@@ -512,19 +512,24 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return resource_provider_payload
 
     @staticmethod
-    def _process_value(value_obj) -> PreprocEntityDelta:
-        if not isinstance(value_obj.value, str):
-            return PreprocEntityDelta(after=value_obj.value)
+    def _process_value(
+        terminal_value: TerminalValueModified | TerminalValueCreated,
+    ) -> PreprocEntityDelta:
+        value = terminal_value.value
 
-        api_match = REGEX_OUTPUT_APIGATEWAY.match(value_obj.value)
-        if api_match and value_obj.value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
+        if (
+            isinstance(value, str)
+            and api_match
+            and value.value not in config.CFN_STRING_REPLACEMENT_DENY_LIST
+        ):
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
             port = localstack_host().port
-            value_obj.value = f"{prefix}{host}:{port}/{path}"
+            value = f"{prefix}{host}:{port}/{path}"
 
-        return PreprocEntityDelta(after=value_obj.value)
+        return PreprocEntityDelta(after=value)
 
     def visit_terminal_value_created(self, value: TerminalValueCreated):
         return self._process_value(value)
