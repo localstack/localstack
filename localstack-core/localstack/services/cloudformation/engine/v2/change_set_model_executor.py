@@ -233,7 +233,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # XXX hacky, stick the previous resources' properties into the payload
                 before_properties = self._merge_before_properties(name, before)
 
-                self._process_event(ChangeAction.Modify, name, OperationStatus.IN_PROGRESS)
+                self._process_event(
+                    ChangeAction.Modify,
+                    name,
+                    OperationStatus.IN_PROGRESS,
+                    resource_type=before.resource_type,
+                )
                 event = self._execute_resource_action(
                     action=ChangeAction.Modify,
                     logical_resource_id=name,

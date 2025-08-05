@@ -1,4 +1,3 @@
-import copy
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
@@ -85,15 +84,10 @@ class Stack:
         account_id: str,
         region_name: str,
         request_payload: CreateChangeSetInput | CreateStackInput,
-        template: dict | None = None,
-        template_body: str | None = None,
         initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
     ):
         self.account_id = account_id
         self.region_name = region_name
-        self.template = template
-        self.template_original = copy.deepcopy(self.template)
-        self.template_body = template_body
         self.status = initial_status
         self.status_reason = None
         self.change_set_ids = []
@@ -131,7 +125,13 @@ class Stack:
         if reason:
             self.status_reason = reason
 
-        self._store_event(self.stack_name, self.stack_id, status.value, status_reason=reason)
+        self._store_event(
+            resource_id=self.stack_name,
+            resource_type="AWS::CloudFormation::Stack",
+            physical_resource_id=self.stack_id,
+            status=status,
+            status_reason=reason,
+        )
 
     def set_resource_status(
         self,
@@ -160,33 +160,33 @@ class Stack:
             self.resource_states.pop(logical_resource_id)
         else:
             self.resource_states[logical_resource_id] = resource_description
-        self._store_event(logical_resource_id, physical_resource_id, status, resource_status_reason)
+
+        self._store_event(
+            resource_id=logical_resource_id,
+            resource_type=resource_type,
+            physical_resource_id=physical_resource_id,
+            status=status,
+            status_reason=resource_status_reason,
+        )
 
     def _store_event(
         self,
         resource_id: str = None,
-        physical_res_id: str = None,
-        status: str = "",
+        resource_type: str | None = "",
+        physical_resource_id: str = None,
+        status: StackStatus | ResourceStatus = "",
         status_reason: str = "",
     ):
-        resource_id = resource_id
-        physical_res_id = physical_res_id
-        resource_type = (
-            self.template.get("Resources", {})
-            .get(resource_id, {})
-            .get("Type", "AWS::CloudFormation::Stack")
+        event = StackEvent(
+            EventId=long_uid(),
+            Timestamp=datetime.now(tz=timezone.utc),
+            StackId=self.stack_id,
+            StackName=self.stack_name,
+            LogicalResourceId=resource_id,
+            PhysicalResourceId=physical_resource_id,
+            ResourceStatus=status,
+            ResourceType=resource_type,
         )
-
-        event: StackEvent = {
-            "EventId": long_uid(),
-            "Timestamp": datetime.now(tz=timezone.utc),
-            "StackId": self.stack_id,
-            "StackName": self.stack_name,
-            "LogicalResourceId": resource_id,
-            "PhysicalResourceId": physical_res_id,
-            "ResourceStatus": status,
-            "ResourceType": resource_type,
-        }
 
         if status_reason:
             event["ResourceStatusReason"] = status_reason

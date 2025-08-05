@@ -345,8 +345,6 @@ class CloudformationProviderV2(CloudformationProvider):
                     account_id=context.account_id,
                     region_name=context.region,
                     request_payload=request,
-                    template=structured_template,
-                    template_body=template_body,
                     initial_status=StackStatus.REVIEW_IN_PROGRESS,
                 )
                 state.stacks_v2[stack.stack_id] = stack
@@ -638,8 +636,6 @@ class CloudformationProviderV2(CloudformationProvider):
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
-            template=structured_template,
-            template_body=template_body,
         )
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
