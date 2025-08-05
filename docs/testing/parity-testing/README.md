@@ -1,5 +1,3 @@
-from conftest import aws_client
-
 # Parity Testing
 
 Parity tests (also called snapshot tests) are a special form of integration tests that should verify and improve the correctness of LocalStack compared to AWS.

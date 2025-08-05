@@ -2,6 +2,7 @@ import copy
 import logging
 import uuid
 from dataclasses import dataclass
+from datetime import datetime, timezone
 from typing import Final, Optional
 
 from localstack import config
@@ -13,11 +14,15 @@ from localstack.aws.api.cloudformation import (
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
+from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
     NodeParameter,
     NodeResource,
+    TerminalValueCreated,
+    TerminalValueModified,
+    TerminalValueUnchanged,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -35,7 +40,8 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -44,28 +50,34 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 
 @dataclass
 class ChangeSetModelExecutorResult:
-    resources: dict
+    resources: dict[str, ResolvedResource]
     parameters: dict
     outputs: dict
+    exports: dict
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
-    resources: Final[dict]
+    resources: Final[dict[str, ResolvedResource]]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
+    exports: Final[dict]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
         self.resolved_parameters = dict()
+        self.exports = dict()
 
     # TODO: use a structured type for the return value
     def execute(self) -> ChangeSetModelExecutorResult:
         self.process()
         return ChangeSetModelExecutorResult(
-            resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
+            resources=self.resources,
+            parameters=self.resolved_parameters,
+            outputs=self.outputs,
+            exports=self.exports,
         )
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
@@ -201,6 +213,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         after = delta.after
         if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
+
+        # TODO validate export name duplication in same template and all exports
+        if delta.after.export:
+            self.exports[delta.after.export.get("Name")] = delta.after.value
+
         self.outputs[delta.after.name] = delta.after.value
         return delta
 
@@ -390,7 +407,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 message=f"Resource type {resource_type} not supported",
             )
 
-        self.resources.setdefault(logical_resource_id, {"Properties": {}})
         match event.status:
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
@@ -403,18 +419,24 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # TODO: avoid the use of setdefault (debuggability/readability)
                 # TODO: review the use of merge
 
-                self.resources[logical_resource_id]["Properties"].update(event.resource_model)
-                self.resources[logical_resource_id].update(extra_resource_properties)
-                # XXX for legacy delete_stack compatibility
-                self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
-                self.resources[logical_resource_id]["Type"] = resource_type
-
+                status_from_action = EventOperationFromAction[action.value]
                 physical_resource_id = (
-                    self._get_physical_id(logical_resource_id)
+                    extra_resource_properties["PhysicalResourceId"]
                     if resource_provider
                     else MOCKED_REFERENCE
                 )
-                self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
+                resolved_resource = ResolvedResource(
+                    Properties=event.resource_model,
+                    LogicalResourceId=logical_resource_id,
+                    Type=resource_type,
+                    LastUpdatedTimestamp=datetime.now(timezone.utc),
+                    ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
+                    PhysicalResourceId=physical_resource_id,
+                )
+                # TODO: do we actually need this line?
+                resolved_resource.update(extra_resource_properties)
+
+                self.resources[logical_resource_id] = resolved_resource
 
             case OperationStatus.FAILED:
                 reason = event.message
@@ -481,3 +503,44 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             },
         }
         return resource_provider_payload
+
+    @staticmethod
+    def _replace_url_outputs_if_required(value: str) -> str:
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
+        if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+            prefix = api_match[1]
+            host = api_match[2]
+            path = api_match[3]
+            port = localstack_host().port
+            value = f"{prefix}{host}:{port}/{path}"
+            return value
+
+        return value
+
+    def visit_terminal_value_created(
+        self, value: TerminalValueCreated
+    ) -> PreprocEntityDelta[str, str]:
+        if isinstance(value.value, str):
+            after = self._replace_url_outputs_if_required(value.value)
+        else:
+            after = value.value
+        return PreprocEntityDelta(after=after)
+
+    def visit_terminal_value_modified(
+        self, value: TerminalValueModified
+    ) -> PreprocEntityDelta[str, str]:
+        # we only need to transform the after
+        if isinstance(value.modified_value, str):
+            after = self._replace_url_outputs_if_required(value.modified_value)
+        else:
+            after = value.modified_value
+        return PreprocEntityDelta(before=value.value, after=after)
+
+    def visit_terminal_value_unchanged(
+        self, terminal_value_unchanged: TerminalValueUnchanged
+    ) -> PreprocEntityDelta:
+        if isinstance(terminal_value_unchanged.value, str):
+            value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
+        else:
+            value = terminal_value_unchanged.value
+        return PreprocEntityDelta(before=value, after=value)

@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import StackDeployError
@@ -69,6 +70,7 @@ class TestCloudFormationMappings:
             )
         snapshot.match("mapping_nonexisting_key_exc", e.value.response)
 
+    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.only_localstack
     def test_async_mapping_error_first_level(self, deploy_cfn_template):
         """
@@ -91,6 +93,7 @@ class TestCloudFormationMappings:
 
         assert "Cannot find map key 'C' in mapping 'TopicSuffixMap'" in str(exc_info.value)
 
+    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.only_localstack
     def test_async_mapping_error_second_level(self, deploy_cfn_template):
         """

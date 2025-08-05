@@ -62,6 +62,15 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::test_no_echo_parameter": {
     "last_validated_date": "2024-12-19T11:35:15+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_no_parameters_given": {
+    "last_validated_date": "2025-07-31T16:12:14+00:00",
+    "durations_in_seconds": {
+      "setup": 1.85,
+      "call": 0.32,
+      "teardown": 0.0,
+      "total": 2.17
+    }
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_non_existing_stack_message": {
     "last_validated_date": "2025-07-21T18:00:27+00:00",
     "durations_in_seconds": {

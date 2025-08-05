@@ -29,6 +29,7 @@ from localstack.aws.api.cloudformation import (
     DeletionMode,
     DescribeChangeSetOutput,
     DescribeStackEventsOutput,
+    DescribeStackResourceOutput,
     DescribeStackResourcesOutput,
     DescribeStackSetOperationOutput,
     DescribeStacksOutput,
@@ -42,6 +43,8 @@ from localstack.aws.api.cloudformation import (
     IncludePropertyValues,
     InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
+    ListExportsOutput,
+    ListStackResourcesOutput,
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
@@ -53,6 +56,8 @@ from localstack.aws.api.cloudformation import (
     RollbackConfiguration,
     StackName,
     StackNameOrId,
+    StackResourceDetail,
+    StackResourceSummary,
     StackSetName,
     StackSetNotFoundException,
     StackSetOperation,
@@ -82,6 +87,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_executor impo
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
     ChangeSetModelTransform,
+)
+from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
+    ChangeSetModelValidator,
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
@@ -115,11 +123,14 @@ def is_stack_set_arn(stack_set_name_or_id: str) -> bool:
 
 
 class StackNotFoundError(ValidationError):
-    def __init__(self, stack_name_or_id: str):
-        if is_stack_arn(stack_name_or_id):
-            super().__init__(f"Stack with id {stack_name_or_id} does not exist")
+    def __init__(self, stack_name_or_id: str, message_override: str | None = None):
+        if message_override:
+            super().__init__(message_override)
         else:
-            super().__init__(f"Stack [{stack_name_or_id}] does not exist")
+            if is_stack_arn(stack_name_or_id):
+                super().__init__(f"Stack with id {stack_name_or_id} does not exist")
+            else:
+                super().__init__(f"Stack [{stack_name_or_id}] does not exist")
 
 
 class StackSetNotFoundError(StackSetNotFoundException):
@@ -265,6 +276,13 @@ class CloudformationProviderV2(CloudformationProvider):
         # the transformations.
         update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
         update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
+
+        # perform validations
+        validator = ChangeSetModelValidator(
+            change_set=change_set,
+        )
+        validator.validate()
+
         change_set.set_update_model(update_model)
         change_set.stack.processed_template = transformed_after_template
 
@@ -473,6 +491,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = result.parameters
                 change_set.stack.resolved_outputs = result.outputs
+                change_set.stack.resolved_exports = result.exports
+
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 change_set.stack.template = change_set.template
@@ -727,6 +747,62 @@ class CloudformationProviderV2(CloudformationProvider):
         ]
         stacks = [select_attributes(stack, attrs) for stack in stacks]
         return ListStacksOutput(StackSummaries=stacks)
+
+    @handler("ListStackResources")
+    def list_stack_resources(
+        self, context: RequestContext, stack_name: StackName, next_token: NextToken = None, **kwargs
+    ) -> ListStackResourcesOutput:
+        result = self.describe_stack_resources(context, stack_name)
+
+        resources = []
+        for resource in result.get("StackResources", []):
+            resources.append(
+                StackResourceSummary(
+                    LogicalResourceId=resource["LogicalResourceId"],
+                    PhysicalResourceId=resource["PhysicalResourceId"],
+                    ResourceType=resource["ResourceType"],
+                    LastUpdatedTimestamp=resource["Timestamp"],
+                    ResourceStatus=resource["ResourceStatus"],
+                    ResourceStatusReason=resource.get("ResourceStatusReason"),
+                    DriftInformation=resource.get("DriftInformation"),
+                    ModuleInfo=resource.get("ModuleInfo"),
+                )
+            )
+
+        return ListStackResourcesOutput(StackResourceSummaries=resources)
+
+    @handler("DescribeStackResource")
+    def describe_stack_resource(
+        self,
+        context: RequestContext,
+        stack_name: StackName,
+        logical_resource_id: LogicalResourceId,
+        **kwargs,
+    ) -> DescribeStackResourceOutput:
+        state = get_cloudformation_store(context.account_id, context.region)
+        stack = find_stack_v2(state, stack_name)
+        if not stack:
+            raise StackNotFoundError(
+                stack_name, message_override=f"Stack '{stack_name}' does not exist"
+            )
+
+        try:
+            resource = stack.resolved_resources[logical_resource_id]
+        except KeyError:
+            raise ValidationError(
+                f"Resource {logical_resource_id} does not exist for stack {stack_name}"
+            )
+
+        resource_detail = StackResourceDetail(
+            StackName=stack.stack_name,
+            StackId=stack.stack_id,
+            LogicalResourceId=logical_resource_id,
+            PhysicalResourceId=resource["PhysicalResourceId"],
+            ResourceType=resource["Type"],
+            LastUpdatedTimestamp=resource["LastUpdatedTimestamp"],
+            ResourceStatus=resource["ResourceStatus"],
+        )
+        return DescribeStackResourceOutput(StackResourceDetail=resource_detail)
 
     @handler("DescribeStackResources")
     def describe_stack_resources(
@@ -1244,3 +1320,10 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
 
         start_worker_thread(_run)
+
+    @handler("ListExports")
+    def list_exports(
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
+    ) -> ListExportsOutput:
+        store = get_cloudformation_store(account_id=context.account_id, region_name=context.region)
+        return ListExportsOutput(Exports=store.exports_v2.values())

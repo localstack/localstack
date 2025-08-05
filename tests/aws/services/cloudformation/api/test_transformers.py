@@ -6,6 +6,7 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -13,6 +14,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid, to_bytes
 
 
+@skip_if_v2_provider(reason="transform not implemented")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
 def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_client):
@@ -71,6 +73,12 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     snapshot.match("api-resources", resources)
 
 
+@skip_if_v2_provider(
+    reason=(
+        "CFNV2:AWS::Include the transformation is run however the "
+        "physical resource id for the resource is not available"
+    )
+)
 @markers.aws.validated
 def test_transformer_property_level(deploy_cfn_template, s3_bucket, aws_client, snapshot):
     api_spec = textwrap.dedent("""
@@ -123,6 +131,7 @@ def test_transformer_property_level(deploy_cfn_template, s3_bucket, aws_client, 
     snapshot.match("processed_template", processed_template)
 
 
+@skip_if_v2_provider(reason="CFNV2:Transform")
 @markers.aws.validated
 def test_transformer_individual_resource_level(deploy_cfn_template, s3_bucket, aws_client):
     api_spec = textwrap.dedent("""
@@ -214,6 +223,7 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
         call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
 
 
+@skip_if_v2_provider(reason="CFNV2:LanguageExtensions")
 class TestLanguageExtensionsTransform:
     """
     Manual testing of the language extensions trasnform

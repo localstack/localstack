@@ -9,7 +9,7 @@ MSG_CONTENT_REGEX = "^[\u0009\u000a\u000d\u0020-\ud7ff\ue000-\ufffd\U00010000-\U
 ATTR_NAME_CHAR_REGEX = "^[\u00c0-\u017fa-zA-Z0-9_.-]*$"
 ATTR_NAME_PREFIX_SUFFIX_REGEX = r"^(?!(aws\.|amazon\.|\.)).*(?<!\.)$"
 ATTR_TYPE_REGEX = "^(String|Number|Binary).*$"
-FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]*$"
+FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]{1,128}$"
 
 DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 

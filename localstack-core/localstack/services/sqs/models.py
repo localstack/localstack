@@ -771,11 +771,6 @@ class StandardQueue(SqsQueue):
                 f"Value {message_deduplication_id} for parameter MessageDeduplicationId is invalid. Reason: The "
                 f"request includes a parameter that is not valid for this queue type."
             )
-        if isinstance(message_group_id, str):
-            raise InvalidParameterValueException(
-                f"Value {message_group_id} for parameter MessageGroupId is invalid. Reason: The request include "
-                f"parameter that is not valid for this queue type."
-            )
 
         standard_message = SqsMessage(time.time(), message)
 
@@ -1067,10 +1062,8 @@ class FifoQueue(SqsQueue):
             # use the attribute from the queue
             fifo_message.visibility_timeout = self.visibility_timeout
 
-        if delay_seconds is not None:
-            fifo_message.delay_seconds = delay_seconds
-        else:
-            fifo_message.delay_seconds = self.delay_seconds
+        # FIFO queues always use the queue level setting for 'DelaySeconds'
+        fifo_message.delay_seconds = self.delay_seconds
 
         original_message = self.deduplication.get(dedup_id)
         if (

@@ -494,5 +494,60 @@
         }
       }
     }
+  },
+  "tests/aws/services/ec2/test_ec2.py::TestEc2Integrations::test_vpc_endpoint_dns_names": {
+    "recorded-date": "29-07-2025, 23:29:35",
+    "recorded-content": {
+      "host": "<host:1>",
+      "subnet-id": "<subnet-id:1>",
+      "dns-suffix": "<dns-suffix:1>",
+      "network-interface-id": "<network-interface-id:1>",
+      "available-endpoint": {
+        "CreationTimestamp": "<datetime>",
+        "DnsEntries": [
+          {
+            "DnsName": "<vpc-endpoint-id:1>-<dns-suffix:1>.execute-api.<region>.vpce.<host:1>",
+            "HostedZoneId": "<hosted-zone-id:1>"
+          }
+        ],
+        "DnsOptions": {
+          "DnsRecordIpType": "ipv4"
+        },
+        "Groups": [
+          {
+            "GroupId": "<group-id:1>",
+            "GroupName": "default"
+          }
+        ],
+        "IpAddressType": "ipv4",
+        "NetworkInterfaceIds": [
+          "<network-interface-id:1>"
+        ],
+        "OwnerId": "111111111111",
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "*",
+              "Effect": "Allow",
+              "Principal": "*",
+              "Resource": "*"
+            }
+          ]
+        },
+        "PrivateDnsEnabled": true,
+        "RequesterManaged": false,
+        "RouteTableIds": [],
+        "ServiceName": "com.amazonaws.<region>.execute-api",
+        "ServiceRegion": "<region>",
+        "State": "available",
+        "SubnetIds": [
+          "<subnet-id:1>"
+        ],
+        "Tags": [],
+        "VpcEndpointId": "<vpc-endpoint-id:1>",
+        "VpcEndpointType": "Interface",
+        "VpcId": "<vpc-id:1>"
+      }
+    }
   }
 }

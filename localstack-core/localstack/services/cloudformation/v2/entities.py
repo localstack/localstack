@@ -39,8 +39,12 @@ from localstack.utils.strings import long_uid, short_uid
 
 
 class ResolvedResource(TypedDict):
+    LogicalResourceId: str
     Type: str
     Properties: dict
+    ResourceStatus: ResourceStatus
+    PhysicalResourceId: str | None
+    LastUpdatedTimestamp: datetime | None
 
 
 class Stack:
@@ -62,6 +66,7 @@ class Stack:
     resolved_resources: dict[str, ResolvedResource]
     resolved_outputs: dict[str, str]
     resource_states: dict[str, StackResource]
+    resolved_exports: dict[str, str]
 
     def __init__(
         self,
@@ -107,6 +112,7 @@ class Stack:
         self.resolved_outputs = {}
         self.resource_states = {}
         self.events = []
+        self.resolved_exports = {}
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status

@@ -17,5 +17,12 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_fetch_non_existent_stack_set_instances": {
+    "recorded-date": "01-08-2025, 09:56:22",
+    "recorded-content": {
+      "non-existent-stack-set-name": "An error occurred (StackSetNotFoundException) when calling the CreateStackInstances operation: StackSet non-existent-stack-set-id not found",
+      "non-existent-stack-set-id": "An error occurred (StackSetNotFoundException) when calling the CreateStackInstances operation: StackSet <stack-id> not found"
+    }
   }
 }

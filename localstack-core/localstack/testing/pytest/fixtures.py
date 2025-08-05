@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Unpack
 
 import botocore.auth
 import botocore.config
@@ -21,7 +21,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.aws.api.ec2 import CreateSecurityGroupRequest
+from localstack.aws.api.ec2 import CreateSecurityGroupRequest, CreateVpcEndpointRequest, VpcEndpoint
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -2047,6 +2047,45 @@ def ec2_create_security_group(aws_client):
 
 
 @pytest.fixture
+def ec2_create_vpc_endpoint(aws_client):
+    vpc_endpoints = []
+
+    def _create(**kwargs: Unpack[CreateVpcEndpointRequest]) -> VpcEndpoint:
+        endpoint = aws_client.ec2.create_vpc_endpoint(**kwargs)
+        endpoint_id = endpoint["VpcEndpoint"]["VpcEndpointId"]
+        vpc_endpoints.append(endpoint_id)
+
+        def _check_available() -> VpcEndpoint:
+            result = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
+            _endpoint_details = result["VpcEndpoints"][0]
+            assert _endpoint_details["State"] == "available"
+
+            return _endpoint_details
+
+        return retry(_check_available, retries=30, sleep=5 if is_aws_cloud() else 1)
+
+    yield _create
+
+    try:
+        aws_client.ec2.delete_vpc_endpoints(VpcEndpointIds=vpc_endpoints)
+    except Exception as e:
+        LOG.error("Error cleaning up VPC endpoint: %s, %s", vpc_endpoints, e)
+
+    def wait_for_endpoint_deleted():
+        try:
+            endpoints = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=vpc_endpoints)
+            assert len(endpoints["VpcEndpoints"]) == 0 or all(
+                endpoint["State"] == "Deleted" for endpoint in endpoints["VpcEndpoints"]
+            )
+        except botocore.exceptions.ClientError:
+            pass
+
+    # the vpc can't be deleted if an endpoint exists
+    if is_aws_cloud():
+        retry(wait_for_endpoint_deleted, retries=30, sleep=10 if is_aws_cloud() else 1)
+
+
+@pytest.fixture
 def cleanups():
     cleanup_fns = []
 
@@ -2616,3 +2655,9 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
+
+
+@pytest.fixture(params=["dill", "jsonpickle"])
+def patch_default_encoder(request, monkeypatch):
+    backend = request.param
+    monkeypatch.setattr(config, "STATE_SERIALIZATION_BACKEND", backend)

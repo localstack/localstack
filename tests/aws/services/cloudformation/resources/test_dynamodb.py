@@ -189,7 +189,7 @@ def test_table_with_ttl_and_sse(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
-# We return field bellow, while AWS doesn't return them
+# We return the fields below, while AWS doesn't return them
 @markers.snapshot.skip_snapshot_verify(
     [
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",

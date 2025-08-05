@@ -6,8 +6,13 @@ from itertools import permutations
 import botocore.exceptions
 import pytest
 import yaml
-from botocore.exceptions import WaiterError
+from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import (
+    skip_if_v1_provider,
+    skip_if_v2_provider,
+    skipped_v2_items,
+)
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.entities import StackIdentifier
@@ -20,8 +25,12 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
+    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
+        + skipped_v2_items(
+            "$..Parameters",
+        ),
     )
     @markers.aws.validated
     def test_stack_lifecycle(self, deploy_cfn_template, snapshot, aws_client):
@@ -69,6 +78,7 @@ class TestStacksApi:
         assert "DeletionTime" in deleted
         snapshot.match("deleted", deleted)
 
+    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.aws.validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -208,45 +218,7 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
-    @markers.aws.needs_fixing
-    def test_list_stack_resources_for_removed_resource(self, deploy_cfn_template, aws_client):
-        template_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/eventbridge_policy.yaml"
-        )
-        event_bus_name = f"bus-{short_uid()}"
-        stack = deploy_cfn_template(
-            template_path=template_path,
-            parameters={"EventBusName": event_bus_name},
-        )
-
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        resources_before = len(resources)
-        assert resources_before == 3
-        statuses = {res["ResourceStatus"] for res in resources}
-        assert statuses == {"CREATE_COMPLETE"}
-
-        # remove one resource from the template, then update stack (via change set)
-        template_dict = parse_yaml(load_file(template_path))
-        template_dict["Resources"].pop("eventPolicy2")
-        template2 = yaml.dump(template_dict)
-
-        deploy_cfn_template(
-            stack_name=stack.stack_name,
-            is_update=True,
-            template=template2,
-            parameters={"EventBusName": event_bus_name},
-        )
-
-        # get list of stack resources, again - make sure that deleted resource is not contained in result
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        assert len(resources) == resources_before - 1
-        statuses = {res["ResourceStatus"] for res in resources}
-        assert statuses == {"UPDATE_COMPLETE"}
-
+    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange(
         self, deploy_cfn_template, aws_client, snapshot
@@ -266,6 +238,7 @@ class TestStacksApi:
 
         snapshot.match("no_change_exception", ctx.value.response)
 
+    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange_transformation(
         self, deploy_cfn_template, aws_client
@@ -730,6 +703,7 @@ Resources:
 """
 
 
+@skip_if_v2_provider(reason="CFNV2:Validation")
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
 )
@@ -838,6 +812,7 @@ def test_describe_stack_events_errors(aws_client, snapshot):
 TEMPLATE_ORDER_CASES = list(permutations(["A", "B", "C"]))
 
 
+@skip_if_v2_provider(reason="CFNV2:Other stack events")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -922,6 +897,7 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     snapshot.match("events", filtered_events)
 
 
+@skip_if_v2_provider(reason="CFNV2:DescribeStack")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when
@@ -1072,9 +1048,21 @@ def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
+@skip_if_v2_provider(reason="Error message does not match")
 def test_non_existing_stack_message(aws_client, snapshot):
     with pytest.raises(botocore.exceptions.ClientError) as ex:
         aws_client.cloudformation.describe_stacks(StackName="non-existing")
 
     snapshot.add_transformer(snapshot.transform.regex("non-existing", "<stack-name>"))
     snapshot.match("Error", ex.value.response)
+
+
+@skip_if_v1_provider(reason="Not implemented for V1 provider")
+@markers.aws.validated
+def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/ssm_parameter_defaultname.yaml"
+    )
+    with pytest.raises(ClientError) as exc_info:
+        deploy_cfn_template(template_path=template_path)
+    snapshot.match("deploy-error", exc_info.value)

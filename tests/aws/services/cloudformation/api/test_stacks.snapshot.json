@@ -2287,6 +2287,12 @@
       }
     }
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_no_parameters_given": {
+    "recorded-date": "31-07-2025, 16:12:14",
+    "recorded-content": {
+      "deploy-error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameters: [Input] must have values"
+    }
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_non_existing_stack_message": {
     "recorded-date": "21-07-2025, 18:00:27",
     "recorded-content": {

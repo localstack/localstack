@@ -177,6 +177,11 @@ class ChangeSetModelVisitor(abc.ABC):
     ):
         self.visit_children(node_intrinsic_function)
 
+    def visit_node_intrinsic_function_fn_import_value(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        self.visit_children(node_intrinsic_function)
+
     def visit_node_divergence(self, node_divergence: NodeDivergence):
         self.visit_children(node_divergence)
 

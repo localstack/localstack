@@ -26,10 +26,12 @@ from localstack.aws.api.ses import (
     DeleteConfigurationSetResponse,
     DeleteTemplateResponse,
     Destination,
+    Enabled,
     EventDestination,
     EventDestinationDoesNotExistException,
     EventDestinationName,
     GetIdentityVerificationAttributesResponse,
+    Identity,
     IdentityList,
     IdentityVerificationAttributes,
     InvalidSNSDestinationException,
@@ -40,12 +42,14 @@ from localstack.aws.api.ses import (
     MessageRejected,
     MessageTagList,
     NextToken,
+    NotificationType,
     RawMessage,
     ReceiptRuleSetName,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
     SesApi,
+    SetIdentityHeadersInNotificationsEnabledResponse,
     TemplateData,
     TemplateName,
     VerificationAttributes,
@@ -523,6 +527,42 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             backend.create_receipt_rule(rule_set_name, rule)
 
         return CloneReceiptRuleSetResponse()
+
+    @handler("SetIdentityHeadersInNotificationsEnabled")
+    def set_identity_headers_in_notifications_enabled(
+        self,
+        context: RequestContext,
+        identity: Identity,
+        notification_type: NotificationType,
+        enabled: Enabled,
+        **kwargs,
+    ) -> SetIdentityHeadersInNotificationsEnabledResponse:
+        """
+        Sets whether Amazon SES includes the original email headers in the Amazon SNS notifications
+        for a specified identity and notification type.
+        """
+        # Validate notification_type
+        if notification_type not in (
+            NotificationType.Bounce,
+            NotificationType.Complaint,
+            NotificationType.Delivery,
+        ):
+            raise InvalidParameterValue(
+                f"Invalid notification type: {notification_type}. "
+                "Valid values are: Bounce, Complaint, Delivery."
+            )
+
+        backend = get_ses_backend(context)
+        if identity not in backend.addresses:
+            raise MessageRejected(f"Identity {identity} is not verified or does not exist.")
+
+        # Store the setting in the backend
+        if not hasattr(backend, "identity_headers_in_notifications_enabled"):
+            backend.identity_headers_in_notifications_enabled = {}
+        backend.identity_headers_in_notifications_enabled.setdefault(identity, {})[
+            notification_type
+        ] = enabled
+        return SetIdentityHeadersInNotificationsEnabledResponse()
 
 
 @dataclasses.dataclass(frozen=True)
