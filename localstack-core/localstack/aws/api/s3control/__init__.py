@@ -857,6 +857,7 @@ class CreateAccessPointRequest(ServiceRequest):
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
     BucketAccountId: Optional[AccountId]
     Scope: Optional[Scope]
+    Tags: Optional[TagList]
 
 
 class CreateAccessPointResult(TypedDict, total=False):
@@ -2423,6 +2424,7 @@ class S3ControlApi:
         public_access_block_configuration: PublicAccessBlockConfiguration | None = None,
         bucket_account_id: AccountId | None = None,
         scope: Scope | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateAccessPointResult:
         raise NotImplementedError

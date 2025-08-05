@@ -9113,6 +9113,7 @@ class Route(TypedDict, total=False):
     VpcPeeringConnectionId: Optional[String]
     CoreNetworkArn: Optional[CoreNetworkArn]
     OdbNetworkArn: Optional[OdbNetworkArn]
+    IpAddress: Optional[String]
 
 
 RouteList = List[Route]
@@ -20678,6 +20679,7 @@ class TerminateClientVpnConnectionsResult(TypedDict, total=False):
 
 class TerminateInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
+    Force: Optional[Boolean]
     SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
 
@@ -29116,6 +29118,7 @@ class Ec2Api:
         self,
         context: RequestContext,
         instance_ids: InstanceIdStringList,
+        force: Boolean | None = None,
         skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         **kwargs,

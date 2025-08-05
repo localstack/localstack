@@ -131,6 +131,11 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             ChangeSetName=change_set_name,
             TemplateBody=t1,
             ChangeSetType="CREATE",
+            Capabilities=[
+                "CAPABILITY_IAM",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+            ],
             Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p1.items()],
         )
         snapshot.match("create-change-set-1", change_set_details)
@@ -189,6 +194,11 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             TemplateBody=t2,
             ChangeSetType="UPDATE",
             Parameters=[{"ParameterKey": k, "ParameterValue": v} for (k, v) in p2.items()],
+            Capabilities=[
+                "CAPABILITY_IAM",
+                "CAPABILITY_NAMED_IAM",
+                "CAPABILITY_AUTO_EXPAND",
+            ],
         )
         snapshot.match("create-change-set-2", change_set_details)
         stack_id = change_set_details["StackId"]
