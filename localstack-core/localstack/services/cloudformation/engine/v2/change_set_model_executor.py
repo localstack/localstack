@@ -539,20 +539,27 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     def visit_terminal_value_created(
         self, value: TerminalValueCreated
     ) -> PreprocEntityDelta[str, str]:
-        after = self._replace_url_outputs_if_required(value.value)
+        if isinstance(value.value, str):
+            after = self._replace_url_outputs_if_required(value.value)
+        else:
+            after = value.value
         return PreprocEntityDelta(after=after)
 
     def visit_terminal_value_modified(
         self, value: TerminalValueModified
     ) -> PreprocEntityDelta[str, str]:
-        # we only need to transform the before
-        after = self._replace_url_outputs_if_required(value.modified_value)
+        # we only need to transform the after
+        if isinstance(value.modified_value, str):
+            after = self._replace_url_outputs_if_required(value.modified_value)
+        else:
+            after = value.modified_value
         return PreprocEntityDelta(before=value.value, after=after)
 
     def visit_terminal_value_unchanged(
         self, terminal_value_unchanged: TerminalValueUnchanged
     ) -> PreprocEntityDelta:
-        if is_nothing(terminal_value_unchanged.value):
-            return PreprocEntityDelta()
-        value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
+        if isinstance(terminal_value_unchanged.value, str):
+            value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
+        else:
+            value = terminal_value_unchanged.value
         return PreprocEntityDelta(before=value, after=value)
