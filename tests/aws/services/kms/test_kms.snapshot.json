@@ -2380,7 +2380,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_with_alias_arn": {
-    "recorded-date": "05-08-2025, 04:13:09",
+    "recorded-date": "05-08-2025, 17:00:25",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",

@@ -2016,8 +2016,8 @@ class TestKMS:
         snapshot.match("created-key", created_key)
 
         aws_client.kms.create_alias(TargetKeyId=created_key["KeyId"], AliasName=alias_name)
-        key_arn = created_key["Arn"]
-        alias_arn = key_arn.rsplit(":", maxsplit=1)[0] + f":{alias_name}"
+        alias = _get_alias(aws_client.kms, alias_name)
+        alias_arn = alias["AliasArn"]
 
         describe_response = aws_client.kms.describe_key(KeyId=alias_arn)
         snapshot.match("describe-key", describe_response)
