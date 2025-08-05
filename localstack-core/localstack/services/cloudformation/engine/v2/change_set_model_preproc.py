@@ -42,6 +42,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+from localstack.services.cloudformation.stores import (
+    exports_map,
+)
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.objects import get_value_from_path
@@ -1135,3 +1138,24 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if not is_nothing(output_after):
                 after.append(output_after)
         return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_import_value(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        def _compute_fn_import_value(string) -> str:
+            if not isinstance(string, str):
+                raise RuntimeError(f"Invalid parameter for import: '{string}'")
+
+            exports = exports_map(
+                account_id=self._change_set.account_id, region_name=self._change_set.region_name
+            )
+
+            return exports.get(string, {}).get("Value") or Nothing
+
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        delta = self._cached_apply(
+            scope=node_intrinsic_function.scope,
+            arguments_delta=arguments_delta,
+            resolver=_compute_fn_import_value,
+        )
+        return delta

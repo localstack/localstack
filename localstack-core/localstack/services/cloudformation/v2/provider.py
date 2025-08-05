@@ -43,6 +43,7 @@ from localstack.aws.api.cloudformation import (
     IncludePropertyValues,
     InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
+    ListExportsOutput,
     ListStackResourcesOutput,
     ListStacksOutput,
     LogicalResourceId,
@@ -459,6 +460,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = result.parameters
                 change_set.stack.resolved_outputs = result.outputs
+                change_set.stack.resolved_exports = result.exports
+
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 change_set.stack.template = change_set.template
@@ -1286,3 +1289,10 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
 
         start_worker_thread(_run)
+
+    @handler("ListExports")
+    def list_exports(
+        self, context: RequestContext, next_token: NextToken = None, **kwargs
+    ) -> ListExportsOutput:
+        store = get_cloudformation_store(account_id=context.account_id, region_name=context.region)
+        return ListExportsOutput(Exports=store.exports_v2.values())
