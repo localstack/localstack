@@ -260,20 +260,55 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties = self._merge_before_properties(name, before)
 
                 self._process_event(ChangeAction.Modify, name, OperationStatus.IN_PROGRESS)
-                event = self._execute_resource_action(
-                    action=ChangeAction.Modify,
-                    logical_resource_id=name,
-                    resource_type=before.resource_type,
-                    before_properties=before_properties,
-                    after_properties=after.properties,
-                )
-                self._process_event(
-                    ChangeAction.Modify,
-                    name,
-                    event.status,
-                    reason=event.message,
-                    resource_type=before.resource_type,
-                )
+                if after.requires_replacement:
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Add,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=None,
+                        after_properties=after.properties,
+                    )
+                    self._process_event(
+                        ChangeAction.Modify,
+                        name,
+                        event.status,
+                        reason=event.message,
+                        resource_type=before.resource_type,
+                    )
+
+                    def cleanup():
+                        self._process_event(ChangeAction.Remove, name, OperationStatus.IN_PROGRESS)
+                        event = self._execute_resource_action(
+                            action=ChangeAction.Remove,
+                            logical_resource_id=name,
+                            resource_type=before.resource_type,
+                            before_properties=before_properties,
+                            after_properties=None,
+                        )
+                        self._process_event(
+                            ChangeAction.Remove,
+                            name,
+                            event.status,
+                            reason=event.message,
+                            resource_type=before.resource_type,
+                        )
+
+                    self._defer_action(cleanup)
+                else:
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=before_properties,
+                        after_properties=after.properties,
+                    )
+                    self._process_event(
+                        ChangeAction.Modify,
+                        name,
+                        event.status,
+                        reason=event.message,
+                        resource_type=before.resource_type,
+                    )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
             else:
@@ -451,24 +486,26 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # TODO: avoid the use of setdefault (debuggability/readability)
                 # TODO: review the use of merge
 
-                status_from_action = EventOperationFromAction[action.value]
-                physical_resource_id = (
-                    extra_resource_properties["PhysicalResourceId"]
-                    if resource_provider
-                    else MOCKED_REFERENCE
-                )
-                resolved_resource = ResolvedResource(
-                    Properties=event.resource_model,
-                    LogicalResourceId=logical_resource_id,
-                    Type=resource_type,
-                    LastUpdatedTimestamp=datetime.now(timezone.utc),
-                    ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
-                    PhysicalResourceId=physical_resource_id,
-                )
-                # TODO: do we actually need this line?
-                resolved_resource.update(extra_resource_properties)
+                # Don't update the resolved resources if we have deleted that resource
+                if action != ChangeAction.Remove:
+                    status_from_action = EventOperationFromAction[action.value]
+                    physical_resource_id = (
+                        extra_resource_properties["PhysicalResourceId"]
+                        if resource_provider
+                        else MOCKED_REFERENCE
+                    )
+                    resolved_resource = ResolvedResource(
+                        Properties=event.resource_model,
+                        LogicalResourceId=logical_resource_id,
+                        Type=resource_type,
+                        LastUpdatedTimestamp=datetime.now(timezone.utc),
+                        ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
+                        PhysicalResourceId=physical_resource_id,
+                    )
+                    # TODO: do we actually need this line?
+                    resolved_resource.update(extra_resource_properties)
 
-                self.resources[logical_resource_id] = resolved_resource
+                    self.resources[logical_resource_id] = resolved_resource
 
             case OperationStatus.FAILED:
                 reason = event.message
