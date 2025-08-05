@@ -63,7 +63,7 @@ def is_internal_class(_type: TypeHint, module_prefixes: list[str] | None = None)
 
 class StoreSchemaBuilder:
     """
-    This class build a schema for a ``BaseStore`` class by recursively parsing its type hints.
+    This class builds a schema for a ``BaseStore`` class by recursively parsing its type hints.
 
     Example::
 
@@ -225,5 +225,5 @@ class StoreSchemaBuilder:
                     _hint[TAG_ARGS] = [self._serialize_hint(_arg) for _arg in args]
                 return _hint
             case _:
-                # A few things that can end up here: generics, Union, or Literal. See ``get_origin`` for more.
+                # A few things that can end up here: generics, or Literal. See ``get_origin`` for more.
                 return get_fully_qualified_name(origin)
