@@ -1,12 +1,14 @@
 """A set of common handlers to parse and route AWS service requests."""
 
 import logging
+import os
+import traceback
 from collections import defaultdict
 from typing import Any
 
 from botocore.model import OperationModel, ServiceModel
 
-from localstack import config
+from localstack import config, constants
 from localstack.http import Response
 from localstack.utils.coverage_docs import get_coverage_link_for_service
 
@@ -182,6 +184,16 @@ class ServiceExceptionSerializer(ExceptionHandler):
         elif not isinstance(exception, ServiceException):
             if not self.handle_internal_failures:
                 return
+
+            if (
+                os.environ.get(constants.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE)
+                in constants.TRUE_STRINGS
+            ):
+                exception = "".join(
+                    traceback.format_exception(
+                        type(exception), value=exception, tb=exception.__traceback__
+                    )
+                )
 
             # wrap exception for serialization
             if operation:

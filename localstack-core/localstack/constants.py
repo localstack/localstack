@@ -171,6 +171,9 @@ DEFAULT_DEVELOP_PORT = 5678
 DEFAULT_BUCKET_MARKER_LOCAL = "hot-reload"
 LEGACY_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
 
+# environment variable to determine whether to include stack traces in http responses
+INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE = "INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE"
+
 # user that starts the opensearch process if the current user is root
 OS_USER_OPENSEARCH = "localstack"
 

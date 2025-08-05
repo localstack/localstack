@@ -23,7 +23,7 @@ from _pytest.main import Session
 
 from localstack import config as localstack_config
 from localstack.config import is_env_true
-from localstack.constants import ENV_INTERNAL_TEST_RUN
+from localstack.constants import ENV_INTERNAL_TEST_RUN, INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE
 
 LOG = logging.getLogger(__name__)
 LOG.info("Pytest plugin for in-memory-localstack session loaded.")
@@ -71,6 +71,8 @@ def pytest_runtestloop(session: Session):
 
     # configure
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
+    os.environ[INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE] = "1"
+
     safe_requests.verify_ssl = False
 
     from localstack.runtime import current
