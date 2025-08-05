@@ -18,7 +18,7 @@ DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 RECENTLY_DELETED_TIMEOUT = 60
 
 # the default maximum message size in SQS
-DEFAULT_MAXIMUM_MESSAGE_SIZE = 262144
+DEFAULT_MAXIMUM_MESSAGE_SIZE = 1048576
 INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
     # therefore be ignored when comparing queue attributes for create_queue
