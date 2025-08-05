@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, Final, Generator, Optional, TypedDict, Un
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
+from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
 from localstack.utils.strings import camel_to_snake_case
 
 if TYPE_CHECKING:
@@ -353,6 +354,7 @@ class NodeResource(ChangeSetNode):
     properties: Final[NodeProperties]
     condition_reference: Final[Maybe[TerminalValue]]
     depends_on: Final[Maybe[NodeDependsOn]]
+    requires_replacement: Final[bool]
 
     def __init__(
         self,
@@ -363,6 +365,7 @@ class NodeResource(ChangeSetNode):
         properties: NodeProperties,
         condition_reference: Maybe[TerminalValue],
         depends_on: Maybe[NodeDependsOn],
+        requires_replacement: bool,
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.name = name
@@ -370,6 +373,7 @@ class NodeResource(ChangeSetNode):
         self.properties = properties
         self.condition_reference = condition_reference
         self.depends_on = depends_on
+        self.requires_replacement = requires_replacement
 
 
 class NodeProperties(ChangeSetNode):
@@ -726,6 +730,30 @@ class ChangeSetModel:
         change_type = parent_change_type_of([node_condition, *arguments[1:]])
         return change_type
 
+    def _resolve_requires_replacement(
+        self, node_properties: NodeProperties, resource_type: TerminalValue
+    ) -> bool:
+        # a bit hacky but we have to load the resource provider executor _and_ resource provider to get the schema
+        # Note: we don't log the attempt to load the resource provider, we need to make sure this is only done once and we already do this in the executor
+        resource_provider = ResourceProviderExecutor.try_load_resource_provider(resource_type.value)
+        if not resource_provider:
+            # if we don't support a resource, assume an in-place update for simplicity
+            return False
+
+        create_only_properties: list[str] = resource_provider.SCHEMA.get("createOnlyProperties", [])
+        # TODO: also hacky: strip the leading `/properties/` string from the definition
+        #       ideally we should use a jsonpath or similar
+        create_only_properties = [
+            property.replace("/properties/", "", 1) for property in create_only_properties
+        ]
+        for node_property in node_properties.properties:
+            if (
+                node_property.change_type == ChangeType.MODIFIED
+                and node_property.name in create_only_properties
+            ):
+                return True
+        return False
+
     def _visit_array(
         self, scope: Scope, before_array: Maybe[list], after_array: Maybe[list]
     ) -> NodeArray:
@@ -921,6 +949,9 @@ class ChangeSetModel:
         change_type = change_type_of(
             before_resource, after_resource, [properties, condition_reference, depends_on]
         )
+        requires_replacement = self._resolve_requires_replacement(
+            node_properties=properties, resource_type=terminal_value_type
+        )
         node_resource = NodeResource(
             scope=scope,
             change_type=change_type,
@@ -929,6 +960,7 @@ class ChangeSetModel:
             properties=properties,
             condition_reference=condition_reference,
             depends_on=depends_on,
+            requires_replacement=requires_replacement,
         )
         self._visited_scopes[scope] = node_resource
         return node_resource

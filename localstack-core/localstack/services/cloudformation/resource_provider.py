@@ -465,15 +465,18 @@ class ResourceProviderExecutor:
                             "A ResourceProvider should always have a SCHEMA property defined."
                         )
                     resource_type_schema = resource_provider.SCHEMA
-                    physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
-                        event.resource_model,
-                        raw_payload["resourceType"],
-                        resource_type_schema,
-                    )
+                    if raw_payload["action"] != "Remove":
+                        physical_resource_id = (
+                            self.extract_physical_resource_id_from_model_with_schema(
+                                event.resource_model,
+                                raw_payload["resourceType"],
+                                resource_type_schema,
+                            )
+                        )
 
-                    resource["PhysicalResourceId"] = physical_resource_id
-                    resource["Properties"] = event.resource_model
-                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
+                        resource["PhysicalResourceId"] = physical_resource_id
+                        resource["Properties"] = event.resource_model
+                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
                     return event
                 case OperationStatus.IN_PROGRESS:
                     # update the shared state
