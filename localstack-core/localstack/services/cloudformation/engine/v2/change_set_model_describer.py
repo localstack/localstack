@@ -226,3 +226,20 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         if not is_nothing(after_resource) and after_resource.physical_resource_id is None:
             after_resource.physical_resource_id = CHANGESET_KNOWN_AFTER_APPLY
         return delta
+
+    def visit_node_intrinsic_function_fn_import_value(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_import_value(
+            node_intrinsic_function=node_intrinsic_function
+        )
+        after_value = delta.after
+        if is_nothing(after_value) and self._include_property_values:
+            # TODO find correct way to obtain parent resource
+            resource_name = node_intrinsic_function.scope.split("/")[2]
+            export_name = node_intrinsic_function.arguments.value
+
+            self._change_set.status_reason = f"[WARN] --include-property-values option can return incomplete ChangeSet data because: ChangeSet creation failed for resource [{resource_name}] because: No export named {export_name}"
+            delta.after = "{{changeSet:KNOWN_AFTER_APPLY}}"
+
+        return delta

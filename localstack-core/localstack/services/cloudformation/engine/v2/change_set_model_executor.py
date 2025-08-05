@@ -15,11 +15,15 @@ from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
     NodeParameter,
     NodeResource,
+    TerminalValueCreated,
+    TerminalValueModified,
+    TerminalValueUnchanged,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -38,6 +42,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -49,6 +54,7 @@ class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
     parameters: dict
     outputs: dict
+    exports: dict
 
 
 class DeferredAction(Protocol):
@@ -60,6 +66,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     resources: Final[dict[str, ResolvedResource]]
     outputs: Final[dict]
     resolved_parameters: Final[dict]
+    exports: Final[dict]
     _deferred_actions: list[DeferredAction]
 
     def __init__(self, change_set: ChangeSet):
@@ -67,6 +74,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self.resources = dict()
         self.outputs = dict()
         self.resolved_parameters = dict()
+        self.exports = dict()
         self._deferred_actions = list()
         self.resource_provider_executor = ResourceProviderExecutor(
             stack_name=change_set.stack.stack_name,
@@ -87,7 +95,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 action()
 
         return ChangeSetModelExecutorResult(
-            resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
+            resources=self.resources,
+            parameters=self.resolved_parameters,
+            outputs=self.outputs,
+            exports=self.exports,
         )
 
     def _defer_action(self, action: DeferredAction):
@@ -244,6 +255,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         after = delta.after
         if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
+
+        # TODO validate export name duplication in same template and all exports
+        if delta.after.export:
+            self.exports[delta.after.export.get("Name")] = delta.after.value
+
         self.outputs[delta.after.name] = delta.after.value
         return delta
 
@@ -572,3 +588,44 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             },
         }
         return resource_provider_payload
+
+    @staticmethod
+    def _replace_url_outputs_if_required(value: str) -> str:
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
+        if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+            prefix = api_match[1]
+            host = api_match[2]
+            path = api_match[3]
+            port = localstack_host().port
+            value = f"{prefix}{host}:{port}/{path}"
+            return value
+
+        return value
+
+    def visit_terminal_value_created(
+        self, value: TerminalValueCreated
+    ) -> PreprocEntityDelta[str, str]:
+        if isinstance(value.value, str):
+            after = self._replace_url_outputs_if_required(value.value)
+        else:
+            after = value.value
+        return PreprocEntityDelta(after=after)
+
+    def visit_terminal_value_modified(
+        self, value: TerminalValueModified
+    ) -> PreprocEntityDelta[str, str]:
+        # we only need to transform the after
+        if isinstance(value.modified_value, str):
+            after = self._replace_url_outputs_if_required(value.modified_value)
+        else:
+            after = value.modified_value
+        return PreprocEntityDelta(before=value.value, after=after)
+
+    def visit_terminal_value_unchanged(
+        self, terminal_value_unchanged: TerminalValueUnchanged
+    ) -> PreprocEntityDelta:
+        if isinstance(terminal_value_unchanged.value, str):
+            value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
+        else:
+            value = terminal_value_unchanged.value
+        return PreprocEntityDelta(before=value, after=value)
