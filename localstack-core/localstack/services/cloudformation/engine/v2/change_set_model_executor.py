@@ -128,12 +128,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def _process_event(
         self,
+        *,
         action: ChangeAction,
         logical_resource_id,
         event_status: OperationStatus,
+        resource_type: str,
         special_action: str = None,
         reason: str = None,
-        resource_type=None,
     ):
         status_from_action = special_action or EventOperationFromAction[action.value]
         if event_status == OperationStatus.SUCCESS:
@@ -197,11 +198,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             delta = super().visit_node_resource(node_resource=node_resource)
         except Exception as e:
             self._process_event(
-                node_resource.change_type.to_change_action(),
-                node_resource.name,
-                OperationStatus.FAILED,
-                reason=str(e),
+                action=node_resource.change_type.to_change_action(),
+                logical_resource_id=node_resource.name,
+                event_status=OperationStatus.FAILED,
                 resource_type=node_resource.type_.value,
+                reason=str(e),
             )
             raise e
 
@@ -257,9 +258,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties = self._merge_before_properties(name, before)
 
                 self._process_event(
-                    ChangeAction.Modify,
-                    name,
-                    OperationStatus.IN_PROGRESS,
+                    action=ChangeAction.Modify,
+                    logical_resource_id=name,
+                    event_status=OperationStatus.IN_PROGRESS,
                     resource_type=before.resource_type,
                 )
                 if after.requires_replacement:
@@ -271,15 +272,20 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         after_properties=after.properties,
                     )
                     self._process_event(
-                        ChangeAction.Modify,
-                        name,
-                        event.status,
-                        reason=event.message,
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        event_status=event.status,
                         resource_type=before.resource_type,
+                        reason=event.message,
                     )
 
                     def cleanup():
-                        self._process_event(ChangeAction.Remove, name, OperationStatus.IN_PROGRESS)
+                        self._process_event(
+                            action=ChangeAction.Remove,
+                            logical_resource_id=name,
+                            event_status=OperationStatus.IN_PROGRESS,
+                            resource_type=before.resource_type,
+                        )
                         event = self._execute_resource_action(
                             action=ChangeAction.Remove,
                             logical_resource_id=name,
@@ -288,11 +294,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                             after_properties=None,
                         )
                         self._process_event(
-                            ChangeAction.Remove,
-                            name,
-                            event.status,
-                            reason=event.message,
+                            action=ChangeAction.Remove,
+                            logical_resource_id=name,
+                            event_status=event.status,
                             resource_type=before.resource_type,
+                            reason=event.message,
                         )
 
                     self._defer_action(cleanup)
@@ -305,11 +311,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         after_properties=after.properties,
                     )
                     self._process_event(
-                        ChangeAction.Modify,
-                        name,
-                        event.status,
-                        reason=event.message,
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        event_status=event.status,
                         resource_type=before.resource_type,
+                        reason=event.message,
                     )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
@@ -327,11 +333,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         after_properties=None,
                     )
                     self._process_event(
-                        ChangeAction.Modify,
-                        name,
-                        event.status,
-                        reason=event.message,
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        event_status=event.status,
                         resource_type=before.resource_type,
+                        reason=event.message,
                     )
 
                 self._defer_action(perform_deletion)
@@ -344,11 +350,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     after_properties=after.properties,
                 )
                 self._process_event(
-                    ChangeAction.Modify,
-                    name,
-                    event.status,
-                    reason=event.message,
+                    action=ChangeAction.Modify,
+                    logical_resource_id=name,
+                    event_status=event.status,
                     resource_type=before.resource_type,
+                    reason=event.message,
                 )
         elif not is_nothing(before):
             # Case: removal
@@ -358,10 +364,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
             def perform_deletion():
                 self._process_event(
-                    ChangeAction.Remove,
-                    name,
-                    OperationStatus.IN_PROGRESS,
+                    action=ChangeAction.Remove,
+                    logical_resource_id=name,
                     resource_type=before.resource_type,
+                    event_status=OperationStatus.IN_PROGRESS,
                 )
                 event = self._execute_resource_action(
                     action=ChangeAction.Remove,
@@ -371,20 +377,20 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     after_properties=None,
                 )
                 self._process_event(
-                    ChangeAction.Remove,
-                    name,
-                    event.status,
-                    reason=event.message,
+                    action=ChangeAction.Remove,
+                    logical_resource_id=name,
+                    event_status=event.status,
                     resource_type=before.resource_type,
+                    reason=event.message,
                 )
 
             self._defer_action(perform_deletion)
         elif not is_nothing(after):
             # Case: addition
             self._process_event(
-                ChangeAction.Add,
-                name,
-                OperationStatus.IN_PROGRESS,
+                action=ChangeAction.Add,
+                logical_resource_id=name,
+                event_status=OperationStatus.IN_PROGRESS,
                 resource_type=after.resource_type,
             )
             event = self._execute_resource_action(
@@ -395,11 +401,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 after_properties=after.properties,
             )
             self._process_event(
-                ChangeAction.Add,
-                name,
-                event.status,
-                reason=event.message,
+                action=ChangeAction.Add,
+                logical_resource_id=name,
+                event_status=event.status,
                 resource_type=after.resource_type,
+                reason=event.message,
             )
 
     def _merge_before_properties(
