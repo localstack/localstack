@@ -8,6 +8,15 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_cfn_template_with_short_form_fn_sub": {
     "last_validated_date": "2024-06-20T20:41:15+00:00"
   },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_has_intrinsic_function": {
+    "last_validated_date": "2025-08-05T18:44:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.23,
+      "call": 10.41,
+      "teardown": 4.4,
+      "total": 15.04
+    }
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {
     "last_validated_date": "2024-04-03T07:12:29+00:00"
   },

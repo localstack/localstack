@@ -1,0 +1,30 @@
+Mappings:
+  RegionMap:
+    us-east-1:
+      AZs:
+        - "empty"
+
+Resources:
+  Parameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::If: [UseFnGetAZs, "true", "false"]
+      Name: commands
+
+
+Conditions:
+  UseFnGetAZs:
+    Fn::Equals:
+    - "empty"
+    - Fn::Select:
+      - 0
+      - Fn::FindInMap:
+        - "RegionMap"
+        - "us-east-1"
+        - "AZs"
+
+Outputs:
+  ParameterValue:
+    Value: !GetAtt Parameter.Value

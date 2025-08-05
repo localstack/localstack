@@ -683,5 +683,13 @@
         "JoinWithNoValue": "Sample"
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_has_intrinsic_function": {
+    "recorded-date": "05-08-2025, 18:44:01",
+    "recorded-content": {
+      "fn-select-fn-map-output": {
+        "ParameterValue": "true"
+      }
+    }
   }
 }
