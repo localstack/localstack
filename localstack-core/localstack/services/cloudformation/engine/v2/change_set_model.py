@@ -1017,7 +1017,7 @@ class ChangeSetModel:
         )
 
         after_parameter = Nothing
-        if not is_nothing(after_parameter_dct):
+        if not is_nothing(after_parameter_dct) and after_parameter_dct["given_value"] is not None:
             # handle externally resolved parameters
             after_parameter = (
                 after_parameter_dct.get("resolved_value") or after_parameter_dct["given_value"]
