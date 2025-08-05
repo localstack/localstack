@@ -102,7 +102,13 @@ from localstack.services.cloudformation.stores import (
     CloudFormationStore,
     get_cloudformation_store,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet, Stack, StackInstance, StackSet
+from localstack.services.cloudformation.v2.entities import (
+    ChangeSet,
+    EngineParameter,
+    Stack,
+    StackInstance,
+    StackSet,
+)
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
@@ -198,24 +204,20 @@ class CloudformationProviderV2(CloudformationProvider):
     @staticmethod
     def _resolve_parameters(
         template: Optional[dict], parameters: Optional[dict], account_id: str, region_name: str
-    ) -> tuple[dict | None, dict | None]:
-        if not template:
-            return None, parameters
-
-        template_copy = template.copy()
-        parameters_copy = parameters.copy() if parameters else {}
-
+    ) -> dict[str, EngineParameter]:
         template_parameters = template.get("Parameters", {})
-        for param_name, param_defn in template_parameters.items():
-            param_type = param_defn.get("Type")
-            if param_type == "AWS::SSM::Parameter::Value<String>":
-                if ssm_param_name := parameters.get(param_name):
-                    ssm_param_value = resolve_ssm_parameter(account_id, region_name, ssm_param_name)
+        resolved_parameters = {}
+        for name, parameter in template_parameters.items():
+            given_value = parameters.get(name)
+            resolved_parameter = EngineParameter(type_=parameter["Type"], given_value=given_value)
+            if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
+                # TODO: support other parameter types
+                resolved_parameter["resolved_value"] = resolve_ssm_parameter(
+                    account_id, region_name, given_value
+                )
 
-                    parameters_copy[param_name] = ssm_param_value
-                    template_copy["Parameters"][param_name]["Type"] = "String"
-
-        return template_copy, parameters_copy
+            resolved_parameters[name] = resolved_parameter
+        return resolved_parameters
 
     @classmethod
     def _setup_change_set_model(
@@ -227,19 +229,21 @@ class CloudformationProviderV2(CloudformationProvider):
         after_parameters: Optional[dict],
         previous_update_model: Optional[UpdateModel],
     ):
-        after_template, after_parameters = cls._resolve_parameters(
-            after_template,
-            after_parameters,
-            change_set.stack.account_id,
-            change_set.stack.region_name,
-        )
+        resolved_parameters = None
+        if after_parameters is not None:
+            resolved_parameters = cls._resolve_parameters(
+                after_template,
+                after_parameters,
+                change_set.stack.account_id,
+                change_set.stack.region_name,
+            )
 
         # Create and preprocess the update graph for this template update.
         change_set_model = ChangeSetModel(
             before_template=before_template,
             after_template=after_template,
             before_parameters=before_parameters,
-            after_parameters=after_parameters,
+            after_parameters=resolved_parameters,
         )
         raw_update_model: UpdateModel = change_set_model.get_update_model()
         # If there exists an update model which operated in the 'before' version of this change set,
@@ -254,7 +258,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set_model_transform = ChangeSetModelTransform(
             change_set=change_set,
             before_parameters=before_parameters,
-            after_parameters=after_parameters,
+            after_parameters=resolved_parameters,
             before_template=before_template,
             after_template=after_template,
         )
@@ -267,7 +271,7 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template=transformed_before_template,
             after_template=transformed_after_template,
             before_parameters=before_parameters,
-            after_parameters=after_parameters,
+            after_parameters=resolved_parameters,
         )
         update_model = change_set_model.get_update_model()
         # Bring the cache for the previous operations forward in the update graph for this version

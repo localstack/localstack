@@ -11,7 +11,6 @@ from localstack.aws.api.cloudformation import (
     CreateStackSetInput,
     ExecutionStatus,
     Output,
-    Parameter,
     ResourceStatus,
     StackDriftInformation,
     StackDriftStatus,
@@ -23,6 +22,9 @@ from localstack.aws.api.cloudformation import (
     StackSetOperation,
     StackStatus,
     StackStatusReason,
+)
+from localstack.aws.api.cloudformation import (
+    Parameter as ApiParameter,
 )
 from localstack.aws.api.cloudformation import (
     Stack as ApiStack,
@@ -38,6 +40,16 @@ from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
 
 
+class EngineParameter(TypedDict):
+    """
+    Parameters supplied by the user. The resolved value field is populated by the engine
+    """
+
+    type_: str
+    given_value: NotRequired[str | None]
+    resolved_value: NotRequired[str | None]
+
+
 class ResolvedResource(TypedDict):
     LogicalResourceId: str
     Type: str
@@ -49,7 +61,7 @@ class ResolvedResource(TypedDict):
 
 class Stack:
     stack_name: str
-    parameters: list[Parameter]
+    parameters: list[ApiParameter]
     change_set_id: str | None
     status: StackStatus
     status_reason: StackStatusReason | None

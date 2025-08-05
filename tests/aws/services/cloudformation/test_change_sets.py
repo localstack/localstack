@@ -780,3 +780,85 @@ class TestCaptureUpdateProcess:
 
         parameter = aws_client.ssm.get_parameter(Name=parameter_name)["Parameter"]
         snapshot.match("parameter-2", parameter)
+
+
+@skip_if_v1_provider(reason="Not supported with v1 engine")
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe..*",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..Replacement",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+    ]
+)
+def test_dynamic_ssm_parameter_lookup(
+    snapshot,
+    aws_client: ServiceLevelClientFactory,
+    aws_client_no_retry: ServiceLevelClientFactory,
+    cleanups,
+    create_parameter,
+    capture_update_process,
+):
+    """
+    Test reading parameter values from SSM works correctly"""
+    parameter_name = f"param-{short_uid()}"
+    value1 = f"value-1-{short_uid()}"
+    value2 = f"value-2-{short_uid()}"
+
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("OutputValue"),
+            snapshot.transform.regex(parameter_name, "<parameter-name>"),
+            snapshot.transform.regex(value1, "<parameter-value-1>"),
+            snapshot.transform.regex(value2, "<parameter-value-2>"),
+        ]
+        + snapshot.transform.cloudformation_api(),
+    )
+
+    create_parameter(Name=parameter_name, Value=value1, Type="String")
+
+    template = {
+        "Parameters": {
+            "InputValue": {
+                "Type": "AWS::SSM::Parameter::Value<String>",
+            },
+        },
+        "Resources": {
+            "DerivedParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {"Ref": "InputValue"},
+                },
+            },
+        },
+        "Outputs": {
+            "DerivedParameterName": {
+                "Value": {"Ref": "DerivedParameter"},
+            },
+        },
+    }
+
+    def update_parameter_value():
+        aws_client.ssm.put_parameter(Name=parameter_name, Value=value2, Overwrite=True)
+
+    capture_update_process(
+        snapshot,
+        template,
+        template,
+        p1={"InputValue": parameter_name},
+        p2={"InputValue": parameter_name},
+        custom_update_step=update_parameter_value,
+    )
+
+
+# TODO: capture ssm parameter that does not change to make sure the before state is propagated
