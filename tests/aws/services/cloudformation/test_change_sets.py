@@ -861,4 +861,82 @@ def test_dynamic_ssm_parameter_lookup(
     )
 
 
-# TODO: capture ssm parameter that does not change to make sure the before state is propagated
+@skip_if_v1_provider(reason="Not supported with v1 engine")
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe..*",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..NotificationARNs",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..Replacement",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+    ]
+)
+def test_dynamic_ssm_parameter_lookup_no_change(
+    snapshot,
+    aws_client: ServiceLevelClientFactory,
+    aws_client_no_retry: ServiceLevelClientFactory,
+    cleanups,
+    create_parameter,
+    capture_update_process,
+):
+    """
+    Test reading parameter values from SSM works correctly"""
+    parameter_name = f"param-{short_uid()}"
+    parameter_value = f"value-{short_uid()}"
+
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.key_value("OutputValue"),
+            snapshot.transform.regex(parameter_name, "<parameter-name>"),
+            snapshot.transform.regex(parameter_value, "<parameter-value>"),
+        ]
+        + snapshot.transform.cloudformation_api(),
+    )
+
+    create_parameter(Name=parameter_name, Value=parameter_value, Type="String")
+
+    t1 = {
+        "Parameters": {
+            "InputValue": {
+                "Type": "AWS::SSM::Parameter::Value<String>",
+            },
+        },
+        "Resources": {
+            "DerivedParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {"Ref": "InputValue"},
+                },
+            },
+        },
+        "Outputs": {
+            "DerivedParameterName": {
+                "Value": {"Ref": "DerivedParameter"},
+            },
+        },
+    }
+    t2 = copy.deepcopy(t1)
+    t2["Resources"]["AnotherParameter"] = {
+        "Type": "AWS::SSM::Parameter",
+        "Properties": {
+            "Type": "String",
+            "Value": "new parameter",
+        },
+    }
+
+    capture_update_process(
+        snapshot,
+        t1,
+        t2,
+        p1={"InputValue": parameter_name},
+        p2={"InputValue": parameter_name},
+    )
