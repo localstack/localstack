@@ -12,7 +12,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.9.0
+anyio==4.10.0
     # via httpx
 apispec==6.8.2
     # via localstack-core
@@ -31,7 +31,7 @@ aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
 aws-cdk-cloud-assembly-schema==45.2.0
     # via aws-cdk-lib
-aws-cdk-lib==2.207.0
+aws-cdk-lib==2.208.0
     # via localstack-core
 aws-sam-translator==1.99.0
     # via
@@ -41,7 +41,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.42.1
     # via localstack-core
-awscrt==0.27.4
+awscrt==0.27.5
     # via localstack-core
 boto3==1.40.1
     # via
@@ -57,7 +57,7 @@ botocore==1.40.1
     #   localstack-core
     #   moto-ext
     #   s3transfer
-build==1.2.2.post1
+build==1.3.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -66,11 +66,11 @@ cachetools==6.1.0
     #   airspeed-ext
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cattrs==24.1.3
+cattrs==25.1.1
     # via jsii
 cbor2==5.6.5
     # via localstack-core
-certifi==2025.7.14
+certifi==2025.8.3
     # via
     #   httpcore
     #   httpx
@@ -80,7 +80,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.38.0
+cfn-lint==1.38.1
     # via moto-ext
 charset-normalizer==3.4.2
     # via requests
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.10.1
+coverage==7.10.2
     # via
     #   coveralls
     #   localstack-core
@@ -195,7 +195,7 @@ joserfc==1.2.2
     # via moto-ext
 jpype1-ext==0.0.2
     # via localstack-core
-jsii==1.112.0
+jsii==1.113.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -260,7 +260,7 @@ mpmath==1.3.0
     # via sympy
 multipart==1.3.0
     # via moto-ext
-mypy==1.17.0
+mypy==1.17.1
     # via localstack-core (pyproject.toml)
 mypy-extensions==1.1.0
     # via mypy
@@ -308,7 +308,7 @@ pluggy==1.6.0
     #   pytest
 plumbum==1.9.0
     # via pandoc
-plux==1.12.1
+plux==1.13.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -402,7 +402,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2024.11.6
+regex==2025.7.34
     # via cfn-lint
 requests==2.32.4
     # via
@@ -437,7 +437,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.5
+ruff==0.12.7
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.1
     # via
@@ -473,6 +473,7 @@ typing-extensions==4.14.1
     # via
     #   anyio
     #   aws-sam-translator
+    #   cattrs
     #   cfn-lint
     #   jsii
     #   localstack-twisted
@@ -493,7 +494,7 @@ urllib3==2.5.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.32.0
+virtualenv==20.33.0
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
