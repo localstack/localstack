@@ -23,7 +23,7 @@ class TestPackage(Package):
 
 
 class TestPackageInstaller(PackageInstaller):
-    def __init__(self, version: str, install_lock: Optional[RLock] = None):
+    def __init__(self, version: str, install_lock: Optional[RLock] = None):  # noqa UP045
         super().__init__("test-installer", version, install_lock)
 
     def _get_install_marker_path(self, install_dir: str) -> str:
@@ -65,7 +65,7 @@ class LockingTestPackageInstaller(PackageInstaller):
     Package installer class used for testing the locking behavior.
     """
 
-    def __init__(self, queue: Queue = None, install_lock: Optional[RLock] = None):
+    def __init__(self, queue: Queue = None, install_lock: Optional[RLock] = None):  # noqa UP045
         super().__init__("lock-test-installer", "test", install_lock)
         self.queue = queue or Queue()
         self.about_to_wait = Event()
