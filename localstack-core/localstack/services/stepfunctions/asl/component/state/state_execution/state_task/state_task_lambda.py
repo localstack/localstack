@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Union
+from typing import Any, Union
 
 from botocore.exceptions import ClientError
 
@@ -94,7 +94,7 @@ class StateTaskLambda(StateTask):
             ),
         )
 
-    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+    def _verify_size_quota(self, env: Environment, value: Union[str, Any]) -> None:
         is_within: bool = is_within_size_quota(value=value)
         if is_within:
             return

@@ -2,10 +2,9 @@ from __future__ import annotations
 
 import abc
 import datetime
-import json
 import logging
 from abc import ABC
-from typing import Final, Optional, Union
+from typing import Any, Final, Optional, Union
 
 from localstack.aws.api.stepfunctions import (
     ExecutionFailedEventDetails,
@@ -163,7 +162,7 @@ class CommonStateField(EvalComponent, ABC):
             event_details["assignedVariablesDetails"] = {"truncated": False}  # noqa
         return event_details
 
-    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+    def _verify_size_quota(self, env: Environment, value: Union[str, Any]) -> None:
         is_within: bool = is_within_size_quota(value)
         if is_within:
             return

@@ -26,7 +26,7 @@ class LambdaFunctionErrorException(Exception):
         self.payload = payload
 
 
-def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
+def _from_payload(payload_streaming_body: IO[bytes]) -> Union[Any, str]:
     """
     This method extracts the lambda payload. The payload may be a string or a JSON stringified object.
     In the first case, this function converts the output into a UTF-8 string, otherwise it parses the
