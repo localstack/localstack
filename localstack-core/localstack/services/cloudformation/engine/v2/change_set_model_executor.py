@@ -23,6 +23,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeResource,
     TerminalValueCreated,
     TerminalValueModified,
+    TerminalValueUnchanged,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -512,27 +513,35 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return resource_provider_payload
 
     @staticmethod
-    def _process_value(
-        terminal_value: TerminalValueModified | TerminalValueCreated,
-    ) -> PreprocEntityDelta:
-        value = terminal_value.value
-
+    def _replace_url_outputs_if_required(value: str) -> str:
         api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
-        if (
-            isinstance(value, str)
-            and api_match
-            and value.value not in config.CFN_STRING_REPLACEMENT_DENY_LIST
-        ):
+        if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
             port = localstack_host().port
             value = f"{prefix}{host}:{port}/{path}"
+            return value
 
-        return PreprocEntityDelta(after=value)
+        return value
 
-    def visit_terminal_value_created(self, value: TerminalValueCreated):
-        return self._process_value(value)
+    def visit_terminal_value_created(
+        self, value: TerminalValueCreated
+    ) -> PreprocEntityDelta[str, str]:
+        after = self._replace_url_outputs_if_required(value.value)
+        return PreprocEntityDelta(after=after)
 
-    def visit_terminal_value_modified(self, value: TerminalValueModified):
-        return self._process_value(value)
+    def visit_terminal_value_modified(
+        self, value: TerminalValueModified
+    ) -> PreprocEntityDelta[str, str]:
+        # we only need to transform the before
+        after = self._replace_url_outputs_if_required(value.modified_value)
+        return PreprocEntityDelta(before=value.value, after=after)
+
+    def visit_terminal_value_unchanged(
+        self, terminal_value_unchanged: TerminalValueUnchanged
+    ) -> PreprocEntityDelta:
+        if is_nothing(terminal_value_unchanged.value):
+            return PreprocEntityDelta()
+        value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
+        return PreprocEntityDelta(before=value, after=value)

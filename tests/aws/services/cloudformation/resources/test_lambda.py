@@ -6,6 +6,7 @@ from io import BytesIO
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
+from tests.aws.services.events.helper_functions import is_v2_provider
 
 from localstack import config
 from localstack.aws.api.lambda_ import InvocationType, Runtime, State
@@ -462,7 +463,6 @@ def test_lambda_cfn_run(deploy_cfn_template, aws_client):
     aws_client.lambda_.invoke(FunctionName=fn_name, LogType="Tail", Payload=b"{}")
 
 
-@skip_if_v2_provider(reason="CFNV2:Other")
 @markers.aws.only_localstack(reason="This is functionality specific to Localstack")
 def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     deploy_cfn_template, aws_client, monkeypatch
@@ -471,6 +471,9 @@ def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     deploys the same lambda with an empty CFN string deny list, testing that it behaves as expected
     (i.e. the URLs in the deny list are modified)
     """
+    custom_url_1 = "https://custom1.execute-api.us-east-1.amazonaws.com/test-resource"
+    custom_url_2 = "https://custom2.execute-api.us-east-1.amazonaws.com/test-resource"
+
     monkeypatch.setattr(config, "CFN_STRING_REPLACEMENT_DENY_LIST", [])
     deployment = deploy_cfn_template(
         template_path=os.path.join(
@@ -478,9 +481,15 @@ def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
             "../../../templates/cfn_lambda_with_external_api_paths_in_env_vars.yaml",
         ),
         max_wait=120,
+        parameters={"CustomURL": custom_url_1},
     )
-    function = aws_client.lambda_.get_function(FunctionName=deployment.outputs["FunctionName"])
-    function_env_variables = function["Configuration"]["Environment"]["Variables"]
+
+    def get_function_envars(function_name: str) -> dict:
+        function = aws_client.lambda_.get_function(FunctionName=function_name)
+        function_env_variables = function["Configuration"]["Environment"]["Variables"]
+        return function_env_variables
+
+    function_env_variables = get_function_envars(function_name=deployment.outputs["FunctionName"])
     # URLs that match regex to capture AWS URLs gets Localstack port appended - non-matching URLs remain unchanged.
     assert function_env_variables["API_URL_1"] == "https://api.example.com"
     assert (
@@ -494,6 +503,45 @@ def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     assert (
         function_env_variables["API_URL_4"]
         == "https://blockchain.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_CUSTOM"]
+        == "https://custom1.execute-api.amazonaws.com:4566/test-resource"
+    )
+
+    if not is_v2_provider():
+        # Not supported by the v1 provider
+        return
+
+    deployment = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cfn_lambda_with_external_api_paths_in_env_vars.yaml",
+        ),
+        max_wait=120,
+        parameters={"CustomURL": custom_url_2},
+        is_update=True,
+        stack_name=deployment.stack_id,
+    )
+
+    function_env_variables = get_function_envars(function_name=deployment.outputs["FunctionName"])
+    # URLs that match regex to capture AWS URLs gets Localstack port appended - non-matching URLs remain unchanged.
+    assert function_env_variables["API_URL_1"] == "https://api.example.com"
+    assert (
+        function_env_variables["API_URL_2"]
+        == "https://storage.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_3"]
+        == "https://reporting.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_4"]
+        == "https://blockchain.execute-api.amazonaws.com:4566/test-resource"
+    )
+    assert (
+        function_env_variables["API_URL_CUSTOM"]
+        == "https://custom2.execute-api.amazonaws.com:4566/test-resource"
     )
 
 
