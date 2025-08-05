@@ -927,7 +927,7 @@ class CloudformationProvider(CloudformationApi):
         self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-        return ListExportsOutput(Exports=state.exports)
+        return ListExportsOutput(Exports=state.exports.values())
 
     @handler("ListImports")
     def list_imports(
