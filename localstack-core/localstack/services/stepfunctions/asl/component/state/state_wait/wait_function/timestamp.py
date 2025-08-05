@@ -47,7 +47,7 @@ class Timestamp(WaitFunction):
         return re.match(TIMESTAMP_PATTERN, timestamp) is not None
 
     @staticmethod
-    def _from_timestamp_string(timestamp: str) -> Optional[datetime]:
+    def _from_timestamp_string(timestamp: str) -> Optional[datetime.datetime]:
         if not Timestamp._is_valid_timestamp_pattern(timestamp):
             return None
         try:
