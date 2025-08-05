@@ -22,7 +22,6 @@ from localstack.utils.strings import short_uid
         "$..Scope",
         "$..Details",
         "$..Parameters",
-        "$..Replacement",
         "$..PolicyAction",
         "$..PhysicalResourceId",
     ]

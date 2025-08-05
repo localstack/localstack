@@ -1,8 +1,9 @@
 import json
 from collections import defaultdict
-from typing import Callable, Optional, TypedDict
+from typing import Callable, Generator, Optional, TypedDict
 
 import pytest
+from botocore.exceptions import WaiterError
 
 from localstack.aws.api.cloudformation import DescribeChangeSetOutput, StackEvent
 from localstack.aws.connect import ServiceLevelClientFactory
@@ -32,23 +33,41 @@ def normalize_event(event: StackEvent) -> NormalizedEvent:
 
 
 @pytest.fixture
-def capture_per_resource_events(
-    aws_client: ServiceLevelClientFactory,
-) -> Callable[[str], PerResourceStackEvents]:
-    def capture(stack_name: str) -> dict:
+def capture_resource_state_changes(aws_client: ServiceLevelClientFactory):
+    def capture(stack_name: str) -> Generator[StackEvent, None, None]:
+        resource_states: dict[str, str] = {}
         events = aws_client.cloudformation.describe_stack_events(StackName=stack_name)[
             "StackEvents"
         ]
-        per_resource_events = defaultdict(list)
         for event in events:
             # TODO: not supported events
             if event.get("ResourceStatus") in {
                 "UPDATE_COMPLETE_CLEANUP_IN_PROGRESS",
-                "DELETE_IN_PROGRESS",
-                "DELETE_COMPLETE",
             }:
                 continue
 
+            resource = event["LogicalResourceId"]
+            status = event["ResourceStatus"]
+            if resource not in resource_states:
+                yield event
+                resource_states[resource] = status
+                continue
+
+            if status != resource_states[resource]:
+                yield event
+                resource_states[resource] = status
+
+    return capture
+
+
+@pytest.fixture
+def capture_per_resource_events(
+    capture_resource_state_changes,
+) -> Callable[[str], PerResourceStackEvents]:
+    def capture(stack_name: str) -> dict:
+        per_resource_events = defaultdict(list)
+        events = capture_resource_state_changes(stack_name)
+        for event in events:
             if logical_resource_id := event.get("LogicalResourceId"):
                 resource_name = (
                     logical_resource_id
@@ -108,7 +127,10 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
 
     def inner(
         snapshot, t1: dict | str, t2: dict | str, p1: dict | None = None, p2: dict | None = None
-    ):
+    ) -> str:
+        """
+        :return: stack id
+        """
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
         if isinstance(t1, dict):
@@ -203,9 +225,15 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
         snapshot.match("create-change-set-2", change_set_details)
         stack_id = change_set_details["StackId"]
         change_set_id = change_set_details["Id"]
-        aws_client_no_retry.cloudformation.get_waiter("change_set_create_complete").wait(
-            ChangeSetName=change_set_id
-        )
+        try:
+            aws_client_no_retry.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_id
+            )
+        except WaiterError as e:
+            desc = aws_client_no_retry.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id
+            )
+            raise RuntimeError(f"Change set deployment failed: {desc}") from e
 
         describe_change_set_with_prop_values = (
             aws_client_no_retry.cloudformation.describe_change_set(
@@ -248,5 +276,7 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
 
         events = capture_per_resource_events(stack_id)
         snapshot.match("per-resource-events", events)
+
+        return stack_id
 
     yield inner
