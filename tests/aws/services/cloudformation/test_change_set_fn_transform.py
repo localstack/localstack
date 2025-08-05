@@ -39,7 +39,7 @@ class TestChangeSetFnTransform:
 
             deploy_cfn_template(
                 template_path=os.path.join(
-                    os.path.dirname(__file__), "../../../templates/macro_resource.yml"
+                    os.path.dirname(__file__), "../../templates/macro_resource.yml"
                 ),
                 parameters={"FunctionName": func_name, "MacroName": macro_name},
             )
@@ -99,7 +99,7 @@ class TestChangeSetFnTransform:
                 },
                 "Fn::Transform": {
                     "Name": "AWS::Include",
-                    "Parameters": {"Location": f"s3://{bucket}/template"},
+                    "Parameters": {"Location./": f"s3://{bucket}/template"},
                 },
             },
         }
@@ -208,7 +208,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(RegexTransformer(name1, "name-1"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "Substitution"
         create_macro(macro_name, macro_function_path)
@@ -245,7 +245,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(RegexTransformer(name1, "name-1"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/add_standard_tags.py"
+            os.path.dirname(__file__), "../../templates/macros/add_standard_tags.py"
         )
         macro_name = "AddTags"
         create_macro(macro_name, macro_function_path)
@@ -286,7 +286,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
         )
         macro_name = "GenerateRandom"
         create_macro(macro_name, macro_function_path)
@@ -333,7 +333,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
         create_macro(macro_name, macro_function_path)
@@ -387,7 +387,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
         create_macro(macro_name, macro_function_path)
@@ -434,7 +434,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
         create_macro(macro_name, macro_function_path)
@@ -481,7 +481,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
         )
         macro_name = "GenerateRandom"
         create_macro(macro_name, macro_function_path)
@@ -527,7 +527,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
         )
         macro_name = "GenerateRandom"
         create_macro(macro_name, macro_function_path)
