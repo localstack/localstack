@@ -93,7 +93,8 @@ jobs:
           bin/release-helper.sh set-dep-ver awscli "==$AWSCLI_VERSION"
 
           # upgrade the requirements files only for the botocore package
-          pip install pip-tools
+          # FIXME remove pin on pip-tools when https://github.com/jazzband/pip-tools/issues/2215 us resolved
+          pip install "pip-tools<7.5.0"
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --extra base-runtime -o requirements-base-runtime.txt pyproject.toml
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra runtime -o requirements-runtime.txt pyproject.toml
           pip-compile --strip-extras --upgrade-package "botocore==$BOTOCORE_VERSION" --upgrade-package "boto3==$BOTOCORE_VERSION" --upgrade-package "awscli==$AWSCLI_VERSION" --extra test -o requirements-test.txt pyproject.toml

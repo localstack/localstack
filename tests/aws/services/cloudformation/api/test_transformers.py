@@ -14,7 +14,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid, to_bytes
 
 
-@skip_if_v2_provider(reason="Fn transform not implemented yet")
+@skip_if_v2_provider(reason="transform not implemented")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..tags"])
 def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_client):

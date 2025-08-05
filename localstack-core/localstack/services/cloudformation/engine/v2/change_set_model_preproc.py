@@ -10,11 +10,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
-from localstack.services.cloudformation.engine.transformers import (
-    Transformer,
-    execute_macro,
-    transformers,
-)
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
@@ -49,7 +44,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
 )
 from localstack.services.cloudformation.stores import (
     exports_map,
-    get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
@@ -609,65 +603,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,
             resolver=_compute_fn_not,
-        )
-        return delta
-
-    def _compute_fn_transform(self, args: dict[str, Any]) -> Any:
-        # TODO: add typing to arguments before this level.
-        # TODO: add schema validation
-        # TODO: add support for other transform types
-
-        account_id = self._change_set.account_id
-        region_name = self._change_set.region_name
-        transform_name: str = args.get("Name")
-        if not isinstance(transform_name, str):
-            raise RuntimeError("Invalid or missing Fn::Transform 'Name' argument")
-        transform_parameters: dict = args.get("Parameters")
-        if not isinstance(transform_parameters, dict):
-            raise RuntimeError("Invalid or missing Fn::Transform 'Parameters' argument")
-
-        if transform_name in transformers:
-            # TODO: port and refactor this 'transformers' logic to this package.
-            builtin_transformer_class = transformers[transform_name]
-            builtin_transformer: Transformer = builtin_transformer_class()
-            transform_output: Any = builtin_transformer.transform(
-                account_id=account_id, region_name=region_name, parameters=transform_parameters
-            )
-            return transform_output
-
-        macros_store = get_cloudformation_store(
-            account_id=account_id, region_name=region_name
-        ).macros
-        if transform_name in macros_store:
-            # TODO: this formatting of stack parameters is odd but required to integrate with v1 execute_macro util.
-            #  consider porting this utils and passing the plain list of parameters instead.
-            stack_parameters = {
-                parameter["ParameterKey"]: parameter
-                for parameter in self._change_set.stack.parameters
-            }
-            transform_output: Any = execute_macro(
-                account_id=account_id,
-                region_name=region_name,
-                parsed_template=dict(),  # TODO: review the requirements for this argument.
-                macro=args,  # TODO: review support for non dict bindings (v1).
-                stack_parameters=stack_parameters,
-                transformation_parameters=transform_parameters,
-                is_intrinsic=True,
-            )
-            return transform_output
-
-        raise RuntimeError(
-            f"Unsupported transform function '{transform_name}' in '{self._change_set.stack.stack_name}'"
-        )
-
-    def visit_node_intrinsic_function_fn_transform(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=self._compute_fn_transform,
         )
         return delta
 
