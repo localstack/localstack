@@ -2,6 +2,8 @@ import os
 
 import pytest
 
+from localstack.constants import INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE
+
 os.environ["LOCALSTACK_INTERNAL_TEST_RUN"] = "1"
 
 pytest_plugins = [
@@ -87,3 +89,13 @@ def secondary_aws_client(secondary_aws_client_factory):
     from localstack.testing.aws.util import base_testing_aws_client
 
     return base_testing_aws_client(secondary_aws_client_factory)
+
+
+@pytest.fixture(autouse=True, scope="session")
+def enable_stack_trace_for_tests(monkeypatch):
+    """
+    Ensure stack traces are enabled in HTTP responses during test sessions.
+
+    This is useful for debugging purposes.
+    """
+    monkeypatch.setenv(INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE, "1")
