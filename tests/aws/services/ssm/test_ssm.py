@@ -263,3 +263,60 @@ class TestSSM:
             Names=[get_parameter_response["Parameter"]["ARN"]]
         )
         snapshot.match("get-parameters-by-arn-response", get_parameters_by_arn_response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])  # Moto adds an error message
+    def test_list_tags_for_parameter(self, aws_client, create_parameter, snapshot):
+        param_name = f"param-{short_uid()}"
+
+        create_parameter(
+            Name=param_name,
+            Description="test",
+            Value="123",
+            Type="String",
+            Tags=[{"Key": "my-tags", "Value": "123"}],
+        )
+        tags = aws_client.ssm.list_tags_for_resource(
+            ResourceId=param_name, ResourceType="Parameter"
+        )
+        snapshot.match("list-tags", tags)
+
+        tags = aws_client.ssm.list_tags_for_resource(
+            ResourceId=f"/{param_name}", ResourceType="Parameter"
+        )
+        snapshot.match("list-tags-with-leading-slash", tags)
+
+        with pytest.raises(aws_client.ssm.exceptions.InvalidResourceId) as exc:
+            aws_client.ssm.list_tags_for_resource(
+                ResourceId=f"//{param_name}", ResourceType="Parameter"
+            )
+        snapshot.match("invalid-resource-with-two-slashes", exc.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])  # Moto adds an error message
+    def test_list_tags_for_nested_parameter(self, aws_client, create_parameter, snapshot):
+        param_name = f"/nested/param-{short_uid()}"
+
+        create_parameter(
+            Name=param_name,
+            Description="test",
+            Value="123",
+            Type="String",
+            Tags=[{"Key": "my-tags", "Value": "123"}],
+        )
+        tags = aws_client.ssm.list_tags_for_resource(
+            ResourceId=param_name, ResourceType="Parameter"
+        )
+        snapshot.match("list-tags", tags)
+
+        with pytest.raises(aws_client.ssm.exceptions.InvalidResourceId) as exc:
+            aws_client.ssm.list_tags_for_resource(
+                ResourceId=param_name.lstrip("/"), ResourceType="Parameter"
+            )
+        snapshot.match("list-nested-tags-missing-leading-slash", exc.value.response)
+
+        with pytest.raises(aws_client.ssm.exceptions.InvalidResourceId) as exc:
+            aws_client.ssm.list_tags_for_resource(
+                ResourceId=f"//{param_name}", ResourceType="Parameter"
+            )
+        snapshot.match("invalid-resource-with-two-slashes", exc.value.response)
