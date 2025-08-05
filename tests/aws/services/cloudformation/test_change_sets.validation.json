@@ -99,21 +99,21 @@
     }
   },
   "tests/aws/services/cloudformation/test_change_sets.py::test_dynamic_ssm_parameter_lookup": {
-    "last_validated_date": "2025-08-05T16:13:08+00:00",
+    "last_validated_date": "2025-08-05T22:24:46+00:00",
     "durations_in_seconds": {
-      "setup": 0.88,
-      "call": 28.57,
-      "teardown": 0.33,
-      "total": 29.78
+      "setup": 1.11,
+      "call": 26.5,
+      "teardown": 0.36,
+      "total": 27.97
     }
   },
   "tests/aws/services/cloudformation/test_change_sets.py::test_dynamic_ssm_parameter_lookup_no_change": {
-    "last_validated_date": "2025-08-05T16:20:22+00:00",
+    "last_validated_date": "2025-08-05T22:26:18+00:00",
     "durations_in_seconds": {
-      "setup": 1.15,
-      "call": 21.1,
-      "teardown": 0.4,
-      "total": 22.65
+      "setup": 1.02,
+      "call": 22.04,
+      "teardown": 0.39,
+      "total": 23.45
     }
   },
   "tests/aws/services/cloudformation/test_change_sets.py::test_single_resource_static_update": {

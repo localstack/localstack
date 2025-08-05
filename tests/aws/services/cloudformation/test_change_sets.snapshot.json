@@ -5014,7 +5014,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_change_sets.py::test_dynamic_ssm_parameter_lookup": {
-    "recorded-date": "05-08-2025, 16:13:08",
+    "recorded-date": "05-08-2025, 22:24:46",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -5359,7 +5359,7 @@
         "DerivedParameter": [
           {
             "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "<output-value:1>",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
@@ -5382,6 +5382,20 @@
             "LogicalResourceId": "DerivedParameter",
             "PhysicalResourceId": "<output-value:1>",
             "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "DerivedParameter",
+            "PhysicalResourceId": "<output-value:1>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "DerivedParameter",
+            "PhysicalResourceId": "<output-value:1>",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -5421,13 +5435,27 @@
             "ResourceStatus": "UPDATE_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Stack",
             "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
           }
         ]
       }
     }
   },
   "tests/aws/services/cloudformation/test_change_sets.py::test_dynamic_ssm_parameter_lookup_no_change": {
-    "recorded-date": "05-08-2025, 16:20:22",
+    "recorded-date": "05-08-2025, 22:26:18",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -5734,15 +5762,29 @@
         "AnotherParameter": [
           {
             "LogicalResourceId": "AnotherParameter",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "CFN-AnotherParameter-V5IPg431Z6Rc",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           },
           {
             "LogicalResourceId": "AnotherParameter",
-            "PhysicalResourceId": "CFN-AnotherParameter-VMqyisNL143v",
+            "PhysicalResourceId": "CFN-AnotherParameter-V5IPg431Z6Rc",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "AnotherParameter",
+            "PhysicalResourceId": "CFN-AnotherParameter-V5IPg431Z6Rc",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "AnotherParameter",
+            "PhysicalResourceId": "CFN-AnotherParameter-V5IPg431Z6Rc",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -5750,7 +5792,7 @@
         "DerivedParameter": [
           {
             "LogicalResourceId": "DerivedParameter",
-            "PhysicalResourceId": "",
+            "PhysicalResourceId": "<output-value:1>",
             "ResourceStatus": "CREATE_IN_PROGRESS",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
@@ -5759,6 +5801,20 @@
             "LogicalResourceId": "DerivedParameter",
             "PhysicalResourceId": "<output-value:1>",
             "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "DerivedParameter",
+            "PhysicalResourceId": "<output-value:1>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "DerivedParameter",
+            "PhysicalResourceId": "<output-value:1>",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::SSM::Parameter",
             "Timestamp": "timestamp"
           }
@@ -5796,6 +5852,20 @@
             "LogicalResourceId": "<stack-name:1>",
             "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
             "ResourceType": "AWS::CloudFormation::Stack",
             "Timestamp": "timestamp"
           }
