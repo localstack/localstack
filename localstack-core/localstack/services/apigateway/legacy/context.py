@@ -10,7 +10,7 @@ from localstack.utils.aws.aws_responses import parse_query_string
 from localstack.utils.strings import short_uid, to_str
 
 # type definition for data parameters (i.e., invocation payloads)
-InvocationPayload = Union[Dict, str, bytes]
+InvocationPayload = dict | str | bytes
 
 
 class ApiGatewayVersion(Enum):

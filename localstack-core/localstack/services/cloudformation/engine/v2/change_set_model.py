@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import enum
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any, Final, Generator, Optional, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, Final, Generator, Optional, TypedDict, cast
 
 from typing_extensions import TypeVar
 
@@ -47,7 +47,7 @@ class NothingType:
         return False
 
 
-Maybe = Union[T, NothingType]
+Maybe = T | NothingType
 Nothing = NothingType()
 
 

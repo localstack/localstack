@@ -32,18 +32,9 @@ types = {
     "boolean",
 }
 
-Instance = Union[
-    Dict[str, "Instance"],
-    List["Instance"],
-    str,
-    bytes,
-    map,
-    list,
-    float,
-    int,
-    bool,
-    date,
-]
+Instance = (
+    dict[str, "Instance"] | list["Instance"] | str | bytes | map | list | float | int | bool | date
+)
 
 # https://github.com/boto/botocore/issues/2623
 StringShape.METADATA_ATTRS.append("pattern")

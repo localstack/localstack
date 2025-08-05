@@ -5,7 +5,7 @@ import os
 import re
 from copy import deepcopy
 from dataclasses import dataclass
-from typing import Any, Callable, Dict, Optional, Type, Union
+from typing import Any, Callable, Dict, Optional, Type
 
 import boto3
 from botocore.exceptions import ClientError
@@ -27,7 +27,7 @@ SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
 
-TransformResult = Union[dict, str]
+TransformResult = dict | str
 
 
 @dataclass
