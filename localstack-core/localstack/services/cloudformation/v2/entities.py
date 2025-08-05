@@ -71,6 +71,7 @@ class Stack:
     capabilities: list[Capability]
     enable_termination_protection: bool
     processed_template: dict | None
+    template_body: str | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -96,6 +97,7 @@ class Stack:
         self.change_set_id = None
         self.enable_termination_protection = False
         self.processed_template = None
+        self.template_body = None
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
@@ -250,14 +252,17 @@ class ChangeSet:
     status_reason: str | None
     execution_status: ExecutionStatus
     creation_time: datetime
+    processed_template: dict | None
 
     def __init__(
         self,
         stack: Stack,
         request_payload: ChangeSetRequestPayload,
+        template_body: str,
         template: dict | None = None,
     ):
         self.stack = stack
+        self.template_body = template_body
         self.template = template
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
         self.status_reason = None
@@ -273,6 +278,7 @@ class ChangeSet:
             account_id=self.stack.account_id,
             region_name=self.stack.region_name,
         )
+        self.processed_template = None
 
     def set_update_model(self, update_model: UpdateModel) -> None:
         self.update_model = update_model

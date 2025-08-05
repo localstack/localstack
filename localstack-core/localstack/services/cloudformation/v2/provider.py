@@ -288,7 +288,7 @@ class CloudformationProviderV2(CloudformationProvider):
         validator.validate()
 
         change_set.set_update_model(update_model)
-        change_set.stack.processed_template = transformed_after_template
+        change_set.processed_template = transformed_after_template
 
     @handler("CreateChangeSet", expand=False)
     def create_change_set(
@@ -411,7 +411,7 @@ class CloudformationProviderV2(CloudformationProvider):
             pass
 
         # create change set for the stack and apply changes
-        change_set = ChangeSet(stack, request, template=after_template)
+        change_set = ChangeSet(stack, request, template=after_template, template_body=template_body)
         self._setup_change_set_model(
             change_set=change_set,
             before_template=before_template,
@@ -498,6 +498,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 change_set.stack.template = change_set.template
+                change_set.stack.processed_template = change_set.processed_template
+                change_set.stack.template_body = change_set.template_body
             except Exception as e:
                 LOG.error(
                     "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
@@ -657,6 +659,7 @@ class CloudformationProviderV2(CloudformationProvider):
             stack,
             {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.CREATE},
             template=after_template,
+            template_body=template_body,
         )
         self._setup_change_set_model(
             change_set=change_set,
@@ -681,6 +684,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 stack.template = change_set.template
+                stack.template_body = change_set.template_body
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
@@ -1223,6 +1227,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set = ChangeSet(
             stack,
             {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.CREATE},
+            template_body=template_body,
             template=after_template,
         )
         self._setup_change_set_model(
@@ -1253,6 +1258,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 stack.template = change_set.template
+                stack.template_body = change_set.template_body
             except Exception as e:
                 LOG.error("Update Stack failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING))
                 stack.set_stack_status(StackStatus.UPDATE_FAILED)
@@ -1292,7 +1298,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 previous_update_model = previous_change_set.update_model
 
         # create a dummy change set
-        change_set = ChangeSet(stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"})  # noqa
+        change_set = ChangeSet(
+            stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"}, template_body=""
+        )  # noqa
         self._setup_change_set_model(
             change_set=change_set,
             before_template=stack.template,
