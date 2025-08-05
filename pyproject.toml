@@ -200,10 +200,8 @@ exclude = [
 "localstack-core/localstack/packages/**" = "py39"
 "localstack-core/localstack/config.py" = "py39"
 "localstack-core/localstack/constants.py" = "py39"
-"localstack-core/localstack/utils/analytics/**" = "py39"
-"localstack-core/localstack/utils/bootstrap.py" = "py39"
-"localstack-core/localstack/utils/json.py" = "py39"
-
+"localstack-core/localstack/utils/**" = "py39"  # imported by CLI tests
+"localstack-core/localstack/testing/pytest/**" = "py39" # imported by CLI tests
 
 [tool.ruff.lint]
 ignore = [
@@ -223,8 +221,29 @@ ignore = [
     "E721", # TODO Do not compare types, use `isinstance()`
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
+    "UP008",# TODO Use `super()` instead of `super(__class__, self)`
+    "UP028",# TODO Replace `yield` over `for` loop with `yield from`
+    "UP031",# TODO Use format specifiers instead of percent format
+    "UP036",# TODO Version block is outdated for minimum Python version
+    "UP038",# TODO Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
-select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G"]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G", "UP"]
+extend-safe-fixes = [
+    "UP006",    # unsafe-fix for py39
+    "UP035",    # unsafe-fix for py39
+]
+
+# The rules below fill fix the code in a way that leaves multiple unused imports.
+# Since F401 (removing unused imports) is currently an unsafe fix, these imports cannot be automatically removed.
+# Therefore, we temporarily disable the rules below for __init__ files.
+[tool.ruff.lint.per-file-ignores]
+"localstack-core/localstack/**/__init__.py" = ["UP006", "UP007", "UP035", "UP045"]
+"tests/aws/services/lambda_/functions/**" = ["UP"]  # lambda tests parametrize the runtime
+
+[tool.ruff.lint.pyupgrade]
+# Avoid PEP 604 rewrites (e.g. Union[str, int] -> str | int), even with the `from __future__ import annotations`
+# import. It only affects py39 and can be removed after we drop it.
+keep-runtime-typing = true
 
 [tool.coverage.run]
 relative_files = true
