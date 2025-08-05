@@ -1020,7 +1020,7 @@ class ChangeSetModel:
         if not is_nothing(after_parameter_dct):
             # handle externally resolved parameters
             after_parameter = (
-                after_parameter_dct.get("resolved_value") or after_parameter_dct["value"]
+                after_parameter_dct.get("resolved_value") or after_parameter_dct["given_value"]
             )
 
         parameter = self._visit_value(
