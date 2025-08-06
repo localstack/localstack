@@ -396,6 +396,7 @@ class TestSnfBase:
             create_state_machine,
             sfn_snapshot,
             definition,
+            definition,
             exec_input,
         )
 
@@ -461,6 +462,33 @@ class TestSnfBase:
         definition = json.dumps(template)
 
         exec_input = json.dumps({})
+        create_and_record_execution(
+            aws_client,
+            create_state_machine_iam_role,
+            create_state_machine,
+            sfn_snapshot,
+            definition,
+            exec_input,
+        )
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "json_path_string",
+        ["$[*]", "$[0]", "$[0:]", "$[:0]", "$[0:1]", "$[1]", "$[1:]", "$[:1]", "$[1:2]"],
+    )
+    def test_json_path_array_wildcard_or_slice_with_dictionary_input(
+        self,
+        aws_client,
+        create_state_machine_iam_role,
+        create_state_machine,
+        sfn_snapshot,
+        json_path_string,
+    ):
+        template = BaseTemplate.load_sfn_template(BaseTemplate.JSON_PATH_ARRAY_ACCESS)
+        template["States"]["EntryState"]["Parameters"]["item.$"] = json_path_string
+        definition = json.dumps(template)
+
+        exec_input = json.dumps({"myKey": "myValue"})
         create_and_record_execution(
             aws_client,
             create_state_machine_iam_role,
