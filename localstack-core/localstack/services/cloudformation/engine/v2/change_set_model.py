@@ -1012,9 +1012,17 @@ class ChangeSetModel:
 
     def _visit_dynamic_parameter(self, parameter_name: str) -> ChangeSetEntity:
         scope = Scope("Dynamic").open_scope("Parameters")
-        scope_parameter, (before_parameter, after_parameter_dct) = self._safe_access_in(
+        scope_parameter, (before_parameter_dct, after_parameter_dct) = self._safe_access_in(
             scope, parameter_name, self._before_parameters, self._after_parameters
         )
+
+        before_parameter = Nothing
+        if not is_nothing(before_parameter_dct):
+            before_parameter = (
+                before_parameter_dct.get("resolved_value")
+                or before_parameter_dct["given_value"]
+                or before_parameter_dct.get("default_value")
+            )
 
         after_parameter = Nothing
         if not is_nothing(after_parameter_dct):
