@@ -2579,14 +2579,22 @@ def events_create_rule(aws_client):
 
 @pytest.fixture
 def sqs_as_events_target(aws_client, sqs_get_queue_arn):
+    """
+    Fixture that creates an SQS queue and sets it up as a target for EventBridge events.
+    """
     queue_urls = []
 
-    def _sqs_as_events_target(queue_name: str | None = None) -> tuple[str, str]:
+    def _sqs_as_events_target(
+        queue_name: str | None = None, custom_aws_client=None
+    ) -> tuple[str, str]:
         if not queue_name:
             queue_name = f"tests-queue-{short_uid()}"
-        sqs_client = aws_client.sqs
+        if custom_aws_client:
+            sqs_client = custom_aws_client.sqs
+        else:
+            sqs_client = aws_client.sqs
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_urls.append(queue_url)
+        queue_urls.append((queue_url, sqs_client))
         queue_arn = sqs_get_queue_arn(queue_url)
         policy = {
             "Version": "2012-10-17",
@@ -2604,15 +2612,96 @@ def sqs_as_events_target(aws_client, sqs_get_queue_arn):
         sqs_client.set_queue_attributes(
             QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
         )
-        return queue_url, queue_arn
+        return queue_url, queue_arn, queue_name
 
     yield _sqs_as_events_target
 
-    for queue_url in queue_urls:
+    for queue_url, sqs_client in queue_urls:
         try:
-            aws_client.sqs.delete_queue(QueueUrl=queue_url)
+            sqs_client.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def create_role_event_bus_source_to_bus_target(create_iam_role_with_policy):
+    def _create_role_event_bus_to_bus():
+        assume_role_policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+
+        policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Action": "events:PutEvents",
+                    "Resource": "arn:aws:events:*:*:event-bus/*",
+                }
+            ],
+        }
+
+        role_arn_bus_source_to_bus_target = create_iam_role_with_policy(
+            RoleDefinition=assume_role_policy_document_bus_source_to_bus_target,
+            PolicyDefinition=policy_document_bus_source_to_bus_target,
+        )
+
+        return role_arn_bus_source_to_bus_target
+
+    yield _create_role_event_bus_to_bus
+
+
+@pytest.fixture
+def get_primary_secondary_client(
+    aws_client_factory,
+    secondary_aws_client_factory,
+    region_name,
+    secondary_region_name,
+    account_id,
+    secondary_account_id,
+):
+    def _get_primary_secondary_clients(cross_scenario: str):
+        """
+        Returns primary and secondary AWS clients based on the cross-scenario.
+        :param cross_scenario: The scenario for cross-region or cross-account testing.
+                               Options: "region", "account", "region_account"
+                               account_region cross scenario is not supported by AWS
+        :return: A dictionary containing primary and secondary AWS clients, and their respective region and account IDs.
+        """
+        secondary_region = secondary_region_name
+        secondary_account = secondary_account_id
+        if cross_scenario not in ["region", "account", "region_account"]:
+            raise ValueError(f"cross_scenario {cross_scenario} not supported")
+
+        primary_client = aws_client_factory(region_name=region_name)
+
+        if cross_scenario == "region":
+            secondary_account = account_id
+            secondary_client = aws_client_factory(region_name=secondary_region_name)
+
+        elif cross_scenario == "account":
+            secondary_region = region_name
+            secondary_client = secondary_aws_client_factory(region_name=region_name)
+
+        elif cross_scenario == "region_account":
+            secondary_client = secondary_aws_client_factory(region_name=secondary_region)
+
+        return {
+            "primary_aws_client": primary_client,
+            "secondary_aws_client": secondary_client,
+            "secondary_region_name": secondary_region,
+            "secondary_account_id": secondary_account,
+        }
+
+    return _get_primary_secondary_clients
 
 
 @pytest.fixture

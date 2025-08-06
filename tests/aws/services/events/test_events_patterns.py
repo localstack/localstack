@@ -446,7 +446,7 @@ class TestRuleWithPattern:
         snapshot,
         aws_client,
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         # Create event bus
         event_bus_name = f"event-bus-{short_uid()}"
