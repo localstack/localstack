@@ -50,6 +50,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_and_list_sign_key": {
     "last_validated_date": "2024-04-11T15:53:27+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_with_alias_arn": {
+    "last_validated_date": "2025-08-05T17:00:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 0.99,
+      "teardown": 0.16,
+      "total": 1.98
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_disable_and_enable_key": {
     "last_validated_date": "2024-04-11T15:52:38+00:00"
   },

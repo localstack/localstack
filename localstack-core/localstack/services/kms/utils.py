@@ -8,7 +8,7 @@ from localstack.utils.aws.arns import ARN_PARTITION_REGEX
 T = TypeVar("T")
 
 KMS_KEY_ARN_PATTERN = re.compile(
-    rf"{ARN_PARTITION_REGEX}:kms:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):key\/(?P<key_id>[^:]+)$"
+    rf"{ARN_PARTITION_REGEX}:kms:(?P<region_name>[^:]+):(?P<account_id>\d{{12}}):((?=key/)key/|(?=alias/))(?P<key_id>[^:]+)$"
 )
 
 
