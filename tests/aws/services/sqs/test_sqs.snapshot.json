@@ -39,7 +39,7 @@
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1048576 bytes.",
           "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
@@ -57,7 +57,7 @@
         "Error": {
           "Code": "InvalidParameterValue",
           "Detail": null,
-          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1048576 bytes.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -107,7 +107,7 @@
       "send_oversized_message_batch": {
         "Error": {
           "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
-          "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
+          "Message": "Batch requests cannot be longer than 1048576 bytes. You have sent 1048577 bytes.",
           "QueryErrorCode": "BatchRequestTooLong",
           "Type": "Sender"
         },
@@ -125,7 +125,7 @@
         "Error": {
           "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
           "Detail": null,
-          "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
+          "Message": "Batch requests cannot be longer than 1048576 bytes. You have sent 1048577 bytes.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -781,7 +781,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -1852,7 +1852,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perMessageGroupId",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -1933,7 +1933,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perMessageGroupId",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -2022,7 +2022,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -2093,7 +2093,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
