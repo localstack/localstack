@@ -21,7 +21,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.aws.api.cloudformation import Parameter, CreateChangeSetInput
+from localstack.aws.api.cloudformation import CreateChangeSetInput, Parameter
 from localstack.aws.api.ec2 import CreateSecurityGroupRequest, CreateVpcEndpointRequest, VpcEndpoint
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.stores import (
