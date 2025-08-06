@@ -10,15 +10,33 @@ from localstack.utils.strings import short_uid
 
 
 class TestCdkInit:
-    @pytest.mark.parametrize("bootstrap_version", ["10", "11", "12"])
+    @pytest.mark.parametrize(
+        "bootstrap_version,parameters",
+        [
+            ("10", {"FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}"}),
+            ("11", {"FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}"}),
+            ("12", {"FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}"}),
+            (
+                "28",
+                {
+                    "CloudFormationExecutionPolicies": "",
+                    "FileAssetsBucketKmsKeyId": "AWS_MANAGED_KEY",
+                    "PublicAccessBlockConfiguration": "true",
+                    "TrustedAccounts": "",
+                    "TrustedAccountsForLookup": "",
+                },
+            ),
+        ],
+        ids=["10", "11", "12", "28"],
+    )
     @markers.aws.validated
-    def test_cdk_bootstrap(self, deploy_cfn_template, bootstrap_version, aws_client):
+    def test_cdk_bootstrap(self, deploy_cfn_template, aws_client, bootstrap_version, parameters):
         deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
                 f"../../../templates/cdk_bootstrap_v{bootstrap_version}.yaml",
             ),
-            parameters={"FileAssetsBucketName": f"cdk-bootstrap-{short_uid()}"},
+            parameters=parameters,
         )
         init_stack_result = deploy_cfn_template(
             template_path=os.path.join(
