@@ -8,7 +8,7 @@ import botocore.exceptions
 import pytest
 import yaml
 from botocore.exceptions import ClientError
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skip_if_v2_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
@@ -401,6 +401,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @skip_if_v1_provider(reason="Not supported in the v1 provider")
     @markers.aws.validated
     def test_resolve_ssm_missing_parameter(self, snapshot, deploy_cfn_template):
         template = {
