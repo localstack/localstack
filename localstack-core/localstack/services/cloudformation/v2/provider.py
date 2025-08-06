@@ -212,11 +212,20 @@ class CloudformationProviderV2(CloudformationProvider):
             resolved_parameter = EngineParameter(type_=parameter["Type"], given_value=given_value)
             if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
                 # TODO: support other parameter types
-                resolved_parameter["resolved_value"] = resolve_ssm_parameter(
-                    account_id, region_name, given_value
-                )
+                try:
+                    resolved_parameter["resolved_value"] = resolve_ssm_parameter(
+                        account_id, region_name, given_value
+                    )
+                except Exception:
+                    # CloudFormation doesn't actually error here, it only fails if the input parameter could not be fulfilled
+                    pass
 
             resolved_parameters[name] = resolved_parameter
+        for name, parameter in resolved_parameters.items():
+            if not parameter.get("resolved_value") and not parameter.get("given_value"):
+                raise ValidationError(
+                    f"Parameter {name} should either have input value or default value"
+                )
         return resolved_parameters
 
     @classmethod

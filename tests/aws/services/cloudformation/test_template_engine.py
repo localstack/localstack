@@ -7,6 +7,7 @@ from copy import deepcopy
 import botocore.exceptions
 import pytest
 import yaml
+from botocore.exceptions import ClientError
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.aws.api.lambda_ import Runtime
@@ -276,7 +277,6 @@ class TestIntrinsicFunctions:
         snapshot.match("join-output", stack.outputs)
 
 
-@skip_if_v2_provider(reason="CFNV2:Imports")
 class TestImports:
     @markers.aws.validated
     def test_stack_imports(self, deploy_cfn_template, aws_client):
@@ -304,8 +304,8 @@ class TestImports:
         assert stack2.outputs["MessageQueueArn2"] == queue_arn2
 
 
-@skip_if_v2_provider(reason="CFNV2:Resolve")
 class TestSsmParameters:
+    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @markers.aws.validated
     def test_create_stack_with_ssm_parameters(
         self, create_parameter, deploy_cfn_template, snapshot, aws_client
@@ -339,6 +339,7 @@ class TestSsmParameters:
         snapshot.match("topic-tags", tags)
 
     @markers.aws.validated
+    @skip_if_v2_provider(reason="CFNV2:Resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -354,6 +355,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
@@ -380,6 +382,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
+    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @markers.aws.needs_fixing
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
@@ -396,6 +399,28 @@ class TestSsmParameters:
 
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
+
+    @markers.aws.validated
+    def test_resolve_ssm_missing_parameter(self, snapshot, deploy_cfn_template):
+        template = {
+            "Parameters": {
+                "InputValue": {
+                    "Type": "AWS::SSM::Parameter::Value<String>",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "InputValue"},
+                    },
+                },
+            },
+        }
+        with pytest.raises(ClientError) as exc_info:
+            deploy_cfn_template(template=json.dumps(template))
+        snapshot.match("error-response", exc_info.value)
 
     @markers.aws.validated
     def test_ssm_nested_with_nested_stack(self, s3_create_bucket, deploy_cfn_template, aws_client):
@@ -432,6 +457,7 @@ class TestSsmParameters:
 
         assert ssm_parameter == key_value
 
+    @skip_if_v2_provider("CFNV2:Resolve stringlist type not supported yet")
     @markers.aws.validated
     def test_create_change_set_with_ssm_parameter_list(
         self, deploy_cfn_template, aws_client, region_name, account_id, snapshot

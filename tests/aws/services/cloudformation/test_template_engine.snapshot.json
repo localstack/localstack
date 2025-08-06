@@ -683,5 +683,11 @@
         "JoinWithNoValue": "Sample"
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_resolve_ssm_missing_parameter": {
+    "recorded-date": "06-08-2025, 09:34:07",
+    "recorded-content": {
+      "error-response": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameter InputValue should either have input value or default value"
+    }
   }
 }
