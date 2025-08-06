@@ -750,7 +750,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 raise StackNotFoundError(stack_name)
             stacks = [stack]
         else:
-            raise RuntimeError("TODO")
+            stacks = state.stacks_v2.values()
 
         describe_stack_output: list[ApiStack] = []
         for stack in stacks:
