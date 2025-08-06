@@ -228,3 +228,67 @@ def test_patch_class_type():
         @patch(MyEchoer.new_echo)
         def new_echo(self, *args):
             pass
+
+
+def test_idempotency():
+    def monkey(self, *args):
+        return f"monkey: {args[-1]}"
+
+    with Patch.function(MyEchoer.do_echo, monkey) as patch_1:
+        patch_1.apply()
+
+        assert len([p for p in Patch.applied_patches if p is patch_1]) == 1
+
+
+def test_multiple_patches_same_target_sequentially():
+    def _new_echo(fn, *args):
+        return fn(*args) + " new"
+
+    def _newer_echo(fn, *args):
+        return fn(*args) + " newer"
+
+    with Patch.function(echo, _new_echo):
+        with Patch.function(echo, _newer_echo):
+            assert echo("foo") == "echo: foo new newer"
+
+    assert echo("foo") == "echo: foo"
+
+
+@pytest.mark.xfail(reason="Not yet working: it removes all patches")
+def test_multiple_patches_same_target_sequentially_undone():
+    def _new_echo(fn, *args):
+        return fn(*args) + " new"
+
+    def _newer_echo(fn, *args):
+        return fn(*args) + " newer"
+
+    patch_1 = Patch.function(echo, _new_echo)
+    patch_1.apply()
+    assert echo("foo") == "echo: foo new"
+
+    patch_2 = Patch.function(echo, _newer_echo)
+    patch_2.apply()
+    assert echo("foo") == "echo: foo new newer"
+
+    patch_1.undo()
+    assert echo("foo") == "echo: foo newer"
+
+
+@pytest.mark.xfail(reason="Not yet working: it only applies latest")
+def test_multiple_patches_same_target_apply_concurrently():
+    def test_echo(arg):
+        return f"echo: {arg}"
+
+    def _new_echo(fn, *args):
+        return fn(*args) + " new"
+
+    def _newer_echo(fn, *args):
+        return fn(*args) + " newer"
+
+    patch1 = Patch.function(test_echo, _new_echo)
+    patch2 = Patch.function(test_echo, _newer_echo)
+
+    patch1.apply()
+    patch2.apply()
+
+    assert test_echo("foo") == "echo: foo new newer"
