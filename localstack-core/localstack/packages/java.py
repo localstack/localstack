@@ -23,6 +23,7 @@ JAVA_VERSIONS = {
     "11": "11.0.25+9",
     "17": "17.0.13+11",
     "21": "21.0.5+11",
+    "24": "24.0.1+9",
 }
 
 
@@ -120,6 +121,8 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
             # Required modules
             "java.base,java.desktop,java.instrument,java.management,"
             "java.naming,java.scripting,java.sql,java.xml,jdk.compiler,"
+            # Required module for trino latest version
+            "jdk.incubator.vector,"
             # jdk.unsupported contains sun.misc.Unsafe which is required by some dependencies
             "jdk.unsupported,"
             # Additional cipher suites
