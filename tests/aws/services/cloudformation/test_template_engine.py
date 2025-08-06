@@ -494,7 +494,6 @@ class TestSsmParameters:
 
 
 class TestSecretsManagerParameters:
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @pytest.mark.parametrize(
         "template_name",
         [

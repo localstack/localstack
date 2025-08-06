@@ -148,7 +148,7 @@ class TestScheduleRate:
     def tests_schedule_rate_custom_input_target_sqs(
         self, sqs_as_events_target, events_put_rule, aws_client, snapshot
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"
@@ -343,7 +343,7 @@ class TestScheduleCron:
         aws_client,
         snapshot,
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         schedule_cron, target_datetime = get_cron_expression(
             1
@@ -391,7 +391,7 @@ class TestScheduleCron:
     def tests_scheduled_rule_does_not_trigger_on_put_events(
         self, sqs_as_events_target, events_put_rule, aws_client
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"
