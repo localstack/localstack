@@ -208,7 +208,7 @@ class CloudformationProviderV2(CloudformationProvider):
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
         for name, parameter in template_parameters.items():
-            given_value = parameters.get(name)
+            given_value = parameters.get(name) or parameter.get("Default")
             resolved_parameter = EngineParameter(type_=parameter["Type"], given_value=given_value)
             if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
                 # TODO: support other parameter types
