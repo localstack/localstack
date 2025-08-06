@@ -220,11 +220,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 type_=parameter["Type"], given_value=given_value, default_value=default_value
             )
 
-            if given_value is None and default_value is None:
-                raise ValidationError(
-                    f"Parameter {name} should either have input value or default value"
-                )
-
             if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
                 # TODO: support other parameter types
                 try:
@@ -235,6 +230,8 @@ class CloudformationProviderV2(CloudformationProvider):
                     raise ValidationError(
                         f"Parameter {name} should either have input value or default value"
                     )
+            elif given_value is None and default_value is None:
+                raise ValidationError(f"Parameters: [{name}] must have values")
 
             resolved_parameters[name] = resolved_parameter
 
