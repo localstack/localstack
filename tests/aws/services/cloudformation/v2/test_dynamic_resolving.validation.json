@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_change_parameter_type": {
+    "last_validated_date": "2025-08-06T12:36:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 21.56,
+      "teardown": 0.39,
+      "total": 21.95
+    }
+  },
+  "tests/aws/services/cloudformation/v2/test_dynamic_resolving.py::TestSSMParameterValues::test_update_parameter_between_deployments": {
+    "last_validated_date": "2025-08-06T12:36:33+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 22.47,
+      "teardown": 0.35,
+      "total": 23.87
+    }
+  }
+}
