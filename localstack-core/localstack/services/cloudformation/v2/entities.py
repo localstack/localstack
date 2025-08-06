@@ -216,7 +216,6 @@ class Stack:
             "Tags": [],
             "NotificationARNs": [],
             "Capabilities": self.capabilities,
-            # "Parameters": self.resolved_parameters,
         }
         # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
