@@ -2594,7 +2594,7 @@ def sqs_as_events_target(aws_client, sqs_get_queue_arn):
         else:
             sqs_client = aws_client.sqs
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_urls.append(queue_url)
+        queue_urls.append((queue_url, sqs_client))
         queue_arn = sqs_get_queue_arn(queue_url)
         policy = {
             "Version": "2012-10-17",
@@ -2616,9 +2616,9 @@ def sqs_as_events_target(aws_client, sqs_get_queue_arn):
 
     yield _sqs_as_events_target
 
-    for queue_url in queue_urls:
+    for queue_url, sqs_client in queue_urls:
         try:
-            aws_client.sqs.delete_queue(QueueUrl=queue_url)
+            sqs_client.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
 
@@ -2669,6 +2669,13 @@ def get_primary_secondary_client(
     secondary_account_id,
 ):
     def _get_primary_secondary_clients(cross_scenario: str):
+        """
+        Returns primary and secondary AWS clients based on the cross-scenario.
+        :param cross_scenario: The scenario for cross-region or cross-account testing.
+                               Options: "region", "account", "region_account"
+                               account_region cross scenario is not supported by AWS
+        :return: A dictionary containing primary and secondary AWS clients, and their respective region and account IDs.
+        """
         secondary_region = secondary_region_name
         secondary_account = secondary_account_id
         if cross_scenario not in ["region", "account", "region_account"]:
@@ -2686,9 +2693,6 @@ def get_primary_secondary_client(
 
         elif cross_scenario == "region_account":
             secondary_client = secondary_aws_client_factory(region_name=secondary_region)
-
-        else:
-            raise ValueError(f"cross_scenario {cross_scenario} not supported")
 
         return {
             "primary_aws_client": primary_client,
