@@ -14,6 +14,7 @@ from localstack.services.cloudformation.v2.types import (
     EngineParameter,
     engine_parameter_value,
 )
+from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -427,6 +428,26 @@ class NodeIntrinsicFunction(ChangeSetNode):
         self.arguments = arguments
 
 
+class NodeIntrinsicFunctionFnTransform(NodeIntrinsicFunction):
+    def __init__(
+        self,
+        scope: Scope,
+        change_type: ChangeType,
+        intrinsic_function: str,
+        arguments: ChangeSetEntity,
+        before_siblings: list[Any],
+        after_siblings: list[Any],
+    ):
+        super().__init__(
+            scope=scope,
+            change_type=change_type,
+            intrinsic_function=intrinsic_function,
+            arguments=arguments,
+        )
+        self.before_siblings = before_siblings
+        self.after_siblings = after_siblings
+
+
 class NodeObject(ChangeSetNode):
     bindings: Final[dict[str, ChangeSetEntity]]
 
@@ -611,12 +632,30 @@ class ChangeSetModel:
                 change_type = resolve_function(arguments)
             else:
                 change_type = arguments.change_type
-        node_intrinsic_function = NodeIntrinsicFunction(
-            scope=scope,
-            change_type=change_type,
-            intrinsic_function=intrinsic_function,
-            arguments=arguments,
-        )
+
+        if intrinsic_function == FnTransform:
+            if scope.count(FnTransform) > 1:
+                raise RuntimeError("Nested Fn::Transforms are bad")
+
+            path = "$" + ".".join(scope.split("/")[:-1])
+            before_siblings = extract_jsonpath(self._before_template, path)
+            after_siblings = extract_jsonpath(self._after_template, path)
+
+            node_intrinsic_function = NodeIntrinsicFunctionFnTransform(
+                scope=scope,
+                change_type=change_type,
+                arguments=arguments,
+                intrinsic_function=intrinsic_function,
+                before_siblings=before_siblings,
+                after_siblings=after_siblings,
+            )
+        else:
+            node_intrinsic_function = NodeIntrinsicFunction(
+                scope=scope,
+                change_type=change_type,
+                intrinsic_function=intrinsic_function,
+                arguments=arguments,
+            )
         self._visited_scopes[scope] = node_intrinsic_function
         return node_intrinsic_function
 

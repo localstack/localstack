@@ -240,6 +240,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         parameters_before = parameters_delta.before
         parameters_after = parameters_delta.after
 
+        self.visit_node_resources(node_template.resources)
+
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
         )
