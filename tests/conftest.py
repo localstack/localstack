@@ -91,7 +91,7 @@ def secondary_aws_client(secondary_aws_client_factory):
     return base_testing_aws_client(secondary_aws_client_factory)
 
 
-@pytest.fixture(autouse=True, scope="session")
+@pytest.fixture(autouse=True)
 def enable_stack_trace_for_tests(monkeypatch):
     """
     Ensure stack traces are enabled in HTTP responses during test sessions.
