@@ -4604,5 +4604,12 @@
         }
       }
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_function_url_with_response_streaming": {
+    "recorded-date": "30-07-2025, 20:58:56",
+    "recorded-content": {
+      "response_status": 200,
+      "response_data": "Hello, world!"
+    }
   }
 }
