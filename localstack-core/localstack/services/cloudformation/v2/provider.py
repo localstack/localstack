@@ -48,12 +48,15 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
+    Output,
     Parameter,
     PhysicalResourceId,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
     RollbackConfiguration,
+    StackDriftInformation,
+    StackDriftStatus,
     StackName,
     StackNameOrId,
     StackResourceDetail,
@@ -69,6 +72,9 @@ from localstack.aws.api.cloudformation import (
     UpdateStackInput,
     UpdateStackOutput,
     UpdateTerminationProtectionOutput,
+)
+from localstack.aws.api.cloudformation import (
+    Stack as ApiStack,
 )
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
@@ -208,24 +214,40 @@ class CloudformationProviderV2(CloudformationProvider):
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
         for name, parameter in template_parameters.items():
-            given_value = parameters.get(name) or parameter.get("Default")
-            resolved_parameter = EngineParameter(type_=parameter["Type"], given_value=given_value)
+            given_value = parameters.get(name)
+            default_value = parameter.get("Default")
+            resolved_parameter = EngineParameter(
+                type_=parameter["Type"], given_value=given_value, default_value=default_value
+            )
+
+            if given_value is None and default_value is None:
+                raise ValidationError(
+                    f"Parameter {name} should either have input value or default value"
+                )
+
             if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
                 # TODO: support other parameter types
                 try:
                     resolved_parameter["resolved_value"] = resolve_ssm_parameter(
-                        account_id, region_name, given_value
+                        account_id, region_name, given_value or default_value
                     )
                 except Exception:
-                    # CloudFormation doesn't actually error here, it only fails if the input parameter could not be fulfilled
-                    pass
+                    raise ValidationError(
+                        f"Parameter {name} should either have input value or default value"
+                    )
 
             resolved_parameters[name] = resolved_parameter
+
         for name, parameter in resolved_parameters.items():
-            if not parameter.get("resolved_value") and not parameter.get("given_value"):
+            if (
+                parameter.get("resolved_value") is None
+                and parameter.get("given_value") is None
+                and parameter.get("default_value") is None
+            ):
                 raise ValidationError(
                     f"Parameter {name} should either have input value or default value"
                 )
+
         return resolved_parameters
 
     @classmethod
@@ -246,6 +268,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.account_id,
                 change_set.stack.region_name,
             )
+
+        change_set.resolved_parameters = resolved_parameters
 
         # Create and preprocess the update graph for this template update.
         change_set_model = ChangeSetModel(
@@ -500,7 +524,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.set_stack_status(new_stack_status)
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
                 change_set.stack.resolved_resources = result.resources
-                change_set.stack.resolved_parameters = result.parameters
+                change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
                 change_set.stack.resolved_exports = result.exports
 
@@ -551,7 +575,7 @@ class CloudformationProviderV2(CloudformationProvider):
             Parameters=[
                 # TODO: add masking support.
                 Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.stack.resolved_parameters.items()
+                for (key, value) in change_set.resolved_parameters.items()
             ],
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
@@ -688,12 +712,12 @@ class CloudformationProviderV2(CloudformationProvider):
                 result = change_set_executor.execute()
                 stack.set_stack_status(StackStatus.CREATE_COMPLETE)
                 stack.resolved_resources = result.resources
-                stack.resolved_parameters = result.parameters
                 stack.resolved_outputs = result.outputs
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
+                stack.resolved_parameters = change_set.resolved_parameters
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
@@ -723,11 +747,68 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DescribeStacksOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-        stack = find_stack_v2(state, stack_name)
-        if not stack:
-            raise StackNotFoundError(stack_name)
-        # TODO: move describe_details method to provider
-        return DescribeStacksOutput(Stacks=[stack.describe_details()])
+        if stack_name:
+            stack = find_stack_v2(state, stack_name)
+            if not stack:
+                raise StackNotFoundError(stack_name)
+            stacks = [stack]
+        else:
+            raise RuntimeError("TODO")
+
+        describe_stack_output: list[ApiStack] = []
+        for stack in stacks:
+            stack_description = ApiStack(
+                CreationTime=stack.creation_time,
+                DeletionTime=stack.deletion_time,
+                StackId=stack.stack_id,
+                StackName=stack.stack_name,
+                StackStatus=stack.status,
+                StackStatusReason=stack.status_reason,
+                # fake values
+                DisableRollback=False,
+                DriftInformation=StackDriftInformation(
+                    StackDriftStatus=StackDriftStatus.NOT_CHECKED
+                ),
+                EnableTerminationProtection=stack.enable_termination_protection,
+                LastUpdatedTime=stack.creation_time,
+                RollbackConfiguration=RollbackConfiguration(),
+                Tags=[],
+                NotificationARNs=[],
+                Capabilities=stack.capabilities,
+                # "Parameters": stack.resolved_parameters,
+            )
+            # TODO: confirm the logic for this
+            if change_set_id := stack.change_set_id:
+                stack_description["ChangeSetId"] = change_set_id
+
+            if stack.resolved_parameters:
+                stack_description["Parameters"] = []
+                for name, resolved_parameter in stack.resolved_parameters.items():
+                    parameter = Parameter(
+                        ParameterKey=name,
+                        ParameterValue=resolved_parameter.get("given_value")
+                        or resolved_parameter.get("default_value"),
+                    )
+                    if resolved_value := resolved_parameter.get("resolved_value"):
+                        parameter["ResolvedValue"] = resolved_value
+                    stack_description["Parameters"].append(parameter)
+
+            if stack.resolved_outputs:
+                describe_outputs = []
+                for key, value in stack.resolved_outputs.items():
+                    describe_outputs.append(
+                        Output(
+                            # TODO(parity): Description, ExportName
+                            # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
+                            OutputKey=key,
+                            OutputValue=value,
+                        )
+                    )
+                stack_description["Outputs"] = describe_outputs
+
+            describe_stack_output.append(stack_description)
+
+        return DescribeStacksOutput(Stacks=describe_stack_output)
 
     @handler("ListStacks")
     def list_stacks(
@@ -1262,12 +1343,12 @@ class CloudformationProviderV2(CloudformationProvider):
                 result = change_set_executor.execute()
                 stack.set_stack_status(StackStatus.UPDATE_COMPLETE)
                 stack.resolved_resources = result.resources
-                stack.resolved_parameters = result.parameters
                 stack.resolved_outputs = result.outputs
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
+                stack.resolved_parameters = change_set.resolved_parameters
             except Exception as e:
                 LOG.error("Update Stack failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING))
                 stack.set_stack_status(StackStatus.UPDATE_FAILED)

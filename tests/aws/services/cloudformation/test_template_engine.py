@@ -305,7 +305,6 @@ class TestImports:
 
 
 class TestSsmParameters:
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @markers.aws.validated
     def test_create_stack_with_ssm_parameters(
         self, create_parameter, deploy_cfn_template, snapshot, aws_client
@@ -335,8 +334,10 @@ class TestSsmParameters:
         matching = [arn for arn in topic_arns if parameter_value in arn]
         assert len(matching) == 1
 
-        tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])
-        snapshot.match("topic-tags", tags)
+        tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])["Tags"]
+        snapshot.match(
+            "topic-tags", [tag for tag in tags if not tag["Key"].startswith("aws:cloudformation")]
+        )
 
     @markers.aws.validated
     @skip_if_v2_provider(reason="CFNV2:Resolve")
@@ -419,7 +420,9 @@ class TestSsmParameters:
             },
         }
         with pytest.raises(ClientError) as exc_info:
-            deploy_cfn_template(template=json.dumps(template))
+            deploy_cfn_template(
+                template=json.dumps(template), parameters={"InputValue": "parameter-does-not-exist"}
+            )
         snapshot.match("error-response", exc_info.value)
 
     @markers.aws.validated

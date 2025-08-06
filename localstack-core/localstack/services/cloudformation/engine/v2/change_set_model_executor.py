@@ -18,7 +18,6 @@ from localstack.services.cloudformation.engine.template_deployer import REGEX_OU
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
-    NodeParameter,
     NodeResource,
     TerminalValueCreated,
     TerminalValueModified,
@@ -51,7 +50,6 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 @dataclass
 class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
-    parameters: dict
     outputs: dict
     exports: dict
 
@@ -64,7 +62,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict[str, ResolvedResource]]
     outputs: Final[dict]
-    resolved_parameters: Final[dict]
     exports: Final[dict]
     _deferred_actions: list[DeferredAction]
 
@@ -72,7 +69,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         super().__init__(change_set=change_set)
         self.resources = dict()
         self.outputs = dict()
-        self.resolved_parameters = dict()
         self.exports = dict()
         self._deferred_actions = list()
         self.resource_provider_executor = ResourceProviderExecutor(
@@ -95,18 +91,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
         return ChangeSetModelExecutorResult(
             resources=self.resources,
-            parameters=self.resolved_parameters,
             outputs=self.outputs,
             exports=self.exports,
         )
 
     def _defer_action(self, action: DeferredAction):
         self._deferred_actions.append(action)
-
-    def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        delta = super().visit_node_parameter(node_parameter)
-        self.resolved_parameters[node_parameter.name] = delta.after
-        return delta
 
     def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str | None:
         physical_resource_id = None

@@ -39,6 +39,7 @@ from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
 
 
+# TODO: turn into class/dataclass
 class EngineParameter(TypedDict):
     """
     Parameters supplied by the user. The resolved value field is populated by the engine
@@ -47,6 +48,7 @@ class EngineParameter(TypedDict):
     type_: str
     given_value: NotRequired[str | None]
     resolved_value: NotRequired[str | None]
+    default_value: NotRequired[str | None]
 
 
 class ResolvedResource(TypedDict):
@@ -214,7 +216,7 @@ class Stack:
             "Tags": [],
             "NotificationARNs": [],
             "Capabilities": self.capabilities,
-            "Parameters": self.parameters,
+            # "Parameters": self.resolved_parameters,
         }
         # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
@@ -253,6 +255,7 @@ class ChangeSet:
     execution_status: ExecutionStatus
     creation_time: datetime
     processed_template: dict | None
+    resolved_parameters: list[ApiParameter]
 
     def __init__(
         self,
@@ -269,6 +272,7 @@ class ChangeSet:
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_model = None
         self.creation_time = datetime.now(tz=timezone.utc)
+        self.resolved_parameters = []
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
