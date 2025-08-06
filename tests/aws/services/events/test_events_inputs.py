@@ -36,7 +36,7 @@ INPUT_TEMPLATE_PREDEFINED_VARIABLES_JSON = '{"originalEvent": <aws.events.event>
 def test_put_event_input_path_and_input_transformer(
     sqs_as_events_target, events_create_event_bus, events_put_rule, aws_client, snapshot
 ):
-    _, queue_arn = sqs_as_events_target()
+    _, queue_arn, _ = sqs_as_events_target()
     bus_name = f"test-bus-{short_uid()}"
     events_create_event_bus(Name=bus_name)
 
@@ -355,7 +355,7 @@ class TestInputTransformer:
         aws_client_factory,
         snapshot,
     ):
-        _, queue_arn = sqs_as_events_target()
+        _, queue_arn, _ = sqs_as_events_target()
 
         bus_name = f"test-bus-{short_uid()}"
         events_create_event_bus(Name=bus_name)
