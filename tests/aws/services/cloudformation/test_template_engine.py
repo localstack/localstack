@@ -354,7 +354,6 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
@@ -468,7 +467,6 @@ class TestSsmParameters:
 
 
 class TestSecretsManagerParameters:
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @pytest.mark.parametrize(
         "template_name",
         [
