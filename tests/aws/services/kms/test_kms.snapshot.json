@@ -2428,8 +2428,6 @@
       }
     }
   },
-  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac": {
-    "recorded-date": "02-08-2025, 09:37:57",
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P256]": {
     "recorded-date": "04-08-2025, 08:10:22",
     "recorded-content": {
