@@ -396,7 +396,6 @@ class TestSnfBase:
             create_state_machine,
             sfn_snapshot,
             definition,
-            definition,
             exec_input,
         )
 
