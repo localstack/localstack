@@ -77,5 +77,9 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/resources/test_cdk.py::TestCdkInit::test_cdk_bootstrap_redeploy": {
+    "recorded-date": "06-08-2025, 21:39:13",
+    "recorded-content": {}
   }
 }

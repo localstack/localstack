@@ -554,21 +554,34 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_if(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
-            condition_name = args[0]
-            boolean_expression_delta = self._resolve_condition(logical_id=condition_name)
-            return PreprocEntityDelta(
-                before=args[1] if boolean_expression_delta.before else args[2],
-                after=args[1] if boolean_expression_delta.after else args[2],
+        def _compute_delta_for_if_statement(condition_name: str) -> PreprocEntityDelta:
+            node_condition = self._get_node_condition_if_exists(condition_name=condition_name)
+            condition_value = self.visit(node_condition).before
+            if condition_value:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+            else:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+
+            return arg_delta
+
+        # `if` needs to be short-circuiting i.e. if the condition is True we don't evaluate the
+        # False branch. If the condition is False, we don't evaluate the True branch.
+        if len(node_intrinsic_function.arguments.array) != 3:
+            raise ValueError(
+                f"Incorrectly constructed Fn::If usage, expected 3 arguments, found {len(node_intrinsic_function.arguments.array)}"
             )
 
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=_compute_delta_for_if_statement,
-        )
-        return delta
+        condition_delta = self.visit(node_intrinsic_function.arguments.array[0])
+        if_delta = PreprocEntityDelta()
+        if not is_nothing(condition_delta.before):
+            arg_delta = _compute_delta_for_if_statement(condition_delta.before)
+            if_delta.before = arg_delta.before
+
+        if not is_nothing(condition_delta.after):
+            arg_delta = _compute_delta_for_if_statement(condition_delta.after)
+            if_delta.after = arg_delta.after
+
+        return if_delta
 
     def visit_node_intrinsic_function_fn_and(
         self, node_intrinsic_function: NodeIntrinsicFunction

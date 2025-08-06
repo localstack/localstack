@@ -83,8 +83,9 @@ class CDKMetadataProvider(ResourceProvider[CDKMetadataProperties]):
 
         """
         model = request.desired_state
+        result_model = {**model, "Id": request.previous_state["Id"]}
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=model,
+            resource_model=result_model,
         )

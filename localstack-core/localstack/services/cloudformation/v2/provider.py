@@ -4,7 +4,6 @@ import logging
 from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
-
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
@@ -115,6 +114,7 @@ from localstack.services.cloudformation.v2.entities import (
     StackInstance,
     StackSet,
 )
+from sympy.codegen.ast import value_const
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
@@ -418,10 +418,17 @@ class CloudformationProviderV2(CloudformationProvider):
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
         request_parameters = request.get("Parameters", list())
         # TODO: handle parameter defaults and resolution
-        after_parameters: dict[str, Any] = {
-            parameter["ParameterKey"]: parameter["ParameterValue"]
-            for parameter in request_parameters
-        }
+        after_parameters = {}
+        for parameter in request_parameters:
+            key = parameter["ParameterKey"]
+            if parameter.get("UsePreviousValue", False):
+                # todo: what if the parameter does not exist in the before parameters
+                after_parameters[key] = before_parameters[key]
+                continue
+
+            if "ParameterValue" in parameter:
+                after_parameters[key] = parameter["ParameterValue"]
+                continue
 
         # TODO: update this logic to always pass the clean template object if one exists. The
         #  current issue with relaying on stack.template_original is that this appears to have
@@ -747,7 +754,9 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack_name:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackNotFoundError(stack_name)
+                raise StackNotFoundError(
+                    stack_name, message_override=f"Stack with id {stack_name} does not exist"
+                )
             stacks = [stack]
         else:
             stacks = state.stacks_v2.values()

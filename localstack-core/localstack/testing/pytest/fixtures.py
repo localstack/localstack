@@ -21,6 +21,7 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
+from localstack.aws.api.cloudformation import Parameter, CreateChangeSetInput
 from localstack.aws.api.ec2 import CreateSecurityGroupRequest, CreateVpcEndpointRequest, VpcEndpoint
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.stores import (
@@ -1095,6 +1096,7 @@ def deploy_cfn_template(
         max_wait: Optional[int] = None,
         delay_between_polls: Optional[int] = 2,
         custom_aws_client: Optional[ServiceLevelClientFactory] = None,
+        raw_parameters: Optional[List[Parameter]] = None,
     ) -> DeployResult:
         if is_update:
             assert stack_name
@@ -1110,20 +1112,21 @@ def deploy_cfn_template(
                 raise RuntimeError(f"Could not find file {os.path.realpath(template_path)}")
         template_rendered = render_template(template, **(template_mapping or {}))
 
-        kwargs = dict(
+        kwargs = CreateChangeSetInput(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_rendered,
             Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
             ChangeSetType=("UPDATE" if is_update else "CREATE"),
-            Parameters=[
-                {
-                    "ParameterKey": k,
-                    "ParameterValue": v,
-                }
-                for (k, v) in (parameters or {}).items()
-            ],
         )
+        kwargs["Parameters"] = []
+        if parameters:
+            kwargs["Parameters"] = [
+                Parameter(ParameterKey=k, ParameterValue=v) for (k, v) in parameters.items()
+            ]
+        elif raw_parameters:
+            kwargs["Parameters"] = raw_parameters
+
         if role_arn is not None:
             kwargs["RoleARN"] = role_arn
 
