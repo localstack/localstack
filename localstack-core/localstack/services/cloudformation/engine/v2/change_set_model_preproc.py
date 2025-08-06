@@ -42,6 +42,10 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+from localstack.services.cloudformation.engine.v2.resolving import (
+    extract_dynamic_reference,
+    perform_dynamic_reference_lookup,
+)
 from localstack.services.cloudformation.stores import (
     exports_map,
 )
@@ -982,7 +986,23 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
-        return self.visit(node_property.value)
+        # TODO: what about other positions?
+        value = self.visit(node_property.value)
+        if not is_nothing(value.before):
+            if dynamic_ref := extract_dynamic_reference(value.before):
+                value.before = perform_dynamic_reference_lookup(
+                    reference=dynamic_ref,
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                )
+        if not is_nothing(value.after):
+            if dynamic_ref := extract_dynamic_reference(value.after):
+                value.after = perform_dynamic_reference_lookup(
+                    reference=dynamic_ref,
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                )
+        return value
 
     def visit_node_properties(
         self, node_properties: NodeProperties
