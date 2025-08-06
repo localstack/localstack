@@ -6170,7 +6170,7 @@
       },
       "describe-change-set-1": {
         "Capabilities": [
-          "CAPABILITY_IAM"retu,
+          "CAPABILITY_IAM",
           "CAPABILITY_NAMED_IAM",
           "CAPABILITY_AUTO_EXPAND"
         ],
