@@ -2006,6 +2006,22 @@ class TestKMS:
             )
         snapshot.match("response-invalid-public-key", e.value.response)
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..CurrentKeyMaterialId"])
+    def test_describe_with_alias_arn(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("CurrentKeyMaterialId"))
+
+        alias_name = f"alias/{short_uid()}"
+        created_key = kms_create_key(Description="test - description")
+        snapshot.match("created-key", created_key)
+
+        aws_client.kms.create_alias(TargetKeyId=created_key["KeyId"], AliasName=alias_name)
+        alias = _get_alias(aws_client.kms, alias_name)
+        alias_arn = alias["AliasArn"]
+
+        describe_response = aws_client.kms.describe_key(KeyId=alias_arn)
+        snapshot.match("describe-key", describe_response)
+
 
 class TestKMSMultiAccounts:
     @markers.aws.needs_fixing
