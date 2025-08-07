@@ -2,6 +2,7 @@ import builtins
 import logging
 import types
 import typing
+from enum import StrEnum
 
 from localstack.constants import VERSION
 from localstack.services.stores import BaseStore
@@ -16,7 +17,7 @@ INTERNAL_MODULE_PREFIXES = ["localstack", "moto"]
 
 AttributeName = str
 FQN = str
-SerializedHint = str | dict[str, typing.Any]
+SerializedHint = str | dict[str, "SerializedHint"]
 
 AttributeSchema = dict[AttributeName, SerializedHint]
 """Maps an attribute name its serialized hints"""
@@ -24,9 +25,14 @@ AttributeSchema = dict[AttributeName, SerializedHint]
 AdditionalClasses = dict[FQN, AttributeSchema]
 """Maps the a FQN of a class to its Attribute Schema"""
 
-TAG_TYPE = "LS/TYPE"
-TAG_ARGS = "LS/ARGS"
-"""Tags for subscribed types and their args. See ``StoreSchemaBuilder`` for examples."""
+
+class Tags(StrEnum):
+    """
+    Tags for subscribed types and their args. See ``StoreSchemaBuilder`` for examples.
+    """
+
+    TYPE = "LS/TYPE"
+    ARGS = "LS/ARGS"
 
 
 class StoreSchema(typing.TypedDict):
@@ -207,23 +213,23 @@ class StoreSchemaBuilder:
 
         match origin:
             case builtins.dict:
-                hint = {TAG_TYPE: get_fully_qualified_name(origin)}
+                hint = {Tags.TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if len(args) == 2:
-                    hint[TAG_ARGS] = [self._serialize_hint(args[0]), self._serialize_hint(args[1])]
+                    hint[Tags.ARGS] = [self._serialize_hint(args[0]), self._serialize_hint(args[1])]
                 # If the hints are incomplete, e.g., ``dict[str]``, we just return the FQN, i.e., ```builtins.dict```
                 return hint
             case builtins.list | builtins.set:
-                hint = {TAG_TYPE: get_fully_qualified_name(origin)}
+                hint = {Tags.TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if args:
-                    hint[TAG_ARGS] = [self._serialize_hint(args[0])]
+                    hint[Tags.ARGS] = [self._serialize_hint(args[0])]
                 return hint
             case types.UnionType | typing.Union | typing.Tuple | builtins.tuple:  # noqa
-                hint = {TAG_TYPE: get_fully_qualified_name(origin)}
+                hint = {Tags.TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if args:
-                    hint[TAG_ARGS] = [self._serialize_hint(_arg) for _arg in args]
+                    hint[Tags.ARGS] = [self._serialize_hint(_arg) for _arg in args]
                 return hint
             case _:
                 # A few things that can end up here: generics, or Literal. See ``get_origin`` for more.
