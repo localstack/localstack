@@ -4,6 +4,7 @@ import os
 from typing import Any, Final, TypedDict
 
 import boto3
+import jsonpath_ng
 from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
@@ -199,7 +200,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             stack_parameters=parameters,
             transformation_parameters=transformation_parameters,
         )
-        # The type annotation on the v1 util appears to be incorrect.
         return transformed_template  # noqa
 
     def _apply_global_transform(
@@ -256,31 +256,32 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         transformed_before_template = self._before_template
         if transform_before and not is_nothing(self._before_template):
-            transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
-            if not transformed_before_template:
-                transformed_before_template = self._before_template
-                for before_global_transform in transform_before:
-                    if not is_nothing(before_global_transform.name):
-                        transformed_before_template = self._apply_global_transform(
-                            global_transform=before_global_transform,
-                            parameters=parameters_before,
-                            template=transformed_before_template,
-                        )
-                self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
+            transformed_before_template = self._before_template
+            for before_global_transform in transform_before:
+                if not is_nothing(before_global_transform.name):
+                    transformed_before_template = self._apply_global_transform(
+                        global_transform=before_global_transform,
+                        parameters=parameters_before,
+                        template=transformed_before_template,
+                    )
+
+            # Macro transformations won't remove the transform from the template
+            transformed_before_template.pop("Transform", "")
+            self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
         if transform_after and not is_nothing(self._after_template):
-            transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
-            if not transformed_after_template:
-                transformed_after_template = self._after_template
-                for after_global_transform in transform_after:
-                    if not is_nothing(after_global_transform.name):
-                        transformed_after_template = self._apply_global_transform(
-                            global_transform=after_global_transform,
-                            parameters=parameters_after,
-                            template=transformed_after_template,
-                        )
-                self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
+            transformed_after_template = self._after_template
+            for after_global_transform in transform_after:
+                if not is_nothing(after_global_transform.name):
+                    transformed_after_template = self._apply_global_transform(
+                        global_transform=after_global_transform,
+                        parameters=parameters_after,
+                        template=transformed_after_template,
+                    )
+            # Macro transformations won't remove the transform from the template
+            transformed_after_template.pop("Transform", "")
+            self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
 
         self._save_runtime_cache()
 
@@ -394,7 +395,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     def _replace_at_jsonpath(self, template, node, result):
         path = node.scope.to_jsonpath()
         parent_path = ".".join(path.split(".")[:-1])
-        import jsonpath_ng
 
         pattern = jsonpath_ng.parse(parent_path)
         result_template = pattern.update(template, result)
