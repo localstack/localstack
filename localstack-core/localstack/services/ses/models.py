@@ -8,7 +8,7 @@ class SentEmailBody(TypedDict):
     text_part: str
 
 
-class SentEmail(TypedDict):
+class SentEmail(TypedDict, total=False):
     Id: str
     Region: str
     Timestamp: str
