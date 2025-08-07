@@ -670,7 +670,6 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @skip_if_v2_provider("Macros")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
