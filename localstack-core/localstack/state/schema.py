@@ -4,6 +4,7 @@ import types
 import typing
 
 from localstack.constants import VERSION
+from localstack.services.stores import BaseStore
 
 LOG = logging.getLogger(__name__)
 
@@ -154,7 +155,7 @@ class StoreSchemaBuilder:
         }
     """
 
-    skip_attributes = ["_account_id", "_global", "_region_name", "_service_name", "_universal"]
+    skip_attributes = list(BaseStore.__annotations__.keys())
     """Set of attributes that are not serialized into a schema"""
 
     def __init__(self, store_type: type) -> None:
