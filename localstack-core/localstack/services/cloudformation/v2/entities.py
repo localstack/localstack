@@ -1,4 +1,3 @@
-import copy
 from datetime import datetime, timezone
 from typing import NotRequired, Optional, TypedDict
 
@@ -11,7 +10,6 @@ from localstack.aws.api.cloudformation import (
     CreateStackSetInput,
     ExecutionStatus,
     Output,
-    Parameter,
     ResourceStatus,
     StackDriftInformation,
     StackDriftStatus,
@@ -23,6 +21,9 @@ from localstack.aws.api.cloudformation import (
     StackSetOperation,
     StackStatus,
     StackStatusReason,
+)
+from localstack.aws.api.cloudformation import (
+    Parameter as ApiParameter,
 )
 from localstack.aws.api.cloudformation import (
     Stack as ApiStack,
@@ -38,6 +39,18 @@ from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
 
 
+# TODO: turn into class/dataclass
+class EngineParameter(TypedDict):
+    """
+    Parameters supplied by the user. The resolved value field is populated by the engine
+    """
+
+    type_: str
+    given_value: NotRequired[str | None]
+    resolved_value: NotRequired[str | None]
+    default_value: NotRequired[str | None]
+
+
 class ResolvedResource(TypedDict):
     LogicalResourceId: str
     Type: str
@@ -49,7 +62,7 @@ class ResolvedResource(TypedDict):
 
 class Stack:
     stack_name: str
-    parameters: list[Parameter]
+    parameters: list[ApiParameter]
     change_set_id: str | None
     status: StackStatus
     status_reason: StackStatusReason | None
@@ -60,6 +73,7 @@ class Stack:
     capabilities: list[Capability]
     enable_termination_protection: bool
     processed_template: dict | None
+    template_body: str | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -73,15 +87,10 @@ class Stack:
         account_id: str,
         region_name: str,
         request_payload: CreateChangeSetInput | CreateStackInput,
-        template: dict | None = None,
-        template_body: str | None = None,
         initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
     ):
         self.account_id = account_id
         self.region_name = region_name
-        self.template = template
-        self.template_original = copy.deepcopy(self.template)
-        self.template_body = template_body
         self.status = initial_status
         self.status_reason = None
         self.change_set_ids = []
@@ -90,6 +99,7 @@ class Stack:
         self.change_set_id = None
         self.enable_termination_protection = False
         self.processed_template = None
+        self.template_body = None
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
@@ -119,7 +129,13 @@ class Stack:
         if reason:
             self.status_reason = reason
 
-        self._store_event(self.stack_name, self.stack_id, status.value, status_reason=reason)
+        self._store_event(
+            resource_id=self.stack_name,
+            resource_type="AWS::CloudFormation::Stack",
+            physical_resource_id=self.stack_id,
+            status=status,
+            status_reason=reason,
+        )
 
     def set_resource_status(
         self,
@@ -148,33 +164,33 @@ class Stack:
             self.resource_states.pop(logical_resource_id)
         else:
             self.resource_states[logical_resource_id] = resource_description
-        self._store_event(logical_resource_id, physical_resource_id, status, resource_status_reason)
+
+        self._store_event(
+            resource_id=logical_resource_id,
+            resource_type=resource_type,
+            physical_resource_id=physical_resource_id,
+            status=status,
+            status_reason=resource_status_reason,
+        )
 
     def _store_event(
         self,
         resource_id: str = None,
-        physical_res_id: str = None,
-        status: str = "",
+        resource_type: str | None = "",
+        physical_resource_id: str = None,
+        status: StackStatus | ResourceStatus = "",
         status_reason: str = "",
     ):
-        resource_id = resource_id
-        physical_res_id = physical_res_id
-        resource_type = (
-            self.template.get("Resources", {})
-            .get(resource_id, {})
-            .get("Type", "AWS::CloudFormation::Stack")
+        event = StackEvent(
+            EventId=long_uid(),
+            Timestamp=datetime.now(tz=timezone.utc),
+            StackId=self.stack_id,
+            StackName=self.stack_name,
+            LogicalResourceId=resource_id,
+            PhysicalResourceId=physical_resource_id,
+            ResourceStatus=status,
+            ResourceType=resource_type,
         )
-
-        event: StackEvent = {
-            "EventId": long_uid(),
-            "Timestamp": datetime.now(tz=timezone.utc),
-            "StackId": self.stack_id,
-            "StackName": self.stack_name,
-            "LogicalResourceId": resource_id,
-            "PhysicalResourceId": physical_res_id,
-            "ResourceStatus": status,
-            "ResourceType": resource_type,
-        }
 
         if status_reason:
             event["ResourceStatusReason"] = status_reason
@@ -200,7 +216,6 @@ class Stack:
             "Tags": [],
             "NotificationARNs": [],
             "Capabilities": self.capabilities,
-            "Parameters": self.parameters,
         }
         # TODO: confirm the logic for this
         if change_set_id := self.change_set_id:
@@ -238,20 +253,25 @@ class ChangeSet:
     status_reason: str | None
     execution_status: ExecutionStatus
     creation_time: datetime
+    processed_template: dict | None
+    resolved_parameters: list[ApiParameter]
 
     def __init__(
         self,
         stack: Stack,
         request_payload: ChangeSetRequestPayload,
+        template_body: str,
         template: dict | None = None,
     ):
         self.stack = stack
+        self.template_body = template_body
         self.template = template
         self.status = ChangeSetStatus.CREATE_IN_PROGRESS
         self.status_reason = None
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_model = None
         self.creation_time = datetime.now(tz=timezone.utc)
+        self.resolved_parameters = []
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
@@ -261,6 +281,7 @@ class ChangeSet:
             account_id=self.stack.account_id,
             region_name=self.stack.region_name,
         )
+        self.processed_template = None
 
     def set_update_model(self, update_model: UpdateModel) -> None:
         self.update_model = update_model
