@@ -4,6 +4,7 @@ import logging
 from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
+
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
@@ -114,7 +115,6 @@ from localstack.services.cloudformation.v2.entities import (
     StackInstance,
     StackSet,
 )
-from sympy.codegen.ast import value_const
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread

@@ -1096,7 +1096,7 @@ def deploy_cfn_template(
         max_wait: Optional[int] = None,
         delay_between_polls: Optional[int] = 2,
         custom_aws_client: Optional[ServiceLevelClientFactory] = None,
-        raw_parameters: Optional[List[Parameter]] = None,
+        raw_parameters: Optional[list[Parameter]] = None,
     ) -> DeployResult:
         if is_update:
             assert stack_name
