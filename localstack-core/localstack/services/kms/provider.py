@@ -481,6 +481,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
     def describe_key(
         self, context: RequestContext, request: DescribeKeyRequest
     ) -> DescribeKeyResponse:
+        a = request["KeyId"][100]
+        print(a)
         account_id, region_name, key_id = self._parse_key_id(request["KeyId"], context)
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
         return DescribeKeyResponse(KeyMetadata=key.metadata)
