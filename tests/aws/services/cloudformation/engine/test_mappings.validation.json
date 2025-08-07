@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_async_mapping_error_first_level_v2": {
+    "last_validated_date": "2025-08-07T14:34:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 0.28,
+      "teardown": 0.0,
+      "total": 1.15
+    }
+  },
   "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_aws_refs_in_mappings": {
     "last_validated_date": "2024-10-15T17:22:43+00:00"
   },

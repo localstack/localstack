@@ -1,6 +1,7 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
 from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
@@ -11,7 +12,6 @@ from localstack.utils.strings import short_uid
 THIS_DIR = os.path.dirname(__file__)
 
 
-@markers.snapshot.skip_snapshot_verify
 class TestCloudFormationMappings:
     @markers.aws.validated
     def test_simple_mapping_working(self, aws_client, deploy_cfn_template):
@@ -92,6 +92,32 @@ class TestCloudFormationMappings:
             )
 
         assert "Cannot find map key 'C' in mapping 'TopicSuffixMap'" in str(exc_info.value)
+
+    @markers.aws.validated
+    def test_async_mapping_error_first_level_v2(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        topic_name = f"test-topic-{short_uid()}"
+        template_path = os.path.join(
+            THIS_DIR,
+            "../../../templates/mappings/simple-mapping.yaml",
+        )
+        parameters = [
+            {"ParameterKey": "TopicName", "ParameterValue": topic_name},
+            {"ParameterKey": "TopicNameSuffixSelector", "ParameterValue": "C"},
+        ]
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                Parameters=parameters,
+                TemplateBody=open(template_path).read(),
+            )
+
+        snapshot.match("error", exc_info.value)
 
     @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.only_localstack

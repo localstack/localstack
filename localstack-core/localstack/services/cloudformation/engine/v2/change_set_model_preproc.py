@@ -76,6 +76,8 @@ TAfter = TypeVar("TAfter")
 
 MOCKED_REFERENCE = "unknown"
 
+VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
+
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
     before: Maybe[TBefore]
@@ -1055,6 +1057,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
+            raise ValidationError(
+                f"Template format error: Resource name {node_resource.name} is non alphanumeric."
+            )
         change_type = node_resource.change_type
         condition_before = Nothing
         condition_after = Nothing
