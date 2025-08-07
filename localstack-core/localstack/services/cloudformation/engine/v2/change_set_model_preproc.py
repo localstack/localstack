@@ -4,6 +4,7 @@ import base64
 import copy
 import re
 from collections.abc import Callable
+from datetime import datetime
 from typing import Any, Final, Generic, TypeVar
 
 from botocore.exceptions import ClientError
@@ -258,7 +259,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         property_value: Any | None = get_value_from_path(properties, property_name)
 
         if property_value:
-            if not isinstance(property_value, str):
+            if not isinstance(property_value, (datetime, str)):
                 # TODO: is this correct? If there is a bug in the logic here, it's probably
                 #  better to know about it with a clear error message than to receive some form
                 #  of message about trying to use a dictionary in place of a string
