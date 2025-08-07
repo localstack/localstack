@@ -1,12 +1,12 @@
 import os
+from collections.abc import Callable
 
 import pytest
-from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skip_if_v2_provider
 
-from localstack.aws.api.cloudformation import ChangeSetType
+from localstack.aws.api.cloudformation import Parameter
 from localstack.testing.pytest import markers
+from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 
@@ -52,76 +52,137 @@ class TestCdkInit:
         assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"
 
     @markers.aws.validated
+    @pytest.mark.parametrize(
+        "template,parameters_fn",
+        [
+            pytest.param(
+                "cdk_bootstrap.yml",
+                lambda qualifier: [
+                    {
+                        "ParameterKey": "BootstrapVariant",
+                        "ParameterValue": "AWS CDK: Default Resources",
+                    },
+                    {"ParameterKey": "TrustedAccounts", "ParameterValue": ""},
+                    {"ParameterKey": "TrustedAccountsForLookup", "ParameterValue": ""},
+                    {"ParameterKey": "CloudFormationExecutionPolicies", "ParameterValue": ""},
+                    {
+                        "ParameterKey": "FileAssetsBucketKmsKeyId",
+                        "ParameterValue": "AWS_MANAGED_KEY",
+                    },
+                    {
+                        "ParameterKey": "PublicAccessBlockConfiguration",
+                        "ParameterValue": "true",
+                    },
+                    {"ParameterKey": "Qualifier", "ParameterValue": qualifier},
+                    {
+                        "ParameterKey": "UseExamplePermissionsBoundary",
+                        "ParameterValue": "false",
+                    },
+                ],
+                id="v20",
+            ),
+            pytest.param(
+                "cdk_bootstrap_v28.yaml",
+                lambda qualifier: [
+                    {"ParameterKey": "CloudFormationExecutionPolicies", "ParameterValue": ""},
+                    {
+                        "ParameterKey": "FileAssetsBucketKmsKeyId",
+                        "ParameterValue": "AWS_MANAGED_KEY",
+                    },
+                    {
+                        "ParameterKey": "PublicAccessBlockConfiguration",
+                        "ParameterValue": "true",
+                    },
+                    {"ParameterKey": "Qualifier", "ParameterValue": qualifier},
+                    {"ParameterKey": "TrustedAccounts", "ParameterValue": ""},
+                    {"ParameterKey": "TrustedAccountsForLookup", "ParameterValue": ""},
+                ],
+                id="v28",
+            ),
+        ],
+    )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Outputs",
+            # CFNV2:Provider
+            "$..Description",
+            # Wrong format, they are our internal parameter format
+            "$..Parameters",
+            # from the list of changes
+            "$..Changes..Details",
+            "$..Changes..LogicalResourceId",
+            "$..Changes..ResourceType",
+            "$..Changes..Scope",
+            # provider
+            "$..IncludeNestedStacks",
+            "$..NotificationARNs",
+            # CFNV2:Describe not supported yet
+            "$..Outputs..ExportName",
+            # mismatch between amazonaws.com and localhost.localstack.cloud
+            "$..Outputs..OutputValue",
         ]
     )
-    @skip_if_v2_provider(
-        reason="CFNV2:Engine changes are detected during redeploy when they shouldn't be"
-    )
-    @skip_if_v1_provider(reason="Changes are detected during redeploy when they shouldn't be")
-    def test_cdk_bootstrap_redeploy_2(self, aws_client, deploy_cfn_template, snapshot):
+    def test_cdk_bootstrap_redeploy(
+        self,
+        aws_client,
+        cleanup_stacks,
+        cleanup_changesets,
+        cleanups,
+        snapshot,
+        template,
+        parameters_fn: Callable[[str], list[Parameter]],
+    ):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
-        snapshot.add_transformers_list(snapshot.transform.cloudformation_api() + [])
-        template_path = os.path.join(
-            os.path.dirname(__file__),
-            "../../../templates/cdk_bootstrap_v28.yaml",
-        )
-        # we have to specify a qualifier to make sure we don't get output collisions
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        snapshot.add_transformer(SortingTransformer("Parameters", lambda p: p["ParameterKey"]))
+        snapshot.add_transformer(SortingTransformer("Outputs", lambda p: p["OutputKey"]))
+
+        stack_name = f"CDKToolkit-{short_uid()}"
+        change_set_name = f"cdk-deploy-change-set-{short_uid()}"
         qualifier = short_uid()
         snapshot.add_transformer(snapshot.transform.regex(qualifier, "<qualifier>"))
-        snapshot.add_transformer(SortingTransformer("Parameters", lambda p: p["ParameterKey"]))
 
-        # deploy 1
-        parameters = {
-            "CloudFormationExecutionPolicies": "",
-            "FileAssetsBucketKmsKeyId": "AWS_MANAGED_KEY",
-            "PublicAccessBlockConfiguration": "true",
-            "TrustedAccounts": "",
-            "TrustedAccountsForLookup": "",
-            # additional parameters not supplied by CDK
-            "Qualifier": qualifier,
-        }
-        stack = deploy_cfn_template(
-            template_path=template_path,
-            parameters=parameters,
+        def clean_resources():
+            cleanup_stacks([stack_name])
+            cleanup_changesets([change_set_name])
+
+        cleanups.append(clean_resources)
+
+        template_path = os.path.realpath(
+            os.path.join(os.path.dirname(__file__), f"../../../templates/{template}")
         )
-        stack_describe = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)[
-            "Stacks"
-        ][0]
-        snapshot.match("describe-1", stack_describe)
-
-        parameters_2 = [
-            {"ParameterKey": "CloudFormationExecutionPolicies", "ParameterValue": ""},
-            {"ParameterKey": "FileAssetsBucketKmsKeyId", "UsePreviousValue": True},
-            {"ParameterKey": "PublicAccessBlockConfiguration", "ParameterValue": "true"},
-            {"ParameterKey": "TrustedAccounts", "ParameterValue": ""},
-            {"ParameterKey": "TrustedAccountsForLookup", "ParameterValue": ""},
-            # additional parameters not supplied by CDK
-            {"ParameterKey": "Qualifier", "UsePreviousValue": True},
-        ]
-
-        # on AWS the stack does not redeploy as we have not changed anything
-        change_set_name = f"cs-{short_uid()}"
-        with open(template_path) as infile:
-            template_body = infile.read()
+        template_body = load_file(template_path)
+        if template_body is None:
+            raise RuntimeError(f"Template {template_path} not loaded")
 
         aws_client.cloudformation.create_change_set(
-            StackName=stack.stack_id,
+            StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_body,
-            Parameters=parameters_2,
-            ChangeSetType=ChangeSetType.UPDATE,
+            ChangeSetType="CREATE",
+            Capabilities=["CAPABILITY_IAM", "CAPABILITY_NAMED_IAM", "CAPABILITY_AUTO_EXPAND"],
+            Description="CDK Changeset for execution 731ed7da-8b2d-49c6-bca3-4698b6875954",
+            Parameters=parameters_fn(qualifier),
         )
-        with pytest.raises(WaiterError):
-            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
-                ChangeSetName=change_set_name, StackName=stack.stack_id
-            )
-        describe_cs = aws_client.cloudformation.describe_change_set(
-            ChangeSetName=change_set_name, StackName=stack.stack_id
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            StackName=stack_name, ChangeSetName=change_set_name
         )
-        snapshot.match("failed-change-set", describe_cs)
+        describe_change_set = aws_client.cloudformation.describe_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+        snapshot.match("describe-change-set", describe_change_set)
+
+        aws_client.cloudformation.execute_change_set(
+            StackName=stack_name, ChangeSetName=change_set_name
+        )
+
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+        stacks = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
+        snapshot.match("describe-stacks", stacks)
+
+        # When CDK bootstrap command is executed again it just confirms that the template is the same
+        aws_client.cloudformation.get_template(StackName=stack_name, TemplateStage="Original")
+
+        # TODO: create scenario where the template is different to catch cdk behavior
 
 
 class TestCdkSampleApp:
