@@ -1,3 +1,4 @@
+from enum import StrEnum
 from typing import TypedDict
 
 from localstack.aws.api.ses import Address, Destination, Subject, TemplateData, TemplateName
@@ -8,7 +9,7 @@ class SentEmailBody(TypedDict):
     text_part: str
 
 
-class SentEmail(TypedDict):
+class SentEmail(TypedDict, total=False):
     Id: str
     Region: str
     Timestamp: str
@@ -19,3 +20,9 @@ class SentEmail(TypedDict):
     Template: TemplateName
     TemplateData: TemplateData
     Body: SentEmailBody
+
+
+class EmailType(StrEnum):
+    TEMPLATED = "templated"
+    RAW = "raw"
+    EMAIL = "email"
