@@ -219,7 +219,7 @@ class StoreSchemaBuilder:
                 if args:
                     hint[TAG_ARGS] = [self._serialize_hint(args[0])]
                 return hint
-            case types.UnionType | typing.Union | typing.Tuple | builtins.tuple:
+            case types.UnionType | typing.Union | typing.Tuple | builtins.tuple:  # noqa
                 hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if args:
