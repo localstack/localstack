@@ -226,7 +226,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if node_resource.name == resource_name:
                 self.visit(node_resource)
                 return node_resource
-        raise RuntimeError(f"No resource '{resource_name}' was found")
+        raise ValidationError(
+            f"Template format error: Unresolved resource dependencies [{resource_name}] in the Resources block of the template"
+        )
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
