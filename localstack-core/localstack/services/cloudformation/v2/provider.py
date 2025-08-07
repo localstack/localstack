@@ -416,7 +416,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
-        request_parameters = request.get("Parameters", list())
+        request_parameters = request.get("Parameters", [])
         # TODO: handle parameter defaults and resolution
         after_parameters = {}
         for parameter in request_parameters:
@@ -683,7 +683,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
-        request_parameters = request.get("Parameters", list())
+        request_parameters = request.get("Parameters", [])
         # TODO: handle parameter defaults and resolution
         after_parameters: dict[str, Any] = {
             parameter["ParameterKey"]: parameter["ParameterValue"]
@@ -1306,7 +1306,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
-        request_parameters = request.get("Parameters", list())
+        request_parameters = request.get("Parameters", [])
         # TODO: handle parameter defaults and resolution
         after_parameters: dict[str, Any] = {
             parameter["ParameterKey"]: parameter["ParameterValue"]

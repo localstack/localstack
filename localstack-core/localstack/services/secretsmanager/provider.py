@@ -521,7 +521,7 @@ def moto_smb_list_secret_version_ids(
     secret = self.secrets[secret_id]
 
     # Patch: output format, report exact createdate instead of current time.
-    versions: list[SecretVersionsListEntry] = list()
+    versions: list[SecretVersionsListEntry] = []
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
         # Patch: include deprecated versions if include_deprecated is True.

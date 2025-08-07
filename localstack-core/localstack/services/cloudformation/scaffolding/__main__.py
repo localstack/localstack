@@ -267,11 +267,11 @@ class TemplateRenderer:
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
             FileType.parity_test: "test_parity_template.py.j2",
         }
-        kwargs = dict(
-            name=resource_name.full_name,  # AWS::SNS::Topic
-            resource=resource_name.provider_name(),  # SNSTopic
-            scaffolding_version=f"v{SCAFFOLDING_VERSION}",
-        )
+        kwargs = {
+            "name": resource_name.full_name,  # AWS::SNS::Topic
+            "resource": resource_name.provider_name(),  # SNSTopic
+            "scaffolding_version": f"v{SCAFFOLDING_VERSION}",
+        }
         # TODO: we might want to segregate each provider in its own directory
         # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
         # add extra parameters

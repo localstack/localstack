@@ -29,7 +29,7 @@ class InputPath(EvalComponent):
 
     def _eval_body(self, env: Environment) -> None:
         if self.string_sampler is None:
-            env.stack.append(dict())
+            env.stack.append({})
             return
         if isinstance(self.string_sampler, StringJsonPath):
             # JsonPaths are sampled from a given state, hence pass the state's input.

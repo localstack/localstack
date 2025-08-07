@@ -271,7 +271,7 @@ def create_state_machine_iam_role(cleanups, create_state_machine):
 
 @pytest.fixture
 def create_state_machine():
-    created_state_machine_references = list()
+    created_state_machine_references = []
 
     def _create_state_machine(target_aws_client, **kwargs):
         sfn_client = target_aws_client.stepfunctions
@@ -299,7 +299,7 @@ def create_state_machine():
 
 @pytest.fixture
 def create_state_machine_alias():
-    state_machine_alias_arn_and_client = list()
+    state_machine_alias_arn_and_client = []
 
     def _create_state_machine_alias(target_aws_client, **kwargs):
         step_functions_client = target_aws_client.stepfunctions
@@ -324,7 +324,7 @@ def create_state_machine_alias():
 
 @pytest.fixture
 def create_activity(aws_client):
-    activities_arns: Final[list[str]] = list()
+    activities_arns: Final[list[str]] = []
 
     def _create_activity(**kwargs):
         create_output = aws_client.stepfunctions.create_activity(**kwargs)
@@ -778,7 +778,7 @@ def sfn_create_log_group(aws_client, snapshot):
 
 @pytest.fixture
 def create_cross_account_admin_role_and_policy(create_state_machine, create_state_machine_iam_role):
-    created = list()
+    created = []
 
     def _create_role_and_policy(trusting_aws_client, trusted_aws_client, trusted_account_id) -> str:
         trusting_iam_client = trusting_aws_client.iam

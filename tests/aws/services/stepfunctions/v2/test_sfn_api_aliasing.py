@@ -303,7 +303,7 @@ class TestSfnApiAliasing:
         )
         state_machine_arn = create_state_machine_response["stateMachineArn"]
 
-        state_machine_version_arns: list[Arn] = list()
+        state_machine_version_arns: list[Arn] = []
         state_machine_version_arns.append(create_state_machine_response["stateMachineVersionArn"])
         for version_number in range(2):
             definition["Comment"] = f"Definition for version {version_number}"
@@ -531,7 +531,7 @@ class TestSfnApiAliasing:
         sfn_snapshot.add_transformer(
             RegexTransformer(state_machine_alias_base_name, "state_machine_alias_base_name")
         )
-        state_machine_alias_arns: list[str] = list()
+        state_machine_alias_arns: list[str] = []
         for num in range(3):
             state_machine_alias_name = f"{state_machine_alias_base_name}-{num}"
             create_state_machine_alias_response = create_state_machine_alias(
@@ -788,7 +788,7 @@ class TestSfnApiAliasing:
         )
         state_machine_arn = create_state_machine_response["stateMachineArn"]
 
-        state_machine_version_arns: list[Arn] = list()
+        state_machine_version_arns: list[Arn] = []
         state_machine_version_arns.append(create_state_machine_response["stateMachineVersionArn"])
         for version_number in range(2):
             definition["Comment"] = f"Definition for version {version_number}"

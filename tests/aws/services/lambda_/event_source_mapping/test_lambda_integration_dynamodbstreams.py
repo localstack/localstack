@@ -219,11 +219,11 @@ class TestDynamoDBEventSourceMapping:
         )["TableDescription"]["LatestStreamArn"]
 
         # extra arguments for create_event_source_mapping calls
-        kwargs = dict(
-            StartingPosition="TRIM_HORIZON",
-            MaximumBatchingWindowInSeconds=1,
-            MaximumRetryAttempts=1,
-        )
+        kwargs = {
+            "StartingPosition": "TRIM_HORIZON",
+            "MaximumBatchingWindowInSeconds": 1,
+            "MaximumRetryAttempts": 1,
+        }
 
         create_lambda_function(
             handler_file=TEST_LAMBDA_PYTHON_ECHO,

@@ -316,7 +316,7 @@ class TestSnfApi:
             f"statemachine_2_{short_uid()}",
             f"statemachine_3_{short_uid()}",
         ]
-        state_machine_arns = list()
+        state_machine_arns = []
 
         for i, sm_name in enumerate(sm_names):
             creation_resp = create_state_machine(
@@ -371,7 +371,7 @@ class TestSnfApi:
         definition_str = json.dumps(definition)
 
         sm_names = [f"statemachine_{i}_{short_uid()}" for i in range(13)]
-        state_machine_arns = list()
+        state_machine_arns = []
 
         for i, sm_name in enumerate(sm_names):
             creation_resp = create_state_machine(
@@ -646,9 +646,9 @@ class TestSnfApi:
             state_machine_arn=state_machine_arn,
         )
 
-        execution_arns = list()
+        execution_arns = []
         for i in range(13):
-            input_data = json.dumps(dict())
+            input_data = json.dumps({})
 
             exec_resp = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=input_data
@@ -759,9 +759,9 @@ class TestSnfApi:
             state_machine_version_arn=state_machine_version_arn,
         )
 
-        execution_arns = list()
+        execution_arns = []
         for i in range(13):
-            input_data = json.dumps(dict())
+            input_data = json.dumps({})
 
             exec_resp = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_version_arn, input=input_data

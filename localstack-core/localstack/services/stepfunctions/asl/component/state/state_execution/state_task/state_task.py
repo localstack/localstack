@@ -51,7 +51,7 @@ class StateTask(ExecutionState, abc.ABC):
 
     def _eval_parameters(self, env: Environment) -> dict:
         # Eval raw parameters.
-        parameters = dict()
+        parameters = {}
         if self.parargs is not None:
             self.parargs.eval(env=env)
             parameters = env.stack.pop()

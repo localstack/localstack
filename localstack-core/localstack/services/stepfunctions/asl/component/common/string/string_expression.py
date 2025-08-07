@@ -129,7 +129,7 @@ class StringVariableSample(StringSampler):
         expression_variable_references: set[VariableReference] = (
             extract_jsonata_variable_references(self.expression)
         )
-        variable_declarations_list = list()
+        variable_declarations_list = []
         if self.query_language_mode == QueryLanguageMode.JSONata:
             # Sample $states values into expression.
             states_variable_declarations: VariableDeclarations = (

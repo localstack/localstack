@@ -318,7 +318,7 @@ LOG = logging.getLogger(__name__)
 
 
 class Preprocessor(ASLParserVisitor):
-    _query_language_per_scope: list[QueryLanguage] = list()
+    _query_language_per_scope: list[QueryLanguage] = []
 
     def _get_current_query_language(self) -> QueryLanguage:
         return self._query_language_per_scope[-1]
@@ -660,7 +660,7 @@ class Preprocessor(ASLParserVisitor):
         self, ctx: ASLParser.Comparison_compositeContext
     ) -> ComparisonComposite:
         choice_op: ComparisonComposite.ChoiceOp = self.visit(ctx.choice_operator())
-        rules: list[ChoiceRule] = list()
+        rules: list[ChoiceRule] = []
         for child in ctx.children[1:]:
             cmp: Component | None = self.visit(child)
             if not cmp:
@@ -746,7 +746,7 @@ class Preprocessor(ASLParserVisitor):
             )
 
     def visitChoices_decl(self, ctx: ASLParser.Choices_declContext) -> ChoicesDecl:
-        rules: list[ChoiceRule] = list()
+        rules: list[ChoiceRule] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if not cmp:
@@ -966,7 +966,7 @@ class Preprocessor(ASLParserVisitor):
         return CSVHeaderLocation(csv_header_location_value=value)
 
     def visitCsv_headers_decl(self, ctx: ASLParser.Csv_headers_declContext) -> CSVHeaders:
-        csv_headers: list[str] = list()
+        csv_headers: list[str] = []
         for child in ctx.children[3:-1]:
             maybe_str = is_production(pt=child, rule_index=ASLParser.RULE_string_literal)
             if maybe_str is not None:
@@ -1074,7 +1074,7 @@ class Preprocessor(ASLParserVisitor):
         return ResultWriter(resource=resource, parargs=parargs)
 
     def visitRetry_decl(self, ctx: ASLParser.Retry_declContext) -> RetryDecl:
-        retriers: list[RetrierDecl] = list()
+        retriers: list[RetrierDecl] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, RetrierDecl):
@@ -1092,7 +1092,7 @@ class Preprocessor(ASLParserVisitor):
         return self.visit(ctx.children[0])
 
     def visitError_equals_decl(self, ctx: ASLParser.Error_equals_declContext) -> ErrorEqualsDecl:
-        error_names: list[ErrorName] = list()
+        error_names: list[ErrorName] = []
         for child in ctx.children:
             cmp = self.visit(child)
             if isinstance(cmp, ErrorName):
@@ -1146,7 +1146,7 @@ class Preprocessor(ASLParserVisitor):
         return JitterStrategyDecl(jitter_strategy=jitter_strategy)
 
     def visitCatch_decl(self, ctx: ASLParser.Catch_declContext) -> CatchDecl:
-        catchers: list[CatcherDecl] = list()
+        catchers: list[CatcherDecl] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, CatcherDecl):
@@ -1208,7 +1208,7 @@ class Preprocessor(ASLParserVisitor):
         return PayloadBindingValue(field=string_literal.literal_value, payload_value=payload_value)
 
     def visitPayload_arr_decl(self, ctx: ASLParser.Payload_arr_declContext) -> PayloadArr:
-        payload_values: list[PayloadValue] = list()
+        payload_values: list[PayloadValue] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, PayloadValue):
@@ -1216,7 +1216,7 @@ class Preprocessor(ASLParserVisitor):
         return PayloadArr(payload_values=payload_values)
 
     def visitPayload_tmpl_decl(self, ctx: ASLParser.Payload_tmpl_declContext) -> PayloadTmpl:
-        payload_bindings: list[PayloadBinding] = list()
+        payload_bindings: list[PayloadBinding] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, PayloadBinding):
@@ -1312,7 +1312,7 @@ class Preprocessor(ASLParserVisitor):
     def visitAssign_template_value_array(
         self, ctx: ASLParser.Assign_template_value_arrayContext
     ) -> AssignTemplateValueArray:
-        values: list[AssignTemplateValue] = list()
+        values: list[AssignTemplateValue] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, AssignTemplateValue):
@@ -1322,7 +1322,7 @@ class Preprocessor(ASLParserVisitor):
     def visitAssign_template_value_object(
         self, ctx: ASLParser.Assign_template_value_objectContext
     ) -> AssignTemplateValueObject:
-        bindings: list[AssignTemplateBinding] = list()
+        bindings: list[AssignTemplateBinding] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, AssignTemplateBinding):
@@ -1359,7 +1359,7 @@ class Preprocessor(ASLParserVisitor):
     def visitAssign_decl_body(
         self, ctx: ASLParser.Assign_decl_bodyContext
     ) -> list[AssignDeclBinding]:
-        bindings: list[AssignDeclBinding] = list()
+        bindings: list[AssignDeclBinding] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, AssignDeclBinding):
@@ -1414,7 +1414,7 @@ class Preprocessor(ASLParserVisitor):
     def visitJsonata_template_value_array(
         self, ctx: ASLParser.Jsonata_template_value_arrayContext
     ) -> JSONataTemplateValueArray:
-        values: list[JSONataTemplateValue] = list()
+        values: list[JSONataTemplateValue] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, JSONataTemplateValue):
@@ -1424,7 +1424,7 @@ class Preprocessor(ASLParserVisitor):
     def visitJsonata_template_value_object(
         self, ctx: ASLParser.Jsonata_template_value_objectContext
     ) -> JSONataTemplateValueObject:
-        bindings: list[JSONataTemplateBinding] = list()
+        bindings: list[JSONataTemplateBinding] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, JSONataTemplateBinding):

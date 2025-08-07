@@ -38,7 +38,7 @@ class TestGeneric:
             '{"Arg1": 1, "Arg2": []}',
             json.loads('{"Arg1": 1, "Arg2": []}'),
         ]
-        input_values = list()
+        input_values = []
         for value in values:
             input_values.append({"fst": value, "snd": value})
 

@@ -122,7 +122,7 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
-    @pytest.mark.parametrize("max_concurrency_value", [dict(), "NoNumber", 0, 1])
+    @pytest.mark.parametrize("max_concurrency_value", [{}, "NoNumber", 0, 1])
     def test_max_concurrency_path(
         self,
         aws_client,
@@ -1285,7 +1285,7 @@ class TestBaseScenarios:
         )
 
     @markers.aws.validated
-    @pytest.mark.parametrize("tolerated_failure_count_value", [dict(), "NoNumber", -1, 0, 1])
+    @pytest.mark.parametrize("tolerated_failure_count_value", [{}, "NoNumber", -1, 0, 1])
     def test_map_state_tolerated_failure_count_path(
         self,
         aws_client,
@@ -1311,7 +1311,7 @@ class TestBaseScenarios:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "tolerated_failure_percentage_value", [dict(), "NoNumber", -1.1, -1, 0, 1, 1.1, 100, 100.1]
+        "tolerated_failure_percentage_value", [{}, "NoNumber", -1.1, -1, 0, 1, 1.1, 100, 100.1]
     )
     def test_map_state_tolerated_failure_percentage_path(
         self,

@@ -162,7 +162,7 @@ class TestSecretsManager:
     def _wait_rotation(client, secret_id: str, secret_version: str):
         def _is_secret_rotated():
             resp: dict = client.describe_secret(SecretId=secret_id)
-            secret_stage_tags = list()
+            secret_stage_tags = []
             for key, tags in resp.get("VersionIdsToStages", {}).items():
                 if key == secret_version:
                     secret_stage_tags = tags

@@ -709,7 +709,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                 "Cannot reference more than 5 layers.", Type="User"
             )
 
-        visited_layers = dict()
+        visited_layers = {}
         for layer_version_arn in new_layers:
             (
                 layer_region,

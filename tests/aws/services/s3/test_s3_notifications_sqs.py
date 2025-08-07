@@ -85,9 +85,9 @@ def create_sqs_bucket_notification(
     queue_arn = set_policy_for_queue(sqs_client, queue_url, bucket_name)
     s3_client.put_bucket_notification_configuration(
         Bucket=bucket_name,
-        NotificationConfiguration=dict(
-            QueueConfigurations=[dict(QueueArn=queue_arn, Events=events)]
-        ),
+        NotificationConfiguration={
+            "QueueConfigurations": [{"QueueArn": queue_arn, "Events": events}]
+        },
     )
 
 

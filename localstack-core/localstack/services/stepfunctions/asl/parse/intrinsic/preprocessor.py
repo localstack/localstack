@@ -85,7 +85,7 @@ class Preprocessor(ASLIntrinsicParserVisitor):
         return ArgumentLiteral(definition_value=bool_val)
 
     def visitFunc_arg_list(self, ctx: ASLIntrinsicParser.Func_arg_listContext) -> ArgumentList:
-        arguments: list[Argument] = list()
+        arguments: list[Argument] = []
         for child in ctx.children:
             cmp: Component | None = self.visit(child)
             if isinstance(cmp, Argument):

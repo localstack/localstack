@@ -90,7 +90,7 @@ def to_payload_type(payload: Any) -> bytes | None:
         return payload
 
     if payload is None:
-        str_value = to_json_str(dict())
+        str_value = to_json_str({})
     elif isinstance(payload, str):
         try:
             json.loads(payload)

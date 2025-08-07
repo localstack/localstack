@@ -39,7 +39,7 @@ def get_outdated_snapshots_for_directory(
                         recorded_date = recorded_snapshot_data.get("last_validated_date")
                         date = datetime.datetime.fromisoformat(recorded_date)
                         if date.timestamp() < date_limit:
-                            outdated_snapshot_data = dict()
+                            outdated_snapshot_data = {}
                             if show_date:
                                 outdated_snapshot_data["last_validation_date"] = recorded_date
                             if combine_parametrized:

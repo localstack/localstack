@@ -77,7 +77,7 @@ class TestSfnApiExpress:
     ):
         definition = ServicesTemplates.load_sfn_template(BaseTemplate.BASE_PASS_RESULT)
         definition_str = json.dumps(definition)
-        execution_input = json.dumps(dict())
+        execution_input = json.dumps({})
         state_machine_arn, execution_arn = create_and_record_express_async_execution(
             aws_client,
             create_state_machine_iam_role,

@@ -172,7 +172,7 @@ class TestSnfBase:
         template = BaseTemplate.load_sfn_template(BaseTemplate.BASE_WAIT_1_MIN)
         template["States"]["State_1"]["Seconds"] = 60 if is_aws_cloud() else 1
         definition = json.dumps(template)
-        execution_input = json.dumps(dict())
+        execution_input = json.dumps({})
         create_and_record_events(
             create_state_machine_iam_role,
             create_state_machine,

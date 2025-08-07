@@ -15,5 +15,5 @@ class AssignDeclBinding(EvalComponent):
         self.binding = binding
 
     def _eval_body(self, env: Environment) -> None:
-        env.stack.append(dict())
+        env.stack.append({})
         self.binding.eval(env=env)

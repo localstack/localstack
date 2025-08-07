@@ -49,14 +49,14 @@ def create_sns_bucket_notification(
 
     s3_client.put_bucket_notification_configuration(
         Bucket=bucket_name,
-        NotificationConfiguration=dict(
-            TopicConfigurations=[
-                dict(
-                    TopicArn=topic_arn,
-                    Events=events,
-                )
+        NotificationConfiguration={
+            "TopicConfigurations": [
+                {
+                    "TopicArn": topic_arn,
+                    "Events": events,
+                }
             ]
-        ),
+        },
     )
 
 

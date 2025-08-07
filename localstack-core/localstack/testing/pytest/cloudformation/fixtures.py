@@ -111,8 +111,8 @@ def capture_per_resource_events(
 
 
 def _normalise_describe_change_set_output(value: DescribeChangeSetOutput) -> None:
-    value.get("Changes", list()).sort(
-        key=lambda change: change.get("ResourceChange", dict()).get("LogicalResourceId", "")
+    value.get("Changes", []).sort(
+        key=lambda change: change.get("ResourceChange", {}).get("LogicalResourceId", "")
     )
 
 
@@ -175,7 +175,7 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
         cleanups.append(
             lambda: call_safe(
                 aws_client_no_retry.cloudformation.delete_change_set,
-                kwargs=dict(ChangeSetName=change_set_id),
+                kwargs={"ChangeSetName": change_set_id},
             )
         )
 
@@ -206,7 +206,7 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
         # ensure stack deletion
         cleanups.append(
             lambda: call_safe(
-                aws_client_no_retry.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                aws_client_no_retry.cloudformation.delete_stack, kwargs={"StackName": stack_id}
             )
         )
 

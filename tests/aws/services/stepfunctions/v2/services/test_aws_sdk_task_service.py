@@ -30,7 +30,7 @@ class TestTaskServiceAwsSdk:
     ):
         template = ST.load_sfn_template(ST.AWSSDK_LIST_SECRETS)
         definition = json.dumps(template)
-        exec_input = json.dumps(dict())
+        exec_input = json.dumps({})
         create_and_record_execution(
             aws_client,
             create_state_machine_iam_role,

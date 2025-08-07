@@ -143,7 +143,7 @@ class States:
             "result": _STATES_RESULT_PREFIX,
             "errorOutput": _STATES_ERROR_OUTPUT_PREFIX,
         }
-        sub_states = dict()
+        sub_states = {}
         for variable_reference in variable_references:
             if not candidate_sub_states:
                 break

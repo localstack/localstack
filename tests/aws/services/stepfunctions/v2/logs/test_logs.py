@@ -270,7 +270,7 @@ class TestLogs:
             expected_events_count += len(execution_history["events"])
 
         logs_client = aws_client.logs
-        log_events = list()
+        log_events = []
 
         def _collect_log_events():
             log_streams = logs_client.describe_log_streams(logGroupName=log_group_name)[

@@ -66,7 +66,7 @@ class EventManager:
     def __init__(self, cloud_watch_logging_session: CloudWatchLoggingSession | None = None):
         self._mutex = threading.Lock()
         self._event_id_gen = EventIdGenerator()
-        self._history_event_list = list()
+        self._history_event_list = []
         self._cloud_watch_logging_session = cloud_watch_logging_session
 
     def add_event(

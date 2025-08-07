@@ -132,7 +132,7 @@ class StateTaskServiceAwsSdk(StateTaskServiceCallback):
             region=resource_runtime_part.region,
             state_credentials=state_credentials,
         )
-        response = getattr(api_client, api_action)(**normalised_parameters) or dict()
+        response = getattr(api_client, api_action)(**normalised_parameters) or {}
         if response:
             response.pop("ResponseMetadata", None)
         env.stack.append(response)
