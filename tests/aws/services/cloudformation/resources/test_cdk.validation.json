@@ -8,6 +8,15 @@
   "tests/aws/services/cloudformation/resources/test_cdk.py::TestCdkInit::test_cdk_bootstrap[12]": {
     "last_validated_date": "2024-06-25T18:44:21+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_cdk.py::TestCdkInit::test_cdk_bootstrap_redeploy": {
+    "last_validated_date": "2025-08-07T10:05:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.92,
+      "call": 50.25,
+      "teardown": 23.05,
+      "total": 74.22
+    }
+  },
   "tests/aws/services/cloudformation/resources/test_cdk.py::TestCdkSampleApp::test_cdk_sample": {
     "last_validated_date": "2022-11-04T14:15:44+00:00"
   }

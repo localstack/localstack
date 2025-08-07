@@ -1,8 +1,11 @@
 import os
 
 import pytest
+from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skip_if_v2_provider
 
+from localstack.aws.api.cloudformation import ChangeSetType
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
@@ -49,12 +52,26 @@ class TestCdkInit:
         assert stack_res["StackResources"][0]["LogicalResourceId"] == "CDKMetadata"
 
     @markers.aws.validated
-    def test_cdk_bootstrap_redeploy(self, aws_client, deploy_cfn_template, snapshot):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Outputs",
+        ]
+    )
+    @skip_if_v2_provider(
+        reason="CFNV2:Engine changes are detected during redeploy when they shouldn't be"
+    )
+    @skip_if_v1_provider(reason="Changes are detected during redeploy when they shouldn't be")
+    def test_cdk_bootstrap_redeploy_2(self, aws_client, deploy_cfn_template, snapshot):
         """Test that simulates a sequence of commands executed by CDK when running 'cdk bootstrap' twice"""
         snapshot.add_transformers_list(snapshot.transform.cloudformation_api() + [])
-
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/cdk_bootstrap_v28.yaml",
+        )
         # we have to specify a qualifier to make sure we don't get output collisions
         qualifier = short_uid()
+        snapshot.add_transformer(snapshot.transform.regex(qualifier, "<qualifier>"))
+        snapshot.add_transformer(SortingTransformer("Parameters", lambda p: p["ParameterKey"]))
 
         # deploy 1
         parameters = {
@@ -67,10 +84,7 @@ class TestCdkInit:
             "Qualifier": qualifier,
         }
         stack = deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__),
-                "../../../templates/cdk_bootstrap_v28.yaml",
-            ),
+            template_path=template_path,
             parameters=parameters,
         )
         stack_describe = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)[
@@ -88,19 +102,26 @@ class TestCdkInit:
             {"ParameterKey": "Qualifier", "UsePreviousValue": True},
         ]
 
-        deploy_cfn_template(
-            template_path=os.path.join(
-                os.path.dirname(__file__),
-                "../../../templates/cdk_bootstrap_v28.yaml",
-            ),
-            raw_parameters=parameters_2,
-            is_update=True,
-            stack_name=stack.stack_id,
+        # on AWS the stack does not redeploy as we have not changed anything
+        change_set_name = f"cs-{short_uid()}"
+        with open(template_path) as infile:
+            template_body = infile.read()
+
+        aws_client.cloudformation.create_change_set(
+            StackName=stack.stack_id,
+            ChangeSetName=change_set_name,
+            TemplateBody=template_body,
+            Parameters=parameters_2,
+            ChangeSetType=ChangeSetType.UPDATE,
         )
-        stack_describe = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)[
-            "Stacks"
-        ][0]
-        snapshot.match("describe-2", stack_describe)
+        with pytest.raises(WaiterError):
+            aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+                ChangeSetName=change_set_name, StackName=stack.stack_id
+            )
+        describe_cs = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_name, StackName=stack.stack_id
+        )
+        snapshot.match("failed-change-set", describe_cs)
 
 
 class TestCdkSampleApp:

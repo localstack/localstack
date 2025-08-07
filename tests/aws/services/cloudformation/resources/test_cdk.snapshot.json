@@ -79,7 +79,169 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_cdk.py::TestCdkInit::test_cdk_bootstrap_redeploy": {
-    "recorded-date": "06-08-2025, 21:39:13",
-    "recorded-content": {}
+    "recorded-date": "07-08-2025, 10:05:13",
+    "recorded-content": {
+      "describe-1": {
+        "Capabilities": [
+          "CAPABILITY_AUTO_EXPAND",
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM"
+        ],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "Description": "This stack includes resources needed to deploy AWS CDK apps into this environment",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "Outputs": [
+          {
+            "Description": "The name of the ECR repository which hosts docker image assets",
+            "OutputKey": "ImageRepositoryName",
+            "OutputValue": "cdk-<qualifier>-container-assets-111111111111-<region>"
+          },
+          {
+            "Description": "The name of the S3 bucket owned by the CDK toolkit stack",
+            "OutputKey": "BucketName",
+            "OutputValue": "cdk-<qualifier>-assets-111111111111-<region>"
+          },
+          {
+            "Description": "The version of the bootstrap resources that are currently mastered in this stack",
+            "OutputKey": "BootstrapVersion",
+            "OutputValue": "28"
+          },
+          {
+            "Description": "The domain name of the S3 bucket owned by the CDK toolkit stack",
+            "OutputKey": "BucketDomainName",
+            "OutputValue": "cdk-<qualifier>-assets-111111111111-<region>.s3.<region>.amazonaws.com"
+          },
+          {
+            "Description": "The ARN of the KMS key used to encrypt the asset bucket (deprecated)",
+            "ExportName": "CdkBootstrap-<qualifier>-FileAssetKeyArn",
+            "OutputKey": "FileAssetKeyArn",
+            "OutputValue": "AWS_MANAGED_KEY"
+          }
+        ],
+        "Parameters": [
+          {
+            "ParameterKey": "BootstrapVariant",
+            "ParameterValue": "AWS CDK: Default Resources"
+          },
+          {
+            "ParameterKey": "CloudFormationExecutionPolicies",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "ContainerAssetsRepositoryName",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "FileAssetsBucketKmsKeyId",
+            "ParameterValue": "AWS_MANAGED_KEY"
+          },
+          {
+            "ParameterKey": "FileAssetsBucketName",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "InputPermissionsBoundary",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "PublicAccessBlockConfiguration",
+            "ParameterValue": "true"
+          },
+          {
+            "ParameterKey": "Qualifier",
+            "ParameterValue": "<qualifier>"
+          },
+          {
+            "ParameterKey": "TrustedAccounts",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "TrustedAccountsForLookup",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "UseExamplePermissionsBoundary",
+            "ParameterValue": "false"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "failed-change-set": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "UNAVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "BootstrapVariant",
+            "ParameterValue": "AWS CDK: Default Resources"
+          },
+          {
+            "ParameterKey": "CloudFormationExecutionPolicies",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "ContainerAssetsRepositoryName",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "FileAssetsBucketKmsKeyId",
+            "ParameterValue": "AWS_MANAGED_KEY"
+          },
+          {
+            "ParameterKey": "FileAssetsBucketName",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "InputPermissionsBoundary",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "PublicAccessBlockConfiguration",
+            "ParameterValue": "true"
+          },
+          {
+            "ParameterKey": "Qualifier",
+            "ParameterValue": "<qualifier>"
+          },
+          {
+            "ParameterKey": "TrustedAccounts",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "TrustedAccountsForLookup",
+            "ParameterValue": ""
+          },
+          {
+            "ParameterKey": "UseExamplePermissionsBoundary",
+            "ParameterValue": "false"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "FAILED",
+        "StatusReason": "The submitted information didn't contain changes. Submit different information to create a change set.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
