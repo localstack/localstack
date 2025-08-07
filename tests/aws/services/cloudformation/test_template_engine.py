@@ -722,9 +722,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(
-        reason="CFNV2:Fn::Transform as resource property with missing Name and Parameters fields"
-    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
