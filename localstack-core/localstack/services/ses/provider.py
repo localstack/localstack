@@ -61,7 +61,7 @@ from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Resource, Response
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.ses.models import SentEmail, SentEmailBody
+from localstack.services.ses.models import EmailType, SentEmail, SentEmailBody
 from localstack.utils.aws import arns
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
@@ -381,6 +381,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 context=context,
                 event_destinations=event_destinations,
                 payload=payload,
+                email_type=EmailType.EMAIL,
             )
 
         text_part = message["Body"].get("Text", {}).get("Data")
@@ -432,6 +433,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 context=context,
                 event_destinations=event_destinations,
                 payload=payload,
+                email_type=EmailType.TEMPLATED,
             )
 
         save_for_retrospection(
@@ -488,6 +490,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
                 context=context,
                 event_destinations=event_destinations,
                 payload=payload,
+                email_type=EmailType.RAW,
             )
 
         save_for_retrospection(
@@ -676,6 +679,7 @@ def notify_event_destinations(
     # FIXME: Moto stores the Event Destinations as a single value when it should be a list
     event_destinations: dict,
     payload: EventDestinationPayload,
+    email_type: EmailType,
 ):
     emitter = SNSEmitter(context)
 
@@ -692,7 +696,9 @@ def notify_event_destinations(
 
         matching_event_types = event_destination.get("EventMatchingTypes") or []
         if EventType.send in matching_event_types:
-            emitter.emit_send_event(payload, sns_destination_arn)
+            emitter.emit_send_event(
+                payload, sns_destination_arn, emit_source_arn=email_type != EmailType.TEMPLATED
+            )
         if EventType.delivery in matching_event_types:
             emitter.emit_delivery_event(payload, sns_destination_arn)
 
