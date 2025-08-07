@@ -4,7 +4,6 @@ import logging
 import re
 import traceback
 import uuid
-from typing import Optional
 
 from botocore.exceptions import ClientError
 
@@ -86,7 +85,7 @@ def get_attr_from_model_instance(
     attribute_name: str,
     resource_type: str,
     resource_id: str,
-    attribute_sub_name: Optional[str] = None,
+    attribute_sub_name: str | None = None,
 ) -> str:
     if resource["PhysicalResourceId"] == MOCK_REFERENCE:
         LOG.warning(
@@ -1029,7 +1028,7 @@ class TemplateDeployer:
             stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
 
     def get_change_config(
-        self, action: str, resource: dict, change_set_id: Optional[str] = None
+        self, action: str, resource: dict, change_set_id: str | None = None
     ) -> ChangeConfig:
         result = ChangeConfig(
             **{
@@ -1105,10 +1104,10 @@ class TemplateDeployer:
         existing_stack,
         new_stack,
         # TODO: remove initialize argument from here, and determine action based on resource status
-        initialize: Optional[bool] = False,
+        initialize: bool | None = False,
         change_set_id=None,
-        append_to_changeset: Optional[bool] = False,
-        filter_unchanged_resources: Optional[bool] = False,
+        append_to_changeset: bool | None = False,
+        filter_unchanged_resources: bool | None = False,
     ) -> list[ChangeConfig]:
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1140,9 +1139,9 @@ class TemplateDeployer:
         self,
         existing_stack: Stack,
         new_stack: StackChangeSet,
-        change_set_id: Optional[str] = None,
-        initialize: Optional[bool] = False,
-        action: Optional[str] = None,
+        change_set_id: str | None = None,
+        initialize: bool | None = False,
+        action: str | None = None,
     ):
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1201,7 +1200,7 @@ class TemplateDeployer:
         self,
         changes: list[ChangeConfig],
         stack: Stack,
-        action: Optional[str] = None,
+        action: str | None = None,
         new_stack=None,
     ):
         def _run(*args):

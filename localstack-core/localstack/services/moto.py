@@ -4,8 +4,8 @@ This module provides tools to call moto using moto and botocore internals withou
 
 import copy
 import sys
+from collections.abc import Callable
 from functools import lru_cache
-from typing import Callable, Optional, Union
 
 import moto.backends as moto_backends
 from moto.core.base_backend import BackendDict
@@ -76,7 +76,7 @@ def call_moto_with_request(
 
 def _proxy_moto(
     context: RequestContext, request: ServiceRequest
-) -> Optional[Union[ServiceResponse, Response]]:
+) -> ServiceResponse | Response | None:
     """
     Wraps `call_moto` such that the interface is compliant with a ServiceRequestHandler.
 
@@ -154,7 +154,7 @@ def get_dispatcher(service: str, path: str) -> MotoDispatcher:
     return endpoint
 
 
-@lru_cache()
+@lru_cache
 def get_moto_routing_table(service: str) -> Map:
     """Cached version of load_moto_routing_table."""
     return load_moto_routing_table(service)

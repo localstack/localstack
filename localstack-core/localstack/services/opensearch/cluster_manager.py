@@ -1,7 +1,6 @@
 import dataclasses
 import logging
 import threading
-from typing import Dict, Optional
 
 from botocore.utils import ArnParser
 
@@ -80,9 +79,9 @@ class DomainKey:
 
 def build_cluster_endpoint(
     domain_key: DomainKey,
-    custom_endpoint: Optional[CustomEndpoint] = None,
+    custom_endpoint: CustomEndpoint | None = None,
     engine_type: EngineType = EngineType.OpenSearch,
-    preferred_port: Optional[int] = None,
+    preferred_port: int | None = None,
 ) -> str:
     """
     Builds the cluster endpoint from and optional custom_endpoint and the localstack opensearch config. Example
@@ -131,7 +130,7 @@ def build_cluster_endpoint(
 
 def determine_custom_endpoint(
     domain_endpoint_options: DomainEndpointOptions,
-) -> Optional[CustomEndpoint]:
+) -> CustomEndpoint | None:
     if not domain_endpoint_options:
         return
 
@@ -146,7 +145,7 @@ def determine_custom_endpoint(
 
 
 class ClusterManager:
-    clusters: Dict[str, Server]
+    clusters: dict[str, Server]
 
     def __init__(self) -> None:
         self.clusters = {}
@@ -155,9 +154,9 @@ class ClusterManager:
         self,
         arn: str,
         version: str,
-        endpoint_options: Optional[DomainEndpointOptions] = None,
-        security_options: Optional[SecurityOptions] = None,
-        preferred_port: Optional[int] = None,
+        endpoint_options: DomainEndpointOptions | None = None,
+        security_options: SecurityOptions | None = None,
+        preferred_port: int | None = None,
     ) -> Server:
         """
         Creates a new cluster.
@@ -190,7 +189,7 @@ class ClusterManager:
         self.clusters[arn] = cluster
         return cluster
 
-    def get(self, arn: str) -> Optional[Server]:
+    def get(self, arn: str) -> Server | None:
         return self.clusters.get(arn)
 
     def remove(self, arn: str):
@@ -257,8 +256,8 @@ class MultiplexingClusterManager(ClusterManager):
     - OPENSEARCH_ENDPOINT_STRATEGY = domain / path
     """
 
-    cluster: Optional[Server]
-    endpoints: Dict[str, ClusterEndpoint]
+    cluster: Server | None
+    endpoints: dict[str, ClusterEndpoint]
 
     def __init__(self) -> None:
         super().__init__()
@@ -366,7 +365,7 @@ class SingletonClusterManager(ClusterManager):
     - ES_MULTI_CLUSTER == False
     """
 
-    cluster: Optional[Server]
+    cluster: Server | None
 
     def __init__(self) -> None:
         super().__init__()
@@ -378,8 +377,8 @@ class SingletonClusterManager(ClusterManager):
         self,
         arn: str,
         version: str,
-        endpoint_options: Optional[DomainEndpointOptions] = None,
-        security_options: Optional[SecurityOptions] = None,
+        endpoint_options: DomainEndpointOptions | None = None,
+        security_options: SecurityOptions | None = None,
         preferred_port: int = None,
     ) -> Server:
         with self.mutex:

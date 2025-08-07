@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,26 +14,26 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaAliasProperties(TypedDict):
-    FunctionName: Optional[str]
-    FunctionVersion: Optional[str]
-    Name: Optional[str]
-    Description: Optional[str]
-    Id: Optional[str]
-    ProvisionedConcurrencyConfig: Optional[ProvisionedConcurrencyConfiguration]
-    RoutingConfig: Optional[AliasRoutingConfiguration]
+    FunctionName: str | None
+    FunctionVersion: str | None
+    Name: str | None
+    Description: str | None
+    Id: str | None
+    ProvisionedConcurrencyConfig: ProvisionedConcurrencyConfiguration | None
+    RoutingConfig: AliasRoutingConfiguration | None
 
 
 class ProvisionedConcurrencyConfiguration(TypedDict):
-    ProvisionedConcurrentExecutions: Optional[int]
+    ProvisionedConcurrentExecutions: int | None
 
 
 class VersionWeight(TypedDict):
-    FunctionVersion: Optional[str]
-    FunctionWeight: Optional[float]
+    FunctionVersion: str | None
+    FunctionWeight: float | None
 
 
 class AliasRoutingConfiguration(TypedDict):
-    AdditionalVersionWeights: Optional[list[VersionWeight]]
+    AdditionalVersionWeights: list[VersionWeight] | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

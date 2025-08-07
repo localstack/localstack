@@ -1,6 +1,6 @@
 import logging
 from collections import defaultdict
-from typing import Iterable
+from collections.abc import Iterable
 
 from werkzeug.datastructures.headers import Headers
 

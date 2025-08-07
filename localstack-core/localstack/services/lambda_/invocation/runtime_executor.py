@@ -2,7 +2,7 @@ import dataclasses
 import logging
 from abc import ABC, abstractmethod
 from pathlib import Path
-from typing import Type, TypedDict
+from typing import TypedDict
 
 from plux import PluginManager
 
@@ -133,12 +133,12 @@ class ChmodPath(TypedDict):
     mode: str
 
 
-EXECUTOR_PLUGIN_MANAGER: PluginManager[Type[RuntimeExecutor]] = PluginManager(
+EXECUTOR_PLUGIN_MANAGER: PluginManager[type[RuntimeExecutor]] = PluginManager(
     RuntimeExecutorPlugin.namespace
 )
 
 
-def get_runtime_executor() -> Type[RuntimeExecutor]:
+def get_runtime_executor() -> type[RuntimeExecutor]:
     plugin_name = config.LAMBDA_RUNTIME_EXECUTOR or "docker"
     if not EXECUTOR_PLUGIN_MANAGER.exists(plugin_name):
         LOG.warning(

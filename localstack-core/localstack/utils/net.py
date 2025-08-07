@@ -3,8 +3,9 @@ import random
 import re
 import socket
 import threading
+from collections.abc import MutableMapping
 from contextlib import closing
-from typing import Any, List, MutableMapping, NamedTuple, Optional, Union
+from typing import Any, NamedTuple, Optional, Union
 from urllib.parse import urlparse
 
 import dns.resolver
@@ -56,7 +57,7 @@ def is_port_open(
     port_or_url: Union[int, str],
     http_path: str = None,
     expect_success: bool = True,
-    protocols: Optional[Union[str, List[str]]] = None,
+    protocols: Optional[Union[str, list[str]]] = None,
     quiet: bool = True,
 ):
     from localstack.utils.http import safe_requests
@@ -92,7 +93,7 @@ def is_port_open(
                         answers = resolver.query("google.com", "A")
                         assert len(answers) > 0
                     else:
-                        sock.sendto(bytes(), (host, port))
+                        sock.sendto(b"", (host, port))
                         sock.recvfrom(1024)
                 except Exception:
                     if not quiet:
@@ -190,7 +191,7 @@ def port_can_be_bound(port: IntOrPort, address: str = "") -> bool:
         return False
 
 
-def get_free_udp_port(blocklist: List[int] = None) -> int:
+def get_free_udp_port(blocklist: list[int] = None) -> int:
     blocklist = blocklist or []
     for i in range(10):
         udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -202,7 +203,7 @@ def get_free_udp_port(blocklist: List[int] = None) -> int:
     raise Exception(f"Unable to determine free UDP port with blocklist {blocklist}")
 
 
-def get_free_tcp_port(blocklist: List[int] = None) -> int:
+def get_free_tcp_port(blocklist: list[int] = None) -> int:
     """
     Tries to bind a socket to port 0 and returns the port that was assigned by the system. If the port is
     in the given ``blocklist``, or the port is marked as reserved in ``dynamic_port_range``, the procedure
@@ -272,7 +273,7 @@ def resolve_hostname(hostname: str) -> Optional[str]:
     """Resolve the given hostname and return its IP address, or None if it cannot be resolved."""
     try:
         return socket.gethostbyname(hostname)
-    except socket.error:
+    except OSError:
         return None
 
 
@@ -280,7 +281,7 @@ def is_ip_address(addr: str) -> bool:
     try:
         socket.inet_aton(addr)
         return True
-    except socket.error:
+    except OSError:
         return False
 
 
@@ -468,9 +469,9 @@ def get_docker_host_from_container() -> str:
         if config.is_in_docker:
             try:
                 result = socket.gethostbyname("host.docker.internal")
-            except socket.error:
+            except OSError:
                 result = socket.gethostbyname("host.containers.internal")
-    except socket.error:
+    except OSError:
         # TODO if neither host resolves, we might be in linux. We could just use the default gateway then
         pass
     return result

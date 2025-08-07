@@ -1,6 +1,6 @@
 import datetime
 import re
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
@@ -47,7 +47,7 @@ class Timestamp(WaitFunction):
         return re.match(TIMESTAMP_PATTERN, timestamp) is not None
 
     @staticmethod
-    def _from_timestamp_string(timestamp: str) -> Optional[datetime.datetime]:
+    def _from_timestamp_string(timestamp: str) -> datetime.datetime | None:
         if not Timestamp._is_valid_timestamp_pattern(timestamp):
             return None
         try:

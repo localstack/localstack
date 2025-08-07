@@ -2,7 +2,7 @@ import functools
 import logging
 import platform
 import random
-from typing import List, Optional, Union
+from typing import Optional, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
@@ -74,11 +74,11 @@ def get_current_container_id() -> str:
     return container_id
 
 
-def inspect_current_container_mounts() -> List[VolumeInfo]:
+def inspect_current_container_mounts() -> list[VolumeInfo]:
     return DOCKER_CLIENT.inspect_container_volumes(get_current_container_id())
 
 
-@functools.lru_cache()
+@functools.lru_cache
 def get_default_volume_dir_mount() -> Optional[VolumeInfo]:
     """
     Returns the volume information of LocalStack's DEFAULT_VOLUME_DIR (/var/lib/localstack), if mounted,
@@ -132,7 +132,7 @@ def get_host_path_for_path_in_docker(path):
 
 
 def container_ports_can_be_bound(
-    ports: Union[IntOrPort, List[IntOrPort]],
+    ports: Union[IntOrPort, list[IntOrPort]],
     address: Optional[str] = None,
 ) -> bool:
     """Determine whether a given list of ports can be bound by Docker containers

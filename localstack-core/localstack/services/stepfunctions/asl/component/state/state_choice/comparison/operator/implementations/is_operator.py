@@ -1,6 +1,6 @@
 import datetime
 import logging
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.state.state_choice.comparison.comparison_operator_type import (
     ComparisonOperatorType,
@@ -88,7 +88,7 @@ class IsTimestamp(Operator):
         return str(ComparisonOperatorType.IsTimestamp)
 
     @staticmethod
-    def string_to_timestamp(string: str) -> Optional[datetime.datetime]:
+    def string_to_timestamp(string: str) -> datetime.datetime | None:
         try:
             return datetime.datetime.strptime(string, IsTimestamp.TIMESTAMP_FORMAT)
         except Exception:

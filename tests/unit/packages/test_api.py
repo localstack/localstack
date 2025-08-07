@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from queue import Queue
 from threading import Event, RLock
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
@@ -15,7 +15,7 @@ class TestPackage(Package):
     def __init__(self):
         super().__init__("Test Package", "test-version")
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["test-version"]
 
     def _get_installer(self, version: str) -> PackageInstaller:

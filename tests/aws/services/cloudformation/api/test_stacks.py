@@ -312,7 +312,7 @@ class TestStacksApi:
         self, rollback_disabled, length_expected, aws_client
     ):
         template_with_error = open(
-            os.path.join(os.path.dirname(__file__), "../../../templates/multiple_bucket.yaml"), "r"
+            os.path.join(os.path.dirname(__file__), "../../../templates/multiple_bucket.yaml")
         ).read()
 
         stack_name = f"stack-{short_uid()}"
@@ -356,7 +356,6 @@ class TestStacksApi:
             os.path.join(
                 os.path.dirname(__file__), "../../../templates/multiple_bucket_update.yaml"
             ),
-            "r",
         ).read()
 
         aws_client.cloudformation.create_stack(
@@ -410,7 +409,6 @@ class TestStacksApi:
         )
         template = open(
             os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"),
-            "r",
         ).read()
 
         stack = aws_client.cloudformation.create_stack(
@@ -1002,7 +1000,7 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
     snapshot.add_transformer(SortingTransformer("Parameters", lambda x: x.get("ParameterKey", "")))
 
     template_path = os.path.join(os.path.dirname(__file__), "../../../templates/cfn_no_echo.yml")
-    template = open(template_path, "r").read()
+    template = open(template_path).read()
 
     deployment = deploy_cfn_template(
         template=template,

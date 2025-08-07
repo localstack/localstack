@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import timedelta, timezone
+from datetime import UTC, timedelta
 
 import pytest
 from botocore.exceptions import ClientError
@@ -377,7 +377,7 @@ class TestScheduleCron:
         # check if message was delivered at the correct time
         time_message = events_time_string_to_timestamp(
             json.loads(messages[0]["Body"])["time"]
-        ).replace(tzinfo=timezone.utc)
+        ).replace(tzinfo=UTC)
 
         # TODO fix JobScheduler to execute on exact time
         # round datetime to nearest minute

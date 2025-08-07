@@ -16,7 +16,7 @@ from localstack.utils.collections import (
 
 class MyTypeDict(TypedDict):
     key_one: str
-    key_optional: Optional[str]
+    key_optional: str | None
 
 
 def test_select_from_typed_dict():

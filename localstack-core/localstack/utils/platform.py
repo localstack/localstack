@@ -14,14 +14,14 @@ def is_windows() -> bool:
     return "windows" == platform.system().lower()
 
 
-@lru_cache()
+@lru_cache
 def is_debian() -> bool:
     from localstack.utils.files import load_file
 
     return "Debian" in load_file("/etc/issue", "")
 
 
-@lru_cache()
+@lru_cache
 def is_redhat() -> bool:
     from localstack.utils.files import load_file
 

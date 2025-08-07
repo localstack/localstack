@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import base64
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -16,155 +16,155 @@ from localstack.utils.strings import to_str
 
 
 class EC2InstanceProperties(TypedDict):
-    AdditionalInfo: Optional[str]
-    Affinity: Optional[str]
-    AvailabilityZone: Optional[str]
-    BlockDeviceMappings: Optional[list[BlockDeviceMapping]]
-    CpuOptions: Optional[CpuOptions]
-    CreditSpecification: Optional[CreditSpecification]
-    DisableApiTermination: Optional[bool]
-    EbsOptimized: Optional[bool]
-    ElasticGpuSpecifications: Optional[list[ElasticGpuSpecification]]
-    ElasticInferenceAccelerators: Optional[list[ElasticInferenceAccelerator]]
-    EnclaveOptions: Optional[EnclaveOptions]
-    HibernationOptions: Optional[HibernationOptions]
-    HostId: Optional[str]
-    HostResourceGroupArn: Optional[str]
-    IamInstanceProfile: Optional[str]
-    Id: Optional[str]
-    ImageId: Optional[str]
-    InstanceInitiatedShutdownBehavior: Optional[str]
-    InstanceType: Optional[str]
-    Ipv6AddressCount: Optional[int]
-    Ipv6Addresses: Optional[list[InstanceIpv6Address]]
-    KernelId: Optional[str]
-    KeyName: Optional[str]
-    LaunchTemplate: Optional[LaunchTemplateSpecification]
-    LicenseSpecifications: Optional[list[LicenseSpecification]]
-    Monitoring: Optional[bool]
-    NetworkInterfaces: Optional[list[NetworkInterface]]
-    PlacementGroupName: Optional[str]
-    PrivateDnsName: Optional[str]
-    PrivateDnsNameOptions: Optional[PrivateDnsNameOptions]
-    PrivateIp: Optional[str]
-    PrivateIpAddress: Optional[str]
-    PropagateTagsToVolumeOnCreation: Optional[bool]
-    PublicDnsName: Optional[str]
-    PublicIp: Optional[str]
-    RamdiskId: Optional[str]
-    SecurityGroupIds: Optional[list[str]]
-    SecurityGroups: Optional[list[str]]
-    SourceDestCheck: Optional[bool]
-    SsmAssociations: Optional[list[SsmAssociation]]
-    SubnetId: Optional[str]
-    Tags: Optional[list[Tag]]
-    Tenancy: Optional[str]
-    UserData: Optional[str]
-    Volumes: Optional[list[Volume]]
+    AdditionalInfo: str | None
+    Affinity: str | None
+    AvailabilityZone: str | None
+    BlockDeviceMappings: list[BlockDeviceMapping] | None
+    CpuOptions: CpuOptions | None
+    CreditSpecification: CreditSpecification | None
+    DisableApiTermination: bool | None
+    EbsOptimized: bool | None
+    ElasticGpuSpecifications: list[ElasticGpuSpecification] | None
+    ElasticInferenceAccelerators: list[ElasticInferenceAccelerator] | None
+    EnclaveOptions: EnclaveOptions | None
+    HibernationOptions: HibernationOptions | None
+    HostId: str | None
+    HostResourceGroupArn: str | None
+    IamInstanceProfile: str | None
+    Id: str | None
+    ImageId: str | None
+    InstanceInitiatedShutdownBehavior: str | None
+    InstanceType: str | None
+    Ipv6AddressCount: int | None
+    Ipv6Addresses: list[InstanceIpv6Address] | None
+    KernelId: str | None
+    KeyName: str | None
+    LaunchTemplate: LaunchTemplateSpecification | None
+    LicenseSpecifications: list[LicenseSpecification] | None
+    Monitoring: bool | None
+    NetworkInterfaces: list[NetworkInterface] | None
+    PlacementGroupName: str | None
+    PrivateDnsName: str | None
+    PrivateDnsNameOptions: PrivateDnsNameOptions | None
+    PrivateIp: str | None
+    PrivateIpAddress: str | None
+    PropagateTagsToVolumeOnCreation: bool | None
+    PublicDnsName: str | None
+    PublicIp: str | None
+    RamdiskId: str | None
+    SecurityGroupIds: list[str] | None
+    SecurityGroups: list[str] | None
+    SourceDestCheck: bool | None
+    SsmAssociations: list[SsmAssociation] | None
+    SubnetId: str | None
+    Tags: list[Tag] | None
+    Tenancy: str | None
+    UserData: str | None
+    Volumes: list[Volume] | None
 
 
 class Ebs(TypedDict):
-    DeleteOnTermination: Optional[bool]
-    Encrypted: Optional[bool]
-    Iops: Optional[int]
-    KmsKeyId: Optional[str]
-    SnapshotId: Optional[str]
-    VolumeSize: Optional[int]
-    VolumeType: Optional[str]
+    DeleteOnTermination: bool | None
+    Encrypted: bool | None
+    Iops: int | None
+    KmsKeyId: str | None
+    SnapshotId: str | None
+    VolumeSize: int | None
+    VolumeType: str | None
 
 
 class BlockDeviceMapping(TypedDict):
-    DeviceName: Optional[str]
-    Ebs: Optional[Ebs]
-    NoDevice: Optional[dict]
-    VirtualName: Optional[str]
+    DeviceName: str | None
+    Ebs: Ebs | None
+    NoDevice: dict | None
+    VirtualName: str | None
 
 
 class InstanceIpv6Address(TypedDict):
-    Ipv6Address: Optional[str]
+    Ipv6Address: str | None
 
 
 class ElasticGpuSpecification(TypedDict):
-    Type: Optional[str]
+    Type: str | None
 
 
 class ElasticInferenceAccelerator(TypedDict):
-    Type: Optional[str]
-    Count: Optional[int]
+    Type: str | None
+    Count: int | None
 
 
 class Volume(TypedDict):
-    Device: Optional[str]
-    VolumeId: Optional[str]
+    Device: str | None
+    VolumeId: str | None
 
 
 class LaunchTemplateSpecification(TypedDict):
-    Version: Optional[str]
-    LaunchTemplateId: Optional[str]
-    LaunchTemplateName: Optional[str]
+    Version: str | None
+    LaunchTemplateId: str | None
+    LaunchTemplateName: str | None
 
 
 class EnclaveOptions(TypedDict):
-    Enabled: Optional[bool]
+    Enabled: bool | None
 
 
 class PrivateIpAddressSpecification(TypedDict):
-    Primary: Optional[bool]
-    PrivateIpAddress: Optional[str]
+    Primary: bool | None
+    PrivateIpAddress: str | None
 
 
 class NetworkInterface(TypedDict):
-    DeviceIndex: Optional[str]
-    AssociateCarrierIpAddress: Optional[bool]
-    AssociatePublicIpAddress: Optional[bool]
-    DeleteOnTermination: Optional[bool]
-    Description: Optional[str]
-    GroupSet: Optional[list[str]]
-    Ipv6AddressCount: Optional[int]
-    Ipv6Addresses: Optional[list[InstanceIpv6Address]]
-    NetworkInterfaceId: Optional[str]
-    PrivateIpAddress: Optional[str]
-    PrivateIpAddresses: Optional[list[PrivateIpAddressSpecification]]
-    SecondaryPrivateIpAddressCount: Optional[int]
-    SubnetId: Optional[str]
+    DeviceIndex: str | None
+    AssociateCarrierIpAddress: bool | None
+    AssociatePublicIpAddress: bool | None
+    DeleteOnTermination: bool | None
+    Description: str | None
+    GroupSet: list[str] | None
+    Ipv6AddressCount: int | None
+    Ipv6Addresses: list[InstanceIpv6Address] | None
+    NetworkInterfaceId: str | None
+    PrivateIpAddress: str | None
+    PrivateIpAddresses: list[PrivateIpAddressSpecification] | None
+    SecondaryPrivateIpAddressCount: int | None
+    SubnetId: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class HibernationOptions(TypedDict):
-    Configured: Optional[bool]
+    Configured: bool | None
 
 
 class LicenseSpecification(TypedDict):
-    LicenseConfigurationArn: Optional[str]
+    LicenseConfigurationArn: str | None
 
 
 class CpuOptions(TypedDict):
-    CoreCount: Optional[int]
-    ThreadsPerCore: Optional[int]
+    CoreCount: int | None
+    ThreadsPerCore: int | None
 
 
 class PrivateDnsNameOptions(TypedDict):
-    EnableResourceNameDnsAAAARecord: Optional[bool]
-    EnableResourceNameDnsARecord: Optional[bool]
-    HostnameType: Optional[str]
+    EnableResourceNameDnsAAAARecord: bool | None
+    EnableResourceNameDnsARecord: bool | None
+    HostnameType: str | None
 
 
 class AssociationParameter(TypedDict):
-    Key: Optional[str]
-    Value: Optional[list[str]]
+    Key: str | None
+    Value: list[str] | None
 
 
 class SsmAssociation(TypedDict):
-    DocumentName: Optional[str]
-    AssociationParameters: Optional[list[AssociationParameter]]
+    DocumentName: str | None
+    AssociationParameters: list[AssociationParameter] | None
 
 
 class CreditSpecification(TypedDict):
-    CPUCredits: Optional[str]
+    CPUCredits: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

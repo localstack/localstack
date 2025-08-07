@@ -1,7 +1,7 @@
 import json
 import logging
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, List, Protocol
+from typing import TYPE_CHECKING, Protocol
 
 import pytest
 import requests
@@ -29,7 +29,7 @@ class NotificationFactory(Protocol):
     A protocol for connecting a bucket to a queue with a notification configurations and the necessary policies.
     """
 
-    def __call__(self, bucket_name: str, queue_url: str, events: List["EventType"]) -> None:
+    def __call__(self, bucket_name: str, queue_url: str, events: list["EventType"]) -> None:
         """
         Creates a new notification configuration and respective policies.
 
@@ -79,7 +79,7 @@ def create_sqs_bucket_notification(
     sqs_client: "SQSClient",
     bucket_name: str,
     queue_url: str,
-    events: List["EventType"],
+    events: list["EventType"],
 ):
     """A NotificationFactory."""
     queue_arn = set_policy_for_queue(sqs_client, queue_url, bucket_name)
@@ -100,7 +100,7 @@ def s3_create_sqs_bucket_notification(aws_client) -> NotificationFactory:
     def factory(
         bucket_name: str,
         queue_url: str,
-        events: List["EventType"],
+        events: list["EventType"],
         s3_client=aws_client.s3,
         sqs_client=aws_client.sqs,
     ):
@@ -111,7 +111,7 @@ def s3_create_sqs_bucket_notification(aws_client) -> NotificationFactory:
 
 def sqs_collect_s3_events(
     sqs_client: "SQSClient", queue_url: str, min_events: int, timeout: int = 10
-) -> List[Dict]:
+) -> list[dict]:
     """
     Polls the given queue for the given amount of time and extracts and flattens from the received messages all
     events (messages that have a "Records" field in their body, and where the records can be json-deserialized).

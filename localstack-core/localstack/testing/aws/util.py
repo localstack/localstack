@@ -1,6 +1,7 @@
 import functools
 import os
-from typing import Callable, Dict, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 import boto3
 import botocore
@@ -80,7 +81,7 @@ def wait_for_user(keys, region_name: str):
 
 def create_client_with_keys(
     service: str,
-    keys: Dict[str, str],
+    keys: dict[str, str],
     region_name: str,
     client_config: Config = None,
 ):

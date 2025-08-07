@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Pattern
+from re import Pattern
 
 from localstack_snapshot.snapshots.transformer import (
     PATTERN_ISO8601,
@@ -50,7 +50,7 @@ PATTERN_KEY_ARN = re.compile(
 class TransformerUtility:
     @staticmethod
     def key_value(
-        key: str, value_replacement: Optional[str] = None, reference_replacement: bool = True
+        key: str, value_replacement: str | None = None, reference_replacement: bool = True
     ):
         """Creates a new KeyValueBasedTransformer. If the key matches, the value will be replaced.
 

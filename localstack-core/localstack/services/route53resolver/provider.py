@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from moto.route53resolver.models import Route53ResolverBackend as MotoRoute53ResolverBackend
 from moto.route53resolver.models import route53resolver_backends
@@ -135,8 +135,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             ShareStatus="NOT_SHARED",
             StatusMessage="Created Firewall Rule Group",
             CreatorRequestId=creator_request_id,
-            CreationTime=datetime.now(timezone.utc).isoformat(),
-            ModificationTime=datetime.now(timezone.utc).isoformat(),
+            CreationTime=datetime.now(UTC).isoformat(),
+            ModificationTime=datetime.now(UTC).isoformat(),
         )
         store.firewall_rule_groups[firewall_rule_group_id] = firewall_rule_group
         store.firewall_rules[firewall_rule_group_id] = {}
@@ -202,8 +202,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             StatusMessage="Created Firewall Domain List",
             ManagedOwnerName=context.account_id,
             CreatorRequestId=creator_request_id,
-            CreationTime=datetime.now(timezone.utc).isoformat(),
-            ModificationTime=datetime.now(timezone.utc).isoformat(),
+            CreationTime=datetime.now(UTC).isoformat(),
+            ModificationTime=datetime.now(UTC).isoformat(),
         )
         store.firewall_domain_lists[id] = firewall_domain_list
         route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
@@ -283,7 +283,7 @@ class Route53ResolverProvider(Route53ResolverApi):
             store.firewall_domains[firewall_domain_list_id] = domains
 
         firewall_domain_list["StatusMessage"] = "Finished domain list update"
-        firewall_domain_list["ModificationTime"] = datetime.now(timezone.utc).isoformat()
+        firewall_domain_list["ModificationTime"] = datetime.now(UTC).isoformat()
         return UpdateFirewallDomainsResponse(
             Id=firewall_domain_list.get("Id"),
             Name=firewall_domain_list.get("Name"),
@@ -340,8 +340,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             BlockOverrideDnsType=block_override_dns_type,
             BlockOverrideTtl=block_override_ttl,
             CreatorRequestId=creator_request_id,
-            CreationTime=datetime.now(timezone.utc).isoformat(),
-            ModificationTime=datetime.now(timezone.utc).isoformat(),
+            CreationTime=datetime.now(UTC).isoformat(),
+            ModificationTime=datetime.now(UTC).isoformat(),
             FirewallDomainRedirectionAction=firewall_domain_redirection_action,
             Qtype=qtype,
         )
@@ -492,8 +492,8 @@ class Route53ResolverProvider(Route53ResolverApi):
             Status="COMPLETE",
             StatusMessage="Creating Firewall Rule Group Association",
             CreatorRequestId=creator_request_id,
-            CreationTime=datetime.now(timezone.utc).isoformat(),
-            ModificationTime=datetime.now(timezone.utc).isoformat(),
+            CreationTime=datetime.now(UTC).isoformat(),
+            ModificationTime=datetime.now(UTC).isoformat(),
         )
         store.firewall_rule_group_associations[id] = firewall_rule_group_association
         route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
@@ -579,7 +579,7 @@ class Route53ResolverProvider(Route53ResolverApi):
             ShareStatus="NOT_SHARED",
             DestinationArn=destination_arn,
             CreatorRequestId=creator_request_id,
-            CreationTime=datetime.now(timezone.utc).isoformat(),
+            CreationTime=datetime.now(UTC).isoformat(),
         )
         store.resolver_query_log_configs[id] = resolver_query_log_config
         route53resolver_backends[context.account_id][context.region].tagger.tag_resource(
@@ -667,7 +667,7 @@ class Route53ResolverProvider(Route53ResolverApi):
                 Status="ACTIVE",
                 Error="NONE",
                 ErrorMessage="",
-                CreationTime=datetime.now(timezone.utc).isoformat(),
+                CreationTime=datetime.now(UTC).isoformat(),
             )
         )
 

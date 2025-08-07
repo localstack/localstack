@@ -2,7 +2,7 @@ import logging
 import math
 import os
 import re
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
@@ -54,7 +54,7 @@ def create_chunked_data(data, chunk_size: int = 80):
     return ret
 
 
-def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
+def canonicalize_headers(headers: Union[dict, CaseInsensitiveDict]) -> dict:
     if not headers:
         return headers
 
@@ -76,7 +76,7 @@ def add_path_parameters_to_url(uri: str, path_params: list):
     return urlunparse(url._replace(path=new_path))
 
 
-def add_query_params_to_url(uri: str, query_params: Dict) -> str:
+def add_query_params_to_url(uri: str, query_params: dict) -> str:
     """
     Add query parameters to the uri.
     :param uri: the base uri it can contains path arguments and query parameters
@@ -103,7 +103,7 @@ def add_query_params_to_url(uri: str, query_params: Dict) -> str:
 
 
 def make_http_request(
-    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+    url: str, data: Union[bytes, str] = None, headers: dict[str, str] = None, method: str = "GET"
 ) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
@@ -141,7 +141,7 @@ class _RequestsSafe:
 safe_requests = _RequestsSafe()
 
 
-def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
+def parse_request_data(method: str, path: str, data=None, headers=None) -> dict:
     """Extract request data either from query string as well as request body (e.g., for POST)."""
     result = {}
     headers = headers or {}
@@ -165,7 +165,7 @@ def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
     return result
 
 
-def get_proxies() -> Dict[str, str]:
+def get_proxies() -> dict[str, str]:
     proxy_map = {}
     if config.OUTBOUND_HTTP_PROXY:
         proxy_map["http"] = config.OUTBOUND_HTTP_PROXY

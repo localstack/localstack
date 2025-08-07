@@ -1,4 +1,4 @@
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.aws.api.stepfunctions import Arn, Definition, LongArn, StateMachineType
 
@@ -18,12 +18,10 @@ class ExecutionDetails:
     arn: Final[LongArn]
     name: Final[str]
     role_arn: Final[Arn]
-    inpt: Final[Optional[Any]]
+    inpt: Final[Any | None]
     start_time: Final[str]
 
-    def __init__(
-        self, arn: LongArn, name: str, role_arn: Arn, inpt: Optional[Any], start_time: str
-    ):
+    def __init__(self, arn: LongArn, name: str, role_arn: Arn, inpt: Any | None, start_time: str):
         self.arn = arn
         self.name = name
         self.role_arn = role_arn

@@ -4,11 +4,12 @@ import os
 import threading
 import time
 from collections import defaultdict
+from collections.abc import Iterator
 from io import BytesIO, UnsupportedOperation
 from shutil import rmtree
 from tempfile import SpooledTemporaryFile, mkdtemp
 from threading import RLock
-from typing import IO, Iterator, Literal, Optional, TypedDict
+from typing import IO, Literal, TypedDict
 
 from readerwriterlock import rwlock
 
@@ -61,9 +62,9 @@ class EphemeralS3StoredObject(S3StoredObject):
     file: LockedSpooledTemporaryFile
     size: int
     _pos: int
-    etag: Optional[str]
-    checksum_hash: Optional[ChecksumHash]
-    _checksum: Optional[str]
+    etag: str | None
+    checksum_hash: ChecksumHash | None
+    _checksum: str | None
     _lock: rwlock.Lockable
 
     def __init__(
@@ -202,7 +203,7 @@ class EphemeralS3StoredObject(S3StoredObject):
         return self.file.internal_last_modified
 
     @property
-    def checksum(self) -> Optional[str]:
+    def checksum(self) -> str | None:
         """
         Return the object checksum base64 encoded, if the S3Object has a checksum algorithm.
         If the checksum hasn't been calculated, this method will iterate over the file again to recalculate it.
@@ -323,7 +324,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: Optional[ObjectRange],
+        range_data: ObjectRange | None,
     ) -> None:
         """
         Create and add an EphemeralS3StoredObject to the Multipart collection, with an S3Object as input. This will

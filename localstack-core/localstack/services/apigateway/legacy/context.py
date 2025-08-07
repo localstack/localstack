@@ -1,7 +1,7 @@
 import base64
 import json
 from enum import Enum
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
 
 from responses import Response
 
@@ -25,15 +25,15 @@ class ApiInvocationContext:
     method: str
     path: str
     data: InvocationPayload
-    headers: Dict[str, str]
+    headers: dict[str, str]
 
     # raw URI (including query string) retired from werkzeug "RAW_URI" environment variable
     raw_uri: str
 
     # invocation context
-    context: Dict[str, Any]
+    context: dict[str, Any]
     # authentication info for this invocation
-    auth_context: Dict[str, Any]
+    auth_context: dict[str, Any]
 
     # target API/resource details extracted from the invocation
     apigw_version: ApiGatewayVersion
@@ -43,24 +43,24 @@ class ApiInvocationContext:
     region_name: str
     # resource path, including any path parameter placeholders (e.g., "/my/path/{id}")
     resource_path: str
-    integration: Dict
-    resource: Dict
+    integration: dict
+    resource: dict
     # Invocation path with query string, e.g., "/my/path?test". Defaults to "path", can be used
     #  to overwrite the actual API path, in case the path format "../_user_request_/.." is used.
     _path_with_query_string: str
 
     # response templates to be applied to the invocation result
-    response_templates: Dict
+    response_templates: dict
 
-    route: Dict
+    route: dict
     connection_id: str
-    path_params: Dict
+    path_params: dict
 
     # response object
     response: Response
 
     # dict of stage variables (mapping names to values)
-    stage_variables: Dict[str, str]
+    stage_variables: dict[str, str]
 
     # websockets route selection
     ws_route: str
@@ -69,12 +69,12 @@ class ApiInvocationContext:
         self,
         method: str,
         path: str,
-        data: Union[str, bytes],
-        headers: Dict[str, str],
+        data: str | bytes,
+        headers: dict[str, str],
         api_id: str = None,
         stage: str = None,
-        context: Dict[str, Any] = None,
-        auth_context: Dict[str, Any] = None,
+        context: dict[str, Any] = None,
+        auth_context: dict[str, Any] = None,
     ):
         self.method = method
         self._path = path
@@ -109,7 +109,7 @@ class ApiInvocationContext:
         self._path = new_path
 
     @property
-    def resource_id(self) -> Optional[str]:
+    def resource_id(self) -> str | None:
         return (self.resource or {}).get("id")
 
     @property
@@ -130,18 +130,18 @@ class ApiInvocationContext:
             new_path = "/" + new_path.lstrip("/")
         self._path_with_query_string = new_path
 
-    def query_params(self) -> Dict[str, str]:
+    def query_params(self) -> dict[str, str]:
         """Extract the query parameters from the target URL or path in this request context."""
         query_string = self.path_with_query_string.partition("?")[2]
         return parse_query_string(query_string)
 
     @property
-    def integration_uri(self) -> Optional[str]:
+    def integration_uri(self) -> str | None:
         integration = self.integration or {}
         return integration.get("uri") or integration.get("integrationUri")
 
     @property
-    def auth_identity(self) -> Optional[Dict]:
+    def auth_identity(self) -> dict | None:
         if isinstance(self.auth_context, dict):
             if self.auth_context.get("identity") is None:
                 self.auth_context["identity"] = {}
@@ -153,7 +153,7 @@ class ApiInvocationContext:
             return self.auth_context.get("authorizer_type") if self.auth_context else None
 
     @property
-    def authorizer_result(self) -> Dict[str, Any]:
+    def authorizer_result(self) -> dict[str, Any]:
         if isinstance(self.auth_context, dict):
             return self.auth_context.get("authorizer") if self.auth_context else {}
 
@@ -165,7 +165,7 @@ class ApiInvocationContext:
         """Whether this is an API Gateway v1 request"""
         return self.apigw_version == ApiGatewayVersion.V1
 
-    def cookies(self) -> Optional[List[str]]:
+    def cookies(self) -> list[str] | None:
         if cookies := self.headers.get("cookie") or "":
             return list(cookies.split(";"))
         return None

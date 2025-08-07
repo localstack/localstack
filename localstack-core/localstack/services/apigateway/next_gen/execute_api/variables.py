@@ -1,4 +1,4 @@
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 
 class ContextVarsAuthorizer(TypedDict, total=False):
@@ -6,9 +6,9 @@ class ContextVarsAuthorizer(TypedDict, total=False):
     # format
 
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
-    claims: Optional[dict[str, str]]
+    claims: dict[str, str] | None
     """Claims returned from the Amazon Cognito user pool after the method caller is successfully authenticated"""
-    principalId: Optional[str]
+    principalId: str | None
     """The principal user identification associated with the token sent by the client and returned from an API Gateway Lambda authorizer"""
 
 
@@ -29,38 +29,38 @@ class ContextVarsIdentityClientCert(TypedDict, total=False):
 
 class ContextVarsIdentity(TypedDict, total=False):
     # https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-mapping-template-reference.html
-    accountId: Optional[str]
+    accountId: str | None
     """The AWS account ID associated with the request."""
-    accessKey: Optional[str]
+    accessKey: str | None
     """The AWS access key associated with the request."""
-    apiKey: Optional[str]
+    apiKey: str | None
     """For API methods that require an API key, this variable is the API key associated with the method request."""
-    apiKeyId: Optional[str]
+    apiKeyId: str | None
     """The API key ID associated with an API request that requires an API key."""
-    caller: Optional[str]
+    caller: str | None
     """The principal identifier of the caller that signed the request. Supported for resources that use IAM authorization."""
-    cognitoAuthenticationProvider: Optional[str]
+    cognitoAuthenticationProvider: str | None
     """A comma-separated list of the Amazon Cognito authentication providers used by the caller making the request"""
-    cognitoAuthenticationType: Optional[str]
+    cognitoAuthenticationType: str | None
     """The Amazon Cognito authentication type of the caller making the request"""
-    cognitoIdentityId: Optional[str]
+    cognitoIdentityId: str | None
     """The Amazon Cognito identity ID of the caller making the request"""
-    cognitoIdentityPoolId: Optional[str]
+    cognitoIdentityPoolId: str | None
     """The Amazon Cognito identity pool ID of the caller making the request"""
-    principalOrgId: Optional[str]
+    principalOrgId: str | None
     """The AWS organization ID."""
-    sourceIp: Optional[str]
+    sourceIp: str | None
     """The source IP address of the immediate TCP connection making the request to the API Gateway endpoint"""
     clientCert: ContextVarsIdentityClientCert
-    vpcId: Optional[str]
+    vpcId: str | None
     """The VPC ID of the VPC making the request to the API Gateway endpoint."""
-    vpceId: Optional[str]
+    vpceId: str | None
     """The VPC endpoint ID of the VPC endpoint making the request to the API Gateway endpoint."""
-    user: Optional[str]
+    user: str | None
     """The principal identifier of the user that will be authorized against resource access for resources that use IAM authorization."""
-    userAgent: Optional[str]
+    userAgent: str | None
     """The User-Agent header of the API caller."""
-    userArn: Optional[str]
+    userArn: str | None
     """The Amazon Resource Name (ARN) of the effective user identified after authentication."""
 
 
@@ -95,9 +95,9 @@ class ContextVariables(TypedDict, total=False):
     """The API owner's AWS account ID."""
     apiId: str
     """The identifier API Gateway assigns to your API."""
-    authorizer: Optional[ContextVarsAuthorizer]
+    authorizer: ContextVarsAuthorizer | None
     """The principal user identification associated with the token."""
-    awsEndpointRequestId: Optional[str]
+    awsEndpointRequestId: str | None
     """The AWS endpoint's request ID."""
     deploymentId: str
     """The ID of the API deployment."""
@@ -111,8 +111,8 @@ class ContextVariables(TypedDict, total=False):
     """The extended ID that API Gateway generates and assigns to the API request. """
     httpMethod: str
     """The HTTP method used"""
-    identity: Optional[ContextVarsIdentity]
-    isCanaryRequest: Optional[bool]
+    identity: ContextVarsIdentity | None
+    isCanaryRequest: bool | None
     """Indicates if the request was directed to the canary"""
     path: str
     """The request path."""
@@ -120,76 +120,76 @@ class ContextVariables(TypedDict, total=False):
     """The request protocol"""
     requestId: str
     """An ID for the request. Clients can override this request ID. """
-    requestOverride: Optional[ContextVarsRequestOverride]
+    requestOverride: ContextVarsRequestOverride | None
     """Request override. Only exists for request mapping template"""
     requestTime: str
     """The CLF-formatted request time (dd/MMM/yyyy:HH:mm:ss +-hhmm)."""
     requestTimeEpoch: int
     """The Epoch-formatted request time, in milliseconds."""
-    resourceId: Optional[str]
+    resourceId: str | None
     """The identifier that API Gateway assigns to your resource."""
-    resourcePath: Optional[str]
+    resourcePath: str | None
     """The path to your resource"""
-    responseOverride: Optional[ContextVarsResponseOverride]
+    responseOverride: ContextVarsResponseOverride | None
     """Response override. Only exists for response mapping template"""
     stage: str
     """The deployment stage of the API request """
-    wafResponseCode: Optional[str]
+    wafResponseCode: str | None
     """The response received from AWS WAF: WAF_ALLOW or WAF_BLOCK. Will not be set if the stage is not associated with a web ACL"""
-    webaclArn: Optional[str]
+    webaclArn: str | None
     """The complete ARN of the web ACL that is used to decide whether to allow or block the request. Will not be set if the stage is not associated with a web ACL."""
 
 
 class LoggingContextVarsAuthorize(TypedDict, total=False):
-    error: Optional[str]
-    latency: Optional[str]
-    status: Optional[str]
+    error: str | None
+    latency: str | None
+    status: str | None
 
 
 class LoggingContextVarsAuthorizer(TypedDict, total=False):
-    error: Optional[str]
-    integrationLatency: Optional[str]
-    integrationStatus: Optional[str]
-    latency: Optional[str]
-    requestId: Optional[str]
-    status: Optional[str]
+    error: str | None
+    integrationLatency: str | None
+    integrationStatus: str | None
+    latency: str | None
+    requestId: str | None
+    status: str | None
 
 
 class LoggingContextVarsAuthenticate(TypedDict, total=False):
-    error: Optional[str]
-    latency: Optional[str]
-    status: Optional[str]
+    error: str | None
+    latency: str | None
+    status: str | None
 
 
 class LoggingContextVarsCustomDomain(TypedDict, total=False):
-    basePathMatched: Optional[str]
+    basePathMatched: str | None
 
 
 class LoggingContextVarsIntegration(TypedDict, total=False):
-    error: Optional[str]
-    integrationStatus: Optional[str]
-    latency: Optional[str]
-    requestId: Optional[str]
-    status: Optional[str]
+    error: str | None
+    integrationStatus: str | None
+    latency: str | None
+    requestId: str | None
+    status: str | None
 
 
 class LoggingContextVarsWaf(TypedDict, total=False):
-    error: Optional[str]
-    latency: Optional[str]
-    status: Optional[str]
+    error: str | None
+    latency: str | None
+    status: str | None
 
 
 class LoggingContextVariables(TypedDict, total=False):
-    authorize: Optional[LoggingContextVarsAuthorize]
-    authorizer: Optional[LoggingContextVarsAuthorizer]
-    authenticate: Optional[LoggingContextVarsAuthenticate]
-    customDomain: Optional[LoggingContextVarsCustomDomain]
-    endpointType: Optional[str]
-    integration: Optional[LoggingContextVarsIntegration]
-    integrationLatency: Optional[str]
-    integrationStatus: Optional[str]
-    responseLatency: Optional[str]
-    responseLength: Optional[str]
-    status: Optional[str]
-    waf: Optional[LoggingContextVarsWaf]
-    xrayTraceId: Optional[str]
+    authorize: LoggingContextVarsAuthorize | None
+    authorizer: LoggingContextVarsAuthorizer | None
+    authenticate: LoggingContextVarsAuthenticate | None
+    customDomain: LoggingContextVarsCustomDomain | None
+    endpointType: str | None
+    integration: LoggingContextVarsIntegration | None
+    integrationLatency: str | None
+    integrationStatus: str | None
+    responseLatency: str | None
+    responseLength: str | None
+    status: str | None
+    waf: LoggingContextVarsWaf | None
+    xrayTraceId: str | None

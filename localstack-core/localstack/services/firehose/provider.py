@@ -8,7 +8,6 @@ import threading
 import time
 import uuid
 from datetime import datetime
-from typing import Dict, List
 from urllib.parse import urlparse
 
 import requests
@@ -609,7 +608,7 @@ class FirehoseProvider(FirehoseApi):
             record["Data"] = base64.b64encode(record["Data"])
         return record
 
-    def _reencode_records(self, records: List[Record]) -> List[Record]:
+    def _reencode_records(self, records: list[Record]) -> list[Record]:
         return [self._reencode_record(r) for r in records]
 
     def _process_records(
@@ -617,7 +616,7 @@ class FirehoseProvider(FirehoseApi):
         account_id: str,
         region_name: str,
         fh_d_stream: str,
-        records: List[Record],
+        records: list[Record],
     ):
         """Process the given records from the underlying Kinesis stream"""
         return self._put_records(account_id, region_name, fh_d_stream, records)
@@ -638,8 +637,8 @@ class FirehoseProvider(FirehoseApi):
         account_id: str,
         region_name: str,
         delivery_stream_name: str,
-        unprocessed_records: List[Record],
-    ) -> List[PutRecordBatchResponseEntry]:
+        unprocessed_records: list[Record],
+    ) -> list[PutRecordBatchResponseEntry]:
         """Put a list of records to the firehose stream - either directly from a PutRecord API call, or
         received from an underlying Kinesis stream (if 'KinesisStreamAsSource' is configured)"""
         store = self.get_store(account_id, region_name)
@@ -786,7 +785,7 @@ class FirehoseProvider(FirehoseApi):
                 LOG.exception("Unable to put record to stream %s.", delivery_stream_name)
                 raise e
 
-    def _add_missing_record_attributes(self, records: List[Dict]) -> None:
+    def _add_missing_record_attributes(self, records: list[dict]) -> None:
         def _get_entry(obj, key):
             return obj.get(key) or obj.get(first_char_to_lower(key))
 
@@ -806,7 +805,7 @@ class FirehoseProvider(FirehoseApi):
                     "subsequenceNumber": "",
                 }
 
-    def _preprocess_records(self, processor: Dict, records: List[Record]) -> List[Dict]:
+    def _preprocess_records(self, processor: dict, records: list[Record]) -> list[dict]:
         """Preprocess the list of records by calling the given processor (e.g., Lamnda function)."""
         proc_type = processor.get("Type")
         parameters = processor.get("Parameters", [])
@@ -838,7 +837,7 @@ class FirehoseProvider(FirehoseApi):
     def _put_records_to_s3_bucket(
         self,
         stream_name: str,
-        records: List[Dict],
+        records: list[dict],
         s3_destination_description: S3DestinationDescription,
     ):
         bucket = s3_bucket_name(s3_destination_description["BucketARN"])
@@ -884,7 +883,7 @@ class FirehoseProvider(FirehoseApi):
 
     def _put_to_redshift(
         self,
-        records: List[Dict],
+        records: list[dict],
         redshift_destination_description: RedshiftDestinationDescription,
     ):
         jdbcurl = redshift_destination_description.get("ClusterJDBCURL")
@@ -940,13 +939,13 @@ class FirehoseProvider(FirehoseApi):
             LOG.debug("Cannot extract region from JDBC url '%s'", jdbc_url)
             return None
 
-    def _decode_record(self, record: Dict) -> Dict:
+    def _decode_record(self, record: dict) -> dict:
         data = base64.b64decode(record.get("Data") or record.get("data"))
         data = to_str(data)
         data = json.loads(data)
         return data
 
-    def _prepare_records_for_redshift(self, record: Dict) -> List[Dict]:
+    def _prepare_records_for_redshift(self, record: dict) -> list[dict]:
         data = self._decode_record(record)
 
         parameters = []
@@ -963,7 +962,7 @@ class FirehoseProvider(FirehoseApi):
 
         return parameters
 
-    def _extract_columns(self, record: Dict) -> str:
+    def _extract_columns(self, record: dict) -> str:
         data = self._decode_record(record)
         placeholders = [f":{key}" for key in data]
         placeholder_str = ", ".join(placeholders)

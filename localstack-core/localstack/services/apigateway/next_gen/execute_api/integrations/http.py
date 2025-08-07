@@ -1,6 +1,6 @@
 import logging
 from http import HTTPMethod
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import requests
 from werkzeug.datastructures import Headers
@@ -20,16 +20,16 @@ NO_BODY_METHODS = {HTTPMethod.OPTIONS, HTTPMethod.GET, HTTPMethod.HEAD}
 class SimpleHttpRequest(TypedDict, total=False):
     method: HTTPMethod | str
     url: str
-    params: Optional[dict[str, str | list[str]]]
+    params: dict[str, str | list[str]] | None
     data: bytes
-    headers: Optional[dict[str, str]]
-    cookies: Optional[dict[str, str]]
-    timeout: Optional[int]
-    allow_redirects: Optional[bool]
-    stream: Optional[bool]
-    verify: Optional[bool]
+    headers: dict[str, str] | None
+    cookies: dict[str, str] | None
+    timeout: int | None
+    allow_redirects: bool | None
+    stream: bool | None
+    verify: bool | None
     # TODO: check if there was a situation where we'd pass certs?
-    cert: Optional[str | tuple[str, str]]
+    cert: str | tuple[str, str] | None
 
 
 class BaseRestApiHttpIntegration(RestApiIntegration):

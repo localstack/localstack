@@ -1,7 +1,7 @@
 import abc
 import logging
 import threading
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import Timestamp
 from localstack.services.stepfunctions.asl.component.program.program import Program
@@ -18,7 +18,7 @@ class BranchWorker:
 
     _branch_worker_comm: Final[BranchWorkerComm]
     _program: Final[Program]
-    _worker_thread: Optional[threading.Thread]
+    _worker_thread: threading.Thread | None
     env: Final[Environment]
 
     def __init__(self, branch_worker_comm: BranchWorkerComm, program: Program, env: Environment):
@@ -43,7 +43,7 @@ class BranchWorker:
         TMP_THREADS.append(self._worker_thread)
         self._worker_thread.start()
 
-    def stop(self, stop_date: Timestamp, cause: Optional[str], error: Optional[str]) -> None:
+    def stop(self, stop_date: Timestamp, cause: str | None, error: str | None) -> None:
         env = self.env
         if env:
             try:

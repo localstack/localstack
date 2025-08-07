@@ -1,5 +1,5 @@
-from datetime import datetime, timezone
-from typing import NotRequired, Optional, TypedDict
+from datetime import UTC, datetime
+from typing import NotRequired, TypedDict
 
 from localstack.aws.api.cloudformation import (
     Capability,
@@ -94,7 +94,7 @@ class Stack:
         self.status = initial_status
         self.status_reason = None
         self.change_set_ids = []
-        self.creation_time = datetime.now(tz=timezone.utc)
+        self.creation_time = datetime.now(tz=UTC)
         self.deletion_time = None
         self.change_set_id = None
         self.enable_termination_protection = False
@@ -152,7 +152,7 @@ class Stack:
             LogicalResourceId=logical_resource_id,
             PhysicalResourceId=physical_resource_id,
             ResourceType=resource_type,
-            Timestamp=datetime.now(tz=timezone.utc),
+            Timestamp=datetime.now(tz=UTC),
             ResourceStatus=status,
             ResourceStatusReason=resource_status_reason,
         )
@@ -183,7 +183,7 @@ class Stack:
     ):
         event = StackEvent(
             EventId=long_uid(),
-            Timestamp=datetime.now(tz=timezone.utc),
+            Timestamp=datetime.now(tz=UTC),
             StackId=self.stack_id,
             StackName=self.stack_name,
             LogicalResourceId=resource_id,
@@ -248,7 +248,7 @@ class ChangeSet:
     change_set_name: str
     change_set_id: str
     change_set_type: ChangeSetType
-    update_model: Optional[UpdateModel]
+    update_model: UpdateModel | None
     status: ChangeSetStatus
     status_reason: str | None
     execution_status: ExecutionStatus
@@ -270,7 +270,7 @@ class ChangeSet:
         self.status_reason = None
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_model = None
-        self.creation_time = datetime.now(tz=timezone.utc)
+        self.creation_time = datetime.now(tz=UTC)
         self.resolved_parameters = []
 
         self.change_set_name = request_payload["ChangeSetName"]

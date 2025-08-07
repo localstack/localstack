@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple, Unpack
+from typing import TYPE_CHECKING, Any, Callable, Optional, Unpack
 
 import botocore.auth
 import botocore.config
@@ -593,7 +593,7 @@ def sns_allow_topic_sqs_queue(aws_client):
 def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_get_queue_arn, aws_client):
     subscriptions = []
 
-    def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
+    def _factory(topic_arn: str, queue_url: str, **kwargs) -> dict[str, str]:
         queue_arn = sqs_get_queue_arn(queue_url)
 
         # connect sns topic to sqs
@@ -630,7 +630,7 @@ def sns_create_http_endpoint(sns_create_topic, sns_subscription, aws_client):
 
     def _create_http_endpoint(
         raw_message_delivery: bool = False,
-    ) -> Tuple[str, str, str, HTTPServer]:
+    ) -> tuple[str, str, str, HTTPServer]:
         server = HTTPServer()
         server.start()
         http_servers.append(server)
@@ -1004,7 +1004,7 @@ def opensearch_document_path(opensearch_endpoint, aws_client):
 # Cleanup fixtures
 @pytest.fixture
 def cleanup_stacks(aws_client):
-    def _cleanup_stacks(stacks: List[str]) -> None:
+    def _cleanup_stacks(stacks: list[str]) -> None:
         stacks = ensure_list(stacks)
         for stack in stacks:
             try:
@@ -1018,7 +1018,7 @@ def cleanup_stacks(aws_client):
 
 @pytest.fixture
 def cleanup_changesets(aws_client):
-    def _cleanup_changesets(changesets: List[str]) -> None:
+    def _cleanup_changesets(changesets: list[str]) -> None:
         changesets = ensure_list(changesets)
         for cs in changesets:
             try:
@@ -1039,7 +1039,7 @@ class DeployResult:
     stack_id: str
     stack_name: str
     change_set_name: str
-    outputs: Dict[str, str]
+    outputs: dict[str, str]
 
     destroy: Callable[[], None]
 
@@ -1089,8 +1089,8 @@ def deploy_cfn_template(
         change_set_name: Optional[str] = None,
         template: Optional[str] = None,
         template_path: Optional[str | os.PathLike] = None,
-        template_mapping: Optional[Dict[str, Any]] = None,
-        parameters: Optional[Dict[str, str]] = None,
+        template_mapping: Optional[dict[str, Any]] = None,
+        parameters: Optional[dict[str, str]] = None,
         role_arn: Optional[str] = None,
         max_wait: Optional[int] = None,
         delay_between_polls: Optional[int] = 2,
@@ -1238,7 +1238,7 @@ def is_stack_deleted(aws_client):
     return _has_stack_status(aws_client.cloudformation, ["DELETE_COMPLETE"])
 
 
-def _has_stack_status(cfn_client, statuses: List[str]):
+def _has_stack_status(cfn_client, statuses: list[str]):
     def _has_status(stack_id: str):
         def _inner():
             resp = cfn_client.describe_stacks(StackName=stack_id)
@@ -1514,7 +1514,7 @@ def create_event_source_mapping(aws_client):
 
 @pytest.fixture
 def check_lambda_logs(aws_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
+    def _check_logs(func_name: str, expected_lines: list[str] = None) -> list[str]:
         if not expected_lines:
             expected_lines = []
         log_events = get_lambda_logs(func_name, logs_client=aws_client.logs)
@@ -2290,7 +2290,7 @@ def echo_http_server_post(echo_http_server):
     return f"{echo_http_server}post"
 
 
-def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
+def create_policy_doc(effect: str, actions: list, resource=None) -> dict:
     actions = ensure_list(actions)
     resource = resource or "*"
     return {

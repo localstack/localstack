@@ -3,7 +3,7 @@ import copy
 import logging
 import threading
 from threading import Thread
-from typing import Any, Optional
+from typing import Any
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.catch.catch_decl import CatchDecl
@@ -44,7 +44,7 @@ class ExecutionState(CommonStateField, abc.ABC):
     def __init__(
         self,
         state_entered_event_type: HistoryEventType,
-        state_exited_event_type: Optional[HistoryEventType],
+        state_exited_event_type: HistoryEventType | None,
     ):
         super().__init__(
             state_entered_event_type=state_entered_event_type,
@@ -54,20 +54,20 @@ class ExecutionState(CommonStateField, abc.ABC):
         # Specifies where (in the input) to place the results of executing the state_task that's specified in Resource.
         # The input is then filtered as specified by the OutputPath field (if present) before being used as the
         # state's output.
-        self.result_path: Optional[ResultPath] = None
+        self.result_path: ResultPath | None = None
 
         # ResultSelector (Optional)
         # Pass a collection of key value pairs, where the values are static or selected from the result.
-        self.result_selector: Optional[ResultSelector] = None
+        self.result_selector: ResultSelector | None = None
 
         # Retry (Optional)
         # An array of objects, called Retriers, that define a retry policy if the state encounters runtime errors.
-        self.retry: Optional[RetryDecl] = None
+        self.retry: RetryDecl | None = None
 
         # Catch (Optional)
         # An array of objects, called Catchers, that define a fallback state. This state is executed if the state
         # encounters runtime errors and its retry policy is exhausted or isn't defined.
-        self.catch: Optional[CatchDecl] = None
+        self.catch: CatchDecl | None = None
 
         # TimeoutSeconds (Optional)
         # If the state_task runs longer than the specified seconds, this state fails with a States.Timeout error name.
@@ -93,7 +93,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         # HeartbeatSecondsPath. When resolved, the reference path must select fields whose values are positive integers.
         # A Task state cannot include both HeartbeatSeconds and HeartbeatSecondsPath
         # HeartbeatSeconds and HeartbeatSecondsPath fields are encoded by the Heartbeat type.
-        self.heartbeat: Optional[Heartbeat] = None
+        self.heartbeat: Heartbeat | None = None
 
     def from_state_props(self, state_props: StateProps) -> None:
         super().from_state_props(state_props=state_props)
@@ -171,7 +171,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         frame.states.reset(input_value=env.states.get_input())
         frame.stack = copy.deepcopy(env.stack)
         execution_outputs: list[Any] = list()
-        execution_exceptions: list[Optional[Exception]] = [None]
+        execution_exceptions: list[Exception | None] = [None]
         terminated_event = threading.Event()
 
         def _exec_and_notify():

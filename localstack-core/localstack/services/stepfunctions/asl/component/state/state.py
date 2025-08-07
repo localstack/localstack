@@ -4,7 +4,7 @@ import abc
 import datetime
 import logging
 from abc import ABC
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 from localstack.aws.api.stepfunctions import (
     ExecutionFailedEventDetails,
@@ -73,27 +73,27 @@ class CommonStateField(EvalComponent, ABC):
     continue_with: ContinueWith
 
     # Holds a human-readable description of the state.
-    comment: Optional[Comment]
+    comment: Comment | None
 
     # A path that selects a portion of the state's input to be passed to the state's state_task for processing.
     # If omitted, it has the value $ which designates the entire input.
-    input_path: Optional[InputPath]
+    input_path: InputPath | None
 
     # A path that selects a portion of the state's output to be passed to the next state.
     # If omitted, it has the value $ which designates the entire output.
-    output_path: Optional[OutputPath]
+    output_path: OutputPath | None
 
-    assign_decl: Optional[AssignDecl]
+    assign_decl: AssignDecl | None
 
-    output: Optional[Output]
+    output: Output | None
 
     state_entered_event_type: Final[HistoryEventType]
-    state_exited_event_type: Final[Optional[HistoryEventType]]
+    state_exited_event_type: Final[HistoryEventType | None]
 
     def __init__(
         self,
         state_entered_event_type: HistoryEventType,
-        state_exited_event_type: Optional[HistoryEventType],
+        state_exited_event_type: HistoryEventType | None,
     ):
         self.state_entered_event_type = state_entered_event_type
         self.state_exited_event_type = state_exited_event_type
@@ -162,7 +162,7 @@ class CommonStateField(EvalComponent, ABC):
             event_details["assignedVariablesDetails"] = {"truncated": False}  # noqa
         return event_details
 
-    def _verify_size_quota(self, env: Environment, value: Union[str, Any]) -> None:
+    def _verify_size_quota(self, env: Environment, value: str | Any) -> None:
         is_within: bool = is_within_size_quota(value)
         if is_within:
             return
@@ -214,7 +214,7 @@ class CommonStateField(EvalComponent, ABC):
             ),
         )
         env.states.context_object.context_object_data["State"] = StateData(
-            EnteredTime=datetime.datetime.now(tz=datetime.timezone.utc).isoformat(), Name=self.name
+            EnteredTime=datetime.datetime.now(tz=datetime.UTC).isoformat(), Name=self.name
         )
 
         self._eval_state_input(env=env)

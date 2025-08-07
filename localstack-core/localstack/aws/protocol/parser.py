@@ -68,8 +68,9 @@ import datetime
 import functools
 import re
 from abc import ABC
+from collections.abc import Mapping
 from email.utils import parsedate_to_datetime
-from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import IO, Any
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
@@ -107,7 +108,7 @@ def _text_content(func):
         self,
         request: Request,
         shape: Shape,
-        node_or_string: Union[ETree.Element, str],
+        node_or_string: ETree.Element | str,
         uri_params: Mapping[str, Any] = None,
     ):
         if hasattr(node_or_string, "text"):
@@ -203,7 +204,7 @@ class RequestParser(abc.ABC):
         self.service = service
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         """
         Determines which operation the request was aiming for and parses the incoming request such that the resulting
         dictionary can be used to invoke the service's function implementation.
@@ -367,7 +368,7 @@ class QueryRequestParser(RequestParser):
     """
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         instance = request.values
         if "Action" not in instance:
             raise ProtocolParserError(
@@ -510,7 +511,7 @@ class QueryRequestParser(RequestParser):
 
         # We collect the list value as well as the integer indicating the list position so we can
         # later sort the list by the position, in case they attribute values are unordered
-        result: List[Tuple[int, Any]] = []
+        result: list[tuple[int, Any]] = []
 
         i = 0
         while True:
@@ -559,7 +560,7 @@ class BaseRestRequestParser(RequestParser):
         self._operation_router = RestServiceOperationRouter(service)
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         try:
             operation, uri_params = self._operation_router.match(request)
         except NotFound as e:
@@ -578,7 +579,7 @@ class BaseRestRequestParser(RequestParser):
         self,
         request: Request,
         shape: Shape,
-        member_shapes: Dict[str, Shape],
+        member_shapes: dict[str, Shape],
         uri_params: Mapping[str, Any],
         final_parsed: dict,
     ) -> None:
@@ -781,7 +782,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
             ) from e
         return root
 
-    def _build_name_to_xml_node(self, parent_node: Union[list, ETree.Element]) -> dict:
+    def _build_name_to_xml_node(self, parent_node: list | ETree.Element) -> dict:
         # If the parent node is actually a list. We should not be trying
         # to serialize it to a dictionary. Instead, return the first element
         # in the list.
@@ -824,9 +825,9 @@ class BaseJSONRequestParser(RequestParser, ABC):
         self,
         request: Request,
         shape: StructureShape,
-        value: Optional[dict],
+        value: dict | None,
         uri_params: Mapping[str, Any] = None,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         if shape.is_document_type:
             final_parsed = value
         else:
@@ -849,9 +850,9 @@ class BaseJSONRequestParser(RequestParser, ABC):
         self,
         request: Request,
         shape: MapShape,
-        value: Optional[dict],
+        value: dict | None,
         uri_params: Mapping[str, Any] = None,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         if value is None:
             return None
         parsed = {}
@@ -916,7 +917,7 @@ class JSONRequestParser(BaseJSONRequestParser):
     """
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         target = request.headers["X-Amz-Target"]
         # assuming that the last part of the target string (e.g., "x.y.z.MyAction") contains the operation name
         operation_name = target.rpartition(".")[2]
@@ -1038,9 +1039,7 @@ class S3RequestParser(RestXMLRequestParser):
                 )
 
         @staticmethod
-        def _set_request_props(
-            request: Request, path: str, host: str, raw_uri: Optional[str] = None
-        ):
+        def _set_request_props(request: Request, path: str, host: str, raw_uri: str | None = None):
             """Sets the HTTP request's path and host and clears the cache in the request object."""
             request.path = path
             request.headers["Host"] = host
@@ -1072,7 +1071,7 @@ class S3RequestParser(RestXMLRequestParser):
             return uses_host_addressing(request.headers)
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
         with self.VirtualHostRewriter(request):
             return super().parse(request)

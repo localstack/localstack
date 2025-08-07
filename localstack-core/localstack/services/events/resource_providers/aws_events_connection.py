@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,53 +14,53 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EventsConnectionProperties(TypedDict):
-    AuthParameters: Optional[AuthParameters]
-    AuthorizationType: Optional[str]
-    Arn: Optional[str]
-    Description: Optional[str]
-    Name: Optional[str]
-    SecretArn: Optional[str]
+    AuthParameters: AuthParameters | None
+    AuthorizationType: str | None
+    Arn: str | None
+    Description: str | None
+    Name: str | None
+    SecretArn: str | None
 
 
 class ApiKeyAuthParameters(TypedDict):
-    ApiKeyName: Optional[str]
-    ApiKeyValue: Optional[str]
+    ApiKeyName: str | None
+    ApiKeyValue: str | None
 
 
 class BasicAuthParameters(TypedDict):
-    Password: Optional[str]
-    Username: Optional[str]
+    Password: str | None
+    Username: str | None
 
 
 class ClientParameters(TypedDict):
-    ClientID: Optional[str]
-    ClientSecret: Optional[str]
+    ClientID: str | None
+    ClientSecret: str | None
 
 
 class Parameter(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
-    IsValueSecret: Optional[bool]
+    Key: str | None
+    Value: str | None
+    IsValueSecret: bool | None
 
 
 class ConnectionHttpParameters(TypedDict):
-    BodyParameters: Optional[list[Parameter]]
-    HeaderParameters: Optional[list[Parameter]]
-    QueryStringParameters: Optional[list[Parameter]]
+    BodyParameters: list[Parameter] | None
+    HeaderParameters: list[Parameter] | None
+    QueryStringParameters: list[Parameter] | None
 
 
 class OAuthParameters(TypedDict):
-    AuthorizationEndpoint: Optional[str]
-    ClientParameters: Optional[ClientParameters]
-    HttpMethod: Optional[str]
-    OAuthHttpParameters: Optional[ConnectionHttpParameters]
+    AuthorizationEndpoint: str | None
+    ClientParameters: ClientParameters | None
+    HttpMethod: str | None
+    OAuthHttpParameters: ConnectionHttpParameters | None
 
 
 class AuthParameters(TypedDict):
-    ApiKeyAuthParameters: Optional[ApiKeyAuthParameters]
-    BasicAuthParameters: Optional[BasicAuthParameters]
-    InvocationHttpParameters: Optional[ConnectionHttpParameters]
-    OAuthParameters: Optional[OAuthParameters]
+    ApiKeyAuthParameters: ApiKeyAuthParameters | None
+    BasicAuthParameters: BasicAuthParameters | None
+    InvocationHttpParameters: ConnectionHttpParameters | None
+    OAuthParameters: OAuthParameters | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

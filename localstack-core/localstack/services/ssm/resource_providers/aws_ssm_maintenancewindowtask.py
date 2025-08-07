@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,80 +14,80 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SSMMaintenanceWindowTaskProperties(TypedDict):
-    Priority: Optional[int]
-    TaskArn: Optional[str]
-    TaskType: Optional[str]
-    WindowId: Optional[str]
-    CutoffBehavior: Optional[str]
-    Description: Optional[str]
-    Id: Optional[str]
-    LoggingInfo: Optional[LoggingInfo]
-    MaxConcurrency: Optional[str]
-    MaxErrors: Optional[str]
-    Name: Optional[str]
-    ServiceRoleArn: Optional[str]
-    Targets: Optional[list[Target]]
-    TaskInvocationParameters: Optional[TaskInvocationParameters]
-    TaskParameters: Optional[dict]
+    Priority: int | None
+    TaskArn: str | None
+    TaskType: str | None
+    WindowId: str | None
+    CutoffBehavior: str | None
+    Description: str | None
+    Id: str | None
+    LoggingInfo: LoggingInfo | None
+    MaxConcurrency: str | None
+    MaxErrors: str | None
+    Name: str | None
+    ServiceRoleArn: str | None
+    Targets: list[Target] | None
+    TaskInvocationParameters: TaskInvocationParameters | None
+    TaskParameters: dict | None
 
 
 class Target(TypedDict):
-    Key: Optional[str]
-    Values: Optional[list[str]]
+    Key: str | None
+    Values: list[str] | None
 
 
 class MaintenanceWindowStepFunctionsParameters(TypedDict):
-    Input: Optional[str]
-    Name: Optional[str]
+    Input: str | None
+    Name: str | None
 
 
 class CloudWatchOutputConfig(TypedDict):
-    CloudWatchLogGroupName: Optional[str]
-    CloudWatchOutputEnabled: Optional[bool]
+    CloudWatchLogGroupName: str | None
+    CloudWatchOutputEnabled: bool | None
 
 
 class NotificationConfig(TypedDict):
-    NotificationArn: Optional[str]
-    NotificationEvents: Optional[list[str]]
-    NotificationType: Optional[str]
+    NotificationArn: str | None
+    NotificationEvents: list[str] | None
+    NotificationType: str | None
 
 
 class MaintenanceWindowRunCommandParameters(TypedDict):
-    CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
-    Comment: Optional[str]
-    DocumentHash: Optional[str]
-    DocumentHashType: Optional[str]
-    DocumentVersion: Optional[str]
-    NotificationConfig: Optional[NotificationConfig]
-    OutputS3BucketName: Optional[str]
-    OutputS3KeyPrefix: Optional[str]
-    Parameters: Optional[dict]
-    ServiceRoleArn: Optional[str]
-    TimeoutSeconds: Optional[int]
+    CloudWatchOutputConfig: CloudWatchOutputConfig | None
+    Comment: str | None
+    DocumentHash: str | None
+    DocumentHashType: str | None
+    DocumentVersion: str | None
+    NotificationConfig: NotificationConfig | None
+    OutputS3BucketName: str | None
+    OutputS3KeyPrefix: str | None
+    Parameters: dict | None
+    ServiceRoleArn: str | None
+    TimeoutSeconds: int | None
 
 
 class MaintenanceWindowLambdaParameters(TypedDict):
-    ClientContext: Optional[str]
-    Payload: Optional[str]
-    Qualifier: Optional[str]
+    ClientContext: str | None
+    Payload: str | None
+    Qualifier: str | None
 
 
 class MaintenanceWindowAutomationParameters(TypedDict):
-    DocumentVersion: Optional[str]
-    Parameters: Optional[dict]
+    DocumentVersion: str | None
+    Parameters: dict | None
 
 
 class TaskInvocationParameters(TypedDict):
-    MaintenanceWindowAutomationParameters: Optional[MaintenanceWindowAutomationParameters]
-    MaintenanceWindowLambdaParameters: Optional[MaintenanceWindowLambdaParameters]
-    MaintenanceWindowRunCommandParameters: Optional[MaintenanceWindowRunCommandParameters]
-    MaintenanceWindowStepFunctionsParameters: Optional[MaintenanceWindowStepFunctionsParameters]
+    MaintenanceWindowAutomationParameters: MaintenanceWindowAutomationParameters | None
+    MaintenanceWindowLambdaParameters: MaintenanceWindowLambdaParameters | None
+    MaintenanceWindowRunCommandParameters: MaintenanceWindowRunCommandParameters | None
+    MaintenanceWindowStepFunctionsParameters: MaintenanceWindowStepFunctionsParameters | None
 
 
 class LoggingInfo(TypedDict):
-    Region: Optional[str]
-    S3Bucket: Optional[str]
-    S3Prefix: Optional[str]
+    Region: str | None
+    S3Bucket: str | None
+    S3Prefix: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

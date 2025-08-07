@@ -511,23 +511,19 @@ class EcsEphemeralStorage(TypedDict, total=False):
     sizeInGiB: EphemeralStorageSize
 
 
-EcsResourceRequirement = TypedDict(
-    "EcsResourceRequirement",
-    {
-        "type": EcsResourceRequirementType,
-        "value": String,
-    },
-    total=False,
-)
+class EcsResourceRequirement(TypedDict, total=False):
+    type: EcsResourceRequirementType
+    value: String
+
+
 EcsResourceRequirementsList = List[EcsResourceRequirement]
-EcsEnvironmentFile = TypedDict(
-    "EcsEnvironmentFile",
-    {
-        "type": EcsEnvironmentFileType,
-        "value": String,
-    },
-    total=False,
-)
+
+
+class EcsEnvironmentFile(TypedDict, total=False):
+    type: EcsEnvironmentFileType
+    value: String
+
+
 EcsEnvironmentFileList = List[EcsEnvironmentFile]
 
 
@@ -563,23 +559,19 @@ class EcsTaskOverride(TypedDict, total=False):
     TaskRoleArn: Optional[ArnOrJsonPath]
 
 
-PlacementStrategy = TypedDict(
-    "PlacementStrategy",
-    {
-        "type": Optional[PlacementStrategyType],
-        "field": Optional[PlacementStrategyField],
-    },
-    total=False,
-)
+class PlacementStrategy(TypedDict, total=False):
+    type: Optional[PlacementStrategyType]
+    field: Optional[PlacementStrategyField]
+
+
 PlacementStrategies = List[PlacementStrategy]
-PlacementConstraint = TypedDict(
-    "PlacementConstraint",
-    {
-        "type": Optional[PlacementConstraintType],
-        "expression": Optional[PlacementConstraintExpression],
-    },
-    total=False,
-)
+
+
+class PlacementConstraint(TypedDict, total=False):
+    type: Optional[PlacementConstraintType]
+    expression: Optional[PlacementConstraintExpression]
+
+
 PlacementConstraints = List[PlacementConstraint]
 
 

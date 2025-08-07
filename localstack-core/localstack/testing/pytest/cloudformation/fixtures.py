@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
-from typing import Callable, Generator, Optional, TypedDict
+from collections.abc import Generator
+from typing import Callable, Optional, TypedDict
 
 import pytest
 from botocore.exceptions import WaiterError
@@ -111,7 +112,7 @@ def capture_per_resource_events(
 
 def _normalise_describe_change_set_output(value: DescribeChangeSetOutput) -> None:
     value.get("Changes", list()).sort(
-        key=lambda change: change.get("ResourceChange", dict()).get("LogicalResourceId", str())
+        key=lambda change: change.get("ResourceChange", dict()).get("LogicalResourceId", "")
     )
 
 

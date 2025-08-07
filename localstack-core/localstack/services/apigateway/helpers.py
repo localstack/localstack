@@ -3,7 +3,7 @@ import copy
 import hashlib
 import json
 import logging
-from typing import List, Optional, TypedDict, Union
+from typing import TypedDict
 from urllib import parse as urlparse
 
 from jsonpatch import apply_patch
@@ -93,7 +93,7 @@ class OpenAPIExt:
 
 class AuthorizerConfig(TypedDict):
     authorizer: Authorizer
-    authorization_scopes: Optional[list[str]]
+    authorization_scopes: list[str] | None
 
 
 # TODO: make the CRUD operations in this file generic for the different model types (authorizes, validators, ...)
@@ -198,11 +198,11 @@ class OpenAPISpecificationResolver:
 
             return cur
 
-    def _namespaced_resolution(self, namespace: str, data: Union[dict, list]) -> Union[dict, list]:
+    def _namespaced_resolution(self, namespace: str, data: dict | list) -> dict | list:
         with self._pathctx(namespace):
             return self._resolve_references(data)
 
-    def _resolve_references(self, data) -> Union[dict, list]:
+    def _resolve_references(self, data) -> dict | list:
         if self._is_ref(data):
             return self._resolve_refpath(data["$ref"])
 
@@ -578,7 +578,7 @@ def import_api_from_openapi_spec(
 
             authorizers[security_scheme_name] = authorizer
 
-    def get_authorizer(path_payload: dict) -> Optional[AuthorizerConfig]:
+    def get_authorizer(path_payload: dict) -> AuthorizerConfig | None:
         if not (security_schemes := path_payload.get("security")):
             return None
 
@@ -605,7 +605,7 @@ def import_api_from_openapi_spec(
         rel_path = abs_path.removeprefix(base_path)
         return add_path_methods(rel_path, parts, parent_id=parent_id)
 
-    def add_path_methods(rel_path: str, parts: List[str], parent_id=""):
+    def add_path_methods(rel_path: str, parts: list[str], parent_id=""):
         rel_path = rel_path or "/"
         child_id = ApigwResourceIdentifier(account_id, region_name, parent_id, rel_path).generate()
 

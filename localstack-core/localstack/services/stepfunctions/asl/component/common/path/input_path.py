@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
@@ -22,9 +22,9 @@ from localstack.services.stepfunctions.asl.utils.json_path import NoSuchJsonPath
 
 
 class InputPath(EvalComponent):
-    string_sampler: Final[Optional[StringSampler]]
+    string_sampler: Final[StringSampler | None]
 
-    def __init__(self, string_sampler: Optional[StringSampler]):
+    def __init__(self, string_sampler: StringSampler | None):
         self.string_sampler = string_sampler
 
     def _eval_body(self, env: Environment) -> None:

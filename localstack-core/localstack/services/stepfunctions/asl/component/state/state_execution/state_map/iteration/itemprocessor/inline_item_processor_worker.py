@@ -1,5 +1,5 @@
 import logging
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.parargs import Parameters
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_selector import (
@@ -17,16 +17,16 @@ LOG = logging.getLogger(__name__)
 
 
 class InlineItemProcessorWorker(IterationWorker):
-    _parameters: Final[Optional[Parameters]]
-    _item_selector: Final[Optional[ItemSelector]]
+    _parameters: Final[Parameters | None]
+    _item_selector: Final[ItemSelector | None]
 
     def __init__(
         self,
         work_name: str,
         job_pool: JobPool,
         env: Environment,
-        item_selector: Optional[ItemSelector],
-        parameters: Optional[Parameters],
+        item_selector: ItemSelector | None,
+        parameters: Parameters | None,
     ):
         super().__init__(work_name=work_name, job_pool=job_pool, env=env)
         self._item_selector = item_selector

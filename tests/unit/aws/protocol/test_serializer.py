@@ -2,9 +2,10 @@ import copy
 import io
 import json
 import re
+from collections.abc import Iterator
 from datetime import datetime
 from io import BytesIO
-from typing import Any, Dict, Iterator, List, Optional
+from typing import Any
 from xml.etree import ElementTree
 
 import pytest
@@ -119,9 +120,9 @@ def _botocore_error_serializer_integration_test(
     exception: ServiceException,
     code: str,
     status_code: int,
-    message: Optional[str],
+    message: str | None,
     is_sender_fault: bool = False,
-    **additional_error_fields: Dict[str, Any],
+    **additional_error_fields: dict[str, Any],
 ) -> dict:
     """
     Performs an integration test for the error serialization using botocore as parser.
@@ -195,7 +196,7 @@ def _botocore_error_serializer_integration_test(
 
 
 def _botocore_event_streaming_test(
-    service: str, action: str, response: dict, response_root_tag: str, expected_events: List[dict]
+    service: str, action: str, response: dict, response_root_tag: str, expected_events: list[dict]
 ):
     """
     Tests the serialization of event streaming responses using botocore.
@@ -627,8 +628,8 @@ def test_s3_xml_protocol_custom_error_serialization_headers():
         code: str = "NoSuchKey"
         sender_fault: bool = False
         status_code: int = 404
-        DeleteMarker: Optional[bool]
-        VersionId: Optional[str]
+        DeleteMarker: bool | None
+        VersionId: str | None
 
     exception = NoSuchKey(
         "You shall not access this API! Sincerely, your friendly neighbourhood firefighter.",
@@ -1677,7 +1678,7 @@ class ComparableBytesList(list):
 
 
 class ComparableBytesIterator(Iterator[bytes]):
-    def __init__(self, bytes_list: List[bytes]):
+    def __init__(self, bytes_list: list[bytes]):
         self.gen = iter(bytes_list)
         self.value = b"".join(bytes_list)
 
@@ -1788,8 +1789,8 @@ def test_restjson_streaming_payload(payload):
 )
 def test_accept_header_detection(
     service: str,
-    accept_header: Optional[str],
-    content_type_header: Optional[str],
+    accept_header: str | None,
+    content_type_header: str | None,
     expected_mime_type: str,
 ):
     service_model = load_service(service)

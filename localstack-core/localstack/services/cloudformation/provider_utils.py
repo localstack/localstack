@@ -9,9 +9,9 @@ import builtins
 import json
 import re
 import uuid
+from collections.abc import Callable
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, List, Optional
 
 from botocore.model import Shape, StructureShape
 
@@ -213,7 +213,7 @@ def convert_request_kwargs(parameters: dict, input_shape: StructureShape) -> dic
     return transformed_dict
 
 
-def convert_values_to_numbers(input_dict: dict, keys_to_skip: Optional[List[str]] = None):
+def convert_values_to_numbers(input_dict: dict, keys_to_skip: list[str] | None = None):
     """
     Recursively converts all string values that represent valid integers
     in a dictionary (including nested dictionaries and lists) to integers.

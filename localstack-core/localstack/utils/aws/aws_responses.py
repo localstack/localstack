@@ -3,7 +3,7 @@ import datetime
 import json
 import re
 from binascii import crc32
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 from urllib.parse import parse_qs
 
 import xmltodict
@@ -43,14 +43,12 @@ def requests_error_response_xml(
 ):
     response = RequestsResponse()
     xmlns = xmlns or "http://%s.amazonaws.com/doc/2010-03-31/" % service
-    response._content = """<ErrorResponse xmlns="{xmlns}"><Error>
+    response._content = f"""<ErrorResponse xmlns="{xmlns}"><Error>
         <Type>Sender</Type>
         <Code>{code_string}</Code>
         <Message>{message}</Message>
-        </Error><RequestId>{req_id}</RequestId>
-        </ErrorResponse>""".format(
-        xmlns=xmlns, message=message, code_string=code_string, req_id=short_uid()
-    )
+        </Error><RequestId>{short_uid()}</RequestId>
+        </ErrorResponse>"""
     response.status_code = code
     return response
 
@@ -65,18 +63,13 @@ def requests_error_response_xml_signature_calculation(
     aws_access_token="temp",
 ):
     response = RequestsResponse()
-    response_template = """<?xml version="1.0" encoding="UTF-8"?>
+    response_template = f"""<?xml version="1.0" encoding="UTF-8"?>
         <Error>
             <Code>{code_string}</Code>
             <Message>{message}</Message>
-            <RequestId>{req_id}</RequestId>
-            <HostId>{host_id}</HostId>
-        </Error>""".format(
-        message=message,
-        code_string=code_string,
-        req_id=short_uid(),
-        host_id=short_uid(),
-    )
+            <RequestId>{short_uid()}</RequestId>
+            <HostId>{short_uid()}</HostId>
+        </Error>"""
 
     parsed_response = xmltodict.parse(response_template)
     response.status_code = code
@@ -94,8 +87,8 @@ def requests_error_response_xml_signature_calculation(
         server_time = datetime.datetime.utcnow().isoformat()[:-4]
         expires_isoformat = datetime.datetime.fromtimestamp(int(expires)).isoformat()[:-4]
         parsed_response["Error"]["Code"] = code_string
-        parsed_response["Error"]["Expires"] = "{}Z".format(expires_isoformat)
-        parsed_response["Error"]["ServerTime"] = "{}Z".format(server_time)
+        parsed_response["Error"]["Expires"] = f"{expires_isoformat}Z"
+        parsed_response["Error"]["ServerTime"] = f"{server_time}Z"
         set_response_content(response, xmltodict.unparse(parsed_response))
 
     if not signature and not expires and code_string == "AccessDenied":
@@ -106,7 +99,7 @@ def requests_error_response_xml_signature_calculation(
 
 
 def requests_error_response(
-    req_headers: Dict,
+    req_headers: dict,
     message: Union[str, bytes],
     code: int = 500,
     error_type: str = "InternalFailure",
@@ -121,7 +114,7 @@ def requests_error_response(
     )
 
 
-def is_json_request(req_headers: Dict) -> bool:
+def is_json_request(req_headers: dict) -> bool:
     ctype = req_headers.get("Content-Type", "")
     accept = req_headers.get("Accept", "")
     return "json" in ctype or "json" in accept
@@ -186,7 +179,7 @@ def set_response_content(response, content, headers=None):
     response.headers["Content-Length"] = str(len(response._content))
 
 
-def create_sqs_system_attributes(headers: Dict[str, str]) -> Dict[str, Any]:
+def create_sqs_system_attributes(headers: dict[str, str]) -> dict[str, Any]:
     system_attributes = {}
     if "X-Amzn-Trace-Id" in headers:
         system_attributes["AWSTraceHeader"] = {
@@ -196,7 +189,7 @@ def create_sqs_system_attributes(headers: Dict[str, str]) -> Dict[str, Any]:
     return system_attributes
 
 
-def parse_query_string(url_or_qs: str, multi_values=False) -> Dict[str, str]:
+def parse_query_string(url_or_qs: str, multi_values=False) -> dict[str, str]:
     url_or_qs = str(url_or_qs or "").strip()
     # we match if the `url_or_qs` passed is maybe a URL
     if regex_url_start.match(url_or_qs) and "?" not in url_or_qs:

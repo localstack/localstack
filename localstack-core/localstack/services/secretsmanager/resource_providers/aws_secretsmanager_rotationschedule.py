@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,32 +14,32 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SecretsManagerRotationScheduleProperties(TypedDict):
-    SecretId: Optional[str]
-    HostedRotationLambda: Optional[HostedRotationLambda]
-    Id: Optional[str]
-    RotateImmediatelyOnUpdate: Optional[bool]
-    RotationLambdaARN: Optional[str]
-    RotationRules: Optional[RotationRules]
+    SecretId: str | None
+    HostedRotationLambda: HostedRotationLambda | None
+    Id: str | None
+    RotateImmediatelyOnUpdate: bool | None
+    RotationLambdaARN: str | None
+    RotationRules: RotationRules | None
 
 
 class RotationRules(TypedDict):
-    AutomaticallyAfterDays: Optional[int]
-    Duration: Optional[str]
-    ScheduleExpression: Optional[str]
+    AutomaticallyAfterDays: int | None
+    Duration: str | None
+    ScheduleExpression: str | None
 
 
 class HostedRotationLambda(TypedDict):
-    RotationType: Optional[str]
-    ExcludeCharacters: Optional[str]
-    KmsKeyArn: Optional[str]
-    MasterSecretArn: Optional[str]
-    MasterSecretKmsKeyArn: Optional[str]
-    RotationLambdaName: Optional[str]
-    Runtime: Optional[str]
-    SuperuserSecretArn: Optional[str]
-    SuperuserSecretKmsKeyArn: Optional[str]
-    VpcSecurityGroupIds: Optional[str]
-    VpcSubnetIds: Optional[str]
+    RotationType: str | None
+    ExcludeCharacters: str | None
+    KmsKeyArn: str | None
+    MasterSecretArn: str | None
+    MasterSecretKmsKeyArn: str | None
+    RotationLambdaName: str | None
+    Runtime: str | None
+    SuperuserSecretArn: str | None
+    SuperuserSecretKmsKeyArn: str | None
+    VpcSecurityGroupIds: str | None
+    VpcSubnetIds: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

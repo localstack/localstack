@@ -1,7 +1,6 @@
 import datetime
 import functools
 from multiprocessing import Process
-from typing import List
 
 import click
 
@@ -15,7 +14,7 @@ from .publisher import AnalyticsClientPublisher
 ANALYTICS_API_RESPONSE_TIMEOUT_SECS = 0.5
 
 
-def _publish_cmd_as_analytics_event(command_name: str, params: List[str]):
+def _publish_cmd_as_analytics_event(command_name: str, params: list[str]):
     event = Event(
         name="cli_cmd",
         payload={"cmd": command_name, "params": params},
@@ -28,7 +27,7 @@ def _publish_cmd_as_analytics_event(command_name: str, params: List[str]):
     publisher.publish([event])
 
 
-def _get_parent_commands(ctx: click.Context) -> List[str]:
+def _get_parent_commands(ctx: click.Context) -> list[str]:
     parent_commands = []
     parent = ctx.parent
     while parent is not None:

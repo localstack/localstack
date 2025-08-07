@@ -1,5 +1,5 @@
 import copy
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.parargs import Parargs
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
@@ -26,15 +26,15 @@ from localstack.services.stepfunctions.asl.eval.environment import Environment
 
 class ItemReader(EvalComponent):
     resource_eval: Final[ResourceEval]
-    parargs: Final[Optional[Parargs]]
-    reader_config: Final[Optional[ReaderConfig]]
-    resource_output_transformer: Optional[ResourceOutputTransformer]
+    parargs: Final[Parargs | None]
+    reader_config: Final[ReaderConfig | None]
+    resource_output_transformer: ResourceOutputTransformer | None
 
     def __init__(
         self,
         resource: Resource,
-        parargs: Optional[Parargs],
-        reader_config: Optional[ReaderConfig],
+        parargs: Parargs | None,
+        reader_config: ReaderConfig | None,
     ):
         self.resource_eval = resource_eval_for(resource=resource)
         self.parargs = parargs

@@ -1,5 +1,5 @@
 from http import HTTPMethod
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from rolo import Request
 from rolo.gateway import RequestContext
@@ -14,12 +14,12 @@ from .variables import ContextVariableOverrides, ContextVariables, LoggingContex
 class InvocationRequest(TypedDict, total=False):
     http_method: HTTPMethod
     """HTTP Method of the incoming request"""
-    raw_path: Optional[str]
+    raw_path: str | None
     # TODO: verify if raw_path is needed
     """Raw path of the incoming request with no modification, needed to keep double forward slashes"""
-    path: Optional[str]
+    path: str | None
     """Path of the request with no URL decoding"""
-    path_parameters: Optional[dict[str, str]]
+    path_parameters: dict[str, str] | None
     """Path parameters of the request"""
     query_string_parameters: dict[str, str]
     """Query string parameters of the request"""
@@ -72,48 +72,48 @@ class RestApiInvocationContext(RequestContext):
     This context is going to be used to pass relevant information across an API Gateway invocation.
     """
 
-    deployment: Optional[RestApiDeployment]
+    deployment: RestApiDeployment | None
     """Contains the invoked REST API Resources"""
-    integration: Optional[Integration]
+    integration: Integration | None
     """The Method Integration for the invoked request"""
-    api_id: Optional[str]
+    api_id: str | None
     """The REST API identifier of the invoked API"""
-    stage: Optional[str]
+    stage: str | None
     """The REST API stage name linked to this invocation"""
-    base_path: Optional[str]
+    base_path: str | None
     """The REST API base path mapped to the stage of this invocation"""
-    deployment_id: Optional[str]
+    deployment_id: str | None
     """The REST API deployment linked to this invocation"""
-    region: Optional[str]
+    region: str | None
     """The region the REST API is living in."""
-    account_id: Optional[str]
+    account_id: str | None
     """The account the REST API is living in."""
-    trace_id: Optional[str]
+    trace_id: str | None
     """The X-Ray trace ID for the request."""
-    resource: Optional[Resource]
+    resource: Resource | None
     """The resource the invocation matched"""
-    resource_method: Optional[Method]
+    resource_method: Method | None
     """The method of the resource the invocation matched"""
-    stage_variables: Optional[dict[str, str]]
+    stage_variables: dict[str, str] | None
     """The Stage variables, also used in parameters mapping and mapping templates"""
-    stage_configuration: Optional[Stage]
+    stage_configuration: Stage | None
     """The Stage configuration, containing canary deployment settings"""
-    is_canary: Optional[bool]
+    is_canary: bool | None
     """If the current call was directed to a canary deployment"""
-    context_variables: Optional[ContextVariables]
+    context_variables: ContextVariables | None
     """The $context used in data models, authorizers, mapping templates, and CloudWatch access logging"""
-    context_variable_overrides: Optional[ContextVariableOverrides]
+    context_variable_overrides: ContextVariableOverrides | None
     """requestOverrides and responseOverrides are passed from request templates to response templates but are
     not in the integration context"""
-    logging_context_variables: Optional[LoggingContextVariables]
+    logging_context_variables: LoggingContextVariables | None
     """Additional $context variables available only for access logging, not yet implemented"""
-    invocation_request: Optional[InvocationRequest]
+    invocation_request: InvocationRequest | None
     """Contains the data relative to the invocation request"""
-    integration_request: Optional[IntegrationRequest]
+    integration_request: IntegrationRequest | None
     """Contains the data needed to construct an HTTP request to an Integration"""
-    endpoint_response: Optional[EndpointResponse]
+    endpoint_response: EndpointResponse | None
     """Contains the data returned by an Integration"""
-    invocation_response: Optional[InvocationResponse]
+    invocation_response: InvocationResponse | None
     """Contains the data serialized and to be returned by an invocation"""
 
     def __init__(self, request: Request):

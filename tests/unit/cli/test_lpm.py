@@ -1,5 +1,4 @@
 import os.path
-from typing import List
 
 import pytest
 from click.testing import CliRunner
@@ -48,7 +47,7 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
         def __init__(self):
             super().__init__("Failing Installer", "latest")
 
-        def get_versions(self) -> List[str]:
+        def get_versions(self) -> list[str]:
             return ["latest"]
 
         def _get_installer(self, version: str) -> PackageInstaller:
@@ -69,7 +68,7 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
         def __init__(self):
             super().__init__("Successful Installer", "latest")
 
-        def get_versions(self) -> List[str]:
+        def get_versions(self) -> list[str]:
             return ["latest"]
 
         def _get_installer(self, version: str) -> PackageInstaller:
@@ -86,7 +85,7 @@ def test_install_failure_returns_non_zero_exit_code(runner, monkeypatch):
         def _install(self, target: InstallTarget) -> None:
             pass
 
-    def patched_get_packages(*_) -> List[Package]:
+    def patched_get_packages(*_) -> list[Package]:
         return [FailingPackage(), SuccessfulPackage()]
 
     with Patch.function(target=PackagesPluginManager.get_packages, fn=patched_get_packages):

@@ -2,8 +2,8 @@ import copy
 import json
 import logging
 from collections import defaultdict
-from datetime import datetime, timezone
-from typing import Any, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
@@ -209,7 +209,7 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str) -> Stack
 class CloudformationProviderV2(CloudformationProvider):
     @staticmethod
     def _resolve_parameters(
-        template: Optional[dict], parameters: Optional[dict], account_id: str, region_name: str
+        template: dict | None, parameters: dict | None, account_id: str, region_name: str
     ) -> dict[str, EngineParameter]:
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
@@ -251,11 +251,11 @@ class CloudformationProviderV2(CloudformationProvider):
     def _setup_change_set_model(
         cls,
         change_set: ChangeSet,
-        before_template: Optional[dict],
-        after_template: Optional[dict],
-        before_parameters: Optional[dict],
-        after_parameters: Optional[dict],
-        previous_update_model: Optional[UpdateModel],
+        before_template: dict | None,
+        after_template: dict | None,
+        before_parameters: dict | None,
+        after_parameters: dict | None,
+        previous_update_model: UpdateModel | None,
     ):
         resolved_parameters = None
         if after_parameters is not None:
@@ -1376,7 +1376,7 @@ class CloudformationProviderV2(CloudformationProvider):
         # created, but never executed
         if stack.status == StackStatus.REVIEW_IN_PROGRESS and not stack.resolved_resources:
             stack.set_stack_status(StackStatus.DELETE_COMPLETE)
-            stack.deletion_time = datetime.now(tz=timezone.utc)
+            stack.deletion_time = datetime.now(tz=UTC)
             return
 
         previous_update_model = None
@@ -1404,7 +1404,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
                 change_set_executor.execute()
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
-                stack.deletion_time = datetime.now(tz=timezone.utc)
+                stack.deletion_time = datetime.now(tz=UTC)
             except Exception as e:
                 LOG.warning(
                     "Failed to delete stack '%s': %s",

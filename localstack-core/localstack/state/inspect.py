@@ -3,7 +3,7 @@
 import importlib
 import logging
 from functools import singledispatchmethod
-from typing import Any, Dict, Optional, TypedDict
+from typing import Any, TypedDict
 
 from moto.core.base_backend import BackendDict
 
@@ -17,14 +17,14 @@ class ServiceBackend(TypedDict, total=False):
     """Wrapper of the possible type of backends that a service can use."""
 
     localstack: AccountRegionBundle | None
-    moto: BackendDict | Dict | None
+    moto: BackendDict | dict | None
 
 
 class ServiceBackendCollectorVisitor(StateVisitor):
     """Implementation of StateVisitor meant to collect the backends that a given service use to hold its state."""
 
     store: AccountRegionBundle | None
-    backend_dict: BackendDict | Dict | None
+    backend_dict: BackendDict | dict | None
 
     def __init__(self) -> None:
         self.store = None
@@ -60,7 +60,7 @@ class ReflectionStateLocator:
 
     provider: Any
 
-    def __init__(self, provider: Optional[Any] = None, service: Optional[str] = None):
+    def __init__(self, provider: Any | None = None, service: str | None = None):
         self.provider = provider
         self.service = service or provider.service
 

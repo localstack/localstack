@@ -3,7 +3,8 @@ from __future__ import annotations
 import base64
 import copy
 import re
-from typing import Any, Callable, Final, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, Final, Generic, TypeVar
 
 from botocore.exceptions import ClientError
 
@@ -103,21 +104,21 @@ class PreprocProperties:
 
 class PreprocResource:
     logical_id: str
-    physical_resource_id: Optional[str]
-    condition: Optional[bool]
+    physical_resource_id: str | None
+    condition: bool | None
     resource_type: str
     properties: PreprocProperties
-    depends_on: Optional[list[str]]
+    depends_on: list[str] | None
     requires_replacement: bool
 
     def __init__(
         self,
         logical_id: str,
         physical_resource_id: str,
-        condition: Optional[bool],
+        condition: bool | None,
         resource_type: str,
         properties: PreprocProperties,
-        depends_on: Optional[list[str]],
+        depends_on: list[str] | None,
         requires_replacement: bool,
     ):
         self.logical_id = logical_id
@@ -151,10 +152,10 @@ class PreprocResource:
 class PreprocOutput:
     name: str
     value: Any
-    export: Optional[Any]
-    condition: Optional[bool]
+    export: Any | None
+    condition: bool | None
 
-    def __init__(self, name: str, value: Any, export: Optional[Any], condition: Optional[bool]):
+    def __init__(self, name: str, value: Any, export: Any | None, condition: bool | None):
         self.name = name
         self.value = value
         self.export = export
@@ -226,7 +227,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
-    ) -> Optional[NodeProperty]:
+    ) -> NodeProperty | None:
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
@@ -254,7 +255,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
         properties = resolved_resource.get("Properties", dict())
         # support structured properties, e.g. NestedStack.Outputs.OutputName
-        property_value: Optional[Any] = get_value_from_path(properties, property_name)
+        property_value: Any | None = get_value_from_path(properties, property_name)
 
         if property_value:
             if not isinstance(property_value, str):
@@ -281,7 +282,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def _after_deployed_property_value_of(
         self, resource_logical_id: str, property_name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         return self._before_deployed_property_value_of(
             resource_logical_id=resource_logical_id, property_name=property_name
         )
@@ -495,7 +496,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             resource_name=logical_name_of_resource,
             node_template=self._change_set.update_model.node_template,
         )
-        node_property: Optional[NodeProperty] = self._get_node_property_for(
+        node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )
         if node_property is not None:
@@ -918,7 +919,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     ) -> str:
         # TODO: typing around resolved resources is needed and should be reflected here.
         resolved_resource = resolved_resources.get(logical_resource_id, dict())
-        physical_resource_id: Optional[str] = resolved_resource.get("PhysicalResourceId")
+        physical_resource_id: str | None = resolved_resource.get("PhysicalResourceId")
         if not isinstance(physical_resource_id, str):
             raise RuntimeError(f"No PhysicalResourceId found for resource '{logical_resource_id}'")
         return physical_resource_id

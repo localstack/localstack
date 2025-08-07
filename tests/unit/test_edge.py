@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 import requests
 from pytest_httpserver.httpserver import HTTPServer
@@ -9,7 +7,7 @@ from localstack.services.edge import start_proxy
 from localstack.utils.net import get_free_tcp_port
 
 
-def gateway_listen_value(httpserver: HTTPServer) -> List[HostAndPort]:
+def gateway_listen_value(httpserver: HTTPServer) -> list[HostAndPort]:
     return [HostAndPort(host=httpserver.host, port=httpserver.port)]
 
 

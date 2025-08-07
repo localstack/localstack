@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,18 +14,18 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2DHCPOptionsProperties(TypedDict):
-    DhcpOptionsId: Optional[str]
-    DomainName: Optional[str]
-    DomainNameServers: Optional[list[str]]
-    NetbiosNameServers: Optional[list[str]]
-    NetbiosNodeType: Optional[int]
-    NtpServers: Optional[list[str]]
-    Tags: Optional[list[Tag]]
+    DhcpOptionsId: str | None
+    DomainName: str | None
+    DomainNameServers: list[str] | None
+    NetbiosNameServers: list[str] | None
+    NetbiosNodeType: int | None
+    NtpServers: list[str] | None
+    Tags: list[Tag] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

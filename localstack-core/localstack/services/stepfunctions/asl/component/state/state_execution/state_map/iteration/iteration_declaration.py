@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
@@ -11,7 +11,7 @@ from localstack.services.stepfunctions.asl.component.state.state_execution.state
 
 
 class IterationDecl(Component):
-    comment: Final[Optional[Comment]]
+    comment: Final[Comment | None]
     query_language: Final[QueryLanguage]
     start_at: Final[StartAt]
     states: Final[States]
@@ -19,7 +19,7 @@ class IterationDecl(Component):
 
     def __init__(
         self,
-        comment: Optional[Comment],
+        comment: Comment | None,
         query_language: QueryLanguage,
         start_at: StartAt,
         states: States,

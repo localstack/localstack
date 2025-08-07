@@ -1,5 +1,3 @@
-from typing import List
-
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.utils.run import run
 
@@ -8,7 +6,7 @@ class DebugPyPackage(Package["DebugPyPackageInstaller"]):
     def __init__(self) -> None:
         super().__init__("DebugPy", "latest")
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["latest"]
 
     def _get_installer(self, version: str) -> "DebugPyPackageInstaller":

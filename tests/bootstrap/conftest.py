@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import pytest
 
@@ -20,7 +19,7 @@ def cdk_template_path():
 @pytest.fixture(scope="session")
 def infrastructure_setup(cdk_template_path, aws_client_factory):
     def _infrastructure_setup(
-        namespace: str, force_synth: Optional[bool] = False, port: int = constants.DEFAULT_PORT_EDGE
+        namespace: str, force_synth: bool | None = False, port: int = constants.DEFAULT_PORT_EDGE
     ) -> InfraProvisioner:
         """
         :param namespace: repo-unique identifier for this CDK app.

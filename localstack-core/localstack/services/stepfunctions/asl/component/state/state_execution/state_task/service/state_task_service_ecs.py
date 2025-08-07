@@ -1,4 +1,5 @@
-from typing import Any, Callable, Final, Optional
+from collections.abc import Callable
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     StateCredentials,
@@ -42,7 +43,7 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _before_eval_execution(
@@ -102,7 +103,7 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
         state_credentials: StateCredentials,
-    ) -> Callable[[], Optional[Any]]:
+    ) -> Callable[[], Any | None]:
         ecs_client = boto_client_for(
             service="ecs",
             region=resource_runtime_part.region,
@@ -112,7 +113,7 @@ class StateTaskServiceEcs(StateTaskServiceCallback):
         task_arn: str = submission_output["Tasks"][0]["TaskArn"]
         cluster_arn: str = submission_output["Tasks"][0]["ClusterArn"]
 
-        def _sync_resolver() -> Optional[dict]:
+        def _sync_resolver() -> dict | None:
             describe_tasks_output = ecs_client.describe_tasks(cluster=cluster_arn, tasks=[task_arn])
             last_status: str = describe_tasks_output["tasks"][0]["lastStatus"]
 

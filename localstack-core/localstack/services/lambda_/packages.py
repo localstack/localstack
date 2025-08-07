@@ -4,7 +4,6 @@ import os
 import stat
 from functools import cache
 from pathlib import Path
-from typing import List
 
 from localstack import config
 from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
@@ -35,7 +34,7 @@ class LambdaRuntimePackage(Package):
     def __init__(self, default_version: str = LAMBDA_RUNTIME_VERSION):
         super().__init__(name="Lambda", default_version=default_version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [LAMBDA_RUNTIME_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
@@ -75,7 +74,7 @@ class LambdaJavaPackage(Package):
     def __init__(self):
         super().__init__("LambdaJavaLibs", "0.2.22")
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["0.2.22", "0.2.21"]
 
     def _get_installer(self, version: str) -> PackageInstaller:

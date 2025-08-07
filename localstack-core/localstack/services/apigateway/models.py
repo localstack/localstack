@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any
 
 from requests.structures import CaseInsensitiveDict
 
@@ -28,21 +28,21 @@ class RestApiContainer:
     # contains the RestApi dictionary. We're not making use of it yet, still using moto data.
     rest_api: RestApi
     # maps AuthorizerId -> Authorizer
-    authorizers: Dict[str, Authorizer]
+    authorizers: dict[str, Authorizer]
     # maps RequestValidatorId -> RequestValidator
-    validators: Dict[str, RequestValidator]
+    validators: dict[str, RequestValidator]
     # map DocumentationPartId -> DocumentationPart
-    documentation_parts: Dict[str, DocumentationPart]
+    documentation_parts: dict[str, DocumentationPart]
     # map doc version name -> DocumentationVersion
-    documentation_versions: Dict[str, DocumentationVersion]
+    documentation_versions: dict[str, DocumentationVersion]
     # not used yet, still in moto
-    gateway_responses: Dict[GatewayResponseType, GatewayResponse]
+    gateway_responses: dict[GatewayResponseType, GatewayResponse]
     # maps Model name -> Model
-    models: Dict[str, Model]
+    models: dict[str, Model]
     # maps Model name -> resolved dict Model, so we don't need to load the JSON everytime
-    resolved_models: Dict[str, dict]
+    resolved_models: dict[str, dict]
     # maps ResourceId of a Resource to its children ResourceIds
-    resource_children: Dict[str, List[str]]
+    resource_children: dict[str, list[str]]
 
     def __init__(self, rest_api: RestApi):
         self.rest_api = rest_api
@@ -102,25 +102,25 @@ class RestApiDeployment:
 class ApiGatewayStore(BaseStore):
     # maps (API id) -> RestApiContainer
     # TODO: remove CaseInsensitiveDict, and lower the value of the ID when getting it from the tags
-    rest_apis: Dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
+    rest_apis: dict[str, RestApiContainer] = LocalAttribute(default=CaseInsensitiveDict)
 
     # account details
-    _account: Dict[str, Any] = LocalAttribute(default=dict)
+    _account: dict[str, Any] = LocalAttribute(default=dict)
 
     # maps (domain_name) -> [path_mappings]
-    base_path_mappings: Dict[str, List[Dict]] = LocalAttribute(default=dict)
+    base_path_mappings: dict[str, list[dict]] = LocalAttribute(default=dict)
 
     # maps ID to VPC link details
-    vpc_links: Dict[str, Dict] = LocalAttribute(default=dict)
+    vpc_links: dict[str, dict] = LocalAttribute(default=dict)
 
     # maps cert ID to client certificate details
-    client_certificates: Dict[str, Dict] = LocalAttribute(default=dict)
+    client_certificates: dict[str, dict] = LocalAttribute(default=dict)
 
     # maps domain name to domain name model
-    domain_names: Dict[str, DomainName] = LocalAttribute(default=dict)
+    domain_names: dict[str, DomainName] = LocalAttribute(default=dict)
 
     # maps resource ARN to tags
-    TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
+    TAGS: dict[str, dict[str, str]] = CrossRegionAttribute(default=dict)
 
     # internal deployments, represents a frozen REST API for a deployment, used in our router
     # TODO: make sure API ID are unique across all accounts

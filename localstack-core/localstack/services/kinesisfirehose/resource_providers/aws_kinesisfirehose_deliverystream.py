@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,328 +14,328 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class KinesisFirehoseDeliveryStreamProperties(TypedDict):
-    AmazonOpenSearchServerlessDestinationConfiguration: Optional[
-        AmazonOpenSearchServerlessDestinationConfiguration
-    ]
-    AmazonopensearchserviceDestinationConfiguration: Optional[
-        AmazonopensearchserviceDestinationConfiguration
-    ]
-    Arn: Optional[str]
-    DeliveryStreamEncryptionConfigurationInput: Optional[DeliveryStreamEncryptionConfigurationInput]
-    DeliveryStreamName: Optional[str]
-    DeliveryStreamType: Optional[str]
-    ElasticsearchDestinationConfiguration: Optional[ElasticsearchDestinationConfiguration]
-    ExtendedS3DestinationConfiguration: Optional[ExtendedS3DestinationConfiguration]
-    HttpEndpointDestinationConfiguration: Optional[HttpEndpointDestinationConfiguration]
-    KinesisStreamSourceConfiguration: Optional[KinesisStreamSourceConfiguration]
-    RedshiftDestinationConfiguration: Optional[RedshiftDestinationConfiguration]
-    S3DestinationConfiguration: Optional[S3DestinationConfiguration]
-    SplunkDestinationConfiguration: Optional[SplunkDestinationConfiguration]
-    Tags: Optional[list[Tag]]
+    AmazonOpenSearchServerlessDestinationConfiguration: (
+        AmazonOpenSearchServerlessDestinationConfiguration | None
+    )
+    AmazonopensearchserviceDestinationConfiguration: (
+        AmazonopensearchserviceDestinationConfiguration | None
+    )
+    Arn: str | None
+    DeliveryStreamEncryptionConfigurationInput: DeliveryStreamEncryptionConfigurationInput | None
+    DeliveryStreamName: str | None
+    DeliveryStreamType: str | None
+    ElasticsearchDestinationConfiguration: ElasticsearchDestinationConfiguration | None
+    ExtendedS3DestinationConfiguration: ExtendedS3DestinationConfiguration | None
+    HttpEndpointDestinationConfiguration: HttpEndpointDestinationConfiguration | None
+    KinesisStreamSourceConfiguration: KinesisStreamSourceConfiguration | None
+    RedshiftDestinationConfiguration: RedshiftDestinationConfiguration | None
+    S3DestinationConfiguration: S3DestinationConfiguration | None
+    SplunkDestinationConfiguration: SplunkDestinationConfiguration | None
+    Tags: list[Tag] | None
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict):
-    KeyType: Optional[str]
-    KeyARN: Optional[str]
+    KeyType: str | None
+    KeyARN: str | None
 
 
 class ElasticsearchBufferingHints(TypedDict):
-    IntervalInSeconds: Optional[int]
-    SizeInMBs: Optional[int]
+    IntervalInSeconds: int | None
+    SizeInMBs: int | None
 
 
 class CloudWatchLoggingOptions(TypedDict):
-    Enabled: Optional[bool]
-    LogGroupName: Optional[str]
-    LogStreamName: Optional[str]
+    Enabled: bool | None
+    LogGroupName: str | None
+    LogStreamName: str | None
 
 
 class ProcessorParameter(TypedDict):
-    ParameterName: Optional[str]
-    ParameterValue: Optional[str]
+    ParameterName: str | None
+    ParameterValue: str | None
 
 
 class Processor(TypedDict):
-    Type: Optional[str]
-    Parameters: Optional[list[ProcessorParameter]]
+    Type: str | None
+    Parameters: list[ProcessorParameter] | None
 
 
 class ProcessingConfiguration(TypedDict):
-    Enabled: Optional[bool]
-    Processors: Optional[list[Processor]]
+    Enabled: bool | None
+    Processors: list[Processor] | None
 
 
 class ElasticsearchRetryOptions(TypedDict):
-    DurationInSeconds: Optional[int]
+    DurationInSeconds: int | None
 
 
 class BufferingHints(TypedDict):
-    IntervalInSeconds: Optional[int]
-    SizeInMBs: Optional[int]
+    IntervalInSeconds: int | None
+    SizeInMBs: int | None
 
 
 class KMSEncryptionConfig(TypedDict):
-    AWSKMSKeyARN: Optional[str]
+    AWSKMSKeyARN: str | None
 
 
 class EncryptionConfiguration(TypedDict):
-    KMSEncryptionConfig: Optional[KMSEncryptionConfig]
-    NoEncryptionConfig: Optional[str]
+    KMSEncryptionConfig: KMSEncryptionConfig | None
+    NoEncryptionConfig: str | None
 
 
 class S3DestinationConfiguration(TypedDict):
-    BucketARN: Optional[str]
-    RoleARN: Optional[str]
-    BufferingHints: Optional[BufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    CompressionFormat: Optional[str]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    ErrorOutputPrefix: Optional[str]
-    Prefix: Optional[str]
+    BucketARN: str | None
+    RoleARN: str | None
+    BufferingHints: BufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    CompressionFormat: str | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    ErrorOutputPrefix: str | None
+    Prefix: str | None
 
 
 class VpcConfiguration(TypedDict):
-    RoleARN: Optional[str]
-    SecurityGroupIds: Optional[list[str]]
-    SubnetIds: Optional[list[str]]
+    RoleARN: str | None
+    SecurityGroupIds: list[str] | None
+    SubnetIds: list[str] | None
 
 
 class DocumentIdOptions(TypedDict):
-    DefaultDocumentIdFormat: Optional[str]
+    DefaultDocumentIdFormat: str | None
 
 
 class ElasticsearchDestinationConfiguration(TypedDict):
-    IndexName: Optional[str]
-    RoleARN: Optional[str]
-    S3Configuration: Optional[S3DestinationConfiguration]
-    BufferingHints: Optional[ElasticsearchBufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ClusterEndpoint: Optional[str]
-    DocumentIdOptions: Optional[DocumentIdOptions]
-    DomainARN: Optional[str]
-    IndexRotationPeriod: Optional[str]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RetryOptions: Optional[ElasticsearchRetryOptions]
-    S3BackupMode: Optional[str]
-    TypeName: Optional[str]
-    VpcConfiguration: Optional[VpcConfiguration]
+    IndexName: str | None
+    RoleARN: str | None
+    S3Configuration: S3DestinationConfiguration | None
+    BufferingHints: ElasticsearchBufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ClusterEndpoint: str | None
+    DocumentIdOptions: DocumentIdOptions | None
+    DomainARN: str | None
+    IndexRotationPeriod: str | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RetryOptions: ElasticsearchRetryOptions | None
+    S3BackupMode: str | None
+    TypeName: str | None
+    VpcConfiguration: VpcConfiguration | None
 
 
 class AmazonopensearchserviceBufferingHints(TypedDict):
-    IntervalInSeconds: Optional[int]
-    SizeInMBs: Optional[int]
+    IntervalInSeconds: int | None
+    SizeInMBs: int | None
 
 
 class AmazonopensearchserviceRetryOptions(TypedDict):
-    DurationInSeconds: Optional[int]
+    DurationInSeconds: int | None
 
 
 class AmazonopensearchserviceDestinationConfiguration(TypedDict):
-    IndexName: Optional[str]
-    RoleARN: Optional[str]
-    S3Configuration: Optional[S3DestinationConfiguration]
-    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ClusterEndpoint: Optional[str]
-    DocumentIdOptions: Optional[DocumentIdOptions]
-    DomainARN: Optional[str]
-    IndexRotationPeriod: Optional[str]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
-    S3BackupMode: Optional[str]
-    TypeName: Optional[str]
-    VpcConfiguration: Optional[VpcConfiguration]
+    IndexName: str | None
+    RoleARN: str | None
+    S3Configuration: S3DestinationConfiguration | None
+    BufferingHints: AmazonopensearchserviceBufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ClusterEndpoint: str | None
+    DocumentIdOptions: DocumentIdOptions | None
+    DomainARN: str | None
+    IndexRotationPeriod: str | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RetryOptions: AmazonopensearchserviceRetryOptions | None
+    S3BackupMode: str | None
+    TypeName: str | None
+    VpcConfiguration: VpcConfiguration | None
 
 
 class AmazonOpenSearchServerlessBufferingHints(TypedDict):
-    IntervalInSeconds: Optional[int]
-    SizeInMBs: Optional[int]
+    IntervalInSeconds: int | None
+    SizeInMBs: int | None
 
 
 class AmazonOpenSearchServerlessRetryOptions(TypedDict):
-    DurationInSeconds: Optional[int]
+    DurationInSeconds: int | None
 
 
 class AmazonOpenSearchServerlessDestinationConfiguration(TypedDict):
-    IndexName: Optional[str]
-    RoleARN: Optional[str]
-    S3Configuration: Optional[S3DestinationConfiguration]
-    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    CollectionEndpoint: Optional[str]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
-    S3BackupMode: Optional[str]
-    VpcConfiguration: Optional[VpcConfiguration]
+    IndexName: str | None
+    RoleARN: str | None
+    S3Configuration: S3DestinationConfiguration | None
+    BufferingHints: AmazonOpenSearchServerlessBufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    CollectionEndpoint: str | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RetryOptions: AmazonOpenSearchServerlessRetryOptions | None
+    S3BackupMode: str | None
+    VpcConfiguration: VpcConfiguration | None
 
 
 class HiveJsonSerDe(TypedDict):
-    TimestampFormats: Optional[list[str]]
+    TimestampFormats: list[str] | None
 
 
 class OpenXJsonSerDe(TypedDict):
-    CaseInsensitive: Optional[bool]
-    ColumnToJsonKeyMappings: Optional[dict]
-    ConvertDotsInJsonKeysToUnderscores: Optional[bool]
+    CaseInsensitive: bool | None
+    ColumnToJsonKeyMappings: dict | None
+    ConvertDotsInJsonKeysToUnderscores: bool | None
 
 
 class Deserializer(TypedDict):
-    HiveJsonSerDe: Optional[HiveJsonSerDe]
-    OpenXJsonSerDe: Optional[OpenXJsonSerDe]
+    HiveJsonSerDe: HiveJsonSerDe | None
+    OpenXJsonSerDe: OpenXJsonSerDe | None
 
 
 class InputFormatConfiguration(TypedDict):
-    Deserializer: Optional[Deserializer]
+    Deserializer: Deserializer | None
 
 
 class OrcSerDe(TypedDict):
-    BlockSizeBytes: Optional[int]
-    BloomFilterColumns: Optional[list[str]]
-    BloomFilterFalsePositiveProbability: Optional[float]
-    Compression: Optional[str]
-    DictionaryKeyThreshold: Optional[float]
-    EnablePadding: Optional[bool]
-    FormatVersion: Optional[str]
-    PaddingTolerance: Optional[float]
-    RowIndexStride: Optional[int]
-    StripeSizeBytes: Optional[int]
+    BlockSizeBytes: int | None
+    BloomFilterColumns: list[str] | None
+    BloomFilterFalsePositiveProbability: float | None
+    Compression: str | None
+    DictionaryKeyThreshold: float | None
+    EnablePadding: bool | None
+    FormatVersion: str | None
+    PaddingTolerance: float | None
+    RowIndexStride: int | None
+    StripeSizeBytes: int | None
 
 
 class ParquetSerDe(TypedDict):
-    BlockSizeBytes: Optional[int]
-    Compression: Optional[str]
-    EnableDictionaryCompression: Optional[bool]
-    MaxPaddingBytes: Optional[int]
-    PageSizeBytes: Optional[int]
-    WriterVersion: Optional[str]
+    BlockSizeBytes: int | None
+    Compression: str | None
+    EnableDictionaryCompression: bool | None
+    MaxPaddingBytes: int | None
+    PageSizeBytes: int | None
+    WriterVersion: str | None
 
 
 class Serializer(TypedDict):
-    OrcSerDe: Optional[OrcSerDe]
-    ParquetSerDe: Optional[ParquetSerDe]
+    OrcSerDe: OrcSerDe | None
+    ParquetSerDe: ParquetSerDe | None
 
 
 class OutputFormatConfiguration(TypedDict):
-    Serializer: Optional[Serializer]
+    Serializer: Serializer | None
 
 
 class SchemaConfiguration(TypedDict):
-    CatalogId: Optional[str]
-    DatabaseName: Optional[str]
-    Region: Optional[str]
-    RoleARN: Optional[str]
-    TableName: Optional[str]
-    VersionId: Optional[str]
+    CatalogId: str | None
+    DatabaseName: str | None
+    Region: str | None
+    RoleARN: str | None
+    TableName: str | None
+    VersionId: str | None
 
 
 class DataFormatConversionConfiguration(TypedDict):
-    Enabled: Optional[bool]
-    InputFormatConfiguration: Optional[InputFormatConfiguration]
-    OutputFormatConfiguration: Optional[OutputFormatConfiguration]
-    SchemaConfiguration: Optional[SchemaConfiguration]
+    Enabled: bool | None
+    InputFormatConfiguration: InputFormatConfiguration | None
+    OutputFormatConfiguration: OutputFormatConfiguration | None
+    SchemaConfiguration: SchemaConfiguration | None
 
 
 class RetryOptions(TypedDict):
-    DurationInSeconds: Optional[int]
+    DurationInSeconds: int | None
 
 
 class DynamicPartitioningConfiguration(TypedDict):
-    Enabled: Optional[bool]
-    RetryOptions: Optional[RetryOptions]
+    Enabled: bool | None
+    RetryOptions: RetryOptions | None
 
 
 class ExtendedS3DestinationConfiguration(TypedDict):
-    BucketARN: Optional[str]
-    RoleARN: Optional[str]
-    BufferingHints: Optional[BufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    CompressionFormat: Optional[str]
-    DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
-    DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    ErrorOutputPrefix: Optional[str]
-    Prefix: Optional[str]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupConfiguration: Optional[S3DestinationConfiguration]
-    S3BackupMode: Optional[str]
+    BucketARN: str | None
+    RoleARN: str | None
+    BufferingHints: BufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    CompressionFormat: str | None
+    DataFormatConversionConfiguration: DataFormatConversionConfiguration | None
+    DynamicPartitioningConfiguration: DynamicPartitioningConfiguration | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    ErrorOutputPrefix: str | None
+    Prefix: str | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupConfiguration: S3DestinationConfiguration | None
+    S3BackupMode: str | None
 
 
 class KinesisStreamSourceConfiguration(TypedDict):
-    KinesisStreamARN: Optional[str]
-    RoleARN: Optional[str]
+    KinesisStreamARN: str | None
+    RoleARN: str | None
 
 
 class CopyCommand(TypedDict):
-    DataTableName: Optional[str]
-    CopyOptions: Optional[str]
-    DataTableColumns: Optional[str]
+    DataTableName: str | None
+    CopyOptions: str | None
+    DataTableColumns: str | None
 
 
 class RedshiftRetryOptions(TypedDict):
-    DurationInSeconds: Optional[int]
+    DurationInSeconds: int | None
 
 
 class RedshiftDestinationConfiguration(TypedDict):
-    ClusterJDBCURL: Optional[str]
-    CopyCommand: Optional[CopyCommand]
-    Password: Optional[str]
-    RoleARN: Optional[str]
-    S3Configuration: Optional[S3DestinationConfiguration]
-    Username: Optional[str]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RetryOptions: Optional[RedshiftRetryOptions]
-    S3BackupConfiguration: Optional[S3DestinationConfiguration]
-    S3BackupMode: Optional[str]
+    ClusterJDBCURL: str | None
+    CopyCommand: CopyCommand | None
+    Password: str | None
+    RoleARN: str | None
+    S3Configuration: S3DestinationConfiguration | None
+    Username: str | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RetryOptions: RedshiftRetryOptions | None
+    S3BackupConfiguration: S3DestinationConfiguration | None
+    S3BackupMode: str | None
 
 
 class SplunkRetryOptions(TypedDict):
-    DurationInSeconds: Optional[int]
+    DurationInSeconds: int | None
 
 
 class SplunkDestinationConfiguration(TypedDict):
-    HECEndpoint: Optional[str]
-    HECEndpointType: Optional[str]
-    HECToken: Optional[str]
-    S3Configuration: Optional[S3DestinationConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    HECAcknowledgmentTimeoutInSeconds: Optional[int]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RetryOptions: Optional[SplunkRetryOptions]
-    S3BackupMode: Optional[str]
+    HECEndpoint: str | None
+    HECEndpointType: str | None
+    HECToken: str | None
+    S3Configuration: S3DestinationConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    HECAcknowledgmentTimeoutInSeconds: int | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RetryOptions: SplunkRetryOptions | None
+    S3BackupMode: str | None
 
 
 class HttpEndpointConfiguration(TypedDict):
-    Url: Optional[str]
-    AccessKey: Optional[str]
-    Name: Optional[str]
+    Url: str | None
+    AccessKey: str | None
+    Name: str | None
 
 
 class HttpEndpointCommonAttribute(TypedDict):
-    AttributeName: Optional[str]
-    AttributeValue: Optional[str]
+    AttributeName: str | None
+    AttributeValue: str | None
 
 
 class HttpEndpointRequestConfiguration(TypedDict):
-    CommonAttributes: Optional[list[HttpEndpointCommonAttribute]]
-    ContentEncoding: Optional[str]
+    CommonAttributes: list[HttpEndpointCommonAttribute] | None
+    ContentEncoding: str | None
 
 
 class HttpEndpointDestinationConfiguration(TypedDict):
-    EndpointConfiguration: Optional[HttpEndpointConfiguration]
-    S3Configuration: Optional[S3DestinationConfiguration]
-    BufferingHints: Optional[BufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RequestConfiguration: Optional[HttpEndpointRequestConfiguration]
-    RetryOptions: Optional[RetryOptions]
-    RoleARN: Optional[str]
-    S3BackupMode: Optional[str]
+    EndpointConfiguration: HttpEndpointConfiguration | None
+    S3Configuration: S3DestinationConfiguration | None
+    BufferingHints: BufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RequestConfiguration: HttpEndpointRequestConfiguration | None
+    RetryOptions: RetryOptions | None
+    RoleARN: str | None
+    S3BackupMode: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

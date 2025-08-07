@@ -1,6 +1,6 @@
 import json
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Self
 
 from botocore.client import BaseClient
@@ -95,7 +95,7 @@ class ArchiveService:
         self.archive.state = state
 
     def set_creation_time(self) -> None:
-        self.archive.creation_time = datetime.now(timezone.utc)
+        self.archive.creation_time = datetime.now(UTC)
 
     def update(
         self,

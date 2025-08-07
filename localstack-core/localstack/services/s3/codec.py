@@ -1,5 +1,5 @@
 import io
-from typing import IO, Any, Optional
+from typing import IO, Any
 
 
 class AwsChunkedDecoder(io.RawIOBase):
@@ -15,7 +15,7 @@ class AwsChunkedDecoder(io.RawIOBase):
         return True
 
     def __init__(
-        self, stream: IO[bytes], decoded_content_length: int, s3_object: Optional[Any] = None
+        self, stream: IO[bytes], decoded_content_length: int, s3_object: Any | None = None
     ):
         self._stream = stream
 

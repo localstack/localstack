@@ -886,8 +886,8 @@ class TestEventBus:
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
-        bus_name_one = "bus1-{}".format(short_uid())
-        bus_name_two = "bus2-{}".format(short_uid())
+        bus_name_one = f"bus1-{short_uid()}"
+        bus_name_two = f"bus2-{short_uid()}"
 
         events_create_event_bus(Name=bus_name_one)
         event_bus_2_arn = events_create_event_bus(Name=bus_name_two)["EventBusArn"]

@@ -1,5 +1,6 @@
 import logging
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from localstack.runtime import hooks
 from localstack.utils.functions import call_safe

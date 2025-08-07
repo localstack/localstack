@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.jsonata.jsonata import (
     VariableDeclarations,
@@ -77,7 +77,7 @@ def get_intrinsic_functions_declarations(
 ) -> VariableDeclarations:
     declarations: list[str] = list()
     for variable_reference in variable_references:
-        declaration: Optional[VariableDeclarations] = _DECLARATION_BY_VARIABLE_REFERENCE.get(
+        declaration: VariableDeclarations | None = _DECLARATION_BY_VARIABLE_REFERENCE.get(
             variable_reference
         )
         if declaration:

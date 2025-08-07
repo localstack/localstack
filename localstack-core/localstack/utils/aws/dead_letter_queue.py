@@ -1,7 +1,6 @@
 import json
 import logging
 import uuid
-from typing import Dict, List
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws import arns
@@ -34,7 +33,7 @@ def sns_error_to_dead_letter_queue(
     return _send_to_dead_letter_queue(sns_subscriber["SubscriptionArn"], target_arn, event, error)
 
 
-def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error, role: str = None):
+def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: dict, error, role: str = None):
     if not dlq_arn:
         return
     LOG.info("Sending failed execution %s to dead letter queue %s", source_arn, dlq_arn)
@@ -84,7 +83,7 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: Dict, error
     return dlq_arn
 
 
-def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
+def _prepare_messages_to_dlq(source_arn: str, event: dict, error) -> list[dict]:
     messages = []
     custom_attrs = {
         "RequestID": {"DataType": "String", "StringValue": str(uuid.uuid4())},
@@ -136,7 +135,7 @@ def _prepare_messages_to_dlq(source_arn: str, event: Dict, error) -> List[Dict]:
     return messages
 
 
-def message_attributes_to_upper(message_attrs: Dict) -> Dict:
+def message_attributes_to_upper(message_attrs: dict) -> dict:
     """Convert message attribute details (first characters) to upper case (e.g., StringValue, DataType)."""
     message_attrs = message_attrs or {}
     for _, attr in message_attrs.items():

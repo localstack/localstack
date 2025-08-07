@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,57 +14,57 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class CloudWatchAlarmProperties(TypedDict):
-    ComparisonOperator: Optional[str]
-    EvaluationPeriods: Optional[int]
-    ActionsEnabled: Optional[bool]
-    AlarmActions: Optional[list[str]]
-    AlarmDescription: Optional[str]
-    AlarmName: Optional[str]
-    Arn: Optional[str]
-    DatapointsToAlarm: Optional[int]
-    Dimensions: Optional[list[Dimension]]
-    EvaluateLowSampleCountPercentile: Optional[str]
-    ExtendedStatistic: Optional[str]
-    Id: Optional[str]
-    InsufficientDataActions: Optional[list[str]]
-    MetricName: Optional[str]
-    Metrics: Optional[list[MetricDataQuery]]
-    Namespace: Optional[str]
-    OKActions: Optional[list[str]]
-    Period: Optional[int]
-    Statistic: Optional[str]
-    Threshold: Optional[float]
-    ThresholdMetricId: Optional[str]
-    TreatMissingData: Optional[str]
-    Unit: Optional[str]
+    ComparisonOperator: str | None
+    EvaluationPeriods: int | None
+    ActionsEnabled: bool | None
+    AlarmActions: list[str] | None
+    AlarmDescription: str | None
+    AlarmName: str | None
+    Arn: str | None
+    DatapointsToAlarm: int | None
+    Dimensions: list[Dimension] | None
+    EvaluateLowSampleCountPercentile: str | None
+    ExtendedStatistic: str | None
+    Id: str | None
+    InsufficientDataActions: list[str] | None
+    MetricName: str | None
+    Metrics: list[MetricDataQuery] | None
+    Namespace: str | None
+    OKActions: list[str] | None
+    Period: int | None
+    Statistic: str | None
+    Threshold: float | None
+    ThresholdMetricId: str | None
+    TreatMissingData: str | None
+    Unit: str | None
 
 
 class Dimension(TypedDict):
-    Name: Optional[str]
-    Value: Optional[str]
+    Name: str | None
+    Value: str | None
 
 
 class Metric(TypedDict):
-    Dimensions: Optional[list[Dimension]]
-    MetricName: Optional[str]
-    Namespace: Optional[str]
+    Dimensions: list[Dimension] | None
+    MetricName: str | None
+    Namespace: str | None
 
 
 class MetricStat(TypedDict):
-    Metric: Optional[Metric]
-    Period: Optional[int]
-    Stat: Optional[str]
-    Unit: Optional[str]
+    Metric: Metric | None
+    Period: int | None
+    Stat: str | None
+    Unit: str | None
 
 
 class MetricDataQuery(TypedDict):
-    Id: Optional[str]
-    AccountId: Optional[str]
-    Expression: Optional[str]
-    Label: Optional[str]
-    MetricStat: Optional[MetricStat]
-    Period: Optional[int]
-    ReturnData: Optional[bool]
+    Id: str | None
+    AccountId: str | None
+    Expression: str | None
+    Label: str | None
+    MetricStat: MetricStat | None
+    Period: int | None
+    ReturnData: bool | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -3,7 +3,7 @@ import json
 import logging
 from functools import lru_cache
 from http import HTTPMethod
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 from urllib.parse import urlparse
 
 import requests
@@ -51,11 +51,11 @@ NO_BODY_METHODS = {
 
 
 class LambdaProxyResponse(TypedDict, total=False):
-    body: Optional[str]
-    statusCode: Optional[int | str]
-    headers: Optional[dict[str, str]]
-    isBase64Encoded: Optional[bool]
-    multiValueHeaders: Optional[dict[str, list[str]]]
+    body: str | None
+    statusCode: int | str | None
+    headers: dict[str, str] | None
+    isBase64Encoded: bool | None
+    multiValueHeaders: dict[str, list[str]] | None
 
 
 class LambdaInputEvent(TypedDict, total=False):

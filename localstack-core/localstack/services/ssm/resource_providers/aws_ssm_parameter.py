@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,15 +14,15 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SSMParameterProperties(TypedDict):
-    Type: Optional[str]
-    Value: Optional[str]
-    AllowedPattern: Optional[str]
-    DataType: Optional[str]
-    Description: Optional[str]
-    Name: Optional[str]
-    Policies: Optional[str]
-    Tags: Optional[dict]
-    Tier: Optional[str]
+    Type: str | None
+    Value: str | None
+    AllowedPattern: str | None
+    DataType: str | None
+    Description: str | None
+    Name: str | None
+    Policies: str | None
+    Tags: dict | None
+    Tier: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

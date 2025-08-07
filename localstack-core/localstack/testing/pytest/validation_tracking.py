@@ -9,7 +9,7 @@ import datetime
 import json
 import os
 from pathlib import Path
-from typing import Dict, Optional
+from typing import Optional
 
 import pytest
 from pluggy import Result
@@ -17,7 +17,7 @@ from pytest import StashKey, TestReport
 
 from localstack.testing.aws.util import is_aws_cloud
 
-durations_key = StashKey[Dict[str, float]]()
+durations_key = StashKey[dict[str, float]]()
 """
 Stores phase durations on the test node between execution phases.
 See https://docs.pytest.org/en/latest/reference/reference.html#pytest.Stash
@@ -35,7 +35,7 @@ def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
     if not os.path.exists(snapshot_path):
         return None
 
-    with open(snapshot_path, "r") as fd:
+    with open(snapshot_path) as fd:
         file_content = json.load(fd)
         return file_content.get(item.nodeid)
 

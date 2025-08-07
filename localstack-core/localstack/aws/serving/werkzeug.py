@@ -1,5 +1,5 @@
 import ssl
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
 from rolo.gateway import Gateway
 from rolo.gateway.wsgi import WsgiGateway
@@ -17,7 +17,7 @@ def serve(
     host: str = "localhost",
     port: int = constants.DEFAULT_PORT_EDGE,
     use_reloader: bool = True,
-    ssl_creds: Optional[Tuple[Any, Any]] = None,
+    ssl_creds: tuple[Any, Any] | None = None,
     **kwargs,
 ) -> None:
     """

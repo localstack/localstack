@@ -5,7 +5,6 @@ import re
 import shutil
 import textwrap
 import threading
-from typing import List
 
 import semver
 
@@ -49,7 +48,7 @@ class OpensearchPackage(Package):
         else:
             return OpensearchPackageInstaller(version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return list(versions.install_versions.keys())
 
 

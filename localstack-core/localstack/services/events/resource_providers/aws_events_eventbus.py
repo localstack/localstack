@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,17 +14,17 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EventsEventBusProperties(TypedDict):
-    Name: Optional[str]
-    Arn: Optional[str]
-    EventSourceName: Optional[str]
-    Id: Optional[str]
-    Policy: Optional[str]
-    Tags: Optional[list[TagEntry]]
+    Name: str | None
+    Arn: str | None
+    EventSourceName: str | None
+    Id: str | None
+    Policy: str | None
+    Tags: list[TagEntry] | None
 
 
 class TagEntry(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

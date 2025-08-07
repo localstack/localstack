@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,43 +15,43 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2SecurityGroupProperties(TypedDict):
-    GroupDescription: Optional[str]
-    GroupId: Optional[str]
-    GroupName: Optional[str]
-    Id: Optional[str]
-    SecurityGroupEgress: Optional[list[Egress]]
-    SecurityGroupIngress: Optional[list[Ingress]]
-    Tags: Optional[list[Tag]]
-    VpcId: Optional[str]
+    GroupDescription: str | None
+    GroupId: str | None
+    GroupName: str | None
+    Id: str | None
+    SecurityGroupEgress: list[Egress] | None
+    SecurityGroupIngress: list[Ingress] | None
+    Tags: list[Tag] | None
+    VpcId: str | None
 
 
 class Ingress(TypedDict):
-    IpProtocol: Optional[str]
-    CidrIp: Optional[str]
-    CidrIpv6: Optional[str]
-    Description: Optional[str]
-    FromPort: Optional[int]
-    SourcePrefixListId: Optional[str]
-    SourceSecurityGroupId: Optional[str]
-    SourceSecurityGroupName: Optional[str]
-    SourceSecurityGroupOwnerId: Optional[str]
-    ToPort: Optional[int]
+    IpProtocol: str | None
+    CidrIp: str | None
+    CidrIpv6: str | None
+    Description: str | None
+    FromPort: int | None
+    SourcePrefixListId: str | None
+    SourceSecurityGroupId: str | None
+    SourceSecurityGroupName: str | None
+    SourceSecurityGroupOwnerId: str | None
+    ToPort: int | None
 
 
 class Egress(TypedDict):
-    IpProtocol: Optional[str]
-    CidrIp: Optional[str]
-    CidrIpv6: Optional[str]
-    Description: Optional[str]
-    DestinationPrefixListId: Optional[str]
-    DestinationSecurityGroupId: Optional[str]
-    FromPort: Optional[int]
-    ToPort: Optional[int]
+    IpProtocol: str | None
+    CidrIp: str | None
+    CidrIpv6: str | None
+    Description: str | None
+    DestinationPrefixListId: str | None
+    DestinationSecurityGroupId: str | None
+    FromPort: int | None
+    ToPort: int | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

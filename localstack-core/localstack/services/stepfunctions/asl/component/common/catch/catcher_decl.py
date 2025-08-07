@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.assign.assign_decl import AssignDecl
 from localstack.services.stepfunctions.asl.component.common.catch.catcher_outcome import (
@@ -34,19 +34,19 @@ class CatcherDecl(EvalComponent):
 
     error_equals: Final[ErrorEqualsDecl]
     next_decl: Final[Next]
-    result_path: Final[Optional[ResultPath]]
-    assign: Final[Optional[AssignDecl]]
-    output: Final[Optional[Output]]
-    comment: Final[Optional[Comment]]
+    result_path: Final[ResultPath | None]
+    assign: Final[AssignDecl | None]
+    output: Final[Output | None]
+    comment: Final[Comment | None]
 
     def __init__(
         self,
         error_equals: ErrorEqualsDecl,
         next_decl: Next,
-        result_path: Optional[ResultPath],
-        assign: Optional[AssignDecl],
-        output: Optional[Output],
-        comment: Optional[Comment],
+        result_path: ResultPath | None,
+        assign: AssignDecl | None,
+        output: Output | None,
+        comment: Comment | None,
     ):
         self.error_equals = error_equals
         self.next_decl = next_decl

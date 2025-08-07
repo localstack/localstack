@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Iterable
 from functools import cache
 from http import HTTPMethod
-from typing import Iterable
 
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter, Rule

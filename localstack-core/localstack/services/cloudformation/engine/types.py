@@ -1,4 +1,5 @@
-from typing import Any, Callable, Optional, TypedDict
+from collections.abc import Callable
+from typing import Any, TypedDict
 
 # ---------------------
 # TYPES
@@ -25,16 +26,16 @@ class FuncDetailsValue(TypedDict):
     # - stack_name
     # - resources
     # - resource_id
-    parameters: Optional[ResourceDefinition | Callable[[dict, str, list[dict], str], dict]]
+    parameters: ResourceDefinition | Callable[[dict, str, list[dict], str], dict] | None
     """arguments to the function, or a function that generates the arguments to the function"""
     # Callable here takes the arguments
     # - result
     # - resource_id
     # - resources
     # - resource_type
-    result_handler: Optional[Callable[[dict, str, list[dict], str], None]]
+    result_handler: Callable[[dict, str, list[dict], str], None] | None
     """Take the result of the operation and patch the state of the resources, yuck..."""
-    types: Optional[dict[str, Callable]]
+    types: dict[str, Callable] | None
     """Possible type conversions"""
 
 

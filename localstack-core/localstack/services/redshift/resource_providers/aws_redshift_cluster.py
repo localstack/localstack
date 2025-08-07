@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,71 +14,71 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class RedshiftClusterProperties(TypedDict):
-    ClusterType: Optional[str]
-    DBName: Optional[str]
-    MasterUserPassword: Optional[str]
-    MasterUsername: Optional[str]
-    NodeType: Optional[str]
-    AllowVersionUpgrade: Optional[bool]
-    AquaConfigurationStatus: Optional[str]
-    AutomatedSnapshotRetentionPeriod: Optional[int]
-    AvailabilityZone: Optional[str]
-    AvailabilityZoneRelocation: Optional[bool]
-    AvailabilityZoneRelocationStatus: Optional[str]
-    Classic: Optional[bool]
-    ClusterIdentifier: Optional[str]
-    ClusterParameterGroupName: Optional[str]
-    ClusterSecurityGroups: Optional[list[str]]
-    ClusterSubnetGroupName: Optional[str]
-    ClusterVersion: Optional[str]
-    DeferMaintenance: Optional[bool]
-    DeferMaintenanceDuration: Optional[int]
-    DeferMaintenanceEndTime: Optional[str]
-    DeferMaintenanceIdentifier: Optional[str]
-    DeferMaintenanceStartTime: Optional[str]
-    DestinationRegion: Optional[str]
-    ElasticIp: Optional[str]
-    Encrypted: Optional[bool]
-    Endpoint: Optional[Endpoint]
-    EnhancedVpcRouting: Optional[bool]
-    HsmClientCertificateIdentifier: Optional[str]
-    HsmConfigurationIdentifier: Optional[str]
-    IamRoles: Optional[list[str]]
-    Id: Optional[str]
-    KmsKeyId: Optional[str]
-    LoggingProperties: Optional[LoggingProperties]
-    MaintenanceTrackName: Optional[str]
-    ManualSnapshotRetentionPeriod: Optional[int]
-    NumberOfNodes: Optional[int]
-    OwnerAccount: Optional[str]
-    Port: Optional[int]
-    PreferredMaintenanceWindow: Optional[str]
-    PubliclyAccessible: Optional[bool]
-    ResourceAction: Optional[str]
-    RevisionTarget: Optional[str]
-    RotateEncryptionKey: Optional[bool]
-    SnapshotClusterIdentifier: Optional[str]
-    SnapshotCopyGrantName: Optional[str]
-    SnapshotCopyManual: Optional[bool]
-    SnapshotCopyRetentionPeriod: Optional[int]
-    SnapshotIdentifier: Optional[str]
-    Tags: Optional[list[Tag]]
-    VpcSecurityGroupIds: Optional[list[str]]
+    ClusterType: str | None
+    DBName: str | None
+    MasterUserPassword: str | None
+    MasterUsername: str | None
+    NodeType: str | None
+    AllowVersionUpgrade: bool | None
+    AquaConfigurationStatus: str | None
+    AutomatedSnapshotRetentionPeriod: int | None
+    AvailabilityZone: str | None
+    AvailabilityZoneRelocation: bool | None
+    AvailabilityZoneRelocationStatus: str | None
+    Classic: bool | None
+    ClusterIdentifier: str | None
+    ClusterParameterGroupName: str | None
+    ClusterSecurityGroups: list[str] | None
+    ClusterSubnetGroupName: str | None
+    ClusterVersion: str | None
+    DeferMaintenance: bool | None
+    DeferMaintenanceDuration: int | None
+    DeferMaintenanceEndTime: str | None
+    DeferMaintenanceIdentifier: str | None
+    DeferMaintenanceStartTime: str | None
+    DestinationRegion: str | None
+    ElasticIp: str | None
+    Encrypted: bool | None
+    Endpoint: Endpoint | None
+    EnhancedVpcRouting: bool | None
+    HsmClientCertificateIdentifier: str | None
+    HsmConfigurationIdentifier: str | None
+    IamRoles: list[str] | None
+    Id: str | None
+    KmsKeyId: str | None
+    LoggingProperties: LoggingProperties | None
+    MaintenanceTrackName: str | None
+    ManualSnapshotRetentionPeriod: int | None
+    NumberOfNodes: int | None
+    OwnerAccount: str | None
+    Port: int | None
+    PreferredMaintenanceWindow: str | None
+    PubliclyAccessible: bool | None
+    ResourceAction: str | None
+    RevisionTarget: str | None
+    RotateEncryptionKey: bool | None
+    SnapshotClusterIdentifier: str | None
+    SnapshotCopyGrantName: str | None
+    SnapshotCopyManual: bool | None
+    SnapshotCopyRetentionPeriod: int | None
+    SnapshotIdentifier: str | None
+    Tags: list[Tag] | None
+    VpcSecurityGroupIds: list[str] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class LoggingProperties(TypedDict):
-    BucketName: Optional[str]
-    S3KeyPrefix: Optional[str]
+    BucketName: str | None
+    S3KeyPrefix: str | None
 
 
 class Endpoint(TypedDict):
-    Address: Optional[str]
-    Port: Optional[str]
+    Address: str | None
+    Port: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

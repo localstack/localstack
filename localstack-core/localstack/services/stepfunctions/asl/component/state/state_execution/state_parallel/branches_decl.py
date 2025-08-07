@@ -1,6 +1,6 @@
 import datetime
 import threading
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
@@ -26,7 +26,7 @@ class BranchWorkerPool(BranchWorker.BranchWorkerComm):
     _termination_event: Final[threading.Event]
     _active_workers_num: int
 
-    _terminated_with_error: Optional[ExecutionFailedEventDetails]
+    _terminated_with_error: ExecutionFailedEventDetails | None
 
     def __init__(self, workers_num: int):
         self._mutex = threading.Lock()
@@ -53,7 +53,7 @@ class BranchWorkerPool(BranchWorker.BranchWorkerComm):
     def wait(self):
         self._termination_event.wait()
 
-    def get_exit_event_details(self) -> Optional[ExecutionFailedEventDetails]:
+    def get_exit_event_details(self) -> ExecutionFailedEventDetails | None:
         return self._terminated_with_error
 
 
@@ -84,7 +84,7 @@ class BranchesDecl(EvalComponent):
         branch_worker_pool.wait()
 
         # Propagate exception if parallel task failed.
-        exit_event_details: Optional[ExecutionFailedEventDetails] = (
+        exit_event_details: ExecutionFailedEventDetails | None = (
             branch_worker_pool.get_exit_event_details()
         )
         if exit_event_details is not None:

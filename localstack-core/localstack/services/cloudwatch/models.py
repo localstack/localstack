@@ -1,6 +1,4 @@
 import datetime
-from datetime import timezone
-from typing import Dict, List
 
 from localstack.aws.api.cloudwatch import CompositeAlarm, DashboardBody, MetricAlarm, StateValue
 from localstack.services.stores import (
@@ -25,7 +23,7 @@ class LocalStackMetricAlarm:
         self.set_default_attributes()
 
     def set_default_attributes(self):
-        current_time = datetime.datetime.now(timezone.utc)
+        current_time = datetime.datetime.now(datetime.UTC)
         self.alarm["AlarmArn"] = arns.cloudwatch_alarm_arn(
             self.alarm["AlarmName"], account_id=self.account_id, region_name=self.region
         )
@@ -53,7 +51,7 @@ class LocalStackCompositeAlarm:
         self.set_default_attributes()
 
     def set_default_attributes(self):
-        current_time = datetime.datetime.now(timezone.utc)
+        current_time = datetime.datetime.now(datetime.UTC)
         self.alarm["AlarmArn"] = arns.cloudwatch_alarm_arn(
             self.alarm["AlarmName"], account_id=self.account_id, region_name=self.region
         )
@@ -97,13 +95,13 @@ class CloudWatchStore(BaseStore):
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
     # maps resource ARN to alarms
-    alarms: Dict[str, LocalStackAlarm] = LocalAttribute(default=dict)
+    alarms: dict[str, LocalStackAlarm] = LocalAttribute(default=dict)
 
     # Contains all the Alarm Histories. Per documentation, an alarm history is retained even if the alarm is deleted,
     # making it necessary to save this at store level
-    histories: List[Dict] = LocalAttribute(default=list)
+    histories: list[dict] = LocalAttribute(default=list)
 
-    dashboards: Dict[str, LocalStackDashboard] = LocalAttribute(default=dict)
+    dashboards: dict[str, LocalStackDashboard] = LocalAttribute(default=dict)
 
 
 cloudwatch_stores = AccountRegionBundle("cloudwatch", CloudWatchStore)

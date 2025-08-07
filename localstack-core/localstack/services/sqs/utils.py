@@ -3,7 +3,7 @@ import itertools
 import json
 import re
 import time
-from typing import Literal, NamedTuple, Optional, Tuple
+from typing import Literal, NamedTuple
 from urllib.parse import urlparse
 
 from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
@@ -36,7 +36,7 @@ def is_sqs_queue_url(url: str) -> bool:
 
 def guess_endpoint_strategy_and_host(
     host: str,
-) -> Tuple[Literal["standard", "domain", "path"], str]:
+) -> tuple[Literal["standard", "domain", "path"], str]:
     """
     This method is used for the dynamic endpoint strategy. It heuristically determines a tuple where the first
     element is the endpoint strategy, and the second is the part of the host after the endpoint prefix and region.
@@ -77,7 +77,7 @@ def is_fifo_queue(queue):
     return "true" == queue.attributes.get(QueueAttributeName.FifoQueue, "false").lower()
 
 
-def parse_queue_url(queue_url: str) -> Tuple[str, Optional[str], str]:
+def parse_queue_url(queue_url: str) -> tuple[str, str | None, str]:
     """
     Parses an SQS Queue URL and returns a triple of account_id, region and queue_name.
 

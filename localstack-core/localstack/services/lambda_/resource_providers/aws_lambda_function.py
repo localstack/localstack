@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -20,98 +20,98 @@ from localstack.utils.testutil import create_zip_file
 
 
 class LambdaFunctionProperties(TypedDict):
-    Code: Optional[Code]
-    Role: Optional[str]
-    Architectures: Optional[list[str]]
-    Arn: Optional[str]
-    CodeSigningConfigArn: Optional[str]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    Description: Optional[str]
-    Environment: Optional[Environment]
-    EphemeralStorage: Optional[EphemeralStorage]
-    FileSystemConfigs: Optional[list[FileSystemConfig]]
-    FunctionName: Optional[str]
-    Handler: Optional[str]
-    ImageConfig: Optional[ImageConfig]
-    KmsKeyArn: Optional[str]
-    Layers: Optional[list[str]]
-    MemorySize: Optional[int]
-    PackageType: Optional[str]
-    ReservedConcurrentExecutions: Optional[int]
-    Runtime: Optional[str]
-    RuntimeManagementConfig: Optional[RuntimeManagementConfig]
-    SnapStart: Optional[SnapStart]
-    SnapStartResponse: Optional[SnapStartResponse]
-    Tags: Optional[list[Tag]]
-    Timeout: Optional[int]
-    TracingConfig: Optional[TracingConfig]
-    VpcConfig: Optional[VpcConfig]
+    Code: Code | None
+    Role: str | None
+    Architectures: list[str] | None
+    Arn: str | None
+    CodeSigningConfigArn: str | None
+    DeadLetterConfig: DeadLetterConfig | None
+    Description: str | None
+    Environment: Environment | None
+    EphemeralStorage: EphemeralStorage | None
+    FileSystemConfigs: list[FileSystemConfig] | None
+    FunctionName: str | None
+    Handler: str | None
+    ImageConfig: ImageConfig | None
+    KmsKeyArn: str | None
+    Layers: list[str] | None
+    MemorySize: int | None
+    PackageType: str | None
+    ReservedConcurrentExecutions: int | None
+    Runtime: str | None
+    RuntimeManagementConfig: RuntimeManagementConfig | None
+    SnapStart: SnapStart | None
+    SnapStartResponse: SnapStartResponse | None
+    Tags: list[Tag] | None
+    Timeout: int | None
+    TracingConfig: TracingConfig | None
+    VpcConfig: VpcConfig | None
 
 
 class TracingConfig(TypedDict):
-    Mode: Optional[str]
+    Mode: str | None
 
 
 class VpcConfig(TypedDict):
-    SecurityGroupIds: Optional[list[str]]
-    SubnetIds: Optional[list[str]]
+    SecurityGroupIds: list[str] | None
+    SubnetIds: list[str] | None
 
 
 class RuntimeManagementConfig(TypedDict):
-    UpdateRuntimeOn: Optional[str]
-    RuntimeVersionArn: Optional[str]
+    UpdateRuntimeOn: str | None
+    RuntimeVersionArn: str | None
 
 
 class SnapStart(TypedDict):
-    ApplyOn: Optional[str]
+    ApplyOn: str | None
 
 
 class FileSystemConfig(TypedDict):
-    Arn: Optional[str]
-    LocalMountPath: Optional[str]
+    Arn: str | None
+    LocalMountPath: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class ImageConfig(TypedDict):
-    Command: Optional[list[str]]
-    EntryPoint: Optional[list[str]]
-    WorkingDirectory: Optional[str]
+    Command: list[str] | None
+    EntryPoint: list[str] | None
+    WorkingDirectory: str | None
 
 
 class DeadLetterConfig(TypedDict):
-    TargetArn: Optional[str]
+    TargetArn: str | None
 
 
 class SnapStartResponse(TypedDict):
-    ApplyOn: Optional[str]
-    OptimizationStatus: Optional[str]
+    ApplyOn: str | None
+    OptimizationStatus: str | None
 
 
 class Code(TypedDict):
-    ImageUri: Optional[str]
-    S3Bucket: Optional[str]
-    S3Key: Optional[str]
-    S3ObjectVersion: Optional[str]
-    ZipFile: Optional[str]
+    ImageUri: str | None
+    S3Bucket: str | None
+    S3Key: str | None
+    S3ObjectVersion: str | None
+    ZipFile: str | None
 
 
 class LoggingConfig(TypedDict):
-    ApplicationLogLevel: Optional[str]
-    LogFormat: Optional[str]
-    LogGroup: Optional[str]
-    SystemLogLevel: Optional[str]
+    ApplicationLogLevel: str | None
+    LogFormat: str | None
+    LogGroup: str | None
+    SystemLogLevel: str | None
 
 
 class Environment(TypedDict):
-    Variables: Optional[dict]
+    Variables: dict | None
 
 
 class EphemeralStorage(TypedDict):
-    Size: Optional[int]
+    Size: int | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

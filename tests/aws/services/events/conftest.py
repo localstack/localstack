@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Tuple
 
 import pytest
 
@@ -156,7 +155,7 @@ def put_events_with_filter_to_sqs(
 ):
     def _put_events_with_filter_to_sqs(
         pattern: dict,
-        entries_asserts: list[Tuple[list[dict], bool]],
+        entries_asserts: list[tuple[list[dict], bool]],
         event_bus_name: str = None,
         input_path: str = None,
         input_transformer: dict[dict, str] = None,

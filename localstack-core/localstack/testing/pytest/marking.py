@@ -3,7 +3,7 @@ Custom pytest mark typings
 """
 
 import os
-from typing import TYPE_CHECKING, Callable, List, Optional
+from typing import TYPE_CHECKING, Callable, Optional
 
 import pytest
 from _pytest.config import PytestPluginManager
@@ -36,13 +36,13 @@ class SkipSnapshotVerifyMarker:
     def __call__(
         self,
         *,
-        paths: "Optional[List[str]]" = None,
+        paths: "Optional[list[str]]" = None,
         condition: "Optional[Callable[[...], bool]]" = None,
     ): ...
 
 
 class MultiRuntimeMarker:
-    def __call__(self, *, scenario: str, runtimes: Optional[List[str]] = None): ...
+    def __call__(self, *, scenario: str, runtimes: Optional[list[str]] = None): ...
 
 
 class SnapshotMarkers:
@@ -82,7 +82,7 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
     )
 
 
-def enforce_single_aws_marker(items: List[pytest.Item]):
+def enforce_single_aws_marker(items: list[pytest.Item]):
     """Enforce that each test has exactly one aws compatibility marker"""
     marker_errors = []
 
@@ -107,7 +107,7 @@ def enforce_single_aws_marker(items: List[pytest.Item]):
         raise pytest.UsageError(*marker_errors)
 
 
-def filter_by_markers(config: "Config", items: List[pytest.Item]):
+def filter_by_markers(config: "Config", items: list[pytest.Item]):
     """Filter tests by markers."""
     from localstack import config as localstack_config
     from localstack.utils.bootstrap import in_ci
@@ -154,7 +154,7 @@ def filter_by_markers(config: "Config", items: List[pytest.Item]):
 
 @pytest.hookimpl
 def pytest_collection_modifyitems(
-    session: pytest.Session, config: "Config", items: List[pytest.Item]
+    session: pytest.Session, config: "Config", items: list[pytest.Item]
 ) -> None:
     enforce_single_aws_marker(items)
     filter_by_markers(config, items)

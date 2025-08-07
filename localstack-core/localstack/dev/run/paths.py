@@ -1,8 +1,8 @@
 """Utilities to resolve important paths on the host and in the container."""
 
 import os
+from collections.abc import Callable
 from pathlib import Path
-from typing import Callable, Optional, Union
 
 
 class HostPaths:
@@ -20,9 +20,9 @@ class HostPaths:
 
     def __init__(
         self,
-        workspace_dir: Union[os.PathLike, str] = None,
-        volume_dir: Union[os.PathLike, str] = None,
-        venv_dir: Union[os.PathLike, str] = None,
+        workspace_dir: os.PathLike | str = None,
+        volume_dir: os.PathLike | str = None,
+        venv_dir: os.PathLike | str = None,
     ):
         self.workspace_dir = Path(workspace_dir or os.path.abspath(os.path.join(os.getcwd(), "..")))
         self.localstack_project_dir = self.workspace_dir / "localstack"
@@ -72,7 +72,7 @@ class ContainerPaths:
     docker_entrypoint: str = "/usr/local/bin/docker-entrypoint.sh"
     localstack_supervisor: str = "/usr/local/bin/localstack-supervisor"
     localstack_source_dir: str
-    localstack_pro_source_dir: Optional[str]
+    localstack_pro_source_dir: str | None
 
     def dependency_source(self, name: str) -> str:
         """Returns path of the given source dependency in the site-packages directory."""

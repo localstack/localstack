@@ -3713,9 +3713,9 @@ class TestS3:
         base_64_content_md5 = etag_to_base_64_content_md5(response["ETag"])
         assert content_md5 == base_64_content_md5
 
-        bad_digest_md5 = base64.b64encode(
-            hashlib.md5(f"{content}1".encode("utf-8")).digest()
-        ).decode("utf-8")
+        bad_digest_md5 = base64.b64encode(hashlib.md5(f"{content}1".encode()).digest()).decode(
+            "utf-8"
+        )
 
         hashes = [
             "__invalid__",

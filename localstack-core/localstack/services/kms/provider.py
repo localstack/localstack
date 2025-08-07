@@ -3,7 +3,6 @@ import copy
 import datetime
 import logging
 import os
-from typing import Dict, Tuple
 
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.backends import default_backend
@@ -359,7 +358,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         return store.aliases.get(alias_name)
 
     @staticmethod
-    def _parse_key_id(key_id_or_arn: str, context: RequestContext) -> Tuple[str, str, str]:
+    def _parse_key_id(key_id_or_arn: str, context: RequestContext) -> tuple[str, str, str]:
         """
         Return locator attributes (account ID, region_name, key ID) of a given KMS key.
 
@@ -1540,7 +1539,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                 "Member must have length less than or equal to 4096"
             )
 
-    def _validate_grant_request(self, data: Dict):
+    def _validate_grant_request(self, data: dict):
         if "KeyId" not in data or "GranteePrincipal" not in data or "Operations" not in data:
             raise ValidationError("Grant ID, key ID and grantee principal must be specified")
 

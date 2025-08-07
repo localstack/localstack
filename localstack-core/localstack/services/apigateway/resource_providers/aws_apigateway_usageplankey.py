@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,10 +15,10 @@ from localstack.utils.objects import keys_to_lower
 
 
 class ApiGatewayUsagePlanKeyProperties(TypedDict):
-    KeyId: Optional[str]
-    KeyType: Optional[str]
-    UsagePlanId: Optional[str]
-    Id: Optional[str]
+    KeyId: str | None
+    KeyType: str | None
+    UsagePlanId: str | None
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

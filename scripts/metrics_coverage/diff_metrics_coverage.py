@@ -42,7 +42,7 @@ def create_initial_coverage(path_to_initial_metrics: str) -> dict:
     pathlist = Path(path_to_initial_metrics).rglob("*.csv")
     coverage = {}
     for path in pathlist:
-        with open(path, "r") as csv_obj:
+        with open(path) as csv_obj:
             print(f"Processing integration test coverage metrics: {path}")
             csv_dict_reader = csv.DictReader(csv_obj)
             for metric in csv_dict_reader:
@@ -85,7 +85,7 @@ def mark_coverage_acceptance_test(
     additional_tested = {}
     add_to_additional = False
     for path in pathlist:
-        with open(path, "r") as csv_obj:
+        with open(path) as csv_obj:
             print(f"Processing acceptance test coverage metrics: {path}")
             csv_dict_reader = csv.DictReader(csv_obj)
             for metric in csv_dict_reader:

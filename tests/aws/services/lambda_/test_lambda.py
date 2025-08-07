@@ -12,7 +12,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-from typing import Dict, TypeVar
+from typing import TypeVar
 
 import pytest
 import requests
@@ -153,7 +153,7 @@ T = TypeVar("T")
 def read_streams(payload: T) -> T:
     new_payload = {}
     for k, v in payload.items():
-        if isinstance(v, Dict):
+        if isinstance(v, dict):
             new_payload[k] = read_streams(v)
         elif isinstance(v, StreamingBody):
             new_payload[k] = to_str(v.read())
@@ -397,7 +397,7 @@ class TestLambdaBaseFeatures:
             )
             return json.load(result["Payload"])["environment"]
 
-        def _transform_to_key_dict(env: Dict[str, str]):
+        def _transform_to_key_dict(env: dict[str, str]):
             return {
                 "AccessKeyId": env["AWS_ACCESS_KEY_ID"],
                 "SecretAccessKey": env["AWS_SECRET_ACCESS_KEY"],

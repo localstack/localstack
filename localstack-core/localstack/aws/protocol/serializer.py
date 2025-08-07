@@ -79,10 +79,11 @@ import logging
 import string
 from abc import ABC
 from binascii import crc32
+from collections.abc import Iterable, Iterator
 from datetime import datetime
 from email.utils import formatdate
 from struct import pack
-from typing import Any, Dict, Iterable, Iterator, List, Optional, Tuple, Union
+from typing import Any
 from xml.etree import ElementTree as ETree
 
 import xmltodict
@@ -181,14 +182,14 @@ class ResponseSerializer(abc.ABC):
     AWS_BINARY_DATA_TYPE_STRING = 7
     # Defines the supported mime types of the specific serializer. Sorted by priority (preferred / default first).
     # Needs to be specified by subclasses.
-    SUPPORTED_MIME_TYPES: List[str] = []
+    SUPPORTED_MIME_TYPES: list[str] = []
 
     @_handle_exceptions
     def serialize_to_response(
         self,
         response: dict,
         operation_model: OperationModel,
-        headers: Optional[Dict | Headers],
+        headers: dict | Headers | None,
         request_id: str,
     ) -> Response:
         """
@@ -234,7 +235,7 @@ class ResponseSerializer(abc.ABC):
         self,
         error: ServiceException,
         operation_model: OperationModel,
-        headers: Optional[Dict | Headers],
+        headers: dict | Headers | None,
         request_id: str,
     ) -> Response:
         """
@@ -274,7 +275,7 @@ class ResponseSerializer(abc.ABC):
         self,
         parameters: dict,
         response: Response,
-        shape: Optional[Shape],
+        shape: Shape | None,
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
@@ -289,7 +290,7 @@ class ResponseSerializer(abc.ABC):
         operation_model: OperationModel,
         mime_type: str,
         request_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         """
         Actually serializes the given params for the given shape to a string for the transmission in the body of the
         response.
@@ -390,9 +391,9 @@ class ResponseSerializer(abc.ABC):
     def _encode_event_payload(
         self,
         event_type: str,
-        content: Union[str, bytes] = "",
-        error_code: Optional[str] = None,
-        error_message: Optional[str] = None,
+        content: str | bytes = "",
+        error_code: str | None = None,
+        error_message: str | None = None,
     ) -> bytes:
         """
         Encodes the given event payload according to AWS specific binary event encoding.
@@ -469,7 +470,7 @@ class ResponseSerializer(abc.ABC):
         """
         return Response(status=operation_model.http.get("responseCode", 200))
 
-    def _get_mime_type(self, headers: Optional[Dict | Headers]) -> str:
+    def _get_mime_type(self, headers: dict | Headers | None) -> str:
         """
         Extracts the accepted mime type from the request headers and returns a matching, supported mime type for the
         serializer or the default mime type of the service if there is no match.
@@ -521,9 +522,7 @@ class ResponseSerializer(abc.ABC):
             value = self._timestamp_unixtimestamp(value)
         return formatdate(value, usegmt=True)
 
-    def _convert_timestamp_to_str(
-        self, value: Union[int, str, datetime], timestamp_format=None
-    ) -> str:
+    def _convert_timestamp_to_str(self, value: int | str | datetime, timestamp_format=None) -> str:
         if timestamp_format is None:
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
@@ -540,7 +539,7 @@ class ResponseSerializer(abc.ABC):
         """
         return shape.serialization.get("name", default_name)
 
-    def _get_base64(self, value: Union[str, bytes]):
+    def _get_base64(self, value: str | bytes):
         """
         Returns the base64-encoded version of value, handling
         both strings and bytes. The returned value is a string
@@ -550,7 +549,7 @@ class ResponseSerializer(abc.ABC):
             value = value.encode(self.DEFAULT_ENCODING)
         return base64.b64encode(value).strip().decode(self.DEFAULT_ENCODING)
 
-    def _encode_payload(self, body: Union[bytes, str]) -> bytes:
+    def _encode_payload(self, body: bytes | str) -> bytes:
         if isinstance(body, str):
             return body.encode(self.DEFAULT_ENCODING)
         return body
@@ -578,7 +577,7 @@ class ResponseSerializer(abc.ABC):
             md5_digest = calculate_md5(body)
             headers["Content-MD5"] = md5_digest
 
-    def _get_error_message(self, error: Exception) -> Optional[str]:
+    def _get_error_message(self, error: Exception) -> str | None:
         return str(error) if error is not None and str(error) != "None" else None
 
 
@@ -661,14 +660,14 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         operation_model: OperationModel,
         mime_type: str,
         request_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         root = self._serialize_body_params_to_xml(params, shape, operation_model, mime_type)
         self._prepare_additional_traits_in_xml(root, request_id)
         return self._node_to_string(root, mime_type)
 
     def _serialize_body_params_to_xml(
         self, params: dict, shape: Shape, operation_model: OperationModel, mime_type: str
-    ) -> Optional[ETree.Element]:
+    ) -> ETree.Element | None:
         if shape is None:
             return
         # The botocore serializer expects `shape.serialization["name"]`, but this isn't always present for responses
@@ -812,7 +811,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         node.text = str_value
 
     def _serialize_type_blob(
-        self, xmlnode: ETree.Element, params: Union[str, bytes], _, name: str, __
+        self, xmlnode: ETree.Element, params: str | bytes, _, name: str, __
     ) -> None:
         node = ETree.SubElement(xmlnode, name)
         node.text = self._get_base64(params)
@@ -838,7 +837,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         node = ETree.SubElement(xmlnode, name)
         node.text = str(params)
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
+    def _prepare_additional_traits_in_xml(self, root: ETree.Element | None, request_id: str):
         """
         Prepares the XML root node before being serialized with additional traits (like the Response ID in the Query
         protocol).
@@ -851,7 +850,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
         response.headers["Content-Type"] = mime_type
         return response
 
-    def _node_to_string(self, root: Optional[ETree.Element], mime_type: str) -> Optional[str]:
+    def _node_to_string(self, root: ETree.Element | None, mime_type: str) -> str | None:
         """Generates the string representation of the given XML element."""
         if root is not None:
             content = ETree.tostring(
@@ -877,7 +876,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         self,
         parameters: dict,
         response: Response,
-        shape: Optional[Shape],
+        shape: Shape | None,
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
@@ -904,7 +903,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         self,
         parameters: dict,
         response: Response,
-        shape: Optional[Shape],
+        shape: Shape | None,
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
@@ -975,7 +974,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         """
         pass
 
-    def _has_streaming_payload(self, payload: Optional[str], shape_members):
+    def _has_streaming_payload(self, payload: str | None, shape_members):
         """Determine if payload is streaming (a blob or string)."""
         return payload is not None and shape_members[payload].type_name in ["blob", "string"]
 
@@ -1040,7 +1039,7 @@ class BaseRestResponseSerializer(ResponseSerializer, ABC):
         else:
             return value
 
-    def _partition_members(self, parameters: dict, shape: Optional[Shape]) -> Tuple[dict, dict]:
+    def _partition_members(self, parameters: dict, shape: Shape | None) -> tuple[dict, dict]:
         """Separates the top-level keys in the given parameters dict into header- and payload-located params."""
         if not isinstance(shape, StructureShape):
             # If the shape isn't a structure, we default to the whole response being parsed in the body.
@@ -1083,7 +1082,7 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         self,
         parameters: dict,
         response: Response,
-        shape: Optional[Shape],
+        shape: Shape | None,
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
@@ -1130,7 +1129,7 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
             root.append(node)
         return root
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
+    def _prepare_additional_traits_in_xml(self, root: ETree.Element | None, request_id: str):
         # Add the response metadata here (it's not defined in the specs)
         # For the ec2 and the query protocol, the root cannot be None at this time.
         response_metadata = ETree.SubElement(root, "ResponseMetadata")
@@ -1179,7 +1178,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         request_id_element.text = request_id
         response.set_response(self._encode_payload(self._node_to_string(root, mime_type)))
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
+    def _prepare_additional_traits_in_xml(self, root: ETree.Element | None, request_id: str):
         # The EC2 protocol does not use the root output shape, therefore we need to remove the hierarchy level
         # below the root level
         if len(root) > 0:
@@ -1251,7 +1250,7 @@ class JSONResponseSerializer(ResponseSerializer):
         self,
         parameters: dict,
         response: Response,
-        shape: Optional[Shape],
+        shape: Shape | None,
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
@@ -1274,7 +1273,7 @@ class JSONResponseSerializer(ResponseSerializer):
         operation_model: OperationModel,
         mime_type: str,
         request_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         body = {}
         if shape is not None:
             self._serialize(body, params, shape, None, mime_type)
@@ -1284,7 +1283,7 @@ class JSONResponseSerializer(ResponseSerializer):
         else:
             return json.dumps(body)
 
-    def _serialize(self, body: dict, value: Any, shape, key: Optional[str], mime_type: str):
+    def _serialize(self, body: dict, value: Any, shape, key: str | None, mime_type: str):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
         try:
             method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
@@ -1295,7 +1294,7 @@ class JSONResponseSerializer(ResponseSerializer):
             ) from e
 
     def _serialize_type_structure(
-        self, body: dict, value: dict, shape: StructureShape, key: Optional[str], mime_type: str
+        self, body: dict, value: dict, shape: StructureShape, key: str | None, mime_type: str
     ):
         if value is None:
             return
@@ -1369,9 +1368,7 @@ class JSONResponseSerializer(ResponseSerializer):
             timestamp_format = shape.serialization.get("timestampFormat")
             body[key] = self._convert_timestamp_to_str(value, timestamp_format)
 
-    def _serialize_type_blob(
-        self, body: dict, value: Union[str, bytes], _, key: str, mime_type: str
-    ):
+    def _serialize_type_blob(self, body: dict, value: str | bytes, _, key: str, mime_type: str):
         if mime_type in self.CBOR_TYPES:
             body[key] = value
         else:
@@ -1466,7 +1463,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         self,
         parameters: dict,
         response: Response,
-        shape: Optional[Shape],
+        shape: Shape | None,
         shape_members: dict,
         operation_model: OperationModel,
         mime_type: str,
@@ -1528,7 +1525,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         operation_model: OperationModel,
         mime_type: str,
         request_id: str,
-    ) -> Optional[str]:
+    ) -> str | None:
         root = self._serialize_body_params_to_xml(params, shape, operation_model, mime_type)
         # S3 does not follow the specs on the root tag name for 41 of 44 operations
         root.tag = self._RESPONSE_ROOT_TAGS.get(root.tag, root.tag)
@@ -1568,7 +1565,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
     def _create_empty_node(xmlnode: ETree.Element, name: str) -> None:
         ETree.SubElement(xmlnode, name)
 
-    def _prepare_additional_traits_in_xml(self, root: Optional[ETree.Element], request_id: str):
+    def _prepare_additional_traits_in_xml(self, root: ETree.Element | None, request_id: str):
         # some tools (Serverless) require a newline after the "<?xml ...>\n" preamble line, e.g., for LocationConstraint
         if root and not root.tail:
             root.tail = "\n"
@@ -1639,7 +1636,7 @@ class SqsQueryResponseSerializer(QueryResponseSerializer):
             .replace("\r", "__marker__-r__marker__")
         )
 
-    def _node_to_string(self, root: Optional[ETree.ElementTree], mime_type: str) -> Optional[str]:
+    def _node_to_string(self, root: ETree.ElementTree | None, mime_type: str) -> str | None:
         """Replaces the previously "marked" characters with their encoded value."""
         generated_string = super()._node_to_string(root, mime_type)
         if generated_string is None:
@@ -1785,7 +1782,7 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
 
 
 def aws_response_serializer(
-    service_name: str, operation: str, protocol: Optional[ProtocolName] = None
+    service_name: str, operation: str, protocol: ProtocolName | None = None
 ):
     """
     A decorator for an HTTP route that can serialize return values or exceptions into AWS responses.

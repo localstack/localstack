@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.aws.api.es import CreateElasticsearchDomainRequest
@@ -17,105 +17,105 @@ from localstack.utils.collections import convert_to_typed_dict
 
 
 class ElasticsearchDomainProperties(TypedDict):
-    AccessPolicies: Optional[dict]
-    AdvancedOptions: Optional[dict]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
-    Arn: Optional[str]
-    CognitoOptions: Optional[CognitoOptions]
-    DomainArn: Optional[str]
-    DomainEndpoint: Optional[str]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    DomainName: Optional[str]
-    EBSOptions: Optional[EBSOptions]
-    ElasticsearchClusterConfig: Optional[ElasticsearchClusterConfig]
-    ElasticsearchVersion: Optional[str]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    Id: Optional[str]
-    LogPublishingOptions: Optional[dict]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    SnapshotOptions: Optional[SnapshotOptions]
-    Tags: Optional[list[Tag]]
-    VPCOptions: Optional[VPCOptions]
+    AccessPolicies: dict | None
+    AdvancedOptions: dict | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsInput | None
+    Arn: str | None
+    CognitoOptions: CognitoOptions | None
+    DomainArn: str | None
+    DomainEndpoint: str | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    DomainName: str | None
+    EBSOptions: EBSOptions | None
+    ElasticsearchClusterConfig: ElasticsearchClusterConfig | None
+    ElasticsearchVersion: str | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    Id: str | None
+    LogPublishingOptions: dict | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    SnapshotOptions: SnapshotOptions | None
+    Tags: list[Tag] | None
+    VPCOptions: VPCOptions | None
 
 
 class ZoneAwarenessConfig(TypedDict):
-    AvailabilityZoneCount: Optional[int]
+    AvailabilityZoneCount: int | None
 
 
 class ColdStorageOptions(TypedDict):
-    Enabled: Optional[bool]
+    Enabled: bool | None
 
 
 class ElasticsearchClusterConfig(TypedDict):
-    ColdStorageOptions: Optional[ColdStorageOptions]
-    DedicatedMasterCount: Optional[int]
-    DedicatedMasterEnabled: Optional[bool]
-    DedicatedMasterType: Optional[str]
-    InstanceCount: Optional[int]
-    InstanceType: Optional[str]
-    WarmCount: Optional[int]
-    WarmEnabled: Optional[bool]
-    WarmType: Optional[str]
-    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig]
-    ZoneAwarenessEnabled: Optional[bool]
+    ColdStorageOptions: ColdStorageOptions | None
+    DedicatedMasterCount: int | None
+    DedicatedMasterEnabled: bool | None
+    DedicatedMasterType: str | None
+    InstanceCount: int | None
+    InstanceType: str | None
+    WarmCount: int | None
+    WarmEnabled: bool | None
+    WarmType: str | None
+    ZoneAwarenessConfig: ZoneAwarenessConfig | None
+    ZoneAwarenessEnabled: bool | None
 
 
 class SnapshotOptions(TypedDict):
-    AutomatedSnapshotStartHour: Optional[int]
+    AutomatedSnapshotStartHour: int | None
 
 
 class VPCOptions(TypedDict):
-    SecurityGroupIds: Optional[list[str]]
-    SubnetIds: Optional[list[str]]
+    SecurityGroupIds: list[str] | None
+    SubnetIds: list[str] | None
 
 
 class NodeToNodeEncryptionOptions(TypedDict):
-    Enabled: Optional[bool]
+    Enabled: bool | None
 
 
 class DomainEndpointOptions(TypedDict):
-    CustomEndpoint: Optional[str]
-    CustomEndpointCertificateArn: Optional[str]
-    CustomEndpointEnabled: Optional[bool]
-    EnforceHTTPS: Optional[bool]
-    TLSSecurityPolicy: Optional[str]
+    CustomEndpoint: str | None
+    CustomEndpointCertificateArn: str | None
+    CustomEndpointEnabled: bool | None
+    EnforceHTTPS: bool | None
+    TLSSecurityPolicy: str | None
 
 
 class CognitoOptions(TypedDict):
-    Enabled: Optional[bool]
-    IdentityPoolId: Optional[str]
-    RoleArn: Optional[str]
-    UserPoolId: Optional[str]
+    Enabled: bool | None
+    IdentityPoolId: str | None
+    RoleArn: str | None
+    UserPoolId: str | None
 
 
 class MasterUserOptions(TypedDict):
-    MasterUserARN: Optional[str]
-    MasterUserName: Optional[str]
-    MasterUserPassword: Optional[str]
+    MasterUserARN: str | None
+    MasterUserName: str | None
+    MasterUserPassword: str | None
 
 
 class AdvancedSecurityOptionsInput(TypedDict):
-    AnonymousAuthEnabled: Optional[bool]
-    Enabled: Optional[bool]
-    InternalUserDatabaseEnabled: Optional[bool]
-    MasterUserOptions: Optional[MasterUserOptions]
+    AnonymousAuthEnabled: bool | None
+    Enabled: bool | None
+    InternalUserDatabaseEnabled: bool | None
+    MasterUserOptions: MasterUserOptions | None
 
 
 class EBSOptions(TypedDict):
-    EBSEnabled: Optional[bool]
-    Iops: Optional[int]
-    VolumeSize: Optional[int]
-    VolumeType: Optional[str]
+    EBSEnabled: bool | None
+    Iops: int | None
+    VolumeSize: int | None
+    VolumeType: str | None
 
 
 class EncryptionAtRestOptions(TypedDict):
-    Enabled: Optional[bool]
-    KmsKeyId: Optional[str]
+    Enabled: bool | None
+    KmsKeyId: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

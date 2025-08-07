@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import abc
 import enum
+from collections.abc import Generator
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any, Final, Generator, Optional, TypedDict, cast
+from typing import TYPE_CHECKING, Any, Final, TypedDict, cast
 
 from typing_extensions import TypeVar
 
@@ -89,7 +90,7 @@ class NormalisedGlobalTransformDefinition(TypedDict):
 
 
 class Scope(str):
-    _ROOT_SCOPE: Final[str] = str()
+    _ROOT_SCOPE: Final[str] = ""
     _SEPARATOR: Final[str] = "/"
 
     def __new__(cls, scope: str = _ROOT_SCOPE) -> Scope:
@@ -536,10 +537,10 @@ class ChangeSetModel:
 
     def __init__(
         self,
-        before_template: Optional[dict],
-        after_template: Optional[dict],
-        before_parameters: Optional[dict],
-        after_parameters: Optional[dict[str, EngineParameter]],
+        before_template: dict | None,
+        after_template: dict | None,
+        before_parameters: dict | None,
+        after_parameters: dict[str, EngineParameter] | None,
     ):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
@@ -1446,7 +1447,7 @@ class ChangeSetModel:
         return keys
 
     @staticmethod
-    def _name_if_intrinsic_function(value: Maybe[Any]) -> Optional[str]:
+    def _name_if_intrinsic_function(value: Maybe[Any]) -> str | None:
         if isinstance(value, dict):
             keys = ChangeSetModel._safe_keys_of(value)
             if len(keys) == 1:

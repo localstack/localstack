@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import requests
 
@@ -190,7 +190,7 @@ class GitHubReleaseInstaller(PermissionDownloadInstaller):
             f"https://api.github.com/repos/{github_slug}/releases/tags/{self.version}"
         )
 
-    @lru_cache()
+    @lru_cache
     def _get_download_url(self) -> str:
         asset_name = self._get_github_asset_name()
         # try to use a token when calling the GH API for increased API rate limits
@@ -404,7 +404,7 @@ class MavenPackageInstaller(MavenDownloadInstaller):
         super()._install(target)
 
 
-def parse_maven_package_url(package_url: str) -> Tuple[str, str, str]:
+def parse_maven_package_url(package_url: str) -> tuple[str, str, str]:
     """Example: parse_maven_package_url("pkg:maven/software.amazon.event.ruler/event-ruler@1.7.3")
     -> software.amazon.event.ruler, event-ruler, 1.7.3
     """

@@ -1,7 +1,6 @@
 import datetime
 import threading
 from queue import Queue
-from typing import List
 
 import pytest
 
@@ -26,7 +25,7 @@ class TestPublisherBuffer:
         calls = Queue()
 
         class QueuePublisher(Publisher):
-            def publish(self, _events: List[Event]):
+            def publish(self, _events: list[Event]):
                 calls.put(_events)
 
         buffer = PublisherBuffer(QueuePublisher(), flush_size=2, flush_interval=1000)
@@ -62,7 +61,7 @@ class TestPublisherBuffer:
         calls = Queue()
 
         class QueuePublisher(Publisher):
-            def publish(self, _events: List[Event]):
+            def publish(self, _events: list[Event]):
                 calls.put(_events)
 
         buffer = PublisherBuffer(QueuePublisher(), flush_size=10, flush_interval=1)

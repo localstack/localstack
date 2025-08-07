@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List
 
 import requests
 
@@ -198,7 +197,7 @@ class JavaPackage(Package[JavaPackageInstaller]):
     def __init__(self, default_version: str = DEFAULT_JAVA_VERSION):
         super().__init__(name="Java", default_version=default_version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return list(JAVA_VERSIONS.keys())
 
     def _get_installer(self, version: str) -> JavaPackageInstaller:
