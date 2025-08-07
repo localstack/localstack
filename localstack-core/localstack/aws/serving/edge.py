@@ -1,6 +1,5 @@
 import logging
 import threading
-from typing import List
 
 from rolo.gateway.wsgi import WsgiGateway
 
@@ -15,7 +14,7 @@ LOG = logging.getLogger(__name__)
 
 
 def serve_gateway(
-    listen: HostAndPort | List[HostAndPort], use_ssl: bool, asynchronous: bool = False
+    listen: HostAndPort | list[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
     """
     Implementation of the edge.do_start_edge_proxy interface to start a Hypercorn server instance serving the
@@ -37,7 +36,7 @@ def serve_gateway(
 
 
 def _serve_werkzeug(
-    gateway: LocalstackAwsGateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool
+    gateway: LocalstackAwsGateway, listen: list[HostAndPort], use_ssl: bool, asynchronous: bool
 ):
     from werkzeug.serving import ThreadedWSGIServer
 
@@ -57,7 +56,7 @@ def _serve_werkzeug(
         params["ssl_context"] = (cert_file_name, key_file_name)
 
     threads = []
-    servers: List[ThreadedWSGIServer] = []
+    servers: list[ThreadedWSGIServer] = []
 
     for host_port in listen:
         kwargs = dict(params)
@@ -90,7 +89,7 @@ def _serve_werkzeug(
 
 
 def _serve_hypercorn(
-    gateway: LocalstackAwsGateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool
+    gateway: LocalstackAwsGateway, listen: list[HostAndPort], use_ssl: bool, asynchronous: bool
 ):
     from localstack.http.hypercorn import GatewayServer
 
@@ -112,7 +111,7 @@ def _serve_hypercorn(
 
 
 def _serve_twisted(
-    gateway: LocalstackAwsGateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool
+    gateway: LocalstackAwsGateway, listen: list[HostAndPort], use_ssl: bool, asynchronous: bool
 ):
     from .twisted import serve_gateway
 

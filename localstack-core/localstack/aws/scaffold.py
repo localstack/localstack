@@ -1,10 +1,10 @@
 import io
 import keyword
 import re
+from collections import OrderedDict
 from functools import cached_property
 from multiprocessing import Pool
 from pathlib import Path
-from typing import Dict, List, Optional, Set
 
 import click
 from botocore import xform_name
@@ -18,7 +18,6 @@ from botocore.model import (
     StringShape,
     StructureShape,
 )
-from typing_extensions import OrderedDict
 
 from localstack.aws.spec import load_service
 from localstack.utils.common import camel_to_snake_case, snake_to_camel_case
@@ -75,7 +74,7 @@ class ShapeNode:
         self.shape = shape
 
     @cached_property
-    def request_operation(self) -> Optional[OperationModel]:
+    def request_operation(self) -> OperationModel | None:
         for operation_name in self.service.operation_names:
             operation = self.service.operation_model(operation_name)
             if operation.input_shape is None:
@@ -89,7 +88,7 @@ class ShapeNode:
         return None
 
     @cached_property
-    def response_operation(self) -> Optional[OperationModel]:
+    def response_operation(self) -> OperationModel | None:
         for operation_name in self.service.operation_names:
             operation = self.service.operation_model(operation_name)
             if operation.output_shape is None:
@@ -128,7 +127,7 @@ class ShapeNode:
         return isinstance(self.shape, StringShape) and self.shape.enum
 
     @property
-    def dependencies(self) -> List[str]:
+    def dependencies(self) -> list[str]:
         shape = self.shape
 
         if isinstance(shape, StructureShape):
@@ -327,7 +326,7 @@ def generate_service_types(output, service: ServiceModel, doc=True):
     output.write("\n")
 
     # ==================================== print type declarations
-    nodes: Dict[str, ShapeNode] = {}
+    nodes: dict[str, ShapeNode] = {}
 
     for shape_name in service.shape_names:
         shape = service.shape_for(shape_name)
@@ -338,9 +337,9 @@ def generate_service_types(output, service: ServiceModel, doc=True):
     #     output.write(f'    "{name}",\n')
     # output.write("]\n")
 
-    printed: Set[str] = set()
-    visited: Set[str] = set()
-    stack: List[str] = list(nodes.keys())
+    printed: set[str] = set()
+    visited: set[str] = set()
+    stack: list[str] = list(nodes.keys())
 
     stack = sorted(stack, key=lambda name: nodes[name].get_order())
     stack.reverse()

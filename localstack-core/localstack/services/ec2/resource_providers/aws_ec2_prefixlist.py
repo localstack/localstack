@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,25 +14,25 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2PrefixListProperties(TypedDict):
-    AddressFamily: Optional[str]
-    MaxEntries: Optional[int]
-    PrefixListName: Optional[str]
-    Arn: Optional[str]
-    Entries: Optional[list[Entry]]
-    OwnerId: Optional[str]
-    PrefixListId: Optional[str]
-    Tags: Optional[list[Tag]]
-    Version: Optional[int]
+    AddressFamily: str | None
+    MaxEntries: int | None
+    PrefixListName: str | None
+    Arn: str | None
+    Entries: list[Entry] | None
+    OwnerId: str | None
+    PrefixListId: str | None
+    Tags: list[Tag] | None
+    Version: int | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class Entry(TypedDict):
-    Cidr: Optional[str]
-    Description: Optional[str]
+    Cidr: str | None
+    Description: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

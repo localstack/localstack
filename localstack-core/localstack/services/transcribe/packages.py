@@ -1,5 +1,3 @@
-from typing import List
-
 from localstack.packages import Package
 from localstack.packages.core import PythonPackageInstaller
 
@@ -13,7 +11,7 @@ class VoskPackage(Package[PythonPackageInstaller]):
     def _get_installer(self, version: str) -> PythonPackageInstaller:
         return VoskPackageInstaller(version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [_VOSK_DEFAULT_VERSION]
 
 

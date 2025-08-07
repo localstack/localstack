@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,10 +14,10 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class IAMInstanceProfileProperties(TypedDict):
-    Roles: Optional[list[str]]
-    Arn: Optional[str]
-    InstanceProfileName: Optional[str]
-    Path: Optional[str]
+    Roles: list[str] | None
+    Arn: str | None
+    InstanceProfileName: str | None
+    Path: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

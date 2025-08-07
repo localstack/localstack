@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 import re
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
@@ -1349,9 +1349,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: EventBusName,
         region: str,
         account_id: str,
-        event_source_name: Optional[EventSourceName],
-        description: Optional[EventBusDescription],
-        tags: Optional[TagList],
+        event_source_name: EventSourceName | None,
+        description: EventBusDescription | None,
+        tags: TagList | None,
     ) -> EventBusService:
         event_bus_service = EventBusService.create_event_bus_service(
             name,
@@ -1369,14 +1369,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: RuleName,
         region: str,
         account_id: str,
-        schedule_expression: Optional[ScheduleExpression],
-        event_pattern: Optional[EventPattern],
-        state: Optional[RuleState],
-        description: Optional[RuleDescription],
-        role_arn: Optional[RoleArn],
-        tags: Optional[TagList],
-        event_bus_name: Optional[EventBusName],
-        targets: Optional[TargetDict],
+        schedule_expression: ScheduleExpression | None,
+        event_pattern: EventPattern | None,
+        state: RuleState | None,
+        description: RuleDescription | None,
+        role_arn: RoleArn | None,
+        tags: TagList | None,
+        event_bus_name: EventBusName | None,
+        targets: TargetDict | None,
     ) -> RuleService:
         rule_service = RuleService.create_rule_service(
             name,

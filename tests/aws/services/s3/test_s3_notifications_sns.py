@@ -1,7 +1,7 @@
 import json
 import logging
 from io import BytesIO
-from typing import TYPE_CHECKING, Dict, List
+from typing import TYPE_CHECKING
 
 import pytest
 from botocore.exceptions import ClientError
@@ -26,7 +26,7 @@ def create_sns_bucket_notification(
     sns_client: "SNSClient",
     bucket_name: str,
     topic_arn: str,
-    events: List["EventType"],
+    events: list["EventType"],
 ):
     """A NotificationFactory."""
     bucket_arn = arns.s3_bucket_arn(bucket_name)
@@ -62,7 +62,7 @@ def create_sns_bucket_notification(
 
 def sqs_collect_sns_messages(
     sqs_client: "SQSClient", queue_url: str, min_messages: int, timeout: int = 10
-) -> List[Dict]:
+) -> list[dict]:
     """
     Polls the given queue for the given amount of time and extracts the received SQS messages all SNS messages (messages that have a "TopicArn" field).
 

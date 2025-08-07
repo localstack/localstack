@@ -2,7 +2,7 @@ import fnmatch
 import pathlib
 import re
 from collections import defaultdict
-from typing import Callable, Iterable, Optional
+from collections.abc import Callable, Iterable
 
 from localstack.aws.scaffold import is_keyword
 
@@ -117,7 +117,7 @@ class Matchers:
 
 def generic_service_test_matching_rule(
     changed_file_path: str,
-    api_dependencies: Optional[dict[str, Iterable[str]]] = None,
+    api_dependencies: dict[str, Iterable[str]] | None = None,
     search_patterns: Iterable[str] = DEFAULT_SEARCH_PATTERNS,
     test_dirs: Iterable[str] = ("tests/aws/services",),
 ) -> set[str]:

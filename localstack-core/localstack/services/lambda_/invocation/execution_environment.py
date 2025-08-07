@@ -2,10 +2,10 @@ import logging
 import random
 import string
 import time
+from collections.abc import Callable
 from datetime import date, datetime
 from enum import Enum, auto
 from threading import RLock, Timer
-from typing import Callable, Dict, Optional
 
 from localstack import config
 from localstack.aws.connect import connect_to
@@ -61,8 +61,8 @@ class ExecutionEnvironment:
     status: RuntimeStatus
     initialization_type: InitializationType
     last_returned: datetime
-    startup_timer: Optional[Timer]
-    keepalive_timer: Optional[Timer]
+    startup_timer: Timer | None
+    keepalive_timer: Timer | None
     on_timeout: Callable[[str, str], None]
 
     def __init__(
@@ -91,7 +91,7 @@ class ExecutionEnvironment:
     def get_log_stream_name(self) -> str:
         return f"{date.today():%Y/%m/%d}/[{self.function_version.id.qualifier}]{self.id}"
 
-    def get_environment_variables(self) -> Dict[str, str]:
+    def get_environment_variables(self) -> dict[str, str]:
         """
         Returns the environment variable set for the runtime container
         :return: Dict of environment variables

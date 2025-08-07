@@ -2,7 +2,8 @@ import logging
 import os
 import shlex
 import threading
-from typing import Callable, Generator, List, Optional
+from collections.abc import Generator
+from typing import Callable, Optional
 
 import pytest
 
@@ -31,14 +32,14 @@ ENV_TEST_CONTAINER_MOUNT_DEPENDENCIES = "TEST_CONTAINER_MOUNT_DEPENDENCIES"
 
 class ContainerFactory:
     def __init__(self):
-        self._containers: List[Container] = []
+        self._containers: list[Container] = []
 
     def __call__(
         self,
         # convenience properties
         pro: bool = False,
-        publish: Optional[List[int]] = None,
-        configurators: Optional[List[ContainerConfigurator]] = None,
+        publish: Optional[list[int]] = None,
+        configurators: Optional[list[ContainerConfigurator]] = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:

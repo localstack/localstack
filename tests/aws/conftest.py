@@ -1,5 +1,4 @@
 import os
-from typing import Optional
 
 import pytest
 from _pytest.config import Config
@@ -87,9 +86,7 @@ def infrastructure_setup(cdk_template_path, aws_client):
     # Note: import needs to be local to avoid CDK import on every test run, which takes quite some time
     from localstack.testing.scenario.provisioning import InfraProvisioner
 
-    def _infrastructure_setup(
-        namespace: str, force_synth: Optional[bool] = False
-    ) -> InfraProvisioner:
+    def _infrastructure_setup(namespace: str, force_synth: bool | None = False) -> InfraProvisioner:
         """
         :param namespace: repo-unique identifier for this CDK app.
             A directory with this name will be created at `tests/aws/cdk_templates/<namespace>/`

@@ -4,7 +4,7 @@ import threading
 import time
 from queue import Empty, Queue
 from threading import Timer
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 import pytest
 import requests
@@ -2489,7 +2489,7 @@ class TestSqsProvider:
         ids_received = set()
         for i in range(message_count):
             ids_sent.add(successful[i]["MessageId"])
-            ids_received.add((result_recv[i]["MessageId"]))
+            ids_received.add(result_recv[i]["MessageId"])
 
         assert ids_sent == ids_received
 
@@ -3001,9 +3001,7 @@ class TestSqsProvider:
 
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
+        dl_target_arn = f"arn:aws:sqs:{region_name}:{url_parts[len(url_parts) - 2]}:{url_parts[-1]}"
 
         conf = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 50}
         attributes = {"RedrivePolicy": json.dumps(conf)}
@@ -3771,21 +3769,19 @@ class TestSqsProvider:
         # FIXME: message id is now preserved, but test is broken
         # https://docs.aws.amazon.com/AWSSimpleQueueService/latest/SQSDeveloperGuide/sqs-dead-letter-queues.html
         queue_name = f"queue-{short_uid()}"
-        dead_letter_queue_name = "dl-queue-{}".format(short_uid())
+        dead_letter_queue_name = f"dl-queue-{short_uid()}"
         dl_queue_url = sqs_create_queue(QueueName=dead_letter_queue_name)
 
         # create arn
         url_parts = dl_queue_url.split("/")
-        dl_target_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
+        dl_target_arn = f"arn:aws:sqs:{region_name}:{url_parts[len(url_parts) - 2]}:{url_parts[-1]}"
 
         policy = {"deadLetterTargetArn": dl_target_arn, "maxReceiveCount": 1}
         queue_url = sqs_create_queue(
             QueueName=queue_name, Attributes={"RedrivePolicy": json.dumps(policy)}
         )
 
-        lambda_name = "lambda-{}".format(short_uid())
+        lambda_name = f"lambda-{short_uid()}"
         create_lambda_function(
             func_name=lambda_name,
             handler_file=TEST_LAMBDA_PYTHON,
@@ -3793,9 +3789,7 @@ class TestSqsProvider:
         )
         # create arn
         url_parts = queue_url.split("/")
-        queue_arn = "arn:aws:sqs:{}:{}:{}".format(
-            region_name, url_parts[len(url_parts) - 2], url_parts[-1]
-        )
+        queue_arn = f"arn:aws:sqs:{region_name}:{url_parts[len(url_parts) - 2]}:{url_parts[-1]}"
         aws_client.lambda_.create_event_source_mapping(
             EventSourceArn=queue_arn, FunctionName=lambda_name
         )
@@ -4658,7 +4652,7 @@ class TestSqsProvider:
     def _add_error_detail_transformer(self, snapshot):
         """Adds a transformer to ignore {"Error": {"Detail": None, ...}} entries in snapshot error responses"""
 
-        def _remove_error_details(snapshot_content: Dict, *args) -> Dict:
+        def _remove_error_details(snapshot_content: dict, *args) -> dict:
             for response in snapshot_content.values():
                 response.get("Error", {}).pop("Detail", None)
             return snapshot_content

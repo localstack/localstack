@@ -2,8 +2,8 @@ import json
 import logging
 import math
 import threading
-from datetime import datetime, timedelta, timezone
-from typing import TYPE_CHECKING, List, Optional
+from datetime import UTC, datetime, timedelta
+from typing import TYPE_CHECKING
 
 from localstack.aws.api.cloudwatch import MetricAlarm, MetricDataQuery, MetricStat, StateValue
 from localstack.aws.connect import connect_to
@@ -120,7 +120,7 @@ class AlarmScheduler:
         return True
 
 
-def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> Optional[MetricAlarm]:
+def get_metric_alarm_details_for_alarm_arn(alarm_arn: str) -> MetricAlarm | None:
     alarm_name = arns.extract_resource_from_arn(alarm_arn).split(":", 1)[1]
     client = get_cloudwatch_client_for_region_of_alarm(alarm_arn)
     metric_alarms = client.describe_alarms(AlarmNames=[alarm_name])["MetricAlarms"]
@@ -155,7 +155,7 @@ def generate_metric_query(alarm_details: MetricAlarm) -> MetricDataQuery:
     )
 
 
-def is_threshold_exceeded(metric_values: List[float], alarm_details: MetricAlarm) -> bool:
+def is_threshold_exceeded(metric_values: list[float], alarm_details: MetricAlarm) -> bool:
     """Evaluates if the threshold is exceeded for the configured alarm and given metric values
 
     :param metric_values: values to compare against threshold
@@ -185,7 +185,7 @@ def is_threshold_exceeded(metric_values: List[float], alarm_details: MetricAlarm
     return False
 
 
-def is_triggering_premature_alarm(metric_values: List[float], alarm_details: MetricAlarm) -> bool:
+def is_triggering_premature_alarm(metric_values: list[float], alarm_details: MetricAlarm) -> bool:
     """
     Checks if a premature alarm should be triggered.
     https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html#CloudWatch-alarms-avoiding-premature-transition:
@@ -217,7 +217,7 @@ def is_triggering_premature_alarm(metric_values: List[float], alarm_details: Met
     return False
 
 
-def collect_metric_data(alarm_details: MetricAlarm, client: "CloudWatchClient") -> List[float]:
+def collect_metric_data(alarm_details: MetricAlarm, client: "CloudWatchClient") -> list[float]:
     """
     Collects the metric data for the evaluation interval.
 
@@ -236,7 +236,7 @@ def collect_metric_data(alarm_details: MetricAlarm, client: "CloudWatchClient") 
     magic_number = max(math.floor(evaluation_periods / 3), 2)
     collected_periods = evaluation_periods + magic_number
 
-    now = datetime.utcnow().replace(tzinfo=timezone.utc)
+    now = datetime.utcnow().replace(tzinfo=UTC)
     metric_query = generate_metric_query(alarm_details)
 
     # get_metric_data needs to be run in a loop, so we also collect empty data points on the right position

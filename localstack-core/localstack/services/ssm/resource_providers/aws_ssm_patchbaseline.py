@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,52 +14,52 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SSMPatchBaselineProperties(TypedDict):
-    Name: Optional[str]
-    ApprovalRules: Optional[RuleGroup]
-    ApprovedPatches: Optional[list[str]]
-    ApprovedPatchesComplianceLevel: Optional[str]
-    ApprovedPatchesEnableNonSecurity: Optional[bool]
-    Description: Optional[str]
-    GlobalFilters: Optional[PatchFilterGroup]
-    Id: Optional[str]
-    OperatingSystem: Optional[str]
-    PatchGroups: Optional[list[str]]
-    RejectedPatches: Optional[list[str]]
-    RejectedPatchesAction: Optional[str]
-    Sources: Optional[list[PatchSource]]
-    Tags: Optional[list[Tag]]
+    Name: str | None
+    ApprovalRules: RuleGroup | None
+    ApprovedPatches: list[str] | None
+    ApprovedPatchesComplianceLevel: str | None
+    ApprovedPatchesEnableNonSecurity: bool | None
+    Description: str | None
+    GlobalFilters: PatchFilterGroup | None
+    Id: str | None
+    OperatingSystem: str | None
+    PatchGroups: list[str] | None
+    RejectedPatches: list[str] | None
+    RejectedPatchesAction: str | None
+    Sources: list[PatchSource] | None
+    Tags: list[Tag] | None
 
 
 class PatchFilter(TypedDict):
-    Key: Optional[str]
-    Values: Optional[list[str]]
+    Key: str | None
+    Values: list[str] | None
 
 
 class PatchFilterGroup(TypedDict):
-    PatchFilters: Optional[list[PatchFilter]]
+    PatchFilters: list[PatchFilter] | None
 
 
 class Rule(TypedDict):
-    ApproveAfterDays: Optional[int]
-    ApproveUntilDate: Optional[dict]
-    ComplianceLevel: Optional[str]
-    EnableNonSecurity: Optional[bool]
-    PatchFilterGroup: Optional[PatchFilterGroup]
+    ApproveAfterDays: int | None
+    ApproveUntilDate: dict | None
+    ComplianceLevel: str | None
+    EnableNonSecurity: bool | None
+    PatchFilterGroup: PatchFilterGroup | None
 
 
 class RuleGroup(TypedDict):
-    PatchRules: Optional[list[Rule]]
+    PatchRules: list[Rule] | None
 
 
 class PatchSource(TypedDict):
-    Configuration: Optional[str]
-    Name: Optional[str]
-    Products: Optional[list[str]]
+    Configuration: str | None
+    Name: str | None
+    Products: list[str] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

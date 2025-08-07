@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,11 +15,11 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class ApiGatewayModelProperties(TypedDict):
-    RestApiId: Optional[str]
-    ContentType: Optional[str]
-    Description: Optional[str]
-    Name: Optional[str]
-    Schema: Optional[dict | str]
+    RestApiId: str | None
+    ContentType: str | None
+    Description: str | None
+    Name: str | None
+    Schema: dict | str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

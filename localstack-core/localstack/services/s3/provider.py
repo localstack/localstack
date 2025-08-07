@@ -8,7 +8,7 @@ from collections import defaultdict
 from inspect import signature
 from io import BytesIO
 from operator import itemgetter
-from typing import IO, Optional, Union
+from typing import IO
 from urllib import parse as urlparse
 from zoneinfo import ZoneInfo
 
@@ -2545,7 +2545,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         source_range = request.get("CopySourceRange")
         # TODO implement copy source IF
 
-        range_data: Optional[ObjectRange] = None
+        range_data: ObjectRange | None = None
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
@@ -4820,14 +4820,12 @@ def get_part_range(s3_object: S3Object, part_number: PartNumber) -> ObjectRange:
 
 
 def get_acl_headers_from_request(
-    request: Union[
-        PutObjectRequest,
-        CreateMultipartUploadRequest,
-        CopyObjectRequest,
-        CreateBucketRequest,
-        PutBucketAclRequest,
-        PutObjectAclRequest,
-    ],
+    request: PutObjectRequest
+    | CreateMultipartUploadRequest
+    | CopyObjectRequest
+    | CreateBucketRequest
+    | PutBucketAclRequest
+    | PutObjectAclRequest,
 ) -> list[tuple[str, str]]:
     permission_keys = [
         "GrantFullControl",
@@ -4845,7 +4843,7 @@ def get_acl_headers_from_request(
 
 
 def get_access_control_policy_from_acl_request(
-    request: Union[PutBucketAclRequest, PutObjectAclRequest],
+    request: PutBucketAclRequest | PutObjectAclRequest,
     owner: Owner,
     request_body: bytes,
 ) -> AccessControlPolicy:
@@ -4894,9 +4892,10 @@ def get_access_control_policy_from_acl_request(
 
 
 def get_access_control_policy_for_new_resource_request(
-    request: Union[
-        PutObjectRequest, CreateMultipartUploadRequest, CopyObjectRequest, CreateBucketRequest
-    ],
+    request: PutObjectRequest
+    | CreateMultipartUploadRequest
+    | CopyObjectRequest
+    | CreateBucketRequest,
     owner: Owner,
 ) -> AccessControlPolicy:
     # TODO: this is basic ACL, not taking into account Bucket settings. Revisit once we really implement ACLs.

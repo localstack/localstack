@@ -1,6 +1,6 @@
 import abc
 import copy
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.events.utils import to_json_str
@@ -46,7 +46,7 @@ class StringExpression(EvalComponent, abc.ABC):
     def __init__(self, literal_value: str):
         self.literal_value = literal_value
 
-    def _field_name(self) -> Optional[str]:
+    def _field_name(self) -> str | None:
         return None
 
 

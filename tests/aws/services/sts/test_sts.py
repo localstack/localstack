@@ -188,12 +188,8 @@ class TestSTSIntegrations:
             fed_name=fed_name,
         ).replace("\n", "")
 
-        role_arn = "arn:aws:iam::{account_id}:role/{role_name}".format(
-            account_id=account_id, role_name=role_name
-        )
-        principal_arn = "arn:aws:iam:{account_id}:saml-provider/{provider_name}".format(
-            account_id=account_id, provider_name=provider_name
-        )
+        role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        principal_arn = f"arn:aws:iam:{account_id}:saml-provider/{provider_name}"
         base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
         response = aws_client.sts.assume_role_with_saml(
             RoleArn=role_arn,

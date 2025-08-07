@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -17,40 +17,40 @@ from localstack.utils.strings import to_bytes
 
 
 class ApiGatewayRestApiProperties(TypedDict):
-    ApiKeySourceType: Optional[str]
-    BinaryMediaTypes: Optional[list[str]]
-    Body: Optional[dict | str]
-    BodyS3Location: Optional[S3Location]
-    CloneFrom: Optional[str]
-    Description: Optional[str]
-    DisableExecuteApiEndpoint: Optional[bool]
-    EndpointConfiguration: Optional[EndpointConfiguration]
-    FailOnWarnings: Optional[bool]
-    MinimumCompressionSize: Optional[int]
-    Mode: Optional[str]
-    Name: Optional[str]
-    Parameters: Optional[dict | str]
-    Policy: Optional[dict | str]
-    RestApiId: Optional[str]
-    RootResourceId: Optional[str]
-    Tags: Optional[list[Tag]]
+    ApiKeySourceType: str | None
+    BinaryMediaTypes: list[str] | None
+    Body: dict | str | None
+    BodyS3Location: S3Location | None
+    CloneFrom: str | None
+    Description: str | None
+    DisableExecuteApiEndpoint: bool | None
+    EndpointConfiguration: EndpointConfiguration | None
+    FailOnWarnings: bool | None
+    MinimumCompressionSize: int | None
+    Mode: str | None
+    Name: str | None
+    Parameters: dict | str | None
+    Policy: dict | str | None
+    RestApiId: str | None
+    RootResourceId: str | None
+    Tags: list[Tag] | None
 
 
 class S3Location(TypedDict):
-    Bucket: Optional[str]
-    ETag: Optional[str]
-    Key: Optional[str]
-    Version: Optional[str]
+    Bucket: str | None
+    ETag: str | None
+    Key: str | None
+    Version: str | None
 
 
 class EndpointConfiguration(TypedDict):
-    Types: Optional[list[str]]
-    VpcEndpointIds: Optional[list[str]]
+    Types: list[str] | None
+    VpcEndpointIds: list[str] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -18,19 +18,19 @@ from localstack.utils.strings import short_uid
 
 
 class EventsEventBusPolicyProperties(TypedDict):
-    StatementId: Optional[str]
-    Action: Optional[str]
-    Condition: Optional[Condition]
-    EventBusName: Optional[str]
-    Id: Optional[str]
-    Principal: Optional[str]
-    Statement: Optional[dict]
+    StatementId: str | None
+    Action: str | None
+    Condition: Condition | None
+    EventBusName: str | None
+    Id: str | None
+    Principal: str | None
+    Statement: dict | None
 
 
 class Condition(TypedDict):
-    Key: Optional[str]
-    Type: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Type: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

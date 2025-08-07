@@ -3,7 +3,6 @@ import logging
 import threading
 import time
 from queue import Queue
-from typing import Optional, Union
 
 from localstack.aws.connect import connect_to
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -28,9 +27,9 @@ class LogItem:
 
 
 class LogHandler:
-    log_queue: "Queue[Union[LogItem, ShutdownPill]]"
+    log_queue: "Queue[LogItem | ShutdownPill]"
     role_arn: str
-    _thread: Optional[FuncThread]
+    _thread: FuncThread | None
     _shutdown_event: threading.Event
 
     def __init__(self, role_arn: str, region: str) -> None:

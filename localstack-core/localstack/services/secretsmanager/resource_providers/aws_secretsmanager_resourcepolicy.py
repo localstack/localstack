@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,10 +15,10 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SecretsManagerResourcePolicyProperties(TypedDict):
-    ResourcePolicy: Optional[dict]
-    SecretId: Optional[str]
-    BlockPublicPolicy: Optional[bool]
-    Id: Optional[str]
+    ResourcePolicy: dict | None
+    SecretId: str | None
+    BlockPublicPolicy: bool | None
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -1,6 +1,5 @@
 import logging
 import threading
-from typing import Optional
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -52,7 +51,7 @@ class ServiceRequestCounter:
             )
         )
 
-    def _get_err_type(self, context: RequestContext, response: Response) -> Optional[str]:
+    def _get_err_type(self, context: RequestContext, response: Response) -> str | None:
         """
         Attempts to re-use the existing service_response, or parse and return the error type from the response body,
         e.g. ``ResourceInUseException``.

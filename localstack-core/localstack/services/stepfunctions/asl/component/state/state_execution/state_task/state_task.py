@@ -31,8 +31,8 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 class StateTask(ExecutionState, abc.ABC):
     resource: Resource
-    parargs: Optional[Parargs]
-    credentials: Optional[Credentials]
+    parargs: Parargs | None
+    credentials: Credentials | None
 
     def __init__(self):
         super(StateTask, self).__init__(

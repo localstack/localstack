@@ -2,8 +2,8 @@ import copy
 import logging
 import uuid
 from dataclasses import dataclass
-from datetime import datetime, timezone
-from typing import Final, Optional, Protocol
+from datetime import UTC, datetime
+from typing import Final, Protocol
 
 from localstack import config
 from localstack.aws.api.cloudformation import (
@@ -236,7 +236,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return delta
 
     def _execute_resource_change(
-        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
+        self, name: str, before: PreprocResource | None, after: PreprocResource | None
     ) -> None:
         # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
@@ -414,8 +414,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         action: ChangeAction,
         logical_resource_id: str,
         resource_type: str,
-        before_properties: Optional[PreprocProperties],
-        after_properties: Optional[PreprocProperties],
+        before_properties: PreprocProperties | None,
+        after_properties: PreprocProperties | None,
     ) -> ProgressEvent:
         LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
         payload = self.create_resource_provider_payload(
@@ -496,7 +496,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         Properties=event.resource_model,
                         LogicalResourceId=logical_resource_id,
                         Type=resource_type,
-                        LastUpdatedTimestamp=datetime.now(timezone.utc),
+                        LastUpdatedTimestamp=datetime.now(UTC),
                         ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
                         PhysicalResourceId=physical_resource_id,
                     )
@@ -520,9 +520,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         action: ChangeAction,
         logical_resource_id: str,
         resource_type: str,
-        before_properties: Optional[PreprocProperties],
-        after_properties: Optional[PreprocProperties],
-    ) -> Optional[ResourceProviderPayload]:
+        before_properties: PreprocProperties | None,
+        after_properties: PreprocProperties | None,
+    ) -> ResourceProviderPayload | None:
         # FIXME: use proper credentials
         creds: Credentials = {
             "accessKeyId": self._change_set.stack.account_id,

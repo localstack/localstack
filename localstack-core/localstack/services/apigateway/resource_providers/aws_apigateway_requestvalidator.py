@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,11 +14,11 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class ApiGatewayRequestValidatorProperties(TypedDict):
-    RestApiId: Optional[str]
-    Name: Optional[str]
-    RequestValidatorId: Optional[str]
-    ValidateRequestBody: Optional[bool]
-    ValidateRequestParameters: Optional[bool]
+    RestApiId: str | None
+    Name: str | None
+    RequestValidatorId: str | None
+    ValidateRequestBody: bool | None
+    ValidateRequestParameters: bool | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

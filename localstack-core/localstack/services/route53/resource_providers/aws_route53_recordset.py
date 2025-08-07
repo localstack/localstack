@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import TYPE_CHECKING, Optional, TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from mypy_boto3_route53 import Route53Client
@@ -17,40 +17,40 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class Route53RecordSetProperties(TypedDict):
-    Name: Optional[str]
-    Type: Optional[str]
-    AliasTarget: Optional[AliasTarget]
-    CidrRoutingConfig: Optional[CidrRoutingConfig]
-    Comment: Optional[str]
-    Failover: Optional[str]
-    GeoLocation: Optional[GeoLocation]
-    HealthCheckId: Optional[str]
-    HostedZoneId: Optional[str]
-    HostedZoneName: Optional[str]
-    Id: Optional[str]
-    MultiValueAnswer: Optional[bool]
-    Region: Optional[str]
-    ResourceRecords: Optional[list[str]]
-    SetIdentifier: Optional[str]
-    TTL: Optional[str]
-    Weight: Optional[int]
+    Name: str | None
+    Type: str | None
+    AliasTarget: AliasTarget | None
+    CidrRoutingConfig: CidrRoutingConfig | None
+    Comment: str | None
+    Failover: str | None
+    GeoLocation: GeoLocation | None
+    HealthCheckId: str | None
+    HostedZoneId: str | None
+    HostedZoneName: str | None
+    Id: str | None
+    MultiValueAnswer: bool | None
+    Region: str | None
+    ResourceRecords: list[str] | None
+    SetIdentifier: str | None
+    TTL: str | None
+    Weight: int | None
 
 
 class AliasTarget(TypedDict):
-    DNSName: Optional[str]
-    HostedZoneId: Optional[str]
-    EvaluateTargetHealth: Optional[bool]
+    DNSName: str | None
+    HostedZoneId: str | None
+    EvaluateTargetHealth: bool | None
 
 
 class CidrRoutingConfig(TypedDict):
-    CollectionId: Optional[str]
-    LocationName: Optional[str]
+    CollectionId: str | None
+    LocationName: str | None
 
 
 class GeoLocation(TypedDict):
-    ContinentCode: Optional[str]
-    CountryCode: Optional[str]
-    SubdivisionCode: Optional[str]
+    ContinentCode: str | None
+    CountryCode: str | None
+    SubdivisionCode: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"
@@ -138,7 +138,7 @@ class Route53RecordSetProvider(ResourceProvider[Route53RecordSetProperties]):
             resource_model=model,
         )
 
-    def get_hosted_zone_id_from_name(self, hosted_zone_name: str, client: "Route53Client"):
+    def get_hosted_zone_id_from_name(self, hosted_zone_name: str, client: Route53Client):
         if not hosted_zone_name:
             raise Exception("Either HostedZoneId or HostedZoneName must be present.")
 

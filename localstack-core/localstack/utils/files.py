@@ -6,13 +6,12 @@ import shutil
 import stat
 import tempfile
 from pathlib import Path
-from typing import Dict
 
 LOG = logging.getLogger(__name__)
 TMP_FILES = []
 
 
-def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
+def parse_config_file(file_or_str: str, single_section: bool = True) -> dict:
     """Parse the given properties config file/string and return a dict of section->key->value.
     If the config contains a single section, and 'single_section' is True, returns"""
 

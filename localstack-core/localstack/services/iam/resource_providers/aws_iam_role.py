@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -16,27 +16,27 @@ from localstack.utils.functions import call_safe
 
 
 class IAMRoleProperties(TypedDict):
-    AssumeRolePolicyDocument: Optional[dict | str]
-    Arn: Optional[str]
-    Description: Optional[str]
-    ManagedPolicyArns: Optional[list[str]]
-    MaxSessionDuration: Optional[int]
-    Path: Optional[str]
-    PermissionsBoundary: Optional[str]
-    Policies: Optional[list[Policy]]
-    RoleId: Optional[str]
-    RoleName: Optional[str]
-    Tags: Optional[list[Tag]]
+    AssumeRolePolicyDocument: dict | str | None
+    Arn: str | None
+    Description: str | None
+    ManagedPolicyArns: list[str] | None
+    MaxSessionDuration: int | None
+    Path: str | None
+    PermissionsBoundary: str | None
+    Policies: list[Policy] | None
+    RoleId: str | None
+    RoleName: str | None
+    Tags: list[Tag] | None
 
 
 class Policy(TypedDict):
-    PolicyDocument: Optional[str | dict]
-    PolicyName: Optional[str]
+    PolicyDocument: str | dict | None
+    PolicyName: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

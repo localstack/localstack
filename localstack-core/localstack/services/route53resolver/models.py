@@ -1,5 +1,3 @@
-from typing import Dict
-
 import localstack.services.route53resolver.utils
 from localstack.aws.api.route53resolver import (
     FirewallConfig,
@@ -18,16 +16,16 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttr
 
 
 class Route53ResolverStore(BaseStore):
-    firewall_configs: Dict[str, FirewallConfig] = LocalAttribute(default=dict)
-    firewall_domain_lists: Dict[str, FirewallDomainList] = LocalAttribute(default=dict)
-    firewall_domains: Dict[str, FirewallDomains] = LocalAttribute(default=dict)
-    firewall_rules: Dict[str, FirewallRule] = LocalAttribute(default=dict)
-    firewall_rule_groups: Dict[str, FirewallRuleGroup] = LocalAttribute(default=dict)
-    firewall_rule_group_associations: Dict[str, FirewallRuleGroupAssociation] = LocalAttribute(
+    firewall_configs: dict[str, FirewallConfig] = LocalAttribute(default=dict)
+    firewall_domain_lists: dict[str, FirewallDomainList] = LocalAttribute(default=dict)
+    firewall_domains: dict[str, FirewallDomains] = LocalAttribute(default=dict)
+    firewall_rules: dict[str, FirewallRule] = LocalAttribute(default=dict)
+    firewall_rule_groups: dict[str, FirewallRuleGroup] = LocalAttribute(default=dict)
+    firewall_rule_group_associations: dict[str, FirewallRuleGroupAssociation] = LocalAttribute(
         default=dict
     )
-    resolver_query_log_configs: Dict[str, ResolverQueryLogConfig] = LocalAttribute(default=dict)
-    resolver_query_log_config_associations: Dict[str, ResolverQueryLogConfigAssociation] = (
+    resolver_query_log_configs: dict[str, ResolverQueryLogConfig] = LocalAttribute(default=dict)
+    resolver_query_log_config_associations: dict[str, ResolverQueryLogConfigAssociation] = (
         LocalAttribute(default=dict)
     )
 

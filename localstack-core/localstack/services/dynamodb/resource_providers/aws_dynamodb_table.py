@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,113 +14,113 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class DynamoDBTableProperties(TypedDict):
-    KeySchema: Optional[list[KeySchema] | dict]
-    Arn: Optional[str]
-    AttributeDefinitions: Optional[list[AttributeDefinition]]
-    BillingMode: Optional[str]
-    ContributorInsightsSpecification: Optional[ContributorInsightsSpecification]
-    DeletionProtectionEnabled: Optional[bool]
-    GlobalSecondaryIndexes: Optional[list[GlobalSecondaryIndex]]
-    ImportSourceSpecification: Optional[ImportSourceSpecification]
-    KinesisStreamSpecification: Optional[KinesisStreamSpecification]
-    LocalSecondaryIndexes: Optional[list[LocalSecondaryIndex]]
-    PointInTimeRecoverySpecification: Optional[PointInTimeRecoverySpecification]
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    SSESpecification: Optional[SSESpecification]
-    StreamArn: Optional[str]
-    StreamSpecification: Optional[StreamSpecification]
-    TableClass: Optional[str]
-    TableName: Optional[str]
-    Tags: Optional[list[Tag]]
-    TimeToLiveSpecification: Optional[TimeToLiveSpecification]
+    KeySchema: list[KeySchema] | dict | None
+    Arn: str | None
+    AttributeDefinitions: list[AttributeDefinition] | None
+    BillingMode: str | None
+    ContributorInsightsSpecification: ContributorInsightsSpecification | None
+    DeletionProtectionEnabled: bool | None
+    GlobalSecondaryIndexes: list[GlobalSecondaryIndex] | None
+    ImportSourceSpecification: ImportSourceSpecification | None
+    KinesisStreamSpecification: KinesisStreamSpecification | None
+    LocalSecondaryIndexes: list[LocalSecondaryIndex] | None
+    PointInTimeRecoverySpecification: PointInTimeRecoverySpecification | None
+    ProvisionedThroughput: ProvisionedThroughput | None
+    SSESpecification: SSESpecification | None
+    StreamArn: str | None
+    StreamSpecification: StreamSpecification | None
+    TableClass: str | None
+    TableName: str | None
+    Tags: list[Tag] | None
+    TimeToLiveSpecification: TimeToLiveSpecification | None
 
 
 class AttributeDefinition(TypedDict):
-    AttributeName: Optional[str]
-    AttributeType: Optional[str]
+    AttributeName: str | None
+    AttributeType: str | None
 
 
 class KeySchema(TypedDict):
-    AttributeName: Optional[str]
-    KeyType: Optional[str]
+    AttributeName: str | None
+    KeyType: str | None
 
 
 class Projection(TypedDict):
-    NonKeyAttributes: Optional[list[str]]
-    ProjectionType: Optional[str]
+    NonKeyAttributes: list[str] | None
+    ProjectionType: str | None
 
 
 class ProvisionedThroughput(TypedDict):
-    ReadCapacityUnits: Optional[int]
-    WriteCapacityUnits: Optional[int]
+    ReadCapacityUnits: int | None
+    WriteCapacityUnits: int | None
 
 
 class ContributorInsightsSpecification(TypedDict):
-    Enabled: Optional[bool]
+    Enabled: bool | None
 
 
 class GlobalSecondaryIndex(TypedDict):
-    IndexName: Optional[str]
-    KeySchema: Optional[list[KeySchema]]
-    Projection: Optional[Projection]
-    ContributorInsightsSpecification: Optional[ContributorInsightsSpecification]
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
+    IndexName: str | None
+    KeySchema: list[KeySchema] | None
+    Projection: Projection | None
+    ContributorInsightsSpecification: ContributorInsightsSpecification | None
+    ProvisionedThroughput: ProvisionedThroughput | None
 
 
 class LocalSecondaryIndex(TypedDict):
-    IndexName: Optional[str]
-    KeySchema: Optional[list[KeySchema]]
-    Projection: Optional[Projection]
+    IndexName: str | None
+    KeySchema: list[KeySchema] | None
+    Projection: Projection | None
 
 
 class PointInTimeRecoverySpecification(TypedDict):
-    PointInTimeRecoveryEnabled: Optional[bool]
+    PointInTimeRecoveryEnabled: bool | None
 
 
 class SSESpecification(TypedDict):
-    SSEEnabled: Optional[bool]
-    KMSMasterKeyId: Optional[str]
-    SSEType: Optional[str]
+    SSEEnabled: bool | None
+    KMSMasterKeyId: str | None
+    SSEType: str | None
 
 
 class StreamSpecification(TypedDict):
-    StreamViewType: Optional[str]
+    StreamViewType: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class TimeToLiveSpecification(TypedDict):
-    AttributeName: Optional[str]
-    Enabled: Optional[bool]
+    AttributeName: str | None
+    Enabled: bool | None
 
 
 class KinesisStreamSpecification(TypedDict):
-    StreamArn: Optional[str]
+    StreamArn: str | None
 
 
 class S3BucketSource(TypedDict):
-    S3Bucket: Optional[str]
-    S3BucketOwner: Optional[str]
-    S3KeyPrefix: Optional[str]
+    S3Bucket: str | None
+    S3BucketOwner: str | None
+    S3KeyPrefix: str | None
 
 
 class Csv(TypedDict):
-    Delimiter: Optional[str]
-    HeaderList: Optional[list[str]]
+    Delimiter: str | None
+    HeaderList: list[str] | None
 
 
 class InputFormatOptions(TypedDict):
-    Csv: Optional[Csv]
+    Csv: Csv | None
 
 
 class ImportSourceSpecification(TypedDict):
-    InputFormat: Optional[str]
-    S3BucketSource: Optional[S3BucketSource]
-    InputCompressionType: Optional[str]
-    InputFormatOptions: Optional[InputFormatOptions]
+    InputFormat: str | None
+    S3BucketSource: S3BucketSource | None
+    InputCompressionType: str | None
+    InputFormatOptions: InputFormatOptions | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

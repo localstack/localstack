@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Optional, TypedDict
 
 import click
 import requests
@@ -405,7 +405,7 @@ def cmd_status_services(format_: str) -> None:
         raise CLIError(f"could not connect to LocalStack health endpoint at {url}")
 
 
-def _print_service_table(services: Dict[str, str]) -> None:
+def _print_service_table(services: dict[str, str]) -> None:
     from rich.table import Table
 
     status_display = {
@@ -486,9 +486,9 @@ def cmd_start(
     no_banner: bool,
     detached: bool,
     network: str = None,
-    env: Tuple = (),
-    publish: Tuple = (),
-    volume: Tuple = (),
+    env: tuple = (),
+    publish: tuple = (),
+    volume: tuple = (),
     host_dns: bool = False,
     stack: str = None,
 ) -> None:
@@ -825,7 +825,7 @@ def cmd_update_docker_images() -> None:
     update_images(localstack_images)
 
 
-def update_images(image_list: List[str]) -> None:
+def update_images(image_list: list[str]) -> None:
     from rich.markup import escape
     from rich.progress import MofNCompleteColumn, Progress
 

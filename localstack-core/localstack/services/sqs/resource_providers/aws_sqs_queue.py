@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,29 +15,29 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SQSQueueProperties(TypedDict):
-    Arn: Optional[str]
-    ContentBasedDeduplication: Optional[bool]
-    DeduplicationScope: Optional[str]
-    DelaySeconds: Optional[int]
-    FifoQueue: Optional[bool]
-    FifoThroughputLimit: Optional[str]
-    KmsDataKeyReusePeriodSeconds: Optional[int]
-    KmsMasterKeyId: Optional[str]
-    MaximumMessageSize: Optional[int]
-    MessageRetentionPeriod: Optional[int]
-    QueueName: Optional[str]
-    QueueUrl: Optional[str]
-    ReceiveMessageWaitTimeSeconds: Optional[int]
-    RedriveAllowPolicy: Optional[dict | str]
-    RedrivePolicy: Optional[dict | str]
-    SqsManagedSseEnabled: Optional[bool]
-    Tags: Optional[list[Tag]]
-    VisibilityTimeout: Optional[int]
+    Arn: str | None
+    ContentBasedDeduplication: bool | None
+    DeduplicationScope: str | None
+    DelaySeconds: int | None
+    FifoQueue: bool | None
+    FifoThroughputLimit: str | None
+    KmsDataKeyReusePeriodSeconds: int | None
+    KmsMasterKeyId: str | None
+    MaximumMessageSize: int | None
+    MessageRetentionPeriod: int | None
+    QueueName: str | None
+    QueueUrl: str | None
+    ReceiveMessageWaitTimeSeconds: int | None
+    RedriveAllowPolicy: dict | str | None
+    RedrivePolicy: dict | str | None
+    SqsManagedSseEnabled: bool | None
+    Tags: list[Tag] | None
+    VisibilityTimeout: int | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

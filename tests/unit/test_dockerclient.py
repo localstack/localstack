@@ -1,7 +1,6 @@
 import json
 import logging
 import textwrap
-from typing import List
 from unittest.mock import patch
 
 import pytest
@@ -21,7 +20,7 @@ LOG = logging.getLogger(__name__)
 
 
 class TestDockerClient:
-    def _docker_cmd(self) -> List[str]:
+    def _docker_cmd(self) -> list[str]:
         """Return the string to be used for running Docker commands."""
         return config.DOCKER_CMD.split()
 
@@ -307,7 +306,7 @@ class TestArgumentParsing:
 
 
 def list_in(a, b):
-    return len(a) <= len(b) and any((b[x : x + len(a)] == a for x in range(len(b) - len(a) + 1)))
+    return len(a) <= len(b) and any(b[x : x + len(a)] == a for x in range(len(b) - len(a) + 1))
 
 
 class TestPortMappings:

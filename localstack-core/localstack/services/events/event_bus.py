@@ -1,6 +1,6 @@
 import json
-from datetime import datetime, timezone
-from typing import Optional, Self
+from datetime import UTC, datetime
+from typing import Self
 
 from localstack.aws.api.events import (
     Action,
@@ -34,11 +34,11 @@ class EventBusService:
         name: EventBusName,
         region: str,
         account_id: str,
-        event_source_name: Optional[str] = None,
-        description: Optional[str] = None,
-        tags: Optional[TagList] = None,
-        policy: Optional[str] = None,
-        rules: Optional[RuleDict] = None,
+        event_source_name: str | None = None,
+        description: str | None = None,
+        tags: TagList | None = None,
+        policy: str | None = None,
+        rules: RuleDict | None = None,
     ) -> Self:
         return cls(
             EventBus(
@@ -68,7 +68,7 @@ class EventBusService:
         # TODO: cover via test
         # if policy and any([action, principal, statement_id, condition]):
         #     raise ValueError("Combination of policy with other arguments is not allowed")
-        self.event_bus.last_modified_time = datetime.now(timezone.utc)
+        self.event_bus.last_modified_time = datetime.now(UTC)
         if policy:  # policy document replaces all existing permissions
             policy = json.loads(policy)
             parsed_policy = ResourcePolicy(**policy)
@@ -102,7 +102,7 @@ class EventBusService:
                 for statement in policy["Statement"]
                 if statement.get("Sid") != statement_id
             ]
-            self.event_bus.last_modified_time = datetime.now(timezone.utc)
+            self.event_bus.last_modified_time = datetime.now(UTC)
 
     def _parse_statement(
         self,

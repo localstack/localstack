@@ -1,5 +1,5 @@
 import re
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from localstack.aws.api.events import (
     Arn,
@@ -75,17 +75,17 @@ class RuleService:
     def create_rule_service(
         cls,
         name: RuleName,
-        region: Optional[str] = None,
-        account_id: Optional[str] = None,
-        schedule_expression: Optional[ScheduleExpression] = None,
-        event_pattern: Optional[EventPattern] = None,
-        state: Optional[RuleState] = None,
-        description: Optional[RuleDescription] = None,
-        role_arn: Optional[RoleArn] = None,
-        tags: Optional[TagList] = None,
-        event_bus_name: Optional[EventBusName] = None,
-        targets: Optional[TargetDict] = None,
-        managed_by: Optional[ManagedBy] = None,
+        region: str | None = None,
+        account_id: str | None = None,
+        schedule_expression: ScheduleExpression | None = None,
+        event_pattern: EventPattern | None = None,
+        state: RuleState | None = None,
+        description: RuleDescription | None = None,
+        role_arn: RoleArn | None = None,
+        tags: TagList | None = None,
+        event_bus_name: EventBusName | None = None,
+        targets: TargetDict | None = None,
+        managed_by: ManagedBy | None = None,
     ):
         cls._validate_input(event_pattern, schedule_expression, event_bus_name)
         # required to keep data and functionality separate for persistence
@@ -209,9 +209,9 @@ class RuleService:
     @classmethod
     def _validate_input(
         cls,
-        event_pattern: Optional[EventPattern],
-        schedule_expression: Optional[ScheduleExpression],
-        event_bus_name: Optional[EventBusName] = "default",
+        event_pattern: EventPattern | None,
+        schedule_expression: ScheduleExpression | None,
+        event_bus_name: EventBusName | None = "default",
     ) -> None:
         if not event_pattern and not schedule_expression:
             raise ValidationException(

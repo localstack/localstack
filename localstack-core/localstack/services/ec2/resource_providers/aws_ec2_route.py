@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from moto.ec2.utils import generate_route_id
 
@@ -16,20 +16,20 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2RouteProperties(TypedDict):
-    RouteTableId: Optional[str]
-    CarrierGatewayId: Optional[str]
-    DestinationCidrBlock: Optional[str]
-    DestinationIpv6CidrBlock: Optional[str]
-    EgressOnlyInternetGatewayId: Optional[str]
-    GatewayId: Optional[str]
-    Id: Optional[str]
-    InstanceId: Optional[str]
-    LocalGatewayId: Optional[str]
-    NatGatewayId: Optional[str]
-    NetworkInterfaceId: Optional[str]
-    TransitGatewayId: Optional[str]
-    VpcEndpointId: Optional[str]
-    VpcPeeringConnectionId: Optional[str]
+    RouteTableId: str | None
+    CarrierGatewayId: str | None
+    DestinationCidrBlock: str | None
+    DestinationIpv6CidrBlock: str | None
+    EgressOnlyInternetGatewayId: str | None
+    GatewayId: str | None
+    Id: str | None
+    InstanceId: str | None
+    LocalGatewayId: str | None
+    NatGatewayId: str | None
+    NetworkInterfaceId: str | None
+    TransitGatewayId: str | None
+    VpcEndpointId: str | None
+    VpcPeeringConnectionId: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -1,8 +1,8 @@
 import abc
 import dataclasses
-from typing import Any, Dict, Union
+from typing import Any, Union
 
-EventPayload = Union[Dict[str, Any], Any]  # FIXME: better typing
+EventPayload = Union[dict[str, Any], Any]  # FIXME: better typing
 
 
 @dataclasses.dataclass

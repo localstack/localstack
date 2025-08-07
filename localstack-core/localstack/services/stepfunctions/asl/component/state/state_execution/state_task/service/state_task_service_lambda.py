@@ -1,6 +1,6 @@
 import json
 import logging
-from typing import Final, Optional
+from typing import Final
 
 from botocore.exceptions import ClientError
 
@@ -50,7 +50,7 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
@@ -105,8 +105,8 @@ class StateTaskServiceLambda(StateTaskServiceCallback):
     def _normalise_parameters(
         self,
         parameters: dict,
-        boto_service_name: Optional[str] = None,
-        service_action_name: Optional[str] = None,
+        boto_service_name: str | None = None,
+        service_action_name: str | None = None,
     ) -> None:
         # Run Payload value casting before normalisation.
         if "Payload" in parameters:

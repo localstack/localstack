@@ -4,7 +4,7 @@ This module has utilities relating to creating/parsing AWS requests.
 
 import logging
 import re
-from typing import Dict, Optional
+from typing import Optional
 
 from rolo import Request as RoloRequest
 
@@ -43,7 +43,7 @@ def extract_account_id_from_auth_header(headers) -> Optional[str]:
         return get_account_id_from_access_key_id(access_key_id)
 
 
-def extract_access_key_id_from_auth_header(headers: Dict[str, str]) -> Optional[str]:
+def extract_access_key_id_from_auth_header(headers: dict[str, str]) -> Optional[str]:
     auth = headers.get("Authorization") or ""
 
     if auth.startswith("AWS4-"):
@@ -67,7 +67,7 @@ def extract_region_from_headers(headers) -> str:
     return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
 
 
-def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
+def extract_service_name_from_auth_header(headers: dict) -> Optional[str]:
     try:
         auth_header = headers.get("authorization", "")
         credential_scope = auth_header.split(",")[0].split()[1]
@@ -79,7 +79,7 @@ def extract_service_name_from_auth_header(headers: Dict) -> Optional[str]:
 
 def mock_aws_request_headers(
     service: str, aws_access_key_id: str, region_name: str, internal: bool = False
-) -> Dict[str, str]:
+) -> dict[str, str]:
     """
     Returns a mock set of headers that resemble SigV4 signing method.
     """

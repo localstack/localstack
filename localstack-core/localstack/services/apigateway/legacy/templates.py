@@ -3,7 +3,7 @@ import copy
 import json
 import logging
 from enum import Enum
-from typing import Any, Dict, Union
+from typing import Any
 from urllib.parse import quote_plus, unquote_plus
 
 import xmltodict
@@ -184,7 +184,7 @@ class VelocityInput:
 class ApiGatewayVtlTemplate(VtlTemplate):
     """Util class for rendering VTL templates with API Gateway specific extensions"""
 
-    def prepare_namespace(self, variables, source: str = APIGW_SOURCE) -> Dict[str, Any]:
+    def prepare_namespace(self, variables, source: str = APIGW_SOURCE) -> dict[str, Any]:
         namespace = super().prepare_namespace(variables, source)
         if stage_var := variables.get("stage_variables") or {}:
             namespace["stageVariables"] = stage_var
@@ -203,7 +203,7 @@ class Templates:
     def __init__(self):
         self.vtl = ApiGatewayVtlTemplate()
 
-    def render(self, api_context: ApiInvocationContext) -> Union[bytes, str]:
+    def render(self, api_context: ApiInvocationContext) -> bytes | str:
         pass
 
     def render_vtl(self, template, variables):
@@ -250,7 +250,7 @@ class RequestTemplates(Templates):
 
     def render(
         self, api_context: ApiInvocationContext, template_key: str = APPLICATION_JSON
-    ) -> Union[bytes, str]:
+    ) -> bytes | str:
         LOG.debug(
             "Method request body before transformations: %s", to_str(api_context.data_as_string())
         )
@@ -278,7 +278,7 @@ class ResponseTemplates(Templates):
     template is used.
     """
 
-    def render(self, api_context: ApiInvocationContext, **kwargs) -> Union[bytes, str]:
+    def render(self, api_context: ApiInvocationContext, **kwargs) -> bytes | str:
         # XXX: keep backwards compatibility until we migrate all integrations to this new classes
         # api_context contains a response object that we want slowly remove from it
         data = kwargs.get("response", "")

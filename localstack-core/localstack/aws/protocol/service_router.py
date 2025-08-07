@@ -1,5 +1,5 @@
 import logging
-from typing import NamedTuple, Optional, Set
+from typing import NamedTuple
 
 from botocore.model import ServiceModel
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -28,15 +28,15 @@ class _ServiceIndicators(NamedTuple):
 
     # AWS service's "signing name" - Contained in the Authorization header
     # (https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-auth-using-authorization-header.html)
-    signing_name: Optional[str] = None
+    signing_name: str | None = None
     # Target prefix as defined in the service specs for non-rest protocols - Contained in the X-Amz-Target header
-    target_prefix: Optional[str] = None
+    target_prefix: str | None = None
     # Targeted operation as defined in the service specs for non-rest protocols - Contained in the X-Amz-Target header
-    operation: Optional[str] = None
+    operation: str | None = None
     # Host field of the HTTP request
-    host: Optional[str] = None
+    host: str | None = None
     # Path of the HTTP request
-    path: Optional[str] = None
+    path: str | None = None
 
 
 def _extract_service_indicators(request: Request) -> _ServiceIndicators:
@@ -111,7 +111,7 @@ signing_name_path_prefix_rules = {
 }
 
 
-def custom_signing_name_rules(signing_name: str, path: str) -> Optional[ServiceModelIdentifier]:
+def custom_signing_name_rules(signing_name: str, path: str) -> ServiceModelIdentifier | None:
     """
     Rules which are based on the signing name (in the auth header) and the request path.
     """
@@ -134,7 +134,7 @@ def custom_signing_name_rules(signing_name: str, path: str) -> Optional[ServiceM
     return rules.get("*", ServiceModelIdentifier(signing_name))
 
 
-def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
+def custom_host_addressing_rules(host: str) -> ServiceModelIdentifier | None:
     """
     Rules based on the host header of the request, which is typically the data plane of a service.
 
@@ -147,7 +147,7 @@ def custom_host_addressing_rules(host: str) -> Optional[ServiceModelIdentifier]:
         return ServiceModelIdentifier("s3")
 
 
-def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
+def custom_path_addressing_rules(path: str) -> ServiceModelIdentifier | None:
     """
     Rules which are only based on the request path.
     """
@@ -159,7 +159,7 @@ def custom_path_addressing_rules(path: str) -> Optional[ServiceModelIdentifier]:
         return ServiceModelIdentifier("lambda")
 
 
-def legacy_s3_rules(request: Request) -> Optional[ServiceModelIdentifier]:
+def legacy_s3_rules(request: Request) -> ServiceModelIdentifier | None:
     """
     *Legacy* rules which allow us to fallback to S3 if no other service was matched.
     All rules which are implemented here should be removed once we make sure it would not break any use-cases.
@@ -228,7 +228,7 @@ def legacy_s3_rules(request: Request) -> Optional[ServiceModelIdentifier]:
 
 
 def resolve_conflicts(
-    candidates: Set[ServiceModelIdentifier], request: Request
+    candidates: set[ServiceModelIdentifier], request: Request
 ) -> ServiceModelIdentifier:
     """
     Some service definitions are overlapping to a point where they are _not_ distinguishable at all
@@ -258,7 +258,7 @@ def resolve_conflicts(
 
 def determine_aws_service_model_for_data_plane(
     request: Request, services: ServiceCatalog = None
-) -> Optional[ServiceModel]:
+) -> ServiceModel | None:
     """
     A stripped down version of ``determine_aws_service_model`` which only checks hostname indicators for
     the AWS data plane, such as s3 websites, lambda function URLs, or API gateway routes.
@@ -271,7 +271,7 @@ def determine_aws_service_model_for_data_plane(
 
 def determine_aws_service_model(
     request: Request, services: ServiceCatalog = None
-) -> Optional[ServiceModel]:
+) -> ServiceModel | None:
     """
     Tries to determine the name of the AWS service an incoming request is targeting.
     :param request: to determine the target service name of

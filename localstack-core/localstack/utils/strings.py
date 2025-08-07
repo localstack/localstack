@@ -7,7 +7,7 @@ import re
 import string
 import uuid
 import zlib
-from typing import Dict, List, Union
+from typing import Union
 
 from localstack.config import DEFAULT_ENCODING
 
@@ -86,7 +86,7 @@ def canonicalize_bool_to_str(val: bool) -> str:
     return "true" if str(val).lower() == "true" else "false"
 
 
-def convert_to_printable_chars(value: Union[List, Dict, str]) -> str:
+def convert_to_printable_chars(value: Union[list, dict, str]) -> str:
     """Removes all unprintable characters from the given string."""
     from localstack.utils.objects import recurse_object
 

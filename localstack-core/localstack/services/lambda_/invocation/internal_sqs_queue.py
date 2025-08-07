@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import Iterable
+from collections.abc import Iterable
 
 from localstack import config
 from localstack.aws.api.sqs import (

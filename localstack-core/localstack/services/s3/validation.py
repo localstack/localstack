@@ -173,7 +173,7 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
             continue
 
         elif grant_type == GranteeType.CanonicalUser and not is_valid_canonical_id(
-            (grantee_id := grantee.get("ID", ""))
+            grantee_id := grantee.get("ID", "")
         ):
             ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", grantee_id)
             raise ex

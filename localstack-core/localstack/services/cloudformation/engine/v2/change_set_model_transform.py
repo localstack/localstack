@@ -1,7 +1,7 @@
 import copy
 import logging
 import os
-from typing import Any, Final, Optional, TypedDict
+from typing import Any, Final, TypedDict
 
 import boto3
 from botocore.exceptions import ClientError
@@ -56,7 +56,7 @@ class TransformPreprocParameter(TypedDict):
     # TODO: expand
     ParameterKey: str
     ParameterValue: Any
-    ParameterType: Optional[str]
+    ParameterType: str | None
 
 
 class ChangeSetModelTransform(ChangeSetModelPreproc):
@@ -70,8 +70,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         change_set: ChangeSet,
         before_parameters: dict,
         after_parameters: dict,
-        before_template: Optional[dict],
-        after_template: Optional[dict],
+        before_template: dict | None,
+        after_template: dict | None,
     ):
         super().__init__(change_set=change_set)
         self._before_parameters = before_parameters
@@ -176,7 +176,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         global_transform: GlobalTransform,
         template: dict,
         parameters: dict,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         macro_name = global_transform.name
         macros_store = get_cloudformation_store(
             account_id=account_id, region_name=region_name

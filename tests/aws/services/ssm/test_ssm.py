@@ -176,11 +176,11 @@ class TestSSM:
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
-        rule_name = "rule-{}".format(short_uid())
-        target_id = "target-{}".format(short_uid())
+        rule_name = f"rule-{short_uid()}"
+        target_id = f"target-{short_uid()}"
 
         # create queue
-        queue_name = "queue-{}".format(short_uid())
+        queue_name = f"queue-{short_uid()}"
         queue_url = aws_client.sqs.create_queue(QueueName=queue_name)["QueueUrl"]
         queue_arn = arns.sqs_queue_arn(queue_name, TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME)
 

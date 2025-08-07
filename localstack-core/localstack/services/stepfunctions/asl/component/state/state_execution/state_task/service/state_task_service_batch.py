@@ -1,4 +1,5 @@
-from typing import Any, Callable, Final, Optional
+from collections.abc import Callable
+from typing import Any, Final
 
 from botocore.exceptions import ClientError
 from moto.batch.utils import JobStatus
@@ -62,7 +63,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
@@ -139,7 +140,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
         state_credentials: StateCredentials,
-    ) -> Callable[[], Optional[Any]]:
+    ) -> Callable[[], Any | None]:
         batch_client = boto_client_for(
             service="batch",
             region=resource_runtime_part.region,
@@ -148,7 +149,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         submission_output: dict = env.stack.pop()
         job_id = submission_output["JobId"]
 
-        def _sync_resolver() -> Optional[dict]:
+        def _sync_resolver() -> dict | None:
             describe_jobs_response = batch_client.describe_jobs(jobs=[job_id])
             describe_jobs = describe_jobs_response["jobs"]
             if describe_jobs:

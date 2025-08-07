@@ -5,7 +5,7 @@ import threading
 import wave
 from functools import cache
 from pathlib import Path
-from typing import Any, Tuple
+from typing import Any
 from zipfile import ZipFile
 
 from localstack import config
@@ -277,7 +277,7 @@ class TranscribeProvider(TranscribeApi):
     # Threads
     #
 
-    def _run_transcription_job(self, args: Tuple[TranscribeStore, str]) -> None:
+    def _run_transcription_job(self, args: tuple[TranscribeStore, str]) -> None:
         store, job_name = args
 
         job = store.transcription_jobs[job_name]

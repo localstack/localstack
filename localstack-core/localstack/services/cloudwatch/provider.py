@@ -1,7 +1,7 @@
 import json
 import logging
 import uuid
-from typing import Any, Optional
+from typing import Any
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
@@ -115,18 +115,18 @@ def put_metric_alarm(
     description: str,
     dimensions: list[dict[str, str]],
     alarm_actions: list[str],
-    metric_data_queries: Optional[list[Any]] = None,
-    datapoints_to_alarm: Optional[int] = None,
-    extended_statistic: Optional[str] = None,
-    ok_actions: Optional[list[str]] = None,
-    insufficient_data_actions: Optional[list[str]] = None,
-    unit: Optional[str] = None,
+    metric_data_queries: list[Any] | None = None,
+    datapoints_to_alarm: int | None = None,
+    extended_statistic: str | None = None,
+    ok_actions: list[str] | None = None,
+    insufficient_data_actions: list[str] | None = None,
+    unit: str | None = None,
     actions_enabled: bool = True,
-    treat_missing_data: Optional[str] = None,
-    evaluate_low_sample_count_percentile: Optional[str] = None,
-    threshold_metric_id: Optional[str] = None,
-    rule: Optional[str] = None,
-    tags: Optional[list[dict[str, str]]] = None,
+    treat_missing_data: str | None = None,
+    evaluate_low_sample_count_percentile: str | None = None,
+    threshold_metric_id: str | None = None,
+    rule: str | None = None,
+    tags: list[dict[str, str]] | None = None,
 ) -> FakeAlarm:
     if description:
         description = escape(description)

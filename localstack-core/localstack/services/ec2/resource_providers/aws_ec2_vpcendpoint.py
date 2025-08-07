@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,18 +14,18 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2VPCEndpointProperties(TypedDict):
-    ServiceName: Optional[str]
-    VpcId: Optional[str]
-    CreationTimestamp: Optional[str]
-    DnsEntries: Optional[list[str]]
-    Id: Optional[str]
-    NetworkInterfaceIds: Optional[list[str]]
-    PolicyDocument: Optional[str | dict]
-    PrivateDnsEnabled: Optional[bool]
-    RouteTableIds: Optional[list[str]]
-    SecurityGroupIds: Optional[list[str]]
-    SubnetIds: Optional[list[str]]
-    VpcEndpointType: Optional[str]
+    ServiceName: str | None
+    VpcId: str | None
+    CreationTimestamp: str | None
+    DnsEntries: list[str] | None
+    Id: str | None
+    NetworkInterfaceIds: list[str] | None
+    PolicyDocument: str | dict | None
+    PrivateDnsEnabled: bool | None
+    RouteTableIds: list[str] | None
+    SecurityGroupIds: list[str] | None
+    SubnetIds: list[str] | None
+    VpcEndpointType: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -3,7 +3,7 @@
 import logging
 import re
 from functools import lru_cache
-from typing import Any, Dict
+from typing import Any
 
 from localstack.utils.numbers import format_bytes
 from localstack.utils.strings import to_bytes
@@ -173,8 +173,8 @@ class AwsTraceLoggingFormatter(TraceLoggingFormatter):
     def __init__(self):
         super().__init__()
 
-    def _copy_service_dict(self, service_dict: Dict) -> Dict:
-        if not isinstance(service_dict, Dict):
+    def _copy_service_dict(self, service_dict: dict) -> dict:
+        if not isinstance(service_dict, dict):
             return service_dict
         result = {}
         for key, value in service_dict.items():

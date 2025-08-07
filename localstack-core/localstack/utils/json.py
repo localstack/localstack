@@ -78,7 +78,7 @@ class FileMappedDocument(dict):
         if os.path.isdir(self.path):
             raise IsADirectoryError
 
-        with open(self.path, "r") as fd:
+        with open(self.path) as fd:
             self.update(json.load(fd))
 
     def save(self):

@@ -1,6 +1,5 @@
 import base64
 import logging
-from typing import Dict
 
 from localstack.aws.api.stepfunctions import ValidationException
 from localstack.aws.connect import connect_to
@@ -11,7 +10,7 @@ from localstack.utils.strings import to_bytes, to_str
 LOG = logging.getLogger(__name__)
 
 
-def await_sfn_execution_result(execution_arn: str, timeout_secs: int = 60) -> Dict:
+def await_sfn_execution_result(execution_arn: str, timeout_secs: int = 60) -> dict:
     """Wait until the given SFN execution ARN is no longer in RUNNING status, then return execution result."""
 
     arn_data = parse_arn(execution_arn)

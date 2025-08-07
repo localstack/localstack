@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from localstack import config
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
@@ -28,7 +27,7 @@ class DynamoDBLocalPackage(Package):
     def _get_installer(self, _) -> PackageInstaller:
         return DynamoDBLocalPackageInstaller()
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["2"]
 
 

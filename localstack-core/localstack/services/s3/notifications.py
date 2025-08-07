@@ -6,7 +6,7 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import TypedDict
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
@@ -64,8 +64,8 @@ HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
 class S3NotificationContent(TypedDict):
     s3SchemaVersion: str
     configurationId: NotificationId
-    bucket: Dict[str, str]  # todo
-    object: Dict[str, Union[str, int]]  # todo
+    bucket: dict[str, str]  # todo
+    object: dict[str, str | int]  # todo
 
 
 class EventRecord(TypedDict):
@@ -74,14 +74,14 @@ class EventRecord(TypedDict):
     awsRegion: str
     eventTime: str
     eventName: str
-    userIdentity: Dict[str, str]
-    requestParameters: Dict[str, str]
-    responseElements: Dict[str, str]
+    userIdentity: dict[str, str]
+    requestParameters: dict[str, str]
+    responseElements: dict[str, str]
     s3: S3NotificationContent
 
 
 class Notification(TypedDict):
-    Records: List[EventRecord]
+    Records: list[EventRecord]
 
 
 @dataclass
@@ -101,7 +101,7 @@ class S3EventNotificationContext:
     key_etag: str
     key_version_id: str
     key_expiry: datetime.datetime
-    key_storage_class: Optional[StorageClass]
+    key_storage_class: StorageClass | None
 
     @classmethod
     def from_request_context_native(
@@ -109,7 +109,7 @@ class S3EventNotificationContext:
         request_context: RequestContext,
         s3_bucket: S3Bucket,
         s3_object: S3Object | S3DeleteMarker,
-    ) -> "S3EventNotificationContext":
+    ) -> S3EventNotificationContext:
         """
         Create an S3EventNotificationContext from a RequestContext.
         The key is not always present in the request context depending on the event type. In that case, we can use
@@ -165,7 +165,7 @@ class BucketVerificationContext:
     request_id: str
     bucket_name: str
     region: str
-    configuration: Dict
+    configuration: dict
     skip_destination_validation: bool
 
 
@@ -185,7 +185,7 @@ def _matching_event(events: EventList, event_name: str) -> bool:
 
 
 def _matching_filter(
-    notification_filter: Optional[NotificationConfigurationFilter], key_name: str
+    notification_filter: NotificationConfigurationFilter | None, key_name: str
 ) -> bool:
     """
     See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-filtering.html
@@ -213,11 +213,11 @@ def _matching_filter(
 class BaseNotifier:
     service_name: str
 
-    def notify(self, ctx: S3EventNotificationContext, config: Dict):
+    def notify(self, ctx: S3EventNotificationContext, config: dict):
         raise NotImplementedError
 
     @staticmethod
-    def should_notify(ctx: S3EventNotificationContext, config: Dict) -> bool:
+    def should_notify(ctx: S3EventNotificationContext, config: dict) -> bool:
         """
         Helper method checking if the event should be notified to the configured notifiers from the configuration
         :param ctx: S3EventNotificationContext
@@ -229,12 +229,12 @@ class BaseNotifier:
         )
 
     @staticmethod
-    def _get_arn_value_and_name(notifier_configuration: Dict) -> Tuple[str, str]:
+    def _get_arn_value_and_name(notifier_configuration: dict) -> tuple[str, str]:
         raise NotImplementedError
 
     def validate_configuration_for_notifier(
         self,
-        configurations: List[Dict],
+        configurations: list[dict],
         skip_destination_validation: bool,
         context: RequestContext,
         bucket_name: str,
@@ -381,7 +381,7 @@ class SqsNotifier(BaseNotifier):
     service_name = "sqs"
 
     @staticmethod
-    def _get_arn_value_and_name(queue_configuration: QueueConfiguration) -> Tuple[QueueArn, str]:
+    def _get_arn_value_and_name(queue_configuration: QueueConfiguration) -> tuple[QueueArn, str]:
         return queue_configuration.get("QueueArn", ""), "QueueArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
@@ -549,7 +549,7 @@ class LambdaNotifier(BaseNotifier):
     @staticmethod
     def _get_arn_value_and_name(
         lambda_configuration: LambdaFunctionConfiguration,
-    ) -> Tuple[LambdaFunctionArn, str]:
+    ) -> tuple[LambdaFunctionArn, str]:
         return lambda_configuration.get("LambdaFunctionArn", ""), "LambdaFunctionArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
@@ -698,14 +698,14 @@ class EventBridgeNotifier(BaseNotifier):
         return entry
 
     @staticmethod
-    def should_notify(ctx: S3EventNotificationContext, config: Dict) -> bool:
+    def should_notify(ctx: S3EventNotificationContext, config: dict) -> bool:
         # Events are always passed to EventBridge, you can route the event in EventBridge
         # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
         return True
 
     def validate_configuration_for_notifier(
         self,
-        configurations: List[Dict],
+        configurations: list[dict],
         skip_destination_validation: bool,
         context: RequestContext,
         bucket_name: str,

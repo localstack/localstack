@@ -5,7 +5,7 @@ import json
 import random
 import string
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -17,12 +17,12 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class IAMPolicyProperties(TypedDict):
-    PolicyDocument: Optional[dict]
-    PolicyName: Optional[str]
-    Groups: Optional[list[str]]
-    Id: Optional[str]
-    Roles: Optional[list[str]]
-    Users: Optional[list[str]]
+    PolicyDocument: dict | None
+    PolicyName: str | None
+    Groups: list[str] | None
+    Id: str | None
+    Roles: list[str] | None
+    Users: list[str] | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

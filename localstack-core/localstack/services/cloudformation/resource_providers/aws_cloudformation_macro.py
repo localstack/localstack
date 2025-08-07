@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,12 +15,12 @@ from localstack.services.cloudformation.stores import get_cloudformation_store
 
 
 class CloudFormationMacroProperties(TypedDict):
-    FunctionName: Optional[str]
-    Name: Optional[str]
-    Description: Optional[str]
-    Id: Optional[str]
-    LogGroupName: Optional[str]
-    LogRoleARN: Optional[str]
+    FunctionName: str | None
+    Name: str | None
+    Description: str | None
+    Id: str | None
+    LogGroupName: str | None
+    LogRoleARN: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

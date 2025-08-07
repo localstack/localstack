@@ -15,10 +15,10 @@ import json
 import logging
 import re
 import threading
+from collections.abc import Callable
 from hashlib import sha256
 from io import BytesIO
 from random import randint
-from typing import Callable
 
 import pytest
 import requests
@@ -4908,7 +4908,7 @@ class TestLambdaUrl:
 class TestLambdaSizeLimits:
     def _generate_sized_python_str(self, filepath: str, size: int) -> str:
         """Generate a text of the specified size by appending #s at the end of the file"""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             py_str = f.read()
         py_str += "#" * (size - len(py_str))
         return py_str

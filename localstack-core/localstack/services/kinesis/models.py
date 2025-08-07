@@ -1,5 +1,4 @@
 from collections import defaultdict
-from typing import Dict, List, Set
 
 from localstack.aws.api.kinesis import ConsumerDescription, MetricsName, StreamName
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
@@ -7,10 +6,10 @@ from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttr
 
 class KinesisStore(BaseStore):
     # list of stream consumer details
-    stream_consumers: List[ConsumerDescription] = LocalAttribute(default=list)
+    stream_consumers: list[ConsumerDescription] = LocalAttribute(default=list)
 
     # maps stream name to list of enhanced monitoring metrics
-    enhanced_metrics: Dict[StreamName, Set[MetricsName]] = LocalAttribute(
+    enhanced_metrics: dict[StreamName, set[MetricsName]] = LocalAttribute(
         default=lambda: defaultdict(set)
     )
 

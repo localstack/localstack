@@ -1585,14 +1585,11 @@ class UpperCaseString(TypedDict, total=False):
     withKeys: UpperCaseStringWithKeys
 
 
-TypeConverterEntry = TypedDict(
-    "TypeConverterEntry",
-    {
-        "key": Key,
-        "type": Type,
-    },
-    total=False,
-)
+class TypeConverterEntry(TypedDict, total=False):
+    key: Key
+    type: Type
+
+
 TypeConverterEntries = List[TypeConverterEntry]
 
 

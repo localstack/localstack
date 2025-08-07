@@ -6,7 +6,8 @@ import os
 import re
 import textwrap
 import time
-from typing import Callable, NamedTuple, Type
+from collections.abc import Callable
+from typing import NamedTuple
 
 import pytest
 from docker.models.containers import Container
@@ -48,13 +49,11 @@ from localstack.utils.sync import retry
 from localstack.utils.threads import FuncThread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
-ContainerInfo = NamedTuple(
-    "ContainerInfo",
-    [
-        ("container_id", str),
-        ("container_name", str),
-    ],
-)
+
+class ContainerInfo(NamedTuple):
+    container_id: str
+    container_name: str
+
 
 LOG = logging.getLogger(__name__)
 
@@ -365,7 +364,7 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.start_container("this_container_does_not_exist")
 
-    def test_docker_not_available(self, docker_client_class: Type[ContainerClient], monkeypatch):
+    def test_docker_not_available(self, docker_client_class: type[ContainerClient], monkeypatch):
         monkeypatch.setattr(config, "DOCKER_CMD", "non-existing-binary")
         monkeypatch.setenv("DOCKER_HOST", "/var/run/docker.sock1")
         # initialize the client after mocking the environment

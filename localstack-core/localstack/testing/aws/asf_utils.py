@@ -3,12 +3,13 @@ import importlib.util
 import inspect
 import pkgutil
 import re
+from re import Pattern
 from types import FunctionType, ModuleType, NoneType, UnionType
-from typing import Optional, Pattern, Union, get_args, get_origin
+from typing import Union, get_args, get_origin
 
 
 def _import_submodules(
-    package_name: str, module_regex: Optional[Pattern] = None, recursive: bool = True
+    package_name: str, module_regex: Pattern | None = None, recursive: bool = True
 ) -> dict[str, ModuleType]:
     """
     Imports all submodules of the given package with the defined (optional) module_suffix.

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,13 +14,13 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EventsApiDestinationProperties(TypedDict):
-    ConnectionArn: Optional[str]
-    HttpMethod: Optional[str]
-    InvocationEndpoint: Optional[str]
-    Arn: Optional[str]
-    Description: Optional[str]
-    InvocationRateLimitPerSecond: Optional[int]
-    Name: Optional[str]
+    ConnectionArn: str | None
+    HttpMethod: str | None
+    InvocationEndpoint: str | None
+    Arn: str | None
+    Description: str | None
+    InvocationRateLimitPerSecond: int | None
+    Name: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

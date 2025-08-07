@@ -9,7 +9,6 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Union
 
 import requests
 from cryptography.hazmat.primitives import hashes
@@ -61,9 +60,9 @@ class SnsPublishContext:
 
 @dataclass
 class SnsBatchPublishContext:
-    messages: List[SnsMessage]
+    messages: list[SnsMessage]
     store: SnsStore
-    request_headers: Dict[str, str]
+    request_headers: dict[str, str]
     topic_attributes: dict[str, str] = field(default_factory=dict)
 
 
@@ -818,7 +817,7 @@ class ApplicationEndpointPublisher(EndpointPublisher):
         # TODO: see about delivery log for individual endpoint message, need credentials for testing
         # store_delivery_log(subscriber, context, success=True)
 
-    def prepare_message(self, message_context: SnsMessage, endpoint: str) -> Union[str, Dict]:
+    def prepare_message(self, message_context: SnsMessage, endpoint: str) -> str | dict:
         platform_type = get_platform_type_from_endpoint_arn(endpoint)
         return {
             "TargetArn": endpoint,
@@ -862,7 +861,7 @@ def get_application_platform_arn_from_endpoint_arn(endpoint_arn: str) -> str:
     return f"{base_arn}:app/{platform_type}/{app_name}"
 
 
-def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Dict]:
+def get_attributes_for_application_endpoint(endpoint_arn: str) -> tuple[dict, dict]:
     """
     Retrieve the attributes necessary to send a message directly to the platform (credentials and token)
     :param endpoint_arn:
@@ -883,7 +882,7 @@ def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Di
 
 
 def send_message_to_gcm(
-    context: SnsPublishContext, app_attributes: Dict[str, str], endpoint_attributes: Dict[str, str]
+    context: SnsPublishContext, app_attributes: dict[str, str], endpoint_attributes: dict[str, str]
 ) -> None:
     """
     Send the message directly to GCM, with the credentials used when creating the PlatformApplication and the Endpoint
@@ -1014,7 +1013,7 @@ def create_sns_message_body(
 
 def prepare_message_attributes(
     message_attributes: MessageAttributeMap,
-) -> Dict[str, Dict[str, str]]:
+) -> dict[str, dict[str, str]]:
     attributes = {}
     if not message_attributes:
         return attributes
