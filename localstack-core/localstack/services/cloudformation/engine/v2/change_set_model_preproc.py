@@ -381,7 +381,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             error_key = "::".join([map_name, top_level_key, second_level_key])
             raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         second_level_value = top_level_value.bindings.get(second_level_key)
-        if not isinstance(second_level_value, NodeObject):
+        if not isinstance(second_level_value, TerminalValue):
             error_key = "::".join([map_name, top_level_key, second_level_key])
             raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         mapping_value_delta = self.visit(second_level_value)
