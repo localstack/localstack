@@ -145,6 +145,37 @@ class TestCloudFormationMappings:
         )
 
     @markers.aws.validated
+    def test_async_mapping_error_second_level_v2(self, aws_client, snapshot):
+        """
+        Similar to the `test_async_mapping_error_first_level` test above, but
+        checking the second level of mapping lookup
+        """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        topic_name = f"test-topic-{short_uid()}"
+        template_path = os.path.join(
+            THIS_DIR,
+            "../../../templates/mappings/simple-mapping.yaml",
+        )
+        parameters = [
+            {"ParameterKey": "TopicName", "ParameterValue": topic_name},
+            {"ParameterKey": "TopicNameSuffixSelector", "ParameterValue": "A"},
+            {"ParameterKey": "TopicAttributeSelector", "ParameterValue": "NotValid"},
+        ]
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                Parameters=parameters,
+                TemplateBody=open(template_path).read(),
+            )
+
+        snapshot.match("error", exc_info.value)
+
+    @markers.aws.validated
     @pytest.mark.skip(reason="not implemented")
     def test_mapping_with_invalid_refs(self, aws_client, deploy_cfn_template, cleanups, snapshot):
         """
