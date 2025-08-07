@@ -11,11 +11,6 @@ from botocore.exceptions import ClientError
 from localstack import config
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
-from localstack.services.cloudformation.engine.transformers import (
-    Transformer,
-    execute_macro,
-    transformers,
-)
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetEntity,
     ChangeType,
@@ -25,7 +20,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeDivergence,
     NodeIntrinsicFunction,
-    NodeIntrinsicFunctionFnTransform,
     NodeMapping,
     NodeObject,
     NodeOutput,
@@ -56,7 +50,6 @@ from localstack.services.cloudformation.engine.v2.resolving import (
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import (
     exports_map,
-    get_cloudformation_store,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils.aws.arns import get_partition
@@ -1225,91 +1218,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return delta
 
     def visit_node_intrinsic_function_fn_transform(
-        self, node_intrinsic_function: NodeIntrinsicFunctionFnTransform
-    ) -> PreprocEntityDelta:
-        def _normalize_transforms(obj):
-            transforms = []
-
-            if isinstance(obj, str):
-                transforms.append({"Name": obj, "Parameters": {}})
-
-            if isinstance(obj, dict):
-                transforms.append(obj)
-
-            if isinstance(obj, list):
-                for v in obj:
-                    if isinstance(v, str):
-                        transforms.append({"Name": v, "Parameters": {}})
-
-                    if isinstance(v, dict):
-                        transforms.append(v)
-
-            return transforms
-
-        def _compute_fn_transform(transform: dict):
-            transforms: list[dict] = _normalize_transforms(transform)
-
-            siblings = node_intrinsic_function.after_siblings
-            transform_output = copy.deepcopy(siblings)
-            transform_output.pop("Fn::Transform", "")
-            for transform in transforms:
-                transform_name = transform["Name"]
-                if transform_name in transforms:
-                    builtin_transformer_class = transformers[transform_name]
-                    builtin_transformer: Transformer = builtin_transformer_class()
-                    transform_output.update(
-                        builtin_transformer.transform(
-                            account_id=self._change_set.account_id,
-                            region_name=self._change_set.region_name,
-                            parameters=transform["Parameters"],
-                        )
-                    )
-                else:
-                    macros_store = get_cloudformation_store(
-                        account_id=self._change_set.account_id,
-                        region_name=self._change_set.region_name,
-                    ).macros
-
-                    if transform["Name"] not in macros_store:
-                        raise RuntimeError("Unsupported transform ")
-
-                    transform_parameters = {
-                        x: v["ParameterValue"] if "ParameterValue" in v else v
-                        for x, v in transform.get("Parameters", {}).items()
-                    }
-
-                    resolved_parameters = {
-                        **self._change_set.stack.resolved_parameters,
-                        **self.visit_node_parameters(
-                            self._change_set.update_model.node_template.parameters
-                        ).after,
-                    }
-
-                    template_parameters = {
-                        **self._change_set.stack.template.get("Parameters", {}),
-                        **(self._change_set.template or {}).get("Parameters", {}),
-                    }
-
-                    for key, value in resolved_parameters.items():
-                        template_parameters[key]["ParameterValue"] = value
-
-                    transform_output: Any = execute_macro(
-                        account_id=self._change_set.account_id,
-                        region_name=self._change_set.region_name,
-                        parsed_template=transform_output,  # TODO: review the requirements for this argument.
-                        macro=transform,  # TODO: review support for non dict bindings (v1).
-                        stack_parameters=template_parameters,
-                        transformation_parameters=transform_parameters,
-                        is_intrinsic=True,
-                    )
-
-            return transform_output
-
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=_compute_fn_transform,
-        )
-
-        return delta
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        raise RuntimeError("Fn::Transform should have been handled by the Transformer")

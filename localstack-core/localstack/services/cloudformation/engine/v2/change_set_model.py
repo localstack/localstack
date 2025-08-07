@@ -107,6 +107,21 @@ class Scope(str):
     def unwrap(self) -> list[str]:
         return self.split(self._SEPARATOR)
 
+    def to_jsonpath(self) -> str:
+        parts = self.split("/")
+        json_parts = []
+
+        for part in parts:
+            if not part:  # Skip empty strings from leading/trailing slashes
+                continue
+            # Wrap keys with special characters (e.g., colon) in quotes
+            if ":" in part:
+                json_parts.append(f'"{part}"')
+            else:
+                json_parts.append(part)
+
+        return f"$.{'.'.join(json_parts)}"
+
 
 class ChangeType(enum.Enum):
     UNCHANGED = "Unchanged"
