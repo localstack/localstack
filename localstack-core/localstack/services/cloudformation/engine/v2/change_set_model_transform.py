@@ -22,6 +22,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeGlobalTransform,
     NodeIntrinsicFunctionFnTransform,
     NodeParameter,
+    NodeProperties,
     NodeTransform,
     Nothing,
     Scope,
@@ -30,10 +31,12 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
     PreprocEntityDelta,
+    PreprocProperties,
 )
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils import testutil
+from localstack.utils.json import extract_jsonpath
 
 LOG = logging.getLogger(__name__)
 
@@ -435,29 +438,24 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self._save_runtime_cache()
         return PreprocEntityDelta(before=before, after=after)
 
-    # def visit_node_properties(
-    #     self, node_properties: NodeProperties
-    # ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
-    #
-    #     before = node_properties
-    #     for property in node_properties.properties:
-    #         if property.name == "Fn::Transform":
-    #             path = "$" + ".".join(node_properties.scope.split("/")[:-1])
-    #             before_siblings = extract_jsonpath(self._before_template, path)
-    #             after_siblings = extract_jsonpath(self._after_template, path)
-    #             intrinsic_transform = NodeIntrinsicFunctionFnTransform(
-    #                 change_type=property.change_type,
-    #                 intrinsic_function=property.name,
-    #                 scope=node_properties.scope,
-    #                 arguments=property.value,
-    #                 before_siblings=before_siblings,
-    #                 after_siblings=after_siblings,
-    #             )
-    #             delta = self.visit(intrinsic_transform)
-    #             node_properties = delta.after
-    #
-    #
-    #
-    #     return PreprocEntityDelta(before=super().visit(node_properties), after=Nothing)
-    #
-    #
+    def visit_node_properties(
+        self, node_properties: NodeProperties
+    ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
+        for i, node_property in enumerate(node_properties.properties):
+            if node_property.name == "Fn::Transform":
+                path = "$" + ".".join(node_property.scope.split("/")[:-1])
+                before_siblings = extract_jsonpath(self._before_template, path)
+                after_siblings = extract_jsonpath(self._after_template, path)
+                intrinsic_transform = NodeIntrinsicFunctionFnTransform(
+                    change_type=node_property.change_type,
+                    intrinsic_function=node_property.name,
+                    scope=node_property.scope,
+                    arguments=node_property.value,
+                    before_siblings=before_siblings,
+                    after_siblings=after_siblings,
+                )
+                self.visit(intrinsic_transform)
+                node_properties.properties.pop(i)
+                break
+
+        return super().visit_node_properties(node_properties=node_properties)
