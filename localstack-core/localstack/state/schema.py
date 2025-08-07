@@ -207,24 +207,24 @@ class StoreSchemaBuilder:
 
         match origin:
             case builtins.dict:
-                _hint = {TAG_TYPE: get_fully_qualified_name(origin)}
+                hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if len(args) == 2:
-                    _hint[TAG_ARGS] = [self._serialize_hint(args[0]), self._serialize_hint(args[1])]
+                    hint[TAG_ARGS] = [self._serialize_hint(args[0]), self._serialize_hint(args[1])]
                 # If the hints are incomplete, e.g., ``dict[str]``, we just return the FQN, i.e., ```builtins.dict```
-                return _hint
+                return hint
             case builtins.list | builtins.set:
-                _hint = {TAG_TYPE: get_fully_qualified_name(origin)}
+                hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if args:
-                    _hint[TAG_ARGS] = [self._serialize_hint(args[0])]
-                return _hint
+                    hint[TAG_ARGS] = [self._serialize_hint(args[0])]
+                return hint
             case types.UnionType | typing.Union | typing.Tuple | builtins.tuple:
-                _hint = {TAG_TYPE: get_fully_qualified_name(origin)}
+                hint = {TAG_TYPE: get_fully_qualified_name(origin)}
                 args = typing.get_args(type_hint)
                 if args:
-                    _hint[TAG_ARGS] = [self._serialize_hint(_arg) for _arg in args]
-                return _hint
+                    hint[TAG_ARGS] = [self._serialize_hint(_arg) for _arg in args]
+                return hint
             case _:
                 # A few things that can end up here: generics, or Literal. See ``get_origin`` for more.
                 return get_fully_qualified_name(origin)

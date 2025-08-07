@@ -28,7 +28,7 @@ from localstack.state.schema import StoreSchemaBuilder, get_fully_qualified_name
 def test_smoke_schema_dumps():
     """
     This test extracts the schema for all the stores in the repo and dumps it.
-    It's just a smoke test to make sure
+    It's just a smoke test to make sure we can return a schema without runtime errors and safely dumps it to JSON.
     """
     stores = [
         ApiGatewayStore,
