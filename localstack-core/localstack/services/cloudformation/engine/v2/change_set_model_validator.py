@@ -1,13 +1,14 @@
 from localstack.services.cloudformation.engine.v2.change_set_model import (
-    NodeParameters,
+    Maybe,
+    NodeIntrinsicFunction,
     NodeTemplate,
+    Nothing,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
     PreprocEntityDelta,
 )
-from localstack.services.cloudformation.engine.validations import ValidationError
 
 
 class ChangeSetModelValidator(ChangeSetModelPreproc):
@@ -15,20 +16,22 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
         self.process()
 
     def visit_node_template(self, node_template: NodeTemplate):
-        self.visit(node_template.parameters)
         self.visit(node_template.mappings)
         self.visit(node_template.resources)
 
-    def visit_node_parameters(self, node_parameters: NodeParameters) -> PreprocEntityDelta:
-        # check that all parameters have values
-        invalid_parameters = []
-        for node_parameter in node_parameters.parameters:
-            parameter_value = self.visit(node_parameter)
-            if is_nothing(parameter_value.before) and is_nothing(parameter_value.after):
-                invalid_parameters.append(node_parameter.name)
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        before_arguments: Maybe[str | list[str]] = arguments_delta.before
+        after_arguments: Maybe[str | list[str]] = arguments_delta.after
 
-        if invalid_parameters:
-            raise ValidationError(f"Parameters: [{','.join(invalid_parameters)}] must have values")
+        before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
+        if is_nothing(before) and not is_nothing(before_arguments):
+            before = ".".join(before_arguments)
 
-        # continue visiting
-        return super().visit_node_parameters(node_parameters)
+        after = self._after_cache.get(node_intrinsic_function.scope, Nothing)
+        if is_nothing(after) and not is_nothing(after_arguments):
+            after = ".".join(after_arguments)
+
+        return PreprocEntityDelta(before=before, after=after)

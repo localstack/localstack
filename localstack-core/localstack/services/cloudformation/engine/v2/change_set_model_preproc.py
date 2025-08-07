@@ -243,7 +243,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _deployed_property_value_of(
         self, resource_logical_id: str, property_name: str, resolved_resources: dict
     ) -> Any:
-        # TODO: typing around resolved resources is needed and should be reflected here.
+        # We have to override this function to make sure it does not try to access the
+        # resolved resource
 
         # Before we can obtain deployed value for a resource, we need to first ensure to
         # process the resource if this wasn't processed already. Ideally, values should only
