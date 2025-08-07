@@ -71,20 +71,20 @@ def test_simple_store():
     build = StoreSchemaBuilder(MyStore)
     schema = build.build_schema()
     assert schema["attributes"]["field1"] == {
-        "LS/TYPE": "builtins.dict",
-        "LS/ARGS": ["builtins.str", "builtins.str"],
+        "LS/TYPE": "builtins::dict",
+        "LS/ARGS": ["builtins::str", "builtins::str"],
     }
     assert schema["attributes"]["field2"] == {
-        "LS/TYPE": "builtins.list",
-        "LS/ARGS": ["builtins.str"],
+        "LS/TYPE": "builtins::list",
+        "LS/ARGS": ["builtins::str"],
     }
     assert schema["attributes"]["field3"] == {
-        "LS/TYPE": "types.UnionType",
-        "LS/ARGS": ["builtins.str", "builtins.int"],
+        "LS/TYPE": "types::UnionType",
+        "LS/ARGS": ["builtins::str", "builtins::int"],
     }
     assert schema["attributes"]["field4"] == {
-        "LS/TYPE": "builtins.tuple",
-        "LS/ARGS": ["builtins.str", "builtins.int"],
+        "LS/TYPE": "builtins::tuple",
+        "LS/ARGS": ["builtins::str", "builtins::int"],
     }
 
 
@@ -95,13 +95,13 @@ def test_nested_attributes():
     build = StoreSchemaBuilder(MyStore)
     schema = build.build_schema()
     assert schema["attributes"]["field1"] == {
-        "LS/TYPE": "builtins.dict",
+        "LS/TYPE": "builtins::dict",
         "LS/ARGS": [
-            "builtins.str",
+            "builtins::str",
             {
-                "LS/TYPE": "builtins.list",
+                "LS/TYPE": "builtins::list",
                 "LS/ARGS": [
-                    {"LS/TYPE": "builtins.dict", "LS/ARGS": ["builtins.str", "builtins.str"]}
+                    {"LS/TYPE": "builtins::dict", "LS/ARGS": ["builtins::str", "builtins::str"]}
                 ],
             },
         ],
@@ -125,6 +125,6 @@ def test_additional_classes(monkeypatch):
     assert schema["attributes"]["move_tasks"]["LS/ARGS"][1] == mmt_fqn
     assert mmt_fqn in schema["additional_classes"]
     assert schema["additional_classes"][mmt_fqn]["source_arn"] == {
-        "LS/TYPE": "types.UnionType",
-        "LS/ARGS": ["builtins.str", "builtins.NoneType"],
+        "LS/TYPE": "types::UnionType",
+        "LS/ARGS": ["builtins::str", "builtins::NoneType"],
     }

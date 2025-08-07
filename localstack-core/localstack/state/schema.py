@@ -42,13 +42,13 @@ class StoreSchema(typing.TypedDict):
     attributes: AttributeSchema
 
 
-def get_fully_qualified_name(obj: type) -> str:
+def get_fully_qualified_name(obj: type, separator: str = "::") -> str:
     """Get the fully qualified name of a type"""
     try:
         module = getattr(obj, "__module__", None)
         qualname = getattr(obj, "__qualname__", None)
         if module and qualname:
-            return f"{module}.{qualname}"
+            return f"{module}{separator}{qualname}"
         return getattr(obj, "__name__", str(obj))
     except Exception as e:
         LOG.debug("Unable to compute the FQN for '%s': %s", obj, e)
