@@ -702,9 +702,9 @@ Resources:
 """
 
 
-@skip_if_v2_provider(reason="CFNV2:Validation")
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
+    + skipped_v2_items("$..Capabilities")
 )
 @markers.aws.validated
 def test_name_conflicts(aws_client, snapshot, cleanups):

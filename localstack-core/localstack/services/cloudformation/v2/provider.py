@@ -7,6 +7,7 @@ from typing import Any
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    AlreadyExistsException,
     CallAs,
     Changes,
     ChangeSetNameOrId,
@@ -638,6 +639,26 @@ class CloudformationProviderV2(CloudformationProvider):
             raise ValidationError("StackName must be specified")
 
         state = get_cloudformation_store(context.account_id, context.region)
+
+        active_stack_candidates = [
+            stack
+            for stack in state.stacks_v2.values()
+            if stack.stack_name == stack_name and stack.status not in [StackStatus.DELETE_COMPLETE]
+        ]
+
+        # TODO: fix/implement this code path
+        #   this needs more investigation how Cloudformation handles it (e.g. normal stack create or does it create a separate changeset?)
+        # REVIEW_IN_PROGRESS is another special status
+        # in this case existing changesets are set to obsolete and the stack is created
+        # review_stack_candidates = [s for s in stack_candidates if s.status == StackStatus.REVIEW_IN_PROGRESS]
+        # if review_stack_candidates:
+        # set changesets to obsolete
+        # for cs in review_stack_candidates[0].change_sets:
+        #     cs.execution_status = ExecutionStatus.OBSOLETE
+
+        if active_stack_candidates:
+            raise AlreadyExistsException(f"Stack [{stack_name}] already exists")
+
         # TODO: copied from create_change_set, consider unifying
         template_body = request.get("TemplateBody")
         # s3 or secretsmanager url
@@ -747,7 +768,7 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack_name:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackNotFoundError(stack_name)
+                raise ValidationError(f"Stack with id {stack_name} does not exist")
             stacks = [stack]
         else:
             stacks = state.stacks_v2.values()
