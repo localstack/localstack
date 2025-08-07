@@ -219,7 +219,6 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange(
         self, deploy_cfn_template, aws_client, snapshot
@@ -239,7 +238,7 @@ class TestStacksApi:
 
         snapshot.match("no_change_exception", ctx.value.response)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
+    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange_transformation(
         self, deploy_cfn_template, aws_client
