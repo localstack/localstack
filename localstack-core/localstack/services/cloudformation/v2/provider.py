@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
     AlreadyExistsException,
@@ -78,7 +79,6 @@ from localstack.aws.api.cloudformation import (
     Stack as ApiStack,
 )
 from localstack.aws.connect import connect_to
-from localstack.config import CFN_VERBOSE_ERRORS
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
@@ -536,7 +536,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 LOG.error(
                     "Execute change set failed: %s",
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG) and CFN_VERBOSE_ERRORS,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 new_stack_status = StackStatus.UPDATE_FAILED
                 if change_set.change_set_type == ChangeSetType.CREATE:
@@ -741,7 +741,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.resolved_parameters = change_set.resolved_parameters
             except Exception as e:
                 LOG.error(
-                    "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                    "Create Stack set failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.CREATE_FAILED)
 
@@ -1371,7 +1373,11 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.template_body = change_set.template_body
                 stack.resolved_parameters = change_set.resolved_parameters
             except Exception as e:
-                LOG.error("Update Stack failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING))
+                LOG.error(
+                    "Update Stack failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
+                )
                 stack.set_stack_status(StackStatus.UPDATE_FAILED)
 
         start_worker_thread(_run)
@@ -1434,7 +1440,7 @@ class CloudformationProviderV2(CloudformationProvider):
                     "Failed to delete stack '%s': %s",
                     stack.stack_name,
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
 

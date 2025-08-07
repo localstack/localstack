@@ -236,7 +236,7 @@ def get_resource_type(resource: dict) -> str:
         LOG.warning(
             "Failed to retrieve resource type %s",
             resource.get("Type"),
-            exc_info=LOG.isEnabledFor(logging.DEBUG),
+            exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
         )
 
 
@@ -577,7 +577,7 @@ class ResourceProviderExecutor:
                 LOG.warning(
                     "Failed to load PRO resource type %s as a ResourceProvider.",
                     resource_type,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
 
         # 2. try to load community resource provider
@@ -592,7 +592,7 @@ class ResourceProviderExecutor:
                 LOG.warning(
                     "Failed to load community resource type %s as a ResourceProvider.",
                     resource_type,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
 
         # we could not find the resource provider
