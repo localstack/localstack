@@ -71,7 +71,7 @@ def pytest_runtestloop(session: Session):
 
     # configure
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
-    os.environ[INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE] = "1"
+    os.environ[INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE] = "0"
 
     safe_requests.verify_ssl = False
 
