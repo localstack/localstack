@@ -78,6 +78,7 @@ from localstack.aws.api.cloudformation import (
     Stack as ApiStack,
 )
 from localstack.aws.connect import connect_to
+from localstack.config import CFN_VERBOSE_ERRORS
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
@@ -533,7 +534,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.template_body = change_set.template_body
             except Exception as e:
                 LOG.error(
-                    "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                    "Execute change set failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and CFN_VERBOSE_ERRORS,
                 )
                 new_stack_status = StackStatus.UPDATE_FAILED
                 if change_set.change_set_type == ChangeSetType.CREATE:

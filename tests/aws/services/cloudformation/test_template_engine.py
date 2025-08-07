@@ -862,7 +862,7 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
+    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -994,7 +994,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
+    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1047,7 +1047,7 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
+    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1120,7 +1120,7 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
+    @skip_if_v2_provider(reason="CFNV2:Transform")
     @pytest.mark.parametrize(
         "macro_function",
         [
@@ -1227,7 +1227,6 @@ class TestMacros:
 
 
 class TestStackEvents:
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
