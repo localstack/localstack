@@ -47,6 +47,7 @@ from localstack.services.cloudformation.engine.v2.resolving import (
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import (
     exports_map,
 )
@@ -372,7 +373,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_mapping: NodeMapping = self._get_node_mapping(map_name=map_name)
         top_level_value = node_mapping.bindings.bindings.get(top_level_key)
         if not isinstance(top_level_value, NodeObject):
-            raise RuntimeError()
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         second_level_value = top_level_value.bindings.get(second_level_key)
         mapping_value_delta = self.visit(second_level_value)
         return mapping_value_delta
