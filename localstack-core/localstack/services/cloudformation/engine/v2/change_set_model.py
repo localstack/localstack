@@ -728,7 +728,7 @@ class ChangeSetModel:
         )
         if not isinstance(node_condition, NodeCondition):
             raise RuntimeError()
-        change_type = parent_change_type_of([node_condition, *arguments[1:]])
+        change_type = parent_change_type_of([node_condition, *arguments.array[1:]])
         return change_type
 
     def _resolve_requires_replacement(
