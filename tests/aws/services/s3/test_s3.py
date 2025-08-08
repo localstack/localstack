@@ -3981,7 +3981,7 @@ class TestS3:
         snapshot.match("get-object-part", get_object_part)
 
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches LOCALSTACK_HOST
+    @markers.requires_in_process  # Patches LOCALSTACK_HOST
     def test_set_external_hostname(
         self, s3_bucket, allow_bucket_acl, s3_multipart_upload, monkeypatch, snapshot, aws_client
     ):
@@ -4655,7 +4655,7 @@ class TestS3:
     )
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches the kms validation
+    @markers.requires_in_process  # Patches the kms validation
     def test_s3_sse_validate_kms_key(
         self,
         aws_client_factory,
@@ -4807,7 +4807,7 @@ class TestS3:
             "$..ETag",  # the ETag is different as we don't encrypt the object with the KMS key
         ]
     )
-    @pytest.mark.requires_in_process  # Patches the kms validation
+    @markers.requires_in_process  # Patches the kms validation
     def test_s3_sse_validate_kms_key_state(
         self, s3_bucket, kms_create_key, monkeypatch, snapshot, aws_client
     ):
@@ -6076,7 +6076,7 @@ class TestS3PresignedUrl:
     # # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # # may not be suitable for parallel execution
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # monkeypatches signature validation
+    @markers.requires_in_process  # monkeypatches signature validation
     def test_presign_with_additional_query_params(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -6219,7 +6219,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "verify_signature", (pytest.param(True, marks=pytest.mark.requires_in_process), False)
+        "verify_signature", (pytest.param(True, marks=markers.requires_in_process), False)
     )
     def test_put_url_metadata_with_sig_s3v4(
         self,
@@ -6296,7 +6296,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
-        "verify_signature", (pytest.param(True, marks=pytest.mark.requires_in_process), False)
+        "verify_signature", (pytest.param(True, marks=markers.requires_in_process), False)
     )
     def test_put_url_metadata_with_sig_s3(
         self,
@@ -6398,9 +6398,9 @@ class TestS3PresignedUrl:
     @pytest.mark.parametrize(
         "signature_version, verify_signature",
         [
-            pytest.param("s3", True, marks=pytest.mark.requires_in_process),
+            pytest.param("s3", True, marks=markers.requires_in_process),
             ("s3", False),
-            pytest.param("s3v4", True, marks=pytest.mark.requires_in_process),
+            pytest.param("s3v4", True, marks=markers.requires_in_process),
             ("s3v4", False),
         ],
     )
@@ -6490,7 +6490,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_presigned_url_expired(
         self,
         s3_bucket,
@@ -6538,7 +6538,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_put_presigned_url_with_different_headers(
         self,
         s3_bucket,
@@ -6646,7 +6646,7 @@ class TestS3PresignedUrl:
         snapshot.match("wrong-content-encoding-response", exception)
 
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_put_presigned_url_same_header_and_qs_parameter(
         self,
         s3_bucket,
@@ -6996,7 +6996,7 @@ class TestS3PresignedUrl:
         ],
     )
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_signature_authentication_expired(
         self,
         s3_create_bucket,
@@ -7038,7 +7038,7 @@ class TestS3PresignedUrl:
         ],
     )
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_signature_authentication(
         self,
         s3_create_bucket,
@@ -7210,7 +7210,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_v4_x_amz_in_qs(
         self,
         s3_bucket,
@@ -7302,7 +7302,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_v4_signed_headers_in_qs(
         self,
         s3_bucket,
@@ -7379,7 +7379,7 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
 
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_pre_signed_url_forward_slash_bucket(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -7435,7 +7435,7 @@ class TestS3PresignedUrl:
         assert req.content == b"123"
 
     @markers.aws.validated
-    @pytest.mark.requires_in_process  # Patches skip signature validation
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_ignored_special_headers(
         self,
         s3_bucket,

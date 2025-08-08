@@ -1,6 +1,5 @@
 import json
 
-import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer, RegexTransformer
 
 import localstack.testing.config
@@ -30,7 +29,7 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata", "$..ExecutedVersion"]
 )
-@pytest.mark.requires_in_process
+@markers.requires_in_process
 class TestBaseScenarios:
     @markers.aws.validated
     def test_lambda_invoke(
