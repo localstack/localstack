@@ -770,52 +770,54 @@ class CloudformationProviderV2(CloudformationProvider):
 
         describe_stack_output: list[ApiStack] = []
         for stack in stacks:
-            stack_description = ApiStack(
-                Description=stack.description,
-                CreationTime=stack.creation_time,
-                DeletionTime=stack.deletion_time,
-                StackId=stack.stack_id,
-                StackName=stack.stack_name,
-                StackStatus=stack.status,
-                StackStatusReason=stack.status_reason,
-                # fake values
-                DisableRollback=False,
-                DriftInformation=StackDriftInformation(
-                    StackDriftStatus=StackDriftStatus.NOT_CHECKED
-                ),
-                EnableTerminationProtection=stack.enable_termination_protection,
-                RollbackConfiguration=RollbackConfiguration(),
-                Tags=[],
-                NotificationARNs=[],
-                # "Parameters": stack.resolved_parameters,
-            )
-            if stack.status != StackStatus.REVIEW_IN_PROGRESS:
-                # TODO: actually track updated time
-                stack_description["LastUpdatedTime"] = stack.creation_time
-            if stack.capabilities:
-                stack_description["Capabilities"] = stack.capabilities
-            # TODO: confirm the logic for this
-            if change_set_id := stack.change_set_id:
-                stack_description["ChangeSetId"] = change_set_id
-
-            if stack.resolved_parameters:
-                stack_description["Parameters"] = []
-                for name, resolved_parameter in stack.resolved_parameters.items():
-                    parameter = Parameter(
-                        ParameterKey=name,
-                        ParameterValue=resolved_parameter.get("given_value")
-                        or resolved_parameter.get("default_value"),
-                    )
-                    if resolved_value := resolved_parameter.get("resolved_value"):
-                        parameter["ResolvedValue"] = resolved_value
-                    stack_description["Parameters"].append(parameter)
-
-            if stack.resolved_outputs:
-                stack_description["Outputs"] = stack.resolved_outputs
-
-            describe_stack_output.append(stack_description)
+            describe_stack_output.append(self._describe_stack(stack))
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
+
+    @staticmethod
+    def _describe_stack(stack: Stack) -> ApiStack:
+        stack_description = ApiStack(
+            Description=stack.description,
+            CreationTime=stack.creation_time,
+            DeletionTime=stack.deletion_time,
+            StackId=stack.stack_id,
+            StackName=stack.stack_name,
+            StackStatus=stack.status,
+            StackStatusReason=stack.status_reason,
+            # fake values
+            DisableRollback=False,
+            DriftInformation=StackDriftInformation(StackDriftStatus=StackDriftStatus.NOT_CHECKED),
+            EnableTerminationProtection=stack.enable_termination_protection,
+            RollbackConfiguration=RollbackConfiguration(),
+            Tags=[],
+            NotificationARNs=[],
+            # "Parameters": stack.resolved_parameters,
+        )
+        if stack.status != StackStatus.REVIEW_IN_PROGRESS:
+            # TODO: actually track updated time
+            stack_description["LastUpdatedTime"] = stack.creation_time
+        if stack.capabilities:
+            stack_description["Capabilities"] = stack.capabilities
+        # TODO: confirm the logic for this
+        if change_set_id := stack.change_set_id:
+            stack_description["ChangeSetId"] = change_set_id
+
+        if stack.resolved_parameters:
+            stack_description["Parameters"] = []
+            for name, resolved_parameter in stack.resolved_parameters.items():
+                parameter = Parameter(
+                    ParameterKey=name,
+                    ParameterValue=resolved_parameter.get("given_value")
+                    or resolved_parameter.get("default_value"),
+                )
+                if resolved_value := resolved_parameter.get("resolved_value"):
+                    parameter["ResolvedValue"] = resolved_value
+                stack_description["Parameters"].append(parameter)
+
+        if stack.resolved_outputs:
+            stack_description["Outputs"] = stack.resolved_outputs
+
+        return stack_description
 
     @handler("ListStacks")
     def list_stacks(
@@ -828,7 +830,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
 
         stacks = [
-            s.describe_details()
+            self._describe_stack(s)
             for s in state.stacks_v2.values()
             if not stack_status_filter or s.status in stack_status_filter
         ]
