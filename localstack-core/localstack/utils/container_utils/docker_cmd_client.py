@@ -266,7 +266,7 @@ class CmdDockerClient(ContainerClient):
             ) from e
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        if check_existence and container_name not in self.get_running_container_names():
+        if check_existence and container_name not in self.get_all_container_names():
             return
         cmd = self._docker_cmd() + ["rm"]
         if force:
