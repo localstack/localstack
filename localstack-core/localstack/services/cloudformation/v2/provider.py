@@ -173,7 +173,7 @@ def find_change_set_v2(
     state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
 ) -> ChangeSet | None:
     if is_changeset_arn(change_set_name):
-        return state.change_sets[change_set_name]
+        return state.change_sets.get(change_set_name)
     else:
         if stack_name is not None:
             stack = find_stack_v2(state, stack_name)
@@ -185,7 +185,9 @@ def find_change_set_v2(
                 if change_set_candidate.change_set_name == change_set_name:
                     return change_set_candidate
         else:
-            raise ValueError("No stack name specified when finding change set")
+            raise ValidationError(
+                "StackName must be specified if ChangeSetName is not specified as an ARN."
+            )
 
 
 def find_stack_set_v2(state: CloudFormationStore, stack_set_name: str) -> StackSet | None:
@@ -618,16 +620,7 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DeleteChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-
-        if is_changeset_arn(change_set_name):
-            change_set = state.change_sets.get(change_set_name)
-        elif not is_changeset_arn(change_set_name) and stack_name:
-            change_set = find_change_set_v2(state, change_set_name, stack_name)
-        else:
-            raise ValidationError(
-                "StackName must be specified if ChangeSetName is not specified as an ARN."
-            )
-
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
         if not change_set:
             return DeleteChangeSetOutput()
 
