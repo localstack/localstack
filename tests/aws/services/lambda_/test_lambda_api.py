@@ -557,7 +557,7 @@ class TestLambdaFunction:
         snapshot.match("wrong_region_exception", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.requires_in_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
+    @markers.requires_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
     def test_lambda_code_location_zipfile(
         self, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
@@ -603,7 +603,7 @@ class TestLambdaFunction:
         )
 
     @markers.aws.validated
-    @pytest.mark.requires_in_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
+    @markers.requires_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
     def test_lambda_code_location_s3(
         self, s3_bucket, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
@@ -1502,7 +1502,7 @@ class TestLambdaFunction:
         reason="Test will fail against other executors as they are not patched to take longer for the update",
     )
     @markers.aws.validated
-    @pytest.mark.requires_in_docker
+    @markers.requires_docker
     def test_lambda_concurrent_config_updates(
         self, aws_client, create_lambda_function, lambda_su_role, snapshot, monkeypatch
     ):
@@ -1696,7 +1696,7 @@ class TestLambdaImages:
                 LOG.debug("Error cleaning up repository %s: %s", repository_name, e)
 
     @markers.aws.validated
-    @pytest.mark.requires_in_docker  # Requires docker for image hash
+    @markers.requires_docker  # Requires docker for image hash
     def test_lambda_image_crud(
         self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
@@ -2099,7 +2099,7 @@ class TestLambdaVersions:
         snapshot.match("publish_result", publish_result)
 
     @markers.aws.validated
-    @pytest.mark.requires_in_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
+    @markers.requires_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
     def test_publish_with_update(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
