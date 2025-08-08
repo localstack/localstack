@@ -111,7 +111,7 @@ class TestRuntimeValidation:
     @markers.aws.validated
     @markers.lambda_runtime_update
     @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
-    @pytest.mark.requires_in_process
+    @markers.requires_in_process
     def test_create_deprecated_function_runtime_with_validation_enabled(
         self, runtime, lambda_su_role, aws_client, monkeypatch, snapshot
     ):
@@ -1449,7 +1449,7 @@ class TestLambdaFunction:
         reason="Test will fail against other executors as they are not patched to take longer for the update",
     )
     @markers.aws.validated
-    @pytest.mark.requires_in_process
+    @markers.requires_in_process
     def test_lambda_concurrent_code_updates(
         self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot, monkeypatch
     ):

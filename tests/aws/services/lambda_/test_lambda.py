@@ -516,7 +516,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_ulimits", invoke_result)
 
     @markers.aws.only_localstack
-    @pytest.mark.requires_in_process
+    @markers.requires_in_process
     def test_ignore_architecture(self, create_lambda_function, monkeypatch, aws_client):
         """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
         monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
@@ -808,7 +808,7 @@ class TestLambdaBehavior:
             "$..Payload.environment._X_AMZN_TRACE_ID",
         ]
     )
-    @pytest.mark.requires_in_process
+    @markers.requires_in_process
     def test_lambda_init_environment(
         self, aws_client, create_lambda_function, snapshot, monkeypatch
     ):
@@ -3531,7 +3531,7 @@ class TestRequestIdHandling:
         snapshot.match("end_log_entries", end_log_entries)
 
     @markers.aws.validated
-    @pytest.mark.requires_in_process
+    @markers.requires_in_process
     def test_request_id_async_invoke_with_retry(
         self, aws_client, create_lambda_function, monkeypatch, snapshot
     ):
