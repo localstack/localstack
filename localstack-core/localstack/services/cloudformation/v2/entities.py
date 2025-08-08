@@ -82,6 +82,7 @@ class Stack:
     enable_termination_protection: bool
     processed_template: dict | None
     template_body: str | None
+    template: dict | None
 
     # state after deploy
     resolved_parameters: dict[str, str]
@@ -96,6 +97,7 @@ class Stack:
         region_name: str,
         request_payload: CreateChangeSetInput | CreateStackInput,
         initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
+        template: dict | None = None,
     ):
         self.account_id = account_id
         self.region_name = region_name
@@ -108,6 +110,7 @@ class Stack:
         self.enable_termination_protection = False
         self.processed_template = None
         self.template_body = None
+        self.template = template
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
@@ -290,6 +293,22 @@ class ChangeSet:
             region_name=self.stack.region_name,
         )
         self.processed_template = None
+
+    def propagate_state_to_stack(
+        self, result: ChangeSetModelExecutorResult, new_stack_status: StackStatus
+    ):
+        self.stack.set_stack_status(new_stack_status)
+        self.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
+        self.stack.resolved_resources = result.resources
+        self.stack.resolved_parameters = self.resolved_parameters
+        self.stack.resolved_outputs = result.outputs
+        self.stack.resolved_exports = result.exports
+
+        # if the deployment succeeded, update the stack's template representation to that
+        # which was just deployed
+        self.stack.template = self.template
+        self.stack.processed_template = self.processed_template
+        self.stack.template_body = self.template_body
 
     def set_update_model(self, update_model: UpdateModel) -> None:
         self.update_model = update_model

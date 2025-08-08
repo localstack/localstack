@@ -534,18 +534,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 new_stack_status = StackStatus.UPDATE_COMPLETE
                 if change_set.change_set_type == ChangeSetType.CREATE:
                     new_stack_status = StackStatus.CREATE_COMPLETE
-                change_set.stack.set_stack_status(new_stack_status)
-                change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
-                change_set.stack.resolved_resources = result.resources
-                change_set.stack.resolved_parameters = change_set.resolved_parameters
-                change_set.stack.resolved_outputs = result.outputs
-                change_set.stack.resolved_exports = result.exports
-
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                change_set.stack.template = change_set.template
-                change_set.stack.processed_template = change_set.processed_template
-                change_set.stack.template_body = change_set.template_body
+                change_set.propagate_state_to_stack(result, new_stack_status)
             except Exception as e:
                 LOG.error(
                     "Execute change set failed: %s",
@@ -736,14 +725,7 @@ class CloudformationProviderV2(CloudformationProvider):
         def _run(*args):
             try:
                 result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.CREATE_COMPLETE)
-                stack.resolved_resources = result.resources
-                stack.resolved_outputs = result.outputs
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                stack.template = change_set.template
-                stack.template_body = change_set.template_body
-                stack.resolved_parameters = change_set.resolved_parameters
+                change_set.propagate_state_to_stack(result, StackStatus.CREATE_COMPLETE)
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s",
@@ -1371,14 +1353,7 @@ class CloudformationProviderV2(CloudformationProvider):
         def _run(*args):
             try:
                 result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.UPDATE_COMPLETE)
-                stack.resolved_resources = result.resources
-                stack.resolved_outputs = result.outputs
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                stack.template = change_set.template
-                stack.template_body = change_set.template_body
-                stack.resolved_parameters = change_set.resolved_parameters
+                change_set.propagate_state_to_stack(result, StackStatus.UPDATE_COMPLETE)
             except Exception as e:
                 LOG.error(
                     "Update Stack failed: %s",
