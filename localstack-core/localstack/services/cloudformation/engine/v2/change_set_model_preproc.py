@@ -47,6 +47,7 @@ from localstack.services.cloudformation.engine.v2.resolving import (
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import (
     exports_map,
 )
@@ -74,6 +75,8 @@ TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
 
 MOCKED_REFERENCE = "unknown"
+
+VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
@@ -223,7 +226,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if node_resource.name == resource_name:
                 self.visit(node_resource)
                 return node_resource
-        raise RuntimeError(f"No resource '{resource_name}' was found")
+        raise ValidationError(
+            f"Template format error: Unresolved resource dependencies [{resource_name}] in the Resources block of the template"
+        )
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
@@ -238,7 +243,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _deployed_property_value_of(
         self, resource_logical_id: str, property_name: str, resolved_resources: dict
     ) -> Any:
-        # TODO: typing around resolved resources is needed and should be reflected here.
+        # We have to override this function to make sure it does not try to access the
+        # resolved resource
 
         # Before we can obtain deployed value for a resource, we need to first ensure to
         # process the resource if this wasn't processed already. Ideally, values should only
@@ -372,8 +378,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_mapping: NodeMapping = self._get_node_mapping(map_name=map_name)
         top_level_value = node_mapping.bindings.bindings.get(top_level_key)
         if not isinstance(top_level_value, NodeObject):
-            raise RuntimeError()
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         second_level_value = top_level_value.bindings.get(second_level_key)
+        if not isinstance(second_level_value, TerminalValue):
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         mapping_value_delta = self.visit(second_level_value)
         return mapping_value_delta
 
@@ -1070,6 +1080,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
+            raise ValidationError(
+                f"Template format error: Resource name {node_resource.name} is non alphanumeric."
+            )
         change_type = node_resource.change_type
         condition_before = Nothing
         condition_after = Nothing

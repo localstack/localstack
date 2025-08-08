@@ -444,7 +444,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 LOG.warning(
                     "Resource provider operation failed: '%s'",
                     reason,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 event = ProgressEvent(
                     OperationStatus.FAILED,

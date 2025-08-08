@@ -848,7 +848,6 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
-@skip_if_v2_provider(reason="CFNV2:DeleteChangeSet")
 @markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""

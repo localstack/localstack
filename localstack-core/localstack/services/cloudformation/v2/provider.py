@@ -5,6 +5,7 @@ from collections import defaultdict
 from datetime import UTC, datetime
 from typing import Any
 
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
     CallAs,
@@ -48,6 +49,74 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
+    Parameter,
+    PhysicalResourceId,
+    RetainExceptOnCreate,
+    RetainResources,
+    RoleARN,
+    RollbackConfiguration,
+    StackDriftInformation,
+    StackDriftStatus,
+    StackName,
+    StackNameOrId,
+    StackResourceDetail,
+    StackResourceSummary,
+    StackSetName,
+    StackSetNotFoundException,
+    StackSetOperation,
+    StackSetOperationAction,
+    StackSetOperationStatus,
+    StackStatus,
+    StackStatusFilter,
+    TemplateStage,
+    UpdateStackInput,
+    UpdateStackOutput,
+    UpdateTerminationProtectionOutput,
+)
+from localstack.aws.api.cloudformation import (
+    AlreadyExistsException,
+    CallAs,
+    Changes,
+    ChangeSetNameOrId,
+    ChangeSetNotFoundException,
+    ChangeSetStatus,
+    ChangeSetType,
+    ClientRequestToken,
+    CreateChangeSetInput,
+    CreateChangeSetOutput,
+    CreateStackInput,
+    CreateStackInstancesInput,
+    CreateStackInstancesOutput,
+    CreateStackOutput,
+    CreateStackSetInput,
+    CreateStackSetOutput,
+    DeleteChangeSetOutput,
+    DeleteStackInstancesInput,
+    DeleteStackInstancesOutput,
+    DeleteStackSetOutput,
+    DeletionMode,
+    DescribeChangeSetOutput,
+    DescribeStackEventsOutput,
+    DescribeStackResourceOutput,
+    DescribeStackResourcesOutput,
+    DescribeStackSetOperationOutput,
+    DescribeStacksOutput,
+    DisableRollback,
+    EnableTerminationProtection,
+    ExecuteChangeSetOutput,
+    ExecutionStatus,
+    GetTemplateOutput,
+    GetTemplateSummaryInput,
+    GetTemplateSummaryOutput,
+    IncludePropertyValues,
+    InsufficientCapabilitiesException,
+    InvalidChangeSetStatusException,
+    ListExportsOutput,
+    ListStackResourcesOutput,
+    ListStacksOutput,
+    LogicalResourceId,
+    NextToken,
+    Output,
     Parameter,
     PhysicalResourceId,
     RetainExceptOnCreate,
@@ -172,7 +241,7 @@ def find_change_set_v2(
     state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
 ) -> ChangeSet | None:
     if is_changeset_arn(change_set_name):
-        return state.change_sets[change_set_name]
+        return state.change_sets.get(change_set_name)
     else:
         if stack_name is not None:
             stack = find_stack_v2(state, stack_name)
@@ -184,7 +253,9 @@ def find_change_set_v2(
                 if change_set_candidate.change_set_name == change_set_name:
                     return change_set_candidate
         else:
-            raise ValueError("No stack name specified when finding change set")
+            raise ValidationError(
+                "StackName must be specified if ChangeSetName is not specified as an ARN."
+            )
 
 
 def find_stack_set_v2(state: CloudFormationStore, stack_set_name: str) -> StackSet | None:
@@ -212,6 +283,7 @@ class CloudformationProviderV2(CloudformationProvider):
     ) -> dict[str, EngineParameter]:
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
+        invalid_parameters = []
         for name, parameter in template_parameters.items():
             given_value = parameters.get(name)
             default_value = parameter.get("Default")
@@ -230,9 +302,13 @@ class CloudformationProviderV2(CloudformationProvider):
                         f"Parameter {name} should either have input value or default value"
                     )
             elif given_value is None and default_value is None:
-                raise ValidationError(f"Parameters: [{name}] must have values")
+                invalid_parameters.append(name)
+                continue
 
             resolved_parameters[name] = resolved_parameter
+
+        if invalid_parameters:
+            raise ValidationError(f"Parameters: [{','.join(invalid_parameters)}] must have values")
 
         for name, parameter in resolved_parameters.items():
             if (
@@ -546,7 +622,9 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.template_body = change_set.template_body
             except Exception as e:
                 LOG.error(
-                    "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                    "Execute change set failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 new_stack_status = StackStatus.UPDATE_FAILED
                 if change_set.change_set_type == ChangeSetType.CREATE:
@@ -631,16 +709,7 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DeleteChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-
-        if is_changeset_arn(change_set_name):
-            change_set = state.change_sets.get(change_set_name)
-        elif not is_changeset_arn(change_set_name) and stack_name:
-            change_set = find_change_set_v2(state, change_set_name, stack_name)
-        else:
-            raise ValidationError(
-                "StackName must be specified if ChangeSetName is not specified as an ARN."
-            )
-
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
         if not change_set:
             return DeleteChangeSetOutput()
 
@@ -658,6 +727,26 @@ class CloudformationProviderV2(CloudformationProvider):
             raise ValidationError("StackName must be specified")
 
         state = get_cloudformation_store(context.account_id, context.region)
+
+        active_stack_candidates = [
+            stack
+            for stack in state.stacks_v2.values()
+            if stack.stack_name == stack_name and stack.status not in [StackStatus.DELETE_COMPLETE]
+        ]
+
+        # TODO: fix/implement this code path
+        #   this needs more investigation how Cloudformation handles it (e.g. normal stack create or does it create a separate changeset?)
+        # REVIEW_IN_PROGRESS is another special status
+        # in this case existing changesets are set to obsolete and the stack is created
+        # review_stack_candidates = [s for s in stack_candidates if s.status == StackStatus.REVIEW_IN_PROGRESS]
+        # if review_stack_candidates:
+        # set changesets to obsolete
+        # for cs in review_stack_candidates[0].change_sets:
+        #     cs.execution_status = ExecutionStatus.OBSOLETE
+
+        if active_stack_candidates:
+            raise AlreadyExistsException(f"Stack [{stack_name}] already exists")
+
         # TODO: copied from create_change_set, consider unifying
         template_body = request.get("TemplateBody")
         # s3 or secretsmanager url
@@ -742,7 +831,9 @@ class CloudformationProviderV2(CloudformationProvider):
 
             except Exception as e:
                 LOG.error(
-                    "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                    "Create Stack set failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.CREATE_FAILED)
 
@@ -772,9 +863,7 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack_name:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackNotFoundError(
-                    stack_name, message_override=f"Stack with id {stack_name} does not exist"
-                )
+                raise ValidationError(f"Stack with id {stack_name} does not exist")
             stacks = [stack]
         else:
             stacks = state.stacks_v2.values()
@@ -1374,7 +1463,11 @@ class CloudformationProviderV2(CloudformationProvider):
                     if export_name := output.get("ExportName"):
                         stack.resolved_exports[export_name] = output["OutputValue"]
             except Exception as e:
-                LOG.error("Update Stack failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING))
+                LOG.error(
+                    "Update Stack failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
+                )
                 stack.set_stack_status(StackStatus.UPDATE_FAILED)
 
         start_worker_thread(_run)
@@ -1437,7 +1530,7 @@ class CloudformationProviderV2(CloudformationProvider):
                     "Failed to delete stack '%s': %s",
                     stack.stack_name,
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
 
