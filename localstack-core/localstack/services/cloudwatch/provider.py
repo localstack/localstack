@@ -5,7 +5,7 @@ from typing import Any
 from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
-from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
+from moto.cloudwatch.models import Alarm, CloudWatchBackend, MetricDatum
 
 from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -54,7 +54,7 @@ MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 LOG = logging.getLogger(__name__)
 
 
-@patch(target=FakeAlarm.update_state)
+@patch(target=Alarm.update_state)
 def update_state(target, self, reason, reason_data, state_value):
     if reason_data is None:
         reason_data = ""
@@ -127,7 +127,7 @@ def put_metric_alarm(
     threshold_metric_id: str | None = None,
     rule: str | None = None,
     tags: list[dict[str, str]] | None = None,
-) -> FakeAlarm:
+) -> Alarm:
     if description:
         description = escape(description)
     return target(
@@ -158,7 +158,7 @@ def put_metric_alarm(
     )
 
 
-def create_metric_data_query_from_alarm(alarm: FakeAlarm):
+def create_metric_data_query_from_alarm(alarm: Alarm):
     # TODO may need to be adapted for other use cases
     #  verified return value with a snapshot test
     return [
@@ -179,7 +179,7 @@ def create_metric_data_query_from_alarm(alarm: FakeAlarm):
 
 
 def create_message_response_update_state_lambda(
-    alarm: FakeAlarm, old_state, old_state_reason, old_state_timestamp
+    alarm: Alarm, old_state, old_state_reason, old_state_timestamp
 ):
     response = {
         "accountId": extract_account_id_from_arn(alarm.alarm_arn),
