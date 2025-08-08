@@ -363,6 +363,12 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
+
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
         if is_stack_arn(stack_name):
@@ -687,6 +693,12 @@ class CloudformationProviderV2(CloudformationProvider):
 
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
+
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
 
         if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
             "Transform" in structured_template.keys() or "Fn::Transform" in template_body

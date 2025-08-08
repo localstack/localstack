@@ -35,6 +35,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocEntityDelta,
     PreprocProperties,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils import testutil
@@ -313,6 +314,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         before = [] if change_type != ChangeType.CREATED else Nothing
         after = [] if change_type != ChangeType.REMOVED else Nothing
         for change_set_entity in node_transform.global_transforms:
+            if not isinstance(change_set_entity.name.value, str):
+                raise ValidationError("Key Name of transform definition must be a string.")
+
             delta: PreprocEntityDelta[GlobalTransform, GlobalTransform] = self.visit(
                 change_set_entity=change_set_entity
             )
