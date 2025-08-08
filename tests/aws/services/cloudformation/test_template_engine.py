@@ -575,7 +575,6 @@ class TestPreviousValues:
         assert len(stack_describe_response["Outputs"]) == 2
 
 
-@skip_if_v2_provider(reason="CFNV2:Imports")
 class TestImportValues:
     @markers.aws.validated
     def test_cfn_with_exports(self, deploy_cfn_template, aws_client, snapshot):
