@@ -529,6 +529,12 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
+
+                change_set.stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        change_set.stack.resolved_exports[export_name] = output["OutputValue"]
+
                 change_set.stack.change_set_id = change_set.change_set_id
                 change_set.stack.change_set_ids.append(change_set.change_set_id)
 
@@ -729,6 +735,11 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
                 stack.resolved_parameters = change_set.resolved_parameters
+                stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        stack.resolved_exports[export_name] = output["OutputValue"]
+
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
@@ -1358,6 +1369,10 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
                 stack.resolved_parameters = change_set.resolved_parameters
+                stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        stack.resolved_exports[export_name] = output["OutputValue"]
             except Exception as e:
                 LOG.error("Update Stack failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING))
                 stack.set_stack_status(StackStatus.UPDATE_FAILED)
