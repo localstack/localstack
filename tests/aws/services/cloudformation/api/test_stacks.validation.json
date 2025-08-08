@@ -27,7 +27,13 @@
     "last_validated_date": "2022-10-05T11:33:55+00:00"
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_special_chars": {
-    "last_validated_date": "2022-08-05T11:03:43+00:00"
+    "last_validated_date": "2025-08-08T15:20:07+00:00",
+    "durations_in_seconds": {
+      "setup": 1.41,
+      "call": 61.6,
+      "teardown": 4.47,
+      "total": 67.48
+    }
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_lifecycle": {
     "last_validated_date": "2023-11-28T12:24:40+00:00"

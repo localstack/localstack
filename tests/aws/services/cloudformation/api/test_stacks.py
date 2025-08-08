@@ -78,7 +78,6 @@ class TestStacksApi:
         assert "DeletionTime" in deleted
         snapshot.match("deleted", deleted)
 
-    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.aws.validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())

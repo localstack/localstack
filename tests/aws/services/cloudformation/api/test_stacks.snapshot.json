@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_special_chars": {
-    "recorded-date": "05-08-2022, 13:03:43",
+    "recorded-date": "08-08-2025, 15:32:46",
     "recorded-content": {
       "describe_stack": {
         "Capabilities": [

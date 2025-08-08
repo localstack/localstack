@@ -537,6 +537,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 change_set.stack.template = change_set.template
+                change_set.stack.description = change_set.template.get("Description")
                 change_set.stack.processed_template = change_set.processed_template
                 change_set.stack.template_body = change_set.template_body
             except Exception as e:
@@ -768,6 +769,7 @@ class CloudformationProviderV2(CloudformationProvider):
         describe_stack_output: list[ApiStack] = []
         for stack in stacks:
             stack_description = ApiStack(
+                Description=stack.description,
                 CreationTime=stack.creation_time,
                 DeletionTime=stack.deletion_time,
                 StackId=stack.stack_id,

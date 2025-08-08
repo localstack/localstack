@@ -62,6 +62,7 @@ class ResolvedResource(TypedDict):
 
 class Stack:
     stack_name: str
+    description: str | None
     parameters: list[ApiParameter]
     change_set_id: str | None
     status: StackStatus
@@ -123,6 +124,7 @@ class Stack:
         self.resource_states = {}
         self.events = []
         self.resolved_exports = {}
+        self.description = None
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
