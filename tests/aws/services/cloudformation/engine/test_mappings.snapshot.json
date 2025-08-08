@@ -62,5 +62,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_async_mapping_error_first_level_v2": {
+    "recorded-date": "07-08-2025, 14:34:05",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template error: Unable to get mapping for TopicSuffixMap::C::Suffix"
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_mappings.py::TestCloudFormationMappings::test_async_mapping_error_second_level_v2": {
+    "recorded-date": "07-08-2025, 15:05:47",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template error: Unable to get mapping for TopicSuffixMap::A::NotValid"
+    }
   }
 }
