@@ -90,8 +90,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return ChangeSetModelExecutorResult(
             resources=self.resources,
             outputs=self.outputs,
-            # TODO: extract from outputs
-            # exports=self.exports,
         )
 
     def _defer_action(self, action: DeferredAction):
