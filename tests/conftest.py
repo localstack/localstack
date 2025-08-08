@@ -98,4 +98,4 @@ def enable_stack_trace_for_tests(monkeypatch):
 
     This is useful for debugging purposes.
     """
-    monkeypatch.setenv(INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE, "0")
+    monkeypatch.setenv(INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE, "1")
