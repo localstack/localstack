@@ -1,7 +1,6 @@
 import copy
 import logging
 import uuid
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Final, Protocol
 
@@ -39,19 +38,16 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
+from localstack.services.cloudformation.v2.entities import (
+    ChangeSet,
+    ChangeSetModelExecutorResult,
+    ResolvedResource,
+)
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
-
-
-@dataclass
-class ChangeSetModelExecutorResult:
-    resources: dict[str, ResolvedResource]
-    outputs: dict
-    exports: dict
 
 
 class DeferredAction(Protocol):

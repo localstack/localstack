@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import NotRequired, TypedDict
 
@@ -39,6 +40,22 @@ from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
 
 
+class ResolvedResource(TypedDict):
+    LogicalResourceId: str
+    Type: str
+    Properties: dict
+    ResourceStatus: ResourceStatus
+    PhysicalResourceId: str | None
+    LastUpdatedTimestamp: datetime | None
+
+
+@dataclass
+class ChangeSetModelExecutorResult:
+    resources: dict[str, ResolvedResource]
+    outputs: dict
+    exports: dict
+
+
 # TODO: turn into class/dataclass
 class EngineParameter(TypedDict):
     """
@@ -49,15 +66,6 @@ class EngineParameter(TypedDict):
     given_value: NotRequired[str | None]
     resolved_value: NotRequired[str | None]
     default_value: NotRequired[str | None]
-
-
-class ResolvedResource(TypedDict):
-    LogicalResourceId: str
-    Type: str
-    Properties: dict
-    ResourceStatus: ResourceStatus
-    PhysicalResourceId: str | None
-    LastUpdatedTimestamp: datetime | None
 
 
 class Stack:
