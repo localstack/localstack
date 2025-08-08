@@ -13,7 +13,10 @@ from localstack.services.cloudformation.resource_provider import ResourceProvide
 from localstack.utils.strings import camel_to_snake_case
 
 if TYPE_CHECKING:
-    from localstack.services.cloudformation.v2.entities import EngineParameter
+    from localstack.services.cloudformation.v2.entities import (
+        EngineParameter,
+        engine_parameter_value,
+    )
 
 T = TypeVar("T")
 
@@ -1019,18 +1022,14 @@ class ChangeSetModel:
 
         before_parameter = Nothing
         if not is_nothing(before_parameter_dct):
-            before_parameter = (
-                before_parameter_dct.get("resolved_value")
-                or before_parameter_dct["given_value"]
-                or before_parameter_dct.get("default_value")
+            before_parameter = before_parameter_dct.get("resolved_value") or engine_parameter_value(
+                before_parameter_dct
             )
 
         after_parameter = Nothing
         if not is_nothing(after_parameter_dct):
-            after_parameter = (
-                after_parameter_dct.get("resolved_value")
-                or after_parameter_dct["given_value"]
-                or after_parameter_dct.get("default_value")
+            after_parameter = after_parameter_dct.get("resolved_value") or engine_parameter_value(
+                after_parameter_dct
             )
 
         parameter = self._visit_value(

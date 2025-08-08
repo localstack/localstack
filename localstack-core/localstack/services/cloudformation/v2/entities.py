@@ -45,6 +45,14 @@ class EngineParameter(TypedDict):
     default_value: NotRequired[str | None]
 
 
+def engine_parameter_value(parameter: EngineParameter) -> str:
+    value = parameter.get("given_value") or parameter.get("default_value")
+    if value is None:
+        raise RuntimeError("Parameter value is None")
+
+    return value
+
+
 class ResolvedResource(TypedDict):
     LogicalResourceId: str
     Type: str
