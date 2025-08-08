@@ -1012,8 +1012,13 @@ def test_multiple_create_changeset(aws_client, snapshot, cleanups):
     )
 
 
-@skip_if_v2_provider(reason="CFNV2:DescribeStacks")
-@markers.snapshot.skip_snapshot_verify(paths=["$..LastUpdatedTime", "$..StackStatusReason"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..LastUpdatedTime", "$..StackStatusReason"]
+    + skipped_v2_items(
+        # TODO
+        "$..Capabilities",
+    )
+)
 @markers.aws.validated
 def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
     """

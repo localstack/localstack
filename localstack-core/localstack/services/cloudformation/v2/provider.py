@@ -471,7 +471,7 @@ class CloudformationProviderV2(CloudformationProvider):
 
             change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
 
-        stack.change_set_id = change_set.change_set_id
+        # stack.change_set_id = change_set.change_set_id
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
 
@@ -531,6 +531,8 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
                 change_set.stack.resolved_exports = result.exports
+                change_set.stack.change_set_id = change_set.change_set_id
+                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
@@ -547,6 +549,8 @@ class CloudformationProviderV2(CloudformationProvider):
 
                 change_set.stack.set_stack_status(new_stack_status)
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
+                change_set.stack.change_set_id = change_set.change_set_id
+                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
         start_worker_thread(_run)
 
