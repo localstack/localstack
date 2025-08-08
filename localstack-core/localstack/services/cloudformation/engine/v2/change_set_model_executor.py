@@ -8,6 +8,7 @@ from typing import Final, Protocol
 from localstack import config
 from localstack.aws.api.cloudformation import (
     ChangeAction,
+    Output,
     ResourceStatus,
     StackStatus,
 )
@@ -50,8 +51,7 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 @dataclass
 class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
-    outputs: dict
-    exports: dict
+    outputs: list[Output]
 
 
 class DeferredAction(Protocol):
@@ -61,15 +61,13 @@ class DeferredAction(Protocol):
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict[str, ResolvedResource]]
-    outputs: Final[dict]
-    exports: Final[dict]
+    outputs: Final[list[Output]]
     _deferred_actions: list[DeferredAction]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
         self.resources = dict()
-        self.outputs = dict()
-        self.exports = dict()
+        self.outputs = []
         self._deferred_actions = list()
         self.resource_provider_executor = ResourceProviderExecutor(
             stack_name=change_set.stack.stack_name,
@@ -92,7 +90,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return ChangeSetModelExecutorResult(
             resources=self.resources,
             outputs=self.outputs,
-            exports=self.exports,
+            # TODO: extract from outputs
+            # exports=self.exports,
         )
 
     def _defer_action(self, action: DeferredAction):
@@ -228,11 +227,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
 
-        # TODO validate export name duplication in same template and all exports
-        if delta.after.export:
-            self.exports[delta.after.export.get("Name")] = delta.after.value
-
-        self.outputs[delta.after.name] = delta.after.value
+        output = Output(
+            OutputKey=delta.after.name,
+            OutputValue=delta.after.value,
+            # TODO
+            # Description=delta.after.description
+        )
+        if after.export:
+            output["ExportName"] = after.export["Name"]
+        self.outputs.append(output)
         return delta
 
     def _execute_resource_change(

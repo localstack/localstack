@@ -48,7 +48,6 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
-    Output,
     Parameter,
     PhysicalResourceId,
     RetainExceptOnCreate,
@@ -530,7 +529,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
-                change_set.stack.resolved_exports = result.exports
                 change_set.stack.change_set_id = change_set.change_set_id
                 change_set.stack.change_set_ids.append(change_set.change_set_id)
 
@@ -813,17 +811,7 @@ class CloudformationProviderV2(CloudformationProvider):
                     stack_description["Parameters"].append(parameter)
 
             if stack.resolved_outputs:
-                describe_outputs = []
-                for key, value in stack.resolved_outputs.items():
-                    describe_outputs.append(
-                        Output(
-                            # TODO(parity): Description, ExportName
-                            # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
-                            OutputKey=key,
-                            OutputValue=value,
-                        )
-                    )
-                stack_description["Outputs"] = describe_outputs
+                stack_description["Outputs"] = stack.resolved_outputs
 
             describe_stack_output.append(stack_description)
 
