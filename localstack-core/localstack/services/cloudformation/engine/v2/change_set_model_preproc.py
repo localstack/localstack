@@ -48,6 +48,7 @@ from localstack.services.cloudformation.engine.v2.resolving import (
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import (
     exports_map,
 )
@@ -75,6 +76,8 @@ TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
 
 MOCKED_REFERENCE = "unknown"
+
+VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
@@ -224,7 +227,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if node_resource.name == resource_name:
                 self.visit(node_resource)
                 return node_resource
-        raise RuntimeError(f"No resource '{resource_name}' was found")
+        raise ValidationError(
+            f"Template format error: Unresolved resource dependencies [{resource_name}] in the Resources block of the template"
+        )
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
@@ -239,7 +244,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _deployed_property_value_of(
         self, resource_logical_id: str, property_name: str, resolved_resources: dict
     ) -> Any:
-        # TODO: typing around resolved resources is needed and should be reflected here.
+        # We have to override this function to make sure it does not try to access the
+        # resolved resource
 
         # Before we can obtain deployed value for a resource, we need to first ensure to
         # process the resource if this wasn't processed already. Ideally, values should only
@@ -373,8 +379,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_mapping: NodeMapping = self._get_node_mapping(map_name=map_name)
         top_level_value = node_mapping.bindings.bindings.get(top_level_key)
         if not isinstance(top_level_value, NodeObject):
-            raise RuntimeError()
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         second_level_value = top_level_value.bindings.get(second_level_key)
+        if not isinstance(second_level_value, TerminalValue):
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         mapping_value_delta = self.visit(second_level_value)
         return mapping_value_delta
 
@@ -555,21 +565,38 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_if(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
-            condition_name = args[0]
-            boolean_expression_delta = self._resolve_condition(logical_id=condition_name)
-            return PreprocEntityDelta(
-                before=args[1] if boolean_expression_delta.before else args[2],
-                after=args[1] if boolean_expression_delta.after else args[2],
+        # `if` needs to be short-circuiting i.e. if the condition is True we don't evaluate the
+        # False branch. If the condition is False, we don't evaluate the True branch.
+        if len(node_intrinsic_function.arguments.array) != 3:
+            raise ValueError(
+                f"Incorrectly constructed Fn::If usage, expected 3 arguments, found {len(node_intrinsic_function.arguments.array)}"
             )
 
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=_compute_delta_for_if_statement,
-        )
-        return delta
+        condition_delta = self.visit(node_intrinsic_function.arguments.array[0])
+        if_delta = PreprocEntityDelta()
+        if not is_nothing(condition_delta.before):
+            node_condition = self._get_node_condition_if_exists(
+                condition_name=condition_delta.before
+            )
+            condition_value = self.visit(node_condition).before
+            if condition_value:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+            else:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+            if_delta.before = arg_delta.before
+
+        if not is_nothing(condition_delta.after):
+            node_condition = self._get_node_condition_if_exists(
+                condition_name=condition_delta.after
+            )
+            condition_value = self.visit(node_condition).after
+            if condition_value:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+            else:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+            if_delta.after = arg_delta.after
+
+        return if_delta
 
     def visit_node_intrinsic_function_fn_and(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -1054,6 +1081,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
+            raise ValidationError(
+                f"Template format error: Resource name {node_resource.name} is non alphanumeric."
+            )
         change_type = node_resource.change_type
         condition_before = Nothing
         condition_after = Nothing

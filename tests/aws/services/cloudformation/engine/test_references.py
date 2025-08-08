@@ -3,7 +3,6 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -75,7 +74,6 @@ class TestFnSub:
         snapshot.match("get-parameter-result", get_param_res)
 
 
-@skip_if_v2_provider(reason="CFNV2:Validation")
 @markers.aws.validated
 def test_useful_error_when_invalid_ref(deploy_cfn_template, snapshot):
     """
