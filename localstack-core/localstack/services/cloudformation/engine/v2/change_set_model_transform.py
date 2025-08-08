@@ -4,6 +4,7 @@ import os
 from typing import Any, Final, TypedDict
 
 import boto3
+import jsonpath_ng
 from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
@@ -12,13 +13,18 @@ from localstack.services.cloudformation.engine.policy_loader import create_polic
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
+    Transformer,
     execute_macro,
+    transformers,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     Maybe,
     NodeGlobalTransform,
+    NodeIntrinsicFunctionFnTransform,
     NodeParameter,
+    NodeProperties,
+    NodeResources,
     NodeTransform,
     Nothing,
     Scope,
@@ -27,10 +33,13 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,
     PreprocEntityDelta,
+    PreprocProperties,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.utils import testutil
+from localstack.utils.json import extract_jsonpath
 
 LOG = logging.getLogger(__name__)
 
@@ -193,7 +202,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             stack_parameters=parameters,
             transformation_parameters=transformation_parameters,
         )
-        # The type annotation on the v1 util appears to be incorrect.
         return transformed_template  # noqa
 
     def _apply_global_transform(
@@ -240,6 +248,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         parameters_before = parameters_delta.before
         parameters_after = parameters_delta.after
 
+        self.visit_node_resources(node_template.resources)
+
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
         )
@@ -248,31 +258,34 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         transformed_before_template = self._before_template
         if transform_before and not is_nothing(self._before_template):
-            transformed_before_template = self._before_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
-            if not transformed_before_template:
-                transformed_before_template = self._before_template
-                for before_global_transform in transform_before:
-                    if not is_nothing(before_global_transform.name):
-                        transformed_before_template = self._apply_global_transform(
-                            global_transform=before_global_transform,
-                            parameters=parameters_before,
-                            template=transformed_before_template,
-                        )
-                self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
+            transformed_before_template = self._before_template
+            for before_global_transform in transform_before:
+                if not is_nothing(before_global_transform.name):
+                    transformed_before_template = self._apply_global_transform(
+                        global_transform=before_global_transform,
+                        parameters=parameters_before,
+                        template=transformed_before_template,
+                    )
+
+            # Macro transformations won't remove the transform from the template
+            if "Transform" in transformed_before_template:
+                transformed_before_template.pop("Transform")
+            self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
         if transform_after and not is_nothing(self._after_template):
-            transformed_after_template = self._after_cache.get(_SCOPE_TRANSFORM_TEMPLATE_OUTCOME)
-            if not transformed_after_template:
-                transformed_after_template = self._after_template
-                for after_global_transform in transform_after:
-                    if not is_nothing(after_global_transform.name):
-                        transformed_after_template = self._apply_global_transform(
-                            global_transform=after_global_transform,
-                            parameters=parameters_after,
-                            template=transformed_after_template,
-                        )
-                self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
+            transformed_after_template = self._after_template
+            for after_global_transform in transform_after:
+                if not is_nothing(after_global_transform.name):
+                    transformed_after_template = self._apply_global_transform(
+                        global_transform=after_global_transform,
+                        parameters=parameters_after,
+                        template=transformed_after_template,
+                    )
+            # Macro transformations won't remove the transform from the template
+            if "Transform" in transformed_after_template:
+                transformed_after_template.pop("Transform")
+            self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
 
         self._save_runtime_cache()
 
@@ -301,6 +314,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         before = list() if change_type != ChangeType.CREATED else Nothing
         after = list() if change_type != ChangeType.REMOVED else Nothing
         for change_set_entity in node_transform.global_transforms:
+            if not isinstance(change_set_entity.name.value, str):
+                raise ValidationError("Key Name of transform definition must be a string.")
+
             delta: PreprocEntityDelta[GlobalTransform, GlobalTransform] = self.visit(
                 change_set_entity=change_set_entity
             )
@@ -311,3 +327,152 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if not is_nothing(after) and not is_nothing(delta_after):
                 after.append(delta_after)
         return PreprocEntityDelta(before=before, after=after)
+
+    def _compute_fn_transform(
+        self, macro_definition: Any, siblings: Any, resolved_parameters: Any
+    ) -> Any:
+        # TODO: add typing to arguments before this level.
+        # TODO: add schema validation
+        # TODO: add support for other transform types
+
+        account_id = self._change_set.account_id
+        region_name = self._change_set.region_name
+
+        def _normalize_transform(obj):
+            transforms = []
+
+            if isinstance(obj, str):
+                transforms.append({"Name": obj, "Parameters": {}})
+
+            if isinstance(obj, dict):
+                transforms.append(obj)
+
+            if isinstance(obj, list):
+                for v in obj:
+                    if isinstance(v, str):
+                        transforms.append({"Name": v, "Parameters": {}})
+
+                    if isinstance(v, dict):
+                        transforms.append(v)
+
+            return transforms
+
+        normalized_transforms = _normalize_transform(macro_definition)
+        transform_output = copy.deepcopy(siblings)
+        for transform in normalized_transforms:
+            transform_name = transform["Name"]
+            if transform_name in transformers.keys():
+                builtin_transformer_class = transformers[transform_name]
+                builtin_transformer: Transformer = builtin_transformer_class()
+                result = builtin_transformer.transform(
+                    account_id=account_id,
+                    region_name=region_name,
+                    parameters=transform["Parameters"],
+                )
+
+                transform_output.update(result)
+            else:
+                macros_store = get_cloudformation_store(
+                    account_id=account_id, region_name=region_name
+                ).macros
+
+                if transform["Name"] not in macros_store:
+                    raise RuntimeError("Unsupported transform ")
+
+                stack_parameters = {
+                    **self._change_set.stack.resolved_parameters,
+                    **self.visit_node_parameters(
+                        self._change_set.update_model.node_template.parameters
+                    ).after,
+                }
+
+                transform_output: Any = execute_macro(
+                    account_id=account_id,
+                    region_name=region_name,
+                    parsed_template=transform_output,  # TODO: review the requirements for this argument.
+                    macro=transform,  # TODO: review support for non dict bindings (v1).
+                    stack_parameters=stack_parameters,
+                    transformation_parameters=transform.get("Parameters"),
+                    is_intrinsic=True,
+                )
+
+        if isinstance(transform_output, dict) and "Fn::Transform" in transform_output:
+            transform_output.pop("Fn::Transform")
+
+        return transform_output
+
+    def _replace_at_jsonpath(self, template, node, result):
+        path = node.scope.to_jsonpath()
+        parent_path = ".".join(path.split(".")[:-1])
+
+        pattern = jsonpath_ng.parse(parent_path)
+        result_template = pattern.update(template, result)
+
+        return result_template
+
+    def visit_node_intrinsic_function_fn_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunctionFnTransform
+    ) -> PreprocEntityDelta:
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        parameters_delta = self.visit_node_parameters(
+            self._change_set.update_model.node_template.parameters
+        )
+
+        if not is_nothing(arguments_delta.before):
+            before = self._compute_fn_transform(
+                arguments_delta.before,
+                node_intrinsic_function.before_siblings,
+                parameters_delta.before,
+            )
+            updated_before_template = self._replace_at_jsonpath(
+                self._before_template, node_intrinsic_function, before
+            )
+            self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = updated_before_template
+        else:
+            before = Nothing
+
+        if not is_nothing(arguments_delta.after):
+            after = self._compute_fn_transform(
+                arguments_delta.after,
+                node_intrinsic_function.after_siblings,
+                parameters_delta.after,
+            )
+            updated_after_template = self._replace_at_jsonpath(
+                self._after_template, node_intrinsic_function, after
+            )
+            self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = updated_after_template
+        else:
+            after = Nothing
+
+        self._save_runtime_cache()
+        return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_properties(
+        self, node_properties: NodeProperties
+    ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
+        for i, node_property in enumerate(node_properties.properties):
+            if node_property.name == "Fn::Transform":
+                path = "$" + ".".join(node_property.scope.split("/")[:-1])
+                before_siblings = extract_jsonpath(self._before_template, path)
+                after_siblings = extract_jsonpath(self._after_template, path)
+                intrinsic_transform = NodeIntrinsicFunctionFnTransform(
+                    change_type=node_property.change_type,
+                    intrinsic_function=node_property.name,
+                    scope=node_property.scope,
+                    arguments=node_property.value,
+                    before_siblings=before_siblings,
+                    after_siblings=after_siblings,
+                )
+                self.visit(intrinsic_transform)
+                node_properties.properties.pop(i)
+                break
+
+        return super().visit_node_properties(node_properties=node_properties)
+
+    def visit_node_resources(self, node_resources: NodeResources) -> PreprocEntityDelta:
+        for i, node_resource in enumerate(node_resources.resources):
+            if isinstance(node_resource, NodeIntrinsicFunctionFnTransform):
+                self.visit(node_resource)
+                node_resources.resources.pop(i)
+                break
+        return super().visit_node_resources(node_resources=node_resources)

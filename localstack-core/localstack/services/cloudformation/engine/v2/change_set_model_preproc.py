@@ -1038,6 +1038,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_change_type = node_properties.change_type
         before_bindings = dict() if node_change_type != ChangeType.CREATED else Nothing
         after_bindings = dict() if node_change_type != ChangeType.REMOVED else Nothing
+
         for node_property in node_properties.properties:
             property_name = node_property.name
             delta = self.visit(node_property)
@@ -1216,3 +1217,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             resolver=_compute_fn_import_value,
         )
         return delta
+
+    def visit_node_intrinsic_function_fn_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        raise RuntimeError("Fn::Transform should have been handled by the Transformer")
