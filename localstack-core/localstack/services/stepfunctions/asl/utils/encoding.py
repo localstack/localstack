@@ -1,7 +1,7 @@
 import datetime
 import json
 from json import JSONEncoder
-from typing import Any, Optional
+from typing import Any
 
 
 class _DateTimeEncoder(JSONEncoder):
@@ -12,5 +12,5 @@ class _DateTimeEncoder(JSONEncoder):
             return str(obj)
 
 
-def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = None) -> str:
+def to_json_str(obj: Any, separators: tuple[str, str] | None = None) -> str:
     return json.dumps(obj, cls=_DateTimeEncoder, separators=separators)

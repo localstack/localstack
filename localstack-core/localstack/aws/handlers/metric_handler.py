@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -16,7 +15,7 @@ class MetricHandlerItem:
 
     request_id: str
     request_context: RequestContext
-    parameters_after_parse: Optional[List[str]]
+    parameters_after_parse: list[str] | None
 
     def __init__(self, request_contex: RequestContext) -> None:
         super().__init__()
@@ -35,7 +34,7 @@ class Metric:
     headers: str
     parameters: str
     status_code: int
-    response_code: Optional[str]
+    response_code: str | None
     exception: str
     origin: str
     xfail: bool
@@ -134,7 +133,7 @@ class Metric:
 
 
 class MetricHandler:
-    metric_data: List[Metric] = []
+    metric_data: list[Metric] = []
 
     def __init__(self) -> None:
         self.metrics_handler_items = {}

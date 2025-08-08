@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,17 +15,17 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class IAMGroupProperties(TypedDict):
-    Arn: Optional[str]
-    GroupName: Optional[str]
-    Id: Optional[str]
-    ManagedPolicyArns: Optional[list[str]]
-    Path: Optional[str]
-    Policies: Optional[list[Policy]]
+    Arn: str | None
+    GroupName: str | None
+    Id: str | None
+    ManagedPolicyArns: list[str] | None
+    Path: str | None
+    Policies: list[Policy] | None
 
 
 class Policy(TypedDict):
-    PolicyDocument: Optional[dict]
-    PolicyName: Optional[str]
+    PolicyDocument: dict | None
+    PolicyName: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

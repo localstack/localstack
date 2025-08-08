@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,24 +14,24 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2TransitGatewayProperties(TypedDict):
-    AmazonSideAsn: Optional[int]
-    AssociationDefaultRouteTableId: Optional[str]
-    AutoAcceptSharedAttachments: Optional[str]
-    DefaultRouteTableAssociation: Optional[str]
-    DefaultRouteTablePropagation: Optional[str]
-    Description: Optional[str]
-    DnsSupport: Optional[str]
-    Id: Optional[str]
-    MulticastSupport: Optional[str]
-    PropagationDefaultRouteTableId: Optional[str]
-    Tags: Optional[list[Tag]]
-    TransitGatewayCidrBlocks: Optional[list[str]]
-    VpnEcmpSupport: Optional[str]
+    AmazonSideAsn: int | None
+    AssociationDefaultRouteTableId: str | None
+    AutoAcceptSharedAttachments: str | None
+    DefaultRouteTableAssociation: str | None
+    DefaultRouteTablePropagation: str | None
+    Description: str | None
+    DnsSupport: str | None
+    Id: str | None
+    MulticastSupport: str | None
+    PropagationDefaultRouteTableId: str | None
+    Tags: list[Tag] | None
+    TransitGatewayCidrBlocks: list[str] | None
+    VpnEcmpSupport: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,15 +15,15 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaPermissionProperties(TypedDict):
-    Action: Optional[str]
-    FunctionName: Optional[str]
-    Principal: Optional[str]
-    EventSourceToken: Optional[str]
-    FunctionUrlAuthType: Optional[str]
-    Id: Optional[str]
-    PrincipalOrgID: Optional[str]
-    SourceAccount: Optional[str]
-    SourceArn: Optional[str]
+    Action: str | None
+    FunctionName: str | None
+    Principal: str | None
+    EventSourceToken: str | None
+    FunctionUrlAuthType: str | None
+    Id: str | None
+    PrincipalOrgID: str | None
+    SourceAccount: str | None
+    SourceArn: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

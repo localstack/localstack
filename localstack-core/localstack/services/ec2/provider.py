@@ -3,7 +3,7 @@ import json
 import logging
 import re
 from abc import ABC
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from botocore.parsers import ResponseParserError
 from moto.core.utils import camelcase_to_underscores, underscores_to_camelcase
@@ -173,13 +173,13 @@ class Ec2Provider(Ec2Api, ABC, ServiceLifecycleHook):
                 ReservedInstances(
                     AvailabilityZone="eu-central-1a",
                     Duration=2628000,
-                    End=datetime(2016, 6, 30, tzinfo=timezone.utc),
+                    End=datetime(2016, 6, 30, tzinfo=UTC),
                     FixedPrice=0.0,
                     InstanceCount=2,
                     InstanceType=InstanceType.t2_small,
                     ProductDescription=RIProductDescription.Linux_UNIX,
                     ReservedInstancesId=long_uid(),
-                    Start=datetime(2016, 1, 1, tzinfo=timezone.utc),
+                    Start=datetime(2016, 1, 1, tzinfo=UTC),
                     State=ReservedInstanceState.active,
                     UsagePrice=0.05,
                     CurrencyCode=CurrencyCodeValues.USD,

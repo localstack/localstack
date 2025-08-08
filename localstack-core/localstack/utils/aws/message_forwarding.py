@@ -3,7 +3,7 @@ import json
 import logging
 import re
 import uuid
-from typing import Dict, Optional
+from typing import Optional
 
 from moto.events.models import events_backends
 
@@ -31,10 +31,10 @@ AUTH_OAUTH = "OAUTH_CLIENT_CREDENTIALS"
 # TODO: refactor/split this. too much here is service specific
 def send_event_to_target(
     target_arn: str,
-    event: Dict,
-    target_attributes: Dict = None,
+    event: dict,
+    target_attributes: dict = None,
     asynchronous: bool = True,
-    target: Dict = None,
+    target: dict = None,
     role: str = None,
     source_arn: str = None,
     source_service: str = None,
@@ -155,7 +155,7 @@ def send_event_to_target(
         LOG.warning('Unsupported Events rule target ARN: "%s"', target_arn)
 
 
-def auth_keys_from_connection(connection: Dict):
+def auth_keys_from_connection(connection: dict):
     headers = {}
 
     auth_type = connection.get("AuthorizationType").upper()
@@ -164,9 +164,7 @@ def auth_keys_from_connection(connection: Dict):
         basic_auth_parameters = auth_parameters.get("BasicAuthParameters", {})
         username = basic_auth_parameters.get("Username", "")
         password = basic_auth_parameters.get("Password", "")
-        auth = "Basic " + to_str(
-            base64.b64encode("{}:{}".format(username, password).encode("ascii"))
-        )
+        auth = "Basic " + to_str(base64.b64encode(f"{username}:{password}".encode("ascii")))
         headers.update({"authorization": auth})
 
     if auth_type == AUTH_API_KEY:
@@ -206,7 +204,7 @@ def auth_keys_from_connection(connection: Dict):
 
         token_type = oauth_data.get("token_type", "")
         access_token = oauth_data.get("access_token", "")
-        auth_header = "{} {}".format(token_type, access_token)
+        auth_header = f"{token_type} {access_token}"
         headers.update({"authorization": auth_header})
 
     return headers
@@ -216,7 +214,7 @@ def list_of_parameters_to_object(items):
     return {item.get("Key"): item.get("Value") for item in items}
 
 
-def send_event_to_api_destination(target_arn, event, http_parameters: Optional[Dict] = None):
+def send_event_to_api_destination(target_arn, event, http_parameters: Optional[dict] = None):
     """Send an event to an EventBridge API destination
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 
@@ -291,7 +289,7 @@ def add_api_destination_authorization(destination, headers, event):
     return endpoint
 
 
-def add_target_http_parameters(http_parameters: Dict, endpoint: str, headers: Dict, body):
+def add_target_http_parameters(http_parameters: dict, endpoint: str, headers: dict, body):
     endpoint = add_path_parameters_to_url(endpoint, http_parameters.get("PathParameterValues", []))
 
     # The request should prioritze connection header/query parameters over target params if there is an overlap

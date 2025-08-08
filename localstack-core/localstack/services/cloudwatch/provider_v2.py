@@ -4,8 +4,6 @@ import logging
 import re
 import threading
 import uuid
-from datetime import timezone
-from typing import List
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.cloudwatch import (
@@ -244,7 +242,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         label_options: LabelOptions = None,
         **kwargs,
     ) -> GetMetricDataOutput:
-        results: List[MetricDataResult] = []
+        results: list[MetricDataResult] = []
         limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
         nxt = None
@@ -345,7 +343,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             if old_state == state_value:
                 return
 
-            alarm.alarm["StateTransitionedTimestamp"] = datetime.datetime.now(timezone.utc)
+            alarm.alarm["StateTransitionedTimestamp"] = datetime.datetime.now(datetime.UTC)
             # update startDate (=last ALARM date) - should only update when a new alarm is triggered
             # the date is only updated if we have a reason-data, which is set by an alarm
             if state_reason_data:

@@ -3,7 +3,8 @@ This module contains utilities to call a backend (e.g., an external service proc
 DynamoDBLocal) from a service provider.
 """
 
-from typing import Any, Callable, Mapping, Optional, Union
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
@@ -54,7 +55,7 @@ class AwsRequestProxy:
         self,
         context: RequestContext,
         service_request: ServiceRequest = None,
-    ) -> Optional[Union[ServiceResponse, Response]]:
+    ) -> ServiceResponse | Response | None:
         """Method to satisfy the ``ServiceRequestHandler`` protocol."""
         return self.forward(context, service_request)
 
@@ -62,7 +63,7 @@ class AwsRequestProxy:
         self,
         context: RequestContext,
         service_request: ServiceRequest = None,
-    ) -> Optional[Union[ServiceResponse, Response]]:
+    ) -> ServiceResponse | Response | None:
         """
         Forwards the given request to the backend configured by ``endpoint_url``.
 
@@ -197,7 +198,7 @@ def create_aws_request_context(
     action: str,
     parameters: Mapping[str, Any] = None,
     region: str = None,
-    endpoint_url: Optional[str] = None,
+    endpoint_url: str | None = None,
 ) -> RequestContext:
     """
     This is a stripped-down version of what the botocore client does to perform an HTTP request from a client call. A

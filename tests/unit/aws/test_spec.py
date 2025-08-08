@@ -1,5 +1,3 @@
-from typing import Type
-
 import pytest
 from botocore.exceptions import UnknownServiceError
 from botocore.model import ServiceModel, StringShape
@@ -121,7 +119,7 @@ def test_protocol_specific_loading(
     ],
 )
 def test_invalid_service_loading(
-    service_name: ServiceName, protocol: ProtocolName, expected_exception: Type[Exception]
+    service_name: ServiceName, protocol: ProtocolName, expected_exception: type[Exception]
 ):
     with pytest.raises(expected_exception):
         load_service(service=service_name, protocol=protocol)

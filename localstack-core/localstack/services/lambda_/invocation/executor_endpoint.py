@@ -3,7 +3,7 @@ import logging
 import time
 from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 from werkzeug import Request
@@ -118,8 +118,8 @@ class ExecutorEndpoint(Endpoint):
     def __init__(
         self,
         executor_id: str,
-        container_address: Optional[str] = None,
-        container_port: Optional[int] = INVOCATION_PORT,
+        container_address: str | None = None,
+        container_port: int | None = INVOCATION_PORT,
     ) -> None:
         self.container_address = container_address
         self.container_port = container_port
@@ -140,7 +140,7 @@ class ExecutorEndpoint(Endpoint):
 
     def invocation_logs(self, request: Request, invoke_id: str) -> Response:
         logs = request.json
-        if isinstance(logs, Dict):
+        if isinstance(logs, dict):
             self.logs = logs["logs"]
         else:
             LOG.error("Invalid logs from init! Logs: %s", logs)
@@ -183,7 +183,7 @@ class ExecutorEndpoint(Endpoint):
         if self.invocation_future:
             self.invocation_future.cancel()
 
-    def invoke(self, payload: Dict[str, str]) -> InvocationResult:
+    def invoke(self, payload: dict[str, str]) -> InvocationResult:
         self.invocation_future = Future()
         self.logs = None
         if not self.container_address:

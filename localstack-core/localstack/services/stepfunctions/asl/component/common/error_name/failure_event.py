@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import (
     EvaluationFailedEventDetails,
@@ -16,16 +16,16 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 class FailureEvent:
     state_name: Final[str]
     source_event_id: Final[int]
-    error_name: Final[Optional[ErrorName]]
+    error_name: Final[ErrorName | None]
     event_type: Final[HistoryEventType]
-    event_details: Final[Optional[EventDetails]]
+    event_details: Final[EventDetails | None]
 
     def __init__(
         self,
         env: Environment,
-        error_name: Optional[ErrorName],
+        error_name: ErrorName | None,
         event_type: HistoryEventType,
-        event_details: Optional[EventDetails] = None,
+        event_details: EventDetails | None = None,
     ):
         self.state_name = env.next_state_name
         self.source_event_id = env.event_history_context.source_event_id
@@ -40,7 +40,7 @@ class FailureEventException(Exception):
     def __init__(self, failure_event: FailureEvent):
         self.failure_event = failure_event
 
-    def extract_error_cause_pair(self) -> Optional[tuple[Optional[str], Optional[str]]]:
+    def extract_error_cause_pair(self) -> tuple[str | None, str | None] | None:
         if self.failure_event.event_details is None:
             return None
 
@@ -54,7 +54,7 @@ class FailureEventException(Exception):
             cause = failure_event_spec["cause"]
         return error, cause
 
-    def get_evaluation_failed_event_details(self) -> Optional[EvaluationFailedEventDetails]:
+    def get_evaluation_failed_event_details(self) -> EvaluationFailedEventDetails | None:
         original_failed_event_details = self.failure_event.event_details[
             "evaluationFailedEventDetails"
         ]
@@ -80,7 +80,7 @@ class FailureEventException(Exception):
 
         return evaluation_failed_event_details
 
-    def get_execution_failed_event_details(self) -> Optional[ExecutionFailedEventDetails]:
+    def get_execution_failed_event_details(self) -> ExecutionFailedEventDetails | None:
         maybe_error_cause_pair = self.extract_error_cause_pair()
         if maybe_error_cause_pair is None:
             return None

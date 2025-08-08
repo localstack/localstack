@@ -3,7 +3,6 @@ import os
 import threading
 from abc import abstractmethod
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
 
 from localstack import config
 from localstack.services.kinesis.packages import (
@@ -31,7 +30,7 @@ class KinesisMockServer(Server):
         account_id: str,
         host: str = "localhost",
         log_level: str = "INFO",
-        data_dir: Optional[str] = None,
+        data_dir: str | None = None,
     ) -> None:
         self._account_id = account_id
         self._latency = latency
@@ -57,7 +56,7 @@ class KinesisMockServer(Server):
         return t
 
     @property
-    def _environment_variables(self) -> Dict:
+    def _environment_variables(self) -> dict:
         env_vars = {
             "KINESIS_MOCK_PLAIN_PORT": self.port,
             # Each kinesis-mock instance listens to two ports - secure and insecure.
@@ -94,7 +93,7 @@ class KinesisMockServer(Server):
         return env_vars
 
     @abstractmethod
-    def _create_shell_command(self) -> Tuple[List, Dict]:
+    def _create_shell_command(self) -> tuple[list, dict]:
         """
         Helper method for creating kinesis mock invocation command
         :return: returns a tuple containing the command list and a dictionary with the environment variables
@@ -106,12 +105,12 @@ class KinesisMockServer(Server):
 
 
 class KinesisMockScalaServer(KinesisMockServer):
-    def _create_shell_command(self) -> Tuple[List, Dict]:
+    def _create_shell_command(self) -> tuple[list, dict]:
         cmd = ["java", "-jar", *self._get_java_vm_options(), str(self._exe_path)]
         return cmd, self._environment_variables
 
     @property
-    def _environment_variables(self) -> Dict:
+    def _environment_variables(self) -> dict:
         default_env_vars = super()._environment_variables
         kinesis_mock_installer = kinesismock_scala_package.get_installer()
         return {
@@ -130,7 +129,7 @@ class KinesisMockScalaServer(KinesisMockServer):
 
 class KinesisMockNodeServer(KinesisMockServer):
     @property
-    def _environment_variables(self) -> Dict:
+    def _environment_variables(self) -> dict:
         node_env_vars = {
             # Use the `server.json` packaged next to the main.js
             "KINESIS_MOCK_CERT_PATH": str((self._exe_path.parent / "server.json").absolute()),
@@ -139,7 +138,7 @@ class KinesisMockNodeServer(KinesisMockServer):
         default_env_vars = super()._environment_variables
         return {**node_env_vars, **default_env_vars}
 
-    def _create_shell_command(self) -> Tuple[List, Dict]:
+    def _create_shell_command(self) -> tuple[list, dict]:
         cmd = ["node", self._exe_path]
         return cmd, self._environment_variables
 

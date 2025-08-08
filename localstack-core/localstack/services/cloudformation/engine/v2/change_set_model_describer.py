@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import Final, Optional
+from typing import Final
 
 import localstack.aws.api.cloudformation as cfn_api
 from localstack.aws.api.cloudformation import Replacement
@@ -76,7 +76,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             resource_name=logical_name_of_resource,
             node_template=self._change_set.update_model.node_template,
         )
-        node_property: Optional[NodeProperty] = self._get_node_property_for(
+        node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )
         if node_property is not None:
@@ -116,9 +116,9 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         self,
         logical_id: str,
         type_: str,
-        physical_id: Optional[str],
-        before_properties: Optional[PreprocProperties],
-        after_properties: Optional[PreprocProperties],
+        physical_id: str | None,
+        before_properties: PreprocProperties | None,
+        after_properties: PreprocProperties | None,
         # TODO: remove default
         requires_replacement: bool = False,
     ) -> None:
@@ -156,7 +156,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         )
 
     def _describe_resource_change(
-        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
+        self, name: str, before: PreprocResource | None, after: PreprocResource | None
     ) -> None:
         if before == after:
             # unchanged: nothing to do.

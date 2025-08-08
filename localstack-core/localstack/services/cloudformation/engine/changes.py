@@ -1,4 +1,4 @@
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 
 Action = str
 
@@ -6,11 +6,11 @@ Action = str
 class ResourceChange(TypedDict):
     Action: Action
     LogicalResourceId: str
-    PhysicalResourceId: Optional[str]
+    PhysicalResourceId: str | None
     ResourceType: str
     Scope: list
     Details: list
-    Replacement: Optional[Literal["False"]]
+    Replacement: Literal["False"] | None
 
 
 class ChangeConfig(TypedDict):

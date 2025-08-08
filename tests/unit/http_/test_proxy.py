@@ -1,5 +1,4 @@
 import json
-from typing import Tuple
 
 import pytest
 import requests
@@ -14,7 +13,7 @@ from localstack.http.proxy import Proxy, ProxyHandler, forward
 
 
 @pytest.fixture
-def router_server(serve_asgi_adapter) -> Tuple[Router, HypercornServer]:
+def router_server(serve_asgi_adapter) -> tuple[Router, HypercornServer]:
     """Creates a new Router with a handler dispatcher, serves it through a newly created ASGI server, and returns
     both the router and the server.
     """

@@ -161,6 +161,78 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
     "last_validated_date": "2024-04-11T15:53:35+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P256]": {
+    "last_validated_date": "2025-08-04T08:10:22+00:00",
+    "durations_in_seconds": {
+      "setup": 1.37,
+      "call": 4.01,
+      "teardown": 0.32,
+      "total": 5.7
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P384]": {
+    "last_validated_date": "2025-08-04T08:10:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.15,
+      "teardown": 0.31,
+      "total": 3.46
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P521]": {
+    "last_validated_date": "2025-08-04T08:10:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.18,
+      "teardown": 0.31,
+      "total": 3.49
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_SECG_P256K1]": {
+    "last_validated_date": "2025-08-04T08:10:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.28,
+      "teardown": 0.32,
+      "total": 3.6
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_224]": {
+    "last_validated_date": "2025-08-04T08:11:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.33,
+      "call": 3.61,
+      "teardown": 0.32,
+      "total": 5.26
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_256]": {
+    "last_validated_date": "2025-08-04T08:11:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.85,
+      "teardown": 0.32,
+      "total": 3.17
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_384]": {
+    "last_validated_date": "2025-08-04T08:11:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.89,
+      "teardown": 0.32,
+      "total": 3.21
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_512]": {
+    "last_validated_date": "2025-08-04T08:11:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.92,
+      "teardown": 0.32,
+      "total": 3.24
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_rsa_aes_wrap_sha256": {
     "last_validated_date": "2025-07-22T06:11:13+00:00",
     "durations_in_seconds": {

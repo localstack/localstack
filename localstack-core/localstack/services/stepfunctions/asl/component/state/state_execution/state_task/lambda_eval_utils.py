@@ -1,6 +1,6 @@
 import json
 from json import JSONDecodeError
-from typing import IO, Any, Final, Optional, Union
+from typing import IO, Any, Final
 
 from localstack.aws.api.lambda_ import InvocationResponse
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
@@ -18,15 +18,15 @@ from localstack.utils.strings import to_bytes
 
 
 class LambdaFunctionErrorException(Exception):
-    function_error: Final[Optional[str]]
+    function_error: Final[str | None]
     payload: Final[str]
 
-    def __init__(self, function_error: Optional[str], payload: str):
+    def __init__(self, function_error: str | None, payload: str):
         self.function_error = function_error
         self.payload = payload
 
 
-def _from_payload(payload_streaming_body: IO[bytes]) -> Union[json, str]:
+def _from_payload(payload_streaming_body: IO[bytes]) -> Any | str:
     """
     This method extracts the lambda payload. The payload may be a string or a JSON stringified object.
     In the first case, this function converts the output into a UTF-8 string, otherwise it parses the
@@ -75,7 +75,7 @@ def execute_lambda_function_integration(
             parameters=parameters, region=region, state_credentials=state_credentials
         )
 
-    function_error: Optional[str] = invocation_response.get("FunctionError")
+    function_error: str | None = invocation_response.get("FunctionError")
     if function_error:
         payload_json = invocation_response["Payload"]
         payload_str = json.dumps(payload_json, separators=(",", ":"))
@@ -85,7 +85,7 @@ def execute_lambda_function_integration(
     env.stack.append(response)
 
 
-def to_payload_type(payload: Any) -> Optional[bytes]:
+def to_payload_type(payload: Any) -> bytes | None:
     if isinstance(payload, bytes):
         return payload
 

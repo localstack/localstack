@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import copy
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,77 +15,77 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaEventSourceMappingProperties(TypedDict):
-    FunctionName: Optional[str]
-    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
-    BatchSize: Optional[int]
-    BisectBatchOnFunctionError: Optional[bool]
-    DestinationConfig: Optional[DestinationConfig]
-    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
-    Enabled: Optional[bool]
-    EventSourceArn: Optional[str]
-    FilterCriteria: Optional[FilterCriteria]
-    FunctionResponseTypes: Optional[list[str]]
-    Id: Optional[str]
-    MaximumBatchingWindowInSeconds: Optional[int]
-    MaximumRecordAgeInSeconds: Optional[int]
-    MaximumRetryAttempts: Optional[int]
-    ParallelizationFactor: Optional[int]
-    Queues: Optional[list[str]]
-    ScalingConfig: Optional[ScalingConfig]
-    SelfManagedEventSource: Optional[SelfManagedEventSource]
-    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
-    SourceAccessConfigurations: Optional[list[SourceAccessConfiguration]]
-    StartingPosition: Optional[str]
-    StartingPositionTimestamp: Optional[float]
-    Topics: Optional[list[str]]
-    TumblingWindowInSeconds: Optional[int]
+    FunctionName: str | None
+    AmazonManagedKafkaEventSourceConfig: AmazonManagedKafkaEventSourceConfig | None
+    BatchSize: int | None
+    BisectBatchOnFunctionError: bool | None
+    DestinationConfig: DestinationConfig | None
+    DocumentDBEventSourceConfig: DocumentDBEventSourceConfig | None
+    Enabled: bool | None
+    EventSourceArn: str | None
+    FilterCriteria: FilterCriteria | None
+    FunctionResponseTypes: list[str] | None
+    Id: str | None
+    MaximumBatchingWindowInSeconds: int | None
+    MaximumRecordAgeInSeconds: int | None
+    MaximumRetryAttempts: int | None
+    ParallelizationFactor: int | None
+    Queues: list[str] | None
+    ScalingConfig: ScalingConfig | None
+    SelfManagedEventSource: SelfManagedEventSource | None
+    SelfManagedKafkaEventSourceConfig: SelfManagedKafkaEventSourceConfig | None
+    SourceAccessConfigurations: list[SourceAccessConfiguration] | None
+    StartingPosition: str | None
+    StartingPositionTimestamp: float | None
+    Topics: list[str] | None
+    TumblingWindowInSeconds: int | None
 
 
 class OnFailure(TypedDict):
-    Destination: Optional[str]
+    Destination: str | None
 
 
 class DestinationConfig(TypedDict):
-    OnFailure: Optional[OnFailure]
+    OnFailure: OnFailure | None
 
 
 class Filter(TypedDict):
-    Pattern: Optional[str]
+    Pattern: str | None
 
 
 class FilterCriteria(TypedDict):
-    Filters: Optional[list[Filter]]
+    Filters: list[Filter] | None
 
 
 class SourceAccessConfiguration(TypedDict):
-    Type: Optional[str]
-    URI: Optional[str]
+    Type: str | None
+    URI: str | None
 
 
 class Endpoints(TypedDict):
-    KafkaBootstrapServers: Optional[list[str]]
+    KafkaBootstrapServers: list[str] | None
 
 
 class SelfManagedEventSource(TypedDict):
-    Endpoints: Optional[Endpoints]
+    Endpoints: Endpoints | None
 
 
 class AmazonManagedKafkaEventSourceConfig(TypedDict):
-    ConsumerGroupId: Optional[str]
+    ConsumerGroupId: str | None
 
 
 class SelfManagedKafkaEventSourceConfig(TypedDict):
-    ConsumerGroupId: Optional[str]
+    ConsumerGroupId: str | None
 
 
 class ScalingConfig(TypedDict):
-    MaximumConcurrency: Optional[int]
+    MaximumConcurrency: int | None
 
 
 class DocumentDBEventSourceConfig(TypedDict):
-    CollectionName: Optional[str]
-    DatabaseName: Optional[str]
-    FullDocument: Optional[str]
+    CollectionName: str | None
+    DatabaseName: str | None
+    FullDocument: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,11 +14,11 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaLayerVersionPermissionProperties(TypedDict):
-    Action: Optional[str]
-    LayerVersionArn: Optional[str]
-    Principal: Optional[str]
-    Id: Optional[str]
-    OrganizationId: Optional[str]
+    Action: str | None
+    LayerVersionArn: str | None
+    Principal: str | None
+    Id: str | None
+    OrganizationId: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

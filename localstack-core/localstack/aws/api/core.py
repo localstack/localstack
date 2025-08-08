@@ -1,11 +1,10 @@
 import functools
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     ParamSpec,
     Protocol,
-    Type,
     TypedDict,
     TypeVar,
 )
@@ -67,7 +66,7 @@ class CommonServiceException(ServiceException):
         self.sender_fault = sender_fault
 
 
-Operation = Type[ServiceRequest]
+Operation = type[ServiceRequest]
 
 
 class ServiceOperation(NamedTuple):

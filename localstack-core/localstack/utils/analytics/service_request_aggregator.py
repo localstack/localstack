@@ -2,7 +2,7 @@ import datetime
 import logging
 import threading
 from collections import Counter
-from typing import Dict, List, NamedTuple, Optional
+from typing import NamedTuple, Optional
 
 from localstack import config
 from localstack.runtime.shutdown import SHUTDOWN_HANDLERS
@@ -110,7 +110,7 @@ class ServiceRequestAggregator:
             "api_calls": self._aggregate_api_calls(self.counter),
         }
 
-    def _aggregate_api_calls(self, counter) -> List:
+    def _aggregate_api_calls(self, counter) -> list:
         aggregations = []
         for api_call_info, count in counter.items():
             doc = api_call_info._asdict()
@@ -121,5 +121,5 @@ class ServiceRequestAggregator:
             aggregations.append(doc)
         return aggregations
 
-    def _emit_payload(self, analytics_payload: Dict):
+    def _emit_payload(self, analytics_payload: dict):
         analytics.log.event(EVENT_NAME, analytics_payload)

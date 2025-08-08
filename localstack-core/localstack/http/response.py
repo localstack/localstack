@@ -1,5 +1,5 @@
 from json import JSONEncoder
-from typing import Any, Type
+from typing import Any
 
 from rolo import Response as RoloResponse
 
@@ -11,7 +11,7 @@ class Response(RoloResponse):
     An HTTP Response object, which simply extends werkzeug's Response object with a few convenience methods.
     """
 
-    def set_json(self, doc: Any, cls: Type[JSONEncoder] = CustomEncoder):
+    def set_json(self, doc: Any, cls: type[JSONEncoder] = CustomEncoder):
         """
         Serializes the given dictionary using localstack's ``CustomEncoder`` into a json response, and sets the
         mimetype automatically to ``application/json``.

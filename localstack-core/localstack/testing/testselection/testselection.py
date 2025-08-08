@@ -1,10 +1,10 @@
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from localstack.testing.testselection.matching import MATCHING_RULES, MatchingRule
 
 
 def get_affected_tests_from_changes(
-    changed_files: Iterable[str], matching_rules: Optional[list[MatchingRule]] = None
+    changed_files: Iterable[str], matching_rules: list[MatchingRule] | None = None
 ) -> list[str]:
     """
     Generate test selectors based on the changed files and matching rules to apply to.

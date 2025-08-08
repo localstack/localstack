@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 from botocore.exceptions import ClientError
 
@@ -46,7 +46,7 @@ class StateTaskServiceSns(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:

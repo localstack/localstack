@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.jsonata.jsonata_template_value import (
     JSONataTemplateValue,
@@ -17,7 +17,7 @@ class JSONataTemplateBinding(EvalComponent):
         self.identifier = identifier
         self.value = value
 
-    def _field_name(self) -> Optional[str]:
+    def _field_name(self) -> str | None:
         return self.identifier
 
     def _eval_body(self, env: Environment) -> None:

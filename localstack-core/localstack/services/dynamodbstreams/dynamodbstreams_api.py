@@ -1,6 +1,6 @@
 import logging
 import threading
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 from bson.json_util import dumps
 
@@ -206,7 +206,7 @@ def kinesis_shard_id(dynamodbstream_shard_id: str) -> str:
     return f"{shard_params[0]}-{shard_params[-1]}"
 
 
-def get_shard_id(stream: Dict, kinesis_shard_id: str) -> str:
+def get_shard_id(stream: dict, kinesis_shard_id: str) -> str:
     ddb_stream_shard_id = stream.get("shards_id_map", {}).get(kinesis_shard_id)
     if not ddb_stream_shard_id:
         ddb_stream_shard_id = shard_id(kinesis_shard_id)

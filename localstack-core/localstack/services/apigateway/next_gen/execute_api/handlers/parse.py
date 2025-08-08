@@ -2,7 +2,6 @@ import datetime
 import logging
 import re
 from collections import defaultdict
-from typing import Optional
 from urllib.parse import urlparse
 
 from rolo.request import restore_payload
@@ -178,7 +177,7 @@ class InvocationRequestParser(RestApiGatewayHandler):
         return context_variables
 
     @staticmethod
-    def get_stage_variables(context: RestApiInvocationContext) -> Optional[dict[str, str]]:
+    def get_stage_variables(context: RestApiInvocationContext) -> dict[str, str] | None:
         stage_variables = context.stage_configuration.get("variables")
         if context.is_canary:
             overrides = (

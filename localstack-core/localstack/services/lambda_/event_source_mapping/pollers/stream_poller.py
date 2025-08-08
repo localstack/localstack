@@ -4,8 +4,8 @@ import threading
 from abc import abstractmethod
 from bisect import bisect_left
 from collections import defaultdict
+from collections.abc import Iterator
 from datetime import datetime
-from typing import Iterator
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError

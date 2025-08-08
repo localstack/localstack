@@ -4,7 +4,6 @@ A set of handlers which handle Cross Origin Resource Sharing (CORS).
 
 import logging
 import re
-from typing import List, Set
 from urllib.parse import urlparse
 
 from werkzeug.datastructures import Headers
@@ -83,7 +82,7 @@ ALLOWED_CORS_RESPONSE_HEADERS = [
 ]
 
 
-def _get_allowed_cors_internal_domains() -> Set[str]:
+def _get_allowed_cors_internal_domains() -> set[str]:
     """
     Construct the list of allowed internal domains for CORS enforcement purposes
     Defined as function to allow easier testing with monkeypatch of config values
@@ -94,7 +93,7 @@ def _get_allowed_cors_internal_domains() -> Set[str]:
 _ALLOWED_INTERNAL_DOMAINS = _get_allowed_cors_internal_domains()
 
 
-def _get_allowed_cors_ports() -> Set[int]:
+def _get_allowed_cors_ports() -> set[int]:
     """
     Construct the list of allowed ports for CORS enforcement purposes
     Defined as function to allow easier testing with monkeypatch of config values
@@ -105,7 +104,7 @@ def _get_allowed_cors_ports() -> Set[int]:
 _ALLOWED_INTERNAL_PORTS = _get_allowed_cors_ports()
 
 
-def _get_allowed_cors_origins() -> List[str]:
+def _get_allowed_cors_origins() -> list[str]:
     """Construct the list of allowed origins for CORS enforcement purposes"""
     result = [
         # allow access from Web app and localhost domains
@@ -210,7 +209,7 @@ class CorsEnforcer(Handler):
         return True
 
     @staticmethod
-    def _is_in_allowed_origins(allowed_origins: List[str], origin: str) -> bool:
+    def _is_in_allowed_origins(allowed_origins: list[str], origin: str) -> bool:
         """Returns true if the `origin` is in the `allowed_origins`."""
         for allowed_origin in allowed_origins:
             if allowed_origin == "*" or origin == allowed_origin:

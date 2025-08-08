@@ -1,5 +1,6 @@
 import re
-from typing import Callable, Tuple, TypeVar
+from collections.abc import Callable
+from typing import TypeVar
 
 from localstack.aws.api.kms import DryRunOperationException, Tag, TagException
 from localstack.services.kms.exceptions import ValidationException
@@ -20,7 +21,7 @@ def get_hash_algorithm(signing_algorithm: str) -> str:
     return "_".join(signing_algorithm.rsplit(sep="_", maxsplit=-2)[-2:])
 
 
-def parse_key_arn(key_arn: str) -> Tuple[str, str, str]:
+def parse_key_arn(key_arn: str) -> tuple[str, str, str]:
     """
     Parse a valid KMS key arn into its constituents.
 

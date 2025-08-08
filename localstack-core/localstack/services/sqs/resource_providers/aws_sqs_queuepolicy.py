@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,9 +15,9 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SQSQueuePolicyProperties(TypedDict):
-    PolicyDocument: Optional[dict]
-    Queues: Optional[list[str]]
-    Id: Optional[str]
+    PolicyDocument: dict | None
+    Queues: list[str] | None
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

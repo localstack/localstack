@@ -3,9 +3,8 @@ import os
 import re
 import threading
 from copy import deepcopy
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from random import randint
-from typing import Dict, Optional
 from urllib.parse import urlparse
 
 from localstack import config
@@ -143,9 +142,9 @@ def _run_cluster_startup_monitor(cluster: Server, domain_name: str, region: str)
 def create_cluster(
     domain_key: DomainKey,
     engine_version: str,
-    domain_endpoint_options: Optional[DomainEndpointOptions],
-    security_options: Optional[SecurityOptions],
-    preferred_port: Optional[int] = None,
+    domain_endpoint_options: DomainEndpointOptions | None,
+    security_options: SecurityOptions | None,
+    preferred_port: int | None = None,
 ):
     """
     Uses the ClusterManager to create a new cluster for the given domain key. NOT thread safe, needs to be called
@@ -369,7 +368,7 @@ def get_domain_status(
             Cancellable=False,
             UpdateStatus=DeploymentStatus.COMPLETED,
             Description="There is no software update available for this domain.",
-            AutomatedUpdateDate=datetime.fromtimestamp(0, tz=timezone.utc),
+            AutomatedUpdateDate=datetime.fromtimestamp(0, tz=UTC),
             OptionalDeployment=True,
         ),
         DomainEndpointOptions=stored_status.get("DomainEndpointOptions")
@@ -399,7 +398,7 @@ def _ensure_domain_exists(arn: ARN) -> None:
 
 
 def _update_domain_config_request_to_status(request: UpdateDomainConfigRequest) -> DomainStatus:
-    request: Dict
+    request: dict
     request.pop("DryRun", None)
     request.pop("DomainName", None)
     return request
@@ -581,7 +580,7 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
             if domain_status is None:
                 raise ResourceNotFoundException(f"Domain not found: {domain_key.domain_name}")
 
-            status_update: Dict = _update_domain_config_request_to_status(payload)
+            status_update: dict = _update_domain_config_request_to_status(payload)
             domain_status.update(status_update)
 
         return UpdateDomainConfigResponse(DomainConfig=_status_to_config(domain_status))

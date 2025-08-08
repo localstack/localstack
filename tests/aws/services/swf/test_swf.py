@@ -15,9 +15,9 @@ class TestSwf:
         swf_client = aws_client.swf
 
         swf_unique_id = short_uid()
-        workflow_domain_name = "test-swf-domain-{}".format(swf_unique_id)
-        workflow_type_name = "test-swf-workflow-{}".format(swf_unique_id)
-        workflow_activity_name = "test-swf-activity-{}".format(swf_unique_id)
+        workflow_domain_name = f"test-swf-domain-{swf_unique_id}"
+        workflow_type_name = f"test-swf-workflow-{swf_unique_id}"
+        workflow_activity_name = f"test-swf-activity-{swf_unique_id}"
 
         swf_client.register_domain(
             name=workflow_domain_name, workflowExecutionRetentionPeriodInDays="1"

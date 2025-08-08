@@ -1,4 +1,5 @@
-from typing import Iterable, TypeVar
+from collections.abc import Iterable
+from typing import TypeVar
 
 import pytest
 

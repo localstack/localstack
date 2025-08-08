@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,10 +14,10 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class IAMServiceLinkedRoleProperties(TypedDict):
-    AWSServiceName: Optional[str]
-    CustomSuffix: Optional[str]
-    Description: Optional[str]
-    Id: Optional[str]
+    AWSServiceName: str | None
+    CustomSuffix: str | None
+    Description: str | None
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

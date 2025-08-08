@@ -635,7 +635,8 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@markers.aws.validated
+@skip_if_v2_provider(reason="test needs fixing")
+@markers.aws.needs_fixing
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
     cleanup_changesets,

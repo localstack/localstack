@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,50 +15,50 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class ApiGatewayMethodProperties(TypedDict):
-    HttpMethod: Optional[str]
-    ResourceId: Optional[str]
-    RestApiId: Optional[str]
-    ApiKeyRequired: Optional[bool]
-    AuthorizationScopes: Optional[list[str]]
-    AuthorizationType: Optional[str]
-    AuthorizerId: Optional[str]
-    Integration: Optional[Integration]
-    MethodResponses: Optional[list[MethodResponse]]
-    OperationName: Optional[str]
-    RequestModels: Optional[dict]
-    RequestParameters: Optional[dict]
-    RequestValidatorId: Optional[str]
+    HttpMethod: str | None
+    ResourceId: str | None
+    RestApiId: str | None
+    ApiKeyRequired: bool | None
+    AuthorizationScopes: list[str] | None
+    AuthorizationType: str | None
+    AuthorizerId: str | None
+    Integration: Integration | None
+    MethodResponses: list[MethodResponse] | None
+    OperationName: str | None
+    RequestModels: dict | None
+    RequestParameters: dict | None
+    RequestValidatorId: str | None
 
 
 class IntegrationResponse(TypedDict):
-    StatusCode: Optional[str]
-    ContentHandling: Optional[str]
-    ResponseParameters: Optional[dict]
-    ResponseTemplates: Optional[dict]
-    SelectionPattern: Optional[str]
+    StatusCode: str | None
+    ContentHandling: str | None
+    ResponseParameters: dict | None
+    ResponseTemplates: dict | None
+    SelectionPattern: str | None
 
 
 class Integration(TypedDict):
-    Type: Optional[str]
-    CacheKeyParameters: Optional[list[str]]
-    CacheNamespace: Optional[str]
-    ConnectionId: Optional[str]
-    ConnectionType: Optional[str]
-    ContentHandling: Optional[str]
-    Credentials: Optional[str]
-    IntegrationHttpMethod: Optional[str]
-    IntegrationResponses: Optional[list[IntegrationResponse]]
-    PassthroughBehavior: Optional[str]
-    RequestParameters: Optional[dict]
-    RequestTemplates: Optional[dict]
-    TimeoutInMillis: Optional[int]
-    Uri: Optional[str]
+    Type: str | None
+    CacheKeyParameters: list[str] | None
+    CacheNamespace: str | None
+    ConnectionId: str | None
+    ConnectionType: str | None
+    ContentHandling: str | None
+    Credentials: str | None
+    IntegrationHttpMethod: str | None
+    IntegrationResponses: list[IntegrationResponse] | None
+    PassthroughBehavior: str | None
+    RequestParameters: dict | None
+    RequestTemplates: dict | None
+    TimeoutInMillis: int | None
+    Uri: str | None
 
 
 class MethodResponse(TypedDict):
-    StatusCode: Optional[str]
-    ResponseModels: Optional[dict]
-    ResponseParameters: Optional[dict]
+    StatusCode: str | None
+    ResponseModels: dict | None
+    ResponseParameters: dict | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

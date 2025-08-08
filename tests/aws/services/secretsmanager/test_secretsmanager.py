@@ -5,7 +5,6 @@ import random
 import uuid
 from datetime import datetime
 from math import isclose
-from typing import Optional
 
 import pytest
 import requests
@@ -479,7 +478,7 @@ class TestSecretsManager:
             )
             rs = aws_client.secretsmanager.create_secret(
                 Name=secret_name,
-                SecretString="my_secret_{}".format(secret_name),
+                SecretString=f"my_secret_{secret_name}",
                 Description="testing creation of secrets",
             )
             arns.append(rs["ARN"])
@@ -750,7 +749,7 @@ class TestSecretsManager:
         sm_snapshot.match("get_secret_value_res_2", get_secret_value_res_2)
 
         secret_string_v3: str = "secret_string_v3"
-        version_stages_v3: ["str"] = ["AWSPENDING"]
+        version_stages_v3: [str] = ["AWSPENDING"]
         pv_v3_vid: str = str(uuid.uuid4())
         #
         put_secret_value_res_3 = aws_client.secretsmanager.put_secret_value(
@@ -1747,7 +1746,7 @@ class TestSecretsManager:
         return TestSecretsManager.secretsmanager_http_put_secret_value_val_res(res, secret_name)
 
     def secretsmanager_http_put_secret_value_with(
-        self, secret_id: str, secret_string: str, client_request_token: Optional[str]
+        self, secret_id: str, secret_string: str, client_request_token: str | None
     ) -> requests.Response:
         http_body: json = {
             "SecretId": secret_id,
@@ -1767,7 +1766,7 @@ class TestSecretsManager:
         return res_json
 
     def secretsmanager_http_update_secret(
-        self, secret_id: str, secret_string: str, client_request_token: Optional[str]
+        self, secret_id: str, secret_string: str, client_request_token: str | None
     ):
         http_body: json = {"SecretId": secret_id, "SecretString": secret_string}
         if client_request_token:
@@ -1776,7 +1775,7 @@ class TestSecretsManager:
 
     @staticmethod
     def secretsmanager_http_update_secret_val_res(
-        res: requests.Response, secret_name: str, client_request_token: Optional[str]
+        res: requests.Response, secret_name: str, client_request_token: str | None
     ):
         assert res.status_code == 200
         res_json: json = res.json()
@@ -1789,7 +1788,7 @@ class TestSecretsManager:
         self,
         secret_id: str,
         secret_string: str,
-        client_request_token: Optional[str],
+        client_request_token: str | None,
         version_stages: list[str],
     ) -> requests.Response:
         http_body: json = {
@@ -1804,7 +1803,7 @@ class TestSecretsManager:
     def secretsmanager_http_put_secret_value_with_version_val_res(
         res: requests.Response,
         secret_name: str,
-        client_request_token: Optional[str],
+        client_request_token: str | None,
         version_stages: list[str],
     ) -> json:
         req_version_id: str
@@ -2270,7 +2269,7 @@ class TestSecretsManager:
         description = "Testing secret already exists."
         rs = aws_client.secretsmanager.create_secret(
             Name=secret_name,
-            SecretString="my_secret_{}".format(secret_name),
+            SecretString=f"my_secret_{secret_name}",
             Description=description,
         )
         self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
@@ -2292,7 +2291,7 @@ class TestSecretsManager:
         ) as res_exists_ex:
             aws_client.secretsmanager.create_secret(
                 Name=secret_name,
-                SecretString="my_secret_{}".format(secret_name),
+                SecretString=f"my_secret_{secret_name}",
                 Description=description,
             )
         assert res_exists_ex.typename == "ResourceExistsException"
@@ -2307,7 +2306,7 @@ class TestSecretsManager:
         description = "Snapshot testing secret already exists."
         rs = aws_client.secretsmanager.create_secret(
             Name=secret_name,
-            SecretString="my_secret_{}".format(secret_name),
+            SecretString=f"my_secret_{secret_name}",
             Description=description,
         )
         self._wait_created_is_listed(aws_client.secretsmanager, secret_id=secret_name)
@@ -2318,7 +2317,7 @@ class TestSecretsManager:
         ) as res_exists_ex:
             aws_client.secretsmanager.create_secret(
                 Name=secret_name,
-                SecretString="my_secret_{}".format(secret_name),
+                SecretString=f"my_secret_{secret_name}",
                 Description=description,
             )
         sm_snapshot.match("ex_log", res_exists_ex.value.response)

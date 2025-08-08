@@ -1,5 +1,3 @@
-import typing as t
-
 from rolo.gateway import Gateway as RoloGateway
 from rolo.response import Response
 
@@ -17,7 +15,7 @@ class Gateway(RoloGateway):
         response_handlers: list[Handler] = None,
         finalizers: list[Handler] = None,
         exception_handlers: list[ExceptionHandler] = None,
-        context_class: t.Type[RequestContext] = None,
+        context_class: type[RequestContext] = None,
     ) -> None:
         super().__init__(
             request_handlers,

@@ -1,5 +1,5 @@
 from collections import OrderedDict
-from typing import Any, Optional
+from typing import Any
 
 
 class TypedProps:
@@ -18,7 +18,7 @@ class TypedProps:
             )
         self._instance_by_type[typ] = instance
 
-    def get(self, typ: type, raise_on_missing: Optional[Exception] = None) -> Optional[Any]:
+    def get(self, typ: type, raise_on_missing: Exception | None = None) -> Any | None:
         if raise_on_missing and typ not in self._instance_by_type:
             raise raise_on_missing
         return self._instance_by_type.get(typ)

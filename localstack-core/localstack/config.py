@@ -9,7 +9,8 @@ import tempfile
 import time
 import warnings
 from collections import defaultdict
-from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
+from collections.abc import Mapping
+from typing import Any, Optional, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
@@ -233,7 +234,7 @@ def is_env_not_false(env_var_name: str) -> bool:
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profiles: str = None, env=os.environ) -> List[str]:
+def load_environment(profiles: str = None, env=os.environ) -> list[str]:
     """Loads the environment variables from ~/.localstack/{profile}.env, for each profile listed in the profiles.
     :param env: environment to load profile to. Defaults to `os.environ`
     :param profiles: a comma separated list of profiles to load (defaults to "default")
@@ -337,7 +338,7 @@ def in_docker():
             return False
     except Exception:
         pass
-    with open("/proc/1/cgroup", "rt") as ifh:
+    with open("/proc/1/cgroup") as ifh:
         content = ifh.read()
         if "docker" in content or "buildkit" in content:
             return True
@@ -348,7 +349,7 @@ def in_docker():
     # containerd does not set any specific file or config, but it does use
     # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
     try:
-        with open("/proc/mounts", "rt") as infile:
+        with open("/proc/mounts") as infile:
             for line in infile:
                 line = line.strip()
 
@@ -603,9 +604,7 @@ class HostAndPort:
 
     def _get_unprivileged_port_range_start(self) -> int:
         try:
-            with open(
-                "/proc/sys/net/ipv4/ip_unprivileged_port_start", "rt"
-            ) as unprivileged_port_start:
+            with open("/proc/sys/net/ipv4/ip_unprivileged_port_start") as unprivileged_port_start:
                 port = unprivileged_port_start.read()
                 return int(port.strip())
         except Exception:
@@ -637,7 +636,7 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
-class UniqueHostAndPortList(List[HostAndPort]):
+class UniqueHostAndPortList(list[HostAndPort]):
     """
     Container type that ensures that ports added to the list are unique based
     on these rules:
@@ -650,7 +649,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
         - Identical identical hosts and ports are de-duped
     """
 
-    def __init__(self, iterable: Union[List[HostAndPort], None] = None):
+    def __init__(self, iterable: Union[list[HostAndPort], None] = None):
         super().__init__(iterable or [])
         self._ensure_unique()
 
@@ -661,10 +660,10 @@ class UniqueHostAndPortList(List[HostAndPort]):
         if len(self) <= 1:
             return
 
-        unique: List[HostAndPort] = list()
+        unique: list[HostAndPort] = list()
 
         # Build a dictionary of hosts by port
-        hosts_by_port: Dict[int, List[str]] = defaultdict(list)
+        hosts_by_port: dict[int, list[str]] = defaultdict(list)
         for item in self:
             hosts_by_port[item.port].append(item.host)
 
@@ -696,7 +695,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
 def populate_edge_configuration(
     environment: Mapping[str, str],
-) -> Tuple[HostAndPort, UniqueHostAndPortList]:
+) -> tuple[HostAndPort, UniqueHostAndPortList]:
     """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
@@ -1448,7 +1447,7 @@ def is_collect_metrics_mode() -> bool:
     return is_env_true(ENV_INTERNAL_TEST_COLLECT_METRIC)
 
 
-def collect_config_items() -> List[Tuple[str, Any]]:
+def collect_config_items() -> list[tuple[str, Any]]:
     """Returns a list of key-value tuples of LocalStack configuration values."""
     none = object()  # sentinel object
 
@@ -1598,7 +1597,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
 
 
 class ServiceProviderConfig(Mapping[str, str]):
-    _provider_config: Dict[str, str]
+    _provider_config: dict[str, str]
     default_value: str
     override_prefix: str = "PROVIDER_OVERRIDE_"
 
@@ -1623,7 +1622,7 @@ class ServiceProviderConfig(Mapping[str, str]):
     def set_provider(self, service: str, provider: str):
         self._provider_config[service] = provider
 
-    def bulk_set_provider_if_not_exists(self, services: List[str], provider: str):
+    def bulk_set_provider_if_not_exists(self, services: list[str], provider: str):
         for service in services:
             self.set_provider_if_not_exists(service, provider)
 

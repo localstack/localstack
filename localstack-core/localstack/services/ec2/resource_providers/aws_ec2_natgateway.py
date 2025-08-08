@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,21 +14,21 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2NatGatewayProperties(TypedDict):
-    SubnetId: Optional[str]
-    AllocationId: Optional[str]
-    ConnectivityType: Optional[str]
-    MaxDrainDurationSeconds: Optional[int]
-    NatGatewayId: Optional[str]
-    PrivateIpAddress: Optional[str]
-    SecondaryAllocationIds: Optional[list[str]]
-    SecondaryPrivateIpAddressCount: Optional[int]
-    SecondaryPrivateIpAddresses: Optional[list[str]]
-    Tags: Optional[list[Tag]]
+    SubnetId: str | None
+    AllocationId: str | None
+    ConnectivityType: str | None
+    MaxDrainDurationSeconds: int | None
+    NatGatewayId: str | None
+    PrivateIpAddress: str | None
+    SecondaryAllocationIds: list[str] | None
+    SecondaryPrivateIpAddressCount: int | None
+    SecondaryPrivateIpAddresses: list[str] | None
+    Tags: list[Tag] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

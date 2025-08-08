@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -22,356 +22,356 @@ from localstack.utils.urls import localstack_host
 
 
 class S3BucketProperties(TypedDict):
-    AccelerateConfiguration: Optional[AccelerateConfiguration]
-    AccessControl: Optional[str]
-    AnalyticsConfigurations: Optional[list[AnalyticsConfiguration]]
-    Arn: Optional[str]
-    BucketEncryption: Optional[BucketEncryption]
-    BucketName: Optional[str]
-    CorsConfiguration: Optional[CorsConfiguration]
-    DomainName: Optional[str]
-    DualStackDomainName: Optional[str]
-    IntelligentTieringConfigurations: Optional[list[IntelligentTieringConfiguration]]
-    InventoryConfigurations: Optional[list[InventoryConfiguration]]
-    LifecycleConfiguration: Optional[LifecycleConfiguration]
-    LoggingConfiguration: Optional[LoggingConfiguration]
-    MetricsConfigurations: Optional[list[MetricsConfiguration]]
-    NotificationConfiguration: Optional[NotificationConfiguration]
-    ObjectLockConfiguration: Optional[ObjectLockConfiguration]
-    ObjectLockEnabled: Optional[bool]
-    OwnershipControls: Optional[OwnershipControls]
-    PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
-    RegionalDomainName: Optional[str]
-    ReplicationConfiguration: Optional[ReplicationConfiguration]
-    Tags: Optional[list[Tag]]
-    VersioningConfiguration: Optional[VersioningConfiguration]
-    WebsiteConfiguration: Optional[WebsiteConfiguration]
-    WebsiteURL: Optional[str]
+    AccelerateConfiguration: AccelerateConfiguration | None
+    AccessControl: str | None
+    AnalyticsConfigurations: list[AnalyticsConfiguration] | None
+    Arn: str | None
+    BucketEncryption: BucketEncryption | None
+    BucketName: str | None
+    CorsConfiguration: CorsConfiguration | None
+    DomainName: str | None
+    DualStackDomainName: str | None
+    IntelligentTieringConfigurations: list[IntelligentTieringConfiguration] | None
+    InventoryConfigurations: list[InventoryConfiguration] | None
+    LifecycleConfiguration: LifecycleConfiguration | None
+    LoggingConfiguration: LoggingConfiguration | None
+    MetricsConfigurations: list[MetricsConfiguration] | None
+    NotificationConfiguration: NotificationConfiguration | None
+    ObjectLockConfiguration: ObjectLockConfiguration | None
+    ObjectLockEnabled: bool | None
+    OwnershipControls: OwnershipControls | None
+    PublicAccessBlockConfiguration: PublicAccessBlockConfiguration | None
+    RegionalDomainName: str | None
+    ReplicationConfiguration: ReplicationConfiguration | None
+    Tags: list[Tag] | None
+    VersioningConfiguration: VersioningConfiguration | None
+    WebsiteConfiguration: WebsiteConfiguration | None
+    WebsiteURL: str | None
 
 
 class AccelerateConfiguration(TypedDict):
-    AccelerationStatus: Optional[str]
+    AccelerationStatus: str | None
 
 
 class TagFilter(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class Destination(TypedDict):
-    BucketArn: Optional[str]
-    Format: Optional[str]
-    BucketAccountId: Optional[str]
-    Prefix: Optional[str]
+    BucketArn: str | None
+    Format: str | None
+    BucketAccountId: str | None
+    Prefix: str | None
 
 
 class DataExport(TypedDict):
-    Destination: Optional[Destination]
-    OutputSchemaVersion: Optional[str]
+    Destination: Destination | None
+    OutputSchemaVersion: str | None
 
 
 class StorageClassAnalysis(TypedDict):
-    DataExport: Optional[DataExport]
+    DataExport: DataExport | None
 
 
 class AnalyticsConfiguration(TypedDict):
-    Id: Optional[str]
-    StorageClassAnalysis: Optional[StorageClassAnalysis]
-    Prefix: Optional[str]
-    TagFilters: Optional[list[TagFilter]]
+    Id: str | None
+    StorageClassAnalysis: StorageClassAnalysis | None
+    Prefix: str | None
+    TagFilters: list[TagFilter] | None
 
 
 class ServerSideEncryptionByDefault(TypedDict):
-    SSEAlgorithm: Optional[str]
-    KMSMasterKeyID: Optional[str]
+    SSEAlgorithm: str | None
+    KMSMasterKeyID: str | None
 
 
 class ServerSideEncryptionRule(TypedDict):
-    BucketKeyEnabled: Optional[bool]
-    ServerSideEncryptionByDefault: Optional[ServerSideEncryptionByDefault]
+    BucketKeyEnabled: bool | None
+    ServerSideEncryptionByDefault: ServerSideEncryptionByDefault | None
 
 
 class BucketEncryption(TypedDict):
-    ServerSideEncryptionConfiguration: Optional[list[ServerSideEncryptionRule]]
+    ServerSideEncryptionConfiguration: list[ServerSideEncryptionRule] | None
 
 
 class CorsRule(TypedDict):
-    AllowedMethods: Optional[list[str]]
-    AllowedOrigins: Optional[list[str]]
-    AllowedHeaders: Optional[list[str]]
-    ExposedHeaders: Optional[list[str]]
-    Id: Optional[str]
-    MaxAge: Optional[int]
+    AllowedMethods: list[str] | None
+    AllowedOrigins: list[str] | None
+    AllowedHeaders: list[str] | None
+    ExposedHeaders: list[str] | None
+    Id: str | None
+    MaxAge: int | None
 
 
 class CorsConfiguration(TypedDict):
-    CorsRules: Optional[list[CorsRule]]
+    CorsRules: list[CorsRule] | None
 
 
 class Tiering(TypedDict):
-    AccessTier: Optional[str]
-    Days: Optional[int]
+    AccessTier: str | None
+    Days: int | None
 
 
 class IntelligentTieringConfiguration(TypedDict):
-    Id: Optional[str]
-    Status: Optional[str]
-    Tierings: Optional[list[Tiering]]
-    Prefix: Optional[str]
-    TagFilters: Optional[list[TagFilter]]
+    Id: str | None
+    Status: str | None
+    Tierings: list[Tiering] | None
+    Prefix: str | None
+    TagFilters: list[TagFilter] | None
 
 
 class InventoryConfiguration(TypedDict):
-    Destination: Optional[Destination]
-    Enabled: Optional[bool]
-    Id: Optional[str]
-    IncludedObjectVersions: Optional[str]
-    ScheduleFrequency: Optional[str]
-    OptionalFields: Optional[list[str]]
-    Prefix: Optional[str]
+    Destination: Destination | None
+    Enabled: bool | None
+    Id: str | None
+    IncludedObjectVersions: str | None
+    ScheduleFrequency: str | None
+    OptionalFields: list[str] | None
+    Prefix: str | None
 
 
 class AbortIncompleteMultipartUpload(TypedDict):
-    DaysAfterInitiation: Optional[int]
+    DaysAfterInitiation: int | None
 
 
 class NoncurrentVersionExpiration(TypedDict):
-    NoncurrentDays: Optional[int]
-    NewerNoncurrentVersions: Optional[int]
+    NoncurrentDays: int | None
+    NewerNoncurrentVersions: int | None
 
 
 class NoncurrentVersionTransition(TypedDict):
-    StorageClass: Optional[str]
-    TransitionInDays: Optional[int]
-    NewerNoncurrentVersions: Optional[int]
+    StorageClass: str | None
+    TransitionInDays: int | None
+    NewerNoncurrentVersions: int | None
 
 
 class Transition(TypedDict):
-    StorageClass: Optional[str]
-    TransitionDate: Optional[str]
-    TransitionInDays: Optional[int]
+    StorageClass: str | None
+    TransitionDate: str | None
+    TransitionInDays: int | None
 
 
 class Rule(TypedDict):
-    Status: Optional[str]
-    AbortIncompleteMultipartUpload: Optional[AbortIncompleteMultipartUpload]
-    ExpirationDate: Optional[str]
-    ExpirationInDays: Optional[int]
-    ExpiredObjectDeleteMarker: Optional[bool]
-    Id: Optional[str]
-    NoncurrentVersionExpiration: Optional[NoncurrentVersionExpiration]
-    NoncurrentVersionExpirationInDays: Optional[int]
-    NoncurrentVersionTransition: Optional[NoncurrentVersionTransition]
-    NoncurrentVersionTransitions: Optional[list[NoncurrentVersionTransition]]
-    ObjectSizeGreaterThan: Optional[str]
-    ObjectSizeLessThan: Optional[str]
-    Prefix: Optional[str]
-    TagFilters: Optional[list[TagFilter]]
-    Transition: Optional[Transition]
-    Transitions: Optional[list[Transition]]
+    Status: str | None
+    AbortIncompleteMultipartUpload: AbortIncompleteMultipartUpload | None
+    ExpirationDate: str | None
+    ExpirationInDays: int | None
+    ExpiredObjectDeleteMarker: bool | None
+    Id: str | None
+    NoncurrentVersionExpiration: NoncurrentVersionExpiration | None
+    NoncurrentVersionExpirationInDays: int | None
+    NoncurrentVersionTransition: NoncurrentVersionTransition | None
+    NoncurrentVersionTransitions: list[NoncurrentVersionTransition] | None
+    ObjectSizeGreaterThan: str | None
+    ObjectSizeLessThan: str | None
+    Prefix: str | None
+    TagFilters: list[TagFilter] | None
+    Transition: Transition | None
+    Transitions: list[Transition] | None
 
 
 class LifecycleConfiguration(TypedDict):
-    Rules: Optional[list[Rule]]
+    Rules: list[Rule] | None
 
 
 class LoggingConfiguration(TypedDict):
-    DestinationBucketName: Optional[str]
-    LogFilePrefix: Optional[str]
+    DestinationBucketName: str | None
+    LogFilePrefix: str | None
 
 
 class MetricsConfiguration(TypedDict):
-    Id: Optional[str]
-    AccessPointArn: Optional[str]
-    Prefix: Optional[str]
-    TagFilters: Optional[list[TagFilter]]
+    Id: str | None
+    AccessPointArn: str | None
+    Prefix: str | None
+    TagFilters: list[TagFilter] | None
 
 
 class EventBridgeConfiguration(TypedDict):
-    EventBridgeEnabled: Optional[bool]
+    EventBridgeEnabled: bool | None
 
 
 class FilterRule(TypedDict):
-    Name: Optional[str]
-    Value: Optional[str]
+    Name: str | None
+    Value: str | None
 
 
 class S3KeyFilter(TypedDict):
-    Rules: Optional[list[FilterRule]]
+    Rules: list[FilterRule] | None
 
 
 class NotificationFilter(TypedDict):
-    S3Key: Optional[S3KeyFilter]
+    S3Key: S3KeyFilter | None
 
 
 class LambdaConfiguration(TypedDict):
-    Event: Optional[str]
-    Function: Optional[str]
-    Filter: Optional[NotificationFilter]
+    Event: str | None
+    Function: str | None
+    Filter: NotificationFilter | None
 
 
 class QueueConfiguration(TypedDict):
-    Event: Optional[str]
-    Queue: Optional[str]
-    Filter: Optional[NotificationFilter]
+    Event: str | None
+    Queue: str | None
+    Filter: NotificationFilter | None
 
 
 class TopicConfiguration(TypedDict):
-    Event: Optional[str]
-    Topic: Optional[str]
-    Filter: Optional[NotificationFilter]
+    Event: str | None
+    Topic: str | None
+    Filter: NotificationFilter | None
 
 
 class NotificationConfiguration(TypedDict):
-    EventBridgeConfiguration: Optional[EventBridgeConfiguration]
-    LambdaConfigurations: Optional[list[LambdaConfiguration]]
-    QueueConfigurations: Optional[list[QueueConfiguration]]
-    TopicConfigurations: Optional[list[TopicConfiguration]]
+    EventBridgeConfiguration: EventBridgeConfiguration | None
+    LambdaConfigurations: list[LambdaConfiguration] | None
+    QueueConfigurations: list[QueueConfiguration] | None
+    TopicConfigurations: list[TopicConfiguration] | None
 
 
 class DefaultRetention(TypedDict):
-    Days: Optional[int]
-    Mode: Optional[str]
-    Years: Optional[int]
+    Days: int | None
+    Mode: str | None
+    Years: int | None
 
 
 class ObjectLockRule(TypedDict):
-    DefaultRetention: Optional[DefaultRetention]
+    DefaultRetention: DefaultRetention | None
 
 
 class ObjectLockConfiguration(TypedDict):
-    ObjectLockEnabled: Optional[str]
-    Rule: Optional[ObjectLockRule]
+    ObjectLockEnabled: str | None
+    Rule: ObjectLockRule | None
 
 
 class OwnershipControlsRule(TypedDict):
-    ObjectOwnership: Optional[str]
+    ObjectOwnership: str | None
 
 
 class OwnershipControls(TypedDict):
-    Rules: Optional[list[OwnershipControlsRule]]
+    Rules: list[OwnershipControlsRule] | None
 
 
 class PublicAccessBlockConfiguration(TypedDict):
-    BlockPublicAcls: Optional[bool]
-    BlockPublicPolicy: Optional[bool]
-    IgnorePublicAcls: Optional[bool]
-    RestrictPublicBuckets: Optional[bool]
+    BlockPublicAcls: bool | None
+    BlockPublicPolicy: bool | None
+    IgnorePublicAcls: bool | None
+    RestrictPublicBuckets: bool | None
 
 
 class DeleteMarkerReplication(TypedDict):
-    Status: Optional[str]
+    Status: str | None
 
 
 class AccessControlTranslation(TypedDict):
-    Owner: Optional[str]
+    Owner: str | None
 
 
 class EncryptionConfiguration(TypedDict):
-    ReplicaKmsKeyID: Optional[str]
+    ReplicaKmsKeyID: str | None
 
 
 class ReplicationTimeValue(TypedDict):
-    Minutes: Optional[int]
+    Minutes: int | None
 
 
 class Metrics(TypedDict):
-    Status: Optional[str]
-    EventThreshold: Optional[ReplicationTimeValue]
+    Status: str | None
+    EventThreshold: ReplicationTimeValue | None
 
 
 class ReplicationTime(TypedDict):
-    Status: Optional[str]
-    Time: Optional[ReplicationTimeValue]
+    Status: str | None
+    Time: ReplicationTimeValue | None
 
 
 class ReplicationDestination(TypedDict):
-    Bucket: Optional[str]
-    AccessControlTranslation: Optional[AccessControlTranslation]
-    Account: Optional[str]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    Metrics: Optional[Metrics]
-    ReplicationTime: Optional[ReplicationTime]
-    StorageClass: Optional[str]
+    Bucket: str | None
+    AccessControlTranslation: AccessControlTranslation | None
+    Account: str | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    Metrics: Metrics | None
+    ReplicationTime: ReplicationTime | None
+    StorageClass: str | None
 
 
 class ReplicationRuleAndOperator(TypedDict):
-    Prefix: Optional[str]
-    TagFilters: Optional[list[TagFilter]]
+    Prefix: str | None
+    TagFilters: list[TagFilter] | None
 
 
 class ReplicationRuleFilter(TypedDict):
-    And: Optional[ReplicationRuleAndOperator]
-    Prefix: Optional[str]
-    TagFilter: Optional[TagFilter]
+    And: ReplicationRuleAndOperator | None
+    Prefix: str | None
+    TagFilter: TagFilter | None
 
 
 class ReplicaModifications(TypedDict):
-    Status: Optional[str]
+    Status: str | None
 
 
 class SseKmsEncryptedObjects(TypedDict):
-    Status: Optional[str]
+    Status: str | None
 
 
 class SourceSelectionCriteria(TypedDict):
-    ReplicaModifications: Optional[ReplicaModifications]
-    SseKmsEncryptedObjects: Optional[SseKmsEncryptedObjects]
+    ReplicaModifications: ReplicaModifications | None
+    SseKmsEncryptedObjects: SseKmsEncryptedObjects | None
 
 
 class ReplicationRule(TypedDict):
-    Destination: Optional[ReplicationDestination]
-    Status: Optional[str]
-    DeleteMarkerReplication: Optional[DeleteMarkerReplication]
-    Filter: Optional[ReplicationRuleFilter]
-    Id: Optional[str]
-    Prefix: Optional[str]
-    Priority: Optional[int]
-    SourceSelectionCriteria: Optional[SourceSelectionCriteria]
+    Destination: ReplicationDestination | None
+    Status: str | None
+    DeleteMarkerReplication: DeleteMarkerReplication | None
+    Filter: ReplicationRuleFilter | None
+    Id: str | None
+    Prefix: str | None
+    Priority: int | None
+    SourceSelectionCriteria: SourceSelectionCriteria | None
 
 
 class ReplicationConfiguration(TypedDict):
-    Role: Optional[str]
-    Rules: Optional[list[ReplicationRule]]
+    Role: str | None
+    Rules: list[ReplicationRule] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class VersioningConfiguration(TypedDict):
-    Status: Optional[str]
+    Status: str | None
 
 
 class RedirectRule(TypedDict):
-    HostName: Optional[str]
-    HttpRedirectCode: Optional[str]
-    Protocol: Optional[str]
-    ReplaceKeyPrefixWith: Optional[str]
-    ReplaceKeyWith: Optional[str]
+    HostName: str | None
+    HttpRedirectCode: str | None
+    Protocol: str | None
+    ReplaceKeyPrefixWith: str | None
+    ReplaceKeyWith: str | None
 
 
 class RoutingRuleCondition(TypedDict):
-    HttpErrorCodeReturnedEquals: Optional[str]
-    KeyPrefixEquals: Optional[str]
+    HttpErrorCodeReturnedEquals: str | None
+    KeyPrefixEquals: str | None
 
 
 class RoutingRule(TypedDict):
-    RedirectRule: Optional[RedirectRule]
-    RoutingRuleCondition: Optional[RoutingRuleCondition]
+    RedirectRule: RedirectRule | None
+    RoutingRuleCondition: RoutingRuleCondition | None
 
 
 class RedirectAllRequestsTo(TypedDict):
-    HostName: Optional[str]
-    Protocol: Optional[str]
+    HostName: str | None
+    Protocol: str | None
 
 
 class WebsiteConfiguration(TypedDict):
-    ErrorDocument: Optional[str]
-    IndexDocument: Optional[str]
-    RedirectAllRequestsTo: Optional[RedirectAllRequestsTo]
-    RoutingRules: Optional[list[RoutingRule]]
+    ErrorDocument: str | None
+    IndexDocument: str | None
+    RedirectAllRequestsTo: RedirectAllRequestsTo | None
+    RoutingRules: list[RoutingRule] | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

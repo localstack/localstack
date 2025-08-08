@@ -2,7 +2,7 @@ import logging
 import os
 from functools import lru_cache
 from json import JSONDecodeError
-from typing import Any, Dict, Final, Optional
+from typing import Any, Final, Optional
 
 from pydantic import BaseModel, RootModel, ValidationError, model_validator
 
@@ -44,8 +44,8 @@ class RawResponseModel(BaseModel):
 
     model_config = {"frozen": True}
 
-    Return: Optional[RawReturnResponse] = None
-    Throw: Optional[RawThrowResponse] = None
+    Return: RawReturnResponse | None = None
+    Throw: RawThrowResponse | None = None
 
     @model_validator(mode="before")
     def validate_response(cls, data: dict) -> dict:
@@ -56,7 +56,7 @@ class RawResponseModel(BaseModel):
         return data
 
 
-class RawTestCase(RootModel[Dict[str, str]]):
+class RawTestCase(RootModel[dict[str, str]]):
     """
     Represents an individual test case.
     The keys are state names (e.g., 'LambdaState', 'SQSState')
@@ -73,7 +73,7 @@ class RawStateMachine(BaseModel):
 
     model_config = {"frozen": True}
 
-    TestCases: Dict[str, RawTestCase]
+    TestCases: dict[str, RawTestCase]
 
 
 class RawMockConfig(BaseModel):
@@ -86,8 +86,8 @@ class RawMockConfig(BaseModel):
 
     model_config = {"frozen": True}
 
-    StateMachines: Dict[str, RawStateMachine]
-    MockedResponses: Dict[str, Dict[str, RawResponseModel]]
+    StateMachines: dict[str, RawStateMachine]
+    MockedResponses: dict[str, dict[str, RawResponseModel]]
 
 
 @lru_cache(maxsize=1)
@@ -119,11 +119,11 @@ def _read_sfn_raw_mock_config(file_path: str, modified_epoch: int) -> Optional[R
         - Logging is used to capture warnings if file access or parsing fails.
     """
     try:
-        with open(file_path, "r") as df:
+        with open(file_path) as df:
             mock_config_str = df.read()
         mock_config: RawMockConfig = RawMockConfig.model_validate_json(mock_config_str)
         return mock_config
-    except (OSError, IOError) as file_error:
+    except OSError as file_error:
         LOG.error("Failed to open mock configuration file '%s'. Error: %s", file_path, file_error)
         return None
     except ValidationError as validation_error:
@@ -168,7 +168,7 @@ def _read_sfn_raw_mock_config(file_path: str, modified_epoch: int) -> Optional[R
         return None
 
 
-def _load_sfn_raw_mock_config() -> Optional[RawMockConfig]:
+def _load_sfn_raw_mock_config() -> RawMockConfig | None:
     configuration_file_path = config.SFN_MOCK_CONFIG
     if not configuration_file_path:
         return None

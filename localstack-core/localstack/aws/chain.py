@@ -5,7 +5,7 @@ The core concepts of the HandlerChain.
 from __future__ import annotations
 
 import logging
-from typing import Callable, Type
+from collections.abc import Callable
 
 from rolo.gateway import (
     CompositeExceptionHandler,
@@ -29,7 +29,7 @@ ExceptionHandler = Callable[["HandlerChain", Exception, RequestContext, Response
 was raised by the request handler, the RequestContext, and the Response object to be populated."""
 
 
-HandlerChain: Type[RoloHandlerChain[RequestContext]] = RoloHandlerChain
+HandlerChain: type[RoloHandlerChain[RequestContext]] = RoloHandlerChain
 
 __all__ = [
     "HandlerChain",

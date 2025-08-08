@@ -4,8 +4,9 @@ import logging
 import os
 import sys
 from collections import defaultdict
+from collections.abc import Generator
 from functools import cached_property, lru_cache
-from typing import Dict, Generator, List, Literal, NamedTuple, Optional, Tuple
+from typing import Literal, NamedTuple
 
 import botocore
 import jsonpatch
@@ -31,13 +32,13 @@ class ServiceModelIdentifier(NamedTuple):
     """
 
     name: ServiceName
-    protocol: Optional[ProtocolName] = None
+    protocol: ProtocolName | None = None
 
 
 spec_patches_json = os.path.join(os.path.dirname(__file__), "spec-patches.json")
 
 
-def load_spec_patches() -> Dict[str, list]:
+def load_spec_patches() -> dict[str, list]:
     if not os.path.exists(spec_patches_json):
         return {}
     with open(spec_patches_json) as fd:
@@ -59,9 +60,9 @@ class PatchingLoader(Loader):
     A custom botocore Loader that applies JSON patches from the given json patch file to the specs as they are loaded.
     """
 
-    patches: Dict[str, list]
+    patches: dict[str, list]
 
-    def __init__(self, patches: Dict[str, list], *args, **kwargs):
+    def __init__(self, patches: dict[str, list], *args, **kwargs):
         # add the builtin data path to the extra_search_paths to ensure they are discovered by the loader
         super().__init__(*args, **kwargs)
         self.patches = patches
@@ -94,12 +95,12 @@ class UnknownServiceProtocolError(UnknownServiceError):
     fmt = "Unknown service protocol: '{service_name}-{protocol}'."
 
 
-def list_services() -> List[ServiceModel]:
+def list_services() -> list[ServiceModel]:
     return [load_service(service) for service in loader.list_available_services("service-2")]
 
 
 def load_service(
-    service: ServiceName, version: Optional[str] = None, protocol: Optional[ProtocolName] = None
+    service: ServiceName, version: str | None = None, protocol: ProtocolName | None = None
 ) -> ServiceModel:
     """
     Loads a service
@@ -136,7 +137,7 @@ def load_service(
     return ServiceModel(service_description, service)
 
 
-def iterate_service_operations() -> Generator[Tuple[ServiceModel, OperationModel], None, None]:
+def iterate_service_operations() -> Generator[tuple[ServiceModel, OperationModel], None, None]:
     """
     Returns one record per operation in the AWS service spec, where the first item is the service model the operation
     belongs to, and the second is the operation model.
@@ -154,11 +155,11 @@ class ServiceCatalogIndex:
     The ServiceCatalogIndex enables fast lookups for common operations to determine a service from service indicators.
     """
 
-    service_names: List[ServiceName]
-    target_prefix_index: Dict[str, List[ServiceModelIdentifier]]
-    signing_name_index: Dict[str, List[ServiceModelIdentifier]]
-    operations_index: Dict[str, List[ServiceModelIdentifier]]
-    endpoint_prefix_index: Dict[str, List[ServiceModelIdentifier]]
+    service_names: list[ServiceName]
+    target_prefix_index: dict[str, list[ServiceModelIdentifier]]
+    signing_name_index: dict[str, list[ServiceModelIdentifier]]
+    operations_index: dict[str, list[ServiceModelIdentifier]]
+    endpoint_prefix_index: dict[str, list[ServiceModelIdentifier]]
 
 
 class LazyServiceCatalogIndex:
@@ -167,11 +168,11 @@ class LazyServiceCatalogIndex:
     """
 
     @cached_property
-    def service_names(self) -> List[ServiceName]:
+    def service_names(self) -> list[ServiceName]:
         return list(self._services.keys())
 
     @cached_property
-    def target_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def target_prefix_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         result = defaultdict(list)
         for service_models in self._services.values():
             for service_model in service_models:
@@ -183,7 +184,7 @@ class LazyServiceCatalogIndex:
         return dict(result)
 
     @cached_property
-    def signing_name_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def signing_name_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         result = defaultdict(list)
         for service_models in self._services.values():
             for service_model in service_models:
@@ -193,7 +194,7 @@ class LazyServiceCatalogIndex:
         return dict(result)
 
     @cached_property
-    def operations_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def operations_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         result = defaultdict(list)
         for service_models in self._services.values():
             for service_model in service_models:
@@ -208,7 +209,7 @@ class LazyServiceCatalogIndex:
         return dict(result)
 
     @cached_property
-    def endpoint_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def endpoint_prefix_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         result = defaultdict(list)
         for service_models in self._services.values():
             for service_model in service_models:
@@ -218,7 +219,7 @@ class LazyServiceCatalogIndex:
         return dict(result)
 
     @cached_property
-    def _services(self) -> Dict[ServiceName, List[ServiceModel]]:
+    def _services(self) -> dict[ServiceName, list[ServiceModel]]:
         services = defaultdict(list)
         for service in list_services():
             services[service.service_name].append(service)
@@ -232,38 +233,36 @@ class ServiceCatalog:
         self.index = index or LazyServiceCatalogIndex()
 
     @lru_cache(maxsize=512)
-    def get(
-        self, name: ServiceName, protocol: Optional[ProtocolName] = None
-    ) -> Optional[ServiceModel]:
+    def get(self, name: ServiceName, protocol: ProtocolName | None = None) -> ServiceModel | None:
         return load_service(name, protocol=protocol)
 
     @property
-    def service_names(self) -> List[ServiceName]:
+    def service_names(self) -> list[ServiceName]:
         return self.index.service_names
 
     @property
-    def target_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def target_prefix_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         return self.index.target_prefix_index
 
     @property
-    def signing_name_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def signing_name_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         return self.index.signing_name_index
 
     @property
-    def operations_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def operations_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         return self.index.operations_index
 
     @property
-    def endpoint_prefix_index(self) -> Dict[str, List[ServiceModelIdentifier]]:
+    def endpoint_prefix_index(self) -> dict[str, list[ServiceModelIdentifier]]:
         return self.index.endpoint_prefix_index
 
-    def by_target_prefix(self, target_prefix: str) -> List[ServiceModelIdentifier]:
+    def by_target_prefix(self, target_prefix: str) -> list[ServiceModelIdentifier]:
         return self.target_prefix_index.get(target_prefix, [])
 
-    def by_signing_name(self, signing_name: str) -> List[ServiceModelIdentifier]:
+    def by_signing_name(self, signing_name: str) -> list[ServiceModelIdentifier]:
         return self.signing_name_index.get(signing_name, [])
 
-    def by_operation(self, operation_name: str) -> List[ServiceModelIdentifier]:
+    def by_operation(self, operation_name: str) -> list[ServiceModelIdentifier]:
         return self.operations_index.get(operation_name, [])
 
 

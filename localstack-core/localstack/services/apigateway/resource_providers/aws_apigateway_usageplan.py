@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -18,35 +18,35 @@ from localstack.utils.strings import first_char_to_lower
 
 
 class ApiGatewayUsagePlanProperties(TypedDict):
-    ApiStages: Optional[list[ApiStage]]
-    Description: Optional[str]
-    Id: Optional[str]
-    Quota: Optional[QuotaSettings]
-    Tags: Optional[list[Tag]]
-    Throttle: Optional[ThrottleSettings]
-    UsagePlanName: Optional[str]
+    ApiStages: list[ApiStage] | None
+    Description: str | None
+    Id: str | None
+    Quota: QuotaSettings | None
+    Tags: list[Tag] | None
+    Throttle: ThrottleSettings | None
+    UsagePlanName: str | None
 
 
 class ApiStage(TypedDict):
-    ApiId: Optional[str]
-    Stage: Optional[str]
-    Throttle: Optional[dict]
+    ApiId: str | None
+    Stage: str | None
+    Throttle: dict | None
 
 
 class QuotaSettings(TypedDict):
-    Limit: Optional[int]
-    Offset: Optional[int]
-    Period: Optional[str]
+    Limit: int | None
+    Offset: int | None
+    Period: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class ThrottleSettings(TypedDict):
-    BurstLimit: Optional[int]
-    RateLimit: Optional[float]
+    BurstLimit: int | None
+    RateLimit: float | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

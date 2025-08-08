@@ -1,4 +1,4 @@
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from botocore.exceptions import ClientError
 
@@ -45,7 +45,7 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _from_error(self, env: Environment, ex: Exception) -> FailureEvent:
@@ -70,8 +70,8 @@ class StateTaskServiceSqs(StateTaskServiceCallback):
     def _normalise_response(
         self,
         response: Any,
-        boto_service_name: Optional[str] = None,
-        service_action_name: Optional[str] = None,
+        boto_service_name: str | None = None,
+        service_action_name: str | None = None,
     ) -> None:
         super()._normalise_response(
             response=response,

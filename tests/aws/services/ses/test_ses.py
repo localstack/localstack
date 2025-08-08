@@ -2,7 +2,6 @@ import contextlib
 import json
 import os
 from datetime import date, datetime
-from typing import Optional, Tuple
 
 import pytest
 import requests
@@ -93,8 +92,8 @@ def setup_email_addresses(ses_verify_identity):
     """
 
     def inner(
-        sender_email_address: Optional[str] = None, recipient_email_address: Optional[str] = None
-    ) -> Tuple[str, str]:
+        sender_email_address: str | None = None, recipient_email_address: str | None = None
+    ) -> tuple[str, str]:
         if is_aws_cloud():
             if sender_email_address is None:
                 raise ValueError(
@@ -932,7 +931,7 @@ class TestSESRetrospection:
         def _read_message_from_filesystem(message_id: str) -> dict:
             """Given a message ID, read the message from filesystem and deserialise it."""
             data_dir = config.dirs.data or config.dirs.tmp
-            with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
+            with open(os.path.join(data_dir, "ses", message_id + ".json")) as f:
                 message = f.read()
             return json.loads(message)
 
@@ -1025,7 +1024,7 @@ class TestSESRetrospection:
         )
         message_id = message["MessageId"]
 
-        with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
+        with open(os.path.join(data_dir, "ses", message_id + ".json")) as f:
             message = f.read()
 
         contents = json.loads(message)

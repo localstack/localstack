@@ -155,14 +155,14 @@ def secretsmanager_secret_arn(
 def cloudformation_stack_arn(
     stack_name: str, stack_id: str, account_id: str, region_name: str
 ) -> str:
-    pattern = "arn:%s:cloudformation:%s:%s:stack/%s/{stack_id}".format(stack_id=stack_id)
+    pattern = f"arn:%s:cloudformation:%s:%s:stack/%s/{stack_id}"
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def cloudformation_change_set_arn(
     change_set_name: str, change_set_id: str, account_id: str, region_name: str
 ) -> str:
-    pattern = "arn:%s:cloudformation:%s:%s:changeSet/%s/{cs_id}".format(cs_id=change_set_id)
+    pattern = f"arn:%s:cloudformation:%s:%s:changeSet/%s/{change_set_id}"
     return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
 
 

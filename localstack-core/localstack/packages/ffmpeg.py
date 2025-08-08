@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from localstack.packages import Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
@@ -21,7 +20,7 @@ class FfmpegPackage(Package["FfmpegPackageInstaller"]):
     def _get_installer(self, version: str) -> "FfmpegPackageInstaller":
         return FfmpegPackageInstaller(version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["7.1"]
 
 

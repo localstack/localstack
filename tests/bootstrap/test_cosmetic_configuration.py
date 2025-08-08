@@ -1,6 +1,6 @@
 import io
 import os
-from typing import Generator, Type
+from collections.abc import Generator
 from urllib.parse import urlparse
 
 import aws_cdk as cdk
@@ -87,7 +87,7 @@ def container(
 
 
 def raise_exception_with_cloudwatch_logs(
-    aws_client: ServiceLevelClientFactory, exc_class: Type[Exception] = AssertionError
+    aws_client: ServiceLevelClientFactory, exc_class: type[Exception] = AssertionError
 ):
     out = io.StringIO()
 

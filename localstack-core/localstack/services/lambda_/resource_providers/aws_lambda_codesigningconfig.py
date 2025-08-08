@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,19 +14,19 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaCodeSigningConfigProperties(TypedDict):
-    AllowedPublishers: Optional[AllowedPublishers]
-    CodeSigningConfigArn: Optional[str]
-    CodeSigningConfigId: Optional[str]
-    CodeSigningPolicies: Optional[CodeSigningPolicies]
-    Description: Optional[str]
+    AllowedPublishers: AllowedPublishers | None
+    CodeSigningConfigArn: str | None
+    CodeSigningConfigId: str | None
+    CodeSigningPolicies: CodeSigningPolicies | None
+    Description: str | None
 
 
 class AllowedPublishers(TypedDict):
-    SigningProfileVersionArns: Optional[list[str]]
+    SigningProfileVersionArns: list[str] | None
 
 
 class CodeSigningPolicies(TypedDict):
-    UntrustedArtifactOnDeployment: Optional[str]
+    UntrustedArtifactOnDeployment: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

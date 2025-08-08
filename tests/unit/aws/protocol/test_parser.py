@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from io import BytesIO
 from urllib.parse import unquote, urlencode, urlsplit
 
@@ -450,8 +450,8 @@ def test_query_parser_no_input_shape_autoscaling_with_botocore():
 
 def test_query_parser_iot_with_botocore():
     """Test if timestamp for 'rest-json' is parsed correctly"""
-    start = datetime(2023, 1, 10, tzinfo=timezone.utc)
-    end = datetime(2023, 1, 11, tzinfo=timezone.utc)
+    start = datetime(2023, 1, 10, tzinfo=UTC)
+    end = datetime(2023, 1, 11, tzinfo=UTC)
     _botocore_parser_integration_test(
         service="iot",
         action="ListAuditMitigationActionsTasks",
@@ -1229,7 +1229,7 @@ def test_restxml_header_date_parsing():
         ContentLength=3,
         Body=BytesIO(b"foo"),
         Metadata={},
-        Expires=datetime(2015, 1, 1, 0, 0, tzinfo=timezone.utc),
+        Expires=datetime(2015, 1, 1, 0, 0, tzinfo=UTC),
     )
 
 

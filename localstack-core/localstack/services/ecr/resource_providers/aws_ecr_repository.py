@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.constants import AWS_REGION_US_EAST_1, DEFAULT_AWS_ACCOUNT_ID
@@ -22,34 +22,34 @@ default_repos_per_stack = {}
 
 
 class ECRRepositoryProperties(TypedDict):
-    Arn: Optional[str]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    ImageScanningConfiguration: Optional[ImageScanningConfiguration]
-    ImageTagMutability: Optional[str]
-    LifecyclePolicy: Optional[LifecyclePolicy]
-    RepositoryName: Optional[str]
-    RepositoryPolicyText: Optional[dict | str]
-    RepositoryUri: Optional[str]
-    Tags: Optional[list[Tag]]
+    Arn: str | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    ImageScanningConfiguration: ImageScanningConfiguration | None
+    ImageTagMutability: str | None
+    LifecyclePolicy: LifecyclePolicy | None
+    RepositoryName: str | None
+    RepositoryPolicyText: dict | str | None
+    RepositoryUri: str | None
+    Tags: list[Tag] | None
 
 
 class LifecyclePolicy(TypedDict):
-    LifecyclePolicyText: Optional[str]
-    RegistryId: Optional[str]
+    LifecyclePolicyText: str | None
+    RegistryId: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class ImageScanningConfiguration(TypedDict):
-    ScanOnPush: Optional[bool]
+    ScanOnPush: bool | None
 
 
 class EncryptionConfiguration(TypedDict):
-    EncryptionType: Optional[str]
-    KmsKey: Optional[str]
+    EncryptionType: str | None
+    KmsKey: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

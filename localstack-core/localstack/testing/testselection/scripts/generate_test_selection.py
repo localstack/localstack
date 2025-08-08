@@ -10,8 +10,8 @@ Optionally set the GITHUB_API_TOKEN environment variable to use the GitHub API.
 import argparse
 import os
 import sys
+from collections.abc import Iterable
 from pathlib import Path
-from typing import Iterable
 
 from localstack.testing.testselection.git import (
     find_merge_base,

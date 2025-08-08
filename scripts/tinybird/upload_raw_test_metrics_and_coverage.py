@@ -210,7 +210,7 @@ def send_metric_report(metric_path: str, source_type: str, timestamp: str):
     pathlist = Path(metric_path).rglob("metric-report-raw-data-*.csv")
     for path in pathlist:
         print(f"checking {str(path)}")
-        with open(path, "r") as csv_obj:
+        with open(path) as csv_obj:
             reader_obj = csv.DictReader(csv_obj)
             data_to_remove = [field for field in reader_obj.fieldnames if field not in DATA_TO_KEEP]
             for row in reader_obj:
@@ -259,7 +259,7 @@ def send_implemented_coverage(file: str, timestamp: str, type: str):
     count: int = 0
 
     build_id = os.environ.get("CIRCLE_WORKFLOW_ID", "") or os.environ.get("GITHUB_RUN_ID", "")
-    with open(file, "r") as csv_obj:
+    with open(file) as csv_obj:
         reader_obj = csv.DictReader(csv_obj)
         for row in reader_obj:
             count = count + 1

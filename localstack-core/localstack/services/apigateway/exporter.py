@@ -1,6 +1,5 @@
 import abc
 import json
-from typing import Type
 
 from apispec import APISpec
 
@@ -320,7 +319,7 @@ class _OpenApiOAS30Exporter(_BaseOpenApiExporter):
 
 
 class OpenApiExporter:
-    exporters: dict[str, Type[_BaseOpenApiExporter]]
+    exporters: dict[str, type[_BaseOpenApiExporter]]
 
     def __init__(self):
         self.exporters = {"swagger": _OpenApiSwaggerExporter, "oas30": _OpenApiOAS30Exporter}

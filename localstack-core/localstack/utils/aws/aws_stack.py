@@ -2,7 +2,7 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import List, Union
+from typing import Union
 
 import boto3
 
@@ -20,7 +20,7 @@ LOG = logging.getLogger(__name__)
 CACHE_S3_HOSTNAME_DNS_STATUS = None
 
 
-@lru_cache()
+@lru_cache
 def get_valid_regions():
     session = boto3.Session()
     valid_regions = set()
@@ -32,7 +32,7 @@ def get_valid_regions():
 
 # FIXME: AWS recommends use of SSM parameter store to determine per region availability
 # https://github.com/aws/aws-sdk/issues/206#issuecomment-1471354853
-@lru_cache()
+@lru_cache
 def get_valid_regions_for_service(service_name):
     session = boto3.Session()
     regions = list(session.get_available_regions(service_name))
@@ -60,7 +60,7 @@ def get_s3_hostname():
         try:
             assert socket.gethostbyname(S3_VIRTUAL_HOSTNAME)
             CACHE_S3_HOSTNAME_DNS_STATUS = True
-        except socket.error:
+        except OSError:
             CACHE_S3_HOSTNAME_DNS_STATUS = False
     if CACHE_S3_HOSTNAME_DNS_STATUS:
         return S3_VIRTUAL_HOSTNAME
@@ -68,7 +68,7 @@ def get_s3_hostname():
 
 
 def fix_account_id_in_arns(
-    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, List[str]] = None
+    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, list[str]] = None
 ):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
     from moto.core import DEFAULT_ACCOUNT_ID
@@ -78,13 +78,9 @@ def fix_account_id_in_arns(
     is_str_obj = is_string_or_bytes(response)
     content = to_str(response if is_str_obj else response._content)
 
-    replacement = r"arn{col}aws{col}\1{col}\2{col}{acc}{col}".format(
-        col=colon_delimiter, acc=replacement
-    )
+    replacement = rf"arn{colon_delimiter}aws{colon_delimiter}\1{colon_delimiter}\2{colon_delimiter}{replacement}{colon_delimiter}"
     for acc_id in existing:
-        regex = r"arn{col}aws{col}([^:%]+){col}([^:%]*){col}{acc}{col}".format(
-            col=colon_delimiter, acc=acc_id
-        )
+        regex = rf"arn{colon_delimiter}aws{colon_delimiter}([^:%]+){colon_delimiter}([^:%]*){colon_delimiter}{acc_id}{colon_delimiter}"
         content = re.sub(regex, replacement, content)
 
     if not is_str_obj:

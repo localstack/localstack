@@ -1,5 +1,3 @@
-from typing import Optional
-
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.eval.event.event_manager import (
@@ -18,7 +16,7 @@ from localstack.services.stepfunctions.backend.execution_worker import SyncExecu
 
 
 class TestStateExecutionWorker(SyncExecutionWorker):
-    env: Optional[TestStateEnvironment]
+    env: TestStateEnvironment | None
 
     def _get_evaluation_entrypoint(self) -> EvalComponent:
         return TestStateAmazonStateLanguageParser.parse(

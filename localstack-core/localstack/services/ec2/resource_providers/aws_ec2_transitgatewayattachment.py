@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,17 +14,17 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2TransitGatewayAttachmentProperties(TypedDict):
-    SubnetIds: Optional[list[str]]
-    TransitGatewayId: Optional[str]
-    VpcId: Optional[str]
-    Id: Optional[str]
-    Options: Optional[dict]
-    Tags: Optional[list[Tag]]
+    SubnetIds: list[str] | None
+    TransitGatewayId: str | None
+    VpcId: str | None
+    Id: str | None
+    Options: dict | None
+    Tags: list[Tag] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

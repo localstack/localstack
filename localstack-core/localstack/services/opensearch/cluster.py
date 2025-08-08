@@ -2,7 +2,7 @@ import dataclasses
 import logging
 import os
 import threading
-from typing import Dict, List, NamedTuple, Optional, Tuple
+from typing import NamedTuple
 from urllib.parse import urlparse
 
 import requests
@@ -37,7 +37,7 @@ LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
 DEFAULT_BACKEND_HOST = "127.0.0.1"
 
-CommandSettings = Dict[str, str]
+CommandSettings = dict[str, str]
 
 
 class Directories(NamedTuple):
@@ -49,8 +49,8 @@ class Directories(NamedTuple):
 
 
 def get_cluster_health_status(
-    url: str, auth: Tuple[str, str] | None, host: str | None = None
-) -> Optional[str]:
+    url: str, auth: tuple[str, str] | None, host: str | None = None
+) -> str | None:
     """
     Queries the health endpoint of OpenSearch/Elasticsearch and returns either the status ('green', 'yellow',
     ...) or None if the response returned a non-200 response.
@@ -125,7 +125,7 @@ def resolve_directories(version: str, cluster_path: str, data_root: str = None) 
     return Directories(install_dir, tmp_dir, modules_dir, data_dir, backup_dir)
 
 
-def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> List[str]:
+def build_cluster_run_command(cluster_bin: str, settings: CommandSettings) -> list[str]:
     """
     Takes the command settings dict and builds the actual command (which can then be executed as a shell command).
 
@@ -169,13 +169,13 @@ class SecurityOptions:
     master_password: str | None
 
     @property
-    def auth(self) -> Tuple[str, str] | None:
+    def auth(self) -> tuple[str, str] | None:
         """Returns an auth tuple which can be used for HTTP requests or None, if disabled."""
         return None if not self.enabled else (self.master_username, self.master_password)
 
     @staticmethod
     def from_input(
-        advanced_security_options: Optional[AdvancedSecurityOptionsInput],
+        advanced_security_options: AdvancedSecurityOptionsInput | None,
     ) -> "SecurityOptions":
         """
         Parses the given AdvancedSecurityOptionsInput, performs some validation, and returns the parsed SecurityOptions.
@@ -215,7 +215,7 @@ class SecurityOptions:
 
 def register_cluster(
     host: str, path: str, forward_url: str, custom_endpoint: CustomEndpoint
-) -> List[Rule]:
+) -> list[Rule]:
     """
     Registers routes for a cluster at the edge router.
     Depending on which endpoint strategy is employed, and if a custom endpoint is enabled, different routes are
@@ -338,7 +338,7 @@ class OpensearchCluster(Server):
     def os_user(self):
         return constants.OS_USER_OPENSEARCH
 
-    def health(self) -> Optional[str]:
+    def health(self) -> str | None:
         return get_cluster_health_status(self.url, auth=self.auth)
 
     def do_start_thread(self) -> FuncThread:
@@ -451,8 +451,8 @@ class OpensearchCluster(Server):
         return settings
 
     def _create_run_command(
-        self, directories: Directories, additional_settings: Optional[CommandSettings] = None
-    ) -> List[str]:
+        self, directories: Directories, additional_settings: CommandSettings | None = None
+    ) -> list[str]:
         # delete opensearch data that may be cached locally from a previous test run
         bin_path = os.path.join(directories.install, "bin", self.bin_name)
 
@@ -464,7 +464,7 @@ class OpensearchCluster(Server):
         cmd = build_cluster_run_command(bin_path, settings)
         return cmd
 
-    def _create_env_vars(self, directories: Directories) -> Dict:
+    def _create_env_vars(self, directories: Directories) -> dict:
         env_vars = {
             "JAVA_HOME": os.path.join(directories.install, "jdk"),
             "OPENSEARCH_JAVA_OPTS": os.environ.get("OPENSEARCH_JAVA_OPTS", "-Xms200m -Xmx600m"),
@@ -699,7 +699,7 @@ class ElasticsearchCluster(OpensearchCluster):
 
         return settings
 
-    def _create_env_vars(self, directories: Directories) -> Dict:
+    def _create_env_vars(self, directories: Directories) -> dict:
         return {
             **elasticsearch_package.get_installer(self.version).get_java_env_vars(),
             "ES_JAVA_OPTS": os.environ.get("ES_JAVA_OPTS", "-Xms200m -Xmx600m"),

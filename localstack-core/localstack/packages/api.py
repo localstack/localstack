@@ -6,7 +6,7 @@ from collections import defaultdict
 from enum import Enum
 from inspect import getmodule
 from threading import RLock
-from typing import Any, Callable, Generic, List, Optional, ParamSpec, TypeVar
+from typing import Any, Callable, Generic, Optional, ParamSpec, TypeVar
 
 from plux import Plugin, PluginManager, PluginSpec  # type: ignore
 
@@ -219,7 +219,7 @@ class Package(abc.ABC, Generic[T]):
         """
         self.get_installer(version).install(target)
 
-    @functools.lru_cache()
+    @functools.lru_cache
     def get_installer(self, version: str | None = None) -> T:
         """
         Returns the installer instance for a specific version of the package.
@@ -237,7 +237,7 @@ class Package(abc.ABC, Generic[T]):
             raise NoSuchVersionException(package=self.name, version=version)
         return self._get_installer(version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         """
         :return: List of all versions available for this package.
         """
@@ -262,7 +262,7 @@ class MultiPackageInstaller(PackageInstaller):
     PackageInstaller implementation which composes of multiple package installers.
     """
 
-    def __init__(self, name: str, version: str, package_installer: List[PackageInstaller]):
+    def __init__(self, name: str, version: str, package_installer: list[PackageInstaller]):
         """
         :param name: of the (multi-)package installer
         :param version: of this (multi-)package installer
@@ -317,7 +317,7 @@ class PackagesPlugin(Plugin):  # type: ignore[misc]
         self,
         name: str,
         scope: str,
-        get_package: Callable[[], Package[PackageInstaller] | List[Package[PackageInstaller]]],
+        get_package: Callable[[], Package[PackageInstaller] | list[Package[PackageInstaller]]],
         should_load: Callable[[], bool] | None = None,
     ) -> None:
         super().__init__()

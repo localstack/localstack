@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.common.payload.payloadvalue.payload_value import (
     PayloadValue,
@@ -16,7 +16,7 @@ class PayloadBinding(PayloadValue, abc.ABC):
     def __init__(self, field: str):
         self.field = field
 
-    def _field_name(self) -> Optional[str]:
+    def _field_name(self) -> str | None:
         return self.field
 
     @abc.abstractmethod
@@ -36,7 +36,7 @@ class PayloadBindingStringExpressionSimple(PayloadBinding):
         super().__init__(field=field)
         self.string_expression_simple = string_expression_simple
 
-    def _field_name(self) -> Optional[str]:
+    def _field_name(self) -> str | None:
         return f"{self.field}.$"
 
     def _eval_val(self, env: Environment) -> Any:

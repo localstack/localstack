@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.jsonata.jsonata import (
     VariableDeclarations,
@@ -51,8 +51,8 @@ class VariableStore:
 
     _declaration_tracing: Final[set[str]]
 
-    _outer_variable_declaration_cache: Optional[VariableDeclarations]
-    _variable_declarations_cache: Optional[VariableDeclarations]
+    _outer_variable_declaration_cache: VariableDeclarations | None
+    _variable_declarations_cache: VariableDeclarations | None
 
     def __init__(self):
         self._outer_scope = dict()

@@ -1,6 +1,5 @@
 import os
 import platform
-from typing import List
 
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
@@ -20,7 +19,7 @@ class TerraformPackage(Package["TerraformPackageInstaller"]):
     def __init__(self) -> None:
         super().__init__("Terraform", TERRAFORM_VERSION)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [TERRAFORM_VERSION]
 
     def _get_installer(self, version: str) -> "TerraformPackageInstaller":

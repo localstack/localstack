@@ -1,9 +1,10 @@
 import json
 import logging
 import warnings
-from contextlib import contextmanager
+from collections.abc import Callable
+from contextlib import AbstractContextManager, contextmanager
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, ContextManager, Optional
+from typing import TYPE_CHECKING
 
 import aws_cdk as cdk
 from botocore.exceptions import ClientError, WaiterError
@@ -77,9 +78,9 @@ class InfraProvisioner:
         self,
         aws_client: ServiceLevelClientFactory,
         namespace: str,
-        base_path: Optional[str] = None,
-        force_synth: Optional[bool] = False,
-        persist_output: Optional[bool] = False,
+        base_path: str | None = None,
+        force_synth: bool | None = False,
+        persist_output: bool | None = False,
     ):
         """
         :param namespace: repo-unique identifier for this CDK app.
@@ -108,8 +109,8 @@ class InfraProvisioner:
 
     @contextmanager
     def provisioner(
-        self, skip_deployment: Optional[bool] = False, skip_teardown: Optional[bool] = False
-    ) -> ContextManager["InfraProvisioner"]:
+        self, skip_deployment: bool | None = False, skip_teardown: bool | None = False
+    ) -> AbstractContextManager["InfraProvisioner"]:
         """
         :param skip_deployment: Set to True to skip stack creation and re-use existing stack without modifications.
             Also skips custom setup steps.
@@ -136,7 +137,7 @@ class InfraProvisioner:
             else:
                 LOG.debug("Skipping teardown. Resources and stacks are not deleted.")
 
-    def provision(self, skip_deployment: Optional[bool] = False):
+    def provision(self, skip_deployment: bool | None = False):
         """
         Execute all previously added custom provisioning steps and deploy added CDK stacks via CloudFormation.
 
@@ -299,7 +300,7 @@ class InfraProvisioner:
     def add_cdk_stack(
         self,
         cdk_stack: cdk.Stack,
-        autoclean_buckets: Optional[bool] = True,
+        autoclean_buckets: bool | None = True,
     ):
         """
         Register a CDK stack to be deployed in a later `InfraProvisioner.provision` call.
@@ -318,7 +319,7 @@ class InfraProvisioner:
                 is_env_true("TEST_CDK_FORCE_SYNTH") or self.force_synth
             )  # EXPERIMENTAL / API subject to change
             if not template_path.exists() or should_update_template:
-                with open(template_path, "wt") as fd:
+                with open(template_path, "w") as fd:
                     template_json = cdk.assertions.Template.from_stack(cdk_stack).to_json()
                     json.dump(template_json, fd, indent=2)
                     # add trailing newline for linter and Git compliance

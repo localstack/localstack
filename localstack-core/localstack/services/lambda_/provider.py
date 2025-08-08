@@ -7,7 +7,7 @@ import logging
 import re
 import threading
 import time
-from typing import IO, Any, Optional, Tuple
+from typing import IO, Any
 
 from botocore.exceptions import ClientError
 
@@ -477,7 +477,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         self,
         account_id: str,
         region_name: str,
-        vpc_config: Optional[dict] = None,
+        vpc_config: dict | None = None,
     ) -> VpcConfig | None:
         if not vpc_config or not is_api_enabled("ec2"):
             return None
@@ -3589,7 +3589,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
     @staticmethod
     def _resolve_layer(
         layer_name_or_arn: str, context: RequestContext
-    ) -> Tuple[str, str, str, Optional[str]]:
+    ) -> tuple[str, str, str, str | None]:
         """
         Return locator attributes for a given Lambda layer.
 

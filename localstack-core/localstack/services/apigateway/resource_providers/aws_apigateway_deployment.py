@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,69 +15,69 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class ApiGatewayDeploymentProperties(TypedDict):
-    RestApiId: Optional[str]
-    DeploymentCanarySettings: Optional[DeploymentCanarySettings]
-    DeploymentId: Optional[str]
-    Description: Optional[str]
-    StageDescription: Optional[StageDescription]
-    StageName: Optional[str]
+    RestApiId: str | None
+    DeploymentCanarySettings: DeploymentCanarySettings | None
+    DeploymentId: str | None
+    Description: str | None
+    StageDescription: StageDescription | None
+    StageName: str | None
 
 
 class DeploymentCanarySettings(TypedDict):
-    PercentTraffic: Optional[float]
-    StageVariableOverrides: Optional[dict]
-    UseStageCache: Optional[bool]
+    PercentTraffic: float | None
+    StageVariableOverrides: dict | None
+    UseStageCache: bool | None
 
 
 class AccessLogSetting(TypedDict):
-    DestinationArn: Optional[str]
-    Format: Optional[str]
+    DestinationArn: str | None
+    Format: str | None
 
 
 class CanarySetting(TypedDict):
-    PercentTraffic: Optional[float]
-    StageVariableOverrides: Optional[dict]
-    UseStageCache: Optional[bool]
+    PercentTraffic: float | None
+    StageVariableOverrides: dict | None
+    UseStageCache: bool | None
 
 
 class MethodSetting(TypedDict):
-    CacheDataEncrypted: Optional[bool]
-    CacheTtlInSeconds: Optional[int]
-    CachingEnabled: Optional[bool]
-    DataTraceEnabled: Optional[bool]
-    HttpMethod: Optional[str]
-    LoggingLevel: Optional[str]
-    MetricsEnabled: Optional[bool]
-    ResourcePath: Optional[str]
-    ThrottlingBurstLimit: Optional[int]
-    ThrottlingRateLimit: Optional[float]
+    CacheDataEncrypted: bool | None
+    CacheTtlInSeconds: int | None
+    CachingEnabled: bool | None
+    DataTraceEnabled: bool | None
+    HttpMethod: str | None
+    LoggingLevel: str | None
+    MetricsEnabled: bool | None
+    ResourcePath: str | None
+    ThrottlingBurstLimit: int | None
+    ThrottlingRateLimit: float | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class StageDescription(TypedDict):
-    AccessLogSetting: Optional[AccessLogSetting]
-    CacheClusterEnabled: Optional[bool]
-    CacheClusterSize: Optional[str]
-    CacheDataEncrypted: Optional[bool]
-    CacheTtlInSeconds: Optional[int]
-    CachingEnabled: Optional[bool]
-    CanarySetting: Optional[CanarySetting]
-    ClientCertificateId: Optional[str]
-    DataTraceEnabled: Optional[bool]
-    Description: Optional[str]
-    DocumentationVersion: Optional[str]
-    LoggingLevel: Optional[str]
-    MethodSettings: Optional[list[MethodSetting]]
-    MetricsEnabled: Optional[bool]
-    Tags: Optional[list[Tag]]
-    ThrottlingBurstLimit: Optional[int]
-    ThrottlingRateLimit: Optional[float]
-    TracingEnabled: Optional[bool]
-    Variables: Optional[dict]
+    AccessLogSetting: AccessLogSetting | None
+    CacheClusterEnabled: bool | None
+    CacheClusterSize: str | None
+    CacheDataEncrypted: bool | None
+    CacheTtlInSeconds: int | None
+    CachingEnabled: bool | None
+    CanarySetting: CanarySetting | None
+    ClientCertificateId: str | None
+    DataTraceEnabled: bool | None
+    Description: str | None
+    DocumentationVersion: str | None
+    LoggingLevel: str | None
+    MethodSettings: list[MethodSetting] | None
+    MetricsEnabled: bool | None
+    Tags: list[Tag] | None
+    ThrottlingBurstLimit: int | None
+    ThrottlingRateLimit: float | None
+    TracingEnabled: bool | None
+    Variables: dict | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

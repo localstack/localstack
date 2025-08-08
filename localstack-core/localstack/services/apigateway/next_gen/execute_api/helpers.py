@@ -4,7 +4,7 @@ import random
 import re
 import time
 from secrets import token_hex
-from typing import Type, TypedDict
+from typing import TypedDict
 
 from moto.apigateway.models import RestAPI as MotoRestAPI
 
@@ -115,7 +115,7 @@ def get_lambda_function_arn_from_invocation_uri(uri: str) -> str:
     return uri.split("functions/")[1].removesuffix("/invocations")
 
 
-def validate_sub_dict_of_typed_dict(typed_dict: Type[TypedDict], obj: dict) -> bool:
+def validate_sub_dict_of_typed_dict(typed_dict: type[TypedDict], obj: dict) -> bool:
     """
     Validate that the object is a subset off the keys of a given `TypedDict`.
     :param typed_dict: the `TypedDict` blueprint

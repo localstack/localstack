@@ -33,7 +33,7 @@ class TestConfigService:
     def test_put_configuration_recorder(
         self, aws_client, create_role, create_configuration_recorder
     ):
-        iam_role_name = "role-{}".format(short_uid())
+        iam_role_name = f"role-{short_uid()}"
         iam_role_arn = create_role(
             RoleName=iam_role_name, AssumeRolePolicyDocument=json.dumps(ASSUME_POLICY_DOCUMENT)
         )["Role"]["Arn"]
@@ -57,7 +57,7 @@ class TestConfigService:
     def test_put_delivery_channel(
         self, aws_client, s3_create_bucket, create_role, create_configuration_recorder
     ):
-        iam_role_name = "role-{}".format(short_uid())
+        iam_role_name = f"role-{short_uid()}"
         iam_role_arn = create_role(
             RoleName=iam_role_name, AssumeRolePolicyDocument=json.dumps(ASSUME_POLICY_DOCUMENT)
         )["Role"]["Arn"]

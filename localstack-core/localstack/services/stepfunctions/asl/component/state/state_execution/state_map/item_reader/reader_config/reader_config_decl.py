@@ -1,4 +1,4 @@
-from typing import Final, Optional, TypedDict
+from typing import Final, TypedDict
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.reader_config.csv_header_location import (
@@ -34,7 +34,7 @@ MaxItemsValueOutput = int
 class ReaderConfigOutput(TypedDict):
     InputType: InputTypeOutput
     CSVHeaderLocation: CSVHeaderLocationOutput
-    CSVHeaders: Optional[CSVHeadersOutput]
+    CSVHeaders: CSVHeadersOutput | None
     MaxItemsValue: MaxItemsValueOutput
 
 
@@ -42,14 +42,14 @@ class ReaderConfig(EvalComponent):
     input_type: Final[InputType]
     max_items_decl: Final[MaxItemsDecl]
     csv_header_location: Final[CSVHeaderLocation]
-    csv_headers: Optional[CSVHeaders]
+    csv_headers: CSVHeaders | None
 
     def __init__(
         self,
         input_type: InputType,
         csv_header_location: CSVHeaderLocation,
-        csv_headers: Optional[CSVHeaders],
-        max_items_decl: Optional[MaxItemsDecl],
+        csv_headers: CSVHeaders | None,
+        max_items_decl: MaxItemsDecl | None,
     ):
         self.input_type = input_type
         self.max_items_decl = max_items_decl or MaxItemsInt()

@@ -2,7 +2,6 @@ import contextlib
 import logging
 from collections import defaultdict
 from concurrent.futures import Future, ThreadPoolExecutor
-from typing import ContextManager
 
 from localstack.services.lambda_.invocation.execution_environment import (
     EnvironmentStartupTimeoutException,
@@ -44,7 +43,7 @@ class AssignmentService(OtherServiceEndpoint):
         version_manager_id: str,
         function_version: FunctionVersion,
         provisioning_type: InitializationType,
-    ) -> ContextManager[ExecutionEnvironment]:
+    ) -> contextlib.AbstractContextManager[ExecutionEnvironment]:
         applicable_envs = (
             env
             for env in self.environments[version_manager_id].values()

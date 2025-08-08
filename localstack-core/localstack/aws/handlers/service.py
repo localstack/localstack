@@ -3,7 +3,7 @@
 import logging
 import traceback
 from collections import defaultdict
-from typing import Any, Dict, Union
+from typing import Any
 
 from botocore.model import OperationModel, ServiceModel
 
@@ -49,7 +49,7 @@ class ServiceRequestParser(Handler):
     already be resolved in the RequestContext (e.g., through a ServiceNameParser)
     """
 
-    parsers: Dict[str, RequestParser]
+    parsers: dict[str, RequestParser]
 
     def __init__(self):
         self.parsers = dict()
@@ -89,7 +89,7 @@ class ServiceRequestRouter(Handler):
     Routes ServiceOperations to Handlers.
     """
 
-    handlers: Dict[ServiceOperation, Handler]
+    handlers: dict[ServiceOperation, Handler]
 
     def __init__(self):
         self.handlers = dict()
@@ -118,7 +118,7 @@ class ServiceRequestRouter(Handler):
 
         self.handlers[key] = handler
 
-    def add_provider(self, provider: Any, service: Union[str, ServiceModel]):
+    def add_provider(self, provider: Any, service: str | ServiceModel):
         self.add_skeleton(create_skeleton(service, provider))
 
     def add_skeleton(self, skeleton: Skeleton):
@@ -278,7 +278,7 @@ class ServiceResponseHandlers(Handler):
     are only called if the request context has a service, and there are handlers for that particular service.
     """
 
-    handlers: Dict[str, CompositeResponseHandler]
+    handlers: dict[str, CompositeResponseHandler]
 
     def __init__(self):
         self.handlers = defaultdict(CompositeResponseHandler)

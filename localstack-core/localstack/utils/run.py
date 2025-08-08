@@ -9,7 +9,7 @@ import threading
 import time
 from functools import lru_cache
 from queue import Queue
-from typing import Any, AnyStr, Callable, Dict, List, Optional, Union
+from typing import Any, AnyStr, Callable, Optional, Union
 
 from localstack import config
 
@@ -23,13 +23,13 @@ LOG = logging.getLogger(__name__)
 
 
 def run(
-    cmd: Union[str, List[str]],
+    cmd: Union[str, list[str]],
     print_error=True,
     asynchronous=False,
     stdin=False,
     stderr=subprocess.STDOUT,
     outfile=None,
-    env_vars: Optional[Dict[AnyStr, AnyStr]] = None,
+    env_vars: Optional[dict[AnyStr, AnyStr]] = None,
     inherit_cwd=False,
     inherit_env=True,
     tty=False,
@@ -151,7 +151,7 @@ def run_for_max_seconds(max_secs, _function, *args, **kwargs):
         time.sleep(0.5)
 
 
-def run_interactive(command: List[str]):
+def run_interactive(command: list[str]):
     """
     Run an interactive command in a subprocess. This blocks the current thread and attaches sys.stdin to
     the process. Copied from https://stackoverflow.com/a/43012138/804840
@@ -196,7 +196,7 @@ def is_root() -> bool:
     return get_os_user() == "root"
 
 
-@lru_cache()
+@lru_cache
 def get_os_user() -> str:
     # using getpass.getuser() seems to be reporting a different/invalid user in Docker/macOS
     return run("whoami").strip()
@@ -211,10 +211,10 @@ class ShellCommandThread(FuncThread):
 
     def __init__(
         self,
-        cmd: Union[str, List[str]],
+        cmd: Union[str, list[str]],
         params: Any = None,
         outfile: Union[str, int] = None,
-        env_vars: Dict[str, str] = None,
+        env_vars: dict[str, str] = None,
         stdin: bool = False,
         auto_restart: bool = False,
         quiet: bool = True,

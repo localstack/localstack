@@ -2,7 +2,7 @@ import json
 import unittest
 import xml
 from json import JSONDecodeError
-from typing import Any, Dict
+from typing import Any
 from unittest.mock import MagicMock, Mock
 
 import boto3
@@ -952,7 +952,7 @@ class TestApigatewayEvents:
 
 class TestRequestParameterResolver:
     def test_resolve_request_parameters(self):
-        integration: Dict[str, Any] = {
+        integration: dict[str, Any] = {
             "requestParameters": {
                 "integration.request.path.pathParam": "method.request.path.id",
                 "integration.request.querystring.baz": "method.request.querystring.baz",

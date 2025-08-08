@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,44 +15,44 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class ResourceGroupsGroupProperties(TypedDict):
-    Name: Optional[str]
-    Arn: Optional[str]
-    Configuration: Optional[list[ConfigurationItem]]
-    Description: Optional[str]
-    ResourceQuery: Optional[ResourceQuery]
-    Resources: Optional[list[str]]
-    Tags: Optional[list[Tag]]
+    Name: str | None
+    Arn: str | None
+    Configuration: list[ConfigurationItem] | None
+    Description: str | None
+    ResourceQuery: ResourceQuery | None
+    Resources: list[str] | None
+    Tags: list[Tag] | None
 
 
 class TagFilter(TypedDict):
-    Key: Optional[str]
-    Values: Optional[list[str]]
+    Key: str | None
+    Values: list[str] | None
 
 
 class Query(TypedDict):
-    ResourceTypeFilters: Optional[list[str]]
-    StackIdentifier: Optional[str]
-    TagFilters: Optional[list[TagFilter]]
+    ResourceTypeFilters: list[str] | None
+    StackIdentifier: str | None
+    TagFilters: list[TagFilter] | None
 
 
 class ResourceQuery(TypedDict):
-    Query: Optional[Query]
-    Type: Optional[str]
+    Query: Query | None
+    Type: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class ConfigurationParameter(TypedDict):
-    Name: Optional[str]
-    Values: Optional[list[str]]
+    Name: str | None
+    Values: list[str] | None
 
 
 class ConfigurationItem(TypedDict):
-    Parameters: Optional[list[ConfigurationParameter]]
-    Type: Optional[str]
+    Parameters: list[ConfigurationParameter] | None
+    Type: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

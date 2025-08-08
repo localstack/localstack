@@ -4,7 +4,7 @@ import json
 import os
 import re
 from collections import namedtuple
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import botocore
 import pytest
@@ -409,7 +409,7 @@ class TestAPIGateway:
         path: str,
         role_arn: str,
         apigw_client,
-        data_mutator_fn: Optional[Callable] = None,
+        data_mutator_fn: Callable | None = None,
     ) -> ApiGatewayLambdaProxyIntegrationTestResult:
         """
         Perform the setup needed to do a POST against a Lambda Proxy Integration;
@@ -482,9 +482,7 @@ class TestAPIGateway:
         try:
             parsed_body = json.loads(to_str(result.content))
         except json.decoder.JSONDecodeError as e:
-            raise Exception(
-                "Couldn't json-decode content: {}".format(to_str(result.content))
-            ) from e
+            raise Exception(f"Couldn't json-decode content: {to_str(result.content)}") from e
         assert parsed_body.get("return_status_code") == 203
         assert parsed_body.get("return_headers") == {"foo": "bar123"}
         assert parsed_body.get("queryStringParameters") == {"foo": "foo", "bar": "baz"}
@@ -717,8 +715,8 @@ class TestAPIGateway:
             restApiId=api_id,
             name="lambda_authorizer",
             type="TOKEN",
-            authorizerUri="arn:aws:apigateway:us-east-1:lambda:path/ \
-                2015-03-31/functions/{}/invocations".format(lambda_uri),
+            authorizerUri=f"arn:aws:apigateway:us-east-1:lambda:path/ \
+                2015-03-31/functions/{lambda_uri}/invocations",
             identitySource="method.request.header.Auth",
         )
         snapshot.match("authorizer", authorizer)
