@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,10 +14,10 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2VPCGatewayAttachmentProperties(TypedDict):
-    VpcId: Optional[str]
-    Id: Optional[str]
-    InternetGatewayId: Optional[str]
-    VpnGatewayId: Optional[str]
+    VpcId: str | None
+    Id: str | None
+    InternetGatewayId: str | None
+    VpnGatewayId: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

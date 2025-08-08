@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from moto.ec2 import models as ec2_models
 from moto.ec2.models.vpcs import VPCEndPoint
@@ -120,7 +119,7 @@ def apply_patches():
         fn: ec2_models.subnets.SubnetBackend.create_subnet,
         self: ec2_models.subnets.SubnetBackend,
         *args,
-        tags: Optional[dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ):
         # Patch this method so that we can create a subnet with a specific "custom"
@@ -173,8 +172,8 @@ def apply_patches():
         self: ec2_models.security_groups.SecurityGroupBackend,
         name: str,
         *args,
-        vpc_id: Optional[str] = None,
-        tags: Optional[dict[str, str]] = None,
+        vpc_id: str | None = None,
+        tags: dict[str, str] | None = None,
         force: bool = False,
         **kwargs,
     ):
@@ -213,7 +212,7 @@ def apply_patches():
         self: ec2_models.vpcs.VPCBackend,
         cidr_block: str,
         *args,
-        tags: Optional[list[dict[str, str]]] = None,
+        tags: list[dict[str, str]] | None = None,
         is_default: bool = False,
         **kwargs,
     ):

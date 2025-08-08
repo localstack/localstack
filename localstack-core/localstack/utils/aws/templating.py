@@ -1,6 +1,6 @@
 import json
 import re
-from typing import Any, Dict
+from typing import Any
 
 import airspeed
 
@@ -44,7 +44,7 @@ class VelocityUtil:
 class VtlTemplate:
     """Utility class for rendering Velocity templates"""
 
-    def render_vtl(self, template: str, variables: Dict, as_json=False) -> str | dict:
+    def render_vtl(self, template: str, variables: dict, as_json=False) -> str | dict:
         """
         Render the given VTL template against the dict of variables. Note that this is a
         potentially mutating operation which may change the values of `variables` in-place.
@@ -125,7 +125,7 @@ class VtlTemplate:
             rendered_template = json.loads(rendered_template)
         return rendered_template
 
-    def prepare_namespace(self, variables: Dict[str, Any], source: str = "") -> Dict:
+    def prepare_namespace(self, variables: dict[str, Any], source: str = "") -> dict:
         namespace = dict(variables or {})
         namespace.setdefault("context", {})
         if not namespace.get("util"):

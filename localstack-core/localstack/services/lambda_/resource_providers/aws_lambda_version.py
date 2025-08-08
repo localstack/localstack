@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,16 +14,16 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaVersionProperties(TypedDict):
-    FunctionName: Optional[str]
-    CodeSha256: Optional[str]
-    Description: Optional[str]
-    Id: Optional[str]
-    ProvisionedConcurrencyConfig: Optional[ProvisionedConcurrencyConfiguration]
-    Version: Optional[str]
+    FunctionName: str | None
+    CodeSha256: str | None
+    Description: str | None
+    Id: str | None
+    ProvisionedConcurrencyConfig: ProvisionedConcurrencyConfiguration | None
+    Version: str | None
 
 
 class ProvisionedConcurrencyConfiguration(TypedDict):
-    ProvisionedConcurrentExecutions: Optional[int]
+    ProvisionedConcurrentExecutions: int | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

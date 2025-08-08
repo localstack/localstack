@@ -7,7 +7,7 @@ import time
 import traceback
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import botocore.config
 import requests
@@ -150,7 +150,7 @@ def simulate_call(service: str, op: str) -> RowEntry:
     return result
 
 
-def _make_api_call(client, service: str, op: str, parameters: Optional[Instance]):
+def _make_api_call(client, service: str, op: str, parameters: Instance | None):
     result = RowEntry(service=service, operation=op, status_code=0)
     try:
         response = client._make_api_call(op, parameters)
@@ -337,7 +337,7 @@ def calculate_percentages():
     implemented_aggregate = {}
     aggregate_list = []
 
-    with open("./output-notimplemented.csv", "r") as fd:
+    with open("./output-notimplemented.csv") as fd:
         reader = csv.DictReader(fd, fieldnames=["service", "operation", "implemented"])
         for line in reader:
             if line["implemented"] == "implemented":

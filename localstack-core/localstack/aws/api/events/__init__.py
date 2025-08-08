@@ -893,23 +893,19 @@ class DisableRuleRequest(ServiceRequest):
     EventBusName: Optional[EventBusNameOrArn]
 
 
-PlacementStrategy = TypedDict(
-    "PlacementStrategy",
-    {
-        "type": Optional[PlacementStrategyType],
-        "field": Optional[PlacementStrategyField],
-    },
-    total=False,
-)
+class PlacementStrategy(TypedDict, total=False):
+    type: Optional[PlacementStrategyType]
+    field: Optional[PlacementStrategyField]
+
+
 PlacementStrategies = List[PlacementStrategy]
-PlacementConstraint = TypedDict(
-    "PlacementConstraint",
-    {
-        "type": Optional[PlacementConstraintType],
-        "expression": Optional[PlacementConstraintExpression],
-    },
-    total=False,
-)
+
+
+class PlacementConstraint(TypedDict, total=False):
+    type: Optional[PlacementConstraintType]
+    expression: Optional[PlacementConstraintExpression]
+
+
 PlacementConstraints = List[PlacementConstraint]
 
 

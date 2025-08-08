@@ -1,6 +1,7 @@
 import dataclasses
+from collections.abc import Callable
 from enum import Enum, auto
-from typing import Callable, Protocol
+from typing import Protocol
 
 
 class RecordType(Enum):

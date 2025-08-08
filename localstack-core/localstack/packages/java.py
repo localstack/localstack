@@ -1,6 +1,5 @@
 import logging
 import os
-from typing import List
 
 import requests
 
@@ -23,6 +22,7 @@ JAVA_VERSIONS = {
     "11": "11.0.25+9",
     "17": "17.0.13+11",
     "21": "21.0.5+11",
+    "24": "24.0.1+9",
 }
 
 
@@ -115,23 +115,49 @@ class JavaPackageInstaller(ArchiveDownloadAndExtractInstaller):
 
         # Build a custom JRE with only the necessary bits to minimise disk footprint
         LOG.debug("Optimising JRE installation")
-        cmd = (
-            "bin/jlink --add-modules "
+
+        base_modules = [
             # Required modules
-            "java.base,java.desktop,java.instrument,java.management,"
-            "java.naming,java.scripting,java.sql,java.xml,jdk.compiler,"
+            "java.base",
+            "java.desktop",
+            "java.instrument",
+            "java.management",
+            "java.naming",
+            "java.scripting",
+            "java.sql",
+            "java.xml",
+            "jdk.compiler",
             # jdk.unsupported contains sun.misc.Unsafe which is required by some dependencies
-            "jdk.unsupported,"
+            "jdk.unsupported",
             # Additional cipher suites
-            "jdk.crypto.cryptoki,"
+            "jdk.crypto.cryptoki",
             # Archive support
-            "jdk.zipfs,"
+            "jdk.zipfs",
             # Required by MQ broker
-            "jdk.httpserver,jdk.management,jdk.management.agent,"
+            "jdk.httpserver",
+            "jdk.management",
+            "jdk.management.agent",
             # Required by Spark and Hadoop
-            "java.security.jgss,jdk.security.auth,"
+            "java.security.jgss",
+            "jdk.security.auth",
             # Include required locales
-            "jdk.localedata --include-locales en "
+            "jdk.localedata",
+        ]
+
+        # Add version-specific modules, not all versions require/support the same set
+        version_specific_modules = {
+            "24": ["jdk.incubator.vector"],  # Required for Trino latest version
+        }
+
+        modules = base_modules + version_specific_modules.get(self.version, [])
+        modules_str = ",".join(modules)
+
+        cmd = (
+            "bin/jlink "
+            # Add modules
+            f"--add-modules {modules_str} "
+            # Include required locales
+            "--include-locales en "
             # Supplementary args
             "--compress 2 --strip-debug --no-header-files --no-man-pages "
             # Output directory
@@ -198,7 +224,7 @@ class JavaPackage(Package[JavaPackageInstaller]):
     def __init__(self, default_version: str = DEFAULT_JAVA_VERSION):
         super().__init__(name="Java", default_version=default_version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return list(JAVA_VERSIONS.keys())
 
     def _get_installer(self, version: str) -> JavaPackageInstaller:

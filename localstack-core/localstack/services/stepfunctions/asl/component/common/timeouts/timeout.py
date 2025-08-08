@@ -1,5 +1,5 @@
 import abc
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import (
     ExecutionFailedEventDetails,
@@ -44,13 +44,13 @@ class Timeout(EvalComponent, abc.ABC):
 class TimeoutSeconds(Timeout):
     DEFAULT_TIMEOUT_SECONDS: Final[int] = 99999999
 
-    def __init__(self, timeout_seconds: int, is_default: Optional[bool] = None):
+    def __init__(self, timeout_seconds: int, is_default: bool | None = None):
         if not isinstance(timeout_seconds, int) and timeout_seconds <= 0:
             raise ValueError(
                 f"Expected non-negative integer for TimeoutSeconds, got '{timeout_seconds}' instead."
             )
         self.timeout_seconds: Final[int] = timeout_seconds
-        self.is_default: Optional[bool] = is_default
+        self.is_default: bool | None = is_default
 
     def is_default_value(self) -> bool:
         if self.is_default is not None:

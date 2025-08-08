@@ -3,7 +3,6 @@ import re
 import time
 from datetime import datetime
 from time import sleep
-from typing import Dict
 
 import botocore.exceptions
 import pytest
@@ -1893,7 +1892,7 @@ class TestDynamoDB:
 
         rs = aws_client.dynamodb.query(
             TableName=table_name,
-            KeyConditionExpression="{} = :username".format(partition_key),
+            KeyConditionExpression=f"{partition_key} = :username",
             ExpressionAttributeValues={":username": {"S": "test"}},
         )
         assert rs["ResponseMetadata"]["HTTPStatusCode"] == 200
@@ -1903,7 +1902,7 @@ class TestDynamoDB:
         with pytest.raises(Exception) as ctx:
             aws_client.dynamodb.query(
                 TableName=table_name,
-                KeyConditionExpression="{} = :username".format(partition_key),
+                KeyConditionExpression=f"{partition_key} = :username",
                 ExpressionAttributeValues={":username": {"S": "test"}},
             )
         assert ctx.match("ResourceNotFoundException")
@@ -2130,7 +2129,7 @@ class TestDynamoDB:
             ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
         )
 
-        def _transact_write(_d: Dict):
+        def _transact_write(_d: dict):
             return aws_client.dynamodb.transact_write_items(
                 ClientRequestToken="dedupe_token",
                 TransactItems=[

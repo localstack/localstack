@@ -2,7 +2,7 @@ import os
 from pathlib import Path
 from queue import Queue
 from threading import Event, RLock
-from typing import List, Optional
+from typing import Optional
 
 import pytest
 
@@ -15,7 +15,7 @@ class TestPackage(Package):
     def __init__(self):
         super().__init__("Test Package", "test-version")
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["test-version"]
 
     def _get_installer(self, version: str) -> PackageInstaller:
@@ -23,7 +23,7 @@ class TestPackage(Package):
 
 
 class TestPackageInstaller(PackageInstaller):
-    def __init__(self, version: str, install_lock: Optional[RLock] = None):
+    def __init__(self, version: str, install_lock: Optional[RLock] = None):  # noqa UP045
         super().__init__("test-installer", version, install_lock)
 
     def _get_install_marker_path(self, install_dir: str) -> str:
@@ -65,7 +65,7 @@ class LockingTestPackageInstaller(PackageInstaller):
     Package installer class used for testing the locking behavior.
     """
 
-    def __init__(self, queue: Queue = None, install_lock: Optional[RLock] = None):
+    def __init__(self, queue: Queue = None, install_lock: Optional[RLock] = None):  # noqa UP045
         super().__init__("lock-test-installer", "test", install_lock)
         self.queue = queue or Queue()
         self.about_to_wait = Event()

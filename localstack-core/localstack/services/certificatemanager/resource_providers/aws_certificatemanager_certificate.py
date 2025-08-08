@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,25 +14,25 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class CertificateManagerCertificateProperties(TypedDict):
-    DomainName: Optional[str]
-    CertificateAuthorityArn: Optional[str]
-    CertificateTransparencyLoggingPreference: Optional[str]
-    DomainValidationOptions: Optional[list[DomainValidationOption]]
-    Id: Optional[str]
-    SubjectAlternativeNames: Optional[list[str]]
-    Tags: Optional[list[Tag]]
-    ValidationMethod: Optional[str]
+    DomainName: str | None
+    CertificateAuthorityArn: str | None
+    CertificateTransparencyLoggingPreference: str | None
+    DomainValidationOptions: list[DomainValidationOption] | None
+    Id: str | None
+    SubjectAlternativeNames: list[str] | None
+    Tags: list[Tag] | None
+    ValidationMethod: str | None
 
 
 class DomainValidationOption(TypedDict):
-    DomainName: Optional[str]
-    HostedZoneId: Optional[str]
-    ValidationDomain: Optional[str]
+    DomainName: str | None
+    HostedZoneId: str | None
+    ValidationDomain: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

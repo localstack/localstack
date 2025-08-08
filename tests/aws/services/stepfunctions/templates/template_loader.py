@@ -12,7 +12,7 @@ class TemplateLoader(abc.ABC):
     def load_sfn_template(file_path: str) -> dict:
         template = _LOAD_CACHE.get(file_path)
         if template is None:
-            with open(file_path, "r") as df:
+            with open(file_path) as df:
                 template = json5.load(df)
             _LOAD_CACHE[file_path] = template
         return copy.deepcopy(template)

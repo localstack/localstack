@@ -5,7 +5,7 @@ import threading
 import traceback
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
-from typing import Callable, List, Optional
+from typing import Callable, Optional
 
 LOG = logging.getLogger(__name__)
 
@@ -153,7 +153,7 @@ def cleanup_threads_and_processes(quiet=True):
     TMP_PROCESSES.clear()
 
 
-def parallelize(func: Callable, arr: List, size: int = None):
+def parallelize(func: Callable, arr: list, size: int = None):
     if not size:
         size = len(arr)
     if size <= 0:

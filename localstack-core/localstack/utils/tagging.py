@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional
+from typing import Optional
 
 
 class TaggingService:
@@ -21,7 +21,7 @@ class TaggingService:
                 result.append({self.key_field: k, self.value_field: v})
         return {root_name: result}
 
-    def tag_resource(self, arn: str, tags: List[Dict[str, str]]):
+    def tag_resource(self, arn: str, tags: list[dict[str, str]]):
         if not tags:
             return
         if arn not in self.tags:
@@ -29,7 +29,7 @@ class TaggingService:
         for t in tags:
             self.tags[arn][t[self.key_field]] = t[self.value_field]
 
-    def untag_resource(self, arn: str, tag_names: List[str]):
+    def untag_resource(self, arn: str, tag_names: list[str]):
         tags = self.tags.get(arn, {})
         for name in tag_names:
             tags.pop(name, None)

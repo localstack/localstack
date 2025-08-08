@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,18 +14,18 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SSMMaintenanceWindowTargetProperties(TypedDict):
-    ResourceType: Optional[str]
-    Targets: Optional[list[Targets]]
-    WindowId: Optional[str]
-    Description: Optional[str]
-    Id: Optional[str]
-    Name: Optional[str]
-    OwnerInformation: Optional[str]
+    ResourceType: str | None
+    Targets: list[Targets] | None
+    WindowId: str | None
+    Description: str | None
+    Id: str | None
+    Name: str | None
+    OwnerInformation: str | None
 
 
 class Targets(TypedDict):
-    Key: Optional[str]
-    Values: Optional[list[str]]
+    Key: str | None
+    Values: list[str] | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

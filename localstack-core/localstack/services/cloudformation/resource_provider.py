@@ -5,11 +5,12 @@ import logging
 import re
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
 from math import ceil
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar
 
 import botocore
 from botocore.client import BaseClient
@@ -51,7 +52,7 @@ LOG = logging.getLogger(__name__)
 
 Properties = TypeVar("Properties")
 
-PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
+PUBLIC_REGISTRY: dict[str, type[ResourceProvider]] = {}
 
 PROVIDER_DEFAULTS = {}  # TODO: remove this after removing patching in -ext
 
@@ -66,12 +67,12 @@ class OperationStatus(Enum):
 @dataclass
 class ProgressEvent(Generic[Properties]):
     status: OperationStatus
-    resource_model: Optional[Properties] = None
-    resource_models: Optional[list[Properties]] = None
+    resource_model: Properties | None = None
+    resource_models: list[Properties] | None = None
 
     message: str = ""
-    result: Optional[str] = None
-    error_code: Optional[str] = None  # TODO: enum
+    result: str | None = None
+    error_code: str | None = None  # TODO: enum
     custom_context: dict = field(default_factory=dict)
 
 
@@ -84,7 +85,7 @@ class Credentials(TypedDict):
 class ResourceProviderPayloadRequestData(TypedDict):
     logicalResourceId: str
     resourceProperties: Properties
-    previousResourceProperties: Optional[Properties]
+    previousResourceProperties: Properties | None
     callerCredentials: Credentials
     providerCredentials: Credentials
     systemTags: dict[str, str]
@@ -184,8 +185,8 @@ class ResourceRequest(Generic[Properties]):
 
     custom_context: dict = field(default_factory=dict)
 
-    previous_state: Optional[Properties] = None
-    previous_tags: Optional[dict[str, str]] = None
+    previous_state: Properties | None = None
+    previous_tags: dict[str, str] | None = None
     tags: dict[str, str] = field(default_factory=dict)
 
 

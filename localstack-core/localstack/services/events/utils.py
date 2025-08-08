@@ -1,8 +1,8 @@
 import json
 import logging
 import re
-from datetime import datetime, timezone
-from typing import Any, Dict, Optional
+from datetime import UTC, datetime
+from typing import Any
 
 from botocore.utils import ArnParser
 
@@ -57,7 +57,7 @@ class EventJSONEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-def to_json_str(obj: Any, separators: Optional[tuple[str, str]] = (",", ":")) -> str:
+def to_json_str(obj: Any, separators: tuple[str, str] | None = (",", ":")) -> str:
     return json.dumps(obj, cls=EventJSONEncoder, separators=separators)
 
 
@@ -132,11 +132,11 @@ def get_resource_type(arn: Arn) -> ResourceType:
 
 
 def get_event_time(event: PutEventsRequestEntry) -> EventTime:
-    event_time = datetime.now(timezone.utc)
+    event_time = datetime.now(UTC)
     if event_timestamp := event.get("Time"):
         try:
             # use time from event if provided
-            event_time = event_timestamp.replace(tzinfo=timezone.utc)
+            event_time = event_timestamp.replace(tzinfo=UTC)
         except ValueError:
             # use current time if event time is invalid
             LOG.debug(
@@ -154,11 +154,11 @@ def convert_to_timezone_aware_datetime(
     timestamp: Timestamp,
 ) -> Timestamp:
     if timestamp.tzinfo is None:
-        timestamp = timestamp.replace(tzinfo=timezone.utc)
+        timestamp = timestamp.replace(tzinfo=UTC)
     return timestamp
 
 
-def recursive_remove_none_values_from_dict(d: Dict[str, Any]) -> Dict[str, Any]:
+def recursive_remove_none_values_from_dict(d: dict[str, Any]) -> dict[str, Any]:
     """
     Recursively removes keys with non values from a dictionary.
     """

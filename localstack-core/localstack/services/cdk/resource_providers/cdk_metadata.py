@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,7 +14,7 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class CDKMetadataProperties(TypedDict):
-    Id: Optional[str]
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"
@@ -83,8 +83,9 @@ class CDKMetadataProvider(ResourceProvider[CDKMetadataProperties]):
 
         """
         model = request.desired_state
+        result_model = {**model, "Id": request.previous_state["Id"]}
 
         return ProgressEvent(
             status=OperationStatus.SUCCESS,
-            resource_model=model,
+            resource_model=result_model,
         )

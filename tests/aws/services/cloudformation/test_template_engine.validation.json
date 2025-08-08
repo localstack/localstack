@@ -102,7 +102,22 @@
     "last_validated_date": "2024-08-08T21:21:23+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
-    "last_validated_date": "2023-01-15T16:54:23+00:00"
+    "last_validated_date": "2025-08-06T10:17:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.86,
+      "call": 10.93,
+      "teardown": 49.95,
+      "total": 61.74
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_resolve_ssm_missing_parameter": {
+    "last_validated_date": "2025-08-06T09:34:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 0.29,
+      "teardown": 0.0,
+      "total": 1.16
+    }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_ssm_nested_with_nested_stack": {
     "last_validated_date": "2024-07-16T16:38:43+00:00"

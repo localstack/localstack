@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,27 +14,27 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class KinesisStreamProperties(TypedDict):
-    Arn: Optional[str]
-    Name: Optional[str]
-    RetentionPeriodHours: Optional[int]
-    ShardCount: Optional[int]
-    StreamEncryption: Optional[StreamEncryption]
-    StreamModeDetails: Optional[StreamModeDetails]
-    Tags: Optional[list[Tag]]
+    Arn: str | None
+    Name: str | None
+    RetentionPeriodHours: int | None
+    ShardCount: int | None
+    StreamEncryption: StreamEncryption | None
+    StreamModeDetails: StreamModeDetails | None
+    Tags: list[Tag] | None
 
 
 class StreamModeDetails(TypedDict):
-    StreamMode: Optional[str]
+    StreamMode: str | None
 
 
 class StreamEncryption(TypedDict):
-    EncryptionType: Optional[str]
-    KeyId: Optional[str]
+    EncryptionType: str | None
+    KeyId: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

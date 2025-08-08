@@ -1,6 +1,7 @@
 import json
 from collections import defaultdict
-from typing import Callable, Generator, Optional, TypedDict
+from collections.abc import Generator
+from typing import Callable, Optional, TypedDict
 
 import pytest
 from botocore.exceptions import WaiterError
@@ -111,7 +112,7 @@ def capture_per_resource_events(
 
 def _normalise_describe_change_set_output(value: DescribeChangeSetOutput) -> None:
     value.get("Changes", list()).sort(
-        key=lambda change: change.get("ResourceChange", dict()).get("LogicalResourceId", str())
+        key=lambda change: change.get("ResourceChange", dict()).get("LogicalResourceId", "")
     )
 
 
@@ -126,7 +127,12 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
     change_set_name = f"cs-{short_uid()}"
 
     def inner(
-        snapshot, t1: dict | str, t2: dict | str, p1: dict | None = None, p2: dict | None = None
+        snapshot,
+        t1: dict | str,
+        t2: dict | str,
+        p1: dict | None = None,
+        p2: dict | None = None,
+        custom_update_step: Callable[[], None] | None = None,
     ) -> str:
         """
         :return: stack id
@@ -208,6 +214,10 @@ def capture_update_process(aws_client_no_retry, cleanups, capture_per_resource_e
             0
         ]
         snapshot.match("post-create-1-describe", describe)
+
+        # run any custom steps if present
+        if custom_update_step:
+            custom_update_step()
 
         # update stack
         change_set_details = aws_client_no_retry.cloudformation.create_change_set(

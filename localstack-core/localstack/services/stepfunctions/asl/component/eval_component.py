@@ -1,6 +1,5 @@
 import abc
 import logging
-from typing import Optional
 
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
@@ -14,7 +13,7 @@ LOG = logging.getLogger(__name__)
 
 
 class EvalComponent(Component, abc.ABC):
-    __heap_key: Optional[str] = None
+    __heap_key: str | None = None
 
     @property
     def heap_key(self) -> str:
@@ -82,5 +81,5 @@ class EvalComponent(Component, abc.ABC):
     def _eval_body(self, env: Environment) -> None:
         raise NotImplementedError()
 
-    def _field_name(self) -> Optional[str]:
+    def _field_name(self) -> str | None:
         return self.__class__.__name__

@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import botocore
 from botocore.client import BaseClient
@@ -57,7 +57,7 @@ def get_standardized_service_name(service_name: str) -> str:
 
 
 def get_current_time() -> datetime:
-    return datetime.now(tz=timezone.utc)
+    return datetime.now(tz=UTC)
 
 
 def get_datetime_from_timestamp(timestamp: float) -> datetime:

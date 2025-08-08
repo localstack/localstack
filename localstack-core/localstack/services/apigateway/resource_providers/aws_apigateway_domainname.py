@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,32 +15,32 @@ from localstack.utils.objects import keys_to_lower
 
 
 class ApiGatewayDomainNameProperties(TypedDict):
-    CertificateArn: Optional[str]
-    DistributionDomainName: Optional[str]
-    DistributionHostedZoneId: Optional[str]
-    DomainName: Optional[str]
-    EndpointConfiguration: Optional[EndpointConfiguration]
-    MutualTlsAuthentication: Optional[MutualTlsAuthentication]
-    OwnershipVerificationCertificateArn: Optional[str]
-    RegionalCertificateArn: Optional[str]
-    RegionalDomainName: Optional[str]
-    RegionalHostedZoneId: Optional[str]
-    SecurityPolicy: Optional[str]
-    Tags: Optional[list[Tag]]
+    CertificateArn: str | None
+    DistributionDomainName: str | None
+    DistributionHostedZoneId: str | None
+    DomainName: str | None
+    EndpointConfiguration: EndpointConfiguration | None
+    MutualTlsAuthentication: MutualTlsAuthentication | None
+    OwnershipVerificationCertificateArn: str | None
+    RegionalCertificateArn: str | None
+    RegionalDomainName: str | None
+    RegionalHostedZoneId: str | None
+    SecurityPolicy: str | None
+    Tags: list[Tag] | None
 
 
 class EndpointConfiguration(TypedDict):
-    Types: Optional[list[str]]
+    Types: list[str] | None
 
 
 class MutualTlsAuthentication(TypedDict):
-    TruststoreUri: Optional[str]
-    TruststoreVersion: Optional[str]
+    TruststoreUri: str | None
+    TruststoreVersion: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

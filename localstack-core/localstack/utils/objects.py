@@ -1,12 +1,12 @@
 import functools
 import re
 import threading
-from typing import Any, Callable, Dict, Generic, List, Optional, Set, Type, TypeVar, Union
+from typing import Any, Callable, Generic, Optional, TypeVar, Union
 
 from .collections import ensure_list
 from .strings import first_char_to_lower, first_char_to_upper
 
-ComplexType = Union[List, Dict, object]
+ComplexType = Union[list, dict, object]
 
 _T = TypeVar("_T")
 
@@ -83,7 +83,7 @@ class SubtypesInstanceManager:
     """Simple instance manager base class that scans the subclasses of a base type for concrete named
     implementations, and lazily creates and returns (singleton) instances on demand."""
 
-    _instances: Dict[str, "SubtypesInstanceManager"]
+    _instances: dict[str, "SubtypesInstanceManager"]
 
     @classmethod
     def get(cls, subtype_name: str, raise_if_missing: bool = True):
@@ -104,7 +104,7 @@ class SubtypesInstanceManager:
         return instance
 
     @classmethod
-    def instances(cls) -> Dict[str, "SubtypesInstanceManager"]:
+    def instances(cls) -> dict[str, "SubtypesInstanceManager"]:
         base_type = cls.get_base_type()
         if not hasattr(base_type, "_instances"):
             base_type._instances = {}
@@ -116,13 +116,13 @@ class SubtypesInstanceManager:
         raise NotImplementedError
 
     @classmethod
-    def get_base_type(cls) -> Type:
+    def get_base_type(cls) -> type:
         """Get the base class for which instances are being managed - can be customized by subtypes."""
         return cls
 
 
 # this requires that all subclasses have been imported before(!)
-def get_all_subclasses(clazz: Type) -> Set[Type]:
+def get_all_subclasses(clazz: type) -> set[type]:
     """Recursively get all subclasses of the given class."""
     result = set()
     subs = clazz.__subclasses__()
@@ -132,7 +132,7 @@ def get_all_subclasses(clazz: Type) -> Set[Type]:
     return result
 
 
-def fully_qualified_class_name(klass: Type) -> str:
+def fully_qualified_class_name(klass: type) -> str:
     return f"{klass.__module__}.{klass.__name__}"
 
 
@@ -156,7 +156,7 @@ def recurse_object(obj: ComplexType, func: Callable, path: str = "") -> ComplexT
 
 
 def keys_to(
-    obj: ComplexType, op: Callable[[str], str], skip_children_of: List[str] = None
+    obj: ComplexType, op: Callable[[str], str], skip_children_of: list[str] = None
 ) -> ComplexType:
     """Recursively changes all dict keys to apply op. Skip children
     of any elements whose names are contained in skip_children_of (e.g., ['Tags'])"""
@@ -175,11 +175,11 @@ def keys_to(
     return result
 
 
-def keys_to_lower(obj: ComplexType, skip_children_of: List[str] = None) -> ComplexType:
+def keys_to_lower(obj: ComplexType, skip_children_of: list[str] = None) -> ComplexType:
     return keys_to(obj, first_char_to_lower, skip_children_of)
 
 
-def keys_to_upper(obj: ComplexType, skip_children_of: List[str] = None) -> ComplexType:
+def keys_to_upper(obj: ComplexType, skip_children_of: list[str] = None) -> ComplexType:
     return keys_to(obj, first_char_to_upper, skip_children_of)
 
 

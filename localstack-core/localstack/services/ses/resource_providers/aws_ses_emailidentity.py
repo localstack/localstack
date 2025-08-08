@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,41 +14,41 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SESEmailIdentityProperties(TypedDict):
-    EmailIdentity: Optional[str]
-    ConfigurationSetAttributes: Optional[ConfigurationSetAttributes]
-    DkimAttributes: Optional[DkimAttributes]
-    DkimDNSTokenName1: Optional[str]
-    DkimDNSTokenName2: Optional[str]
-    DkimDNSTokenName3: Optional[str]
-    DkimDNSTokenValue1: Optional[str]
-    DkimDNSTokenValue2: Optional[str]
-    DkimDNSTokenValue3: Optional[str]
-    DkimSigningAttributes: Optional[DkimSigningAttributes]
-    FeedbackAttributes: Optional[FeedbackAttributes]
-    MailFromAttributes: Optional[MailFromAttributes]
+    EmailIdentity: str | None
+    ConfigurationSetAttributes: ConfigurationSetAttributes | None
+    DkimAttributes: DkimAttributes | None
+    DkimDNSTokenName1: str | None
+    DkimDNSTokenName2: str | None
+    DkimDNSTokenName3: str | None
+    DkimDNSTokenValue1: str | None
+    DkimDNSTokenValue2: str | None
+    DkimDNSTokenValue3: str | None
+    DkimSigningAttributes: DkimSigningAttributes | None
+    FeedbackAttributes: FeedbackAttributes | None
+    MailFromAttributes: MailFromAttributes | None
 
 
 class ConfigurationSetAttributes(TypedDict):
-    ConfigurationSetName: Optional[str]
+    ConfigurationSetName: str | None
 
 
 class DkimSigningAttributes(TypedDict):
-    DomainSigningPrivateKey: Optional[str]
-    DomainSigningSelector: Optional[str]
-    NextSigningKeyLength: Optional[str]
+    DomainSigningPrivateKey: str | None
+    DomainSigningSelector: str | None
+    NextSigningKeyLength: str | None
 
 
 class DkimAttributes(TypedDict):
-    SigningEnabled: Optional[bool]
+    SigningEnabled: bool | None
 
 
 class MailFromAttributes(TypedDict):
-    BehaviorOnMxFailure: Optional[str]
-    MailFromDomain: Optional[str]
+    BehaviorOnMxFailure: str | None
+    MailFromDomain: str | None
 
 
 class FeedbackAttributes(TypedDict):
-    EmailForwardingEnabled: Optional[bool]
+    EmailForwardingEnabled: bool | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

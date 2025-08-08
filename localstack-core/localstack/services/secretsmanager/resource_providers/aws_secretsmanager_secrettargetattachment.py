@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,10 +14,10 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SecretsManagerSecretTargetAttachmentProperties(TypedDict):
-    SecretId: Optional[str]
-    TargetId: Optional[str]
-    TargetType: Optional[str]
-    Id: Optional[str]
+    SecretId: str | None
+    TargetId: str | None
+    TargetType: str | None
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -49,7 +49,7 @@ def pytest_collection_modifyitems(config, items):
     if not os.path.exists(pathfilter_file):
         raise ValueError(f"Pathfilter file does not exist: {pathfilter_file}")
 
-    with open(pathfilter_file, "r") as f:
+    with open(pathfilter_file) as f:
         pathfilter_substrings = [line.strip() for line in f.readlines() if line.strip()]
 
         if not pathfilter_substrings:

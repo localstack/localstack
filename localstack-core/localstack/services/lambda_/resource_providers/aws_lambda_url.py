@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,22 +14,22 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaUrlProperties(TypedDict):
-    AuthType: Optional[str]
-    TargetFunctionArn: Optional[str]
-    Cors: Optional[Cors]
-    FunctionArn: Optional[str]
-    FunctionUrl: Optional[str]
-    InvokeMode: Optional[str]
-    Qualifier: Optional[str]
+    AuthType: str | None
+    TargetFunctionArn: str | None
+    Cors: Cors | None
+    FunctionArn: str | None
+    FunctionUrl: str | None
+    InvokeMode: str | None
+    Qualifier: str | None
 
 
 class Cors(TypedDict):
-    AllowCredentials: Optional[bool]
-    AllowHeaders: Optional[list[str]]
-    AllowMethods: Optional[list[str]]
-    AllowOrigins: Optional[list[str]]
-    ExposeHeaders: Optional[list[str]]
-    MaxAge: Optional[int]
+    AllowCredentials: bool | None
+    AllowHeaders: list[str] | None
+    AllowMethods: list[str] | None
+    AllowOrigins: list[str] | None
+    ExposeHeaders: list[str] | None
+    MaxAge: int | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"
@@ -67,7 +67,7 @@ class LambdaUrlProvider(ResourceProvider[LambdaUrlProperties]):
         """
         model = request.desired_state
         lambda_client = request.aws_client_factory.lambda_
-        params = util.select_attributes(model, ["Qualifier", "Cors", "AuthType"])
+        params = util.select_attributes(model, ["Qualifier", "Cors", "AuthType", "InvokeMode"])
         params["FunctionName"] = model["TargetFunctionArn"]
 
         response = lambda_client.create_function_url_config(**params)

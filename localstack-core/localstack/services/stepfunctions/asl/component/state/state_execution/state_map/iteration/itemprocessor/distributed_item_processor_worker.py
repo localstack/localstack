@@ -1,5 +1,5 @@
 import logging
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
@@ -44,8 +44,8 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
         job_pool: JobPool,
         env: Environment,
         item_reader: ItemReader,
-        parameters: Optional[Parameters],
-        item_selector: Optional[ItemSelector],
+        parameters: Parameters | None,
+        item_selector: ItemSelector | None,
         map_run_record: MapRunRecord,
     ):
         super().__init__(
@@ -124,7 +124,7 @@ class DistributedItemProcessorWorker(InlineItemProcessorWorker):
             self._map_run_record.item_counter.running.offset(-1)
             job.job_output = job_output
 
-    def _eval_pool(self, job: Optional[Job], worker_frame: Environment) -> None:
+    def _eval_pool(self, job: Job | None, worker_frame: Environment) -> None:
         if job is None:
             self._env.delete_frame(worker_frame)
             return

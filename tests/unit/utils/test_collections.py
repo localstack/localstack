@@ -16,7 +16,7 @@ from localstack.utils.collections import (
 
 class MyTypeDict(TypedDict):
     key_one: str
-    key_optional: Optional[str]
+    key_optional: str | None
 
 
 def test_select_from_typed_dict():
@@ -130,7 +130,7 @@ def test_convert_to_typed_dict():
 
 def test_convert_to_typed_dict_with_union():
     class TestTypedDict(TypedDict):
-        union_member: Union[str, int]
+        union_member: Union[str, int]  # noqa
 
     test_dict = {"union_member": 1}
 
@@ -141,7 +141,7 @@ def test_convert_to_typed_dict_with_union():
 
 def test_convert_to_typed_dict_with_optional():
     class TestTypedDict(TypedDict):
-        optional_member: Optional[str]
+        optional_member: Optional[str]  # noqa
 
     test_dict = {"optional_member": 1}
 

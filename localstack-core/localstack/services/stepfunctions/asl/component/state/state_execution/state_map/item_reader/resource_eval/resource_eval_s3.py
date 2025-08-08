@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-from typing import Callable, Final
+from collections.abc import Callable
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_map.item_reader.resource_eval.resource_eval import (
     ResourceEval,

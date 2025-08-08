@@ -2,8 +2,8 @@ import builtins
 import json
 import logging
 import re
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Callable, List
 
 from localstack import config
 from localstack.utils import common
@@ -88,7 +88,7 @@ def params_list_to_dict(param_name, key_attr_name="Key", value_attr_name="Value"
     return do_replace
 
 
-def lambda_keys_to_lower(key=None, skip_children_of: List[str] = None):
+def lambda_keys_to_lower(key=None, skip_children_of: list[str] = None):
     return (
         lambda account_id,
         region_name,

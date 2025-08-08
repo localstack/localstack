@@ -4,7 +4,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime
 from secrets import token_urlsafe
-from typing import Literal, NamedTuple, Optional, Union
+from typing import Literal, NamedTuple, Union
 from zoneinfo import ZoneInfo
 
 from localstack.aws.api import CommonServiceException
@@ -105,25 +105,25 @@ class S3Bucket:
     multiparts: dict[MultipartUploadId, "S3Multipart"]
     objects: Union["KeyStore", "VersionedKeyStore"]
     versioning_status: BucketVersioningStatus | None
-    lifecycle_rules: Optional[LifecycleRules]
-    transition_default_minimum_object_size: Optional[TransitionDefaultMinimumObjectSize]
-    policy: Optional[Policy]
-    website_configuration: Optional[WebsiteConfiguration]
+    lifecycle_rules: LifecycleRules | None
+    transition_default_minimum_object_size: TransitionDefaultMinimumObjectSize | None
+    policy: Policy | None
+    website_configuration: WebsiteConfiguration | None
     acl: AccessControlPolicy
-    cors_rules: Optional[CORSConfiguration]
+    cors_rules: CORSConfiguration | None
     logging: LoggingEnabled
     notification_configuration: NotificationConfiguration
     payer: Payer
-    encryption_rule: Optional[ServerSideEncryptionRule]
-    public_access_block: Optional[PublicAccessBlockConfiguration]
-    accelerate_status: Optional[BucketAccelerateStatus]
+    encryption_rule: ServerSideEncryptionRule | None
+    public_access_block: PublicAccessBlockConfiguration | None
+    accelerate_status: BucketAccelerateStatus | None
     object_lock_enabled: bool
     object_ownership: ObjectOwnership
     intelligent_tiering_configurations: dict[IntelligentTieringId, IntelligentTieringConfiguration]
     analytics_configurations: dict[AnalyticsId, AnalyticsConfiguration]
     inventory_configurations: dict[InventoryId, InventoryConfiguration]
     metric_configurations: dict[MetricsId, MetricsConfiguration]
-    object_lock_default_retention: Optional[DefaultRetention]
+    object_lock_default_retention: DefaultRetention | None
     replication: ReplicationConfiguration
     owner: Owner
 
@@ -256,58 +256,58 @@ class S3Bucket:
 
 class S3Object:
     key: ObjectKey
-    version_id: Optional[ObjectVersionId]
+    version_id: ObjectVersionId | None
     bucket: BucketName
-    owner: Optional[Owner]
-    size: Optional[Size]
-    etag: Optional[ETag]
+    owner: Owner | None
+    size: Size | None
+    etag: ETag | None
     user_metadata: Metadata
     system_metadata: Metadata
     last_modified: datetime
-    expires: Optional[datetime]
-    expiration: Optional[Expiration]  # right now, this is stored in the provider cache
+    expires: datetime | None
+    expiration: Expiration | None  # right now, this is stored in the provider cache
     storage_class: StorageClass | ObjectStorageClass
-    encryption: Optional[ServerSideEncryption]  # inherit bucket
-    kms_key_id: Optional[SSEKMSKeyId]  # inherit bucket
-    bucket_key_enabled: Optional[bool]  # inherit bucket
-    sse_key_hash: Optional[SSECustomerKeyMD5]
+    encryption: ServerSideEncryption | None  # inherit bucket
+    kms_key_id: SSEKMSKeyId | None  # inherit bucket
+    bucket_key_enabled: bool | None  # inherit bucket
+    sse_key_hash: SSECustomerKeyMD5 | None
     checksum_algorithm: ChecksumAlgorithm
     checksum_value: str
     checksum_type: ChecksumType
-    lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode]
-    lock_legal_status: Optional[ObjectLockLegalHoldStatus]
-    lock_until: Optional[datetime]
-    website_redirect_location: Optional[WebsiteRedirectLocation]
-    acl: Optional[AccessControlPolicy]
+    lock_mode: ObjectLockMode | ObjectLockRetentionMode | None
+    lock_legal_status: ObjectLockLegalHoldStatus | None
+    lock_until: datetime | None
+    website_redirect_location: WebsiteRedirectLocation | None
+    acl: AccessControlPolicy | None
     is_current: bool
-    parts: Optional[dict[int, InternalObjectPart]]
-    restore: Optional[Restore]
+    parts: dict[int, InternalObjectPart] | None
+    restore: Restore | None
     internal_last_modified: int
 
     def __init__(
         self,
         key: ObjectKey,
-        etag: Optional[ETag] = None,
-        size: Optional[int] = None,
-        version_id: Optional[ObjectVersionId] = None,
-        user_metadata: Optional[Metadata] = None,
-        system_metadata: Optional[Metadata] = None,
+        etag: ETag | None = None,
+        size: int | None = None,
+        version_id: ObjectVersionId | None = None,
+        user_metadata: Metadata | None = None,
+        system_metadata: Metadata | None = None,
         storage_class: StorageClass = StorageClass.STANDARD,
-        expires: Optional[datetime] = None,
-        expiration: Optional[Expiration] = None,
-        checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-        checksum_value: Optional[str] = None,
-        checksum_type: Optional[ChecksumType] = ChecksumType.FULL_OBJECT,
-        encryption: Optional[ServerSideEncryption] = None,
-        kms_key_id: Optional[SSEKMSKeyId] = None,
-        sse_key_hash: Optional[SSECustomerKeyMD5] = None,
+        expires: datetime | None = None,
+        expiration: Expiration | None = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        checksum_value: str | None = None,
+        checksum_type: ChecksumType | None = ChecksumType.FULL_OBJECT,
+        encryption: ServerSideEncryption | None = None,
+        kms_key_id: SSEKMSKeyId | None = None,
+        sse_key_hash: SSECustomerKeyMD5 | None = None,
         bucket_key_enabled: bool = False,
-        lock_mode: Optional[ObjectLockMode | ObjectLockRetentionMode] = None,
-        lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
-        lock_until: Optional[datetime] = None,
-        website_redirect_location: Optional[WebsiteRedirectLocation] = None,
-        acl: Optional[AccessControlPolicy] = None,  # TODO
-        owner: Optional[Owner] = None,
+        lock_mode: ObjectLockMode | ObjectLockRetentionMode | None = None,
+        lock_legal_status: ObjectLockLegalHoldStatus | None = None,
+        lock_until: datetime | None = None,
+        website_redirect_location: WebsiteRedirectLocation | None = None,
+        acl: AccessControlPolicy | None = None,  # TODO
+        owner: Owner | None = None,
     ):
         self.key = key
         self.user_metadata = (
@@ -406,19 +406,19 @@ class S3DeleteMarker:
 # TODO: could use dataclass, validate after models are set
 class S3Part:
     part_number: PartNumber
-    etag: Optional[ETag]
+    etag: ETag | None
     last_modified: datetime
-    size: Optional[int]
-    checksum_algorithm: Optional[ChecksumAlgorithm]
-    checksum_value: Optional[str]
+    size: int | None
+    checksum_algorithm: ChecksumAlgorithm | None
+    checksum_value: str | None
 
     def __init__(
         self,
         part_number: PartNumber,
         size: int = None,
         etag: ETag = None,
-        checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-        checksum_value: Optional[str] = None,
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        checksum_value: str | None = None,
     ):
         self.last_modified = datetime.now(tz=_gmt_zone_info)
         self.part_number = part_number
@@ -436,8 +436,8 @@ class S3Multipart:
     parts: dict[PartNumber, S3Part]
     object: S3Object
     upload_id: MultipartUploadId
-    checksum_value: Optional[str]
-    checksum_type: Optional[ChecksumType]
+    checksum_value: str | None
+    checksum_type: ChecksumType | None
     checksum_algorithm: ChecksumAlgorithm
     initiated: datetime
     precondition: bool
@@ -446,25 +446,25 @@ class S3Multipart:
         self,
         key: ObjectKey,
         storage_class: StorageClass | ObjectStorageClass = StorageClass.STANDARD,
-        expires: Optional[datetime] = None,
-        expiration: Optional[datetime] = None,  # come from lifecycle
-        checksum_algorithm: Optional[ChecksumAlgorithm] = None,
-        checksum_type: Optional[ChecksumType] = None,
-        encryption: Optional[ServerSideEncryption] = None,  # inherit bucket
-        kms_key_id: Optional[SSEKMSKeyId] = None,  # inherit bucket
+        expires: datetime | None = None,
+        expiration: datetime | None = None,  # come from lifecycle
+        checksum_algorithm: ChecksumAlgorithm | None = None,
+        checksum_type: ChecksumType | None = None,
+        encryption: ServerSideEncryption | None = None,  # inherit bucket
+        kms_key_id: SSEKMSKeyId | None = None,  # inherit bucket
         bucket_key_enabled: bool = False,  # inherit bucket
-        sse_key_hash: Optional[SSECustomerKeyMD5] = None,
-        lock_mode: Optional[ObjectLockMode] = None,
-        lock_legal_status: Optional[ObjectLockLegalHoldStatus] = None,
-        lock_until: Optional[datetime] = None,
-        website_redirect_location: Optional[WebsiteRedirectLocation] = None,
-        acl: Optional[AccessControlPolicy] = None,  # TODO
-        user_metadata: Optional[Metadata] = None,
-        system_metadata: Optional[Metadata] = None,
-        initiator: Optional[Owner] = None,
-        tagging: Optional[dict[str, str]] = None,
-        owner: Optional[Owner] = None,
-        precondition: Optional[bool] = None,
+        sse_key_hash: SSECustomerKeyMD5 | None = None,
+        lock_mode: ObjectLockMode | None = None,
+        lock_legal_status: ObjectLockLegalHoldStatus | None = None,
+        lock_until: datetime | None = None,
+        website_redirect_location: WebsiteRedirectLocation | None = None,
+        acl: AccessControlPolicy | None = None,  # TODO
+        user_metadata: Metadata | None = None,
+        system_metadata: Metadata | None = None,
+        initiator: Owner | None = None,
+        tagging: dict[str, str] | None = None,
+        owner: Owner | None = None,
+        precondition: bool | None = None,
     ):
         self.id = token_urlsafe(96)  # MultipartUploadId is 128 characters long
         self.initiated = datetime.now(tz=_gmt_zone_info)

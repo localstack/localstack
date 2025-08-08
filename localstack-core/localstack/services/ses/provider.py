@@ -4,8 +4,8 @@ import logging
 import os
 import re
 from collections import defaultdict
-from datetime import date, datetime, time, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from datetime import UTC, date, datetime, time
+from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import ClientError
 from moto.ses import ses_backends
@@ -73,7 +73,7 @@ LOGGER = logging.getLogger(__name__)
 
 # Keep record of all sent emails
 # These can be retrieved via a service endpoint
-EMAILS: Dict[MessageId, Dict[str, Any]] = {}
+EMAILS: dict[MessageId, dict[str, Any]] = {}
 
 # Endpoint to access all the sent emails
 # (relative to LocalStack internal HTTP resources base endpoint)
@@ -116,7 +116,7 @@ def save_for_retrospection(sent_email: SentEmail):
     LOGGER.debug("Email saved at: %s", path)
 
 
-def recipients_from_destination(destination: Destination) -> List[str]:
+def recipients_from_destination(destination: Destination) -> list[str]:
     """Get list of recipient email addresses from a Destination object."""
     return (
         destination.get("ToAddresses", [])
@@ -188,7 +188,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     # Helpers
     #
 
-    def get_source_from_raw(self, raw_data: str) -> Optional[str]:
+    def get_source_from_raw(self, raw_data: str) -> str | None:
         """Given a raw representation of email, return the source/from field."""
         entities = raw_data.split("\n")
         for entity in entities:
@@ -570,7 +570,7 @@ class SNSPayload:
     message_id: str
     sender_email: Address
     destination_addresses: AddressList
-    tags: Optional[MessageTagList]
+    tags: MessageTagList | None
 
 
 class SNSEmitter:
@@ -600,7 +600,7 @@ class SNSEmitter:
     def emit_send_event(
         self, payload: SNSPayload, sns_topic_arn: str, emit_source_arn: bool = True
     ):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         tags = defaultdict(list)
         for every in payload.tags or []:
@@ -635,7 +635,7 @@ class SNSEmitter:
             LOGGER.exception("sending SNS message")
 
     def emit_delivery_event(self, payload: SNSPayload, sns_topic_arn: str):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         tags = defaultdict(list)
         for every in payload.tags or []:

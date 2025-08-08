@@ -8,7 +8,6 @@ import threading
 import time
 from datetime import datetime
 from queue import Empty
-from typing import Dict, Optional, Set
 
 from localstack import config
 from localstack.aws.api import RequestContext
@@ -53,11 +52,11 @@ class SqsMessage:
     created: float
     visibility_timeout: int
     receive_count: int
-    delay_seconds: Optional[int]
-    receipt_handles: Set[str]
-    last_received: Optional[float]
-    first_received: Optional[float]
-    visibility_deadline: Optional[float]
+    delay_seconds: int | None
+    receipt_handles: set[str]
+    last_received: float | None
+    first_received: float | None
+    visibility_deadline: float | None
     deleted: bool
     priority: float
     message_deduplication_id: str
@@ -104,15 +103,15 @@ class SqsMessage:
         )
 
     @property
-    def message_group_id(self) -> Optional[str]:
+    def message_group_id(self) -> str | None:
         return self.message["Attributes"].get(MessageSystemAttributeName.MessageGroupId)
 
     @property
-    def message_deduplication_id(self) -> Optional[str]:
+    def message_deduplication_id(self) -> str | None:
         return self.message["Attributes"].get(MessageSystemAttributeName.MessageDeduplicationId)
 
     @property
-    def dead_letter_queue_source_arn(self) -> Optional[str]:
+    def dead_letter_queue_source_arn(self) -> str | None:
         return self.message["Attributes"].get(MessageSystemAttributeName.DeadLetterQueueSourceArn)
 
     @property
@@ -272,11 +271,11 @@ class SqsQueue:
     tags: TagMap
 
     purge_in_progress: bool
-    purge_timestamp: Optional[float]
+    purge_timestamp: float | None
 
-    delayed: Set[SqsMessage]
-    inflight: Set[SqsMessage]
-    receipts: Dict[str, SqsMessage]
+    delayed: set[SqsMessage]
+    inflight: set[SqsMessage]
+    receipts: dict[str, SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         self.name = name
@@ -393,13 +392,13 @@ class SqsQueue:
         )
 
     @property
-    def redrive_policy(self) -> Optional[dict]:
+    def redrive_policy(self) -> dict | None:
         if policy_document := self.attributes.get(QueueAttributeName.RedrivePolicy):
             return json.loads(policy_document)
         return None
 
     @property
-    def max_receive_count(self) -> Optional[int]:
+    def max_receive_count(self) -> int | None:
         """
         Returns the maxReceiveCount attribute of the redrive policy. If no redrive policy is set, then it
         returns None.
@@ -678,7 +677,7 @@ class SqsQueue:
         if QueueAttributeName.All in attribute_names:
             attribute_names = self.attributes.keys()
 
-        result: Dict[QueueAttributeName, str] = {}
+        result: dict[QueueAttributeName, str] = {}
 
         for attr in attribute_names:
             try:
@@ -740,7 +739,7 @@ class SqsQueue:
 
 class StandardQueue(SqsQueue):
     visible: InterruptiblePriorityQueue[SqsMessage]
-    inflight: Set[SqsMessage]
+    inflight: set[SqsMessage]
 
     def __init__(self, name: str, region: str, account_id: str, attributes=None, tags=None) -> None:
         super().__init__(name, region, account_id, attributes, tags)
@@ -955,7 +954,7 @@ class FifoQueue(SqsQueue):
     TODO: raise exceptions when trying to remove a message with an expired receipt handle
     """
 
-    deduplication: Dict[str, SqsMessage]
+    deduplication: dict[str, SqsMessage]
     message_groups: dict[str, MessageGroup]
     inflight_groups: set[MessageGroup]
     message_group_queue: InterruptibleQueue
@@ -1152,7 +1151,7 @@ class FifoQueue(SqsQueue):
         timeout = wait_time_seconds or 0
         start = time.time()
 
-        received_groups: Set[MessageGroup] = set()
+        received_groups: set[MessageGroup] = set()
 
         # collect messages over potentially multiple groups
         while True:
@@ -1308,11 +1307,11 @@ class FifoQueue(SqsQueue):
 
 
 class SqsStore(BaseStore):
-    queues: Dict[str, SqsQueue] = LocalAttribute(default=dict)
+    queues: dict[str, SqsQueue] = LocalAttribute(default=dict)
 
-    deleted: Dict[str, float] = LocalAttribute(default=dict)
+    deleted: dict[str, float] = LocalAttribute(default=dict)
 
-    move_tasks: Dict[str, MessageMoveTask] = LocalAttribute(default=dict)
+    move_tasks: dict[str, MessageMoveTask] = LocalAttribute(default=dict)
     """Maps task IDs to their ``MoveMessageTask`` object. Task IDs can be found by decoding a task handle."""
 
     def expire_deleted(self):

@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.mocking.mock_config_file import (
     RawMockConfig,
@@ -144,8 +144,8 @@ def _mocked_response_from_raw(
 def _mocked_responses_from_raw(
     mocked_response_name: str, raw_mock_config: RawMockConfig
 ) -> list[MockedResponse]:
-    raw_response_models: Optional[dict[str, RawResponseModel]] = (
-        raw_mock_config.MockedResponses.get(mocked_response_name)
+    raw_response_models: dict[str, RawResponseModel] | None = raw_mock_config.MockedResponses.get(
+        mocked_response_name
     )
     if not raw_response_models:
         raise RuntimeError(
@@ -202,8 +202,8 @@ def _mock_test_case_from_raw(
     )
 
 
-def load_mock_test_case_for(state_machine_name: str, test_case_name: str) -> Optional[MockTestCase]:
-    raw_mock_config: Optional[RawMockConfig] = _load_sfn_raw_mock_config()
+def load_mock_test_case_for(state_machine_name: str, test_case_name: str) -> MockTestCase | None:
+    raw_mock_config: RawMockConfig | None = _load_sfn_raw_mock_config()
     if raw_mock_config is None:
         return None
     mock_test_case: MockTestCase = _mock_test_case_from_raw(

@@ -1,6 +1,5 @@
 import time
 from queue import Queue
-from typing import List
 
 import dateutil.parser
 import pytest
@@ -71,7 +70,7 @@ def test_whitebox_flush():
 
 
 def test_integration(monkeypatch):
-    events: List[Event] = []
+    events: list[Event] = []
 
     def _handle(_event: Event):
         events.append(_event)

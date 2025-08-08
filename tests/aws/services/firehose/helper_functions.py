@@ -1,8 +1,5 @@
-from typing import Union
-
-
 def get_firehose_iam_documents(
-    bucket_arns: Union[list[str], str], stream_arns: Union[list[str], str]
+    bucket_arns: list[str] | str, stream_arns: list[str] | str
 ) -> tuple[dict, dict]:
     """
     Generate the required IAM role and policy documents for Firehose.

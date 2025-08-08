@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Final, Optional
+from typing import Any, Final
 
 import jpype
 import jpype.imports
@@ -45,9 +46,9 @@ _EXPRESSION_CLOSE_SYMBOL: Final[str] = ")"
 
 class JSONataException(Exception):
     error: Final[str]
-    details: Optional[str]
+    details: str | None
 
-    def __init__(self, error: str, details: Optional[str]):
+    def __init__(self, error: str, details: str | None):
         self.error = error
         self.details = details
 
@@ -105,7 +106,7 @@ class _JSONataJVMBridge:
 
 # Lazy initialization of the `eval_jsonata` function pointer.
 # This ensures the JVM is only started when JSONata functionality is needed.
-_eval_jsonata: Optional[Callable[[JSONataExpression], Any]] = None
+_eval_jsonata: Callable[[JSONataExpression], Any] | None = None
 
 
 def eval_jsonata_expression(jsonata_expression: JSONataExpression) -> Any:

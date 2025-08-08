@@ -1,5 +1,6 @@
 from collections import defaultdict
-from typing import Any, Dict, List, Mapping, NamedTuple, Optional, Tuple
+from collections.abc import Mapping
+from typing import Any, NamedTuple
 from urllib.parse import parse_qs, unquote
 
 from botocore.model import OperationModel, ServiceModel, StructureShape
@@ -24,8 +25,8 @@ class _HttpOperation(NamedTuple):
     operation: OperationModel
     path: str
     method: str
-    query_args: Mapping[str, List[str]]
-    header_args: List[str]
+    query_args: Mapping[str, list[str]]
+    header_args: list[str]
     deprecated: bool
 
     @staticmethod
@@ -49,11 +50,11 @@ class _HttpOperation(NamedTuple):
         path_query = uri.split("?")
         path = path_query[0]
         header_args = []
-        query_args: Dict[str, List[str]] = {}
+        query_args: dict[str, list[str]] = {}
 
         if len(path_query) > 1:
             # parse the query args of the request URI (they are mandatory)
-            query_args: Dict[str, List[str]] = parse_qs(path_query[1], keep_blank_values=True)
+            query_args: dict[str, list[str]] = parse_qs(path_query[1], keep_blank_values=True)
             # for mandatory keys without values, keep an empty list (instead of [''] - the result of parse_qs)
             query_args = {k: filter(None, v) for k, v in query_args.items()}
 
@@ -85,8 +86,8 @@ class _RequiredArgsRule:
     """
 
     endpoint: Any
-    required_query_args: Optional[Mapping[str, List[Any]]]
-    required_header_args: List[str]
+    required_query_args: Mapping[str, list[Any]] | None
+    required_header_args: list[str]
     match_score: int
 
     def __init__(self, operation: _HttpOperation) -> None:
@@ -139,7 +140,7 @@ class _RequestMatchingRule(StrictMethodRule):
     """
 
     def __init__(
-        self, string: str, operations: List[_HttpOperation], method: str, **kwargs
+        self, string: str, operations: list[_HttpOperation], method: str, **kwargs
     ) -> None:
         super().__init__(string=string, method=method, **kwargs)
         # Create a rule which checks all required arguments (not only the path and method)
@@ -174,7 +175,7 @@ def _create_service_map(service: ServiceModel) -> Map:
     rules = []
 
     # group all operations by their path and method
-    path_index: Dict[(str, str), List[_HttpOperation]] = defaultdict(list)
+    path_index: dict[(str, str), list[_HttpOperation]] = defaultdict(list)
     for op in ops:
         http_op = _HttpOperation.from_operation(op)
         path_index[(http_op.path, http_op.method)].append(http_op)
@@ -216,7 +217,7 @@ class RestServiceOperationRouter:
     def __init__(self, service: ServiceModel):
         self._map = _create_service_map(service)
 
-    def match(self, request: Request) -> Tuple[OperationModel, Mapping[str, Any]]:
+    def match(self, request: Request) -> tuple[OperationModel, Mapping[str, Any]]:
         """
         Matches the given request to the operation it targets (or raises an exception if no operation matches).
 

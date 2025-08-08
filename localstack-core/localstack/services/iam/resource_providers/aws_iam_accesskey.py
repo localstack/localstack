@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,11 +14,11 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class IAMAccessKeyProperties(TypedDict):
-    UserName: Optional[str]
-    Id: Optional[str]
-    SecretAccessKey: Optional[str]
-    Serial: Optional[int]
-    Status: Optional[str]
+    UserName: str | None
+    Id: str | None
+    SecretAccessKey: str | None
+    Serial: int | None
+    Status: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

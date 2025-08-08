@@ -12,7 +12,7 @@ import threading
 from abc import ABCMeta, abstractmethod
 from datetime import datetime
 from pathlib import Path
-from typing import IO, Dict, Literal, Optional, TypedDict
+from typing import IO, Literal, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -52,8 +52,8 @@ LOG = logging.getLogger(__name__)
 @dataclasses.dataclass(frozen=True)
 class VersionState:
     state: State
-    code: Optional[StateReasonCode] = None
-    reason: Optional[str] = None
+    code: StateReasonCode | None = None
+    reason: str | None = None
 
 
 @dataclasses.dataclass
@@ -66,7 +66,7 @@ class Invocation:
     # = invocation_id
     request_id: str
     trace_context: dict
-    user_agent: Optional[str] = None
+    user_agent: str | None = None
 
 
 InitializationType = Literal["on-demand", "provisioned-concurrency"]
@@ -352,11 +352,11 @@ class FunctionUrlConfig:
     url: str  # full URL (e.g. "https://pfn5bdb2dl5mzkbn6eb2oi3xfe0nthdn.lambda-url.eu-west-3.on.aws/")
     auth_type: FunctionUrlAuthType
     creation_time: str  # time
-    last_modified_time: Optional[str] = (
+    last_modified_time: str | None = (
         None  # TODO: check if this is the creation time when initially creating
     )
-    function_qualifier: Optional[str] = "$LATEST"  # only $LATEST or alias name
-    invoke_mode: Optional[InvokeMode] = None
+    function_qualifier: str | None = "$LATEST"  # only $LATEST or alias name
+    invoke_mode: InvokeMode | None = None
 
 
 @dataclasses.dataclass
@@ -374,12 +374,12 @@ class ProvisionedConcurrencyState:
     status: ProvisionedConcurrencyStatusEnum = dataclasses.field(
         default=ProvisionedConcurrencyStatusEnum.IN_PROGRESS
     )
-    status_reason: Optional[str] = None
+    status_reason: str | None = None
 
 
 @dataclasses.dataclass
 class AliasRoutingConfig:
-    version_weights: Dict[str, float]
+    version_weights: dict[str, float]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -431,10 +431,10 @@ class EventInvokeConfig:
     function_name: str
     qualifier: str
 
-    last_modified: Optional[str] = dataclasses.field(compare=False)
-    destination_config: Optional[DestinationConfig] = None
-    maximum_retry_attempts: Optional[int] = None
-    maximum_event_age_in_seconds: Optional[int] = None
+    last_modified: str | None = dataclasses.field(compare=False)
+    destination_config: DestinationConfig | None = None
+    maximum_retry_attempts: int | None = None
+    maximum_event_age_in_seconds: int | None = None
 
 
 # Result Models
@@ -484,7 +484,7 @@ class CodeSigningConfig:
     allowed_publishers: AllowedPublishers
     policies: CodeSigningPolicies
     last_modified: str
-    description: Optional[str] = None
+    description: str | None = None
 
 
 @dataclasses.dataclass
@@ -492,7 +492,7 @@ class LayerPolicyStatement:
     sid: str
     action: str
     principal: str
-    organization_id: Optional[str]
+    organization_id: str | None
 
 
 @dataclasses.dataclass
@@ -551,18 +551,18 @@ class VersionFunctionConfiguration:
     last_modified: str  # ISO string
     state: VersionState
 
-    image: Optional[ImageCode] = None
-    image_config: Optional[ImageConfig] = None
-    runtime_version_config: Optional[RuntimeVersionConfig] = None
-    last_update: Optional[UpdateStatus] = None
+    image: ImageCode | None = None
+    image_config: ImageConfig | None = None
+    runtime_version_config: RuntimeVersionConfig | None = None
+    last_update: UpdateStatus | None = None
     revision_id: str = dataclasses.field(init=False, default_factory=long_uid)
     layers: list[LayerVersion] = dataclasses.field(default_factory=list)
 
-    dead_letter_arn: Optional[str] = None
+    dead_letter_arn: str | None = None
 
     # kms_key_arn: str
     # file_system_configs: FileSystemConfig
-    vpc_config: Optional[VpcConfig] = None
+    vpc_config: VpcConfig | None = None
 
     logging_config: LoggingConfig = dataclasses.field(default_factory=dict)
 
@@ -580,7 +580,7 @@ class FunctionVersion:
 @dataclasses.dataclass
 class Function:
     function_name: str
-    code_signing_config_arn: Optional[str] = None
+    code_signing_config_arn: str | None = None
     aliases: dict[str, VersionAlias] = dataclasses.field(default_factory=dict)
     versions: dict[str, FunctionVersion] = dataclasses.field(default_factory=dict)
     function_url_configs: dict[str, FunctionUrlConfig] = dataclasses.field(
@@ -592,7 +592,7 @@ class Function:
     event_invoke_configs: dict[str, EventInvokeConfig] = dataclasses.field(
         default_factory=dict
     )  # key is $LATEST(?), version or alias
-    reserved_concurrent_executions: Optional[int] = None
+    reserved_concurrent_executions: int | None = None
     recursive_loop: RecursiveLoop = RecursiveLoop.Terminate
     provisioned_concurrency_configs: dict[str, ProvisionedConcurrencyConfiguration] = (
         dataclasses.field(default_factory=dict)

@@ -6,8 +6,6 @@ the latest install_versions from the github repository tags. Run::
 
 """
 
-from typing import Dict
-
 import semver
 
 from localstack.aws.api.opensearch import CompatibleVersionsMap, EngineType
@@ -301,7 +299,7 @@ def get_download_url(install_version: str, engine_type: EngineType) -> str:
         return _es_url(install_version)
 
 
-def fetch_latest_versions() -> Dict[str, str]:  # pragma: no cover
+def fetch_latest_versions() -> dict[str, str]:  # pragma: no cover
     """
     Fetches from the opensearch git repository tags the latest patch versions for a minor version and returns a
     dictionary where the key corresponds to the minor version, and the value to the patch version. Run this once in a

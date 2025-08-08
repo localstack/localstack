@@ -7,7 +7,7 @@ from __future__ import annotations
 import logging
 import textwrap
 from dataclasses import dataclass
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 LOG = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ class Schema(TypedDict):
     properties: dict
     definitions: dict
     typeName: str
-    required: Optional[list[str]]
+    required: list[str] | None
 
 
 TYPE_MAP = {

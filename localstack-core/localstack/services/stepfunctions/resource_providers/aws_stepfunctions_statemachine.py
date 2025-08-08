@@ -4,7 +4,7 @@ from __future__ import annotations
 import json
 import re
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -18,48 +18,48 @@ from localstack.utils.strings import to_str
 
 
 class StepFunctionsStateMachineProperties(TypedDict):
-    RoleArn: Optional[str]
-    Arn: Optional[str]
-    Definition: Optional[dict]
-    DefinitionS3Location: Optional[S3Location]
-    DefinitionString: Optional[str]
-    DefinitionSubstitutions: Optional[dict]
-    LoggingConfiguration: Optional[LoggingConfiguration]
-    Name: Optional[str]
-    StateMachineName: Optional[str]
-    StateMachineRevisionId: Optional[str]
-    StateMachineType: Optional[str]
-    Tags: Optional[list[TagsEntry]]
-    TracingConfiguration: Optional[TracingConfiguration]
+    RoleArn: str | None
+    Arn: str | None
+    Definition: dict | None
+    DefinitionS3Location: S3Location | None
+    DefinitionString: str | None
+    DefinitionSubstitutions: dict | None
+    LoggingConfiguration: LoggingConfiguration | None
+    Name: str | None
+    StateMachineName: str | None
+    StateMachineRevisionId: str | None
+    StateMachineType: str | None
+    Tags: list[TagsEntry] | None
+    TracingConfiguration: TracingConfiguration | None
 
 
 class CloudWatchLogsLogGroup(TypedDict):
-    LogGroupArn: Optional[str]
+    LogGroupArn: str | None
 
 
 class LogDestination(TypedDict):
-    CloudWatchLogsLogGroup: Optional[CloudWatchLogsLogGroup]
+    CloudWatchLogsLogGroup: CloudWatchLogsLogGroup | None
 
 
 class LoggingConfiguration(TypedDict):
-    Destinations: Optional[list[LogDestination]]
-    IncludeExecutionData: Optional[bool]
-    Level: Optional[str]
+    Destinations: list[LogDestination] | None
+    IncludeExecutionData: bool | None
+    Level: str | None
 
 
 class TracingConfiguration(TypedDict):
-    Enabled: Optional[bool]
+    Enabled: bool | None
 
 
 class S3Location(TypedDict):
-    Bucket: Optional[str]
-    Key: Optional[str]
-    Version: Optional[str]
+    Bucket: str | None
+    Key: str | None
+    Version: str | None
 
 
 class TagsEntry(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -1704,6 +1704,195 @@ class TestKMS:
 
     @markers.aws.validated
     @pytest.mark.parametrize(
+        "key_spec, curve, oaep_hash, signing_algorithm, wrapping_key_spec, wrapping_algorithm",
+        [
+            (
+                "ECC_NIST_P256",
+                ec.SECP256R1(),
+                hashes.SHA1(),
+                "ECDSA_SHA_256",
+                "RSA_2048",
+                "RSAES_OAEP_SHA_1",
+            ),
+            (
+                "ECC_NIST_P384",
+                ec.SECP384R1(),
+                hashes.SHA1(),
+                "ECDSA_SHA_384",
+                "RSA_2048",
+                "RSAES_OAEP_SHA_1",
+            ),
+            (
+                "ECC_NIST_P521",
+                ec.SECP521R1(),
+                hashes.SHA256(),
+                "ECDSA_SHA_512",
+                "RSA_4096",
+                "RSAES_OAEP_SHA_256",
+            ),
+            (
+                "ECC_SECG_P256K1",
+                ec.SECP256K1(),
+                hashes.SHA1(),
+                "ECDSA_SHA_256",
+                "RSA_2048",
+                "RSAES_OAEP_SHA_1",
+            ),
+        ],
+        ids=["ECC_NIST_P256", "ECC_NIST_P384", "ECC_NIST_P521", "ECC_SECG_P256K1"],
+    )
+    def test_import_key_ecc_keys(
+        self,
+        key_spec,
+        curve,
+        oaep_hash,
+        signing_algorithm,
+        wrapping_key_spec,
+        wrapping_algorithm,
+        kms_create_key,
+        aws_client,
+        snapshot,
+    ):
+        key = kms_create_key(
+            Origin="EXTERNAL",
+            KeySpec=key_spec,
+            KeyUsage="SIGN_VERIFY",
+            Description="test ecc key import",
+        )
+        key_id = key["KeyId"]
+
+        ecc_key = ec.generate_private_key(curve)
+        raw_private_key = ecc_key.private_bytes(
+            serialization.Encoding.DER,
+            serialization.PrivateFormat.PKCS8,
+            serialization.NoEncryption(),
+        )
+        raw_public_key = ecc_key.public_key().public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+
+        import_params = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id,
+            WrappingAlgorithm=wrapping_algorithm,
+            WrappingKeySpec=wrapping_key_spec,
+        )
+
+        public_key = load_der_public_key(import_params["PublicKey"])
+        encrypted_key = public_key.encrypt(
+            raw_private_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=oaep_hash),
+                algorithm=oaep_hash,
+                label=None,
+            ),
+        )
+
+        describe_before = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-import", describe_before)
+
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=import_params["ImportToken"],
+            EncryptedKeyMaterial=encrypted_key,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+
+        describe_after = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-import", describe_after)
+
+        get_public_key_after_import = aws_client.kms.get_public_key(KeyId=key_id)
+        assert get_public_key_after_import["PublicKey"] == raw_public_key
+
+        message = b"test sign verify 123 !%$@ 1234567890"
+        sign_result = aws_client.kms.sign(
+            KeyId=key_id,
+            Message=message,
+            MessageType="RAW",
+            SigningAlgorithm=signing_algorithm,
+        )
+        snapshot.match("sign-result", sign_result)
+
+        verify_result = aws_client.kms.verify(
+            KeyId=key_id,
+            Message=message,
+            MessageType="RAW",
+            SigningAlgorithm=signing_algorithm,
+            Signature=sign_result["Signature"],
+        )
+        snapshot.match("verify-result", verify_result)
+        assert verify_result["SignatureValid"]
+
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_deleted = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_deleted)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "key_spec, key_length, mac_algo",
+        [
+            ("HMAC_224", 28, "HMAC_SHA_224"),
+            ("HMAC_256", 32, "HMAC_SHA_256"),
+            ("HMAC_384", 48, "HMAC_SHA_384"),
+            ("HMAC_512", 64, "HMAC_SHA_512"),
+        ],
+        ids=["HMAC_224", "HMAC_256", "HMAC_384", "HMAC_512"],
+    )
+    def test_import_key_hmac_keys(
+        self, key_spec, key_length, mac_algo, kms_create_key, aws_client, snapshot
+    ):
+        key = kms_create_key(
+            Origin="EXTERNAL",
+            KeySpec=key_spec,
+            KeyUsage="GENERATE_VERIFY_MAC",
+            Description="test import hmac key",
+        )
+        key_id = key["KeyId"]
+
+        plaintext = os.urandom(key_length)
+
+        params = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_4096"
+        )
+
+        public_key = load_der_public_key(params["PublicKey"])
+        encrypted_key = public_key.encrypt(
+            plaintext,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
+        )
+        describe_key_before_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-before-import", describe_key_before_import)
+
+        aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=params["ImportToken"],
+            EncryptedKeyMaterial=encrypted_key,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+        describe_key_after_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-import", describe_key_after_import)
+
+        # Generate and verify MAC
+        message = b"test-mac-message"
+        generate_mac = aws_client.kms.generate_mac(
+            KeyId=key_id, Message=message, MacAlgorithm=mac_algo
+        )
+        snapshot.match("generate-mac-response", generate_mac)
+
+        verify_mac = aws_client.kms.verify_mac(
+            KeyId=key_id, Message=message, Mac=generate_mac["Mac"], MacAlgorithm=mac_algo
+        )
+        snapshot.match("verify-mac-response", verify_mac)
+        assert verify_mac["MacValid"]
+
+        aws_client.kms.delete_imported_key_material(KeyId=key_id)
+        describe_key_after_deleted_import = aws_client.kms.describe_key(KeyId=key_id)
+        snapshot.match("describe-key-after-deleted-import", describe_key_after_deleted_import)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
         "key_spec,mac_algo",
         [
             ("HMAC_224", "HMAC_SHA_224"),
@@ -2005,6 +2194,22 @@ class TestKMS:
                 KeyId=key1["KeyId"], KeyAgreementAlgorithm="ECDH", PublicKey=b"InvalidPublicKey"
             )
         snapshot.match("response-invalid-public-key", e.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..CurrentKeyMaterialId"])
+    def test_describe_with_alias_arn(self, kms_create_key, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("CurrentKeyMaterialId"))
+
+        alias_name = f"alias/{short_uid()}"
+        created_key = kms_create_key(Description="test - description")
+        snapshot.match("created-key", created_key)
+
+        aws_client.kms.create_alias(TargetKeyId=created_key["KeyId"], AliasName=alias_name)
+        alias = _get_alias(aws_client.kms, alias_name)
+        alias_arn = alias["AliasArn"]
+
+        describe_response = aws_client.kms.describe_key(KeyId=alias_arn)
+        snapshot.match("describe-key", describe_response)
 
 
 class TestKMSMultiAccounts:

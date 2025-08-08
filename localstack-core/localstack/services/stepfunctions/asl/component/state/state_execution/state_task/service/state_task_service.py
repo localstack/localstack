@@ -4,7 +4,7 @@ import abc
 import copy
 import json
 import logging
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 from botocore.model import ListShape, OperationModel, Shape, StringShape, StructureShape
 from botocore.response import StreamingBody
@@ -147,8 +147,8 @@ class StateTaskService(StateTask, abc.ABC):
         parameters_bind_keys: list[str] = list(parameters.keys())
         for parameter_key in parameters_bind_keys:
             norm_parameter_key = camel_to_snake_case(parameter_key)
-            norm_member_bind: Optional[tuple[str, Optional[StructureShape]]] = (
-                norm_member_binds.get(norm_parameter_key)
+            norm_member_bind: tuple[str, StructureShape | None] | None = norm_member_binds.get(
+                norm_parameter_key
             )
             if norm_member_bind is not None:
                 norm_member_bind_key, norm_member_bind_shape = norm_member_bind
@@ -203,19 +203,19 @@ class StateTaskService(StateTask, abc.ABC):
 
                 response[norm_response_key] = response_value
 
-    def _get_boto_service_name(self, boto_service_name: Optional[str] = None) -> str:
+    def _get_boto_service_name(self, boto_service_name: str | None = None) -> str:
         api_name = boto_service_name or self.resource.api_name
         return self._SERVICE_NAME_SFN_TO_BOTO_OVERRIDES.get(api_name, api_name)
 
-    def _get_boto_service_action(self, service_action_name: Optional[str] = None) -> str:
+    def _get_boto_service_action(self, service_action_name: str | None = None) -> str:
         api_action = service_action_name or self.resource.api_action
         return camel_to_snake_case(api_action)
 
     def _normalise_parameters(
         self,
         parameters: dict,
-        boto_service_name: Optional[str] = None,
-        service_action_name: Optional[str] = None,
+        boto_service_name: str | None = None,
+        service_action_name: str | None = None,
     ) -> None:
         boto_service_name = self._get_boto_service_name(boto_service_name=boto_service_name)
         service_action_name = self._get_boto_service_action(service_action_name=service_action_name)
@@ -228,8 +228,8 @@ class StateTaskService(StateTask, abc.ABC):
     def _normalise_response(
         self,
         response: Any,
-        boto_service_name: Optional[str] = None,
-        service_action_name: Optional[str] = None,
+        boto_service_name: str | None = None,
+        service_action_name: str | None = None,
     ) -> None:
         boto_service_name = self._get_boto_service_name(boto_service_name=boto_service_name)
         service_action_name = self._get_boto_service_action(service_action_name=service_action_name)
@@ -239,7 +239,7 @@ class StateTaskService(StateTask, abc.ABC):
         if output_shape is not None:
             self._from_boto_response(response, output_shape)  # noqa
 
-    def _verify_size_quota(self, env: Environment, value: Union[str, json]) -> None:
+    def _verify_size_quota(self, env: Environment, value: str | json) -> None:
         is_within: bool = is_within_size_quota(value)
         if is_within:
             return

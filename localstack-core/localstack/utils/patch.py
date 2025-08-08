@@ -1,7 +1,7 @@
 import functools
 import inspect
 import types
-from typing import Any, Callable, List, Type
+from typing import Any, Callable
 
 
 def get_defining_object(method):
@@ -71,7 +71,7 @@ def create_patch_proxy(target: Callable, new: Callable):
 
 
 class Patch:
-    applied_patches: List["Patch"] = []
+    applied_patches: list["Patch"] = []
     """Bookkeeping for patches that are applied. You can use this to debug patches. For instance,
     you could write something like::
 
@@ -120,7 +120,7 @@ class Patch:
         return self
 
     @staticmethod
-    def extend_class(target: Type, fn: Callable):
+    def extend_class(target: type, fn: Callable):
         def _getattr(obj, name):
             if name != fn.__name__:
                 raise AttributeError(f"`{target.__name__}` object has no attribute `{name}`")
@@ -164,9 +164,9 @@ class Patch:
 
 
 class Patches:
-    patches: List[Patch]
+    patches: list[Patch]
 
-    def __init__(self, patches: List[Patch] = None) -> None:
+    def __init__(self, patches: list[Patch] = None) -> None:
         super().__init__()
 
         self.patches = []

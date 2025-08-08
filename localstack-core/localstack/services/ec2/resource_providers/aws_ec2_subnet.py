@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -16,33 +16,33 @@ from localstack.utils.strings import str_to_bool
 
 
 class EC2SubnetProperties(TypedDict):
-    VpcId: Optional[str]
-    AssignIpv6AddressOnCreation: Optional[bool]
-    AvailabilityZone: Optional[str]
-    AvailabilityZoneId: Optional[str]
-    CidrBlock: Optional[str]
-    EnableDns64: Optional[bool]
-    Ipv6CidrBlock: Optional[str]
-    Ipv6CidrBlocks: Optional[list[str]]
-    Ipv6Native: Optional[bool]
-    MapPublicIpOnLaunch: Optional[bool]
-    NetworkAclAssociationId: Optional[str]
-    OutpostArn: Optional[str]
-    PrivateDnsNameOptionsOnLaunch: Optional[dict]
-    SubnetId: Optional[str]
-    Tags: Optional[list[Tag]]
+    VpcId: str | None
+    AssignIpv6AddressOnCreation: bool | None
+    AvailabilityZone: str | None
+    AvailabilityZoneId: str | None
+    CidrBlock: str | None
+    EnableDns64: bool | None
+    Ipv6CidrBlock: str | None
+    Ipv6CidrBlocks: list[str] | None
+    Ipv6Native: bool | None
+    MapPublicIpOnLaunch: bool | None
+    NetworkAclAssociationId: str | None
+    OutpostArn: str | None
+    PrivateDnsNameOptionsOnLaunch: dict | None
+    SubnetId: str | None
+    Tags: list[Tag] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"
 
 
 def generate_subnet_read_payload(
-    ec2_client, schema, subnet_ids: Optional[list[str]] = None
+    ec2_client, schema, subnet_ids: list[str] | None = None
 ) -> list[EC2SubnetProperties]:
     kwargs = {}
     if subnet_ids:

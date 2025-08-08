@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,25 +15,25 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LambdaEventInvokeConfigProperties(TypedDict):
-    FunctionName: Optional[str]
-    Qualifier: Optional[str]
-    DestinationConfig: Optional[DestinationConfig]
-    Id: Optional[str]
-    MaximumEventAgeInSeconds: Optional[int]
-    MaximumRetryAttempts: Optional[int]
+    FunctionName: str | None
+    Qualifier: str | None
+    DestinationConfig: DestinationConfig | None
+    Id: str | None
+    MaximumEventAgeInSeconds: int | None
+    MaximumRetryAttempts: int | None
 
 
 class OnSuccess(TypedDict):
-    Destination: Optional[str]
+    Destination: str | None
 
 
 class OnFailure(TypedDict):
-    Destination: Optional[str]
+    Destination: str | None
 
 
 class DestinationConfig(TypedDict):
-    OnFailure: Optional[OnFailure]
-    OnSuccess: Optional[OnSuccess]
+    OnFailure: OnFailure | None
+    OnSuccess: OnSuccess | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

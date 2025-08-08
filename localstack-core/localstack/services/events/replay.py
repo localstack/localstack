@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from localstack.aws.api.events import (
     Arn,
@@ -61,13 +61,13 @@ class ReplayService:
 
     def start(self, events: FormattedEventList | None) -> None:
         self.set_state(ReplayState.RUNNING)
-        self.replay.replay_start_time = datetime.now(timezone.utc)
+        self.replay.replay_start_time = datetime.now(UTC)
         if events:
             self._set_event_last_replayed_time(events)
 
     def finish(self) -> None:
         self.set_state(ReplayState.COMPLETED)
-        self.replay.replay_end_time = datetime.now(timezone.utc)
+        self.replay.replay_end_time = datetime.now(UTC)
 
     def stop(self) -> None:
         self.set_state(ReplayState.CANCELLING)

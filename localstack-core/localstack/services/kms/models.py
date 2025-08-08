@@ -10,7 +10,6 @@ import struct
 import uuid
 from collections import namedtuple
 from dataclasses import dataclass
-from typing import Dict, Optional, Tuple
 
 from cryptography.exceptions import InvalidSignature, InvalidTag, UnsupportedAlgorithm
 from cryptography.hazmat.backends import default_backend
@@ -91,9 +90,7 @@ KEY_ID_LEN = 36
 # Moto uses IV_LEN of 12, as it is fine for GCM encryption mode, but we use CBC, so have to set it to 16.
 IV_LEN = 16
 TAG_LEN = 16
-CIPHERTEXT_HEADER_FORMAT = ">{key_id_len}s{iv_len}s{tag_len}s".format(
-    key_id_len=KEY_ID_LEN, iv_len=IV_LEN, tag_len=TAG_LEN
-)
+CIPHERTEXT_HEADER_FORMAT = f">{KEY_ID_LEN}s{IV_LEN}s{TAG_LEN}s"
 HEADER_LEN = KEY_ID_LEN + IV_LEN + TAG_LEN
 Ciphertext = namedtuple("Ciphertext", ("key_id", "iv", "ciphertext", "tag"))
 
@@ -138,7 +135,7 @@ def deserialize_ciphertext_blob(ciphertext_blob: bytes) -> Ciphertext:
     return Ciphertext(key_id=key_id.decode("utf-8"), iv=iv, ciphertext=ciphertext, tag=tag)
 
 
-def _serialize_encryption_context(encryption_context: Optional[EncryptionContextType]) -> bytes:
+def _serialize_encryption_context(encryption_context: EncryptionContextType | None) -> bytes:
     if encryption_context:
         aad = io.BytesIO()
         for key, value in sorted(encryption_context.items(), key=lambda x: x[0]):
@@ -173,8 +170,8 @@ class KmsCryptoKey:
     by AWS and is not used by AWS.
     """
 
-    public_key: Optional[bytes]
-    private_key: Optional[bytes]
+    public_key: bytes | None
+    private_key: bytes | None
     key_material: bytes
     key_spec: str
 
@@ -217,7 +214,7 @@ class KmsCryptoKey:
 
         raise UnsupportedOperationException(f"KeySpec {key_spec} is not supported")
 
-    def __init__(self, key_spec: str, key_material: Optional[bytes] = None):
+    def __init__(self, key_spec: str, key_material: bytes | None = None):
         self.private_key = None
         self.public_key = None
         # Technically, key_material, being a symmetric encryption key, is only relevant for
@@ -251,7 +248,13 @@ class KmsCryptoKey:
         self._serialize_key(key)
 
     def load_key_material(self, material: bytes):
-        if self.key_spec == "SYMMETRIC_DEFAULT":
+        if self.key_spec in [
+            KeySpec.SYMMETRIC_DEFAULT,
+            KeySpec.HMAC_224,
+            KeySpec.HMAC_256,
+            KeySpec.HMAC_384,
+            KeySpec.HMAC_512,
+        ]:
             self.key_material = material
         else:
             key = crypto_serialization.load_der_private_key(material, password=None)
@@ -280,7 +283,7 @@ class KmsCryptoKey:
 class KmsKey:
     metadata: KeyMetadata
     crypto_key: KmsCryptoKey
-    tags: Dict[str, str]
+    tags: dict[str, str]
     policy: str
     is_key_rotation_enabled: bool
     rotation_period_in_days: int
@@ -752,7 +755,7 @@ class KmsGrant:
     # keys. But, based on our understanding of AWS documentation for CreateGrant, ListGrants operations etc,
     # AWS has some set of fields for grants like it has for keys. So we are going to call them `metadata` here for
     # consistency.
-    metadata: Dict
+    metadata: dict
     # Tokens are not a part of metadata, as their use is more limited and specific than for the rest of the
     # metadata: https://docs.aws.amazon.com/kms/latest/developerguide/grant-manage.html#using-grant-token
     # Tokens are used to refer to a grant in a short period right after the grant gets created. Normally it might
@@ -797,7 +800,7 @@ class KmsGrant:
 class KmsAlias:
     # Like with grants (see comment for KmsGrant), there is no mention of some specific object modeling metadata
     # for KMS aliases. But there is data that is some metadata, so we model it in a way similar to KeyMetadata for keys.
-    metadata: Dict
+    metadata: dict
 
     def __init__(
         self,
@@ -827,25 +830,25 @@ class KeyImportState:
 
 class KmsStore(BaseStore):
     # maps key ids to keys
-    keys: Dict[str, KmsKey] = LocalAttribute(default=dict)
+    keys: dict[str, KmsKey] = LocalAttribute(default=dict)
 
     # According to AWS documentation on grants https://docs.aws.amazon.com/kms/latest/APIReference/API_RetireGrant.html
     # "Cross-account use: Yes. You can retire a grant on a KMS key in a different AWS account."
 
     # maps grant ids to grants
-    grants: Dict[str, KmsGrant] = LocalAttribute(default=dict)
+    grants: dict[str, KmsGrant] = LocalAttribute(default=dict)
 
     # maps from (grant names (used for idempotency), key id) to grant ids
-    grant_names: Dict[Tuple[str, str], str] = LocalAttribute(default=dict)
+    grant_names: dict[tuple[str, str], str] = LocalAttribute(default=dict)
 
     # maps grant tokens to grant ids
-    grant_tokens: Dict[str, str] = LocalAttribute(default=dict)
+    grant_tokens: dict[str, str] = LocalAttribute(default=dict)
 
     # maps key alias names to aliases
-    aliases: Dict[str, KmsAlias] = LocalAttribute(default=dict)
+    aliases: dict[str, KmsAlias] = LocalAttribute(default=dict)
 
     # maps import tokens to import data
-    imports: Dict[str, KeyImportState] = LocalAttribute(default=dict)
+    imports: dict[str, KeyImportState] = LocalAttribute(default=dict)
 
 
 kms_stores = AccountRegionBundle("kms", KmsStore)

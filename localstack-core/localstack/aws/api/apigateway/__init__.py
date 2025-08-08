@@ -289,22 +289,21 @@ class ApiStage(TypedDict, total=False):
 
 
 ListOfARNs = List[ProviderARN]
-Authorizer = TypedDict(
-    "Authorizer",
-    {
-        "id": Optional[String],
-        "name": Optional[String],
-        "type": Optional[AuthorizerType],
-        "providerARNs": Optional[ListOfARNs],
-        "authType": Optional[String],
-        "authorizerUri": Optional[String],
-        "authorizerCredentials": Optional[String],
-        "identitySource": Optional[String],
-        "identityValidationExpression": Optional[String],
-        "authorizerResultTtlInSeconds": Optional[NullableInteger],
-    },
-    total=False,
-)
+
+
+class Authorizer(TypedDict, total=False):
+    id: Optional[String]
+    name: Optional[String]
+    type: Optional[AuthorizerType]
+    providerARNs: Optional[ListOfARNs]
+    authType: Optional[String]
+    authorizerUri: Optional[String]
+    authorizerCredentials: Optional[String]
+    identitySource: Optional[String]
+    identityValidationExpression: Optional[String]
+    authorizerResultTtlInSeconds: Optional[NullableInteger]
+
+
 ListOfAuthorizer = List[Authorizer]
 
 
@@ -373,22 +372,17 @@ class CreateApiKeyRequest(ServiceRequest):
     tags: Optional[MapOfStringToString]
 
 
-CreateAuthorizerRequest = TypedDict(
-    "CreateAuthorizerRequest",
-    {
-        "restApiId": String,
-        "name": String,
-        "type": AuthorizerType,
-        "providerARNs": Optional[ListOfARNs],
-        "authType": Optional[String],
-        "authorizerUri": Optional[String],
-        "authorizerCredentials": Optional[String],
-        "identitySource": Optional[String],
-        "identityValidationExpression": Optional[String],
-        "authorizerResultTtlInSeconds": Optional[NullableInteger],
-    },
-    total=False,
-)
+class CreateAuthorizerRequest(TypedDict, total=False):
+    restApiId: String
+    name: String
+    type: AuthorizerType
+    providerARNs: Optional[ListOfARNs]
+    authType: Optional[String]
+    authorizerUri: Optional[String]
+    authorizerCredentials: Optional[String]
+    identitySource: Optional[String]
+    identityValidationExpression: Optional[String]
+    authorizerResultTtlInSeconds: Optional[NullableInteger]
 
 
 class CreateBasePathMappingRequest(ServiceRequest):
@@ -417,17 +411,12 @@ class CreateDeploymentRequest(ServiceRequest):
     tracingEnabled: Optional[NullableBoolean]
 
 
-DocumentationPartLocation = TypedDict(
-    "DocumentationPartLocation",
-    {
-        "type": DocumentationPartType,
-        "path": Optional[String],
-        "method": Optional[String],
-        "statusCode": Optional[DocumentationPartLocationStatusCode],
-        "name": Optional[String],
-    },
-    total=False,
-)
+class DocumentationPartLocation(TypedDict, total=False):
+    type: DocumentationPartType
+    path: Optional[String]
+    method: Optional[String]
+    statusCode: Optional[DocumentationPartLocationStatusCode]
+    name: Optional[String]
 
 
 class CreateDocumentationPartRequest(ServiceRequest):
@@ -889,19 +878,14 @@ class GetDocumentationPartRequest(ServiceRequest):
     documentationPartId: String
 
 
-GetDocumentationPartsRequest = TypedDict(
-    "GetDocumentationPartsRequest",
-    {
-        "restApiId": String,
-        "type": Optional[DocumentationPartType],
-        "nameQuery": Optional[String],
-        "path": Optional[String],
-        "position": Optional[String],
-        "limit": Optional[NullableInteger],
-        "locationStatus": Optional[LocationStatusType],
-    },
-    total=False,
-)
+class GetDocumentationPartsRequest(TypedDict, total=False):
+    restApiId: String
+    type: Optional[DocumentationPartType]
+    nameQuery: Optional[String]
+    path: Optional[String]
+    position: Optional[String]
+    limit: Optional[NullableInteger]
+    locationStatus: Optional[LocationStatusType]
 
 
 class GetDocumentationVersionRequest(ServiceRequest):
@@ -1131,27 +1115,26 @@ class IntegrationResponse(TypedDict, total=False):
 
 
 MapOfIntegrationResponse = Dict[String, IntegrationResponse]
-Integration = TypedDict(
-    "Integration",
-    {
-        "type": Optional[IntegrationType],
-        "httpMethod": Optional[String],
-        "uri": Optional[String],
-        "connectionType": Optional[ConnectionType],
-        "connectionId": Optional[String],
-        "credentials": Optional[String],
-        "requestParameters": Optional[MapOfStringToString],
-        "requestTemplates": Optional[MapOfStringToString],
-        "passthroughBehavior": Optional[String],
-        "contentHandling": Optional[ContentHandlingStrategy],
-        "timeoutInMillis": Optional[Integer],
-        "cacheNamespace": Optional[String],
-        "cacheKeyParameters": Optional[ListOfString],
-        "integrationResponses": Optional[MapOfIntegrationResponse],
-        "tlsConfig": Optional[TlsConfig],
-    },
-    total=False,
-)
+
+
+class Integration(TypedDict, total=False):
+    type: Optional[IntegrationType]
+    httpMethod: Optional[String]
+    uri: Optional[String]
+    connectionType: Optional[ConnectionType]
+    connectionId: Optional[String]
+    credentials: Optional[String]
+    requestParameters: Optional[MapOfStringToString]
+    requestTemplates: Optional[MapOfStringToString]
+    passthroughBehavior: Optional[String]
+    contentHandling: Optional[ContentHandlingStrategy]
+    timeoutInMillis: Optional[Integer]
+    cacheNamespace: Optional[String]
+    cacheKeyParameters: Optional[ListOfString]
+    integrationResponses: Optional[MapOfIntegrationResponse]
+    tlsConfig: Optional[TlsConfig]
+
+
 Long = int
 ListOfLong = List[Long]
 
@@ -1319,16 +1302,15 @@ class UsagePlan(TypedDict, total=False):
 
 
 ListOfUsagePlan = List[UsagePlan]
-UsagePlanKey = TypedDict(
-    "UsagePlanKey",
-    {
-        "id": Optional[String],
-        "type": Optional[String],
-        "value": Optional[String],
-        "name": Optional[String],
-    },
-    total=False,
-)
+
+
+class UsagePlanKey(TypedDict, total=False):
+    id: Optional[String]
+    type: Optional[String]
+    value: Optional[String]
+    name: Optional[String]
+
+
 ListOfUsagePlanKey = List[UsagePlanKey]
 
 
@@ -1360,29 +1342,24 @@ class PutGatewayResponseRequest(ServiceRequest):
     responseTemplates: Optional[MapOfStringToString]
 
 
-PutIntegrationRequest = TypedDict(
-    "PutIntegrationRequest",
-    {
-        "restApiId": String,
-        "resourceId": String,
-        "httpMethod": String,
-        "type": IntegrationType,
-        "integrationHttpMethod": Optional[String],
-        "uri": Optional[String],
-        "connectionType": Optional[ConnectionType],
-        "connectionId": Optional[String],
-        "credentials": Optional[String],
-        "requestParameters": Optional[MapOfStringToString],
-        "requestTemplates": Optional[MapOfStringToString],
-        "passthroughBehavior": Optional[String],
-        "cacheNamespace": Optional[String],
-        "cacheKeyParameters": Optional[ListOfString],
-        "contentHandling": Optional[ContentHandlingStrategy],
-        "timeoutInMillis": Optional[NullableInteger],
-        "tlsConfig": Optional[TlsConfig],
-    },
-    total=False,
-)
+class PutIntegrationRequest(TypedDict, total=False):
+    restApiId: String
+    resourceId: String
+    httpMethod: String
+    type: IntegrationType
+    integrationHttpMethod: Optional[String]
+    uri: Optional[String]
+    connectionType: Optional[ConnectionType]
+    connectionId: Optional[String]
+    credentials: Optional[String]
+    requestParameters: Optional[MapOfStringToString]
+    requestTemplates: Optional[MapOfStringToString]
+    passthroughBehavior: Optional[String]
+    cacheNamespace: Optional[String]
+    cacheKeyParameters: Optional[ListOfString]
+    contentHandling: Optional[ContentHandlingStrategy]
+    timeoutInMillis: Optional[NullableInteger]
+    tlsConfig: Optional[TlsConfig]
 
 
 class PutIntegrationResponseRequest(ServiceRequest):

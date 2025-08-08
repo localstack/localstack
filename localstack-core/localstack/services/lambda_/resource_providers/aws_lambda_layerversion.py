@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -20,19 +20,19 @@ LOG = logging.getLogger(__name__)
 
 
 class LambdaLayerVersionProperties(TypedDict):
-    Content: Optional[Content]
-    CompatibleArchitectures: Optional[list[str]]
-    CompatibleRuntimes: Optional[list[str]]
-    Description: Optional[str]
-    LayerName: Optional[str]
-    LayerVersionArn: Optional[str]
-    LicenseInfo: Optional[str]
+    Content: Content | None
+    CompatibleArchitectures: list[str] | None
+    CompatibleRuntimes: list[str] | None
+    Description: str | None
+    LayerName: str | None
+    LayerVersionArn: str | None
+    LicenseInfo: str | None
 
 
 class Content(TypedDict):
-    S3Bucket: Optional[str]
-    S3Key: Optional[str]
-    S3ObjectVersion: Optional[str]
+    S3Bucket: str | None
+    S3Key: str | None
+    S3ObjectVersion: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

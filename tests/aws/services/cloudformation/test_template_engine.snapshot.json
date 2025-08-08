@@ -509,7 +509,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_stack_with_ssm_parameters": {
-    "recorded-date": "15-01-2023, 17:54:23",
+    "recorded-date": "06-08-2025, 10:16:50",
     "recorded-content": {
       "stack-details": {
         "Capabilities": [
@@ -539,18 +539,12 @@
         "StackStatus": "CREATE_COMPLETE",
         "Tags": []
       },
-      "topic-tags": {
-        "Tags": [
-          {
-            "Key": "param-value",
-            "Value": "param <resolved-value:1>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+      "topic-tags": [
+        {
+          "Key": "param-value",
+          "Value": "param <resolved-value:1>"
         }
-      }
+      ]
     }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestMacros::test_macro_deployment": {
@@ -690,6 +684,12 @@
       "fn-select-fn-map-output": {
         "ParameterValue": "true"
       }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_resolve_ssm_missing_parameter": {
+    "recorded-date": "06-08-2025, 09:34:07",
+    "recorded-content": {
+      "error-response": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameter InputValue should either have input value or default value"
     }
   }
 }

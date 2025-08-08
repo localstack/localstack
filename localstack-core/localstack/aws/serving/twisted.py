@@ -4,7 +4,6 @@ Bindings to serve LocalStack using twisted.
 
 import logging
 import time
-from typing import List
 
 from rolo.gateway import Gateway
 from rolo.serving.twisted import TwistedGateway
@@ -130,7 +129,7 @@ def stop_thread_pool(self: ThreadPool, stop, timeout: float = None):
 
 
 def serve_gateway(
-    gateway: Gateway, listen: List[HostAndPort], use_ssl: bool, asynchronous: bool = False
+    gateway: Gateway, listen: list[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
     """
     Serve a Gateway instance using twisted.

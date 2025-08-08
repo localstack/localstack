@@ -1,5 +1,5 @@
 import abc
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import ExecutionFailedEventDetails, Timestamp
 
@@ -12,16 +12,16 @@ class ProgramEnded(ProgramState):
 
 
 class ProgramStopped(ProgramState):
-    def __init__(self, stop_date: Timestamp, error: Optional[str], cause: Optional[str]):
+    def __init__(self, stop_date: Timestamp, error: str | None, cause: str | None):
         super().__init__()
         self.stop_date: Timestamp = stop_date
-        self.error: Optional[str] = error
-        self.cause: Optional[str] = cause
+        self.error: str | None = error
+        self.cause: str | None = cause
 
 
 class ProgramRunning(ProgramState):
-    _next_state_name: Optional[str]
-    _next_field_name: Optional[str]
+    _next_state_name: str | None
+    _next_field_name: str | None
 
     def __init__(self):
         super().__init__()
@@ -53,9 +53,9 @@ class ProgramRunning(ProgramState):
 
 
 class ProgramError(ProgramState):
-    error: Final[Optional[ExecutionFailedEventDetails]]
+    error: Final[ExecutionFailedEventDetails | None]
 
-    def __init__(self, error: Optional[ExecutionFailedEventDetails]):
+    def __init__(self, error: ExecutionFailedEventDetails | None):
         super().__init__()
         self.error = error
 

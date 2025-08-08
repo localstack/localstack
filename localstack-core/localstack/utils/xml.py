@@ -9,7 +9,7 @@ def obj_to_xml(obj: Any) -> str:
     if isinstance(obj, list):
         return "".join([obj_to_xml(o) for o in obj])
     if isinstance(obj, dict):
-        return "".join(["<{k}>{v}</{k}>".format(k=k, v=obj_to_xml(v)) for (k, v) in obj.items()])
+        return "".join([f"<{k}>{obj_to_xml(v)}</{k}>" for (k, v) in obj.items()])
     return str(obj)
 
 

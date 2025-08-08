@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -18,9 +18,9 @@ from localstack.services.sns.models import create_default_sns_topic_policy
 
 
 class SNSTopicPolicyProperties(TypedDict):
-    PolicyDocument: Optional[dict | str]
-    Topics: Optional[list[str]]
-    Id: Optional[str]
+    PolicyDocument: dict | str | None
+    Topics: list[str] | None
+    Id: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

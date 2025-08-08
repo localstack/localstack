@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Callable, List
+from typing import Callable
 
 from requests.models import Response
 
@@ -9,7 +9,7 @@ from localstack import config
 
 LOG = logging.getLogger(__name__)
 
-CONFIG_LISTENERS: List[Callable[[str, str], None]] = []
+CONFIG_LISTENERS: list[Callable[[str, str], None]] = []
 
 
 def trigger_config_listeners(variable, new_value):

@@ -3,7 +3,8 @@ from __future__ import annotations
 import base64
 import copy
 import re
-from typing import Any, Callable, Final, Generic, Optional, TypeVar
+from collections.abc import Callable
+from typing import Any, Final, Generic, TypeVar
 
 from botocore.exceptions import ClientError
 
@@ -41,6 +42,10 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
+)
+from localstack.services.cloudformation.engine.v2.resolving import (
+    extract_dynamic_reference,
+    perform_dynamic_reference_lookup,
 )
 from localstack.services.cloudformation.stores import (
     exports_map,
@@ -99,21 +104,21 @@ class PreprocProperties:
 
 class PreprocResource:
     logical_id: str
-    physical_resource_id: Optional[str]
-    condition: Optional[bool]
+    physical_resource_id: str | None
+    condition: bool | None
     resource_type: str
     properties: PreprocProperties
-    depends_on: Optional[list[str]]
+    depends_on: list[str] | None
     requires_replacement: bool
 
     def __init__(
         self,
         logical_id: str,
         physical_resource_id: str,
-        condition: Optional[bool],
+        condition: bool | None,
         resource_type: str,
         properties: PreprocProperties,
-        depends_on: Optional[list[str]],
+        depends_on: list[str] | None,
         requires_replacement: bool,
     ):
         self.logical_id = logical_id
@@ -147,10 +152,10 @@ class PreprocResource:
 class PreprocOutput:
     name: str
     value: Any
-    export: Optional[Any]
-    condition: Optional[bool]
+    export: Any | None
+    condition: bool | None
 
-    def __init__(self, name: str, value: Any, export: Optional[Any], condition: Optional[bool]):
+    def __init__(self, name: str, value: Any, export: Any | None, condition: bool | None):
         self.name = name
         self.value = value
         self.export = export
@@ -222,7 +227,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
-    ) -> Optional[NodeProperty]:
+    ) -> NodeProperty | None:
         # TODO: this could be improved with hashmap lookups if the Node contained bindings and not lists.
         for node_property in node_resource.properties.properties:
             if node_property.name == property_name:
@@ -250,7 +255,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             )
         properties = resolved_resource.get("Properties", dict())
         # support structured properties, e.g. NestedStack.Outputs.OutputName
-        property_value: Optional[Any] = get_value_from_path(properties, property_name)
+        property_value: Any | None = get_value_from_path(properties, property_name)
 
         if property_value:
             if not isinstance(property_value, str):
@@ -277,7 +282,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def _after_deployed_property_value_of(
         self, resource_logical_id: str, property_name: str
-    ) -> Optional[str]:
+    ) -> str | None:
         return self._before_deployed_property_value_of(
             resource_logical_id=resource_logical_id, property_name=property_name
         )
@@ -491,7 +496,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             resource_name=logical_name_of_resource,
             node_template=self._change_set.update_model.node_template,
         )
-        node_property: Optional[NodeProperty] = self._get_node_property_for(
+        node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )
         if node_property is not None:
@@ -549,21 +554,38 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_if(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_delta_for_if_statement(args: list[Any]) -> PreprocEntityDelta:
-            condition_name = args[0]
-            boolean_expression_delta = self._resolve_condition(logical_id=condition_name)
-            return PreprocEntityDelta(
-                before=args[1] if boolean_expression_delta.before else args[2],
-                after=args[1] if boolean_expression_delta.after else args[2],
+        # `if` needs to be short-circuiting i.e. if the condition is True we don't evaluate the
+        # False branch. If the condition is False, we don't evaluate the True branch.
+        if len(node_intrinsic_function.arguments.array) != 3:
+            raise ValueError(
+                f"Incorrectly constructed Fn::If usage, expected 3 arguments, found {len(node_intrinsic_function.arguments.array)}"
             )
 
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = self._cached_apply(
-            scope=node_intrinsic_function.scope,
-            arguments_delta=arguments_delta,
-            resolver=_compute_delta_for_if_statement,
-        )
-        return delta
+        condition_delta = self.visit(node_intrinsic_function.arguments.array[0])
+        if_delta = PreprocEntityDelta()
+        if not is_nothing(condition_delta.before):
+            node_condition = self._get_node_condition_if_exists(
+                condition_name=condition_delta.before
+            )
+            condition_value = self.visit(node_condition).before
+            if condition_value:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+            else:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+            if_delta.before = arg_delta.before
+
+        if not is_nothing(condition_delta.after):
+            node_condition = self._get_node_condition_if_exists(
+                condition_name=condition_delta.after
+            )
+            condition_value = self.visit(node_condition).after
+            if condition_value:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+            else:
+                arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+            if_delta.after = arg_delta.after
+
+        return if_delta
 
     def visit_node_intrinsic_function_fn_and(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -914,7 +936,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     ) -> str:
         # TODO: typing around resolved resources is needed and should be reflected here.
         resolved_resource = resolved_resources.get(logical_resource_id, dict())
-        physical_resource_id: Optional[str] = resolved_resource.get("PhysicalResourceId")
+        physical_resource_id: str | None = resolved_resource.get("PhysicalResourceId")
         if not isinstance(physical_resource_id, str):
             raise RuntimeError(f"No PhysicalResourceId found for resource '{logical_resource_id}'")
         return physical_resource_id
@@ -982,7 +1004,23 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before, after=after)
 
     def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
-        return self.visit(node_property.value)
+        # TODO: what about other positions?
+        value = self.visit(node_property.value)
+        if not is_nothing(value.before):
+            if dynamic_ref := extract_dynamic_reference(value.before):
+                value.before = perform_dynamic_reference_lookup(
+                    reference=dynamic_ref,
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                )
+        if not is_nothing(value.after):
+            if dynamic_ref := extract_dynamic_reference(value.after):
+                value.after = perform_dynamic_reference_lookup(
+                    reference=dynamic_ref,
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                )
+        return value
 
     def visit_node_properties(
         self, node_properties: NodeProperties

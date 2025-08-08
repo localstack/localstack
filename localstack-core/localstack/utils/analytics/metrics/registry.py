@@ -43,7 +43,7 @@ class MetricRegistry:
     Provides methods for retrieving and collecting metrics.
     """
 
-    _instance: "MetricRegistry" = None
+    _instance: MetricRegistry = None
     _mutex: threading.Lock = threading.Lock()
 
     def __new__(cls):

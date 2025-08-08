@@ -6,7 +6,8 @@ some of its functionality.
 import ipaddress
 import json
 import subprocess as sp
-from typing import Any, Generator, TypedDict
+from collections.abc import Generator
+from typing import Any, TypedDict
 
 from cachetools import TTLCache, cached
 

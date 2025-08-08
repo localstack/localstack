@@ -342,7 +342,7 @@ def is_execution_logs_list_complete(
 
 def _await_on_execution_log_stream_created(target_aws_client, log_group_name: str) -> str:
     logs_client = target_aws_client.logs
-    log_stream_name = str()
+    log_stream_name = ""
 
     def _run_check():
         nonlocal log_stream_name

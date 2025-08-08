@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import abc
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
@@ -18,14 +18,14 @@ class IterationComponent(EvalComponent, abc.ABC):
     _query_language: Final[QueryLanguage]
     _start_at: Final[StartAt]
     _states: Final[States]
-    _comment: Final[Optional[Comment]]
+    _comment: Final[Comment | None]
 
     def __init__(
         self,
         query_language: QueryLanguage,
         start_at: StartAt,
         states: States,
-        comment: Optional[Comment],
+        comment: Comment | None,
     ):
         self._query_language = query_language
         self._start_at = start_at

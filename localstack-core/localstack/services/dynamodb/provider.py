@@ -12,7 +12,6 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 from datetime import datetime
 from operator import itemgetter
-from typing import Dict, List, Optional
 
 import requests
 import werkzeug
@@ -492,7 +491,7 @@ class ExpiredItemsWorker:
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
+        self.thread: FuncThread | None = None
         self.mutex = threading.RLock()
 
     def start(self):
@@ -796,7 +795,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         store = get_store(context.account_id, context.region)
 
         # Update replication details
-        replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
+        replicas: dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
         replica_description_list = []
 
@@ -865,7 +864,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 store = get_store(context.account_id, global_table_region)
 
                 # Dict with source region to set of replicated regions
-                replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
+                replicas: dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
                 for replica_update in replica_updates:
                     for key, details in replica_update.items():
@@ -1512,7 +1511,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         replication_group: ReplicaList,
         **kwargs,
     ) -> CreateGlobalTableOutput:
-        global_tables: Dict = get_store(context.account_id, context.region).GLOBAL_TABLES
+        global_tables: dict = get_store(context.account_id, context.region).GLOBAL_TABLES
         if global_table_name in global_tables:
             raise GlobalTableAlreadyExistsException("Global table with this name already exists")
         replication_group = [grp.copy() for grp in replication_group or []]
@@ -1891,7 +1890,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return context.region
 
     @staticmethod
-    def prepare_request_headers(headers: Dict, account_id: str, region_name: str):
+    def prepare_request_headers(headers: dict, account_id: str, region_name: str):
         """
         Modify the Credentials field of Authorization header to achieve namespacing in DynamoDBLocal.
         """
@@ -1908,7 +1907,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             flags=re.IGNORECASE,
         )
 
-    def fix_consumed_capacity(self, request: Dict, result: Dict):
+    def fix_consumed_capacity(self, request: dict, result: dict):
         # make sure we append 'ConsumedCapacity', which is properly
         # returned by dynalite, but not by AWS's DynamoDBLocal
         table_name = request.get("TableName")
@@ -2282,7 +2281,7 @@ def get_updated_records(
     account_id: str,
     region_name: str,
     table_name: str,
-    existing_items: List,
+    existing_items: list,
     server_url: str,
     table_stream_type: TableStreamType,
 ) -> RecordsMap:

@@ -3,7 +3,6 @@ import copy
 import functools
 import json
 import logging
-from typing import Dict, List
 from uuid import uuid4
 
 from botocore.utils import InvalidArnException
@@ -1130,7 +1129,7 @@ def register_sns_api_resource(router: Router):
     router.add(SNSServiceSubscriptionTokenApiResource())
 
 
-def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
+def _format_messages(sent_messages: list[dict[str, str]], validated_keys: list[str]):
     """
     This method format the messages to be more readable and undo the format change that was needed for Moto
     Should be removed once we refactor SNS.

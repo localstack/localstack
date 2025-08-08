@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Optional, Protocol, Tuple
+from typing import Protocol
 
 from werkzeug.datastructures import Headers
 
@@ -58,7 +58,7 @@ class S3CorsHandler(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         self.handle_cors(chain, context, response)
 
-    def pre_parse_s3_request(self, request: Request) -> Tuple[bool, Optional[str]]:
+    def pre_parse_s3_request(self, request: Request) -> tuple[bool, str | None]:
         """
         Parse the request to try to determine if it's directed towards S3. It tries to match on host, then check
         if the targeted bucket exists. If we could not determine it was a s3 request from the host, but the first
@@ -224,7 +224,7 @@ class S3CorsHandler(Handler):
     def invalidate_cache(self):
         self.bucket_cors_index.invalidate()
 
-    def match_rules(self, request: Request, rules: CORSRules) -> Optional[CORSRule]:
+    def match_rules(self, request: Request, rules: CORSRules) -> CORSRule | None:
         """
         Try to match the request to the bucket rules. How to match rules:
           - The request's Origin header must match AllowedOrigin elements.
@@ -243,7 +243,7 @@ class S3CorsHandler(Handler):
                 return matched_rule
 
     @staticmethod
-    def _match_rule(rule: CORSRule, method: str, headers: Headers) -> Optional[CORSRule]:
+    def _match_rule(rule: CORSRule, method: str, headers: Headers) -> CORSRule | None:
         """
         Check if the request method and headers matches the given CORS rule.
         :param rule: CORSRule: a CORS Rule from the bucket

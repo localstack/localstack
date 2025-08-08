@@ -5,7 +5,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from queue import Queue
 from threading import Thread
-from typing import List
 
 import pytest
 import requests
@@ -17,7 +16,7 @@ LOG = logging.getLogger(__name__)
 
 
 def test_serve_asgi_adapter(serve_asgi_adapter):
-    request_list: List[Request] = []
+    request_list: list[Request] = []
 
     @Request.application
     def app(request: Request) -> Response:
@@ -136,7 +135,7 @@ def test_chunked_transfer_encoding_client_timeout(serve_asgi_adapter):
 
 
 def test_chunked_transfer_encoding_request(serve_asgi_adapter):
-    request_list: List[Request] = []
+    request_list: list[Request] = []
 
     @Request.application
     def app(request: Request) -> Response:

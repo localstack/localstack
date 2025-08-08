@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,25 +15,25 @@ from localstack.utils.objects import keys_to_lower
 
 
 class ApiGatewayApiKeyProperties(TypedDict):
-    APIKeyId: Optional[str]
-    CustomerId: Optional[str]
-    Description: Optional[str]
-    Enabled: Optional[bool]
-    GenerateDistinctId: Optional[bool]
-    Name: Optional[str]
-    StageKeys: Optional[list[StageKey]]
-    Tags: Optional[list[Tag]]
-    Value: Optional[str]
+    APIKeyId: str | None
+    CustomerId: str | None
+    Description: str | None
+    Enabled: bool | None
+    GenerateDistinctId: bool | None
+    Name: str | None
+    StageKeys: list[StageKey] | None
+    Tags: list[Tag] | None
+    Value: str | None
 
 
 class StageKey(TypedDict):
-    RestApiId: Optional[str]
-    StageName: Optional[str]
+    RestApiId: str | None
+    StageName: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

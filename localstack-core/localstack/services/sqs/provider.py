@@ -5,9 +5,10 @@ import logging
 import re
 import threading
 import time
+from collections.abc import Iterable
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import islice
-from typing import Dict, Iterable, List, Literal, Optional, Tuple
+from typing import Literal
 
 from botocore.utils import InvalidArnException
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -310,7 +311,7 @@ class CloudwatchPublishWorker:
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
+        self.thread: FuncThread | None = None
 
     def publish_approximate_cloudwatch_metrics(self):
         """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
@@ -391,7 +392,7 @@ class QueueUpdateWorker:
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
+        self.thread: FuncThread | None = None
         self.mutex = threading.RLock()
 
     def iter_queues(self) -> Iterable[SqsQueue]:
@@ -744,7 +745,7 @@ class SqsDeveloperEndpoints:
 
     def _collect_messages(
         self, queue: SqsQueue, show_invisible: bool = False, show_delayed: bool = False
-    ) -> List[Message]:
+    ) -> list[Message]:
         """
         Retrieves from a given SqsQueue all visible messages without causing any side effects (not setting any
         receive timestamps, receive counts, or visibility state).
@@ -756,7 +757,7 @@ class SqsDeveloperEndpoints:
         """
         receipt_handle = "SQS/BACKDOOR/ACCESS"  # dummy receipt handle
 
-        sqs_messages: List[SqsMessage] = []
+        sqs_messages: list[SqsMessage] = []
 
         if show_invisible:
             sqs_messages.extend(queue.inflight)
@@ -811,7 +812,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         - UntagQueue
     """
 
-    queues: Dict[str, SqsQueue]
+    queues: dict[str, SqsQueue]
 
     def __init__(self) -> None:
         super().__init__()
@@ -877,8 +878,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def _resolve_queue(
         self,
         context: RequestContext,
-        queue_name: Optional[str] = None,
-        queue_url: Optional[str] = None,
+        queue_name: str | None = None,
+        queue_url: str | None = None,
     ) -> SqsQueue:
         """
         Determines the name of the queue from available information (request context, queue URL) to return the respective queue,
@@ -1670,8 +1671,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         message_system_attributes: MessageBodySystemAttributeMap = None,
-    ) -> Dict[MessageSystemAttributeName, str]:
-        result: Dict[MessageSystemAttributeName, str] = {
+    ) -> dict[MessageSystemAttributeName, str]:
+        result: dict[MessageSystemAttributeName, str] = {
             MessageSystemAttributeName.SenderId: context.account_id,  # not the account ID in AWS
             MessageSystemAttributeName.SentTimestamp: str(now(millis=True)),
         }
@@ -1705,7 +1706,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _assert_batch(
         self,
-        batch: List,
+        batch: list,
         *,
         require_fifo_queue_params: bool = False,
         require_message_deduplication_id: bool = False,
@@ -1741,7 +1742,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             else:
                 visited.add(entry_id)
 
-    def _assert_valid_batch_size(self, batch: List, max_message_size: int):
+    def _assert_valid_batch_size(self, batch: list, max_message_size: int):
         batch_message_size = sum(
             _message_body_size(entry.get("MessageBody"))
             + _message_attributes_size(entry.get("MessageAttributes"))
@@ -1752,7 +1753,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             error += f" You have sent {batch_message_size} bytes."
             raise BatchRequestTooLong(error)
 
-    def _assert_valid_message_ids(self, batch: List):
+    def _assert_valid_message_ids(self, batch: list):
         batch_id_regex = r"^[\w-]{1,80}$"
         for message in batch:
             if not re.match(batch_id_regex, message.get("Id", "")):
@@ -1782,7 +1783,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
-def _create_message_attribute_hash(message_attributes) -> Optional[str]:
+def _create_message_attribute_hash(message_attributes) -> str | None:
     # To avoid the need to check for dict conformity everytime we invoke this function
     if not isinstance(message_attributes, dict):
         return
@@ -1810,8 +1811,8 @@ def _create_message_attribute_hash(message_attributes) -> Optional[str]:
 
 
 def resolve_queue_location(
-    context: RequestContext, queue_name: Optional[str] = None, queue_url: Optional[str] = None
-) -> Tuple[str, Optional[str], str]:
+    context: RequestContext, queue_name: str | None = None, queue_url: str | None = None
+) -> tuple[str, str | None, str]:
     """
     Resolves a queue location from the given information.
 
@@ -1868,7 +1869,7 @@ def to_sqs_api_message(
     return message
 
 
-def message_filter_attributes(message: Message, names: Optional[AttributeNameList]):
+def message_filter_attributes(message: Message, names: AttributeNameList | None):
     """
     Utility function filter from the given message (in-place) the system attributes from the given list. It will
     apply all rules according to:
@@ -1892,7 +1893,7 @@ def message_filter_attributes(message: Message, names: Optional[AttributeNameLis
             del message["Attributes"][k]
 
 
-def message_filter_message_attributes(message: Message, names: Optional[MessageAttributeNameList]):
+def message_filter_message_attributes(message: Message, names: MessageAttributeNameList | None):
     """
     Utility function filter from the given message (in-place) the message attributes from the given list. It will
     apply all rules according to:

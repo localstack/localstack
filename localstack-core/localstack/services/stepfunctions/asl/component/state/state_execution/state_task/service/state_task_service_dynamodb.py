@@ -1,4 +1,4 @@
-from typing import Final, Optional
+from typing import Final
 
 from botocore.exceptions import ClientError
 
@@ -76,7 +76,7 @@ _SUPPORTED_API_PARAM_BINDINGS: Final[dict[str, set[str]]] = {
 
 
 class StateTaskServiceDynamoDB(StateTaskService):
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod

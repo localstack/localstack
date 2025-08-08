@@ -1,6 +1,6 @@
 import dataclasses
 import os
-from typing import Iterable, Tuple
+from collections.abc import Iterable
 
 import click
 from rich.rule import Rule
@@ -133,9 +133,9 @@ def run(
     mount_dependencies: bool = False,
     mount_entrypoints: bool = False,
     mount_docker_socket: bool = True,
-    env: Tuple = (),
-    volume: Tuple = (),
-    publish: Tuple = (),
+    env: tuple = (),
+    volume: tuple = (),
+    publish: tuple = (),
     entrypoint: str = None,
     network: str = None,
     local_packages: list[str] | None = None,

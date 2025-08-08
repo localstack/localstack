@@ -2,7 +2,8 @@ import dataclasses
 import inspect
 import logging
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from rolo import Response
 from rolo.gateway import ExceptionHandler, Handler, HandlerChain, RequestContext

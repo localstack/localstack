@@ -1,5 +1,3 @@
-from typing import List
-
 import pytest
 from _pytest.config import Config, PytestPluginManager
 from _pytest.config.argparsing import Parser
@@ -13,7 +11,7 @@ def pytest_addoption(parser: Parser, pluginmanager: PytestPluginManager):
 
 
 @pytest.hookimpl
-def pytest_collection_modifyitems(session: Session, config: Config, items: List[Item]):
+def pytest_collection_modifyitems(session: Session, config: Config, items: list[Item]):
     filter_fixtures_option = config.getoption("--filter-fixtures")
     if filter_fixtures_option:
         # TODO: add more sophisticated combinations (=> like pytest -m and -k)

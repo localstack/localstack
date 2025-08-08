@@ -1,6 +1,7 @@
 import sys
+from collections.abc import Iterable, Iterator
 from itertools import islice
-from typing import Any, Iterable, Iterator
+from typing import Any
 
 
 def batched(iterable, n):

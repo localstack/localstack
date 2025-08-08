@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,110 +14,110 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SchedulerScheduleProperties(TypedDict):
-    FlexibleTimeWindow: Optional[FlexibleTimeWindow]
-    ScheduleExpression: Optional[str]
-    Target: Optional[Target]
-    Arn: Optional[str]
-    Description: Optional[str]
-    EndDate: Optional[str]
-    GroupName: Optional[str]
-    KmsKeyArn: Optional[str]
-    Name: Optional[str]
-    ScheduleExpressionTimezone: Optional[str]
-    StartDate: Optional[str]
-    State: Optional[str]
+    FlexibleTimeWindow: FlexibleTimeWindow | None
+    ScheduleExpression: str | None
+    Target: Target | None
+    Arn: str | None
+    Description: str | None
+    EndDate: str | None
+    GroupName: str | None
+    KmsKeyArn: str | None
+    Name: str | None
+    ScheduleExpressionTimezone: str | None
+    StartDate: str | None
+    State: str | None
 
 
 class FlexibleTimeWindow(TypedDict):
-    Mode: Optional[str]
-    MaximumWindowInMinutes: Optional[float]
+    Mode: str | None
+    MaximumWindowInMinutes: float | None
 
 
 class DeadLetterConfig(TypedDict):
-    Arn: Optional[str]
+    Arn: str | None
 
 
 class RetryPolicy(TypedDict):
-    MaximumEventAgeInSeconds: Optional[float]
-    MaximumRetryAttempts: Optional[float]
+    MaximumEventAgeInSeconds: float | None
+    MaximumRetryAttempts: float | None
 
 
 class AwsVpcConfiguration(TypedDict):
-    Subnets: Optional[list[str]]
-    AssignPublicIp: Optional[str]
-    SecurityGroups: Optional[list[str]]
+    Subnets: list[str] | None
+    AssignPublicIp: str | None
+    SecurityGroups: list[str] | None
 
 
 class NetworkConfiguration(TypedDict):
-    AwsvpcConfiguration: Optional[AwsVpcConfiguration]
+    AwsvpcConfiguration: AwsVpcConfiguration | None
 
 
 class CapacityProviderStrategyItem(TypedDict):
-    CapacityProvider: Optional[str]
-    Base: Optional[float]
-    Weight: Optional[float]
+    CapacityProvider: str | None
+    Base: float | None
+    Weight: float | None
 
 
 class PlacementConstraint(TypedDict):
-    Expression: Optional[str]
-    Type: Optional[str]
+    Expression: str | None
+    Type: str | None
 
 
 class PlacementStrategy(TypedDict):
-    Field: Optional[str]
-    Type: Optional[str]
+    Field: str | None
+    Type: str | None
 
 
 class EcsParameters(TypedDict):
-    TaskDefinitionArn: Optional[str]
-    CapacityProviderStrategy: Optional[list[CapacityProviderStrategyItem]]
-    EnableECSManagedTags: Optional[bool]
-    EnableExecuteCommand: Optional[bool]
-    Group: Optional[str]
-    LaunchType: Optional[str]
-    NetworkConfiguration: Optional[NetworkConfiguration]
-    PlacementConstraints: Optional[list[PlacementConstraint]]
-    PlacementStrategy: Optional[list[PlacementStrategy]]
-    PlatformVersion: Optional[str]
-    PropagateTags: Optional[str]
-    ReferenceId: Optional[str]
-    Tags: Optional[list[dict]]
-    TaskCount: Optional[float]
+    TaskDefinitionArn: str | None
+    CapacityProviderStrategy: list[CapacityProviderStrategyItem] | None
+    EnableECSManagedTags: bool | None
+    EnableExecuteCommand: bool | None
+    Group: str | None
+    LaunchType: str | None
+    NetworkConfiguration: NetworkConfiguration | None
+    PlacementConstraints: list[PlacementConstraint] | None
+    PlacementStrategy: list[PlacementStrategy] | None
+    PlatformVersion: str | None
+    PropagateTags: str | None
+    ReferenceId: str | None
+    Tags: list[dict] | None
+    TaskCount: float | None
 
 
 class EventBridgeParameters(TypedDict):
-    DetailType: Optional[str]
-    Source: Optional[str]
+    DetailType: str | None
+    Source: str | None
 
 
 class KinesisParameters(TypedDict):
-    PartitionKey: Optional[str]
+    PartitionKey: str | None
 
 
 class SageMakerPipelineParameter(TypedDict):
-    Name: Optional[str]
-    Value: Optional[str]
+    Name: str | None
+    Value: str | None
 
 
 class SageMakerPipelineParameters(TypedDict):
-    PipelineParameterList: Optional[list[SageMakerPipelineParameter]]
+    PipelineParameterList: list[SageMakerPipelineParameter] | None
 
 
 class SqsParameters(TypedDict):
-    MessageGroupId: Optional[str]
+    MessageGroupId: str | None
 
 
 class Target(TypedDict):
-    Arn: Optional[str]
-    RoleArn: Optional[str]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    EcsParameters: Optional[EcsParameters]
-    EventBridgeParameters: Optional[EventBridgeParameters]
-    Input: Optional[str]
-    KinesisParameters: Optional[KinesisParameters]
-    RetryPolicy: Optional[RetryPolicy]
-    SageMakerPipelineParameters: Optional[SageMakerPipelineParameters]
-    SqsParameters: Optional[SqsParameters]
+    Arn: str | None
+    RoleArn: str | None
+    DeadLetterConfig: DeadLetterConfig | None
+    EcsParameters: EcsParameters | None
+    EventBridgeParameters: EventBridgeParameters | None
+    Input: str | None
+    KinesisParameters: KinesisParameters | None
+    RetryPolicy: RetryPolicy | None
+    SageMakerPipelineParameters: SageMakerPipelineParameters | None
+    SqsParameters: SqsParameters | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

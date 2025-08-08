@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -16,153 +16,153 @@ from localstack.utils import common
 
 
 class EventsRuleProperties(TypedDict):
-    Arn: Optional[str]
-    Description: Optional[str]
-    EventBusName: Optional[str]
-    EventPattern: Optional[dict]
-    Id: Optional[str]
-    Name: Optional[str]
-    RoleArn: Optional[str]
-    ScheduleExpression: Optional[str]
-    State: Optional[str]
-    Targets: Optional[list[Target]]
+    Arn: str | None
+    Description: str | None
+    EventBusName: str | None
+    EventPattern: dict | None
+    Id: str | None
+    Name: str | None
+    RoleArn: str | None
+    ScheduleExpression: str | None
+    State: str | None
+    Targets: list[Target] | None
 
 
 class HttpParameters(TypedDict):
-    HeaderParameters: Optional[dict]
-    PathParameterValues: Optional[list[str]]
-    QueryStringParameters: Optional[dict]
+    HeaderParameters: dict | None
+    PathParameterValues: list[str] | None
+    QueryStringParameters: dict | None
 
 
 class DeadLetterConfig(TypedDict):
-    Arn: Optional[str]
+    Arn: str | None
 
 
 class RunCommandTarget(TypedDict):
-    Key: Optional[str]
-    Values: Optional[list[str]]
+    Key: str | None
+    Values: list[str] | None
 
 
 class RunCommandParameters(TypedDict):
-    RunCommandTargets: Optional[list[RunCommandTarget]]
+    RunCommandTargets: list[RunCommandTarget] | None
 
 
 class InputTransformer(TypedDict):
-    InputTemplate: Optional[str]
-    InputPathsMap: Optional[dict]
+    InputTemplate: str | None
+    InputPathsMap: dict | None
 
 
 class KinesisParameters(TypedDict):
-    PartitionKeyPath: Optional[str]
+    PartitionKeyPath: str | None
 
 
 class RedshiftDataParameters(TypedDict):
-    Database: Optional[str]
-    Sql: Optional[str]
-    DbUser: Optional[str]
-    SecretManagerArn: Optional[str]
-    StatementName: Optional[str]
-    WithEvent: Optional[bool]
+    Database: str | None
+    Sql: str | None
+    DbUser: str | None
+    SecretManagerArn: str | None
+    StatementName: str | None
+    WithEvent: bool | None
 
 
 class SqsParameters(TypedDict):
-    MessageGroupId: Optional[str]
+    MessageGroupId: str | None
 
 
 class PlacementConstraint(TypedDict):
-    Expression: Optional[str]
-    Type: Optional[str]
+    Expression: str | None
+    Type: str | None
 
 
 class PlacementStrategy(TypedDict):
-    Field: Optional[str]
-    Type: Optional[str]
+    Field: str | None
+    Type: str | None
 
 
 class CapacityProviderStrategyItem(TypedDict):
-    CapacityProvider: Optional[str]
-    Base: Optional[int]
-    Weight: Optional[int]
+    CapacityProvider: str | None
+    Base: int | None
+    Weight: int | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 class AwsVpcConfiguration(TypedDict):
-    Subnets: Optional[list[str]]
-    AssignPublicIp: Optional[str]
-    SecurityGroups: Optional[list[str]]
+    Subnets: list[str] | None
+    AssignPublicIp: str | None
+    SecurityGroups: list[str] | None
 
 
 class NetworkConfiguration(TypedDict):
-    AwsVpcConfiguration: Optional[AwsVpcConfiguration]
+    AwsVpcConfiguration: AwsVpcConfiguration | None
 
 
 class EcsParameters(TypedDict):
-    TaskDefinitionArn: Optional[str]
-    CapacityProviderStrategy: Optional[list[CapacityProviderStrategyItem]]
-    EnableECSManagedTags: Optional[bool]
-    EnableExecuteCommand: Optional[bool]
-    Group: Optional[str]
-    LaunchType: Optional[str]
-    NetworkConfiguration: Optional[NetworkConfiguration]
-    PlacementConstraints: Optional[list[PlacementConstraint]]
-    PlacementStrategies: Optional[list[PlacementStrategy]]
-    PlatformVersion: Optional[str]
-    PropagateTags: Optional[str]
-    ReferenceId: Optional[str]
-    TagList: Optional[list[Tag]]
-    TaskCount: Optional[int]
+    TaskDefinitionArn: str | None
+    CapacityProviderStrategy: list[CapacityProviderStrategyItem] | None
+    EnableECSManagedTags: bool | None
+    EnableExecuteCommand: bool | None
+    Group: str | None
+    LaunchType: str | None
+    NetworkConfiguration: NetworkConfiguration | None
+    PlacementConstraints: list[PlacementConstraint] | None
+    PlacementStrategies: list[PlacementStrategy] | None
+    PlatformVersion: str | None
+    PropagateTags: str | None
+    ReferenceId: str | None
+    TagList: list[Tag] | None
+    TaskCount: int | None
 
 
 class BatchRetryStrategy(TypedDict):
-    Attempts: Optional[int]
+    Attempts: int | None
 
 
 class BatchArrayProperties(TypedDict):
-    Size: Optional[int]
+    Size: int | None
 
 
 class BatchParameters(TypedDict):
-    JobDefinition: Optional[str]
-    JobName: Optional[str]
-    ArrayProperties: Optional[BatchArrayProperties]
-    RetryStrategy: Optional[BatchRetryStrategy]
+    JobDefinition: str | None
+    JobName: str | None
+    ArrayProperties: BatchArrayProperties | None
+    RetryStrategy: BatchRetryStrategy | None
 
 
 class SageMakerPipelineParameter(TypedDict):
-    Name: Optional[str]
-    Value: Optional[str]
+    Name: str | None
+    Value: str | None
 
 
 class SageMakerPipelineParameters(TypedDict):
-    PipelineParameterList: Optional[list[SageMakerPipelineParameter]]
+    PipelineParameterList: list[SageMakerPipelineParameter] | None
 
 
 class RetryPolicy(TypedDict):
-    MaximumEventAgeInSeconds: Optional[int]
-    MaximumRetryAttempts: Optional[int]
+    MaximumEventAgeInSeconds: int | None
+    MaximumRetryAttempts: int | None
 
 
 class Target(TypedDict):
-    Arn: Optional[str]
-    Id: Optional[str]
-    BatchParameters: Optional[BatchParameters]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    EcsParameters: Optional[EcsParameters]
-    HttpParameters: Optional[HttpParameters]
-    Input: Optional[str]
-    InputPath: Optional[str]
-    InputTransformer: Optional[InputTransformer]
-    KinesisParameters: Optional[KinesisParameters]
-    RedshiftDataParameters: Optional[RedshiftDataParameters]
-    RetryPolicy: Optional[RetryPolicy]
-    RoleArn: Optional[str]
-    RunCommandParameters: Optional[RunCommandParameters]
-    SageMakerPipelineParameters: Optional[SageMakerPipelineParameters]
-    SqsParameters: Optional[SqsParameters]
+    Arn: str | None
+    Id: str | None
+    BatchParameters: BatchParameters | None
+    DeadLetterConfig: DeadLetterConfig | None
+    EcsParameters: EcsParameters | None
+    HttpParameters: HttpParameters | None
+    Input: str | None
+    InputPath: str | None
+    InputTransformer: InputTransformer | None
+    KinesisParameters: KinesisParameters | None
+    RedshiftDataParameters: RedshiftDataParameters | None
+    RetryPolicy: RetryPolicy | None
+    RoleArn: str | None
+    RunCommandParameters: RunCommandParameters | None
+    SageMakerPipelineParameters: SageMakerPipelineParameters | None
+    SqsParameters: SqsParameters | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

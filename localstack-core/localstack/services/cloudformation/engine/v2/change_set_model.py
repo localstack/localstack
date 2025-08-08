@@ -2,14 +2,18 @@ from __future__ import annotations
 
 import abc
 import enum
+from collections.abc import Generator
 from itertools import zip_longest
-from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
+from typing import TYPE_CHECKING, Any, Final, TypedDict, cast
 
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
 from localstack.utils.strings import camel_to_snake_case
+
+if TYPE_CHECKING:
+    from localstack.services.cloudformation.v2.entities import EngineParameter
 
 T = TypeVar("T")
 
@@ -44,7 +48,7 @@ class NothingType:
         return False
 
 
-Maybe = Union[T, NothingType]
+Maybe = T | NothingType
 Nothing = NothingType()
 
 
@@ -86,7 +90,7 @@ class NormalisedGlobalTransformDefinition(TypedDict):
 
 
 class Scope(str):
-    _ROOT_SCOPE: Final[str] = str()
+    _ROOT_SCOPE: Final[str] = ""
     _SEPARATOR: Final[str] = "/"
 
     def __new__(cls, scope: str = _ROOT_SCOPE) -> Scope:
@@ -533,16 +537,17 @@ class ChangeSetModel:
 
     def __init__(
         self,
-        before_template: Optional[dict],
-        after_template: Optional[dict],
-        before_parameters: Optional[dict],
-        after_parameters: Optional[dict],
+        before_template: dict | None,
+        after_template: dict | None,
+        before_parameters: dict | None,
+        after_parameters: dict[str, EngineParameter] | None,
     ):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
         self._before_parameters = before_parameters or Nothing
         self._after_parameters = after_parameters or Nothing
         self._visited_scopes = dict()
+        # TODO: move this modeling process to the `get_update_model` method as constructors shouldn't do work
         self._node_template = self._model(
             before_template=self._before_template, after_template=self._after_template
         )
@@ -723,7 +728,7 @@ class ChangeSetModel:
         )
         if not isinstance(node_condition, NodeCondition):
             raise RuntimeError()
-        change_type = parent_change_type_of([node_condition, *arguments[1:]])
+        change_type = parent_change_type_of([node_condition, *arguments.array[1:]])
         return change_type
 
     def _resolve_requires_replacement(
@@ -1008,9 +1013,26 @@ class ChangeSetModel:
 
     def _visit_dynamic_parameter(self, parameter_name: str) -> ChangeSetEntity:
         scope = Scope("Dynamic").open_scope("Parameters")
-        scope_parameter, (before_parameter, after_parameter) = self._safe_access_in(
+        scope_parameter, (before_parameter_dct, after_parameter_dct) = self._safe_access_in(
             scope, parameter_name, self._before_parameters, self._after_parameters
         )
+
+        before_parameter = Nothing
+        if not is_nothing(before_parameter_dct):
+            before_parameter = (
+                before_parameter_dct.get("resolved_value")
+                or before_parameter_dct["given_value"]
+                or before_parameter_dct.get("default_value")
+            )
+
+        after_parameter = Nothing
+        if not is_nothing(after_parameter_dct):
+            after_parameter = (
+                after_parameter_dct.get("resolved_value")
+                or after_parameter_dct["given_value"]
+                or after_parameter_dct.get("default_value")
+            )
+
         parameter = self._visit_value(
             scope=scope_parameter, before_value=before_parameter, after_value=after_parameter
         )
@@ -1425,7 +1447,7 @@ class ChangeSetModel:
         return keys
 
     @staticmethod
-    def _name_if_intrinsic_function(value: Maybe[Any]) -> Optional[str]:
+    def _name_if_intrinsic_function(value: Maybe[Any]) -> str | None:
         if isinstance(value, dict):
             keys = ChangeSetModel._safe_keys_of(value)
             if len(keys) == 1:

@@ -1,7 +1,7 @@
 import copy
 import logging
 import threading
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.program.program import Program
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
@@ -12,10 +12,10 @@ LOG = logging.getLogger(__name__)
 class Job:
     job_index: Final[int]
     job_program: Final[Program]
-    job_input: Final[Optional[Any]]
-    job_output: Optional[Any]
+    job_input: Final[Any | None]
+    job_output: Any | None
 
-    def __init__(self, job_index: int, job_program: Program, job_input: Optional[Any]):
+    def __init__(self, job_index: int, job_program: Program, job_input: Any | None):
         self.job_index = job_index
         self.job_program = job_program
         self.job_input = job_input
@@ -24,9 +24,9 @@ class Job:
 
 class JobClosed:
     job_index: Final[int]
-    job_output: Optional[Any]
+    job_output: Any | None
 
-    def __init__(self, job_index: int, job_output: Optional[Any]):
+    def __init__(self, job_index: int, job_output: Any | None):
         self.job_index = job_index
         self.job_output = job_output
 
@@ -37,7 +37,7 @@ class JobClosed:
 class JobPool:
     _mutex: Final[threading.Lock]
     _termination_event: Final[threading.Event]
-    _worker_exception: Optional[Exception]
+    _worker_exception: Exception | None
 
     _jobs_number: Final[int]
     _open_jobs: Final[list[Job]]
@@ -56,7 +56,7 @@ class JobPool:
         self._open_jobs.reverse()
         self._closed_jobs = set()
 
-    def next_job(self) -> Optional[Any]:
+    def next_job(self) -> Any | None:
         with self._mutex:
             if self._worker_exception is not None:
                 return None
@@ -72,7 +72,7 @@ class JobPool:
         if self._is_terminated():
             self._termination_event.set()
 
-    def get_worker_exception(self) -> Optional[Exception]:
+    def get_worker_exception(self) -> Exception | None:
         return self._worker_exception
 
     def close_job(self, job: Job) -> None:

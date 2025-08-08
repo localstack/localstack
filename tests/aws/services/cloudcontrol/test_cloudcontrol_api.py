@@ -1,6 +1,7 @@
 import json
 import logging
-from typing import Callable, ParamSpec, TypeVar
+from collections.abc import Callable
+from typing import ParamSpec, TypeVar
 
 import jsonpatch
 import pytest

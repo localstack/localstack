@@ -6,7 +6,7 @@ import re
 import string
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, TypeVar
+from typing import Any, TypeVar
 from urllib.parse import quote
 
 from moto.iam.models import (
@@ -183,7 +183,7 @@ class IamProvider(IamApi):
 
     @staticmethod
     def build_evaluation_result(
-        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: List[Dict]
+        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: list[dict]
     ) -> EvaluationResult:
         eval_res = EvaluationResult()
         eval_res["EvalActionName"] = action_name
@@ -249,7 +249,7 @@ class IamProvider(IamApi):
         if backend.managed_policies.get(policy_arn):
             backend.managed_policies.pop(policy_arn, None)
         else:
-            raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
 
     def detach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
@@ -260,7 +260,7 @@ class IamProvider(IamApi):
             policy = role.managed_policies[policy_arn]
             policy.detach_from(role)
         except KeyError:
-            raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
 
     @staticmethod
     def moto_role_to_role_type(moto_role: MotoRole) -> Role:

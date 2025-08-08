@@ -1,7 +1,7 @@
 import itertools
 import logging
 from multiprocessing.pool import ThreadPool
-from typing import List, Optional
+from typing import Optional
 
 import click
 from rich.console import Console
@@ -74,7 +74,7 @@ def _do_install_package(package: Package, version: str = None, target: InstallTa
     help="target of the installation",
 )
 def install(
-    package: List[str],
+    package: list[str],
     parallel: Optional[int] = 1,
     version: Optional[str] = None,
     target: Optional[str] = None,

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import time
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.error_name.error_equals_decl import (
@@ -38,17 +38,17 @@ class RetrierDecl(EvalComponent):
     backoff_rate: Final[BackoffRateDecl]
     max_delay_seconds: Final[MaxDelaySecondsDecl]
     jitter_strategy: Final[JitterStrategyDecl]
-    comment: Final[Optional[Comment]]
+    comment: Final[Comment | None]
 
     def __init__(
         self,
         error_equals: ErrorEqualsDecl,
-        interval_seconds: Optional[IntervalSecondsDecl] = None,
-        max_attempts: Optional[MaxAttemptsDecl] = None,
-        backoff_rate: Optional[BackoffRateDecl] = None,
-        max_delay_seconds: Optional[MaxDelaySecondsDecl] = None,
-        jitter_strategy: Optional[JitterStrategyDecl] = None,
-        comment: Optional[Comment] = None,
+        interval_seconds: IntervalSecondsDecl | None = None,
+        max_attempts: MaxAttemptsDecl | None = None,
+        backoff_rate: BackoffRateDecl | None = None,
+        max_delay_seconds: MaxDelaySecondsDecl | None = None,
+        jitter_strategy: JitterStrategyDecl | None = None,
+        comment: Comment | None = None,
     ):
         self.error_equals = error_equals
         self.interval_seconds = interval_seconds or IntervalSecondsDecl()

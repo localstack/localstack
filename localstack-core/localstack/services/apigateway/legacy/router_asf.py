@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict
+from typing import Any
 
 from requests.models import Response as RequestsResponse
 from werkzeug.datastructures import Headers
@@ -22,7 +22,7 @@ LOG = logging.getLogger(__name__)
 # invocation context property decorators and use the url_params directly,
 # something asked for a long time.
 def to_invocation_context(
-    request: Request, url_params: Dict[str, Any] = None
+    request: Request, url_params: dict[str, Any] = None
 ) -> ApiInvocationContext:
     """
     Converts an HTTP Request object into an ApiInvocationContext.

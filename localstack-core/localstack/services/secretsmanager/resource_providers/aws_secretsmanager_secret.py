@@ -6,7 +6,7 @@ import logging
 import random
 import string
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -20,37 +20,37 @@ LOG = logging.getLogger(__name__)
 
 
 class SecretsManagerSecretProperties(TypedDict):
-    Description: Optional[str]
-    GenerateSecretString: Optional[GenerateSecretString]
-    Id: Optional[str]
-    KmsKeyId: Optional[str]
-    Name: Optional[str]
-    ReplicaRegions: Optional[list[ReplicaRegion]]
-    SecretString: Optional[str]
-    Tags: Optional[list[Tag]]
+    Description: str | None
+    GenerateSecretString: GenerateSecretString | None
+    Id: str | None
+    KmsKeyId: str | None
+    Name: str | None
+    ReplicaRegions: list[ReplicaRegion] | None
+    SecretString: str | None
+    Tags: list[Tag] | None
 
 
 class GenerateSecretString(TypedDict):
-    ExcludeCharacters: Optional[str]
-    ExcludeLowercase: Optional[bool]
-    ExcludeNumbers: Optional[bool]
-    ExcludePunctuation: Optional[bool]
-    ExcludeUppercase: Optional[bool]
-    GenerateStringKey: Optional[str]
-    IncludeSpace: Optional[bool]
-    PasswordLength: Optional[int]
-    RequireEachIncludedType: Optional[bool]
-    SecretStringTemplate: Optional[str]
+    ExcludeCharacters: str | None
+    ExcludeLowercase: bool | None
+    ExcludeNumbers: bool | None
+    ExcludePunctuation: bool | None
+    ExcludeUppercase: bool | None
+    GenerateStringKey: str | None
+    IncludeSpace: bool | None
+    PasswordLength: int | None
+    RequireEachIncludedType: bool | None
+    SecretStringTemplate: str | None
 
 
 class ReplicaRegion(TypedDict):
-    Region: Optional[str]
-    KmsKeyId: Optional[str]
+    Region: str | None
+    KmsKeyId: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

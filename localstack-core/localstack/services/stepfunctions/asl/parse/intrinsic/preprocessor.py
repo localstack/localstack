@@ -1,5 +1,4 @@
 import re
-from typing import Optional
 
 from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
 
@@ -88,7 +87,7 @@ class Preprocessor(ASLIntrinsicParserVisitor):
     def visitFunc_arg_list(self, ctx: ASLIntrinsicParser.Func_arg_listContext) -> ArgumentList:
         arguments: list[Argument] = list()
         for child in ctx.children:
-            cmp: Optional[Component] = self.visit(child)
+            cmp: Component | None = self.visit(child)
             if isinstance(cmp, Argument):
                 arguments.append(cmp)
         return ArgumentList(arguments=arguments)

@@ -1,5 +1,3 @@
-from typing import Dict
-
 from moto.logs.models import LogsBackend as MotoLogsBackend
 from moto.logs.models import logs_backends as moto_logs_backend
 
@@ -12,7 +10,7 @@ def get_moto_logs_backend(account_id: str, region_name: str) -> MotoLogsBackend:
 
 class LogsStore(BaseStore):
     # maps resource ARN to tags
-    TAGS: Dict[str, Dict[str, str]] = CrossRegionAttribute(default=dict)
+    TAGS: dict[str, dict[str, str]] = CrossRegionAttribute(default=dict)
 
 
 logs_stores = AccountRegionBundle("logs", LogsStore)

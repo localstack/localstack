@@ -41,18 +41,18 @@ LOG = logging.getLogger(__name__)
 
 class Environment:
     _state_mutex: Final[threading.RLock()]
-    _program_state: Optional[ProgramState]
+    _program_state: ProgramState | None
     program_state_event: Final[threading.Event()]
 
     event_manager: EventManager
     event_history_context: Final[EventHistoryContext]
-    cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
+    cloud_watch_logging_session: Final[CloudWatchLoggingSession | None]
     aws_execution_details: Final[AWSExecutionDetails]
     execution_type: Final[StateMachineType]
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
     activity_store: Final[dict[Arn, Activity]]
-    mock_test_case: Optional[MockTestCase] = None
+    mock_test_case: MockTestCase | None = None
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -68,10 +68,10 @@ class Environment:
         execution_type: StateMachineType,
         context: ContextObjectData,
         event_history_context: EventHistoryContext,
-        cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
+        cloud_watch_logging_session: CloudWatchLoggingSession | None,
         activity_store: dict[Arn, Activity],
-        variable_store: Optional[VariableStore] = None,
-        mock_test_case: Optional[MockTestCase] = None,
+        variable_store: VariableStore | None = None,
+        mock_test_case: MockTestCase | None = None,
     ):
         super(Environment, self).__init__()
         self._state_mutex = threading.RLock()
@@ -101,7 +101,7 @@ class Environment:
 
     @classmethod
     def as_frame_of(
-        cls, env: Environment, event_history_frame_cache: Optional[EventHistoryContext] = None
+        cls, env: Environment, event_history_frame_cache: EventHistoryContext | None = None
     ) -> Environment:
         return Environment.as_inner_frame_of(
             env=env,
@@ -114,7 +114,7 @@ class Environment:
         cls,
         env: Environment,
         variable_store: VariableStore,
-        event_history_frame_cache: Optional[EventHistoryContext] = None,
+        event_history_frame_cache: EventHistoryContext | None = None,
     ) -> Environment:
         # Construct the frame's context object data.
         context = ContextObjectData(
@@ -153,8 +153,8 @@ class Environment:
         return frame
 
     @property
-    def next_state_name(self) -> Optional[str]:
-        next_state_name: Optional[str] = None
+    def next_state_name(self) -> str | None:
+        next_state_name: str | None = None
         program_state = self._program_state
         if isinstance(program_state, ProgramRunning):
             next_state_name = program_state.next_state_name
@@ -173,8 +173,8 @@ class Environment:
             )
 
     @property
-    def next_field_name(self) -> Optional[str]:
-        next_field_name: Optional[str] = None
+    def next_field_name(self) -> str | None:
+        next_field_name: str | None = None
         program_state = self._program_state
         if isinstance(program_state, ProgramRunning):
             next_field_name = program_state.next_field_name
@@ -220,7 +220,7 @@ class Environment:
             self.program_state_event.set()
             self.program_state_event.clear()
 
-    def set_stop(self, stop_date: Timestamp, cause: Optional[str], error: Optional[str]) -> None:
+    def set_stop(self, stop_date: Timestamp, cause: str | None, error: str | None) -> None:
         with self._state_mutex:
             if isinstance(self._program_state, ProgramRunning):
                 self._program_state = ProgramStopped(stop_date=stop_date, cause=cause, error=error)
@@ -229,16 +229,14 @@ class Environment:
                 self.program_state_event.set()
                 self.program_state_event.clear()
 
-    def open_frame(
-        self, event_history_context: Optional[EventHistoryContext] = None
-    ) -> Environment:
+    def open_frame(self, event_history_context: EventHistoryContext | None = None) -> Environment:
         with self._state_mutex:
             frame = self.as_frame_of(env=self, event_history_frame_cache=event_history_context)
             self._frames.append(frame)
             return frame
 
     def open_inner_frame(
-        self, event_history_context: Optional[EventHistoryContext] = None
+        self, event_history_context: EventHistoryContext | None = None
     ) -> Environment:
         with self._state_mutex:
             variable_store = VariableStore.as_inner_scope_of(

@@ -4,7 +4,7 @@ import logging
 import threading
 import time
 from queue import Full, Queue
-from typing import List, Optional
+from typing import Optional
 
 from localstack import config
 from localstack.utils.threads import start_thread, start_worker_thread
@@ -21,7 +21,7 @@ class Publisher(abc.ABC):
     A publisher takes a batch of events and publishes them to a destination.
     """
 
-    def publish(self, events: List[Event]):
+    def publish(self, events: list[Event]):
         raise NotImplementedError
 
     def close(self):
@@ -35,7 +35,7 @@ class AnalyticsClientPublisher(Publisher):
         super().__init__()
         self.client = client or AnalyticsClient()
 
-    def publish(self, events: List[Event]):
+    def publish(self, events: list[Event]):
         self.client.append_events(events)
 
     def close(self):
@@ -47,7 +47,7 @@ class Printer(Publisher):
     Publisher that prints serialized events to stdout.
     """
 
-    def publish(self, events: List[Event]):
+    def publish(self, events: list[Event]):
         for event in events:
             print(event.asdict())
 

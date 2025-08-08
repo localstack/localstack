@@ -1,5 +1,4 @@
 import logging
-from typing import Optional
 
 from localstack.aws.api.apigateway import ApiKey, ApiKeySourceType, RestApi
 from localstack.http import Response
@@ -56,9 +55,7 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
         LOG.debug("Updating $context.identity.apiKeyId='%s'", validated_key["id"])
         identity["apiKeyId"] = validated_key["id"]
 
-    def validate_api_key(
-        self, api_key_value, context: RestApiInvocationContext
-    ) -> Optional[ApiKey]:
+    def validate_api_key(self, api_key_value, context: RestApiInvocationContext) -> ApiKey | None:
         api_id = context.api_id
         stage = context.stage
         account_id = context.account_id
@@ -95,7 +92,7 @@ class ApiKeyValidationHandler(RestApiGatewayHandler):
 
     def get_request_api_key(
         self, rest_api: RestApi, request: InvocationRequest, identity: ContextVarsIdentity
-    ) -> Optional[str]:
+    ) -> str | None:
         """https://docs.aws.amazon.com/apigateway/latest/developerguide/api-gateway-api-key-source.html
         The source of the API key for metering requests according to a usage plan.
         Valid values are:

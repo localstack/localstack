@@ -6,9 +6,9 @@ import queue
 import re
 import socket
 import threading
-from functools import lru_cache
+from functools import cache
 from time import sleep
-from typing import Callable, Dict, List, Optional, Tuple, Union, cast
+from typing import Callable, Optional, Union, cast
 from urllib.parse import quote
 
 import docker
@@ -278,7 +278,7 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
+    def list_containers(self, filter: Union[list[str], str, None] = None, all=True) -> list[dict]:
         if filter:
             filter = [filter] if isinstance(filter, str) else filter
             filter = dict([f.split("=", 1) for f in filter])
@@ -344,7 +344,7 @@ class SdkDockerClient(ContainerClient):
         # some path in the docker image string indicates a custom repository
 
         docker_image = self.registry_resolver_strategy.resolve(docker_image)
-        kwargs: Dict[str, Union[str, bool]] = {"platform": platform}
+        kwargs: dict[str, Union[str, bool]] = {"platform": platform}
         try:
             if log_handler:
                 # Use a lower-level API, as the 'stream' argument is not available in the higher-level `pull`-API
@@ -466,7 +466,7 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_container(self, container_name_or_id: str) -> dict[str, Union[dict, str]]:
         try:
             return self.client().containers.get(container_name_or_id).attrs
         except NotFound:
@@ -479,7 +479,7 @@ class SdkDockerClient(ContainerClient):
         image_name: str,
         pull: bool = True,
         strip_wellknown_repo_prefixes: bool = True,
-    ) -> Dict[str, Union[dict, list, str]]:
+    ) -> dict[str, Union[dict, list, str]]:
         image_name = self.registry_resolver_strategy.resolve(image_name)
         try:
             result = self.client().images.get(image_name).attrs
@@ -513,7 +513,7 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_network(self, network_name: str) -> dict[str, Union[dict, str]]:
         try:
             return self.client().networks.get(network_name).attrs
         except NotFound:
@@ -525,8 +525,8 @@ class SdkDockerClient(ContainerClient):
         self,
         network_name: str,
         container_name_or_id: str,
-        aliases: Optional[List] = None,
-        link_local_ips: List[str] = None,
+        aliases: Optional[list] = None,
+        link_local_ips: list[str] = None,
     ) -> None:
         LOG.debug(
             "Connecting container '%s' to network '%s' with aliases '%s'",
@@ -574,7 +574,7 @@ class SdkDockerClient(ContainerClient):
             LOG.info("Container has more than one assigned network. Picking the first one...")
         return networks[network_names[0]]["IPAddress"]
 
-    @lru_cache(maxsize=None)
+    @cache
     def has_docker(self) -> bool:
         try:
             if not self.docker_client:
@@ -620,7 +620,7 @@ class SdkDockerClient(ContainerClient):
         interactive: bool = False,
         attach: bool = False,
         flags: Optional[str] = None,
-    ) -> Tuple[bytes, bytes]:
+    ) -> tuple[bytes, bytes]:
         LOG.debug("Starting container %s", container_name_or_id)
         try:
             container = self.client().containers.get(container_name_or_id)
@@ -702,28 +702,28 @@ class SdkDockerClient(ContainerClient):
         image_name: str,
         *,
         name: Optional[str] = None,
-        entrypoint: Optional[Union[List[str], str]] = None,
+        entrypoint: Optional[Union[list[str], str]] = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,
         detach: bool = False,
-        command: Optional[Union[List[str], str]] = None,
-        volumes: Optional[List[SimpleVolumeBind]] = None,
+        command: Optional[Union[list[str], str]] = None,
+        volumes: Optional[list[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
-        exposed_ports: Optional[List[str]] = None,
-        env_vars: Optional[Dict[str, str]] = None,
+        exposed_ports: Optional[list[str]] = None,
+        env_vars: Optional[dict[str, str]] = None,
         user: Optional[str] = None,
-        cap_add: Optional[List[str]] = None,
-        cap_drop: Optional[List[str]] = None,
-        security_opt: Optional[List[str]] = None,
+        cap_add: Optional[list[str]] = None,
+        cap_drop: Optional[list[str]] = None,
+        security_opt: Optional[list[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[Union[str, List[str]]] = None,
+        dns: Optional[Union[str, list[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
-        ulimits: Optional[List[Ulimit]] = None,
+        ulimits: Optional[list[Ulimit]] = None,
         init: Optional[bool] = None,
         log_config: Optional[LogConfig] = None,
     ) -> str:
@@ -838,26 +838,26 @@ class SdkDockerClient(ContainerClient):
         interactive: bool = False,
         tty: bool = False,
         detach: bool = False,
-        command: Optional[Union[List[str], str]] = None,
-        volumes: Optional[List[SimpleVolumeBind]] = None,
+        command: Optional[Union[list[str], str]] = None,
+        volumes: Optional[list[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
-        exposed_ports: Optional[List[str]] = None,
-        env_vars: Optional[Dict[str, str]] = None,
+        exposed_ports: Optional[list[str]] = None,
+        env_vars: Optional[dict[str, str]] = None,
         user: Optional[str] = None,
-        cap_add: Optional[List[str]] = None,
-        cap_drop: Optional[List[str]] = None,
-        security_opt: Optional[List[str]] = None,
+        cap_add: Optional[list[str]] = None,
+        cap_drop: Optional[list[str]] = None,
+        security_opt: Optional[list[str]] = None,
         network: Optional[str] = None,
         dns: Optional[str] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
         privileged: Optional[bool] = None,
-        ulimits: Optional[List[Ulimit]] = None,
+        ulimits: Optional[list[Ulimit]] = None,
         init: Optional[bool] = None,
         log_config: Optional[LogConfig] = None,
-    ) -> Tuple[bytes, bytes]:
+    ) -> tuple[bytes, bytes]:
         LOG.debug("Running container with image: %s", image_name)
         container = None
         try:
@@ -903,14 +903,14 @@ class SdkDockerClient(ContainerClient):
     def exec_in_container(
         self,
         container_name_or_id: str,
-        command: Union[List[str], str],
+        command: Union[list[str], str],
         interactive=False,
         detach=False,
-        env_vars: Optional[Dict[str, Optional[str]]] = None,
+        env_vars: Optional[dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
         workdir: Optional[str] = None,
-    ) -> Tuple[bytes, bytes]:
+    ) -> tuple[bytes, bytes]:
         LOG.debug("Executing command in container %s: %s", container_name_or_id, command)
         try:
             container: Container = self.client().containers.get(container_name_or_id)

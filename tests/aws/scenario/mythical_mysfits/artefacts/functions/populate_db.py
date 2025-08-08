@@ -1,5 +1,4 @@
 # Source adapted from: https://github.com/aws-samples/aws-modern-application-workshop/blob/python-cdk
-from __future__ import print_function
 
 import os
 
