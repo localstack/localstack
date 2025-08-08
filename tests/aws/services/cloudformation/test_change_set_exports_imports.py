@@ -33,10 +33,7 @@ def execute_change_set(aws_client):
     paths=[
         "$..Changes..ResourceChange.Details",
         "$..Changes..ResourceChange.Scope",
-        "$..IncludeNestedStacks",
-        "$..NotificationARNs",
         "$..Parameters",
-        "$..Capabilities",
     ]
 )
 class TestChangeSetImportExport:

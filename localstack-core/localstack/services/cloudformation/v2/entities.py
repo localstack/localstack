@@ -9,10 +9,7 @@ from localstack.aws.api.cloudformation import (
     CreateStackInput,
     CreateStackSetInput,
     ExecutionStatus,
-    Output,
     ResourceStatus,
-    StackDriftInformation,
-    StackDriftStatus,
     StackEvent,
     StackInstanceComprehensiveStatus,
     StackInstanceDetailedStatus,
@@ -24,9 +21,6 @@ from localstack.aws.api.cloudformation import (
 )
 from localstack.aws.api.cloudformation import (
     Parameter as ApiParameter,
-)
-from localstack.aws.api.cloudformation import (
-    Stack as ApiStack,
 )
 from localstack.services.cloudformation.engine.entities import (
     StackIdentifier,
@@ -62,6 +56,7 @@ class ResolvedResource(TypedDict):
 
 class Stack:
     stack_name: str
+    description: str | None
     parameters: list[ApiParameter]
     change_set_id: str | None
     status: StackStatus
@@ -123,6 +118,7 @@ class Stack:
         self.resource_states = {}
         self.events = []
         self.resolved_exports = {}
+        self.description = None
 
     def set_stack_status(self, status: StackStatus, reason: StackStatusReason | None = None):
         self.status = status
@@ -196,44 +192,6 @@ class Stack:
             event["ResourceStatusReason"] = status_reason
 
         self.events.insert(0, event)
-
-    def describe_details(self) -> ApiStack:
-        result = {
-            "CreationTime": self.creation_time,
-            "DeletionTime": self.deletion_time,
-            "StackId": self.stack_id,
-            "StackName": self.stack_name,
-            "StackStatus": self.status,
-            "StackStatusReason": self.status_reason,
-            # fake values
-            "DisableRollback": False,
-            "DriftInformation": StackDriftInformation(
-                StackDriftStatus=StackDriftStatus.NOT_CHECKED
-            ),
-            "EnableTerminationProtection": self.enable_termination_protection,
-            "LastUpdatedTime": self.creation_time,
-            "RollbackConfiguration": {},
-            "Tags": [],
-            "NotificationARNs": [],
-            "Capabilities": self.capabilities,
-        }
-        # TODO: confirm the logic for this
-        if change_set_id := self.change_set_id:
-            result["ChangeSetId"] = change_set_id
-
-        if self.resolved_outputs:
-            describe_outputs = []
-            for key, value in self.resolved_outputs.items():
-                describe_outputs.append(
-                    Output(
-                        # TODO(parity): Description, ExportName
-                        # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
-                        OutputKey=key,
-                        OutputValue=value,
-                    )
-                )
-            result["Outputs"] = describe_outputs
-        return result
 
     def is_active(self) -> bool:
         return self.status != StackStatus.DELETE_COMPLETE

@@ -19,7 +19,6 @@ from localstack.utils.strings import short_uid
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",

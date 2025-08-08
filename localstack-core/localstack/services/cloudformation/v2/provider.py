@@ -50,7 +50,6 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
-    Output,
     Parameter,
     PhysicalResourceId,
     RetainExceptOnCreate,
@@ -480,7 +479,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
             change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
 
-        stack.change_set_id = change_set.change_set_id
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
 
@@ -539,11 +537,19 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
-                change_set.stack.resolved_exports = result.exports
+
+                change_set.stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        change_set.stack.resolved_exports[export_name] = output["OutputValue"]
+
+                change_set.stack.change_set_id = change_set.change_set_id
+                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 change_set.stack.template = change_set.template
+                change_set.stack.description = change_set.template.get("Description")
                 change_set.stack.processed_template = change_set.processed_template
                 change_set.stack.template_body = change_set.template_body
             except Exception as e:
@@ -558,6 +564,8 @@ class CloudformationProviderV2(CloudformationProvider):
 
                 change_set.stack.set_stack_status(new_stack_status)
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
+                change_set.stack.change_set_id = change_set.change_set_id
+                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
         start_worker_thread(_run)
 
@@ -587,15 +595,19 @@ class CloudformationProviderV2(CloudformationProvider):
             StackId=change_set.stack.stack_id,
             StackName=change_set.stack.stack_name,
             CreationTime=change_set.creation_time,
-            Parameters=[
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.resolved_parameters.items()
-            ],
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
             StatusReason=change_set.status_reason,
+            NotificationARNs=[],
+            # TODO: static information
+            IncludeNestedStacks=False,
         )
+        if change_set.resolved_parameters:
+            result["Parameters"] = [
+                # TODO: add masking support.
+                Parameter(ParameterKey=key, ParameterValue=value)
+                for (key, value) in change_set.resolved_parameters.items()
+            ]
         return result
 
     @handler("DescribeChangeSet")
@@ -744,6 +756,11 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
                 stack.resolved_parameters = change_set.resolved_parameters
+                stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        stack.resolved_exports[export_name] = output["OutputValue"]
+
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s",
@@ -785,58 +802,54 @@ class CloudformationProviderV2(CloudformationProvider):
 
         describe_stack_output: list[ApiStack] = []
         for stack in stacks:
-            stack_description = ApiStack(
-                CreationTime=stack.creation_time,
-                DeletionTime=stack.deletion_time,
-                StackId=stack.stack_id,
-                StackName=stack.stack_name,
-                StackStatus=stack.status,
-                StackStatusReason=stack.status_reason,
-                # fake values
-                DisableRollback=False,
-                DriftInformation=StackDriftInformation(
-                    StackDriftStatus=StackDriftStatus.NOT_CHECKED
-                ),
-                EnableTerminationProtection=stack.enable_termination_protection,
-                LastUpdatedTime=stack.creation_time,
-                RollbackConfiguration=RollbackConfiguration(),
-                Tags=[],
-                NotificationARNs=[],
-                Capabilities=stack.capabilities,
-                # "Parameters": stack.resolved_parameters,
-            )
-            # TODO: confirm the logic for this
-            if change_set_id := stack.change_set_id:
-                stack_description["ChangeSetId"] = change_set_id
-
-            if stack.resolved_parameters:
-                stack_description["Parameters"] = []
-                for name, resolved_parameter in stack.resolved_parameters.items():
-                    parameter = Parameter(
-                        ParameterKey=name,
-                        ParameterValue=resolved_parameter.get("given_value")
-                        or resolved_parameter.get("default_value"),
-                    )
-                    if resolved_value := resolved_parameter.get("resolved_value"):
-                        parameter["ResolvedValue"] = resolved_value
-                    stack_description["Parameters"].append(parameter)
-
-            if stack.resolved_outputs:
-                describe_outputs = []
-                for key, value in stack.resolved_outputs.items():
-                    describe_outputs.append(
-                        Output(
-                            # TODO(parity): Description, ExportName
-                            # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
-                            OutputKey=key,
-                            OutputValue=value,
-                        )
-                    )
-                stack_description["Outputs"] = describe_outputs
-
-            describe_stack_output.append(stack_description)
+            describe_stack_output.append(self._describe_stack(stack))
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
+
+    @staticmethod
+    def _describe_stack(stack: Stack) -> ApiStack:
+        stack_description = ApiStack(
+            Description=stack.description,
+            CreationTime=stack.creation_time,
+            DeletionTime=stack.deletion_time,
+            StackId=stack.stack_id,
+            StackName=stack.stack_name,
+            StackStatus=stack.status,
+            StackStatusReason=stack.status_reason,
+            # fake values
+            DisableRollback=False,
+            DriftInformation=StackDriftInformation(StackDriftStatus=StackDriftStatus.NOT_CHECKED),
+            EnableTerminationProtection=stack.enable_termination_protection,
+            RollbackConfiguration=RollbackConfiguration(),
+            Tags=[],
+            NotificationARNs=[],
+            # "Parameters": stack.resolved_parameters,
+        )
+        if stack.status != StackStatus.REVIEW_IN_PROGRESS:
+            # TODO: actually track updated time
+            stack_description["LastUpdatedTime"] = stack.creation_time
+        if stack.capabilities:
+            stack_description["Capabilities"] = stack.capabilities
+        # TODO: confirm the logic for this
+        if change_set_id := stack.change_set_id:
+            stack_description["ChangeSetId"] = change_set_id
+
+        if stack.resolved_parameters:
+            stack_description["Parameters"] = []
+            for name, resolved_parameter in stack.resolved_parameters.items():
+                parameter = Parameter(
+                    ParameterKey=name,
+                    ParameterValue=resolved_parameter.get("given_value")
+                    or resolved_parameter.get("default_value"),
+                )
+                if resolved_value := resolved_parameter.get("resolved_value"):
+                    parameter["ResolvedValue"] = resolved_value
+                stack_description["Parameters"].append(parameter)
+
+        if stack.resolved_outputs:
+            stack_description["Outputs"] = stack.resolved_outputs
+
+        return stack_description
 
     @handler("ListStacks")
     def list_stacks(
@@ -849,7 +862,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
 
         stacks = [
-            s.describe_details()
+            self._describe_stack(s)
             for s in state.stacks_v2.values()
             if not stack_status_filter or s.status in stack_status_filter
         ]
@@ -1377,6 +1390,10 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
                 stack.resolved_parameters = change_set.resolved_parameters
+                stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        stack.resolved_exports[export_name] = output["OutputValue"]
             except Exception as e:
                 LOG.error(
                     "Update Stack failed: %s",

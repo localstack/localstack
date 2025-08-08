@@ -12,7 +12,6 @@ pytestmark = skip_if_v1_provider(reason="Only valid for the V2 provider")
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
