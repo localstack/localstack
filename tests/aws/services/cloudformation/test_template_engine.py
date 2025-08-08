@@ -856,7 +856,6 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -926,7 +925,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(reason="CFNV2:GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -988,7 +986,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1041,7 +1038,6 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
-    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1063,7 +1059,6 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @skip_if_v2_provider(reason="CFNV2:GetTemplate")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
@@ -1114,7 +1109,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider(reason="CFNV2:Transform")
     @pytest.mark.parametrize(
         "macro_function",
         [
