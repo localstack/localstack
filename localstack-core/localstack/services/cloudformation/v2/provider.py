@@ -742,6 +742,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 # which was just deployed
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
+                stack.processed_template = change_set.processed_template
                 stack.resolved_parameters = change_set.resolved_parameters
                 stack.resolved_exports = {}
                 for output in result.outputs:
