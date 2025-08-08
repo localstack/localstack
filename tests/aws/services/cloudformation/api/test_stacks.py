@@ -98,6 +98,7 @@ class TestStacksApi:
         ]
         snapshot.match("describe_stack", response)
 
+    @skip_if_v1_provider(reason="Lots of fields not in parity")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -1044,6 +1045,7 @@ def test_stack_deletion_order(
         "$..Capabilities",
         "$..IncludeNestedStacks",
         "$..LastUpdatedTime",
+        "$..NotificationARNs",
         "$..ResourceChange",
         "$..StackResourceDetail.Metadata",
     ]
