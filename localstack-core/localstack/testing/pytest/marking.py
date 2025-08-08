@@ -62,7 +62,12 @@ class Markers:
     only_on_amd64 = pytest.mark.only_on_amd64
     only_on_arm64 = pytest.mark.only_on_arm64
     resource_heavy = pytest.mark.resource_heavy
+    # Tests require LocalStack to be run inside a container
     requires_in_container = pytest.mark.requires_in_container
+    # The test and the LS instance have to be run in the same process
+    requires_in_process = pytest.mark.requires_in_process
+    # The test requires docker or a compatible container engine - will not work on kubernetes
+    requires_docker = pytest.mark.requires_docker
     # Tests to execute when updating snapshots for a new Lambda runtime
     lambda_runtime_update = pytest.mark.lambda_runtime_update
 
@@ -207,4 +212,12 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "multiruntime: parametrize test against multiple Lambda runtimes",
+    )
+    config.addinivalue_line(
+        "markers",
+        "requires_docker: mark the test as requiring docker (or a compatible container engine) - will not work on kubernetes.",
+    )
+    config.addinivalue_line(
+        "markers",
+        "requires_in_process: mark the test as requiring the test to run inside the same process as LocalStack - will not work if tests are run against a running LS container.",
     )
