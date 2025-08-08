@@ -224,7 +224,7 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
         cast_class = getattr(builtins, valid_class)
         old_value = get_nested(params, param_name)
 
-        if cast_class == bool and str(old_value).lower() in ["true", "false"]:
+        if isinstance(cast_class, bool) and str(old_value).lower() in ["true", "false"]:
             new_value = str(old_value).lower() == "true"
         else:
             new_value = cast_class(old_value)
@@ -252,15 +252,17 @@ def convert_data_types(type_conversions: dict[str, Callable], params: dict) -> d
     attr_names = type_conversions.keys() or []
 
     def cast(_obj, _type):
-        if _type == bool:
-            return _obj in ["True", "true", True]
-        if _type == str:
-            if isinstance(_obj, bool):
-                return str(_obj).lower()
-            return str(_obj)
-        if _type in (int, float):
-            return _type(_obj)
-        return _obj
+        match _type:
+            case builtins.bool:
+                return _obj in ["True", "true", True]
+            case builtins.str:
+                if isinstance(_obj, bool):
+                    return str(_obj).lower()
+                return str(_obj)
+            case builtins.int | builtins.float:
+                return _type(_obj)
+            case _:
+                return _obj
 
     def fix_types(o, **kwargs):
         if isinstance(o, dict):

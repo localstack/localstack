@@ -152,7 +152,7 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
         cast_class = getattr(builtins, valid_class)
         old_value = get_nested(params, param_name)
 
-        if cast_class == bool and str(old_value).lower() in ["true", "false"]:
+        if isinstance(cast_class, bool) and str(old_value).lower() in ["true", "false"]:
             new_value = str(old_value).lower() == "true"
         else:
             new_value = cast_class(old_value)

@@ -218,7 +218,6 @@ ignore = [
     "C901", # TODO function is too complex
     "E402", # TODO Module level import not at top of file
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
-    "E721", # TODO Do not compare types, use `isinstance()`
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
     "UP008",# TODO Use `super()` instead of `super(__class__, self)`
