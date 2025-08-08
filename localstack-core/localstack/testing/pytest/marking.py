@@ -62,7 +62,7 @@ class Markers:
     only_on_amd64 = pytest.mark.only_on_amd64
     only_on_arm64 = pytest.mark.only_on_arm64
     resource_heavy = pytest.mark.resource_heavy
-    only_in_docker = pytest.mark.only_in_docker
+    requires_in_container = pytest.mark.requires_in_container
     # Tests to execute when updating snapshots for a new Lambda runtime
     lambda_runtime_update = pytest.mark.lambda_runtime_update
 
@@ -131,8 +131,8 @@ def filter_by_markers(config: "Config", items: list[pytest.Item]):
         "Add network connectivity and remove the --offline option when running "
         "the test."
     )
-    only_in_docker = pytest.mark.skip(
-        reason="Test requires execution inside Docker (e.g., to install system packages)"
+    requires_in_container = pytest.mark.skip(
+        reason="Test requires execution inside a container (e.g., to install system packages)"
     )
     only_on_amd64 = pytest.mark.skip(
         reason="Test uses features that are currently only supported for AMD64. Skipping in CI."
@@ -144,8 +144,8 @@ def filter_by_markers(config: "Config", items: list[pytest.Item]):
     for item in items:
         if is_offline and "skip_offline" in item.keywords:
             item.add_marker(skip_offline)
-        if not is_in_docker and "only_in_docker" in item.keywords:
-            item.add_marker(only_in_docker)
+        if not is_in_docker and "requires_in_container" in item.keywords:
+            item.add_marker(requires_in_container)
         if is_in_ci and not is_amd64 and "only_on_amd64" in item.keywords:
             item.add_marker(only_on_amd64)
         if is_in_ci and not is_arm64 and "only_on_arm64" in item.keywords:
@@ -177,7 +177,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "only_in_docker: mark the test as running only in Docker (e.g., requires installation of system packages)",
+        "requires_in_container: mark the test as running only in a container (e.g., requires installation of system packages)",
     )
     config.addinivalue_line(
         "markers",
