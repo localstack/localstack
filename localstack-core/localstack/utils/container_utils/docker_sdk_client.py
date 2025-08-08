@@ -266,7 +266,7 @@ class SdkDockerClient(ContainerClient):
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
         LOG.debug("Removing container: %s", container_name)
-        if check_existence and container_name not in self.get_running_container_names():
+        if check_existence and container_name not in self.get_all_container_names():
             LOG.debug("Aborting removing due to check_existence check")
             return
         try:
