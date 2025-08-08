@@ -73,7 +73,7 @@ def recurse_properties(properties: dict, fn: Callable) -> dict:
     return _recurse_properties(deepcopy(properties), fn)
 
 
-def keys_pascalcase_to_lower_camelcase(model: dict, skip_keys: set=None) -> dict:
+def keys_pascalcase_to_lower_camelcase(model: dict, skip_keys: set = None) -> dict:
     """Recursively change any dicts keys to lower camelcase"""
 
     if skip_keys:
