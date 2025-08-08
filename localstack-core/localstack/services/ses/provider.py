@@ -369,7 +369,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if not event_destination["Enabled"]:
                 continue
 
-            sns_destination_arn = event_destination.get("SNSDestination")
+            sns_destination_arn = event_destination.get("SNSDestination", {}).get("topic_arn")
             if not sns_destination_arn:
                 continue
 
@@ -425,7 +425,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if not event_destination["Enabled"]:
                 continue
 
-            sns_destination_arn = event_destination.get("SNSDestination")
+            sns_destination_arn = event_destination.get("SNSDestination", {}).get("topic_arn")
             if not sns_destination_arn:
                 continue
 
@@ -486,7 +486,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if not event_destination["Enabled"]:
                 continue
 
-            sns_destination_arn = event_destination.get("SNSDestination")
+            sns_destination_arn = event_destination.get("SNSDestination", {}).get("topic_arn")
             if not sns_destination_arn:
                 continue
 
