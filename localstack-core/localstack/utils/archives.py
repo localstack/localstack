@@ -233,7 +233,7 @@ def download_and_extract(
             rm_rf(tmp_archive)
             raise e
 
-    if ext == ".zip":
+    if ext in (".zip", ".whl"):
         unzip(tmp_archive, target_dir)
     elif ext in (
         ".bz2",
