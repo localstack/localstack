@@ -968,7 +968,6 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -1045,7 +1044,6 @@ def test_stack_deletion_order(
         "$..Capabilities",
         "$..IncludeNestedStacks",
         "$..LastUpdatedTime",
-        "$..NotificationARNs",
         "$..ResourceChange",
         "$..StackResourceDetail.Metadata",
     ]

@@ -759,7 +759,6 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
 
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Parameters",
     ]

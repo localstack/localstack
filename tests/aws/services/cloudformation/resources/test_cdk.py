@@ -115,7 +115,6 @@ class TestCdkInit:
             "$..Changes..Scope",
             # provider
             "$..IncludeNestedStacks",
-            "$..NotificationARNs",
             # CFNV2:Describe not supported yet
             "$..Outputs..ExportName",
             # mismatch between amazonaws.com and localhost.localstack.cloud
