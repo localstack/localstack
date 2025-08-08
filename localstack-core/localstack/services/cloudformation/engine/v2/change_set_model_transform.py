@@ -9,13 +9,13 @@ from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.connect import connect_to
-from localstack.services.cloudformation.engine import transformers
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
     Transformer,
     execute_macro,
+    transformers,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -24,6 +24,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunctionFnTransform,
     NodeParameter,
     NodeProperties,
+    NodeResources,
     NodeTransform,
     Nothing,
     Scope,
@@ -352,20 +353,20 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
             return transforms
 
-        transforms = _normalize_transform(macro_definition)
+        normalized_transforms = _normalize_transform(macro_definition)
         transform_output = copy.deepcopy(siblings)
-        for transform in transforms:
+        for transform in normalized_transforms:
             transform_name = transform["Name"]
-            if transform_name in transforms:
+            if transform_name in transformers.keys():
                 builtin_transformer_class = transformers[transform_name]
                 builtin_transformer: Transformer = builtin_transformer_class()
-                transform_output.update(
-                    builtin_transformer.transform(
-                        account_id=account_id,
-                        region_name=region_name,
-                        parameters=transform["Parameters"],
-                    )
+                result = builtin_transformer.transform(
+                    account_id=account_id,
+                    region_name=region_name,
+                    parameters=transform["Parameters"],
                 )
+
+                transform_output.update(result)
             else:
                 macros_store = get_cloudformation_store(
                     account_id=account_id, region_name=region_name
@@ -463,3 +464,11 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 break
 
         return super().visit_node_properties(node_properties=node_properties)
+
+    def visit_node_resources(self, node_resources: NodeResources) -> PreprocEntityDelta:
+        for i, node_resource in enumerate(node_resources.resources):
+            if isinstance(node_resource, NodeIntrinsicFunctionFnTransform):
+                self.visit(node_resource)
+                node_resources.resources.pop(i)
+                break
+        return super().visit_node_resources(node_resources=node_resources)
