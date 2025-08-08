@@ -29,37 +29,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     UpdateModel,
 )
+from localstack.services.cloudformation.v2.types import ResolvedResource
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
-
-
-# TODO: turn into class/dataclass
-class EngineParameter(TypedDict):
-    """
-    Parameters supplied by the user. The resolved value field is populated by the engine
-    """
-
-    type_: str
-    given_value: NotRequired[str | None]
-    resolved_value: NotRequired[str | None]
-    default_value: NotRequired[str | None]
-
-
-def engine_parameter_value(parameter: EngineParameter) -> str:
-    value = parameter.get("given_value") or parameter.get("default_value")
-    if value is None:
-        raise RuntimeError("Parameter value is None")
-
-    return value
-
-
-class ResolvedResource(TypedDict):
-    LogicalResourceId: str
-    Type: str
-    Properties: dict
-    ResourceStatus: ResourceStatus
-    PhysicalResourceId: str | None
-    LastUpdatedTimestamp: datetime | None
 
 
 class Stack:

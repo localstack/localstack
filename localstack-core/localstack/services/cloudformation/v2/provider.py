@@ -110,11 +110,11 @@ from localstack.services.cloudformation.stores import (
 )
 from localstack.services.cloudformation.v2.entities import (
     ChangeSet,
-    EngineParameter,
     Stack,
     StackInstance,
     StackSet,
 )
+from localstack.services.cloudformation.v2.types import EngineParameter
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread

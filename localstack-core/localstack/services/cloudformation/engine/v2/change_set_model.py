@@ -4,19 +4,17 @@ import abc
 import enum
 from collections.abc import Generator
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any, Final, TypedDict, cast
+from typing import Any, Final, TypedDict, cast
 
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
+from localstack.services.cloudformation.v2.types import (
+    EngineParameter,
+    engine_parameter_value,
+)
 from localstack.utils.strings import camel_to_snake_case
-
-if TYPE_CHECKING:
-    from localstack.services.cloudformation.v2.entities import (
-        EngineParameter,
-        engine_parameter_value,
-    )
 
 T = TypeVar("T")
 
