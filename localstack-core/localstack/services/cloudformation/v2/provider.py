@@ -581,15 +581,19 @@ class CloudformationProviderV2(CloudformationProvider):
             StackId=change_set.stack.stack_id,
             StackName=change_set.stack.stack_name,
             CreationTime=change_set.creation_time,
-            Parameters=[
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.resolved_parameters.items()
-            ],
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
             StatusReason=change_set.status_reason,
+            NotificationARNs=[],
+            # TODO: static information
+            IncludeNestedStacks=False,
         )
+        if change_set.resolved_parameters:
+            result["Parameters"] = [
+                # TODO: add masking support.
+                Parameter(ParameterKey=key, ParameterValue=value)
+                for (key, value) in change_set.resolved_parameters.items()
+            ]
         return result
 
     @handler("DescribeChangeSet")
@@ -782,13 +786,16 @@ class CloudformationProviderV2(CloudformationProvider):
                     StackDriftStatus=StackDriftStatus.NOT_CHECKED
                 ),
                 EnableTerminationProtection=stack.enable_termination_protection,
-                LastUpdatedTime=stack.creation_time,
                 RollbackConfiguration=RollbackConfiguration(),
                 Tags=[],
                 NotificationARNs=[],
-                Capabilities=stack.capabilities,
                 # "Parameters": stack.resolved_parameters,
             )
+            if stack.status != StackStatus.REVIEW_IN_PROGRESS:
+                # TODO: actually track updated time
+                stack_description["LastUpdatedTime"] = stack.creation_time
+            if stack.capabilities:
+                stack_description["Capabilities"] = stack.capabilities
             # TODO: confirm the logic for this
             if change_set_id := stack.change_set_id:
                 stack_description["ChangeSetId"] = change_set_id

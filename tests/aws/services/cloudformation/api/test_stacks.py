@@ -99,6 +99,64 @@ class TestStacksApi:
         snapshot.match("describe_stack", response)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ResourceChange.Details",
+            "$..ResourceChange.Scope",
+            "$..StackStatusReason",
+        ]
+    )
+    def test_stack_description_lifecycle(self, snapshot, aws_client, cleanups):
+        """
+        Test when and how the description gets set
+        """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Description": "test <env>.test.net",
+            "Resources": {
+                "TestResource": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "DummyValue",
+                    },
+                }
+            },
+        }
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        change_set = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            ChangeSetType="CREATE",
+            TemplateBody=json.dumps(template),
+        )
+        change_set_id = change_set["Id"]
+        stack_id = change_set["StackId"]
+
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_id, StackName=stack_id
+        )
+        change_set_description = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id
+        )
+        snapshot.match("change-set-pre-execute", change_set_description)
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
+            0
+        ]
+        snapshot.match("stack-pre-execute", stack_description)
+
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
+            0
+        ]
+        snapshot.match("stack-post-execute", stack_description)
+
+    @markers.aws.validated
     def test_stack_name_creation(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
