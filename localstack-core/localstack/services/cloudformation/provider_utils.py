@@ -84,6 +84,7 @@ def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
 
     return _recurse_properties(model, _keys_pascalcase_to_lower_camelcase)
 
+
 def keys_pascalcase_to_lower_camelcase_skip_keys(model: dict, exclude_keys: set = None) -> dict:
     exclude_keys = exclude_keys or set()
 
@@ -103,6 +104,7 @@ def keys_pascalcase_to_lower_camelcase_skip_keys(model: dict, exclude_keys: set 
             return obj
 
     return _transform(model)
+
 
 def keys_lower_camelcase_to_pascalcase(model: dict) -> dict:
     """Recursively change any dicts keys to PascalCase"""
