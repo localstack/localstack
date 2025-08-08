@@ -536,7 +536,7 @@ class CloudformationProviderV2(CloudformationProvider):
                     new_stack_status = StackStatus.CREATE_COMPLETE
                 change_set.propagate_state_to_stack(result, new_stack_status)
             except Exception as e:
-                LOG.error(
+                LOG.warning(
                     "Execute change set failed: %s",
                     e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
@@ -686,6 +686,8 @@ class CloudformationProviderV2(CloudformationProvider):
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
+            # because this change does not externally involve a change set, we should set the template on the stack
+            template=structured_template,
         )
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
@@ -717,6 +719,9 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
             previous_update_model=None,
         )
+
+        # propagate the processed template to the stack
+        stack.processed_template = change_set.processed_template
 
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)

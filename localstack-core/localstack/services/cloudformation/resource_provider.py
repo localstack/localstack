@@ -458,9 +458,7 @@ class ResourceProviderExecutor:
                 raise
 
             match event.status:
-                case OperationStatus.FAILED:
-                    return event
-                case OperationStatus.SUCCESS:
+                case OperationStatus.SUCCESS | OperationStatus.FAILED:
                     if not hasattr(resource_provider, "SCHEMA"):
                         raise Exception(
                             "A ResourceProvider should always have a SCHEMA property defined."

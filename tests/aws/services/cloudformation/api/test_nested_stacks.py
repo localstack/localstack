@@ -295,7 +295,6 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
     assert ":" not in nested_stack["Stacks"][0]["StackName"]
 
 
-@skip_if_v2_provider(reason="CFNV2:Deletion")
 @markers.aws.validated
 def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name, snapshot):
     """
@@ -341,9 +340,10 @@ def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_na
     assert stack_status == "CREATE_FAILED"
 
     stacks = aws_client.cloudformation.describe_stacks()["Stacks"]
-    nested_stack_name = [
-        stack for stack in stacks if f"{stack_name}-ChildStack-" in stack["StackName"]
-    ][0]["StackName"]
+    name_ = [stack for stack in stacks if f"{stack_name}-ChildStack-" in stack["StackName"]][0][
+        "StackName"
+    ]
+    nested_stack_name = name_
 
     aws_client.cloudformation.delete_stack(StackName=stack_name)
     aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack_name)

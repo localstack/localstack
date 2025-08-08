@@ -22,6 +22,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     TerminalValueModified,
     TerminalValueUnchanged,
     is_nothing,
+    ChangeType,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     MOCKED_REFERENCE,
@@ -48,6 +49,21 @@ from localstack.utils.urls import localstack_host
 LOG = logging.getLogger(__name__)
 
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
+
+
+class ResourceDeployError(Exception):
+    def __init__(
+        self,
+        resource_name: str,
+        before: PreprocResource | None,
+        after: PreprocResource | None,
+        event: ProgressEvent,
+    ):
+        self.resource_name = resource_name
+        self.before = before
+        self.after = after
+        self.event = event
+        super().__init__(f"Failed to deploy resource {resource_name}: {event.message}")
 
 
 class DeferredAction(Protocol):
@@ -233,9 +249,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def _execute_resource_change(
         self, name: str, before: PreprocResource | None, after: PreprocResource | None
-    ) -> None:
+    ) -> ProgressEvent:
         # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
+        event: ProgressEvent | None = None
         if not is_nothing(before) and not is_nothing(after):
             # Case: change on same type.
             if before.resource_type == after.resource_type:
@@ -507,6 +524,25 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     "Resource provider operation failed: '%s'",
                     reason,
                 )
+                if action != ChangeAction.Remove:
+                    status_from_action = EventOperationFromAction[action.value]
+                    physical_resource_id = (
+                        extra_resource_properties["PhysicalResourceId"]
+                        if resource_provider
+                        else MOCKED_REFERENCE
+                    )
+                    resolved_resource = ResolvedResource(
+                        Properties=event.resource_model,
+                        LogicalResourceId=logical_resource_id,
+                        Type=resource_type,
+                        LastUpdatedTimestamp=datetime.now(UTC),
+                        ResourceStatus=ResourceStatus(f"{status_from_action}_FAILED"),
+                        PhysicalResourceId=physical_resource_id,
+                    )
+                    # TODO: do we actually need this line?
+                    resolved_resource.update(extra_resource_properties)
+
+                    self.resources[logical_resource_id] = resolved_resource
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
         return event

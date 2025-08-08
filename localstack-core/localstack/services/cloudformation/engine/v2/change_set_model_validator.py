@@ -1,4 +1,5 @@
 import re
+import logging
 from typing import Any
 
 from localstack.services.cloudformation.engine.v2.change_set_model import (
@@ -7,6 +8,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeTemplate,
     Nothing,
     is_nothing,
+    NodeResources,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     _PSEUDO_PARAMETERS,
@@ -14,6 +16,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocEntityDelta,
     PreprocResource,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
+
+LOG = logging.getLogger(__name__)
 
 
 class ChangeSetModelValidator(ChangeSetModelPreproc):
@@ -23,6 +28,15 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
     def visit_node_template(self, node_template: NodeTemplate):
         self.visit(node_template.mappings)
         self.visit(node_template.resources)
+
+    def visit_node_resources(self, node_resources: NodeResources):
+        for node_resource in node_resources.resources:
+            try:
+                self.visit(node_resource)
+            except ValidationError:
+                raise
+            except Exception as e:
+                LOG.warning("Error validating resource '%s': %s", node_resource.name, e)
 
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
