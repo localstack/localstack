@@ -73,8 +73,11 @@ def recurse_properties(properties: dict, fn: Callable) -> dict:
     return _recurse_properties(deepcopy(properties), fn)
 
 
-def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
+def keys_pascalcase_to_lower_camelcase(model: dict, skip_keys: set=None) -> dict:
     """Recursively change any dicts keys to lower camelcase"""
+
+    if skip_keys:
+        return _pascal_to_camel_keys_preserve_values(model, skip_keys)
 
     def _keys_pascalcase_to_lower_camelcase(obj):
         if isinstance(obj, dict):
@@ -85,15 +88,21 @@ def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
     return _recurse_properties(model, _keys_pascalcase_to_lower_camelcase)
 
 
-def keys_pascalcase_to_lower_camelcase_skip_keys(model: dict, exclude_keys: set = None) -> dict:
-    exclude_keys = exclude_keys or set()
+def _pascal_to_camel_keys_preserve_values(model: dict, skip_keys: set = None) -> dict:
+    """
+    Variant of keys_pascalcase_to_lower_camelcase
+    All VALUES of provided keys are skipped and not transformed to lower camelcase.
+    The keys themselves will be transformed.
+    The function simply stops recursion if a key matches, so make sure no lower level values are ignored.
+    """
+    skip_keys = skip_keys or set()
 
     def _transform(obj):
         if isinstance(obj, dict):
             new_dict = {}
             for k, v in obj.items():
                 new_key = convert_pascalcase_to_lower_camelcase(k)
-                if k in exclude_keys:
+                if k in skip_keys:
                     new_dict[new_key] = v
                 else:
                     new_dict[new_key] = _transform(v)
