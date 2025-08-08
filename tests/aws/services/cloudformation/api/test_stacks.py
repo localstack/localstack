@@ -26,7 +26,6 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
-    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
         + skipped_v2_items(
@@ -978,7 +977,7 @@ def test_stack_deletion_order(
     snapshot.match("all-events", to_snapshot)
 
 
-@skip_if_v2_provider(reason="CFNV2:DescribeStack")
+@skip_if_v2_provider(reason="CFNV2:DescribeStack(noecho)")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when
