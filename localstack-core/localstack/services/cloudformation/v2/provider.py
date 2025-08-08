@@ -761,7 +761,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 for output in result.outputs:
                     if export_name := output.get("ExportName"):
                         stack.resolved_exports[export_name] = output["OutputValue"]
-
+                stack.processed_template = change_set.processed_template
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s",
