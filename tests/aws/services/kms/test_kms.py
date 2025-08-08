@@ -107,10 +107,6 @@ class TestKMS:
         snapshot.add_transformer(snapshot.transform.kms_api())
 
     @markers.aws.validated
-    def test_stack_trace(self, snapshot, aws_client):
-        aws_client.kms.describe_key(KeyId="fake-key-id")
-
-    @markers.aws.validated
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
         alias_name = f"{short_uid()}"
         alias_key_id = kms_create_key()["KeyId"]
