@@ -170,7 +170,7 @@ class ExecutionState(CommonStateField, abc.ABC):
         frame: Environment = env.open_frame()
         frame.states.reset(input_value=env.states.get_input())
         frame.stack = copy.deepcopy(env.stack)
-        execution_outputs: list[Any] = list()
+        execution_outputs: list[Any] = []
         execution_exceptions: list[Exception | None] = [None]
         terminated_event = threading.Event()
 

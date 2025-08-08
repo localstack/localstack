@@ -41,7 +41,7 @@ class StatesFunctionFormat(StatesFunction):
         # TODO: investigate behaviour for incorrect number of arguments in string format.
         self.argument_list.eval(env=env)
 
-        values: list[Any] = list()
+        values: list[Any] = []
         for _ in range(self.argument_list.size):
             values.append(env.stack.pop())
         string_format: str = values.pop()

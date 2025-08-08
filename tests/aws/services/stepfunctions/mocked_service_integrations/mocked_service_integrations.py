@@ -6,7 +6,7 @@ from typing import Final
 import json5
 
 _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
-_LOAD_CACHE: Final[dict[str, dict]] = dict()
+_LOAD_CACHE: Final[dict[str, dict]] = {}
 
 
 class MockedServiceIntegrationsLoader(abc.ABC):

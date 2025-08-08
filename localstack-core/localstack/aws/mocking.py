@@ -99,7 +99,7 @@ def shape_graph(root: Shape) -> ShapeGraph:
     graph.root = root
     populate_graph(graph, root)
 
-    cycles = list()
+    cycles = []
     shapes = set()
     for node in graph.nodes:
         try:

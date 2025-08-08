@@ -57,8 +57,8 @@ class Environment:
     _frames: Final[list[Environment]]
     _is_frame: bool = False
 
-    heap: dict[str, Any] = dict()
-    stack: list[Any] = list()
+    heap: dict[str, Any] = {}
+    stack: list[Any] = []
     states: Final[States]
     variable_store: Final[VariableStore]
 
@@ -91,11 +91,11 @@ class Environment:
 
         self.mock_test_case = mock_test_case
 
-        self._frames = list()
+        self._frames = []
         self._is_frame = False
 
-        self.heap = dict()
-        self.stack = list()
+        self.heap = {}
+        self.stack = []
         self.states = States(context=context)
         self.variable_store = variable_store or VariableStore()
 
@@ -148,7 +148,7 @@ class Environment:
             )
         frame.callback_pool_manager = env.callback_pool_manager
         frame.map_run_record_pool_manager = env.map_run_record_pool_manager
-        frame.heap = dict()
+        frame.heap = {}
         frame._program_state = copy.deepcopy(env._program_state)
         return frame
 

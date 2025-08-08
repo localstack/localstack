@@ -97,7 +97,7 @@ class ArgumentList(Argument):
         self.size = len(arguments)
 
     def _eval_argument(self, env: Environment) -> Any:
-        values = list()
+        values = []
         for argument in self.arguments:
             argument.eval(env=env)
             argument_value = env.stack.pop()

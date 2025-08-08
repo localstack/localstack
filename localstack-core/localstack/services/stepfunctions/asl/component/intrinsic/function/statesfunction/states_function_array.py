@@ -24,7 +24,7 @@ class StatesFunctionArray(StatesFunction):
 
     def _eval_body(self, env: Environment) -> None:
         self.argument_list.eval(env=env)
-        values: list[Any] = list()
+        values: list[Any] = []
         for _ in range(self.argument_list.size):
             values.append(env.stack.pop())
         values.reverse()

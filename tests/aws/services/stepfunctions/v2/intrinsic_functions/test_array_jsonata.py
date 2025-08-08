@@ -12,7 +12,7 @@ class TestArrayJSONata:
     ):
         # TODO: test and add support for raising exception on empty array.
         arrays = [list(range(i)) for i in range(1, 5)]
-        input_values = list()
+        input_values = []
         for array in arrays:
             for chunk_size in range(1, 6):
                 input_values.append({"fst": array, "snd": chunk_size})
@@ -35,7 +35,7 @@ class TestArrayJSONata:
             (1, 9, 9),
             (1, 9, 2),
         ]
-        input_values = list()
+        input_values = []
         for fst, lst, step in ranges:
             input_values.append({"fst": fst, "snd": lst, "trd": step})
         create_and_test_on_inputs(

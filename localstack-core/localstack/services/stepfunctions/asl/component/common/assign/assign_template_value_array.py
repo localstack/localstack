@@ -13,7 +13,7 @@ class AssignTemplateValueArray(AssignTemplateValue):
         self.values = values
 
     def _eval_body(self, env: Environment) -> None:
-        arr = list()
+        arr = []
         for value in self.values:
             value.eval(env)
             arr.append(env.stack.pop())

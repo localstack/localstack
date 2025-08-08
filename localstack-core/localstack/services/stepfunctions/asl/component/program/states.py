@@ -4,4 +4,4 @@ from localstack.services.stepfunctions.asl.component.state.state import CommonSt
 
 class States(Component):
     def __init__(self):
-        self.states: dict[str, CommonStateField] = dict()
+        self.states: dict[str, CommonStateField] = {}

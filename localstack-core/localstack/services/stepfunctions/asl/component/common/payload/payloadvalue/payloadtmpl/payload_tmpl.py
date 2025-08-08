@@ -14,6 +14,6 @@ class PayloadTmpl(PayloadValue):
         self.payload_bindings: Final[list[PayloadBinding]] = payload_bindings
 
     def _eval_body(self, env: Environment) -> None:
-        env.stack.append(dict())
+        env.stack.append({})
         for payload_binding in self.payload_bindings:
             payload_binding.eval(env)

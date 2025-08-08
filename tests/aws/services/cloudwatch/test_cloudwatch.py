@@ -212,13 +212,13 @@ class TestCloudwatch:
         namespace2 = f"test/{short_uid()}"
 
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
+            Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 23}]
         )
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=18)]
+            Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 18}]
         )
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace2, MetricData=[dict(MetricName="ug", Value=23)]
+            Namespace=namespace2, MetricData=[{"MetricName": "ug", "Value": 23}]
         )
 
         now = datetime.utcnow().replace(microsecond=0)
@@ -528,7 +528,7 @@ class TestCloudwatch:
         """
         namespace1 = f"test/{short_uid()}"
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
+            Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 23}]
         )
         # the new v2 provider doesn't need the headers, will return results for all accounts/regions
         headers = mock_aws_request_headers(
@@ -2057,7 +2057,11 @@ class TestCloudwatch:
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
-                    dict(MetricName="metric", Value=i, Timestamp=utc_now + timedelta(seconds=1))
+                    {
+                        "MetricName": "metric",
+                        "Value": i,
+                        "Timestamp": utc_now + timedelta(seconds=1),
+                    }
                 ],
             )
 

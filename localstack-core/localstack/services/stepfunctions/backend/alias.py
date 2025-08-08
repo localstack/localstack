@@ -88,8 +88,8 @@ class Alias:
 
             if routing_configuration_list:
                 self._routing_configuration_list = routing_configuration_list
-                self._state_machine_version_arns = list()
-                self._execution_probability_distribution = list()
+                self._state_machine_version_arns = []
+                self._execution_probability_distribution = []
                 for routing_configuration in routing_configuration_list:
                     self._state_machine_version_arns.append(
                         routing_configuration["stateMachineVersionArn"]

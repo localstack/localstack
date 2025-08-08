@@ -42,7 +42,7 @@ class BranchWorkerPool(BranchWorker.BranchWorkerComm):
             end_program_state: ProgramState = env.program_state()
             if isinstance(end_program_state, ProgramError):
                 self._terminated_with_error = select_from_typed_dict(
-                    typed_dict=ExecutionFailedEventDetails, obj=end_program_state.error or dict()
+                    typed_dict=ExecutionFailedEventDetails, obj=end_program_state.error or {}
                 )
                 self._termination_event.set()
             else:
@@ -67,7 +67,7 @@ class BranchesDecl(EvalComponent):
 
         branch_worker_pool = BranchWorkerPool(workers_num=len(self.programs))
 
-        branch_workers: list[BranchWorker] = list()
+        branch_workers: list[BranchWorker] = []
         for program in self.programs:
             # Environment frame for this sub process.
             env_frame: Environment = env.open_inner_frame()
@@ -103,7 +103,7 @@ class BranchesDecl(EvalComponent):
             )
 
         # Collect the results and return.
-        result_list = list()
+        result_list = []
 
         for worker in branch_workers:
             env_frame = worker.env

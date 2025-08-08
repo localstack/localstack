@@ -16,6 +16,6 @@ class JSONataTemplateValueObject(JSONataTemplateValue):
         self.bindings = bindings
 
     def _eval_body(self, env: Environment) -> None:
-        env.stack.append(dict())
+        env.stack.append({})
         for binding in self.bindings:
             binding.eval(env)

@@ -660,7 +660,7 @@ class UniqueHostAndPortList(list[HostAndPort]):
         if len(self) <= 1:
             return
 
-        unique: list[HostAndPort] = list()
+        unique: list[HostAndPort] = []
 
         # Build a dictionary of hosts by port
         hosts_by_port: dict[int, list[str]] = defaultdict(list)

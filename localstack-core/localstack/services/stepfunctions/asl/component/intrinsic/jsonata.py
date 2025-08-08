@@ -75,7 +75,7 @@ _DECLARATION_BY_VARIABLE_REFERENCE: Final[dict[VariableReference, str]] = {
 def get_intrinsic_functions_declarations(
     variable_references: set[VariableReference],
 ) -> VariableDeclarations:
-    declarations: list[str] = list()
+    declarations: list[str] = []
     for variable_reference in variable_references:
         declaration: VariableDeclarations | None = _DECLARATION_BY_VARIABLE_REFERENCE.get(
             variable_reference

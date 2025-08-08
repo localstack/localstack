@@ -146,7 +146,7 @@ class RuntimeImageResolver:
     def __init__(
         self, default_resolve_fn: Callable[[Runtime], str] = get_default_image_for_runtime
     ):
-        self._mapping = dict()
+        self._mapping = {}
         self._default_resolve_fn = default_resolve_fn
 
     def _resolve(self, runtime: Runtime, custom_image_mapping: str = "") -> str:

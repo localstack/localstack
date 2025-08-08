@@ -27,8 +27,8 @@ class ScheduledTask:
         self.period = period
         self.start = start
         self.on_error = on_error
-        self.args = args or tuple()
-        self.kwargs = kwargs or dict()
+        self.args = args or ()
+        self.kwargs = kwargs or {}
 
         self.deadline = None
         self.error = None

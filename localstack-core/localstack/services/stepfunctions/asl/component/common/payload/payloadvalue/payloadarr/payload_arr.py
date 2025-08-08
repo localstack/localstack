@@ -11,7 +11,7 @@ class PayloadArr(PayloadValue):
         self.payload_values: Final[list[PayloadValue]] = payload_values
 
     def _eval_body(self, env: Environment) -> None:
-        arr = list()
+        arr = []
         for payload_value in self.payload_values:
             payload_value.eval(env)
             arr.append(env.stack.pop())

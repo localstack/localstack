@@ -192,7 +192,7 @@ class TestSnfApiVersioning:
         sfn_snapshot.match("creation_resp_1", creation_resp_1)
         state_machine_arn = creation_resp_1["stateMachineArn"]
 
-        state_machine_version_arns = list()
+        state_machine_version_arns = []
         for revision_no in range(1, 14):
             definition["Comment"] = f"{definition['Comment']}-R{revision_no}"
             definition_raw_str = json.dumps(definition)

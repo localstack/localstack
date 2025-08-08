@@ -2729,10 +2729,10 @@ def clean_up(
         if rule_name:
             call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
         if bus_name:
-            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
+            call_safe(events_client.delete_event_bus, kwargs={"Name": bus_name})
         if queue_url:
             sqs_client = aws_client.sqs
-            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
+            call_safe(sqs_client.delete_queue, kwargs={"QueueUrl": queue_url})
         if log_group_name:
             logs_client = aws_client.logs
 
