@@ -266,7 +266,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                     )
 
             # Macro transformations won't remove the transform from the template
-            transformed_before_template.pop("Transform", "")
+            if "Transform" in transformed_before_template:
+                transformed_before_template.pop("Transform")
             self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
@@ -280,7 +281,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                         template=transformed_after_template,
                     )
             # Macro transformations won't remove the transform from the template
-            transformed_after_template.pop("Transform", "")
+            if "Transform" in transformed_after_template:
+                transformed_after_template.pop("Transform")
             self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
 
         self._save_runtime_cache()
@@ -352,7 +354,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         transforms = _normalize_transform(macro_definition)
         transform_output = copy.deepcopy(siblings)
-        transform_output.pop("Fn::Transform", "")
         for transform in transforms:
             transform_name = transform["Name"]
             if transform_name in transforms:
@@ -389,6 +390,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                     transformation_parameters=transform.get("Parameters"),
                     is_intrinsic=True,
                 )
+
+        if isinstance(transform_output, dict) and "Fn::Transform" in transform_output:
+            transform_output.pop("Fn::Transform")
 
         return transform_output
 
