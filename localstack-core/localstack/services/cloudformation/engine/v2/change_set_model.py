@@ -114,6 +114,10 @@ class Scope(str):
         for part in parts:
             if not part:  # Skip empty strings from leading/trailing slashes
                 continue
+
+            if part == "divergence":
+                continue
+
             # Wrap keys with special characters (e.g., colon) in quotes
             if ":" in part:
                 json_parts.append(f'"{part}"')
