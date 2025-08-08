@@ -213,6 +213,7 @@ class ChangeSet:
     creation_time: datetime
     processed_template: dict | None
     resolved_parameters: list[ApiParameter]
+    description: str | None
 
     def __init__(
         self,
@@ -233,6 +234,7 @@ class ChangeSet:
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
+        self.description = request_payload.get("Description")
         self.change_set_id = arns.cloudformation_change_set_arn(
             self.change_set_name,
             change_set_id=short_uid(),

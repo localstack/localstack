@@ -598,9 +598,10 @@ class CloudformationProviderV2(CloudformationProvider):
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
             StatusReason=change_set.status_reason,
-            NotificationARNs=[],
+            Description=change_set.description,
             # TODO: static information
             IncludeNestedStacks=False,
+            NotificationARNs=[],
         )
         if change_set.resolved_parameters:
             result["Parameters"] = [
