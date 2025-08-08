@@ -1091,12 +1091,20 @@ class ChangeSetModel:
             resource_scope, (before_resource, after_resource) = self._safe_access_in(
                 scope, resource_name, before_resources, after_resources
             )
-            resource = self._visit_resource(
-                scope=resource_scope,
-                resource_name=resource_name,
-                before_resource=before_resource,
-                after_resource=after_resource,
-            )
+            if resource_name == "Fn::Transform":
+                resource = self._visit_intrinsic_function(
+                    scope=resource_scope,
+                    intrinsic_function=resource_name,
+                    before_arguments=before_resource,
+                    after_arguments=after_resource,
+                )
+            else:
+                resource = self._visit_resource(
+                    scope=resource_scope,
+                    resource_name=resource_name,
+                    before_resource=before_resource,
+                    after_resource=after_resource,
+                )
             resources.append(resource)
         return NodeResources(scope=scope, resources=resources)
 

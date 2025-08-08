@@ -99,7 +99,7 @@ class TestChangeSetFnTransform:
                 },
                 "Fn::Transform": {
                     "Name": "AWS::Include",
-                    "Parameters": {"Location./": f"s3://{bucket}/template"},
+                    "Parameters": {"Location": f"s3://{bucket}/template"},
                 },
             },
         }
