@@ -12,7 +12,13 @@
     "last_validated_date": "2022-11-21T14:36:32+00:00"
   },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_previous_parameter_value": {
-    "last_validated_date": "2022-11-21T09:38:33+00:00"
+    "last_validated_date": "2025-08-08T21:55:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.77,
+      "teardown": 49.74,
+      "total": 66.51
+    }
   },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_resource_types": {
     "last_validated_date": "2022-11-19T13:34:18+00:00"

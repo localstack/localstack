@@ -4,16 +4,17 @@ import abc
 import enum
 from collections.abc import Generator
 from itertools import zip_longest
-from typing import TYPE_CHECKING, Any, Final, TypedDict, cast
+from typing import Any, Final, TypedDict, cast
 
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
+from localstack.services.cloudformation.v2.types import (
+    EngineParameter,
+    engine_parameter_value,
+)
 from localstack.utils.strings import camel_to_snake_case
-
-if TYPE_CHECKING:
-    from localstack.services.cloudformation.v2.entities import EngineParameter
 
 T = TypeVar("T")
 
@@ -356,6 +357,8 @@ class NodeResource(ChangeSetNode):
     condition_reference: Final[Maybe[TerminalValue]]
     depends_on: Final[Maybe[NodeDependsOn]]
     requires_replacement: Final[bool]
+    deletion_policy: Final[Maybe[ChangeSetTerminal]]
+    update_replace_policy: Final[Maybe[ChangeSetTerminal]]
 
     def __init__(
         self,
@@ -367,6 +370,8 @@ class NodeResource(ChangeSetNode):
         condition_reference: Maybe[TerminalValue],
         depends_on: Maybe[NodeDependsOn],
         requires_replacement: bool,
+        deletion_policy: Maybe[ChangeSetTerminal],
+        update_replace_policy: Maybe[ChangeSetTerminal],
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.name = name
@@ -375,6 +380,8 @@ class NodeResource(ChangeSetNode):
         self.condition_reference = condition_reference
         self.depends_on = depends_on
         self.requires_replacement = requires_replacement
+        self.deletion_policy = deletion_policy
+        self.update_replace_policy = update_replace_policy
 
 
 class NodeProperties(ChangeSetNode):
@@ -481,6 +488,8 @@ ValueKey: Final[str] = "Value"
 ExportKey: Final[str] = "Export"
 OutputsKey: Final[str] = "Outputs"
 DependsOnKey: Final[str] = "DependsOn"
+DeletionPolicyKey: Final[str] = "DeletionPolicy"
+UpdateReplacePolicyKey: Final[str] = "UpdateReplacePolicy"
 # TODO: expand intrinsic functions set.
 RefKey: Final[str] = "Ref"
 RefConditionKey: Final[str] = "Condition"
@@ -902,6 +911,30 @@ class ChangeSetModel:
             raise RuntimeError()
         return value
 
+    def _visit_deletion_policy(
+        self, scope: Scope, before_deletion_policy: Any, after_deletion_policy: Any
+    ) -> TerminalValue:
+        value = self._visit_value(
+            scope=scope, before_value=before_deletion_policy, after_value=after_deletion_policy
+        )
+        if not isinstance(value, TerminalValue):
+            # TODO: decide where template schema validation should occur.
+            raise RuntimeError()
+        return value
+
+    def _visit_update_replace_policy(
+        self, scope: Scope, before_update_replace_policy: Any, after_deletion_policy: Any
+    ) -> TerminalValue:
+        value = self._visit_value(
+            scope=scope,
+            before_value=before_update_replace_policy,
+            after_value=after_deletion_policy,
+        )
+        if not isinstance(value, TerminalValue):
+            # TODO: decide where template schema validation should occur.
+            raise RuntimeError()
+        return value
+
     def _visit_resource(
         self,
         scope: Scope,
@@ -947,8 +980,30 @@ class ChangeSetModel:
             after_properties=after_properties,
         )
 
+        deletion_policy = Nothing
+        scope_deletion_policy, (before_deletion_policy, after_deletion_policy) = (
+            self._safe_access_in(scope, DeletionPolicyKey, before_resource, after_resource)
+        )
+        if before_deletion_policy or after_deletion_policy:
+            deletion_policy = self._visit_deletion_policy(
+                scope_deletion_policy, before_deletion_policy, after_deletion_policy
+            )
+
+        update_replace_policy = Nothing
+        scope_update_replace_policy, (before_update_replace_policy, after_update_replace_policy) = (
+            self._safe_access_in(scope, UpdateReplacePolicyKey, before_resource, after_resource)
+        )
+        if before_update_replace_policy or after_update_replace_policy:
+            update_replace_policy = self._visit_update_replace_policy(
+                scope_update_replace_policy,
+                before_update_replace_policy,
+                after_update_replace_policy,
+            )
+
         change_type = change_type_of(
-            before_resource, after_resource, [properties, condition_reference, depends_on]
+            before_resource,
+            after_resource,
+            [properties, condition_reference, depends_on, deletion_policy, update_replace_policy],
         )
         requires_replacement = self._resolve_requires_replacement(
             node_properties=properties, resource_type=terminal_value_type
@@ -962,6 +1017,8 @@ class ChangeSetModel:
             condition_reference=condition_reference,
             depends_on=depends_on,
             requires_replacement=requires_replacement,
+            deletion_policy=deletion_policy,
+            update_replace_policy=update_replace_policy,
         )
         self._visited_scopes[scope] = node_resource
         return node_resource
@@ -1019,18 +1076,14 @@ class ChangeSetModel:
 
         before_parameter = Nothing
         if not is_nothing(before_parameter_dct):
-            before_parameter = (
-                before_parameter_dct.get("resolved_value")
-                or before_parameter_dct["given_value"]
-                or before_parameter_dct.get("default_value")
+            before_parameter = before_parameter_dct.get("resolved_value") or engine_parameter_value(
+                before_parameter_dct
             )
 
         after_parameter = Nothing
         if not is_nothing(after_parameter_dct):
-            after_parameter = (
-                after_parameter_dct.get("resolved_value")
-                or after_parameter_dct["given_value"]
-                or after_parameter_dct.get("default_value")
+            after_parameter = after_parameter_dct.get("resolved_value") or engine_parameter_value(
+                after_parameter_dct
             )
 
         parameter = self._visit_value(

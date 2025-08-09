@@ -5,7 +5,6 @@ import textwrap
 import botocore.errorfactory
 import botocore.exceptions
 import pytest
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -255,15 +254,18 @@ def test_no_parameters_update(deploy_cfn_template, aws_client):
     aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
 
 
-@skip_if_v2_provider(reason="CFNV2:UpdateStack")
 @markers.aws.validated
-def test_update_with_previous_parameter_value(deploy_cfn_template, snapshot, aws_client):
+def test_update_with_previous_parameter_value(deploy_cfn_template, aws_client):
+    topic_name = f"topic-{short_uid()}"
     stack = deploy_cfn_template(
         template_path=os.path.join(
             os.path.dirname(__file__), "../../../templates/sns_topic_parameter.yml"
         ),
-        parameters={"TopicName": f"topic-{short_uid()}"},
+        parameters={"TopicName": topic_name},
     )
+
+    topic_arn = stack.outputs["TopicArn"]
+    assert topic_name in topic_arn
 
     aws_client.cloudformation.update_stack(
         StackName=stack.stack_name,
@@ -276,6 +278,9 @@ def test_update_with_previous_parameter_value(deploy_cfn_template, snapshot, aws
     )
 
     aws_client.cloudformation.get_waiter("stack_update_complete").wait(StackName=stack.stack_name)
+
+    # this call makes sure the topic name has not changed
+    aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
 
 
 @markers.aws.validated
