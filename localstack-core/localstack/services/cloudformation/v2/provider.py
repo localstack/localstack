@@ -1401,7 +1401,12 @@ class CloudformationProviderV2(CloudformationProvider):
             key = parameter["ParameterKey"]
             if parameter.get("UsePreviousValue", False):
                 # todo: what if the parameter does not exist in the before parameters
-                after_parameters[key] = before_parameters[key]
+                before = before_parameters[key]
+                after_parameters[key] = (
+                    before.get("resolved_value")
+                    or before.get("given_value")
+                    or before.get("default_value")
+                )
                 continue
 
             if "ParameterValue" in parameter:
