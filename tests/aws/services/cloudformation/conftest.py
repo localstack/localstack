@@ -8,12 +8,18 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.collections import optional_list
 
 
-def skip_if_v2_provider(reason: str):
+def skip_if_v2_provider(*types: str, reason: str = ""):
+    if reason:
+        reason = f"CFNV2({','.join(types)}): {reason}"
+    else:
+        reason = f"CFNV2({','.join(types)})"
     return pytest.mark.skipif(condition=is_v2_engine() and not is_aws_cloud(), reason=reason)
 
 
-def skip_if_v1_provider(*, reason: str):
-    return pytest.mark.skipif(condition=not is_v2_engine() and not is_aws_cloud(), reason=reason)
+def skip_if_v1_provider(reason: str):
+    return pytest.mark.skipif(
+        condition=not is_v2_engine() and not is_aws_cloud(), reason=f"CFNV1: {reason}"
+    )
 
 
 _T = TypeVar("_T")

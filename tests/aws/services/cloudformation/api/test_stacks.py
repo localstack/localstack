@@ -26,7 +26,7 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
-    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
+    @skip_if_v2_provider("DescribeStacks")
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
         + skipped_v2_items(
@@ -79,7 +79,7 @@ class TestStacksApi:
         assert "DeletionTime" in deleted
         snapshot.match("deleted", deleted)
 
-    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
+    @skip_if_v2_provider("DescribeStacks")
     @markers.aws.validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -238,7 +238,7 @@ class TestStacksApi:
 
         snapshot.match("no_change_exception", ctx.value.response)
 
-    @skip_if_v2_provider(reason="CFNV2:Transform")
+    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange_transformation(
         self, deploy_cfn_template, aws_client
@@ -894,7 +894,7 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     snapshot.match("events", filtered_events)
 
 
-@skip_if_v1_provider(reason="Not supported with v1 provider")
+@skip_if_v1_provider("Not supported with v1 provider")
 @markers.aws.validated
 @pytest.mark.parametrize(
     "deletions",
@@ -977,7 +977,7 @@ def test_stack_deletion_order(
     snapshot.match("all-events", to_snapshot)
 
 
-@skip_if_v2_provider(reason="CFNV2:DescribeStack")
+@skip_if_v2_provider("DescribeStack")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when
@@ -1128,7 +1128,6 @@ def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
 
 
 @markers.aws.validated
-@skip_if_v2_provider(reason="Error message does not match")
 def test_non_existing_stack_message(aws_client, snapshot):
     with pytest.raises(botocore.exceptions.ClientError) as ex:
         aws_client.cloudformation.describe_stacks(StackName="non-existing")
@@ -1137,7 +1136,7 @@ def test_non_existing_stack_message(aws_client, snapshot):
     snapshot.match("Error", ex.value.response)
 
 
-@skip_if_v1_provider(reason="Not implemented for V1 provider")
+@skip_if_v1_provider("Not implemented for V1 provider")
 @markers.aws.validated
 def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
     template_path = os.path.join(

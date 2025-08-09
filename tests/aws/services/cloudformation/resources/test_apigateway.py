@@ -167,8 +167,9 @@ def test_cfn_apigateway_swagger_import(
 
 
 @skip_if_v2_provider(
+    "Provider",
     reason="The v2 provider appears to instead return the correct url: "
-    "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/"
+    "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/",
 )
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
@@ -330,7 +331,6 @@ def test_cfn_deploy_apigateway_integration(deploy_cfn_template, snapshot, aws_cl
     # TODO: snapshot the authorizer too? it's not attached to the REST API
 
 
-# @skip_if_v2_provider(reason="")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -581,9 +581,6 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
-@skip_if_v2_provider(
-    reason="CFNV2:Other lambda function fails on creation due to invalid function name"
-)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

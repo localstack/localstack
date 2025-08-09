@@ -2,13 +2,14 @@ import os
 
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.skip("CFnv2 implementation missing")
+@skip_if_v2_provider("Transform")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
