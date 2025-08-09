@@ -581,6 +581,9 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
+@skip_if_v2_provider(
+    "Other", reason="lambda function fails on creation due to invalid function name"
+)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
