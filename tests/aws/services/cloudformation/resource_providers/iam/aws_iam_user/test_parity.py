@@ -22,7 +22,7 @@ class TestParity:
         - Negative test: missing required properties
     """
 
-    @skip_if_v2_provider(reason="CFNV2:Engine possible resource dependency issue")
+    @skip_if_v2_provider("Engine", reason="possible resource dependency issue")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..IsTruncated"]

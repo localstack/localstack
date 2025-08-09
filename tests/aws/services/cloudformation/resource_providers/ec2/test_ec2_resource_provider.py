@@ -78,7 +78,7 @@ def test_deploy_security_group_with_tags(deploy_cfn_template, aws_client, snapsh
     snapshot.match("security-group", security_group)
 
 
-@skip_if_v2_provider(reason="CFNV2:ResourceProvider(AWS::EC2::VPCEndpoint)")
+@skip_if_v2_provider("ResourceProvider", reason="AWS::EC2::VPCEndpoint")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

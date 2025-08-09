@@ -8,7 +8,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.skip("CFnv2 implementation missing")
+@pytest.mark.skip(reason="Not implemented with either provider")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
