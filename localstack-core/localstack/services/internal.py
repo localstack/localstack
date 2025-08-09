@@ -145,6 +145,23 @@ class InfoResource:
         }
 
 
+class RuntimeReadyResource:
+    """
+    Resource to check whether the localstack instance is ready to serve requests. In other words, until
+    ``localstack wait`` returns, this endpoint will return a 503 status code. As soon as the "Ready." marker is printed
+    to stdout, this will return a 200 status code.
+    """
+
+    def on_get(self, request):
+        from localstack.runtime import get_current_runtime
+
+        if runtime := get_current_runtime():
+            runtime.is_ready()
+            return Response.for_json(True, status=200)
+        else:
+            return Response.for_json(False, status=503)
+
+
 class UsageResource:
     def on_get(self, request):
         from localstack.utils import diagnose
@@ -314,6 +331,7 @@ class LocalstackResources(Router):
 
         health_resource = HealthResource(SERVICE_PLUGINS)
         self.add(Resource("/_localstack/health", health_resource))
+        self.add(Resource("/_localstack/ready", RuntimeReadyResource()))
         self.add(Resource("/_localstack/info", InfoResource()))
         self.add(Resource("/_localstack/plugins", PluginsResource()))
         self.add(Resource("/_localstack/init", InitScriptsResource()))

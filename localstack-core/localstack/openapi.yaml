@@ -1012,6 +1012,24 @@ paths:
                   - status
                 type: object
           description: Data was saved
+  /_localstack/ready:
+    get:
+      description: Check whether the localstack instance is ready to serve requests
+      operationId: check_runtime_ready
+      tags: [ localstack ]
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: boolean
+          description: LocalStack is ready to serve requests
+        '503':
+          content:
+            application/json:
+              schema:
+                type: boolean
+          description: LocalStack is not ready yet
   /_localstack/info:
     get:
       description: Get information about the current LocalStack session
