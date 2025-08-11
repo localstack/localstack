@@ -356,10 +356,11 @@ class Execution:
         try:
             self._get_events_client().put_events(Entries=[entry])
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "Unable to send notification of Entry='%s' for Step Function execution with Arn='%s' to EventBridge.",
                 entry,
                 self.exec_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 

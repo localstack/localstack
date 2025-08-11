@@ -868,9 +868,10 @@ class FirehoseProvider(FirehoseApi):
             LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
             s3.put_object(Bucket=bucket, Key=obj_path, Body=batched_data)
         except Exception as e:
-            LOG.exception(
+            LOG.error(
                 "Unable to put records %s to s3 bucket.",
                 records,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             raise e
 
@@ -925,9 +926,10 @@ class FirehoseProvider(FirehoseApi):
                 )
                 redshift_data.execute_statement(Parameters=row_to_insert, **execute_statement)
             except Exception as e:
-                LOG.exception(
+                LOG.error(
                     "Unable to put records %s to redshift cluster.",
                     row_to_insert,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 raise e
 

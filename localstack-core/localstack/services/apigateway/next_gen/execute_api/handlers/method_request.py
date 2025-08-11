@@ -91,9 +91,10 @@ class MethodRequestHandler(RestApiGatewayHandler):
         # try to get the resolved model first
         resolved_schema = model_resolver.get_resolved_model()
         if not resolved_schema:
-            LOG.exception(
+            LOG.error(
                 "An exception occurred while trying to validate the request: could not resolve the model '%s'",
                 model_name,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return False
 

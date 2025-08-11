@@ -343,8 +343,9 @@ def get_service_catalog() -> ServiceCatalog:
                 index = build_service_index_cache(cache_catalog_file)
         return ServiceCatalog(index)
     except Exception:
-        LOG.exception(
-            "error while processing service catalog index cache, falling back to lazy-loaded index"
+        LOG.error(
+            "error while processing service catalog index cache, falling back to lazy-loaded index",
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
         )
         return ServiceCatalog()
 

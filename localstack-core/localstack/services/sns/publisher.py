@@ -89,9 +89,10 @@ class TopicPublisher(abc.ABC):
         try:
             self._publish(context=context, subscriber=subscriber)
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "An internal error occurred while trying to send the SNS message %s",
                 context.message,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return
 
@@ -147,9 +148,10 @@ class EndpointPublisher(abc.ABC):
         try:
             self._publish(context=context, endpoint=endpoint)
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "An internal error occurred while trying to send the SNS message %s",
                 context.message,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return
 

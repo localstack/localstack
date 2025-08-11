@@ -298,11 +298,12 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
             return True
         except Exception as e:
             if print_error:
-                LOG.exception(
+                LOG.error(
                     "Unable to download Github artifact from %s to %s: %s %s",
                     url,
                     target_file,
                     e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
     # if a GitHub API token is set, use it to avoid rate limiting issues
