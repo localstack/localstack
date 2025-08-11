@@ -823,6 +823,9 @@ OPENAPI_VALIDATE_RESPONSE = is_env_true("OPENAPI_VALIDATE_RESPONSE")
 # Flag to enable the validation of the requests made to the LocalStack internal endpoints. Active by default.
 OPENAPI_VALIDATE_REQUEST = is_env_true("OPENAPI_VALIDATE_REQUEST")
 
+# environment variable to determine whether to include stack traces in http responses
+INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE = is_env_true("INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE")
+
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
 

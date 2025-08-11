@@ -276,6 +276,16 @@ class TestIntrinsicFunctions:
 
         snapshot.match("join-output", stack.outputs)
 
+    @markers.aws.validated
+    def test_fn_select_has_intrinsic_function(self, deploy_cfn_template, snapshot, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/fn_select_fn_mapp.yml"
+            )
+        )
+
+        snapshot.match("fn-select-fn-map-output", stack.outputs)
+
 
 class TestImports:
     @markers.aws.validated
@@ -575,7 +585,6 @@ class TestPreviousValues:
         assert len(stack_describe_response["Outputs"]) == 2
 
 
-@skip_if_v2_provider("Imports")
 class TestImportValues:
     @markers.aws.validated
     def test_cfn_with_exports(self, deploy_cfn_template, aws_client, snapshot):
@@ -932,7 +941,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider("GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -1069,7 +1077,7 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @skip_if_v2_provider("GetTemplate")
+    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
