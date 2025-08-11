@@ -90,7 +90,7 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
             response = ec2.create_vpc_endpoint(**create_params)
             model["Id"] = response["VpcEndpoint"]["VpcEndpointId"]
             model["DnsEntries"] = response["VpcEndpoint"]["DnsEntries"]
-            model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"]
+            model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"].isoformat()
             model["NetworkInterfaceIds"] = response["VpcEndpoint"]["NetworkInterfaceIds"]
             model["VpcEndpointType"] = model.get("VpcEndpointType") or "Gateway"
             model["PrivateDnsEnabled"] = bool(model.get("VpcEndpointType", False))
