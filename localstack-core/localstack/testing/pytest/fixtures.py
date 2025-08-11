@@ -2753,3 +2753,17 @@ def clean_up(
 def patch_default_encoder(request, monkeypatch):
     backend = request.param
     monkeypatch.setattr(config, "STATE_SERIALIZATION_BACKEND", backend)
+
+
+@pytest.fixture(scope="session")
+def localstack_sdk_aws_client():
+    """
+    Returns a client that is used to interact with the LocalStack's internal endpoints.
+    """
+    from localstack.sdk.aws.client import AWSClient
+
+    def _wrapper(host: str | None = None, **kwargs) -> AWSClient:
+        host = host or config.internal_service_url()
+        return AWSClient(host=host, **kwargs)
+
+    return _wrapper
