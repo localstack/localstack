@@ -80,6 +80,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.transformers import FailedTransformationException
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
@@ -299,9 +300,18 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template=before_template,
             after_template=after_template,
         )
-        transformed_before_template, transformed_after_template = (
-            change_set_model_transform.transform()
-        )
+        try:
+            transformed_before_template, transformed_after_template = (
+                change_set_model_transform.transform()
+            )
+        except FailedTransformationException as e:
+            change_set.status = ChangeSetStatus.FAILED
+            change_set.status_reason = e.message
+            change_set.stack.set_stack_status(
+                status=StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message
+            )
+            change_set.stack.set_stack_status(status=StackStatus.CREATE_FAILED)
+            return
 
         # Remodel the update graph after the applying the global transforms.
         change_set_model = ChangeSetModel(
@@ -739,6 +749,8 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
             previous_update_model=None,
         )
+        if change_set.status == ChangeSetStatus.FAILED:
+            return CreateStackOutput(StackId=stack.stack_id)
 
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
