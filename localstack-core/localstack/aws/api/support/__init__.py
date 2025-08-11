@@ -209,10 +209,14 @@ class SupportedHour(TypedDict, total=False):
 
 
 SupportedHoursList = List[SupportedHour]
+
+
 class CommunicationTypeOptions(TypedDict, total=False):
     type: Optional[Type]
     supportedHours: Optional[SupportedHoursList]
     datesWithoutSupport: Optional[DatesWithoutSupportList]
+
+
 CommunicationTypeOptionsList = List[CommunicationTypeOptions]
 
 
