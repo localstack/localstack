@@ -112,11 +112,11 @@ from localstack.services.cloudformation.stores import (
 )
 from localstack.services.cloudformation.v2.entities import (
     ChangeSet,
-    EngineParameter,
     Stack,
     StackInstance,
     StackSet,
 )
+from localstack.services.cloudformation.v2.types import EngineParameter
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
@@ -529,35 +529,8 @@ class CloudformationProviderV2(CloudformationProvider):
         )
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
-                new_stack_status = StackStatus.UPDATE_COMPLETE
-                if change_set.change_set_type == ChangeSetType.CREATE:
-                    new_stack_status = StackStatus.CREATE_COMPLETE
-                change_set.stack.set_stack_status(new_stack_status)
-                change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
-                change_set.stack.resolved_resources = result.resources
-                change_set.stack.resolved_parameters = change_set.resolved_parameters
-                change_set.stack.resolved_outputs = result.outputs
-                change_set.stack.resolved_exports = result.exports
-
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                change_set.stack.template = change_set.template
-                change_set.stack.processed_template = change_set.processed_template
-                change_set.stack.template_body = change_set.template_body
-            except Exception as e:
-                LOG.error(
-                    "Execute change set failed: %s",
-                    e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
-                )
-                new_stack_status = StackStatus.UPDATE_FAILED
-                if change_set.change_set_type == ChangeSetType.CREATE:
-                    new_stack_status = StackStatus.CREATE_FAILED
-
-                change_set.stack.set_stack_status(new_stack_status)
-                change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
+            result = change_set_executor.execute()
+            change_set.propagate_to_stack(result)
 
         start_worker_thread(_run)
 
@@ -734,23 +707,8 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.CREATE_COMPLETE)
-                stack.resolved_resources = result.resources
-                stack.resolved_outputs = result.outputs
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                stack.template = change_set.template
-                stack.template_body = change_set.template_body
-                stack.resolved_parameters = change_set.resolved_parameters
-            except Exception as e:
-                LOG.error(
-                    "Create Stack set failed: %s",
-                    e,
-                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
-                )
-                stack.set_stack_status(StackStatus.CREATE_FAILED)
+            result = change_set_executor.execute()
+            change_set.propagate_to_stack(result)
 
         start_worker_thread(_run)
 
@@ -1367,23 +1325,8 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.UPDATE_COMPLETE)
-                stack.resolved_resources = result.resources
-                stack.resolved_outputs = result.outputs
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                stack.template = change_set.template
-                stack.template_body = change_set.template_body
-                stack.resolved_parameters = change_set.resolved_parameters
-            except Exception as e:
-                LOG.error(
-                    "Update Stack failed: %s",
-                    e,
-                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
-                )
-                stack.set_stack_status(StackStatus.UPDATE_FAILED)
+            result = change_set_executor.execute()
+            change_set.propagate_to_stack(result)
 
         start_worker_thread(_run)
 
@@ -1435,6 +1378,7 @@ class CloudformationProviderV2(CloudformationProvider):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
+            # TODO: how to propagate state to the stack, do we need to?
             try:
                 stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
                 change_set_executor.execute()

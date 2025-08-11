@@ -1,7 +1,6 @@
 import copy
 import logging
 import uuid
-from dataclasses import dataclass
 from datetime import UTC, datetime
 from typing import Final, Protocol
 
@@ -40,18 +39,12 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
+from localstack.services.cloudformation.v2.types import ChangeSetModelExecutorResult
 from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
-
-
-@dataclass
-class ChangeSetModelExecutorResult:
-    resources: dict[str, ResolvedResource]
-    outputs: dict
-    exports: dict
 
 
 class DeferredAction(Protocol):
@@ -78,21 +71,34 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def execute(self) -> ChangeSetModelExecutorResult:
         # constructive process
-        self.process()
+        error_message: str | None = None
+        try:
+            self.process()
 
-        if self._deferred_actions:
-            self._change_set.stack.set_stack_status(StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS)
+            if self._deferred_actions:
+                self._change_set.stack.set_stack_status(
+                    StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+                )
 
-            # perform all deferred actions such as deletions. These must happen in reverse from their
-            # defined order so that resource dependencies are honoured
-            # TODO: errors will stop all rollbacks; get parity on this behaviour
-            for action in self._deferred_actions[::-1]:
-                action()
+                # perform all deferred actions such as deletions. These must happen in reverse from their
+                # defined order so that resource dependencies are honoured
+                # TODO: errors will stop all rollbacks; get parity on this behaviour
+                for action in self._deferred_actions[::-1]:
+                    action()
+        except Exception as e:
+            error_message = str(e)
+            LOG.warning(
+                "Stack deploy failed: %s",
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
+            )
 
+        # we always want to return a result here, and the partial state of the deployed stack will be returned to the caller
         return ChangeSetModelExecutorResult(
             resources=self.resources,
             outputs=self.outputs,
             exports=self.exports,
+            error_message=error_message,
         )
 
     def _defer_action(self, action: DeferredAction):
@@ -184,6 +190,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         Overrides the default preprocessing for NodeResource objects by annotating the
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
+        # TODO: how do we handle stack deployment failures?
         try:
             delta = super().visit_node_resource(node_resource=node_resource)
         except Exception as e:

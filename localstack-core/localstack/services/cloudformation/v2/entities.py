@@ -35,29 +35,12 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     UpdateModel,
 )
+from localstack.services.cloudformation.v2.types import (
+    ChangeSetModelExecutorResult,
+    ResolvedResource,
+)
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
-
-
-# TODO: turn into class/dataclass
-class EngineParameter(TypedDict):
-    """
-    Parameters supplied by the user. The resolved value field is populated by the engine
-    """
-
-    type_: str
-    given_value: NotRequired[str | None]
-    resolved_value: NotRequired[str | None]
-    default_value: NotRequired[str | None]
-
-
-class ResolvedResource(TypedDict):
-    LogicalResourceId: str
-    Type: str
-    Properties: dict
-    ResourceStatus: ResourceStatus
-    PhysicalResourceId: str | None
-    LastUpdatedTimestamp: datetime | None
 
 
 class Stack:
@@ -294,6 +277,40 @@ class ChangeSet:
 
     def has_changes(self) -> bool:
         return self.update_model.node_template.change_type != ChangeType.UNCHANGED
+
+    def propagate_to_stack(self, result: ChangeSetModelExecutorResult | None = None):
+        """
+        After a change set execution, propagate change set properties to the parent stack
+
+        Note: this should be done on execution termination regardless of status.
+
+        The presence or absence of the `result` variable represents if an exception occurred
+        """
+        if result.error_message is None:
+            new_stack_status = StackStatus.UPDATE_COMPLETE
+            if self.change_set_type == ChangeSetType.CREATE:
+                new_stack_status = StackStatus.CREATE_COMPLETE
+        else:
+            new_stack_status = StackStatus.UPDATE_FAILED
+            if self.change_set_type == ChangeSetType.CREATE:
+                new_stack_status = StackStatus.CREATE_FAILED
+
+        self.stack.set_stack_status(new_stack_status)
+        self.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
+        self.stack.resolved_parameters = self.resolved_parameters
+        self.stack.change_set_id = self.change_set_id
+        self.stack.change_set_ids.append(self.change_set_id)
+
+        # if the deployment succeeded, update the stack's template representation to that
+        # which was just deployed
+        self.stack.template = self.template
+        self.stack.processed_template = self.processed_template
+        self.stack.template_body = self.template_body
+
+        if result.error_message is None:
+            self.stack.resolved_resources = result.resources
+            self.stack.resolved_outputs = result.outputs
+            self.stack.resolved_exports = result.exports
 
     @property
     def account_id(self) -> str:
