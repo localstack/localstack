@@ -116,6 +116,7 @@ test = [
     "aws-cdk-lib>=2.88.0",
     "websocket-client>=1.7.0",
     "localstack-snapshot>=0.1.1",
+    "localstack-sdk-python"
 ]
 
 # for developing localstack
