@@ -709,5 +709,7 @@ def eager_load_services():
             LOG.debug("%s", e)
         except Exception:
             LOG.error(
-                "could not load service plugin %s", api, exc_info=LOG.isEnabledFor(logging.DEBUG)
+                "could not load service plugin %s",
+                api,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
