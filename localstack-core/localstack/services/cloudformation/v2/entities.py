@@ -29,29 +29,9 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     UpdateModel,
 )
+from localstack.services.cloudformation.v2.types import ResolvedResource
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
-
-
-# TODO: turn into class/dataclass
-class EngineParameter(TypedDict):
-    """
-    Parameters supplied by the user. The resolved value field is populated by the engine
-    """
-
-    type_: str
-    given_value: NotRequired[str | None]
-    resolved_value: NotRequired[str | None]
-    default_value: NotRequired[str | None]
-
-
-class ResolvedResource(TypedDict):
-    LogicalResourceId: str
-    Type: str
-    Properties: dict
-    ResourceStatus: ResourceStatus
-    PhysicalResourceId: str | None
-    LastUpdatedTimestamp: datetime | None
 
 
 class Stack:
@@ -213,6 +193,7 @@ class ChangeSet:
     creation_time: datetime
     processed_template: dict | None
     resolved_parameters: list[ApiParameter]
+    description: str | None
 
     def __init__(
         self,
@@ -233,6 +214,7 @@ class ChangeSet:
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
+        self.description = request_payload.get("Description")
         self.change_set_id = arns.cloudformation_change_set_arn(
             self.change_set_name,
             change_set_id=short_uid(),

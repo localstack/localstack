@@ -3,7 +3,6 @@ import json
 import logging
 from collections import defaultdict
 from datetime import UTC, datetime
-from typing import Any
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -111,11 +110,11 @@ from localstack.services.cloudformation.stores import (
 )
 from localstack.services.cloudformation.v2.entities import (
     ChangeSet,
-    EngineParameter,
     Stack,
     StackInstance,
     StackSet,
 )
+from localstack.services.cloudformation.v2.types import EngineParameter
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
@@ -426,17 +425,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
         request_parameters = request.get("Parameters", list())
         # TODO: handle parameter defaults and resolution
-        after_parameters = {}
-        for parameter in request_parameters:
-            key = parameter["ParameterKey"]
-            if parameter.get("UsePreviousValue", False):
-                # todo: what if the parameter does not exist in the before parameters
-                after_parameters[key] = before_parameters[key]
-                continue
-
-            if "ParameterValue" in parameter:
-                after_parameters[key] = parameter["ParameterValue"]
-                continue
+        after_parameters = self._extract_after_parameters(request_parameters, before_parameters)
 
         # TODO: update this logic to always pass the clean template object if one exists. The
         #  current issue with relaying on stack.template_original is that this appears to have
@@ -598,9 +587,10 @@ class CloudformationProviderV2(CloudformationProvider):
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
             StatusReason=change_set.status_reason,
-            NotificationARNs=[],
+            Description=change_set.description,
             # TODO: static information
             IncludeNestedStacks=False,
+            NotificationARNs=[],
         )
         if change_set.resolved_parameters:
             result["Parameters"] = [
@@ -719,10 +709,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
         request_parameters = request.get("Parameters", list())
         # TODO: handle parameter defaults and resolution
-        after_parameters: dict[str, Any] = {
-            parameter["ParameterKey"]: parameter["ParameterValue"]
-            for parameter in request_parameters
-        }
+        after_parameters = self._extract_after_parameters(request_parameters)
         after_template = structured_template
 
         # Create internal change set to execute
@@ -760,7 +747,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 for output in result.outputs:
                     if export_name := output.get("ExportName"):
                         stack.resolved_exports[export_name] = output["OutputValue"]
-
+                stack.processed_template = change_set.processed_template
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s",
@@ -1343,10 +1330,8 @@ class CloudformationProviderV2(CloudformationProvider):
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
         request_parameters = request.get("Parameters", list())
         # TODO: handle parameter defaults and resolution
-        after_parameters: dict[str, Any] = {
-            parameter["ParameterKey"]: parameter["ParameterValue"]
-            for parameter in request_parameters
-        }
+        after_parameters = self._extract_after_parameters(request_parameters, before_parameters)
+
         before_template = stack.template
         after_template = structured_template
 
@@ -1404,8 +1389,30 @@ class CloudformationProviderV2(CloudformationProvider):
 
         start_worker_thread(_run)
 
-        # TODO: stack id
         return UpdateStackOutput(StackId=stack.stack_id)
+
+    @staticmethod
+    def _extract_after_parameters(
+        request_parameters, before_parameters: dict[str, str] | None = None
+    ) -> dict[str, str]:
+        before_parameters = before_parameters or {}
+        after_parameters = {}
+        for parameter in request_parameters:
+            key = parameter["ParameterKey"]
+            if parameter.get("UsePreviousValue", False):
+                # todo: what if the parameter does not exist in the before parameters
+                before = before_parameters[key]
+                after_parameters[key] = (
+                    before.get("resolved_value")
+                    or before.get("given_value")
+                    or before.get("default_value")
+                )
+                continue
+
+            if "ParameterValue" in parameter:
+                after_parameters[key] = parameter["ParameterValue"]
+                continue
+        return after_parameters
 
     @handler("DeleteStack")
     def delete_stack(
