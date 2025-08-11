@@ -19,6 +19,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     Maybe,
     NodeGlobalTransform,
+    NodeIntrinsicFunction,
     NodeIntrinsicFunctionFnTransform,
     NodeProperties,
     NodeResources,
@@ -444,3 +445,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             )
 
         return result.get("fragment")
+
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        return PreprocEntityDelta(before=Nothing, after=Nothing)
