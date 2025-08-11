@@ -14,8 +14,6 @@ from localstack.services.cloudformation.engine.policy_loader import create_polic
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
-    Transformer,
-    transformers,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -114,18 +112,17 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if region_before is not None:
                 os.environ["AWS_DEFAULT_REGION"] = region_before
 
-    @staticmethod
-    def _apply_global_include(
-        global_transform: GlobalTransform, template: dict, parameters: dict, account_id, region_name
-    ) -> dict:
-        location = global_transform.parameters.get("Location")
+    def _compute_include_transform(self, parameters: dict, fragment: dict) -> dict:
+        location = parameters.get("Location")
         if not location or not location.startswith("s3://"):
             raise FailedTransformationException(
                 transformation=INCLUDE_TRANSFORM,
                 message="Unexpected Location parameter for AWS::Include transformer: %s" % location,
             )
 
-        s3_client = connect_to(aws_access_key_id=account_id, region_name=region_name).s3
+        s3_client = connect_to(
+            aws_access_key_id=self._change_set.account_id, region_name=self._change_set.region_name
+        ).s3
         bucket, _, path = location.removeprefix("s3://").partition("/")
         try:
             content = testutil.download_s3_object(s3_client, bucket, path)
@@ -138,7 +135,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             template_to_include = parse_template(content)
         except Exception as e:
             raise FailedTransformationException(transformation=INCLUDE_TRANSFORM, message=str(e))
-        return {**template, **template_to_include}
+
+        return {**fragment, **template_to_include}
 
     def _apply_global_transform(
         self, global_transform: GlobalTransform, template: dict, parameters: dict
@@ -158,15 +156,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             LOG.warning("%s is not yet supported. Ignoring.", SECRETSMANAGER_TRANSFORM)
             transformed_template = template
         elif transform_name == INCLUDE_TRANSFORM:
-            transformed_template = self._apply_global_include(
-                global_transform=global_transform,
-                region_name=self._change_set.region_name,
-                account_id=self._change_set.account_id,
-                template=template,
-                parameters=parameters,
+            transformed_template = self._compute_include_transform(
+                parameters=global_transform.parameters,
+                fragment=template,
             )
         else:
-            transformed_template = self._execute_macro(
+            transformed_template = self._invoke_macro(
                 name=global_transform.name,
                 parameters=global_transform.parameters
                 if not is_nothing(global_transform.parameters)
@@ -269,13 +264,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         macro_definition: Any,
         siblings: Any,
     ) -> Any:
-        # TODO: add typing to arguments before this level.
-        # TODO: add schema validation
-        # TODO: add support for other transform types
-
-        account_id = self._change_set.account_id
-        region_name = self._change_set.region_name
-
         def _normalize_transform(obj):
             transforms = []
 
@@ -291,6 +279,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                         transforms.append({"Name": v, "Parameters": {}})
 
                     if isinstance(v, dict):
+                        if not v.get("Parameters"):
+                            v["Parameters"] = {}
                         transforms.append(v)
 
             return transforms
@@ -299,18 +289,13 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         transform_output = copy.deepcopy(siblings)
         for transform in normalized_transforms:
             transform_name = transform["Name"]
-            if transform_name in transformers.keys():
-                builtin_transformer_class = transformers[transform_name]
-                builtin_transformer: Transformer = builtin_transformer_class()
-                result = builtin_transformer.transform(
-                    account_id=account_id,
-                    region_name=region_name,
-                    parameters=transform["Parameters"],
+            if transform_name == INCLUDE_TRANSFORM:
+                transform_output = self._compute_include_transform(
+                    parameters=transform["Parameters"], fragment=transform_output
                 )
 
-                transform_output.update(result)
             else:
-                transform_output: dict | str = self._execute_macro(
+                transform_output: dict | str = self._invoke_macro(
                     fragment=transform_output,
                     name=transform["Name"],
                     parameters=transform.get("Parameters", {}),
@@ -393,7 +378,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 break
         return super().visit_node_resources(node_resources=node_resources)
 
-    def _execute_macro(self, name: str, parameters: dict, fragment: dict, allow_string=True):
+    def _invoke_macro(self, name: str, parameters: dict, fragment: dict, allow_string=True):
         account_id = self._change_set.account_id
         region_name = self._change_set.region_name
         macro_definition = get_cloudformation_store(
