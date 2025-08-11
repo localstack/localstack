@@ -276,6 +276,16 @@ class TestIntrinsicFunctions:
 
         snapshot.match("join-output", stack.outputs)
 
+    @markers.aws.validated
+    def test_fn_select_has_intrinsic_function(self, deploy_cfn_template, snapshot, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/fn_select_fn_mapp.yml"
+            )
+        )
+
+        snapshot.match("fn-select-fn-map-output", stack.outputs)
+
 
 class TestImports:
     @markers.aws.validated
