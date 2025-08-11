@@ -184,7 +184,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             if not self.handle_internal_failures:
                 return
 
-            if config.DEBUG:
+            if config.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE:
                 exception = "".join(
                     traceback.format_exception(
                         type(exception), value=exception, tb=exception.__traceback__
