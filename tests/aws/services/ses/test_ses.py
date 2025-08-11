@@ -937,7 +937,9 @@ class TestSES:
         sender_email_address, recipient_email_address = setup_email_addresses()
         config_set_name = f"config-set-{short_uid()}"
 
-        EMAILS.clear()
+        emails_url = config.internal_service_url() + EMAILS_ENDPOINT
+        response = requests.delete(emails_url)
+        assert response.status_code == 204
 
         # create subscription to get notified about SES events
         topic_arn = sns_topic["Attributes"]["TopicArn"]
@@ -970,13 +972,19 @@ class TestSES:
                 }
             ],
         )
-        poll_condition(lambda: len(EMAILS) >= 4, timeout=3)
-        assert EMAILS.pop(send_email["MessageId"])
 
+        def _get_emails():
+            _resp = requests.get(emails_url)
+            return _resp.json()["messages"]
+
+        poll_condition(lambda: len(_get_emails()) >= 4, timeout=3)
+        requests.delete(emails_url, params={"id": send_email["MessageId"]})
+
+        emails = _get_emails()
         # we assert that we only received 3 emails
-        assert len(EMAILS) == 3
+        assert len(emails) == 3
 
-        emails = sorted(EMAILS.values(), key=lambda x: x["Body"]["text_part"])
+        emails = sorted(emails, key=lambda x: x["Body"]["text_part"])
         # the first email is the validation of SNS confirming the SES subscription
         ses_delivery_notification = emails[1]
         ses_send_notification = emails[2]
