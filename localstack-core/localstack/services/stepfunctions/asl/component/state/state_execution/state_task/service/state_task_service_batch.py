@@ -118,7 +118,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
                     "Proxy: null",
                 ]
             )
-            cause = f"Error executing request, Exception : {error_message}, RequestId: {request_id} ({response_details})"
+            cause = f"{error_message} ({response_details})"
             return FailureEvent(
                 env=env,
                 error_name=CustomErrorName(error_name),
