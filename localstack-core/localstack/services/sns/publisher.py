@@ -295,7 +295,10 @@ class SqsTopicPublisher(TopicPublisher):
             )
             kwargs = self.get_sqs_kwargs(msg_context=message_context, subscriber=subscriber)
         except Exception:
-            LOG.exception("An internal error occurred while trying to format the message for SQS")
+            LOG.error(
+                "An internal error occurred while trying to format the message for SQS",
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])

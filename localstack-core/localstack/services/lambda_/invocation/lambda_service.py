@@ -478,7 +478,7 @@ class LambdaService:
             ] = new_version_state
 
         except Exception:
-            LOG.exception("Failed to update function version for arn %s", function_arn)
+            LOG.error("Failed to update function version for arn %s", function_arn)
 
     def update_alias(self, old_alias: VersionAlias, new_alias: VersionAlias, function: Function):
         # if pointer changed, need to restart provisioned

@@ -50,7 +50,11 @@ class MethodRequestHandler(RestApiGatewayHandler):
         # check if there is a validator for this request
         if not (validator := rest_api.validators.get(request_validator_id)):
             # TODO Should we raise an exception instead?
-            LOG.exception("No validator were found with matching id: '%s'", request_validator_id)
+            LOG.error(
+                "No validator were found with matching id: '%s'",
+                request_validator_id,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
             return
 
         if self.should_validate_request(validator) and (

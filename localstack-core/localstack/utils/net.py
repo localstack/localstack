@@ -97,7 +97,12 @@ def is_port_open(
                         sock.recvfrom(1024)
                 except Exception:
                     if not quiet:
-                        LOG.exception("Error connecting to UDP port %s:%s", host, port)
+                        LOG.error(
+                            "Error connecting to UDP port %s:%s",
+                            host,
+                            port,
+                            exc_info=LOG.isEnabledFor(logging.DEBUG),
+                        )
                     return False
             elif nw_protocol == socket.SOCK_STREAM:
                 result = sock.connect_ex((host, port))

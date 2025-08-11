@@ -93,8 +93,10 @@ class S3WebsiteHostingHandler:
             return Response(response_body, status=e.response["ResponseMetadata"]["HTTPStatusCode"])
 
         except Exception:
-            LOG.exception(
-                "Exception encountered while trying to serve s3-website at %s", request.url
+            LOG.error(
+                "Exception encountered while trying to serve s3-website at %s",
+                request.url,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return Response(_create_500_error_string(), status=500)
 
