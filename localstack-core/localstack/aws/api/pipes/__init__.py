@@ -514,16 +514,10 @@ class EcsEphemeralStorage(TypedDict, total=False):
 class EcsResourceRequirement(TypedDict, total=False):
     type: EcsResourceRequirementType
     value: String
-
-
 EcsResourceRequirementsList = List[EcsResourceRequirement]
-
-
 class EcsEnvironmentFile(TypedDict, total=False):
     type: EcsEnvironmentFileType
     value: String
-
-
 EcsEnvironmentFileList = List[EcsEnvironmentFile]
 
 
@@ -562,16 +556,10 @@ class EcsTaskOverride(TypedDict, total=False):
 class PlacementStrategy(TypedDict, total=False):
     type: Optional[PlacementStrategyType]
     field: Optional[PlacementStrategyField]
-
-
 PlacementStrategies = List[PlacementStrategy]
-
-
 class PlacementConstraint(TypedDict, total=False):
     type: Optional[PlacementConstraintType]
     expression: Optional[PlacementConstraintExpression]
-
-
 PlacementConstraints = List[PlacementConstraint]
 
 
