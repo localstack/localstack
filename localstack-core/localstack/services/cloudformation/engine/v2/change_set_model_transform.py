@@ -39,7 +39,6 @@ from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.services.cloudformation.v2.types import engine_parameter_value
 from localstack.utils import testutil
-from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
@@ -359,31 +358,17 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     def visit_node_properties(
         self, node_properties: NodeProperties
     ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
-        for i, node_property in enumerate(node_properties.properties):
-            if node_property.name == "Fn::Transform":
-                path = "$" + ".".join(node_property.scope.split("/")[:-1])
-                before_siblings = extract_jsonpath(self._before_template, path)
-                after_siblings = extract_jsonpath(self._after_template, path)
-                intrinsic_transform = NodeIntrinsicFunctionFnTransform(
-                    change_type=node_property.change_type,
-                    intrinsic_function=node_property.name,
-                    scope=node_property.scope,
-                    arguments=node_property.value,
-                    before_siblings=before_siblings,
-                    after_siblings=after_siblings,
-                )
-                self.visit(intrinsic_transform)
-                node_properties.properties.pop(i)
-                break
+        if not is_nothing(node_properties.fn_transform):
+            self.visit_node_intrinsic_function_fn_transform(node_properties.fn_transform)
 
         return super().visit_node_properties(node_properties=node_properties)
 
     def visit_node_resources(self, node_resources: NodeResources) -> PreprocEntityDelta:
-        for i, node_resource in enumerate(node_resources.resources):
-            if isinstance(node_resource, NodeIntrinsicFunctionFnTransform):
-                self.visit(node_resource)
-                node_resources.resources.pop(i)
-                break
+        if not is_nothing(node_resources.fn_transform):
+            self.visit_node_intrinsic_function_fn_transform(
+                node_intrinsic_function=node_resources.fn_transform
+            )
+
         return super().visit_node_resources(node_resources=node_resources)
 
     def _invoke_macro(self, name: str, parameters: dict, fragment: dict, allow_string=False):
