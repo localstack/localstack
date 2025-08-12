@@ -3,7 +3,7 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.12.7
+    rev: v0.12.8
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -18,7 +18,7 @@ repos:
         additional_dependencies: ['botocore-stubs', 'rolo']
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace

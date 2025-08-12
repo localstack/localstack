@@ -28,13 +28,13 @@ certifi==2025.8.3
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 click==8.2.1
     # via localstack-core (pyproject.toml)
 constantly==23.10.4
     # via localstack-twisted
-cryptography==45.0.5
+cryptography==45.0.6
     # via
     #   localstack-core (pyproject.toml)
     #   pyopenssl
@@ -98,7 +98,7 @@ lazy-object-proxy==1.11.0
     # via openapi-spec-validator
 localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
-markdown-it-py==3.0.0
+markdown-it-py==4.0.0
     # via rich
 markupsafe==3.0.2
     # via werkzeug
@@ -168,7 +168,7 @@ rich==14.1.0
     # via localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core (pyproject.toml)
-rpds-py==0.26.0
+rpds-py==0.27.0
     # via
     #   jsonschema
     #   referencing
