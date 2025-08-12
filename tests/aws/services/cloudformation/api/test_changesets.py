@@ -386,7 +386,6 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
-@skip_if_v2_provider("Resolve")
 @markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,

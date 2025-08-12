@@ -593,11 +593,24 @@ class CloudformationProviderV2(CloudformationProvider):
             NotificationARNs=[],
         )
         if change_set.resolved_parameters:
-            result["Parameters"] = [
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.resolved_parameters.items()
-            ]
+            result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
+        return result
+
+    @staticmethod
+    def _render_resolved_parameters(
+        resolved_parameters: dict[str, EngineParameter],
+    ) -> list[Parameter]:
+        result = []
+        for name, resolved_parameter in resolved_parameters.items():
+            parameter = Parameter(
+                ParameterKey=name,
+                ParameterValue=resolved_parameter.get("given_value")
+                or resolved_parameter.get("default_value"),
+            )
+            if resolved_value := resolved_parameter.get("resolved_value"):
+                parameter["ResolvedValue"] = resolved_value
+            result.append(parameter)
+
         return result
 
     @handler("DescribeChangeSet")
@@ -793,8 +806,7 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
 
-    @staticmethod
-    def _describe_stack(stack: Stack) -> ApiStack:
+    def _describe_stack(self, stack: Stack) -> ApiStack:
         stack_description = ApiStack(
             Description=stack.description,
             CreationTime=stack.creation_time,
@@ -810,7 +822,6 @@ class CloudformationProviderV2(CloudformationProvider):
             RollbackConfiguration=RollbackConfiguration(),
             Tags=[],
             NotificationARNs=[],
-            # "Parameters": stack.resolved_parameters,
         )
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
             # TODO: actually track updated time
@@ -822,16 +833,9 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_description["ChangeSetId"] = change_set_id
 
         if stack.resolved_parameters:
-            stack_description["Parameters"] = []
-            for name, resolved_parameter in stack.resolved_parameters.items():
-                parameter = Parameter(
-                    ParameterKey=name,
-                    ParameterValue=resolved_parameter.get("given_value")
-                    or resolved_parameter.get("default_value"),
-                )
-                if resolved_value := resolved_parameter.get("resolved_value"):
-                    parameter["ResolvedValue"] = resolved_value
-                stack_description["Parameters"].append(parameter)
+            stack_description["Parameters"] = self._render_resolved_parameters(
+                stack.resolved_parameters
+            )
 
         if stack.resolved_outputs:
             stack_description["Outputs"] = stack.resolved_outputs
