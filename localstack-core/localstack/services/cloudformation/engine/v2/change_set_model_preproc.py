@@ -47,6 +47,7 @@ from localstack.services.cloudformation.engine.v2.resolving import (
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import (
     exports_map,
 )
@@ -74,6 +75,8 @@ TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
 
 MOCKED_REFERENCE = "unknown"
+
+VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
@@ -183,8 +186,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def __init__(self, change_set: ChangeSet):
         self._change_set = change_set
         self._before_resolved_resources = change_set.stack.resolved_resources
-        self._before_cache = dict()
-        self._after_cache = dict()
+        self._before_cache = {}
+        self._after_cache = {}
 
     def _setup_runtime_cache(self) -> None:
         runtime_cache_key = self.__class__.__name__
@@ -223,7 +226,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if node_resource.name == resource_name:
                 self.visit(node_resource)
                 return node_resource
-        raise RuntimeError(f"No resource '{resource_name}' was found")
+        raise ValidationError(
+            f"Template format error: Unresolved resource dependencies [{resource_name}] in the Resources block of the template"
+        )
 
     def _get_node_property_for(
         self, property_name: str, node_resource: NodeResource
@@ -238,7 +243,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _deployed_property_value_of(
         self, resource_logical_id: str, property_name: str, resolved_resources: dict
     ) -> Any:
-        # TODO: typing around resolved resources is needed and should be reflected here.
+        # We have to override this function to make sure it does not try to access the
+        # resolved resource
 
         # Before we can obtain deployed value for a resource, we need to first ensure to
         # process the resource if this wasn't processed already. Ideally, values should only
@@ -253,7 +259,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             raise RuntimeError(
                 f"No deployed instances of resource '{resource_logical_id}' were found"
             )
-        properties = resolved_resource.get("Properties", dict())
+        properties = resolved_resource.get("Properties", {})
         # support structured properties, e.g. NestedStack.Outputs.OutputName
         property_value: Any | None = get_value_from_path(properties, property_name)
 
@@ -372,8 +378,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         node_mapping: NodeMapping = self._get_node_mapping(map_name=map_name)
         top_level_value = node_mapping.bindings.bindings.get(top_level_key)
         if not isinstance(top_level_value, NodeObject):
-            raise RuntimeError()
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         second_level_value = top_level_value.bindings.get(second_level_key)
+        if not isinstance(second_level_value, (TerminalValue, NodeArray, NodeObject)):
+            error_key = "::".join([map_name, top_level_key, second_level_key])
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
         mapping_value_delta = self.visit(second_level_value)
         return mapping_value_delta
 
@@ -470,8 +480,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def visit_node_object(self, node_object: NodeObject) -> PreprocEntityDelta:
         node_change_type = node_object.change_type
-        before = dict() if node_change_type != ChangeType.CREATED else Nothing
-        after = dict() if node_change_type != ChangeType.REMOVED else Nothing
+        before = {} if node_change_type != ChangeType.CREATED else Nothing
+        after = {} if node_change_type != ChangeType.REMOVED else Nothing
         for name, change_set_entity in node_object.bindings.items():
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
             delta_before = delta.before
@@ -640,7 +650,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             sub_parameters: dict
             if isinstance(args, str):
                 string_template = args
-                sub_parameters = dict()
+                sub_parameters = {}
             elif (
                 isinstance(args, list)
                 and len(args) == 2
@@ -747,7 +757,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 if values == "":
                     return ""
                 raise RuntimeError(f"Invalid arguments list definition for Fn::Join: '{args}'")
-            str_values: list[str] = list()
+            str_values: list[str] = []
             for value in values:
                 if value is None:
                     continue
@@ -888,8 +898,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_parameters(
         self, node_parameters: NodeParameters
     ) -> PreprocEntityDelta[dict[str, Any], dict[str, Any]]:
-        before_parameters = dict()
-        after_parameters = dict()
+        before_parameters = {}
+        after_parameters = {}
         for parameter in node_parameters.parameters:
             parameter_delta = self.visit(parameter)
             parameter_before = parameter_delta.before
@@ -935,7 +945,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, logical_resource_id: str, resolved_resources: dict
     ) -> str:
         # TODO: typing around resolved resources is needed and should be reflected here.
-        resolved_resource = resolved_resources.get(logical_resource_id, dict())
+        resolved_resource = resolved_resources.get(logical_resource_id, {})
         physical_resource_id: str | None = resolved_resource.get("PhysicalResourceId")
         if not isinstance(physical_resource_id, str):
             raise RuntimeError(f"No PhysicalResourceId found for resource '{logical_resource_id}'")
@@ -991,8 +1001,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def visit_node_array(self, node_array: NodeArray) -> PreprocEntityDelta:
         node_change_type = node_array.change_type
-        before = list() if node_change_type != ChangeType.CREATED else Nothing
-        after = list() if node_change_type != ChangeType.REMOVED else Nothing
+        before = [] if node_change_type != ChangeType.CREATED else Nothing
+        after = [] if node_change_type != ChangeType.REMOVED else Nothing
         for change_set_entity in node_array.array:
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
             delta_before = delta.before
@@ -1026,8 +1036,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_properties: NodeProperties
     ) -> PreprocEntityDelta[PreprocProperties, PreprocProperties]:
         node_change_type = node_properties.change_type
-        before_bindings = dict() if node_change_type != ChangeType.CREATED else Nothing
-        after_bindings = dict() if node_change_type != ChangeType.REMOVED else Nothing
+        before_bindings = {} if node_change_type != ChangeType.CREATED else Nothing
+        after_bindings = {} if node_change_type != ChangeType.REMOVED else Nothing
         for node_property in node_properties.properties:
             property_name = node_property.name
             delta = self.visit(node_property)
@@ -1070,6 +1080,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
+            raise ValidationError(
+                f"Template format error: Resource name {node_resource.name} is non alphanumeric."
+            )
         change_type = node_resource.change_type
         condition_before = Nothing
         condition_after = Nothing
@@ -1170,8 +1184,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_outputs(
         self, node_outputs: NodeOutputs
     ) -> PreprocEntityDelta[list[PreprocOutput], list[PreprocOutput]]:
-        before: list[PreprocOutput] = list()
-        after: list[PreprocOutput] = list()
+        before: list[PreprocOutput] = []
+        after: list[PreprocOutput] = []
         for node_output in node_outputs.outputs:
             output_delta: PreprocEntityDelta[PreprocOutput, PreprocOutput] = self.visit(node_output)
             output_before = output_delta.before

@@ -4,7 +4,7 @@ from typing import Final
 
 import json5
 
-_LOAD_CACHE: Final[dict[str, dict]] = dict()
+_LOAD_CACHE: Final[dict[str, dict]] = {}
 
 
 class TemplateLoader(abc.ABC):

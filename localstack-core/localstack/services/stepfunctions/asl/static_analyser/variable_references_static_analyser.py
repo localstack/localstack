@@ -30,7 +30,7 @@ class VariableReferencesStaticAnalyser(StaticAnalyser):
 
     def __init__(self):
         super().__init__()
-        self._fringe_state_names = list()
+        self._fringe_state_names = []
         self._variable_references = OrderedDict()
 
     def get_variable_references(self) -> VariableReferences:
@@ -54,7 +54,7 @@ class VariableReferencesStaticAnalyser(StaticAnalyser):
 
     def _put_variable_name(self, variable_name: VariableName) -> None:
         state_name = self._fringe_state_names[-1]
-        variable_name_list: VariableNameList = self._variable_references.get(state_name, list())
+        variable_name_list: VariableNameList = self._variable_references.get(state_name, [])
         if variable_name in variable_name_list:
             return
         variable_name_list.append(variable_name)

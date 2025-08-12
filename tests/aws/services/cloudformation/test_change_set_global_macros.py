@@ -19,7 +19,6 @@ from localstack.utils.strings import short_uid
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -156,7 +155,7 @@ class TestChangeSetGlobalMacros:
             ChangeSetName=change_set_name,
             TemplateBody=json.dumps(template_1),
             ChangeSetType="CREATE",
-            Parameters=list(),
+            Parameters=[],
         )
         stack_id = change_set_details["StackId"]
         change_set_id = change_set_details["Id"]
@@ -166,7 +165,7 @@ class TestChangeSetGlobalMacros:
         cleanups.append(
             lambda: call_safe(
                 aws_client_no_retry.cloudformation.delete_change_set,
-                kwargs=dict(ChangeSetName=change_set_id),
+                kwargs={"ChangeSetName": change_set_id},
             )
         )
         # Describe
@@ -188,7 +187,7 @@ class TestChangeSetGlobalMacros:
         # ensure stack deletion
         cleanups.append(
             lambda: call_safe(
-                aws_client_no_retry.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                aws_client_no_retry.cloudformation.delete_stack, kwargs={"StackName": stack_id}
             )
         )
         describe = aws_client_no_retry.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
@@ -240,7 +239,7 @@ class TestChangeSetGlobalMacros:
             ChangeSetName=change_set_name,
             TemplateBody=json.dumps(template_2),
             ChangeSetType="UPDATE",
-            Parameters=list(),
+            Parameters=[],
         )
         stack_id = change_set_details["StackId"]
         change_set_id = change_set_details["Id"]

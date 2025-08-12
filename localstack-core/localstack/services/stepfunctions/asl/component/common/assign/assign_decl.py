@@ -15,7 +15,7 @@ class AssignDecl(EvalComponent):
         self.declaration_bindings = declaration_bindings
 
     def _eval_body(self, env: Environment) -> None:
-        declarations: dict[str, Any] = dict()
+        declarations: dict[str, Any] = {}
         for declaration_binding in self.declaration_bindings:
             declaration_binding.eval(env=env)
             binding: dict[str, Any] = env.stack.pop()

@@ -610,7 +610,6 @@ def test_create_delete_create(aws_client, cleanups, deploy_cfn_template):
     deploy()
 
 
-@skip_if_v2_provider(reason="CFNV2:Metadata, CFNV2:Other")
 @markers.aws.validated
 def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_template):
     # first deploy cfn with a CodeArtifact resource that is not actually supported
@@ -848,7 +847,6 @@ def test_empty_changeset(snapshot, cleanups, aws_client):
     snapshot.match("error_execute_failed", e.value)
 
 
-@skip_if_v2_provider(reason="CFNV2:DeleteChangeSet")
 @markers.aws.validated
 def test_deleted_changeset(snapshot, cleanups, aws_client):
     """simple case verifying that proper exception is thrown when trying to get a deleted changeset"""
@@ -1012,8 +1010,13 @@ def test_multiple_create_changeset(aws_client, snapshot, cleanups):
     )
 
 
-@skip_if_v2_provider(reason="CFNV2:DescribeStacks")
-@markers.snapshot.skip_snapshot_verify(paths=["$..LastUpdatedTime", "$..StackStatusReason"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..LastUpdatedTime", "$..StackStatusReason"]
+    + skipped_v2_items(
+        # TODO
+        "$..Capabilities",
+    )
+)
 @markers.aws.validated
 def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
     """

@@ -57,7 +57,7 @@ class MetricRegistry:
 
     def __init__(self):
         if not hasattr(self, "_registry"):
-            self._registry = dict()
+            self._registry = {}
 
     @property
     def registry(self) -> dict[MetricRegistryKey, Metric]:

@@ -26,7 +26,6 @@ from localstack.utils.sync import retry, wait_until
 
 
 class TestStacksApi:
-    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
         + skipped_v2_items(
@@ -79,7 +78,6 @@ class TestStacksApi:
         assert "DeletionTime" in deleted
         snapshot.match("deleted", deleted)
 
-    @skip_if_v2_provider(reason="CFNV2:DescribeStacks")
     @markers.aws.validated
     def test_stack_description_special_chars(self, deploy_cfn_template, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
@@ -99,6 +97,65 @@ class TestStacksApi:
             0
         ]
         snapshot.match("describe_stack", response)
+
+    @skip_if_v1_provider(reason="Lots of fields not in parity")
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ResourceChange.Details",
+            "$..ResourceChange.Scope",
+            "$..StackStatusReason",
+        ]
+    )
+    def test_stack_description_lifecycle(self, snapshot, aws_client, cleanups):
+        """
+        Test when and how the description gets set
+        """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Description": "test <env>.test.net",
+            "Resources": {
+                "TestResource": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "DummyValue",
+                    },
+                }
+            },
+        }
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        change_set = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            ChangeSetType="CREATE",
+            TemplateBody=json.dumps(template),
+        )
+        change_set_id = change_set["Id"]
+        stack_id = change_set["StackId"]
+
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_id, StackName=stack_id
+        )
+        change_set_description = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id
+        )
+        snapshot.match("change-set-pre-execute", change_set_description)
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
+            0
+        ]
+        snapshot.match("stack-pre-execute", stack_description)
+
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
+            0
+        ]
+        snapshot.match("stack-post-execute", stack_description)
 
     @markers.aws.validated
     def test_stack_name_creation(self, deploy_cfn_template, snapshot, aws_client):
@@ -219,7 +276,6 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange(
         self, deploy_cfn_template, aws_client, snapshot
@@ -239,7 +295,7 @@ class TestStacksApi:
 
         snapshot.match("no_change_exception", ctx.value.response)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
+    @skip_if_v2_provider(reason="CFNV2:Transform")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange_transformation(
         self, deploy_cfn_template, aws_client
@@ -702,9 +758,9 @@ Resources:
 """
 
 
-@skip_if_v2_provider(reason="CFNV2:Validation")
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
+    + skipped_v2_items("$..Capabilities")
 )
 @markers.aws.validated
 def test_name_conflicts(aws_client, snapshot, cleanups):
@@ -912,7 +968,6 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -978,7 +1033,7 @@ def test_stack_deletion_order(
     snapshot.match("all-events", to_snapshot)
 
 
-@skip_if_v2_provider(reason="CFNV2:DescribeStack")
+@skip_if_v2_provider(reason="CFNV2:DescribeStack(noecho)")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when

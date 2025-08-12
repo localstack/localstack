@@ -67,7 +67,7 @@ class TestJsonManipulation:
         merge_bindings = [
             ({"a": {"a1": 1, "a2": 2}, "b": 2, "d": 3}, {"a": {"a3": 1, "a4": 2}, "c": 3, "d": 4}),
         ]
-        input_values = list()
+        input_values = []
         for fst, snd in merge_bindings:
             input_values.append({"fst": fst, "snd": snd})
         create_and_test_on_inputs(

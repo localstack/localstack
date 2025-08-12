@@ -111,7 +111,7 @@ class Program(EvalComponent):
         program_state: ProgramState = env.program_state()
         if isinstance(program_state, ProgramError):
             exec_failed_event_details = select_from_typed_dict(
-                typed_dict=ExecutionFailedEventDetails, obj=program_state.error or dict()
+                typed_dict=ExecutionFailedEventDetails, obj=program_state.error or {}
             )
             env.event_manager.add_event(
                 context=env.event_history_context,

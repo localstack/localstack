@@ -135,3 +135,68 @@ class TestDictUtils:
                 }
             ],
         }
+
+    def test_lower_camelcase_to_pascalcase_skip_keys(self):
+        original_dict = {
+            "Stages": [
+                {
+                    "Actions": [
+                        {
+                            "Actiontypeid": {
+                                "Category": "Source",
+                                "Owner": "AWS",
+                                "Provider": "S3",
+                                "Version": "1",
+                            },
+                            "Configuration": {
+                                "S3bucket": "localstack-codepipeline-source-86a13a88",
+                                "S3objectkey": "source-key",
+                                "Subconfig": {"Subconfig1": "Foo", "Subconfig2": "bar"},
+                            },
+                            "Inputartifacts": [],
+                            "Name": "S3Source",
+                            "Namespace": "S3SourceVariables",
+                            "Outputartifacts": [{"Name": "Artifact_Source_S3Source"}],
+                            "Rolearn": "arn:aws:iam::096845016391:role/EcrPipelineStack-MyPipelineSourceS3SourceCodePipeli-YOoRQUZQe6WU",
+                            "Runorder": 1,
+                        }
+                    ],
+                    "Name": "Source",
+                }
+            ]
+        }
+        target_dict = {
+            "stages": [
+                {
+                    "actions": [
+                        {
+                            "actiontypeid": {
+                                "category": "Source",
+                                "owner": "AWS",
+                                "provider": "S3",
+                                "version": "1",
+                            },
+                            # The excluded key itself is transformed
+                            # Its values are not
+                            # Recursion stops, items at lower levels are not transformed as well
+                            "configuration": {
+                                "S3bucket": "localstack-codepipeline-source-86a13a88",
+                                "S3objectkey": "source-key",
+                                "Subconfig": {"Subconfig1": "Foo", "Subconfig2": "bar"},
+                            },
+                            "inputartifacts": [],
+                            "name": "S3Source",
+                            "namespace": "S3SourceVariables",
+                            "outputartifacts": [{"name": "Artifact_Source_S3Source"}],
+                            "rolearn": "arn:aws:iam::096845016391:role/EcrPipelineStack-MyPipelineSourceS3SourceCodePipeli-YOoRQUZQe6WU",
+                            "runorder": 1,
+                        }
+                    ],
+                    "name": "Source",
+                }
+            ]
+        }
+        converted_dict = utils.keys_pascalcase_to_lower_camelcase(
+            original_dict, skip_keys={"Configuration"}
+        )
+        assert converted_dict == target_dict

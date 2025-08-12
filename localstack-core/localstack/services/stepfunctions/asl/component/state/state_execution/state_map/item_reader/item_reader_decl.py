@@ -65,7 +65,7 @@ class ItemReader(EvalComponent):
         if self.parargs:
             self.parargs.eval(env=env)
         else:
-            env.stack.append(dict())
+            env.stack.append({})
 
         self.resource_eval.eval_resource(env=env)
 

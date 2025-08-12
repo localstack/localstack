@@ -255,7 +255,7 @@ def create_lambda_function(
         "Role": role or LAMBDA_TEST_ROLE.format(account_id=TEST_AWS_ACCOUNT_ID),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
-        "Environment": dict(Variables=envvars),
+        "Environment": {"Variables": envvars},
         "Tags": tags,
     }
     kwargs.update(additional_kwargs)

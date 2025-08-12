@@ -93,7 +93,7 @@ class Stack:
         if template is None:
             template = {}
 
-        self.resolved_outputs = list()  # TODO
+        self.resolved_outputs = []  # TODO
         self.resolved_parameters: dict[str, StackParameter] = {}
         self.resolved_conditions: dict[str, bool] = {}
 

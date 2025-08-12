@@ -40,7 +40,7 @@ def _error_name(error_name: StatesErrorNameType) -> str:
 
 
 def _reverse_error_name_lookup() -> dict[str, StatesErrorNameType]:
-    lookup: dict[str, StatesErrorNameType] = dict()
+    lookup: dict[str, StatesErrorNameType] = {}
     for error_name in StatesErrorNameType:
         error_text: str = _error_name(error_name)
         lookup[error_text] = error_name

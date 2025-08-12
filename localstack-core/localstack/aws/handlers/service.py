@@ -52,7 +52,7 @@ class ServiceRequestParser(Handler):
     parsers: dict[str, RequestParser]
 
     def __init__(self):
-        self.parsers = dict()
+        self.parsers = {}
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # determine service
@@ -92,7 +92,7 @@ class ServiceRequestRouter(Handler):
     handlers: dict[ServiceOperation, Handler]
 
     def __init__(self):
-        self.handlers = dict()
+        self.handlers = {}
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not context.service:
@@ -184,7 +184,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             if not self.handle_internal_failures:
                 return
 
-            if config.DEBUG:
+            if config.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE:
                 exception = "".join(
                     traceback.format_exception(
                         type(exception), value=exception, tb=exception.__traceback__

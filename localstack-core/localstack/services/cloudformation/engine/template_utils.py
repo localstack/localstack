@@ -322,18 +322,40 @@ def resolve_condition(
                 case "Fn::Select":
                     index = v[0]
                     options = v[1]
-                    for i, option in enumerate(options):
-                        if isinstance(option, dict):
-                            options[i] = resolve_condition(
-                                account_id,
-                                region_name,
-                                option,
-                                conditions,
-                                parameters,
-                                mappings,
-                                stack_name,
-                            )
-                    return options[index]
+
+                    if isinstance(options, dict):
+                        options = resolve_condition(
+                            account_id,
+                            region_name,
+                            options,
+                            conditions,
+                            parameters,
+                            mappings,
+                            stack_name,
+                        )
+
+                    if isinstance(options, list):
+                        for i, option in enumerate(options):
+                            if isinstance(option, dict):
+                                options[i] = resolve_condition(
+                                    account_id,
+                                    region_name,
+                                    option,
+                                    conditions,
+                                    parameters,
+                                    mappings,
+                                    stack_name,
+                                )
+
+                        return options[index]
+
+                    if index != 0:
+                        raise Exception(
+                            f"Template error: Fn::Select  cannot select nonexistent value at index {index}"
+                        )
+
+                    return options
+
                 case "Fn::Sub":
                     # we can assume anything in there is a ref
                     if isinstance(v, str):

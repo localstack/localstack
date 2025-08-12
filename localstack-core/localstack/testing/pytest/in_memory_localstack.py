@@ -71,6 +71,8 @@ def pytest_runtestloop(session: Session):
 
     # configure
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
+    localstack_config.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE = True
+
     safe_requests.verify_ssl = False
 
     from localstack.runtime import current
