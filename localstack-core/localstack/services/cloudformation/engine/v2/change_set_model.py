@@ -107,7 +107,12 @@ class Scope(str):
     def unwrap(self) -> list[str]:
         return self.split(self._SEPARATOR)
 
-    def to_jsonpath(self) -> str:
+    @property
+    def parent(self) -> Scope:
+        return Scope(self._SEPARATOR.join(self.split(self._SEPARATOR)[:-1]))
+
+    @property
+    def jsonpath(self) -> str:
         parts = self.split("/")
         json_parts = []
 

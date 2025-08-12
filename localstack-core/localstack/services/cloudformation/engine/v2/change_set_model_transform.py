@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.transformers import (
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
+    FnTransform,
     Maybe,
     NodeGlobalTransform,
     NodeIntrinsicFunction,
@@ -301,16 +302,13 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                     allow_string=allow_string,
                 )
 
-        if isinstance(transform_output, dict) and "Fn::Transform" in transform_output:
-            transform_output.pop("Fn::Transform")
+        if isinstance(transform_output, dict) and FnTransform in transform_output:
+            transform_output.pop(FnTransform)
 
         return transform_output
 
-    def _replace_at_jsonpath(self, template, node, result):
-        path = node.scope.to_jsonpath()
-        parent_path = ".".join(path.split(".")[:-1])
-
-        pattern = jsonpath_ng.parse(parent_path)
+    def _replace_at_jsonpath(self, template: dict, path: str, result: Any):
+        pattern = jsonpath_ng.parse(path)
         result_template = pattern.update(template, result)
 
         return result_template
@@ -319,11 +317,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self, node_intrinsic_function: NodeIntrinsicFunctionFnTransform
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+        parent_json_path = node_intrinsic_function.scope.parent.jsonpath
 
-        json_path = node_intrinsic_function.scope.to_jsonpath()
-        property_value_regex = r"Properties\.(\w+)"
+        # Only when a FnTransform is used as Property value the macro function is allowed to return a str
+        property_value_regex = r"\.(Properties)"
         allow_string = False
-        if re.search(property_value_regex, json_path):
+        if re.search(property_value_regex, parent_json_path):
             allow_string = True
 
         if not is_nothing(arguments_delta.before):
@@ -333,7 +332,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 allow_string=allow_string,
             )
             updated_before_template = self._replace_at_jsonpath(
-                self._before_template, node_intrinsic_function, before
+                self._before_template, parent_json_path, before
             )
             self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = updated_before_template
         else:
@@ -346,7 +345,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 allow_string=allow_string,
             )
             updated_after_template = self._replace_at_jsonpath(
-                self._after_template, node_intrinsic_function, after
+                self._after_template, parent_json_path, after
             )
             self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = updated_after_template
         else:
