@@ -392,7 +392,6 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
-    @skip_if_v2_provider("Resolve")
     @markers.aws.needs_fixing
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
