@@ -676,7 +676,9 @@ class ChangeSetModel:
 
         if intrinsic_function == FnTransform:
             if scope.count(FnTransform) > 1:
-                raise RuntimeError("Nested Fn::Transforms are bad")
+                raise RuntimeError(
+                    "Invalid: Fn::Transforms cannot be nested inside another Fn::Transform"
+                )
 
             path = "$" + ".".join(scope.split("/")[:-1])
             before_siblings = extract_jsonpath(self._before_template, path)
