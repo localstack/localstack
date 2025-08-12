@@ -91,7 +91,7 @@ def enforce_single_aws_marker(items: list[pytest.Item]):
         if "tests/aws" not in item.fspath.dirname:
             continue
 
-        aws_markers = list()
+        aws_markers = []
         for mark in item.iter_markers():
             if mark.name.startswith("aws_"):
                 aws_markers.append(mark.name)

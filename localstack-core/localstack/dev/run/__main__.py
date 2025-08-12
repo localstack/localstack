@@ -266,7 +266,7 @@ def run(
             remove=True,
             interactive=True,
             tty=True,
-            env_vars=dict(),
+            env_vars={},
             volumes=VolumeMappings(),
             ports=PortMappings(),
             network=network,

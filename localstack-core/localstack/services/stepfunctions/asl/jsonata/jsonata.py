@@ -145,7 +145,7 @@ def extract_jsonata_variable_references(
 def encode_jsonata_variable_declarations(
     bindings: dict[VariableReference, Any],
 ) -> VariableDeclarations:
-    declarations_parts: list[str] = list()
+    declarations_parts: list[str] = []
     for variable_reference, value in bindings.items():
         if isinstance(value, str):
             value_str_lit = f'"{value}"'

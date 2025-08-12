@@ -52,7 +52,7 @@ class ServiceRequestParser(Handler):
     parsers: dict[str, RequestParser]
 
     def __init__(self):
-        self.parsers = dict()
+        self.parsers = {}
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # determine service
@@ -92,7 +92,7 @@ class ServiceRequestRouter(Handler):
     handlers: dict[ServiceOperation, Handler]
 
     def __init__(self):
-        self.handlers = dict()
+        self.handlers = {}
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not context.service:

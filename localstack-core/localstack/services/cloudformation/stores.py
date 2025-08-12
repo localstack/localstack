@@ -52,7 +52,7 @@ class CloudFormationStore(BaseStore):
 
     @property
     def exports_v2(self) -> dict[str, Export]:
-        exports = dict()
+        exports = {}
         stacks_v2 = self.stacks_v2.values()
         for stack in stacks_v2:
             if stack.status == StackStatus.DELETE_COMPLETE:
