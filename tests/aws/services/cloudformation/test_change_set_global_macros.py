@@ -11,7 +11,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 
-@skip_if_v1_provider(reason="Requires the V2 engine")
+@skip_if_v1_provider("Requires the V2 engine")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",

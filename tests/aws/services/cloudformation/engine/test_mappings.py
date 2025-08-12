@@ -70,7 +70,7 @@ class TestCloudFormationMappings:
             )
         snapshot.match("mapping_nonexisting_key_exc", e.value.response)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation replaced with v2 test below")
+    @skip_if_v2_provider("Validation", reason="replaced with v2 test below")
     @markers.aws.only_localstack
     def test_async_mapping_error_first_level(self, deploy_cfn_template):
         """
@@ -94,7 +94,7 @@ class TestCloudFormationMappings:
         assert "Cannot find map key 'C' in mapping 'TopicSuffixMap'" in str(exc_info.value)
 
     @markers.aws.validated
-    @skip_if_v1_provider(reason="V1 provider is not in parity with AWS")
+    @skip_if_v1_provider("V1 provider is not in parity with AWS")
     def test_async_mapping_error_first_level_v2(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         topic_name = f"test-topic-{short_uid()}"
@@ -120,7 +120,7 @@ class TestCloudFormationMappings:
 
         snapshot.match("error", exc_info.value)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation replaced with v2 test below")
+    @skip_if_v2_provider("Validation", reason="replaced with v2 test below")
     @markers.aws.only_localstack
     def test_async_mapping_error_second_level(self, deploy_cfn_template):
         """
@@ -146,7 +146,7 @@ class TestCloudFormationMappings:
         )
 
     @markers.aws.validated
-    @skip_if_v1_provider(reason="V1 provider is not in parity with AWS")
+    @skip_if_v1_provider("V1 provider is not in parity with AWS")
     def test_async_mapping_error_second_level_v2(self, aws_client, snapshot):
         """
         Similar to the `test_async_mapping_error_first_level` test above, but

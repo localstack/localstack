@@ -118,7 +118,7 @@ class TestCdkInit:
             "$..Outputs..Description",
         ]
     )
-    @skip_if_v1_provider(reason="Changes array not in parity")
+    @skip_if_v1_provider("Changes array not in parity")
     def test_cdk_bootstrap_redeploy(
         self,
         aws_client,
