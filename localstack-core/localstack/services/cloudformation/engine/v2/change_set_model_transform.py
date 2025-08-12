@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 import os
+import re
 from typing import Any, Final, TypedDict
 
 import boto3
@@ -168,6 +169,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 if not is_nothing(global_transform.parameters)
                 else {},
                 fragment=template,
+                allow_string=False,
             )
         return transformed_template
 
@@ -261,9 +263,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         return PreprocEntityDelta(before=before, after=after)
 
     def _compute_fn_transform(
-        self,
-        macro_definition: Any,
-        siblings: Any,
+        self, macro_definition: Any, siblings: Any, allow_string: False
     ) -> Any:
         def _normalize_transform(obj):
             transforms = []
@@ -294,13 +294,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 transform_output = self._compute_include_transform(
                     parameters=transform["Parameters"], fragment=transform_output
                 )
-
             else:
                 transform_output: dict | str = self._invoke_macro(
                     fragment=transform_output,
                     name=transform["Name"],
                     parameters=transform.get("Parameters", {}),
-                    allow_string=True,
+                    allow_string=allow_string,
                 )
 
         if isinstance(transform_output, dict) and "Fn::Transform" in transform_output:
@@ -322,10 +321,17 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     ) -> PreprocEntityDelta:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
 
+        json_path = node_intrinsic_function.scope.to_jsonpath()
+        property_value_regex = r"Properties\.(\w+)"
+        allow_string = False
+        if re.search(property_value_regex, json_path):
+            allow_string = True
+
         if not is_nothing(arguments_delta.before):
             before = self._compute_fn_transform(
                 arguments_delta.before,
                 node_intrinsic_function.before_siblings,
+                allow_string=allow_string,
             )
             updated_before_template = self._replace_at_jsonpath(
                 self._before_template, node_intrinsic_function, before
@@ -338,6 +344,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             after = self._compute_fn_transform(
                 arguments_delta.after,
                 node_intrinsic_function.after_siblings,
+                allow_string=allow_string,
             )
             updated_after_template = self._replace_at_jsonpath(
                 self._after_template, node_intrinsic_function, after
@@ -379,7 +386,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 break
         return super().visit_node_resources(node_resources=node_resources)
 
-    def _invoke_macro(self, name: str, parameters: dict, fragment: dict, allow_string=True):
+    def _invoke_macro(self, name: str, parameters: dict, fragment: dict, allow_string=False):
         account_id = self._change_set.account_id
         region_name = self._change_set.region_name
         macro_definition = get_cloudformation_store(
