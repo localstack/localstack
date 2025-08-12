@@ -31,7 +31,7 @@ def test_counter_reset():
     counter.increment(value=5)
     counter.reset()
     collected = counter.collect()
-    assert collected == list(), f"Unexpected counter value: expected 0, got {collected}"
+    assert collected == [], f"Unexpected counter value: expected 0, got {collected}"
 
 
 def test_labeled_counter_increment():

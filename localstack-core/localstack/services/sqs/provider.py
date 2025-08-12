@@ -461,7 +461,7 @@ class MessageMoveTaskManager:
     def __init__(self, stores: AccountRegionBundle[SqsStore] = None) -> None:
         self.stores = stores or sqs_stores
         self.mutex = threading.RLock()
-        self.move_tasks: dict[str, MessageMoveTask] = dict()
+        self.move_tasks: dict[str, MessageMoveTask] = {}
         self.executor = ThreadPoolExecutor(max_workers=100, thread_name_prefix="sqs-move-message")
 
     def submit(self, move_task: MessageMoveTask):

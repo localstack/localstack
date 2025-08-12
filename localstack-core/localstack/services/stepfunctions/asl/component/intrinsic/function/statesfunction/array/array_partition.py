@@ -60,7 +60,7 @@ class ArrayPartition(StatesFunction):
 
     @staticmethod
     def _to_chunks(array: list, chunk_size: int):
-        chunks = list()
+        chunks = []
         for i in range(0, len(array), chunk_size):
             chunks.append(array[i : i + chunk_size])
         return chunks

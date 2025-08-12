@@ -154,7 +154,7 @@ class TagManager:
             self._tags.pop(key, None)
 
     def to_tag_list(self) -> TagList:
-        tag_list = list()
+        tag_list = []
         for key, value in self._tags.items():
             tag_list.append(Tag(key=key, value=value))
         return tag_list
@@ -191,7 +191,7 @@ class StateMachineRevision(StateMachineInstance):
             tags,
             tracing_config,
         )
-        self.versions = dict()
+        self.versions = {}
         self._version_number = 0
         self.tag_manager = TagManager()
         if tags:

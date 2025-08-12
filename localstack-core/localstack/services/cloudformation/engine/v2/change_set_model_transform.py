@@ -184,7 +184,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         macro = macros_store.get(macro_name)
         if macro is None:
             raise RuntimeError(f"No definitions for global transform '{macro_name}'")
-        transformation_parameters = global_transform.parameters or dict()
+        transformation_parameters = global_transform.parameters or {}
         transformed_template = execute_macro(
             account_id,
             region_name,
@@ -298,8 +298,8 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self, node_transform: NodeTransform
     ) -> PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]]:
         change_type = node_transform.change_type
-        before = list() if change_type != ChangeType.CREATED else Nothing
-        after = list() if change_type != ChangeType.REMOVED else Nothing
+        before = [] if change_type != ChangeType.CREATED else Nothing
+        after = [] if change_type != ChangeType.REMOVED else Nothing
         for change_set_entity in node_transform.global_transforms:
             delta: PreprocEntityDelta[GlobalTransform, GlobalTransform] = self.visit(
                 change_set_entity=change_set_entity

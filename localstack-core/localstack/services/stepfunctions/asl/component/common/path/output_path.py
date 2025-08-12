@@ -28,7 +28,7 @@ class OutputPath(EvalComponent):
 
     def _eval_body(self, env: Environment) -> None:
         if self.string_sampler is None:
-            env.states.reset(input_value=dict())
+            env.states.reset(input_value={})
             return
         try:
             self.string_sampler.eval(env=env)

@@ -12,8 +12,8 @@ class DummyTask:
     def __init__(self, fn=None) -> None:
         super().__init__()
         self.i = 0
-        self.invocations = list()
-        self.completions = list()
+        self.invocations = []
+        self.completions = []
         self.fn = fn
 
     def __call__(self, *args, **kwargs):

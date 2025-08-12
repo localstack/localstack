@@ -377,7 +377,7 @@ def build_statement(
             Type="User",
         )
 
-    condition = dict()
+    condition = {}
     if auth_type:
         update = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
         condition = merge_recursive(condition, update)

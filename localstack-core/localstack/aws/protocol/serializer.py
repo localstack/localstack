@@ -1215,7 +1215,7 @@ class JSONResponseSerializer(ResponseSerializer):
         mime_type: str,
         request_id: str,
     ) -> None:
-        body = dict()
+        body = {}
 
         # TODO implement different service-specific serializer configurations
         #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header

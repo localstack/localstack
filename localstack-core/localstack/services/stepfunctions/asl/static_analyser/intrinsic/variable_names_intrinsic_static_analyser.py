@@ -16,7 +16,7 @@ class VariableNamesIntrinsicStaticAnalyser(IntrinsicStaticAnalyser):
 
     def __init__(self):
         super().__init__()
-        self._variable_names = list()
+        self._variable_names = []
 
     @staticmethod
     def process_and_get(definition: str) -> VariableNameList:

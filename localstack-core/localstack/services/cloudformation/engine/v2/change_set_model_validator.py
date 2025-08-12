@@ -50,7 +50,7 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
             sub_parameters: dict
             if isinstance(args, str):
                 string_template = args
-                sub_parameters = dict()
+                sub_parameters = {}
             elif (
                 isinstance(args, list)
                 and len(args) == 2
