@@ -470,7 +470,6 @@ class TestSsmParameters:
 
         assert ssm_parameter == key_value
 
-    @skip_if_v2_provider("Resolve", reason="stringlist type not supported yet")
     @markers.aws.validated
     def test_create_change_set_with_ssm_parameter_list(
         self, deploy_cfn_template, aws_client, region_name, account_id, snapshot

@@ -233,6 +233,16 @@ class CloudformationProviderV2(CloudformationProvider):
                     raise ValidationError(
                         f"Parameter {name} should either have input value or default value"
                     )
+            elif parameter["Type"] == "AWS::SSM::Parameter::Value<CommaDelimitedList>":
+                try:
+                    resolved_value = resolve_ssm_parameter(
+                        account_id, region_name, given_value or default_value
+                    )
+                    resolved_parameter["resolved_value"] = resolved_value.split(",")
+                except Exception:
+                    raise ValidationError(
+                        f"Parameter {name} should either have input value or default value"
+                    )
             elif given_value is None and default_value is None:
                 invalid_parameters.append(name)
                 continue
