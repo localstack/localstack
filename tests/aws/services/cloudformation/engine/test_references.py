@@ -122,3 +122,28 @@ def test_resolve_transitive_placeholders_in_strings(deploy_cfn_template, aws_cli
         snapshot.transform.regex(r"/cdk-bootstrap/(\w+)/", "/cdk-bootstrap/.../")
     )
     snapshot.match("tags", tags)
+
+
+@markers.aws.validated
+@pytest.mark.parametrize("parameter_value", ["yes", "no"])
+def test_aws_novalue(deploy_cfn_template, parameter_value):
+    """
+    Test that AWS::NoValue is correctly executed in the CFn engine
+    """
+    fallback_bucket_name = f"my-bucket-{short_uid()}"
+    stack = deploy_cfn_template(
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/aws_novalue.yml"),
+        parameters={
+            "SetBucketName": parameter_value,
+            "FallbackBucketName": fallback_bucket_name,
+        },
+    )
+    outputs = stack.outputs
+
+    match parameter_value:
+        case "yes":
+            assert outputs["BucketName"] == fallback_bucket_name
+        case "no":
+            assert outputs["BucketName"] != fallback_bucket_name
+        case other:
+            pytest.fail(f"Test setup error, unexpected parameter value: {other}")

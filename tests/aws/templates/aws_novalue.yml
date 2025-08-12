@@ -1,0 +1,22 @@
+Parameters:
+  SetBucketName:
+    Type: String
+  FallbackBucketName:
+    Type: String
+Conditions:
+  ShouldSetBucketName:
+    Fn::Equals:
+      - "yes"
+      - !Ref SetBucketName
+Resources:
+  MyBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName:
+        Fn::If:
+          - ShouldSetBucketName
+          - !Ref FallbackBucketName
+          - !Ref AWS::NoValue
+Outputs:
+  BucketName:
+    Value: !Ref MyBucket
