@@ -8,6 +8,7 @@ import requests
 from botocore.exceptions import ClientError
 
 import localstack.config as config
+from localstack.sdk.models import SesSentEmail
 from localstack.services.ses.provider import EMAILS, EMAILS_ENDPOINT
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -928,18 +929,18 @@ class TestSES:
         ses_configuration_set_sns_event_destination,
         setup_email_addresses,
         aws_client,
+        localstack_sdk_aws_client,
     ):
         """
         Validates that configure Event Destinations and sending an email does not trigger an infinite loop of sending
         SNS notifications that sends an email that would trigger SNS.
         """
 
+        sdk_client = localstack_sdk_aws_client()
         sender_email_address, recipient_email_address = setup_email_addresses()
         config_set_name = f"config-set-{short_uid()}"
 
-        emails_url = config.internal_service_url() + EMAILS_ENDPOINT
-        response = requests.delete(emails_url)
-        assert response.status_code == 204
+        sdk_client.discard_ses_messages()
 
         # create subscription to get notified about SES events
         topic_arn = sns_topic["Attributes"]["TopicArn"]
@@ -973,29 +974,25 @@ class TestSES:
             ],
         )
 
-        def _get_emails():
-            _resp = requests.get(emails_url)
-            return _resp.json()["messages"]
+        poll_condition(lambda: len(sdk_client.get_ses_messages()) >= 4, timeout=3)
+        sdk_client.discard_ses_messages(id_filter=send_email["MessageId"])
 
-        poll_condition(lambda: len(_get_emails()) >= 4, timeout=3)
-        requests.delete(emails_url, params={"id": send_email["MessageId"]})
-
-        emails = _get_emails()
+        emails: list[SesSentEmail] = sdk_client.get_ses_messages()
         # we assert that we only received 3 emails
         assert len(emails) == 3
 
-        emails = sorted(emails, key=lambda x: x["Body"]["text_part"])
+        emails = sorted(emails, key=lambda x: x.body.text_part)
         # the first email is the validation of SNS confirming the SES subscription
         ses_delivery_notification = emails[1]
         ses_send_notification = emails[2]
 
-        assert ses_delivery_notification["Subject"] == "SNS-Subscriber-Endpoint"
-        delivery_payload = json.loads(ses_delivery_notification["Body"]["text_part"])
+        assert ses_delivery_notification.subject == "SNS-Subscriber-Endpoint"
+        delivery_payload = json.loads(ses_delivery_notification.body.text_part)
         assert delivery_payload["eventType"] == "Delivery"
         assert delivery_payload["mail"]["source"] == sender_email_address
 
-        assert ses_send_notification["Subject"] == "SNS-Subscriber-Endpoint"
-        send_payload = json.loads(ses_send_notification["Body"]["text_part"])
+        assert ses_send_notification.subject == "SNS-Subscriber-Endpoint"
+        send_payload = json.loads(ses_send_notification.body.text_part)
         assert send_payload["eventType"] == "Send"
         assert send_payload["mail"]["source"] == sender_email_address
 
