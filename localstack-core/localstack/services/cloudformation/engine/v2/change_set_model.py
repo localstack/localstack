@@ -970,7 +970,7 @@ class ChangeSetModel:
         if isinstance(node_properties, NodeProperties):
             return node_properties
         property_names: list[str] = self._safe_keys_of(before_properties, after_properties)
-        properties: list[NodeProperty] = list()
+        properties: list[NodeProperty] = []
         fn_transform = Nothing
 
         for property_name in property_names:
