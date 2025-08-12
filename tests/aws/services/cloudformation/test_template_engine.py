@@ -350,7 +350,6 @@ class TestSsmParameters:
         )
 
     @markers.aws.validated
-    @skip_if_v2_provider("Resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
