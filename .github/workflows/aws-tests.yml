@@ -317,7 +317,7 @@ jobs:
         if: success() || failure()
         with:
           files: |
-            test-results-preflight/*.xml
+            **/pytest-junit-*.xml
           check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
           test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
