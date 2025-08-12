@@ -35,7 +35,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     ):
         super().__init__(change_set=change_set)
         self._include_property_values = include_property_values
-        self._changes = list()
+        self._changes = []
 
     def get_changes(self) -> cfn_api.Changes:
         self._changes.clear()

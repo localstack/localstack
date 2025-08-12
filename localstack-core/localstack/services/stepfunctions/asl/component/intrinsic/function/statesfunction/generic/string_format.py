@@ -95,7 +95,7 @@ class StringFormat(StatesFunction):
             value_parts: list[str] = list(map(StringFormat._to_str_repr, value))
             return f"[{', '.join(value_parts)}]"
         elif isinstance(value, dict):
-            dict_items = list()
+            dict_items = []
             for d_key, d_value in value.items():
                 d_value_lit = StringFormat._to_str_repr(d_value)
                 dict_items.append(f"{d_key}={d_value_lit}")

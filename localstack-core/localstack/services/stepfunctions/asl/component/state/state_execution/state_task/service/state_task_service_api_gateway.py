@@ -168,7 +168,7 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
 
     @staticmethod
     def _headers_of(parameters: TaskParameters) -> dict | None:
-        headers = parameters.get("Headers", dict())
+        headers = parameters.get("Headers", {})
         if headers:
             for key in headers.keys():
                 # TODO: the following check takes place at parse time.
@@ -239,8 +239,8 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             response_body = response.json()
         except JSONDecodeError:
             response_body = response.text
-            if response_body == json.dumps(dict()):
-                response_body = dict()
+            if response_body == json.dumps({}):
+                response_body = {}
 
         # since we are not using a case-insensitive dict, and we want to remove a header, for server
         # compatibility we should consider both casing variants

@@ -12,11 +12,11 @@ certifi==2025.8.3
     # via requests
 cffi==1.17.1
     # via cryptography
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 click==8.2.1
     # via localstack-core (pyproject.toml)
-cryptography==45.0.5
+cryptography==45.0.6
     # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via localstack-core (pyproject.toml)
@@ -28,7 +28,7 @@ idna==3.10
     # via requests
 jsonpickle==4.1.1
     # via localstack-core (pyproject.toml)
-markdown-it-py==3.0.0
+markdown-it-py==4.0.0
     # via rich
 mdurl==0.1.2
     # via markdown-it-py

@@ -66,9 +66,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
-        self.resources = dict()
+        self.resources = {}
         self.outputs = []
-        self._deferred_actions = list()
+        self._deferred_actions = []
         self.resource_provider_executor = ResourceProviderExecutor(
             stack_name=change_set.stack.stack_name,
             stack_id=change_set.stack.stack_id,
@@ -205,7 +205,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # references or other downstream operations.
             if not is_nothing(before):
                 before_logical_id = delta.before.logical_id
-                before_resource = self._before_resolved_resources.get(before_logical_id, dict())
+                before_resource = self._before_resolved_resources.get(before_logical_id, {})
                 self.resources[before_logical_id] = before_resource
 
         # Update the latest version of this resource for downstream references.
