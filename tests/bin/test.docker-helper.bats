@@ -148,6 +148,19 @@ setup_file() {
   [[ "$output" =~ "docker push $IMAGE_NAME:stable-$PLATFORM" ]]
 }
 
+@test "push fails on malformed tag" {
+  export MAIN_BRANCH="non-existing-branch"
+  export IMAGE_NAME="localstack/test"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
+  export PLATFORM=amd64
+  export TEST_TAG=not-a-version
+  run bin/docker-helper.sh push
+  [ "$status" -ne 0 ]
+  [[ "$output" =~ "tag '$TEST_TAG' is not a version tag" ]]
+}
+
+
 @test "push fails without PLATFORM" {
   export IMAGE_NAME="localstack/test"
   export MAIN_BRANCH="main"

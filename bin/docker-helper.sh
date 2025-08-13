@@ -80,6 +80,13 @@ function _enforce_tagged_or_main_branch() {
     echo "Current git branch: '$CURRENT_BRANCH'"
     echo "Current tag: '$CURRENT_TAG'"
     test -n "$CURRENT_TAG" || test "$CURRENT_BRANCH" == "$MAIN_BRANCH" || _fail "Current branch ($CURRENT_BRANCH) is not $MAIN_BRANCH and current tag ($CURRENT_TAG) is not set."
+
+    # if we're not on the main branch but have a tag, ensure it's a version tag like v1.2.3
+    if [[ "$CURRENT_BRANCH" != "$MAIN_BRANCH" && -n "$CURRENT_TAG" ]]; then
+      if ! [[ "$CURRENT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        _fail "tag '$CURRENT_TAG' is not a version tag of the shape ^v[0-9]+\.[0-9]+\.[0-9]+$"
+      fi
+    fi
 }
 
 function _enforce_no_fork() {
