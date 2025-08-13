@@ -213,12 +213,16 @@ class LambdaVersionManager:
                 self.store_logs(
                     invocation_result=invocation_result, execution_env=ldm_execution_environment
                 )
-            except CancelledError:
+            except CancelledError as e:
                 # Timeouts for invocation futures are managed by LDM, a cancelled error here is
                 # aligned with the debug container terminating whilst debugging/invocation.
+                LOG.debug("LDM invocation future encountered a cancelled error: '%s'", e)
                 invocation_result = InvocationResult(
                     request_id="",
-                    payload=to_bytes("Invocation was cancelled"),
+                    payload=to_bytes(
+                        "The invocation was canceled because the debug configuration "
+                        "was removed or the operation timed out"
+                    ),
                     is_error=True,
                     logs="",
                     executed_version=self.function_version.id.qualifier,
