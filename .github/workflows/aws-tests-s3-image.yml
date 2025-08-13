@@ -83,7 +83,7 @@ jobs:
           - arch: amd64
             runner: ubuntu-latest
           - arch: arm64
-            runner: buildjet-2vcpu-ubuntu-2204-arm
+            runner: ubuntu-24.04-arm
     name: "Build and Test S3 image"
     env:
       PLATFORM: ${{ matrix.arch }}
