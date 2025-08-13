@@ -3,7 +3,7 @@ name: AWS / S3 Image Integration Tests
 on:
   push:
     paths:
-      - .github/workflows/tests-s3-image.yml
+      - .github/workflows/aws-tests-s3-image.yml
       - localstack-core/localstack/aws/*.py
       - localstack-core/localstack/aws/handlers/*¨
       - localstack-core/localstack/aws/protocol/**
@@ -22,7 +22,7 @@ on:
       - main
   pull_request:
     paths:
-      - .github/workflows/tests-s3-image.yml
+      - .github/workflows/aws-tests-s3-image.yml
       - localstack-core/localstack/aws/*.py
       - localstack-core/localstack/aws/handlers/*¨
       - localstack-core/localstack/aws/protocol/**
