@@ -825,6 +825,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
+    @skip_if_v1_provider("V1 is unable to resolve fn::transform with lists")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
