@@ -29,8 +29,13 @@ setup_file() {
   function python3() {
     case $2 in
     "setuptools_scm")
-      # setuptools_scm returns out test version
-      echo "$TEST_SPECIFIC_VERSION"
+      # setuptools_scm returns our test version; prefer TEST_TAG if set
+      if [ -n "${TEST_TAG-}" ]; then
+        # strip leading 'v' if present (e.g., v1.2.3 -> 1.2.3)
+        echo "${TEST_TAG#v}"
+      else
+        echo "$TEST_SPECIFIC_VERSION"
+      fi
       ;;
     "pip")
       # pip exits with $TEST_PIP_EXIT_CODE
@@ -137,6 +142,10 @@ setup_file() {
   export TEST_TAG=v1.0.0
   run bin/docker-helper.sh push
   [ "$status" -eq 0 ]
+  [[ "$output" =~ "docker push $IMAGE_NAME:1-$PLATFORM" ]]
+  [[ "$output" =~ "docker push $IMAGE_NAME:1.0-$PLATFORM" ]]
+  [[ "$output" =~ "docker push $IMAGE_NAME:1.0.0-$PLATFORM" ]]
+  [[ "$output" =~ "docker push $IMAGE_NAME:stable-$PLATFORM" ]]
 }
 
 @test "push fails without PLATFORM" {
