@@ -136,7 +136,6 @@ setup_file() {
   export PLATFORM=amd64
   export TEST_TAG=v1.0.0
   run bin/docker-helper.sh push
-  echo "$output"
   [ "$status" -eq 0 ]
 }
 
