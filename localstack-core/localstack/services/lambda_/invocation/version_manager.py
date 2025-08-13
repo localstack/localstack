@@ -232,6 +232,8 @@ class LambdaVersionManager:
                     logs="",
                     executed_version=self.function_version.id.qualifier,
                 )
+            finally:
+                ldm_execution_environment.release()
             return invocation_result
 
         with self.counting_service.get_invocation_lease(
