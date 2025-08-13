@@ -5,7 +5,6 @@ import time
 from concurrent.futures import Future
 from concurrent.futures._base import CancelledError
 
-from aws.services.lambda_.functions.lambda_integration import to_bytes
 from localstack import config
 from localstack.aws.api.lambda_ import (
     ProvisionedConcurrencyStatusEnum,
@@ -33,7 +32,7 @@ from localstack.services.lambda_.invocation.metrics import (
 )
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
 from localstack.services.lambda_.ldm import LDMProvisioner
-from localstack.utils.strings import long_uid, truncate
+from localstack.utils.strings import long_uid, to_bytes, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
 LOG = logging.getLogger(__name__)
