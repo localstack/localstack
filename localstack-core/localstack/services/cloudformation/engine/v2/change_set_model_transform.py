@@ -440,4 +440,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        return PreprocEntityDelta(before=Nothing, after=Nothing)
+        return self.visit(node_intrinsic_function.arguments)
+
+    def visit_node_intrinsic_function_fn_sub(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        return self.visit(node_intrinsic_function.arguments)
