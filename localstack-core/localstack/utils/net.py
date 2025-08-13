@@ -343,7 +343,7 @@ class PortRange:
             raise ValueError(f"end not in range ({end} < {self.end})")
 
         # ensures that we return an instance of a subclass
-        port_range = self.__class__(start, end)
+        port_range = type(self)(start, end)
         port_range._ports_cache = self._ports_cache
         port_range._ports_lock = self._ports_lock
         return port_range
