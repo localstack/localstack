@@ -14,7 +14,7 @@ setup_file() {
       echo "main"
       ;;
     "describe")
-            echo "$TEST_TAG"
+      echo "$TEST_TAG"
       ;;
     "remote")
       echo "origin	git@github.com:localstack/localstack.git (push)"
