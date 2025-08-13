@@ -3,7 +3,9 @@ import logging
 import threading
 import time
 from concurrent.futures import Future
+from concurrent.futures._base import CancelledError
 
+from aws.services.lambda_.functions.lambda_integration import to_bytes
 from localstack import config
 from localstack.aws.api.lambda_ import (
     ProvisionedConcurrencyStatusEnum,
@@ -212,6 +214,16 @@ class LambdaVersionManager:
                 self.store_logs(
                     invocation_result=invocation_result, execution_env=ldm_execution_environment
                 )
+            except CancelledError:
+                # Timeouts for invocation futures are managed by LDM, a cancelled error here is
+                # aligned with the debug container terminating whilst debugging/invocation.
+                invocation_result = InvocationResult(
+                    request_id="",
+                    payload=to_bytes("Invocation was cancelled"),
+                    is_error=True,
+                    logs="",
+                    executed_version=self.function_version.id.qualifier,
+                )
             except StatusErrorException as e:
                 invocation_result = InvocationResult(
                     request_id="",
@@ -220,8 +232,6 @@ class LambdaVersionManager:
                     logs="",
                     executed_version=self.function_version.id.qualifier,
                 )
-            finally:
-                ldm_execution_environment.release()
             return invocation_result
 
         with self.counting_service.get_invocation_lease(
