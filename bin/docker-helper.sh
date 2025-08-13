@@ -299,4 +299,7 @@ function main() {
     esac
 }
 
-main "$@"
+# Only call main if the script is executed, not sourced
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
