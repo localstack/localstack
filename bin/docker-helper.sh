@@ -31,6 +31,9 @@ function usage() {
     echo "  push-manifests"
     echo "      Create and push the multi-arch Docker manifests for already pushed platform-specific images"
     echo ""
+    echo "  get-release-version"
+    echo "      Output the current release version if HEAD is at a release tag"
+    echo ""
     echo "  help"
     echo "      Show this message"
 }
@@ -275,6 +278,14 @@ function cmd-push-manifests() {
     fi
 }
 
+function cmd-get-release-version() {
+    if _is_release_commit; then
+        _get_current_version
+    else
+        echo "Not a release commit."
+    fi
+}
+
 
 
 ##############
@@ -294,12 +305,10 @@ function main() {
         "load")                cmd-load "$@" ;;
         "push")                cmd-push "$@" ;;
         "push-manifests")      cmd-push-manifests "$@" ;;
+        "get-release-version") cmd-get-release-version "$@" ;;
         "help")                usage && exit 0 ;;
         *)                     usage && exit 1 ;;
     esac
 }
 
-# Only call main if the script is executed, not sourced
-if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
-  main "$@"
-fi
+main "$@"
