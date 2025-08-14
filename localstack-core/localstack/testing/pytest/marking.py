@@ -58,18 +58,23 @@ class Markers:
 
     # test selection
     acceptance_test = pytest.mark.acceptance_test
+    """This test is an acceptance test"""
     skip_offline = pytest.mark.skip_offline
+    """Test is skipped if offline, as it requires some sort of internet connection to run"""
     only_on_amd64 = pytest.mark.only_on_amd64
+    """Test requires ability of the system to execute amd64 binaries"""
     only_on_arm64 = pytest.mark.only_on_arm64
+    """Test requires ability of the system to execute arm64 binaries"""
     resource_heavy = pytest.mark.resource_heavy
-    # Tests require LocalStack to be run inside a container
+    """Test is very resource heavy, and might be skipped in CI"""
     requires_in_container = pytest.mark.requires_in_container
-    # The test and the LS instance have to be run in the same process
+    """Test requires LocalStack to run inside a container"""
     requires_in_process = pytest.mark.requires_in_process
-    # The test requires docker or a compatible container engine - will not work on kubernetes
+    """The test and the LS instance have to be run in the same process"""
     requires_docker = pytest.mark.requires_docker
-    # Tests to execute when updating snapshots for a new Lambda runtime
+    """The test requires docker or a compatible container engine - will not work on kubernetes"""
     lambda_runtime_update = pytest.mark.lambda_runtime_update
+    """Tests to execute when updating snapshots for a new Lambda runtime"""
 
 
 # pytest plugin
