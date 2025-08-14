@@ -18,7 +18,10 @@ def _worker(work_queue: queue.Queue):
             del work_item
 
     except Exception:
-        LOG.exception("Exception in worker")
+        LOG.error(
+            "Exception in worker",
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
 
 
 class _WorkItem:
@@ -31,7 +34,11 @@ class _WorkItem:
         try:
             self.fn(*self.args, **self.kwargs)
         except Exception:
-            LOG.exception("Unhandled Exception in while running %s", self.fn.__name__)
+            LOG.error(
+                "Unhandled Exception in while running %s",
+                self.fn.__name__,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
 
 
 class TopicPartitionedThreadPoolExecutor:

@@ -706,7 +706,11 @@ class FirehoseProvider(FirehoseApi):
                 try:
                     requests.post(url, json=record_to_send, headers=headers)
                 except Exception as e:
-                    LOG.exception("Unable to put Firehose records to HTTP endpoint %s.", url)
+                    LOG.error(
+                        "Unable to put Firehose records to HTTP endpoint %s.",
+                        url,
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
                     raise e
             if "RedshiftDestinationDescription" in destination:
                 s3_dest_desc = destination["RedshiftDestinationDescription"][
@@ -782,7 +786,11 @@ class FirehoseProvider(FirehoseApi):
             try:
                 db_connection.create(index=search_db_index, id=obj_id, body=body)
             except Exception as e:
-                LOG.exception("Unable to put record to stream %s.", delivery_stream_name)
+                LOG.error(
+                    "Unable to put record to stream %s.",
+                    delivery_stream_name,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
                 raise e
 
     def _add_missing_record_attributes(self, records: list[dict]) -> None:
@@ -860,9 +868,10 @@ class FirehoseProvider(FirehoseApi):
             LOG.debug("Publishing to S3 destination: %s. Data: %s", bucket, batched_data)
             s3.put_object(Bucket=bucket, Key=obj_path, Body=batched_data)
         except Exception as e:
-            LOG.exception(
+            LOG.error(
                 "Unable to put records %s to s3 bucket.",
                 records,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             raise e
 
@@ -917,9 +926,10 @@ class FirehoseProvider(FirehoseApi):
                 )
                 redshift_data.execute_statement(Parameters=row_to_insert, **execute_statement)
             except Exception as e:
-                LOG.exception(
+                LOG.error(
                     "Unable to put records %s to redshift cluster.",
                     row_to_insert,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
                 raise e
 

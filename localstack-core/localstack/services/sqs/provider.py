@@ -405,18 +405,27 @@ class QueueUpdateWorker:
             try:
                 queue.requeue_inflight_messages()
             except Exception:
-                LOG.exception("error re-queueing inflight messages")
+                LOG.error(
+                    "error re-queueing inflight messages",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
             try:
                 queue.enqueue_delayed_messages()
             except Exception:
-                LOG.exception("error enqueueing delayed messages")
+                LOG.error(
+                    "error enqueueing delayed messages",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
             if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
                 try:
                     queue.remove_expired_messages()
                 except Exception:
-                    LOG.exception("error removing expired messages")
+                    LOG.error(
+                        "error removing expired messages",
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
 
     def start(self):
         with self.mutex:
@@ -697,8 +706,10 @@ class SqsDeveloperEndpoints:
         try:
             account_id, region, queue_name = parse_queue_url(service_request.get("QueueUrl"))
         except ValueError:
-            LOG.exception(
-                "Error while parsing Queue URL from request values: %s", service_request.get
+            LOG.error(
+                "Error while parsing Queue URL from request values: %s",
+                service_request.get,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             raise InvalidAddress()
 

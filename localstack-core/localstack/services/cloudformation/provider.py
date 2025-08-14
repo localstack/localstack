@@ -306,7 +306,7 @@ class CloudformationProvider(CloudformationApi):
         except Exception as e:
             stack.set_stack_status("CREATE_FAILED")
             msg = 'Unable to create stack "%s": %s' % (stack.stack_name, e)
-            LOG.exception("%s")
+            LOG.error("%s", exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError(msg) from e
 
         return CreateStackOutput(StackId=stack.stack_id)
@@ -423,7 +423,7 @@ class CloudformationProvider(CloudformationApi):
         except Exception as e:
             stack.set_stack_status("UPDATE_FAILED")
             msg = f'Unable to update stack "{stack_name}": {e}'
-            LOG.exception("%s", msg)
+            LOG.error("%s", msg, exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError(msg) from e
 
         return UpdateStackOutput(StackId=stack.stack_id)
@@ -1052,7 +1052,7 @@ class CloudformationProvider(CloudformationApi):
                 Description=valid_template.get("Description"), Parameters=parameters
             )
         except Exception as e:
-            LOG.exception("Error validating template")
+            LOG.error("Error validating template", exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError("Template Validation Error") from e
 
     # =======================================
