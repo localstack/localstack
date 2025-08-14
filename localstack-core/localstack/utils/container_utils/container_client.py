@@ -706,9 +706,11 @@ class ContainerClient(metaclass=ABCMeta):
 
     def get_running_container_names(self) -> list[str]:
         """Returns a list of the names of all running containers"""
-        result = self.list_containers(all=False)
-        result = [container["name"] for container in result]
-        return result
+        return self.__get_container_names(return_all=False)
+
+    def get_all_container_names(self) -> list[str]:
+        """Returns a list of the names of all containers including stopped ones"""
+        return self.__get_container_names(return_all=True)
 
     def is_container_running(self, container_name: str) -> bool:
         """Checks whether a container with a given name is currently running"""
@@ -1132,6 +1134,11 @@ class ContainerClient(metaclass=ABCMeta):
         :param password: Password / token for the registry
         :param registry: Registry url
         """
+
+    def __get_container_names(self, return_all: bool) -> list[str]:
+        result = self.list_containers(all=return_all)
+        result = [container["name"] for container in result]
+        return result
 
 
 class Util:
