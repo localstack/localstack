@@ -69,10 +69,7 @@ class AlarmScheduler:
         schedule_period = evaluation_periods * period
 
         def on_error(e):
-            if LOG.isEnabledFor(logging.DEBUG):
-                LOG.exception("Error executing scheduled alarm", exc_info=e)
-            else:
-                LOG.error("Error executing scheduled alarm")
+            LOG.error("Error executing scheduled alarm", exc_info=LOG.isEnabledFor(logging.DEBUG))
 
         task = self.scheduler.schedule(
             func=calculate_alarm_state,
