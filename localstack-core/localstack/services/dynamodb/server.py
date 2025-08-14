@@ -219,7 +219,7 @@ class DynamodbServer(Server):
                 aws_secret_access_key=DEFAULT_AWS_ACCOUNT_ID,
             ).dynamodb.list_tables()
         except Exception:
-            LOG.exception("DynamoDB health check failed")
+            LOG.error("DynamoDB health check failed", exc_info=LOG.isEnabledFor(logging.DEBUG))
         if expect_shutdown:
             assert out is None
         else:

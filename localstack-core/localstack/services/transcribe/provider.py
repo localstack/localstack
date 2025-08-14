@@ -412,4 +412,9 @@ class TranscribeProvider(TranscribeApi):
             job["FailureReason"] = failure_reason or str(exc)
             job["TranscriptionJobStatus"] = TranscriptionJobStatus.FAILED
 
-            LOG.exception("Transcription job %s failed: %s", job_name, job["FailureReason"])
+            LOG.error(
+                "Transcription job %s failed: %s",
+                job_name,
+                job["FailureReason"],
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )

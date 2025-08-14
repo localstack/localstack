@@ -402,8 +402,14 @@ class SqsNotifier(BaseNotifier):
             queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
             )["QueueUrl"]
-        except ClientError:
-            LOG.exception("Could not validate the notification destination %s", target_arn)
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            LOG.error(
+                "Could not validate the notification destination %s: %s",
+                target_arn,
+                code,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
             raise _create_invalid_argument_exc(
                 "Unable to validate the following destination configurations",
                 name=target_arn,
@@ -454,10 +460,11 @@ class SqsNotifier(BaseNotifier):
                 MessageSystemAttributes=system_attributes,
             )
         except Exception:
-            LOG.exception(
+            LOG.error(
                 'Unable to send notification for S3 bucket "%s" to SQS queue "%s"',
                 ctx.bucket_name,
                 parsed_arn["resource"],
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -536,10 +543,11 @@ class SnsNotifier(BaseNotifier):
                 Subject="Amazon S3 Notification",
             )
         except Exception:
-            LOG.exception(
+            LOG.error(
                 'Unable to send notification for S3 bucket "%s" to SNS topic "%s"',
                 ctx.bucket_name,
                 topic_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -604,10 +612,11 @@ class LambdaNotifier(BaseNotifier):
                 Payload=payload,
             )
         except Exception:
-            LOG.exception(
+            LOG.error(
                 'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
                 ctx.bucket_name,
                 lambda_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -729,8 +738,10 @@ class EventBridgeNotifier(BaseNotifier):
         try:
             events_client.put_events(Entries=[entry])
         except Exception:
-            LOG.exception(
-                'Unable to send notification for S3 bucket "%s" to EventBridge', ctx.bucket_name
+            LOG.error(
+                'Unable to send notification for S3 bucket "%s" to EventBridge',
+                ctx.bucket_name,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 

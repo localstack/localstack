@@ -29,6 +29,7 @@ from tests.aws.services.stepfunctions.templates.services.services_templates impo
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..SdkHttpMetadata", "$..SdkResponseMetadata", "$..ExecutedVersion"]
 )
+@markers.requires_in_process
 class TestBaseScenarios:
     @markers.aws.validated
     def test_lambda_invoke(

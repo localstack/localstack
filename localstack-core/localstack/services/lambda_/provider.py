@@ -313,7 +313,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                             LOG.warning(
                                 "Failed to restore function version %s",
                                 fn_version.id.qualified_arn(),
-                                exc_info=True,
+                                exc_info=LOG.isEnabledFor(logging.DEBUG),
                             )
                     # restore provisioned concurrency per function considering both versions and aliases
                     for (
@@ -344,7 +344,7 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
                                 "Failed to restore provisioned concurrency %s for function %s",
                                 provisioned_config,
                                 fn_arn,
-                                exc_info=True,
+                                exc_info=LOG.isEnabledFor(logging.DEBUG),
                             )
 
                 for esm in state.event_source_mappings.values():
