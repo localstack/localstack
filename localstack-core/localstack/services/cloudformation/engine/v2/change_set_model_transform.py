@@ -450,3 +450,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             return super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
         except RuntimeError:
             return self.visit(node_intrinsic_function.arguments)
+
+    def visit_node_intrinsic_function_fn_split(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        try:
+            # If an argument is a Parameter it should be resolved, any other case, ignore it
+            return super().visit_node_intrinsic_function_fn_split(node_intrinsic_function)
+        except RuntimeError:
+            return self.visit(node_intrinsic_function.arguments)
