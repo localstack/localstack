@@ -295,7 +295,6 @@ class TestStacksApi:
 
         snapshot.match("no_change_exception", ctx.value.response)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange_transformation(
         self, deploy_cfn_template, aws_client
