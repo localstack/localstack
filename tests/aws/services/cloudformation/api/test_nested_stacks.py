@@ -295,7 +295,7 @@ def test_nested_stacks_conditions(deploy_cfn_template, s3_create_bucket, aws_cli
     assert ":" not in nested_stack["Stacks"][0]["StackName"]
 
 
-@skip_if_v2_provider(reason="CFNV2:Deletion")
+@skip_if_v2_provider("Deletion")
 @markers.aws.validated
 def test_deletion_of_failed_nested_stack(s3_create_bucket, aws_client, region_name, snapshot):
     """

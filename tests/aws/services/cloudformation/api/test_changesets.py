@@ -386,7 +386,7 @@ def test_create_change_set_missing_stackname(aws_client):
         )
 
 
-@skip_if_v2_provider(reason="CFNV2:Resolve")
+@skip_if_v2_provider("Resolve")
 @markers.aws.validated
 def test_create_change_set_with_ssm_parameter(
     cleanup_changesets,
@@ -634,7 +634,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@skip_if_v2_provider(reason="test needs fixing")
+@skip_if_v2_provider("Test", reason="test needs fixing")
 @markers.aws.needs_fixing
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
