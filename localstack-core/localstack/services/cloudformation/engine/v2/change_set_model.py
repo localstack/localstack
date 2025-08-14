@@ -1100,10 +1100,44 @@ class ChangeSetModel:
                 after_update_replace_policy,
             )
 
+        fn_transform = Nothing
+        scope_fn_transform, (before_fn_transform_args, after_fn_transform_args) = (
+            self._safe_access_in(scope, FnTransform, before_resource, after_resource)
+        )
+        if not is_nothing(before_fn_transform_args) or not is_nothing(after_fn_transform_args):
+            if scope_fn_transform.count(FnTransform) > 1:
+                raise RuntimeError(
+                    "Invalid: Fn::Transforms cannot be nested inside another Fn::Transform"
+                )
+            path = "$" + ".".join(scope_fn_transform.split("/")[:-1])
+            before_siblings = extract_jsonpath(self._before_template, path)
+            after_siblings = extract_jsonpath(self._after_template, path)
+            arguments_scope = scope.open_scope("args")
+            arguments = self._visit_value(
+                scope=arguments_scope,
+                before_value=before_fn_transform_args,
+                after_value=after_fn_transform_args,
+            )
+            fn_transform = NodeIntrinsicFunctionFnTransform(
+                scope=scope_fn_transform,
+                change_type=ChangeType.MODIFIED,  # TODO
+                arguments=arguments,  # TODO
+                intrinsic_function=FnTransform,
+                before_siblings=before_siblings,
+                after_siblings=after_siblings,
+            )
+
         change_type = change_type_of(
             before_resource,
             after_resource,
-            [properties, condition_reference, depends_on, deletion_policy, update_replace_policy],
+            [
+                properties,
+                condition_reference,
+                depends_on,
+                deletion_policy,
+                update_replace_policy,
+                fn_transform,
+            ],
         )
         requires_replacement = self._resolve_requires_replacement(
             node_properties=properties, resource_type=terminal_value_type
@@ -1119,7 +1153,7 @@ class ChangeSetModel:
             requires_replacement=requires_replacement,
             deletion_policy=deletion_policy,
             update_replace_policy=update_replace_policy,
-            fn_transform=Nothing,  # TODO
+            fn_transform=fn_transform,
         )
         self._visited_scopes[scope] = node_resource
         return node_resource

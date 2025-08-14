@@ -24,6 +24,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeIntrinsicFunctionFnTransform,
     NodeProperties,
+    NodeResource,
     NodeResources,
     NodeTransform,
     Nothing,
@@ -363,6 +364,14 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             self.visit_node_intrinsic_function_fn_transform(node_properties.fn_transform)
 
         return super().visit_node_properties(node_properties=node_properties)
+
+    def visit_node_resource(self, node_resource: NodeResource) -> PreprocEntityDelta:
+        if not is_nothing(node_resource.fn_transform):
+            self.visit_node_intrinsic_function_fn_transform(
+                node_intrinsic_function=node_resource.fn_transform
+            )
+
+        return super().visit_node_resource(node_resource)
 
     def visit_node_resources(self, node_resources: NodeResources) -> PreprocEntityDelta:
         if not is_nothing(node_resources.fn_transform):
