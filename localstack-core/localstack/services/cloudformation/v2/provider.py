@@ -80,6 +80,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.transformers import FailedTransformationException
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
@@ -299,9 +300,18 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template=before_template,
             after_template=after_template,
         )
-        transformed_before_template, transformed_after_template = (
-            change_set_model_transform.transform()
-        )
+        try:
+            transformed_before_template, transformed_after_template = (
+                change_set_model_transform.transform()
+            )
+        except FailedTransformationException as e:
+            change_set.status = ChangeSetStatus.FAILED
+            change_set.status_reason = e.message
+            change_set.stack.set_stack_status(
+                status=StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message
+            )
+            change_set.stack.set_stack_status(status=StackStatus.CREATE_FAILED)
+            return
 
         # Remodel the update graph after the applying the global transforms.
         change_set_model = ChangeSetModel(
@@ -362,6 +372,12 @@ class CloudformationProviderV2(CloudformationProvider):
 
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
+
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
 
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
@@ -688,6 +704,12 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
+
         if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
             "Transform" in structured_template.keys() or "Fn::Transform" in template_body
         ):
@@ -727,6 +749,8 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
             previous_update_model=None,
         )
+        if change_set.status == ChangeSetStatus.FAILED:
+            return CreateStackOutput(StackId=stack.stack_id)
 
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
@@ -742,6 +766,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 # which was just deployed
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
+                stack.processed_template = change_set.processed_template
                 stack.resolved_parameters = change_set.resolved_parameters
                 stack.resolved_exports = {}
                 for output in result.outputs:

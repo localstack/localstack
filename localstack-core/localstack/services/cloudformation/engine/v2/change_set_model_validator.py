@@ -139,3 +139,11 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
         if is_nothing(after) and not is_nothing(arguments_after):
             after = _compute_sub(args=arguments_after, select_before=False)
         return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        # TODO Research this issue:
+        # Function is already resolved in the template reaching this point
+        # But transformation is still present in update model
+        return self.visit(node_intrinsic_function.arguments)

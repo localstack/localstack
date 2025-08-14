@@ -670,7 +670,6 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @skip_if_v2_provider("Macros")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -731,9 +730,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(
-        "Transform", reason="as resource property with missing Name and Parameters fields"
-    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -794,7 +790,6 @@ class TestMacros:
         snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider("Fn::Transform")
     @markers.aws.validated
     def test_attribute_uses_macro(self, deploy_cfn_template, create_lambda_function, aws_client):
         macro_function_path = os.path.join(
@@ -830,7 +825,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
+    @skip_if_v1_provider("V1 is unable to resolve fn::transform with lists")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -871,7 +866,6 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -1002,7 +996,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1055,7 +1048,6 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1077,7 +1069,6 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
@@ -1128,7 +1119,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider("Transform")
     @pytest.mark.parametrize(
         "macro_function",
         [
