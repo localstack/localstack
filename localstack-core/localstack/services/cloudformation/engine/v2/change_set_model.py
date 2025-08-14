@@ -70,6 +70,9 @@ def parent_change_type_of(children: list[Maybe[ChangeSetEntity]]):
     change_types = [c.change_type for c in children if not is_nothing(c)]
     if not change_types:
         return ChangeType.UNCHANGED
+    # TODO: rework this logic. Currently if any values are different then we consider it
+    #  modified, but e.g. if everything is unchanged or created, the result should probably be
+    #  "created"
     first_type = change_types[0]
     if all(ct == first_type for ct in change_types):
         return first_type
