@@ -192,19 +192,21 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         transformed_before_template = self._before_template
         if transform_before and not is_nothing(self._before_template):
-            transformed_before_template = self._before_template
-            for before_global_transform in transform_before:
-                if not is_nothing(before_global_transform.name):
-                    transformed_before_template = self._apply_global_transform(
-                        global_transform=before_global_transform,
-                        parameters=parameters_before,
-                        template=transformed_before_template,
-                    )
+            if _SCOPE_TRANSFORM_TEMPLATE_OUTCOME in self._before_cache:
+                transformed_before_template = self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME]
+            else:
+                for before_global_transform in transform_before:
+                    if not is_nothing(before_global_transform.name):
+                        transformed_before_template = self._apply_global_transform(
+                            global_transform=before_global_transform,
+                            parameters=parameters_before,
+                            template=transformed_before_template,
+                        )
 
-            # Macro transformations won't remove the transform from the template
-            if "Transform" in transformed_before_template:
-                transformed_before_template.pop("Transform")
-            self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
+                # Macro transformations won't remove the transform from the template
+                if "Transform" in transformed_before_template:
+                    transformed_before_template.pop("Transform")
+                self._before_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_before_template
 
         transformed_after_template = self._after_template
         if transform_after and not is_nothing(self._after_template):
