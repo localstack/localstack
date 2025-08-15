@@ -600,42 +600,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return ExecuteChangeSetOutput()
 
-    def _describe_change_set(
-        self, change_set: ChangeSet, include_property_values: bool
-    ) -> DescribeChangeSetOutput:
-        # TODO: The ChangeSetModelDescriber currently matches AWS behavior by listing
-        #       resource changes in the order they appear in the template. However, when
-        #       a resource change is triggered indirectly (e.g., via Ref or GetAtt), the
-        #       dependency's change appears first in the list.
-        #       Snapshot tests using the `capture_update_process` fixture rely on a
-        #       normalizer to account for this ordering. This should be removed in the
-        #       future by enforcing a consistently correct change ordering at the source.
-        change_set_describer = ChangeSetModelDescriber(
-            change_set=change_set, include_property_values=include_property_values
-        )
-        changes: Changes = change_set_describer.get_changes()
-
-        result = DescribeChangeSetOutput(
-            Status=change_set.status,
-            ChangeSetId=change_set.change_set_id,
-            ChangeSetName=change_set.change_set_name,
-            ExecutionStatus=change_set.execution_status,
-            RollbackConfiguration=RollbackConfiguration(),
-            StackId=change_set.stack.stack_id,
-            StackName=change_set.stack.stack_name,
-            CreationTime=change_set.creation_time,
-            Changes=changes,
-            Capabilities=change_set.stack.capabilities,
-            StatusReason=change_set.status_reason,
-            Description=change_set.description,
-            # TODO: static information
-            IncludeNestedStacks=False,
-            NotificationARNs=[],
-        )
-        if change_set.resolved_parameters:
-            result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
-        return result
-
     @staticmethod
     def _render_resolved_parameters(
         resolved_parameters: dict[str, EngineParameter],
@@ -670,9 +634,38 @@ class CloudformationProviderV2(CloudformationProvider):
 
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
-        result = self._describe_change_set(
-            change_set=change_set, include_property_values=include_property_values or False
+
+        # TODO: The ChangeSetModelDescriber currently matches AWS behavior by listing
+        #       resource changes in the order they appear in the template. However, when
+        #       a resource change is triggered indirectly (e.g., via Ref or GetAtt), the
+        #       dependency's change appears first in the list.
+        #       Snapshot tests using the `capture_update_process` fixture rely on a
+        #       normalizer to account for this ordering. This should be removed in the
+        #       future by enforcing a consistently correct change ordering at the source.
+        change_set_describer = ChangeSetModelDescriber(
+            change_set=change_set, include_property_values=include_property_values
         )
+        changes: Changes = change_set_describer.get_changes()
+
+        result = DescribeChangeSetOutput(
+            Status=change_set.status,
+            ChangeSetId=change_set.change_set_id,
+            ChangeSetName=change_set.change_set_name,
+            ExecutionStatus=change_set.execution_status,
+            RollbackConfiguration=RollbackConfiguration(),
+            StackId=change_set.stack.stack_id,
+            StackName=change_set.stack.stack_name,
+            CreationTime=change_set.creation_time,
+            Changes=changes,
+            Capabilities=change_set.stack.capabilities,
+            StatusReason=change_set.status_reason,
+            Description=change_set.description,
+            # TODO: static information
+            IncludeNestedStacks=False,
+            NotificationARNs=[],
+        )
+        if change_set.resolved_parameters:
+            result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
         return result
 
     @handler("DeleteChangeSet")
