@@ -11,7 +11,6 @@ from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.cloudformation.conftest import (
     skip_if_v1_provider,
-    skip_if_v2_provider,
     skipped_v2_items,
 )
 
@@ -1032,7 +1031,6 @@ def test_stack_deletion_order(
     snapshot.match("all-events", to_snapshot)
 
 
-@skip_if_v2_provider("DescribeStack")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when
@@ -1047,6 +1045,10 @@ def test_stack_deletion_order(
         "$..ResourceChange",
         "$..StackResourceDetail.Metadata",
     ]
+    + skipped_v2_items(
+        "$..Stacks..Outputs..Description",
+        "$..StackResourceDetail.DriftInformation",
+    )
 )
 @markers.aws.validated
 def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
@@ -1081,6 +1083,28 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
             f"describe_stack_resource_details_{resource_logical_id}",
             describe_stack_resource_details,
         )
+
+    # create a change set
+    change_set_name = f"CreateChangeSetSecretParameterValue-{short_uid()}"
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template,
+        ChangeSetName=change_set_name,
+        Parameters=[
+            {"ParameterKey": "SecretParameter", "ParameterValue": "NewSecretValue1"},
+        ],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+    )
+    change_sets = aws_client.cloudformation.describe_change_set(
+        StackName=stack_id,
+        ChangeSetName=change_set_name,
+    )
+    snapshot.match("describe_change_set_on_create_complete", change_sets)
+    describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_stack_on_create_complete", describe_stacks)
 
     # Update stack via update_stack (and change the value of SecretParameter)
     aws_client.cloudformation.update_stack(
