@@ -965,6 +965,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         def _compute_fn_ref(logical_id: str) -> PreprocEntityDelta:
+            if logical_id == "AWS::NoValue":
+                return Nothing
+
             reference_delta: PreprocEntityDelta = self._resolve_reference(logical_id=logical_id)
             if isinstance(before := reference_delta.before, PreprocResource):
                 reference_delta.before = before.physical_resource_id
