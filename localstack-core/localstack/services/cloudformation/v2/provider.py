@@ -353,6 +353,11 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         validator.validate()
 
+        # hacky
+        if transform := raw_update_model.node_template.transform:
+            if transform.global_transforms:
+                # global transforms should always be considered "MODIFIED"
+                update_model.node_template.change_type = ChangeType.MODIFIED
         change_set.set_update_model(update_model)
         change_set.processed_template = transformed_after_template
 
@@ -1406,7 +1411,7 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO: some changes are only detectable at runtime; consider using
         #       the ChangeSetModelDescriber, or a new custom visitors, to
         #       pick-up on runtime changes.
-        if change_set.update_model.node_template.change_type == ChangeType.UNCHANGED:
+        if not change_set.has_changes():
             raise ValidationError("No updates are to be performed.")
 
         stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)

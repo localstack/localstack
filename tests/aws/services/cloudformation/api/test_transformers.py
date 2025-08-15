@@ -128,7 +128,6 @@ def test_transformer_property_level(deploy_cfn_template, s3_bucket, aws_client, 
     snapshot.match("processed_template", processed_template)
 
 
-@skip_if_v2_provider("Transform")
 @markers.aws.validated
 def test_transformer_individual_resource_level(deploy_cfn_template, s3_bucket, aws_client):
     api_spec = textwrap.dedent("""
