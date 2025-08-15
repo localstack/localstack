@@ -226,7 +226,10 @@ class CloudformationProviderV2(CloudformationProvider):
             given_value = parameters.get(name)
             default_value = parameter.get("Default")
             resolved_parameter = EngineParameter(
-                type_=parameter["Type"], given_value=given_value, default_value=default_value
+                type_=parameter["Type"],
+                given_value=given_value,
+                default_value=default_value,
+                no_echo=parameter.get("NoEcho"),
             )
 
             # TODO: support other parameter types
@@ -501,9 +504,7 @@ class CloudformationProviderV2(CloudformationProvider):
             change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
             change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
         else:
-            if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-                stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
-            else:
+            if stack.status not in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
                 stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
             change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
@@ -613,6 +614,10 @@ class CloudformationProviderV2(CloudformationProvider):
             )
             if resolved_value := resolved_parameter.get("resolved_value"):
                 parameter["ResolvedValue"] = resolved_value
+
+            # TODO :what happens to the resolved value?
+            if resolved_parameter.get("no_echo", False):
+                parameter["ParameterValue"] = "****"
             result.append(parameter)
 
         return result
