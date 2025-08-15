@@ -72,10 +72,6 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     snapshot.match("api-resources", resources)
 
 
-@skip_if_v2_provider(
-    "AWS::Include",
-    reason="The transformation is run however the physical resource id for the resource is not available",
-)
 @markers.aws.validated
 def test_transformer_property_level(deploy_cfn_template, s3_bucket, aws_client, snapshot):
     api_spec = textwrap.dedent("""

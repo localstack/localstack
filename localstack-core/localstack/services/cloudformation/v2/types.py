@@ -13,6 +13,7 @@ class EngineParameter(TypedDict):
     given_value: NotRequired[str | None]
     resolved_value: NotRequired[str | None]
     default_value: NotRequired[str | None]
+    no_echo: NotRequired[bool | None]
 
 
 def engine_parameter_value(parameter: EngineParameter) -> str:
