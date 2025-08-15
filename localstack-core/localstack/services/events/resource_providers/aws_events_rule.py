@@ -320,4 +320,33 @@ class EventsRuleProvider(ResourceProvider[EventsRuleProperties]):
 
 
         """
-        raise NotImplementedError
+
+        # Taken verbatim from https://github.com/aws-cloudformation/aws-cloudformation-resource-providers-events/blob/master/aws-events-rule/src/main/java/software/amazon/events/rule/UpdateHandler.java
+        before = request.previous_state
+        after = request.desired_state
+        events = request.aws_client_factory.events
+
+        existing_target_ids = set()
+        model_target_ids = set()
+        target_ids_to_delete = set()
+
+        if targets := before.get("Targets"):
+            existing_target_ids = set(target["Id"] for target in targets)
+
+        if targets := after.get("Targets"):
+            model_target_ids = set(target["Id"] for target in targets)
+
+        target_ids_to_delete = existing_target_ids - model_target_ids
+
+        if not request.custom_context.get(REPEATED_INVOCATION):
+
+            # STEP 1 [update the rule]putTargetsRequest
+            put_rule_request = {}
+            events.put_rule(**put_rule_request)
+            # STEP 2 [delete extra targets]
+            events.remove_targets(...)
+            # STEP 3 [put targets]
+            events.put_targets(...)
+
+            request.custom_context[REPEATED_INVOCATION] = True
+        # STEP 4 [describe call/chain to return the resource model]
