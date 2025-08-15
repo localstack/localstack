@@ -168,7 +168,7 @@ class ExecutionEnvironment:
         if config.LAMBDA_INIT_USER is not None:
             env_vars["LOCALSTACK_USER"] = config.LAMBDA_INIT_USER
         if config.LS_LOG in config.TRACE_LOG_LEVELS:
-            env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "info"
+            env_vars["LOCALSTACK_INIT_LOG_LEVEL"] = "trace"
         if config.LAMBDA_INIT_POST_INVOKE_WAIT_MS:
             env_vars["LOCALSTACK_POST_INVOKE_WAIT_MS"] = int(config.LAMBDA_INIT_POST_INVOKE_WAIT_MS)
         if config.LAMBDA_LIMITS_MAX_FUNCTION_PAYLOAD_SIZE_BYTES:
@@ -361,10 +361,11 @@ class ExecutionEnvironment:
         # TODO: test and implement Active and PassThrough tracing and sampling decisions.
         # TODO: implement Lambda lineage: https://docs.aws.amazon.com/lambda/latest/dg/invocation-recursion.html
         invoke_payload = {
-            "invoke-id": invocation.request_id,  # TODO: rename to request-id (requires change in lambda-init)
+            "request-id": invocation.request_id,
             "invoked-function-arn": invocation.invoked_arn,
             "payload": to_str(invocation.payload),
             "trace-id": aws_trace_header.to_header_str(),
+            "client-context": invocation.client_context,
         }
         return self.runtime_executor.invoke(payload=invoke_payload)
 
