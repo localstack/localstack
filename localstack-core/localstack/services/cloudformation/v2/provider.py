@@ -354,11 +354,10 @@ class CloudformationProviderV2(CloudformationProvider):
         validator.validate()
 
         # hacky
-        if hasattr(
-            update_model.node_template, "transform"
-        ):  #  and update_model.node_template.change_type == ChangeType.UNCHANGED:
-            # global transforms should always be considered "MODIFIED"
-            update_model.node_template.change_type = ChangeType.MODIFIED
+        if transform := raw_update_model.node_template.transform:
+            if transform.global_transforms:
+                # global transforms should always be considered "MODIFIED"
+                update_model.node_template.change_type = ChangeType.MODIFIED
         change_set.set_update_model(update_model)
         change_set.processed_template = transformed_after_template
 

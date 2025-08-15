@@ -155,7 +155,7 @@ class ChangeType(enum.Enum):
 
 class ChangeSetEntity(abc.ABC):
     scope: Final[Scope]
-    change_type: Final[ChangeType]
+    change_type: ChangeType
 
     def __init__(self, scope: Scope, change_type: ChangeType):
         self.scope = scope
