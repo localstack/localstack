@@ -166,11 +166,6 @@ def test_cfn_apigateway_swagger_import(
     assert content["url"].endswith("/post")
 
 
-@skip_if_v2_provider(
-    "Provider",
-    reason="The v2 provider appears to instead return the correct url: "
-    "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/",
-)
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)
