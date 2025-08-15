@@ -18,6 +18,7 @@ from localstack.services.cloudformation.deployment_utils import log_not_availabl
 from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
+    NodeIntrinsicFunction,
     NodeOutput,
     NodeResource,
     TerminalValueCreated,
@@ -585,6 +586,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
         return value
 
+    def _replace_url_outputs_in_delta_if_required(
+        self, delta: PreprocEntityDelta
+    ) -> PreprocEntityDelta:
+        if isinstance(delta.before, str):
+            delta.before = self._replace_url_outputs_if_required(delta.before)
+        if isinstance(delta.after, str):
+            delta.after = self._replace_url_outputs_if_required(delta.after)
+        return delta
+
     def visit_terminal_value_created(
         self, value: TerminalValueCreated
     ) -> PreprocEntityDelta[str, str]:
@@ -612,3 +622,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         else:
             value = terminal_value_unchanged.value
         return PreprocEntityDelta(before=value, after=value)
+
+    def visit_node_intrinsic_function_fn_join(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_join(node_intrinsic_function)
+        return self._replace_url_outputs_in_delta_if_required(delta)
+
+    def visit_node_intrinsic_function_fn_sub(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
+        return self._replace_url_outputs_in_delta_if_required(delta)
+
+    # TODO: other intrinsic functions
