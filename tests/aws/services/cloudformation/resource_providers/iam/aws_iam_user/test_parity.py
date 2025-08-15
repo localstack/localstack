@@ -22,7 +22,6 @@ class TestParity:
         - Negative test: missing required properties
     """
 
-    @skip_if_v2_provider("Engine", reason="possible resource dependency issue")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..IsTruncated"]

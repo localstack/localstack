@@ -924,7 +924,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         def _resolve_parameter_type(value: str, type_: str) -> Any:
             match type_:
-                case "List<String>":
+                case "List<String>" | "CommaDelimitedList":
                     return [item.strip() for item in value.split(",")]
             return value
 

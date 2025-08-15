@@ -350,7 +350,6 @@ class TestSsmParameters:
         )
 
     @markers.aws.validated
-    @skip_if_v2_provider("Resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -393,7 +392,6 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
-    @skip_if_v2_provider("Resolve")
     @markers.aws.needs_fixing
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
@@ -471,7 +469,6 @@ class TestSsmParameters:
 
         assert ssm_parameter == key_value
 
-    @skip_if_v2_provider("Resolve", reason="stringlist type not supported yet")
     @markers.aws.validated
     def test_create_change_set_with_ssm_parameter_list(
         self, deploy_cfn_template, aws_client, region_name, account_id, snapshot

@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import re
 from collections import defaultdict
 from datetime import UTC, datetime
 
@@ -122,6 +123,10 @@ from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
 
+SSM_PARAMETER_TYPE_RE = re.compile(
+    r"^AWS::SSM::Parameter::Value<(?P<listtype>List<)?(?P<innertype>[^>]+)>?>$"
+)
+
 
 def is_stack_arn(stack_name_or_id: str) -> bool:
     return ARN_STACK_REGEX.match(stack_name_or_id) is not None
@@ -224,16 +229,30 @@ class CloudformationProviderV2(CloudformationProvider):
                 type_=parameter["Type"], given_value=given_value, default_value=default_value
             )
 
-            if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
-                # TODO: support other parameter types
-                try:
-                    resolved_parameter["resolved_value"] = resolve_ssm_parameter(
-                        account_id, region_name, given_value or default_value
-                    )
-                except Exception:
-                    raise ValidationError(
-                        f"Parameter {name} should either have input value or default value"
-                    )
+            # TODO: support other parameter types
+            if match := SSM_PARAMETER_TYPE_RE.match(parameter["Type"]):
+                inner_type = match.group("innertype")
+                is_list_type = match.group("listtype") is not None
+                if is_list_type or inner_type == "CommaDelimitedList":
+                    # list types
+                    try:
+                        resolved_value = resolve_ssm_parameter(
+                            account_id, region_name, given_value or default_value
+                        )
+                        resolved_parameter["resolved_value"] = resolved_value.split(",")
+                    except Exception:
+                        raise ValidationError(
+                            f"Parameter {name} should either have input value or default value"
+                        )
+                else:
+                    try:
+                        resolved_parameter["resolved_value"] = resolve_ssm_parameter(
+                            account_id, region_name, given_value or default_value
+                        )
+                    except Exception:
+                        raise ValidationError(
+                            f"Parameter {name} should either have input value or default value"
+                        )
             elif given_value is None and default_value is None:
                 invalid_parameters.append(name)
                 continue
@@ -609,11 +628,24 @@ class CloudformationProviderV2(CloudformationProvider):
             NotificationARNs=[],
         )
         if change_set.resolved_parameters:
-            result["Parameters"] = [
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.resolved_parameters.items()
-            ]
+            result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
+        return result
+
+    @staticmethod
+    def _render_resolved_parameters(
+        resolved_parameters: dict[str, EngineParameter],
+    ) -> list[Parameter]:
+        result = []
+        for name, resolved_parameter in resolved_parameters.items():
+            parameter = Parameter(
+                ParameterKey=name,
+                ParameterValue=resolved_parameter.get("given_value")
+                or resolved_parameter.get("default_value"),
+            )
+            if resolved_value := resolved_parameter.get("resolved_value"):
+                parameter["ResolvedValue"] = resolved_value
+            result.append(parameter)
+
         return result
 
     @handler("DescribeChangeSet")
@@ -818,8 +850,7 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
 
-    @staticmethod
-    def _describe_stack(stack: Stack) -> ApiStack:
+    def _describe_stack(self, stack: Stack) -> ApiStack:
         stack_description = ApiStack(
             Description=stack.description,
             CreationTime=stack.creation_time,
@@ -835,7 +866,6 @@ class CloudformationProviderV2(CloudformationProvider):
             RollbackConfiguration=RollbackConfiguration(),
             Tags=[],
             NotificationARNs=[],
-            # "Parameters": stack.resolved_parameters,
         )
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
             # TODO: actually track updated time
@@ -847,16 +877,9 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_description["ChangeSetId"] = change_set_id
 
         if stack.resolved_parameters:
-            stack_description["Parameters"] = []
-            for name, resolved_parameter in stack.resolved_parameters.items():
-                parameter = Parameter(
-                    ParameterKey=name,
-                    ParameterValue=resolved_parameter.get("given_value")
-                    or resolved_parameter.get("default_value"),
-                )
-                if resolved_value := resolved_parameter.get("resolved_value"):
-                    parameter["ResolvedValue"] = resolved_value
-                stack_description["Parameters"].append(parameter)
+            stack_description["Parameters"] = self._render_resolved_parameters(
+                stack.resolved_parameters
+            )
 
         if stack.resolved_outputs:
             stack_description["Outputs"] = stack.resolved_outputs
