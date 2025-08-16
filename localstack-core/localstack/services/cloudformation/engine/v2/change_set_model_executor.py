@@ -59,11 +59,17 @@ class DeferredAction(Protocol):
     def __call__(self) -> None: ...
 
 
+@dataclass
+class Deferred:
+    name: str
+    action: DeferredAction
+
+
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict[str, ResolvedResource]]
     outputs: Final[list[Output]]
-    _deferred_actions: list[DeferredAction]
+    _deferred_actions: list[Deferred]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
@@ -85,16 +91,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # perform all deferred actions such as deletions. These must happen in reverse from their
             # defined order so that resource dependencies are honoured
             # TODO: errors will stop all rollbacks; get parity on this behaviour
-            for action in self._deferred_actions[::-1]:
-                action()
+            for deferred in self._deferred_actions[::-1]:
+                LOG.debug("executing deferred action: '%s'", deferred.name)
+                deferred.action()
 
         return ChangeSetModelExecutorResult(
             resources=self.resources,
             outputs=self.outputs,
         )
 
-    def _defer_action(self, action: DeferredAction):
-        self._deferred_actions.append(action)
+    def _defer_action(self, name: str, action: DeferredAction):
+        self._deferred_actions.append(Deferred(name=name, action=action))
 
     def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str | None:
         physical_resource_id = None
@@ -293,7 +300,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                             reason=event.message,
                         )
 
-                    self._defer_action(cleanup)
+                    self._defer_action(f"cleanup-from-replacement-{name}", cleanup)
                 else:
                     event = self._execute_resource_action(
                         action=ChangeAction.Modify,
@@ -332,7 +339,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         reason=event.message,
                     )
 
-                self._defer_action(perform_deletion)
+                self._defer_action(f"type-migration-{name}", perform_deletion)
 
                 event = self._execute_resource_action(
                     action=ChangeAction.Add,
@@ -376,7 +383,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason=event.message,
                 )
 
-            self._defer_action(perform_deletion)
+            self._defer_action(f"remove-{name}", perform_deletion)
         elif not is_nothing(after):
             # Case: addition
             self._process_event(
