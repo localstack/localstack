@@ -105,7 +105,6 @@ def test_eventbus_policy_statement(deploy_cfn_template, aws_client):
     assert event_bus_name in statement["Resource"]
 
 
-@skip_if_v2_provider("Other")
 @markers.aws.validated
 def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     event_rule_name = f"event-rule-{short_uid()}"
