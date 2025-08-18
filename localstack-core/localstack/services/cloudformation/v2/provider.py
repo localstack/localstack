@@ -298,7 +298,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 account_id=change_set.account_id,
                 region_name=change_set.region_name,
                 template=after_template,
-                stack_name=change_set.stack.stack_name,
                 resolved_parameters=resolved_parameters,
             )
         else:

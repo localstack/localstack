@@ -215,7 +215,6 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
         call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
 
 
-@skip_if_v2_provider("LanguageExtensions")
 class TestLanguageExtensionsTransform:
     """
     Manual testing of the language extensions trasnform

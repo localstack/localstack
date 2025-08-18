@@ -8,6 +8,7 @@ import botocore.exceptions
 import pytest
 import yaml
 from botocore.exceptions import ClientError
+from localstack.services.cloudformation.v2.utils import is_v2_engine
 from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skip_if_v2_provider
 
 from localstack.aws.api.lambda_ import Runtime
@@ -114,7 +115,6 @@ class TestIntrinsicFunctions:
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
         assert converted_string == deployed.outputs["Encoded"]
 
-    @skip_if_v2_provider("LanguageExtensions")
     @markers.aws.validated
     def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(
@@ -135,8 +135,13 @@ class TestIntrinsicFunctions:
         assert first_value == deployed.outputs["SplitResult"]
         assert f"{first_value}_{second_value}" == deployed.outputs["JoinResult"]
 
+        if not is_v2_engine():
+            # The V1 engine does not support these features
+            return
+
+        assert f"{first_value}_{second_value}" == deployed.outputs["SplitJoin"]
+
         # TODO support join+split and length operations
-        # assert f"{first_value}_{second_value}" == deployed.outputs["SplitJoin"]
         # assert 2 == deployed.outputs["LengthResult"]
 
     @markers.aws.validated
