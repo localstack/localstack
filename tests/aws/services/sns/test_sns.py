@@ -2561,11 +2561,6 @@ class TestSNSSubscriptionSQSFifo:
         assert e.match("MessageDeduplicationId")
         snapshot.match("no-msg-dedup-regular-topic", e.value.response)
 
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.publish(TopicArn=topic_arn, Message="test", MessageGroupId=short_uid())
-        assert e.match("MessageGroupId")
-        snapshot.match("no-msg-group-id-regular-topic", e.value.response)
-
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

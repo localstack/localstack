@@ -2206,7 +2206,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[True]": {
-    "recorded-date": "07-12-2023, 10:13:37",
+    "recorded-date": "18-08-2025, 16:25:29",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2248,7 +2248,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[False]": {
-    "recorded-date": "07-12-2023, 10:13:41",
+    "recorded-date": "18-08-2025, 16:25:32",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -2290,7 +2290,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_validations_for_fifo": {
-    "recorded-date": "24-08-2023, 23:55:19",
+    "recorded-date": "18-08-2025, 16:21:40",
     "recorded-content": {
       "not-fifo-topic": {
         "Error": {
@@ -2351,17 +2351,6 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: MessageDeduplicationId Reason: The request includes MessageDeduplicationId parameter that is not valid for this topic type",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "no-msg-group-id-regular-topic": {
-        "Error": {
-          "Code": "InvalidParameter",
-          "Message": "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -3321,7 +3310,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_fifo_topic_to_regular_sqs[True]": {
-    "recorded-date": "24-08-2023, 23:53:59",
+    "recorded-date": "18-08-2025, 16:18:41",
     "recorded-content": {
       "messages": {
         "Messages": [
@@ -3360,7 +3349,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_fifo_topic_to_regular_sqs[False]": {
-    "recorded-date": "24-08-2023, 23:54:05",
+    "recorded-date": "18-08-2025, 16:18:46",
     "recorded-content": {
       "messages": {
         "Messages": [
