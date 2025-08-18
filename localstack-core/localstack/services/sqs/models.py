@@ -771,7 +771,11 @@ class StandardQueue(SqsQueue):
                 f"request includes a parameter that is not valid for this queue type."
             )
 
-        standard_message = SqsMessage(time.time(), message)
+        standard_message = SqsMessage(
+            time.time(),
+            message,
+            message_group_id=message_group_id,
+        )
 
         if visibility_timeout is not None:
             standard_message.visibility_timeout = visibility_timeout

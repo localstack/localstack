@@ -4782,6 +4782,11 @@ class TestSqsProvider:
         )
         snapshot.match("send_message", send_result)
 
+        response = aws_sqs_client.receive_message(
+            QueueUrl=sqs_queue, WaitTimeSeconds=5, AttributeNames=["All"]
+        )
+        snapshot.match("get-message-with-deduplication-id", response)
+
 
 @pytest.fixture()
 def sqs_http_client(aws_http_client_factory, region_name):

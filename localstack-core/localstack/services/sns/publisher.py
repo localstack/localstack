@@ -338,11 +338,12 @@ class SqsTopicPublisher(TopicPublisher):
         if is_raw_message_delivery(subscriber) and msg_context.message_attributes:
             kwargs["MessageAttributes"] = msg_context.message_attributes
 
+        if msg_context.message_group_id:
+            kwargs["MessageGroupId"] = msg_context.message_group_id
+
         # SNS now allows regular non-fifo subscriptions to FIFO topics. Validate that the subscription target is fifo
         # before passing the FIFO-only parameters
         if subscriber["Endpoint"].endswith(".fifo"):
-            if msg_context.message_group_id:
-                kwargs["MessageGroupId"] = msg_context.message_group_id
             if msg_context.message_deduplication_id:
                 kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
             elif subscriber["TopicArn"].endswith(".fifo"):
