@@ -152,6 +152,15 @@
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_batch_messages_without_topic": {
     "last_validated_date": "2023-08-24T21:36:13+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_message_group_id": {
+    "last_validated_date": "2025-08-18T15:21:27+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 1.56,
+      "teardown": 0.52,
+      "total": 3.22
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_sqs_from_sns": {
     "last_validated_date": "2023-08-24T21:36:09+00:00"
   },

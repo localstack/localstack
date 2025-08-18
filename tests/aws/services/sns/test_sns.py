@@ -2329,6 +2329,33 @@ class TestSNSSubscriptionSQS:
         # if the verification failed, it would raise `InvalidSignature`
         assert is_valid is None
 
+    @markers.aws.validated
+    def test_publish_message_group_id(
+        self,
+        aws_client,
+        sns_topic,
+        sqs_create_queue,
+        sns_create_sqs_subscription,
+        snapshot,
+    ):
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+        queue_url = sqs_create_queue()
+        sns_create_sqs_subscription(topic_arn=topic_arn, queue_url=queue_url)
+
+        aws_client.sns.publish(
+            TopicArn=topic_arn,
+            Message="test signature value with attributes",
+            MessageGroupId="my-group-id-1",
+            MessageAttributes={"attr1": {"DataType": "Number", "StringValue": "1"}},
+        )
+        response = aws_client.sqs.receive_message(
+            QueueUrl=queue_url,
+            WaitTimeSeconds=10,
+            AttributeNames=["All"],
+            MessageAttributeNames=["All"],
+        )
+        snapshot.match("messages", response)
+
 
 class TestSNSSubscriptionSQSFifo:
     @markers.aws.validated
