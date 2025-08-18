@@ -134,7 +134,10 @@ def resolve_transform_refs(
 
 
 def apply_serverless_transformation(
-    account_id: str, region_name: str, parsed_template: dict, template_parameters: dict
+    account_id: str,
+    region_name: str,
+    parsed_template: dict,
+    template_parameters: dict[str, EngineParameter],
 ) -> str | None:
     """only returns string when parsing SAM template, otherwise None"""
     # TODO: we might also want to override the access key ID to account ID
@@ -143,7 +146,8 @@ def apply_serverless_transformation(
         os.environ["AWS_DEFAULT_REGION"] = region_name
     loader = create_policy_loader()
     simplified_parameters = {
-        k: v.get("ResolvedValue") or v["ParameterValue"] for k, v in template_parameters.items()
+        k: v.get("resolved_value") or engine_parameter_value(v)
+        for k, v in template_parameters.items()
     }
 
     try:
