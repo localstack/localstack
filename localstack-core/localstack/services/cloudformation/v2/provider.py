@@ -93,12 +93,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model_describer imp
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
-    ChangeSetModelTransform,
-)
-from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
-    ChangeSetModelValidator,
-)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -444,7 +438,7 @@ class CloudformationProviderV2(CloudformationProvider):
         #  its parameters and conditions populated.
         before_template = None
         if change_set_type == ChangeSetType.UPDATE:
-            before_template = stack.template
+            before_template = stack.processed_template
         after_template = structured_template
 
         previous_update_model = None
@@ -458,14 +452,25 @@ class CloudformationProviderV2(CloudformationProvider):
 
         # create change set for the stack and apply changes
         change_set = ChangeSet(stack, request, template=after_template, template_body=template_body)
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-            previous_update_model=previous_update_model,
-        )
+        try:
+            self._setup_change_set_model(
+                change_set=change_set,
+                before_template=before_template,
+                after_template=after_template,
+                before_parameters=before_parameters,
+                after_parameters=after_parameters,
+                previous_update_model=previous_update_model,
+            )
+        except transforms.FailedTransformationException as e:
+            change_set.set_change_set_status(ChangeSetStatus.FAILED)
+            change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
+            change_set.status_reason = e.message
+            stack.change_set_ids.append(change_set.change_set_id)
+            state.change_sets[change_set.change_set_id] = change_set
+            return CreateChangeSetOutput(
+                StackId=stack.stack_id,
+                Id=change_set.change_set_id,
+            )
 
         # TODO: handle the empty change set case
         if not change_set.has_changes():
@@ -745,14 +750,20 @@ class CloudformationProviderV2(CloudformationProvider):
             template=after_template,
             template_body=template_body,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=None,
-            after_template=after_template,
-            before_parameters=None,
-            after_parameters=after_parameters,
-            previous_update_model=None,
-        )
+        try:
+            self._setup_change_set_model(
+                change_set=change_set,
+                before_template=None,
+                after_template=after_template,
+                before_parameters=None,
+                after_parameters=after_parameters,
+                previous_update_model=None,
+            )
+        except transforms.FailedTransformationException as e:
+            stack.set_stack_status(StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message)
+            stack.set_stack_status(StackStatus.ROLLBACK_COMPLETE)
+            return CreateStackOutput(StackId=stack.stack_id)
+
         if change_set.status == ChangeSetStatus.FAILED:
             return CreateStackOutput(StackId=stack.stack_id)
 
@@ -1366,14 +1377,19 @@ class CloudformationProviderV2(CloudformationProvider):
             template_body=template_body,
             template=after_template,
         )
-        self._setup_change_set_model(
-            change_set=change_set,
-            before_template=before_template,
-            after_template=after_template,
-            before_parameters=before_parameters,
-            after_parameters=after_parameters,
-            previous_update_model=previous_update_model,
-        )
+        try:
+            self._setup_change_set_model(
+                change_set=change_set,
+                before_template=before_template,
+                after_template=after_template,
+                before_parameters=before_parameters,
+                after_parameters=after_parameters,
+                previous_update_model=previous_update_model,
+            )
+        except transforms.FailedTransformationException as e:
+            stack.set_stack_status(StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message)
+            stack.set_stack_status(status=StackStatus.ROLLBACK_COMPLETE)
+            return UpdateStackOutput(StackId=stack.stack_id)
 
         # TODO: some changes are only detectable at runtime; consider using
         #       the ChangeSetModelDescriber, or a new custom visitors, to

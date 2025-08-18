@@ -1,4 +1,22 @@
 {
+  "tests/aws/services/cloudformation/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_fn_transform_include[yml]": {
+    "last_validated_date": "2025-08-18T13:57:25+00:00",
+    "durations_in_seconds": {
+      "setup": 1.83,
+      "call": 51.02,
+      "teardown": 1.07,
+      "total": 53.92
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_global_macro_fn_transform": {
+    "last_validated_date": "2025-08-18T13:56:01+00:00",
+    "durations_in_seconds": {
+      "setup": 12.53,
+      "call": 105.12,
+      "teardown": 6.13,
+      "total": 123.78
+    }
+  },
   "tests/aws/services/cloudformation/v2/test_change_set_fn_transform.py::TestChangeSetFnTransform::test_conditional_transform": {
     "last_validated_date": "2025-06-20T21:12:32+00:00",
     "durations_in_seconds": {

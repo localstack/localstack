@@ -1,12 +1,16 @@
 from __future__ import annotations
+
 import json
 import logging
 import os
 from copy import deepcopy
+from typing import Any
+
 import boto3
 from botocore.exceptions import ClientError
 from samtranslator.translator.managed_policy_translator import ManagedPolicyLoader
 from samtranslator.translator.transform import transform as transform_sam
+
 from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.stores import get_cloudformation_store
@@ -42,6 +46,18 @@ def create_policy_loader() -> ManagedPolicyLoader:
     return policy_loader
 
 
+def format_intrinsic_transformations_into_list(transforms: list | dict | str) -> list[dict]:
+    formatted_transforms = []
+    if isinstance(transforms, str):
+        formatted_transforms.append({"Name": transforms})
+    elif isinstance(transforms, dict):
+        formatted_transforms.append(transforms)
+    elif isinstance(transforms, list):
+        formatted_transforms.extend(transforms)
+
+    return formatted_transforms
+
+
 def format_template_transformations_into_list(transforms: list | dict | str) -> list[dict]:
     """
     The value of the Transform attribute can be:
@@ -68,8 +84,53 @@ def format_template_transformations_into_list(transforms: list | dict | str) -> 
     return formatted_transformations
 
 
-def resolve_transform_ref():
-    pass
+class ResolverVisitor:
+    def __init__(
+        self, stack_parameters: dict[str, EngineParameter], mappings: dict, conditions: dict
+    ):
+        self._stack_parameters = stack_parameters
+        self._mappings = mappings
+        self._conditions = conditions
+
+    def visit(self, obj: Any) -> Any:
+        method_name = f"visit_{obj.__class__.__name__}"
+        if method := getattr(self, method_name, None):
+            return method(obj)
+
+        raise RuntimeError(f"No method '{method_name}' found for {self.__class__.__name__}")
+
+    def visit_dict(self, obj: dict) -> dict:
+        out = {}
+        for key, value in obj.items():
+            # handle intrinsic functions
+            if "Ref" in value:
+                out[key] = self.visit_ref(value["Ref"])
+            else:
+                out[key] = self.visit(value)
+        return out
+
+    def visit_str(self, obj: str) -> str:
+        return obj
+
+    def visit_list(self, obj: list) -> list:
+        out = []
+        for item in obj:
+            out.append(self.visit(item))
+        return out
+
+    def visit_ref(self, name: str) -> str:
+        if param := self._stack_parameters.get(name):
+            return param.get("resolved_value") or engine_parameter_value(param)
+        raise RuntimeError(
+            f"Could not resolve reference '{name}' to parameter, mapping or condition"
+        )
+
+
+def resolve_transform_refs(
+    payload: dict, stack_parameters: dict[str, EngineParameter], mappings: dict, conditions: dict
+) -> dict:
+    resolver = ResolverVisitor(stack_parameters, mappings, conditions)
+    return resolver.visit(payload)
 
 
 def apply_serverless_transformation(
@@ -108,24 +169,14 @@ def apply_global_transformations(
     stack_parameters: dict,
 ) -> dict:
     processed_template = deepcopy(template)
-    transformations = format_template_transformations_into_list(
-        processed_template.get("Transform", [])
-    )
+    transformations = format_template_transformations_into_list(template.get("Transform", []))
     for transformation in transformations:
-        # TODO
-        # transformation_parameters = resolve_transform_ref()
-        transformation_parameters = transformation.get("Parameters", {})
-
-        # transformation_parameters = resolve_refs_recursively(
-        #     account_id,
-        #     region_name,
-        #     stack_name,
-        #     resources,
-        #     mappings,
-        #     conditions,
-        #     stack_parameters,
-        #     transformation.get("Parameters", {}),
-        # )
+        transformation_parameters = resolve_transform_refs(
+            payload=transformation.get("Parameters") or {},
+            stack_parameters=stack_parameters,
+            mappings=mappings,
+            conditions=conditions,
+        )
 
         if not isinstance(transformation["Name"], str):
             raise CommonServiceException(
@@ -167,7 +218,7 @@ def apply_global_transformations(
             processed_template = execute_macro(
                 account_id,
                 region_name,
-                parsed_template=template,
+                parsed_template=processed_template,
                 macro=transformation,
                 stack_parameters=stack_parameters,
                 transformation_parameters=transformation_parameters,
@@ -228,46 +279,44 @@ def apply_intrinsic_transformations(
 
     def _visit(obj, path, **_):
         if isinstance(obj, dict) and "Fn::Transform" in obj:
-            transform = (
-                obj["Fn::Transform"]
-                if isinstance(obj["Fn::Transform"], dict)
-                else {"Name": obj["Fn::Transform"]}
-            )
-            transform_name = transform.get("Name")
-            transformer_class = transformers.get(transform_name)
-            macro_store = get_cloudformation_store(account_id, region_name).macros
-            parameters = transform.get("Parameters") or {}
-            # parameters = resolve_refs_recursively(
-            #     account_id,
-            #     region_name,
-            #     stack_name,
-            #     resources,
-            #     mappings,
-            #     conditions,
-            #     stack_parameters,
-            #     parameters,
-            # )
-            # TODO
-            parameters = resolve_transform_ref()
-            if transformer_class:
-                transformer = transformer_class()
-                transformed = transformer.transform(account_id, region_name, parameters)
-                obj_copy = deepcopy(obj)
-                obj_copy.pop("Fn::Transform")
-                obj_copy.update(transformed)
-                return obj_copy
+            obj_copy = deepcopy(obj)
+            transforms = format_intrinsic_transformations_into_list(obj["Fn::Transform"])
+            obj_copy.pop("Fn::Transform")
+            for transform in transforms:
+                transform_name = transform.get("Name")
+                transformer_class = transformers.get(transform_name)
+                macro_store = get_cloudformation_store(account_id, region_name).macros
+                parameters = resolve_transform_refs(
+                    payload=transform.get("Parameters") or {},
+                    stack_parameters=stack_parameters,
+                    mappings=mappings,
+                    conditions=conditions,
+                )
+                if transformer_class:
+                    transformer = transformer_class()
+                    transformed = transformer.transform(account_id, region_name, parameters)
+                    obj_copy.update(**transformed)
 
-            elif transform_name in macro_store:
-                obj_copy = deepcopy(obj)
-                obj_copy.pop("Fn::Transform")
-                result = execute_macro(
-                    account_id, region_name, obj_copy, transform, stack_parameters, parameters, True
-                )
-                return result
-            else:
-                LOG.warning(
-                    "Unsupported transform function '%s' used in %s", transform_name, stack_name
-                )
+                elif transform_name in macro_store:
+                    result = execute_macro(
+                        account_id,
+                        region_name,
+                        obj_copy,
+                        transform,
+                        stack_parameters,
+                        parameters,
+                        True,
+                    )
+                    if isinstance(result, dict):
+                        obj_copy.update(**result)
+                    else:
+                        obj_copy = result
+                else:
+                    LOG.warning(
+                        "Unsupported transform function '%s' used in %s", transform_name, stack_name
+                    )
+            return obj_copy
+
         return obj
 
     return recurse_object(template, _visit)
@@ -281,7 +330,7 @@ def execute_macro(
     stack_parameters: dict[str, EngineParameter],
     transformation_parameters: dict,
     is_intrinsic=False,
-) -> str:
+) -> dict:
     macro_definition = get_cloudformation_store(account_id, region_name).macros.get(macro["Name"])
     if not macro_definition:
         raise FailedTransformationException(
