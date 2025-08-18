@@ -112,6 +112,29 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             delta.after = CHANGESET_KNOWN_AFTER_APPLY
         return delta
 
+    def visit_node_intrinsic_function_fn_select(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        delta = PreprocEntityDelta()
+        if not is_nothing(arguments_delta.before):
+            idx = arguments_delta.before[0]
+            arr = arguments_delta.before[1]
+            try:
+                delta.before = arr[idx]
+            except IndexError:
+                delta.before = CHANGESET_KNOWN_AFTER_APPLY
+
+        if not is_nothing(arguments_delta.after):
+            idx = arguments_delta.after[0]
+            arr = arguments_delta.after[1]
+            try:
+                delta.after = arr[idx]
+            except IndexError:
+                delta.after = CHANGESET_KNOWN_AFTER_APPLY
+
+        return delta
+
     def _register_resource_change(
         self,
         logical_id: str,
