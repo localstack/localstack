@@ -1588,6 +1588,8 @@ class UpperCaseString(TypedDict, total=False):
 class TypeConverterEntry(TypedDict, total=False):
     key: Key
     type: Type
+
+
 TypeConverterEntries = List[TypeConverterEntry]
 
 
