@@ -289,6 +289,8 @@ class ApiStage(TypedDict, total=False):
 
 
 ListOfARNs = List[ProviderARN]
+
+
 class Authorizer(TypedDict, total=False):
     id: Optional[String]
     name: Optional[String]
@@ -300,6 +302,8 @@ class Authorizer(TypedDict, total=False):
     identitySource: Optional[String]
     identityValidationExpression: Optional[String]
     authorizerResultTtlInSeconds: Optional[NullableInteger]
+
+
 ListOfAuthorizer = List[Authorizer]
 
 
@@ -1111,6 +1115,8 @@ class IntegrationResponse(TypedDict, total=False):
 
 
 MapOfIntegrationResponse = Dict[String, IntegrationResponse]
+
+
 class Integration(TypedDict, total=False):
     type: Optional[IntegrationType]
     httpMethod: Optional[String]
@@ -1127,6 +1133,8 @@ class Integration(TypedDict, total=False):
     cacheKeyParameters: Optional[ListOfString]
     integrationResponses: Optional[MapOfIntegrationResponse]
     tlsConfig: Optional[TlsConfig]
+
+
 Long = int
 ListOfLong = List[Long]
 
@@ -1294,11 +1302,15 @@ class UsagePlan(TypedDict, total=False):
 
 
 ListOfUsagePlan = List[UsagePlan]
+
+
 class UsagePlanKey(TypedDict, total=False):
     id: Optional[String]
     type: Optional[String]
     value: Optional[String]
     name: Optional[String]
+
+
 ListOfUsagePlanKey = List[UsagePlanKey]
 
 
