@@ -1,12 +1,13 @@
 from __future__ import annotations
-import copy
 
+import copy
 import json
 import logging
 import os
 import re
+from collections.abc import Callable
 from copy import deepcopy
-from typing import Any, Callable
+from typing import Any
 
 import boto3
 from botocore.exceptions import ClientError

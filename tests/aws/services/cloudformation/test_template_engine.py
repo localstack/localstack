@@ -8,11 +8,11 @@ import botocore.exceptions
 import pytest
 import yaml
 from botocore.exceptions import ClientError
-from localstack.services.cloudformation.v2.utils import is_v2_engine
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skip_if_v2_provider
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
+from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.cloudformation_utils import load_template_file, load_template_raw
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers

@@ -6,7 +6,6 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
