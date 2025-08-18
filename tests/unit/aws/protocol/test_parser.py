@@ -1213,6 +1213,29 @@ def test_restxml_header_list_parsing():
     )
 
 
+def test_restxml_header_list_parsing_with_multiple_header_values():
+    """
+    Tests that list attributes that are encoded into headers are parsed correctly.
+    However, our serializer will by default encode the header list by concatenating it in a comma-separated string
+    Some different serializers, like the Java SDK or Go, will add a header entry for each value.
+    See https://github.com/aws/aws-sdk-go-v2/issues/1620 for example
+    It will send:
+    X-Amz-Object-Attributes: Checksum
+    X-Amz-Object-Attributes: ObjectParts
+    Instead of:
+    X-Amz-Object-Attributes: Checksum,ObjectParts
+    """
+    _botocore_parser_integration_test(
+        service="s3",
+        action="GetObjectAttributes",
+        Bucket="test-bucket",
+        Key="/test-key",
+        ObjectAttributes=["ObjectSize", "StorageClass"],
+        # override serialized headers with a manual list
+        headers={"X-Amz-Object-Attributes": ["ObjectSize", "StorageClass"]},
+    )
+
+
 def test_restxml_header_optional_list_parsing():
     """Tests that non-existing header list attributes are working correctly."""
     # OptionalObjectAttributes (the "x-amz-optional-object-attributes") in ListObjectsV2Request is optional

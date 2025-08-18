@@ -23,6 +23,7 @@ import boto3 as boto3
 import botocore
 import pytest
 import requests
+import urllib3
 import xmltodict
 from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
@@ -30,6 +31,7 @@ from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
+from urllib3 import HTTPHeaderDict
 
 import localstack.config
 from localstack import config
@@ -5264,6 +5266,54 @@ class TestS3:
         assert mpu_ordered_keys[2] == "ObjectParts"
         assert mpu_ordered_keys[3] == "StorageClass"
         assert mpu_ordered_keys[4] == "ObjectSize"
+
+    @markers.aws.only_localstack
+    def test_get_obj_attrs_multi_headers_behavior(self, s3_bucket, aws_client, region_name):
+        """
+        The Botocore serializer will by default encode the header list by concatenating it in a comma-separated string
+        Some different serializers, like the Java SDK or Go, will add a header entry for each value.
+        See https://github.com/aws/aws-sdk-go-v2/issues/1620 for example
+        We validate that we can properly parse the request when receiving the following:
+        X-Amz-Object-Attributes: Checksum
+        X-Amz-Object-Attributes: ObjectParts
+
+        Botocore default behavior would be:
+        X-Amz-Object-Attributes: Checksum,ObjectParts
+        """
+        key_name = "get-obj-attrs"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test")
+
+        bucket_url = _bucket_url(s3_bucket)
+
+        def get_urllib_headers_for_attributes(attributes: list[str]) -> HTTPHeaderDict:
+            _headers = mock_aws_request_headers(
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
+            )
+
+            urllib_headers = HTTPHeaderDict(headers=_headers)
+            for attr in attributes:
+                urllib_headers.add("x-amz-object-attributes", attr)
+            return urllib_headers
+
+        get_object_attributes_url = f"{bucket_url}/{key_name}?attributes"
+
+        possible_attrs = ["StorageClass", "ETag", "ObjectSize", "ObjectParts", "Checksum"]
+        # we use the low level `urllib3` and `HTTPHeaderDict` to make sure the headers are properly serialized
+        # as distinct headers and not a concatenated value
+        headers = get_urllib_headers_for_attributes(possible_attrs)
+        resp = urllib3.request(method="GET", url=get_object_attributes_url, headers=headers)
+
+        resp_dict = xmltodict.parse(resp.data)
+        get_attrs_response = resp_dict["GetObjectAttributesResponse"]
+        get_attrs_response.pop("@xmlns", None)
+        attributes_keys = list(get_attrs_response.keys())
+
+        assert attributes_keys[0] == "ETag"
+        assert attributes_keys[1] == "Checksum"
+        assert attributes_keys[2] == "StorageClass"
+        assert attributes_keys[3] == "ObjectSize"
 
     @markers.aws.validated
     def test_s3_timestamp_precision(self, s3_bucket, aws_client, aws_http_client_factory):
