@@ -237,7 +237,7 @@ class PickleEncoder(Encoder):
     def __init__(self, pickler_class: type[dill.Pickler] = None):
         self.pickler_class = pickler_class or Pickler
 
-    def encode(self, obj: Any, file: BinaryIO):
+    def encode(self, obj: Any, file: BinaryIO, py_type: type = None) -> Any:
         return self.pickler_class(file).dump(obj)
 
 
@@ -252,7 +252,7 @@ class PickleDecoder(Decoder):
     def __init__(self, unpickler_class: type[dill.Unpickler] = None):
         self.unpickler_class = unpickler_class or dill.Unpickler
 
-    def decode(self, file: BinaryIO) -> Any:
+    def decode(self, file: BinaryIO, py_type=None) -> Any:
         return self.unpickler_class(file).load()
 
 
