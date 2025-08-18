@@ -18,7 +18,7 @@
 
 # Git, Pipelines, GitHub config
 /.github @alexrashed @dfangl @dominikschubert @silv-io @k-a-il
-/.test_durations @alexrashed @silv-io @k-a-il
+/.test_durations @silv-io @k-a-il
 /.git-blame-ignore-revs @alexrashed @thrau
 /bin/release-dev.sh @thrau @alexrashed
 /bin/release-helper.sh @thrau @alexrashed
