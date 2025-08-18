@@ -2,7 +2,6 @@ import os.path
 
 import aws_cdk as cdk
 import pytest
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
