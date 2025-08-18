@@ -4,7 +4,6 @@ import urllib.parse
 
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack import config
 from localstack.testing.pytest import markers
@@ -47,10 +46,6 @@ def test_statemachine_definitionsubstitution(deploy_cfn_template, aws_client):
     assert "hello from statemachine" in execution_desc["output"]
 
 
-@skip_if_v2_provider(
-    "Engine",
-    reason="During change set describe the a Ref to a not yet deployed resource returns null which is an invalid input for Fn::Split",
-)
 @markers.aws.validated
 def test_nested_statemachine_with_sync2(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
