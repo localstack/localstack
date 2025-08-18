@@ -201,21 +201,13 @@ class EventBridgeParameters(TypedDict, total=False):
 
 TagMap = Dict[TagKey, TagValue]
 Tags = List[TagMap]
-
-
 class PlacementStrategy(TypedDict, total=False):
     field: Optional[PlacementStrategyField]
     type: Optional[PlacementStrategyType]
-
-
 PlacementStrategies = List[PlacementStrategy]
-
-
 class PlacementConstraint(TypedDict, total=False):
     expression: Optional[PlacementConstraintExpression]
     type: Optional[PlacementConstraintType]
-
-
 PlacementConstraints = List[PlacementConstraint]
 
 

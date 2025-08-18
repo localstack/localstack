@@ -896,16 +896,10 @@ class DisableRuleRequest(ServiceRequest):
 class PlacementStrategy(TypedDict, total=False):
     type: Optional[PlacementStrategyType]
     field: Optional[PlacementStrategyField]
-
-
 PlacementStrategies = List[PlacementStrategy]
-
-
 class PlacementConstraint(TypedDict, total=False):
     type: Optional[PlacementConstraintType]
     expression: Optional[PlacementConstraintExpression]
-
-
 PlacementConstraints = List[PlacementConstraint]
 
 

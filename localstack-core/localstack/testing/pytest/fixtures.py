@@ -23,7 +23,6 @@ from werkzeug import Request, Response
 from localstack import config
 from localstack.aws.api.cloudformation import CreateChangeSetInput, Parameter
 from localstack.aws.api.ec2 import CreateSecurityGroupRequest, CreateVpcEndpointRequest, VpcEndpoint
-from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -1393,8 +1392,6 @@ def create_lambda_function(aws_client, wait_until_lambda_ready, lambda_su_role):
             kwargs["role"] = lambda_su_role
 
         def _create_function():
-            kwargs["runtime"] = Runtime.go1_x
-            kwargs["handler"] = "index.handler"
             resp = testutil.create_lambda_function(func_name, **kwargs)
             lambda_arns_and_clients.append((resp["CreateFunctionResponse"]["FunctionArn"], client))
             wait_until_lambda_ready(function_name=func_name, client=client)
