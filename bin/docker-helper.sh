@@ -54,8 +54,7 @@ function _fail {
 function _get_current_version() {
     # check if setuptools_scm is installed, if not prompt to install. python3 is expected to be present
     if ! python3 -m pip -qqq show setuptools_scm > /dev/null ; then
-      echo "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'" >&2
-      exit 1
+      _fail "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'"
     fi
     python3 -m setuptools_scm
 }
@@ -282,7 +281,7 @@ function cmd-get-release-version() {
     if _is_release_commit; then
         _get_current_version
     else
-        echo "Not a release commit."
+        _fail "Not a release commit."
     fi
 }
 

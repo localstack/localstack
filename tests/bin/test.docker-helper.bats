@@ -276,9 +276,9 @@ setup_file() {
   [[ "$output" == "4.0.0" ]]
 }
 
-@test "get-release-version returns empty for a non-release commit" {
+@test "get-release-version throws error for non-release commits" {
   export TEST_SPECIFIC_VERSION="4.0.0.dev123"
   run bin/docker-helper.sh get-release-version
-  [ "$status" -eq 0 ]
+  [ "$status" -eq 1 ]
   [[ "$output" == "Not a release commit." ]]
 }
