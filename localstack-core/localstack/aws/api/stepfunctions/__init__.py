@@ -1014,8 +1014,6 @@ class HistoryEvent(TypedDict, total=False):
     mapRunFailedEventDetails: Optional[MapRunFailedEventDetails]
     mapRunRedrivenEventDetails: Optional[MapRunRedrivenEventDetails]
     evaluationFailedEventDetails: Optional[EvaluationFailedEventDetails]
-
-
 HistoryEventList = List[HistoryEvent]
 
 
@@ -1147,8 +1145,6 @@ class StateMachineListItem(TypedDict, total=False):
     name: Name
     type: StateMachineType
     creationDate: Timestamp
-
-
 StateMachineList = List[StateMachineListItem]
 
 
@@ -1344,8 +1340,6 @@ class ValidateStateMachineDefinitionDiagnostic(TypedDict, total=False):
 
 
 ValidateStateMachineDefinitionDiagnosticList = List[ValidateStateMachineDefinitionDiagnostic]
-
-
 class ValidateStateMachineDefinitionInput(TypedDict, total=False):
     definition: Definition
     type: Optional[StateMachineType]
