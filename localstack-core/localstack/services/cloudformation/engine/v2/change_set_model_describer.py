@@ -115,22 +115,23 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_select(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ):
+        # TODO: should this not _ALWAYS_ return CHANGESET_KNOWN_AFTER_APPLY?
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         delta = PreprocEntityDelta()
         if not is_nothing(arguments_delta.before):
             idx = arguments_delta.before[0]
             arr = arguments_delta.before[1]
             try:
-                delta.before = arr[idx]
-            except IndexError:
+                delta.before = arr[int(idx)]
+            except Exception:
                 delta.before = CHANGESET_KNOWN_AFTER_APPLY
 
         if not is_nothing(arguments_delta.after):
             idx = arguments_delta.after[0]
             arr = arguments_delta.after[1]
             try:
-                delta.after = arr[idx]
-            except IndexError:
+                delta.after = arr[int(idx)]
+            except Exception:
                 delta.after = CHANGESET_KNOWN_AFTER_APPLY
 
         return delta
