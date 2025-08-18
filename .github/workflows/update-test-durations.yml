@@ -2,7 +2,8 @@ name: Update test durations
 
 on:
   schedule:
-    - cron: 0 4 * 1-12 MON
+    # trigger on the 5th of each month at 4 AM UTC
+    - cron: 0 4 5 * *
   workflow_dispatch:
     inputs:
       publishMethod:
