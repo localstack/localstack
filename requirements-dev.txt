@@ -29,9 +29,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.3.0
+aws-cdk-cloud-assembly-schema==48.4.0
     # via aws-cdk-lib
-aws-cdk-lib==2.210.0
+aws-cdk-lib==2.211.0
     # via localstack-core
 aws-sam-translator==1.99.0
     # via
@@ -41,7 +41,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.42.11
     # via localstack-core
-awscrt==0.27.5
+awscrt==0.27.6
     # via localstack-core
 boto3==1.40.11
     # via
@@ -68,7 +68,7 @@ cachetools==6.1.0
     #   localstack-core (pyproject.toml)
 cattrs==25.1.1
     # via jsii
-cbor2==5.6.5
+cbor2==5.7.0
     # via localstack-core
 certifi==2025.8.3
     # via
@@ -80,7 +80,7 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.38.2
+cfn-lint==1.39.0
     # via moto-ext
 charset-normalizer==3.4.3
     # via requests
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.10.3
+coverage==7.10.4
     # via
     #   coveralls
     #   localstack-core
@@ -109,7 +109,7 @@ cryptography==45.0.6
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.1.2
+cython==3.1.3
     # via localstack-core (pyproject.toml)
 decorator==5.2.1
     # via jsonpath-rw
@@ -142,7 +142,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.18.0
+filelock==3.19.1
     # via virtualenv
 graphql-core==3.2.6
     # via moto-ext
@@ -202,7 +202,7 @@ jsii==1.113.0
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
-json5==0.12.0
+json5==0.12.1
     # via localstack-core
 jsonpatch==1.33
     # via
@@ -221,7 +221,7 @@ jsonpickle==4.1.1
     #   localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.25.0
+jsonschema==4.25.1
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -404,7 +404,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 regex==2025.7.34
     # via cfn-lint
-requests==2.32.4
+requests==2.32.5
     # via
     #   coveralls
     #   docker
@@ -437,7 +437,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.8
+ruff==0.12.9
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.1
     # via
@@ -494,7 +494,7 @@ urllib3==2.5.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.33.1
+virtualenv==20.34.0
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
@@ -505,7 +505,7 @@ werkzeug==3.1.3
     #   openapi-core
     #   pytest-httpserver
     #   rolo
-wrapt==1.17.2
+wrapt==1.17.3
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn
