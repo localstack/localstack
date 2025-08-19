@@ -3,7 +3,7 @@
 import io
 import os
 import pathlib
-from typing import IO, Any, Protocol, runtime_checkable, Type
+from typing import IO, Any, Protocol, runtime_checkable
 
 
 class StateContainer(Protocol):
@@ -97,7 +97,7 @@ class AssetDirectory:
 
 
 class Encoder:
-    def encodes(self, obj: Any, obj_type: Type = None) -> bytes:
+    def encodes(self, obj: Any, obj_type: type = None) -> bytes:
         """
         Encode an object into bytes.
 
@@ -109,7 +109,7 @@ class Encoder:
         self.encode(obj, b)
         return b.getvalue()
 
-    def encode(self, obj: Any, file: IO[bytes], obj_type: Type = None):
+    def encode(self, obj: Any, file: IO[bytes], obj_type: type = None):
         """
         Encode an object into bytes.
 
@@ -121,7 +121,7 @@ class Encoder:
 
 
 class Decoder:
-    def decodes(self, data: bytes, expected_type: Type = None) -> Any:
+    def decodes(self, data: bytes, expected_type: type = None) -> Any:
         """
         Decode a previously encoded object.
 
@@ -132,7 +132,7 @@ class Decoder:
         """
         return self.decode(io.BytesIO(data), expected_type)
 
-    def decode(self, file: IO[bytes], expected_type: Type = None) -> Any:
+    def decode(self, file: IO[bytes], expected_type: type = None) -> Any:
         """
         Decode a previously encoded object.
 
