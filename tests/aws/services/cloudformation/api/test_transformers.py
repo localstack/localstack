@@ -215,7 +215,6 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
         call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
 
 
-@skip_if_v2_provider("LanguageExtensions")
 class TestLanguageExtensionsTransform:
     """
     Manual testing of the language extensions trasnform
@@ -239,6 +238,7 @@ class TestLanguageExtensionsTransform:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId", "$..StackId"])
+    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_foreach(self, transform_template, snapshot):
         topic_names = [
             f"mytopic1{short_uid()}",
@@ -268,6 +268,7 @@ class TestLanguageExtensionsTransform:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
     )
+    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_foreach_multiple_resources(self, transform_template, snapshot):
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
@@ -294,6 +295,7 @@ class TestLanguageExtensionsTransform:
             "$..StackResources..StackId",
         ]
     )
+    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_foreach_use_case(self, aws_client, transform_template, snapshot):
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
@@ -334,6 +336,7 @@ class TestLanguageExtensionsTransform:
             "$..StackResources..StackId",
         ]
     )
+    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_to_json_string(self, aws_client, transform_template, snapshot):
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
