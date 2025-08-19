@@ -2806,7 +2806,7 @@ class TestApigatewayTestInvoke:
             target_resource_id=resource_id,
             method="GET",
         )
-        # assert "HTTP Method: GET, Resource Path: /pets/123" in response["log"]
+        assert "HTTP Method: GET, Resource Path: /pets/{petId}" in response["log"]
         snapshot.match(
             "test-invoke-method-get-pets-id-no-path",
             apigw_test_invoke_response_formatter(response),
@@ -2821,7 +2821,7 @@ class TestApigatewayTestInvoke:
             path_with_query_string="/random/test",
             method="GET",
         )
-        # assert "HTTP Method: GET, Resource Path: /pets/123" in response["log"]
+        assert "HTTP Method: GET, Resource Path: /random/test" in response["log"]
         snapshot.match(
             "test-invoke-method-get-pets-id-bad-path",
             apigw_test_invoke_response_formatter(response),

@@ -1,4 +1,5 @@
 import datetime
+import logging
 from urllib.parse import parse_qs
 
 from rolo import Request
@@ -21,6 +22,9 @@ from .variables import (
     ContextVarsRequestOverride,
     ContextVarsResponseOverride,
 )
+
+LOG = logging.getLogger(__name__)
+
 
 # TODO: we probably need to write and populate those logs as part of the handler chain itself
 #  and store it in the InvocationContext. That way, we could also retrieve in when calling TestInvoke
@@ -185,7 +189,14 @@ def create_test_invocation_context(
         # this is AWS behavior, it will accept any value for the `pathWithQueryString`, even if it doesn't match
         # the expected format. It will just fall back to no value if it cannot parse the path parameters out of it
         _, path_parameters = RestAPIResourceRouter(deployment).match(invocation_context)
-    except Exception:
+    except Exception as e:
+        LOG.warning(
+            "Error while trying to extract path parameters from user-provided 'pathWithQueryString=%s' "
+            "for the following resource path: '%s'. Error: '%s'",
+            path,
+            resource_path,
+            e,
+        )
         path_parameters = {}
 
     invocation_request["path_parameters"] = path_parameters
