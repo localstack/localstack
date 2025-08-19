@@ -11,6 +11,7 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
 )
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
     ApiConfigurationError,
+    InternalServerError,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import (
     IntegrationResponseHandler,
@@ -332,7 +333,7 @@ class TestIntegrationResponseBinaryHandling:
 
         outcome = possible_values.get(expected, input_data)
         if outcome is None:
-            with pytest.raises(Exception):
+            with pytest.raises(InternalServerError):
                 convert(body=input_data, context=ctx, content_handling=content_handling)
         else:
             converted_body = convert(

@@ -336,7 +336,7 @@ def test_create_change_set_update_nonexisting(aws_client):
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
 
-    with pytest.raises(Exception) as ex:
+    with pytest.raises(ClientError) as ex:
         response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
@@ -377,7 +377,7 @@ def test_create_change_set_missing_stackname(aws_client):
     template_path = os.path.join(
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
-    with pytest.raises(Exception):
+    with pytest.raises(ClientError):
         aws_client.cloudformation.create_change_set(
             StackName="",
             ChangeSetName=change_set_name,
