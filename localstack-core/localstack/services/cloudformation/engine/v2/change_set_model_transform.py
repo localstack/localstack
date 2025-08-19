@@ -11,10 +11,13 @@ from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
+    ResolveRefsRecursivelyContext,
+    apply_language_extensions_transform,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -154,8 +157,20 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
     ) -> dict:
         transform_name = global_transform.name
         if transform_name == EXTENSIONS_TRANSFORM:
-            # Applied lazily in downstream tasks (see ChangeSetModelPreproc).
-            transformed_template = template
+            resources = template["Resources"]
+            mappings = template.get("Mappings", {})
+            conditions = template.get("Conditions", {})
+
+            resolve_context = ResolveRefsRecursivelyContext(
+                self._change_set.account_id,
+                self._change_set.region_name,
+                self._change_set.stack.stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters,
+            )
+            transformed_template = apply_language_extensions_transform(template, resolve_context)
         elif transform_name == SERVERLESS_TRANSFORM:
             transformed_template = self._apply_global_serverless_transformation(
                 region_name=self._change_set.region_name,
@@ -188,9 +203,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
     def _execute_global_transforms(self) -> tuple[dict, dict]:
         node_template = self._change_set.update_model.node_template
-        parameters_delta = self.visit_node_parameters(node_template.parameters)
-        parameters_before = parameters_delta.before
-        parameters_after = parameters_delta.after
 
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
@@ -205,9 +217,11 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             else:
                 for before_global_transform in transform_before:
                     if not is_nothing(before_global_transform.name):
+                        before_parameters = {}
+
                         transformed_before_template = self._apply_global_transform(
                             global_transform=before_global_transform,
-                            parameters=parameters_before,
+                            parameters=before_parameters,
                             template=transformed_before_template,
                         )
 
@@ -221,9 +235,17 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             transformed_after_template = self._after_template
             for after_global_transform in transform_after:
                 if not is_nothing(after_global_transform.name):
+                    after_parameters: dict[str, StackParameter] = {}
+                    for name, engine_param in self._after_parameters.items():
+                        after_parameters[name] = StackParameter(
+                            ParameterKey=name,
+                            ParameterValue=engine_parameter_value(engine_param),
+                            ResolvedValue=engine_param.get("resolved_value"),
+                            ParameterType=engine_param["type_"],
+                        )
                     transformed_after_template = self._apply_global_transform(
                         global_transform=after_global_transform,
-                        parameters=parameters_after,
+                        parameters=after_parameters,
                         template=transformed_after_template,
                     )
             # Macro transformations won't remove the transform from the template
