@@ -226,7 +226,10 @@ class CloudformationProviderV2(CloudformationProvider):
             given_value = parameters.get(name)
             default_value = parameter.get("Default")
             resolved_parameter = EngineParameter(
-                type_=parameter["Type"], given_value=given_value, default_value=default_value
+                type_=parameter["Type"],
+                given_value=given_value,
+                default_value=default_value,
+                no_echo=parameter.get("NoEcho"),
             )
 
             # TODO: support other parameter types
@@ -501,9 +504,7 @@ class CloudformationProviderV2(CloudformationProvider):
             change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
             change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
         else:
-            if stack.status in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-                stack.set_stack_status(StackStatus.UPDATE_IN_PROGRESS)
-            else:
+            if stack.status not in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
                 stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
 
             change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
@@ -600,9 +601,45 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return ExecuteChangeSetOutput()
 
-    def _describe_change_set(
-        self, change_set: ChangeSet, include_property_values: bool
+    @staticmethod
+    def _render_resolved_parameters(
+        resolved_parameters: dict[str, EngineParameter],
+    ) -> list[Parameter]:
+        result = []
+        for name, resolved_parameter in resolved_parameters.items():
+            parameter = Parameter(
+                ParameterKey=name,
+                ParameterValue=resolved_parameter.get("given_value")
+                or resolved_parameter.get("default_value"),
+            )
+            if resolved_value := resolved_parameter.get("resolved_value"):
+                parameter["ResolvedValue"] = resolved_value
+
+            # TODO :what happens to the resolved value?
+            if resolved_parameter.get("no_echo", False):
+                parameter["ParameterValue"] = "****"
+            result.append(parameter)
+
+        return result
+
+    @handler("DescribeChangeSet")
+    def describe_change_set(
+        self,
+        context: RequestContext,
+        change_set_name: ChangeSetNameOrId,
+        stack_name: StackNameOrId | None = None,
+        next_token: NextToken | None = None,
+        include_property_values: IncludePropertyValues | None = None,
+        **kwargs,
     ) -> DescribeChangeSetOutput:
+        # TODO add support for include_property_values
+        # only relevant if change_set_name isn't an ARN
+        state = get_cloudformation_store(context.account_id, context.region)
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
+
+        if not change_set:
+            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
+
         # TODO: The ChangeSetModelDescriber currently matches AWS behavior by listing
         #       resource changes in the order they appear in the template. However, when
         #       a resource change is triggered indirectly (e.g., via Ref or GetAtt), the
@@ -634,45 +671,6 @@ class CloudformationProviderV2(CloudformationProvider):
         )
         if change_set.resolved_parameters:
             result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
-        return result
-
-    @staticmethod
-    def _render_resolved_parameters(
-        resolved_parameters: dict[str, EngineParameter],
-    ) -> list[Parameter]:
-        result = []
-        for name, resolved_parameter in resolved_parameters.items():
-            parameter = Parameter(
-                ParameterKey=name,
-                ParameterValue=resolved_parameter.get("given_value")
-                or resolved_parameter.get("default_value"),
-            )
-            if resolved_value := resolved_parameter.get("resolved_value"):
-                parameter["ResolvedValue"] = resolved_value
-            result.append(parameter)
-
-        return result
-
-    @handler("DescribeChangeSet")
-    def describe_change_set(
-        self,
-        context: RequestContext,
-        change_set_name: ChangeSetNameOrId,
-        stack_name: StackNameOrId | None = None,
-        next_token: NextToken | None = None,
-        include_property_values: IncludePropertyValues | None = None,
-        **kwargs,
-    ) -> DescribeChangeSetOutput:
-        # TODO add support for include_property_values
-        # only relevant if change_set_name isn't an ARN
-        state = get_cloudformation_store(context.account_id, context.region)
-        change_set = find_change_set_v2(state, change_set_name, stack_name)
-
-        if not change_set:
-            raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
-        result = self._describe_change_set(
-            change_set=change_set, include_property_values=include_property_values or False
-        )
         return result
 
     @handler("DeleteChangeSet")
