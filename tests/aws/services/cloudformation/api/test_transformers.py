@@ -290,6 +290,10 @@ class TestLanguageExtensionsTransform:
             "$..OutputValue",
             "$..StackResources..PhysicalResourceId",
             "$..StackResources..StackId",
+            # since we don't support these resources in LocalStack community, we show a message
+            # in the ResourceStatusReason stating our lack of support. This should be excluded in
+            # the snapshot assertion
+            "$..StackResources..ResourceStatusReason",
         ]
     )
     def test_transform_foreach_use_case(self, aws_client, transform_template, snapshot):
