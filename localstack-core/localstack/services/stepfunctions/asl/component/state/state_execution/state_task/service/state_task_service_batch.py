@@ -71,12 +71,12 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         # Attaches to the ContainerOverrides environment variables the AWS managed flags.
         container_overrides = parameters.get("ContainerOverrides")
         if container_overrides is None:
-            container_overrides = dict()
+            container_overrides = {}
             parameters["ContainerOverrides"] = container_overrides
 
         environment = container_overrides.get("Environment")
         if environment is None:
-            environment = list()
+            environment = []
             container_overrides["Environment"] = environment
 
         environment.append(
@@ -118,7 +118,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
                     "Proxy: null",
                 ]
             )
-            cause = f"Error executing request, Exception : {error_message}, RequestId: {request_id} ({response_details})"
+            cause = f"{error_message} ({response_details})"
             return FailureEvent(
                 env=env,
                 error_name=CustomErrorName(error_name),

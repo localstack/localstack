@@ -466,10 +466,11 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                         preferred_port=preferred_port,
                     )
                 except Exception:
-                    LOG.exception(
+                    LOG.error(
                         "Could not restore domain %s in region %s.",
                         domain_name,
                         region,
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
                     )
 
     def on_before_state_reset(self):

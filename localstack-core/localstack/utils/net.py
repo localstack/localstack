@@ -97,7 +97,12 @@ def is_port_open(
                         sock.recvfrom(1024)
                 except Exception:
                     if not quiet:
-                        LOG.exception("Error connecting to UDP port %s:%s", host, port)
+                        LOG.error(
+                            "Error connecting to UDP port %s:%s",
+                            host,
+                            port,
+                            exc_info=LOG.isEnabledFor(logging.DEBUG),
+                        )
                     return False
             elif nw_protocol == socket.SOCK_STREAM:
                 result = sock.connect_ex((host, port))
@@ -342,7 +347,8 @@ class PortRange:
         if end > self.end:
             raise ValueError(f"end not in range ({end} < {self.end})")
 
-        port_range = PortRange(start, end)
+        # ensures that we return an instance of a subclass
+        port_range = type(self)(start, end)
         port_range._ports_cache = self._ports_cache
         port_range._ports_lock = self._ports_lock
         return port_range

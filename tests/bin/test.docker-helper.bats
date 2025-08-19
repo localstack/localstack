@@ -13,6 +13,9 @@ setup_file() {
     "branch")
       echo "main"
       ;;
+    "describe")
+      echo "$TEST_TAG"
+      ;;
     "remote")
       echo "origin	git@github.com:localstack/localstack.git (push)"
       ;;
@@ -26,8 +29,13 @@ setup_file() {
   function python3() {
     case $2 in
     "setuptools_scm")
-      # setuptools_scm returns out test version
-      echo "$TEST_SPECIFIC_VERSION"
+      # setuptools_scm returns our test version; prefer TEST_TAG if set
+      if [ -n "${TEST_TAG-}" ]; then
+        # strip leading 'v' if present (e.g., v1.2.3 -> 1.2.3)
+        echo "${TEST_TAG#v}"
+      else
+        echo "$TEST_SPECIFIC_VERSION"
+      fi
       ;;
     "pip")
       # pip exits with $TEST_PIP_EXIT_CODE
@@ -117,11 +125,41 @@ setup_file() {
 @test "push fails on non-default branch" {
   export MAIN_BRANCH="non-existing-branch"
   export IMAGE_NAME="localstack/test"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
   export PLATFORM=amd64
   run bin/docker-helper.sh push
   [ "$status" -ne 0 ]
   [[ "$output" =~ "is not non-existing-branch" ]]
 }
+
+@test "push succeeds on tag without main branch" {
+  export MAIN_BRANCH="non-existing-branch"
+  export IMAGE_NAME="localstack/test"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
+  export PLATFORM=amd64
+  export TEST_TAG=v1.0.0
+  run bin/docker-helper.sh push
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "docker push $IMAGE_NAME:1-$PLATFORM" ]]
+  [[ "$output" =~ "docker push $IMAGE_NAME:1.0-$PLATFORM" ]]
+  [[ "$output" =~ "docker push $IMAGE_NAME:1.0.0-$PLATFORM" ]]
+  [[ "$output" =~ "docker push $IMAGE_NAME:stable-$PLATFORM" ]]
+}
+
+@test "push fails on malformed tag" {
+  export MAIN_BRANCH="non-existing-branch"
+  export IMAGE_NAME="localstack/test"
+  export DOCKER_USERNAME=test
+  export DOCKER_PASSWORD=test
+  export PLATFORM=amd64
+  export TEST_TAG=not-a-version
+  run bin/docker-helper.sh push
+  [ "$status" -ne 0 ]
+  [[ "$output" =~ "tag '$TEST_TAG' is not a version tag" ]]
+}
+
 
 @test "push fails without PLATFORM" {
   export IMAGE_NAME="localstack/test"
@@ -265,4 +303,20 @@ setup_file() {
   run bin/docker-helper.sh build
   [ "$status" -eq 1 ]
   [[ "$output" =~ "ERROR" ]]
+}
+
+# get-release-version
+
+@test "get-release-version returns version for a release commit" {
+  export TEST_SPECIFIC_VERSION="4.0.0"
+  run bin/docker-helper.sh get-release-version
+  [ "$status" -eq 0 ]
+  [[ "$output" == "4.0.0" ]]
+}
+
+@test "get-release-version throws error for non-release commits" {
+  export TEST_SPECIFIC_VERSION="4.0.0.dev123"
+  run bin/docker-helper.sh get-release-version
+  [ "$status" -eq 1 ]
+  [[ "$output" == "Not a release commit." ]]
 }

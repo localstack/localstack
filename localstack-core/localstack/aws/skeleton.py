@@ -53,7 +53,7 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
     handlers: dict[str, HandlerAttributes] = {}
     cls_tree = reversed(list(cls_tree))
     for cls in cls_tree:
-        if cls == object:
+        if cls is object:
             continue
 
         for name, fn in inspect.getmembers(cls, inspect.isfunction):

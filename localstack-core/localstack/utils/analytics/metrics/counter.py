@@ -113,11 +113,11 @@ class Counter(Metric, ThreadSafeCounter):
     def collect(self) -> list[CounterPayload]:
         """Collects the metric unless events are disabled."""
         if config.DISABLE_EVENTS:
-            return list()
+            return []
 
         if self._count == 0:
             # Return an empty list if the count is 0, as there are no metrics to send to the analytics backend.
-            return list()
+            return []
 
         return [
             CounterPayload(
@@ -184,7 +184,7 @@ class LabeledCounter(Metric):
 
     def collect(self) -> list[LabeledCounterPayload]:
         if config.DISABLE_EVENTS:
-            return list()
+            return []
 
         payload = []
         num_labels = len(self._labels)
@@ -200,10 +200,7 @@ class LabeledCounter(Metric):
                 )
 
             # Create labels dictionary
-            labels_dict = {
-                label_name: label_value
-                for label_name, label_value in zip(self._labels, label_values)
-            }
+            labels_dict = dict(zip(self._labels, label_values))
 
             payload.append(
                 LabeledCounterPayload(

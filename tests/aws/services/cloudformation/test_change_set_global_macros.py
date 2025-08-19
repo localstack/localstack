@@ -11,7 +11,7 @@ from localstack.utils.functions import call_safe
 from localstack.utils.strings import short_uid
 
 
-@skip_if_v1_provider(reason="Requires the V2 engine")
+@skip_if_v1_provider("Requires the V2 engine")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
@@ -19,7 +19,6 @@ from localstack.utils.strings import short_uid
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -104,8 +103,15 @@ class TestChangeSetGlobalMacros:
         snapshot,
         deploy_cfn_template,
         create_lambda_function,
-        capture_update_process,
     ):
+        """
+        1. create the macro
+        2. deploy the first version of the template including the template
+        3. delete the first macro
+        4. create a second macro (same implementation)
+        5. update the stack adding a second SSM parameter
+        6. the deploy should work as the new macro is in place
+        """
         snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..Outputs..OutputValue",
@@ -120,7 +126,7 @@ class TestChangeSetGlobalMacros:
 
         # Create the macro to be used in the first version of the template.
         macro_name_first = f"SubstitutionMacroFirst-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(macro_name_first, "macro-name-first"))
+        snapshot.add_transformer(RegexTransformer(macro_name_first, "<macro-name-first>"))
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
@@ -156,7 +162,7 @@ class TestChangeSetGlobalMacros:
             ChangeSetName=change_set_name,
             TemplateBody=json.dumps(template_1),
             ChangeSetType="CREATE",
-            Parameters=list(),
+            Parameters=[],
         )
         stack_id = change_set_details["StackId"]
         change_set_id = change_set_details["Id"]
@@ -166,7 +172,7 @@ class TestChangeSetGlobalMacros:
         cleanups.append(
             lambda: call_safe(
                 aws_client_no_retry.cloudformation.delete_change_set,
-                kwargs=dict(ChangeSetName=change_set_id),
+                kwargs={"ChangeSetName": change_set_id},
             )
         )
         # Describe
@@ -188,7 +194,7 @@ class TestChangeSetGlobalMacros:
         # ensure stack deletion
         cleanups.append(
             lambda: call_safe(
-                aws_client_no_retry.cloudformation.delete_stack, kwargs=dict(StackName=stack_id)
+                aws_client_no_retry.cloudformation.delete_stack, kwargs={"StackName": stack_id}
             )
         )
         describe = aws_client_no_retry.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
@@ -201,7 +207,7 @@ class TestChangeSetGlobalMacros:
 
         # Create the macro to be used in the second version of the template.
         macro_name_second = f"SubstitutionMacroSecond-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(macro_name_second, "macro-name-second"))
+        snapshot.add_transformer(RegexTransformer(macro_name_second, "<macro-name-second>"))
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
@@ -240,7 +246,7 @@ class TestChangeSetGlobalMacros:
             ChangeSetName=change_set_name,
             TemplateBody=json.dumps(template_2),
             ChangeSetType="UPDATE",
-            Parameters=list(),
+            Parameters=[],
         )
         stack_id = change_set_details["StackId"]
         change_set_id = change_set_details["Id"]

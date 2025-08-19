@@ -50,7 +50,11 @@ class MethodRequestHandler(RestApiGatewayHandler):
         # check if there is a validator for this request
         if not (validator := rest_api.validators.get(request_validator_id)):
             # TODO Should we raise an exception instead?
-            LOG.exception("No validator were found with matching id: '%s'", request_validator_id)
+            LOG.error(
+                "No validator were found with matching id: '%s'",
+                request_validator_id,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
             return
 
         if self.should_validate_request(validator) and (
@@ -87,9 +91,10 @@ class MethodRequestHandler(RestApiGatewayHandler):
         # try to get the resolved model first
         resolved_schema = model_resolver.get_resolved_model()
         if not resolved_schema:
-            LOG.exception(
+            LOG.error(
                 "An exception occurred while trying to validate the request: could not resolve the model '%s'",
                 model_name,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return False
 

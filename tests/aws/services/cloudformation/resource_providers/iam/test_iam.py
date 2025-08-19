@@ -2,7 +2,6 @@ import json
 import os
 
 import pytest
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.services.iam.provider import SERVICE_LINKED_ROLE_PATH_PREFIX
 from localstack.testing.pytest import markers
@@ -202,7 +201,6 @@ def test_update_inline_policy(deploy_cfn_template, snapshot, aws_client):
     snapshot.match("role_updated_inline_policy", role_updated_inline_policy_resource)
 
 
-@skip_if_v2_provider(reason="CFNV2:Engine Ref: AWS::NoValue")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

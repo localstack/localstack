@@ -104,8 +104,6 @@ class TestCdkInit:
     )
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            # CFNV2:Provider
-            "$..Description",
             # Wrong format, they are our internal parameter format
             "$..Parameters",
             # from the list of changes
@@ -115,14 +113,12 @@ class TestCdkInit:
             "$..Changes..Scope",
             # provider
             "$..IncludeNestedStacks",
-            "$..NotificationARNs",
-            # CFNV2:Describe not supported yet
-            "$..Outputs..ExportName",
             # mismatch between amazonaws.com and localhost.localstack.cloud
             "$..Outputs..OutputValue",
+            "$..Outputs..Description",
         ]
     )
-    @skip_if_v1_provider(reason="Changes array not in parity")
+    @skip_if_v1_provider("Changes array not in parity")
     def test_cdk_bootstrap_redeploy(
         self,
         aws_client,

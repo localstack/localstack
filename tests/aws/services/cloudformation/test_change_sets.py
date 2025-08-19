@@ -10,14 +10,13 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@skip_if_v1_provider(reason="Requires the V2 engine")
+@skip_if_v1_provider("Requires the V2 engine")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "delete-describe..*",
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -781,7 +780,7 @@ class TestCaptureUpdateProcess:
         snapshot.match("parameter-2", parameter)
 
 
-@skip_if_v1_provider(reason="Not supported with v1 engine")
+@skip_if_v1_provider("Not supported with v1 engine")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -789,7 +788,6 @@ class TestCaptureUpdateProcess:
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -860,7 +858,7 @@ def test_dynamic_ssm_parameter_lookup(
     )
 
 
-@skip_if_v1_provider(reason="Not supported with v1 engine")
+@skip_if_v1_provider("Not supported with v1 engine")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -868,7 +866,6 @@ def test_dynamic_ssm_parameter_lookup(
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",

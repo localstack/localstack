@@ -258,7 +258,7 @@ class Execution:
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
         env = self.exec_worker.env
-        event_history: HistoryEventList = list()
+        event_history: HistoryEventList = []
         if env is not None:
             # The execution has not started yet.
             event_history: HistoryEventList = env.event_manager.get_event_history()
@@ -323,7 +323,7 @@ class Execution:
 
     def publish_execution_status_change_event(self):
         input_value = (
-            dict() if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
+            {} if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
         )
         output_value = (
             None if self.output is None else to_json_str(self.output, separators=(",", ":"))
@@ -356,10 +356,11 @@ class Execution:
         try:
             self._get_events_client().put_events(Entries=[entry])
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "Unable to send notification of Entry='%s' for Step Function execution with Arn='%s' to EventBridge.",
                 entry,
                 self.exec_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 

@@ -15,7 +15,7 @@ class SyntaxErrorListener(ErrorListener):
 
     def __init__(self):
         super().__init__()
-        self.errors = list()
+        self.errors = []
 
     def syntaxError(self, recognizer, offending_symbol, line, column, message, exception):
         log_parts = [f"line {line}:{column}"]

@@ -606,7 +606,7 @@ class TestCallback:
 
         # Launch multiple execution of the same state machine.
         execution_count = 6
-        execution_arns = list()
+        execution_arns = []
         for _ in range(execution_count):
             execution_arn = aws_client.stepfunctions.start_execution(
                 stateMachineArn=state_machine_arn, input=exec_input

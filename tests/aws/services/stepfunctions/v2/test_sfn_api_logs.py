@@ -33,7 +33,7 @@ _TEST_INVALID_LOGGING_CONFIGURATIONS = [
 ]
 _TEST_INCOMPLETE_LOGGING_CONFIGURATIONS = [
     LoggingConfiguration(),
-    LoggingConfiguration(destinations=list()),
+    LoggingConfiguration(destinations=[]),
 ]
 
 

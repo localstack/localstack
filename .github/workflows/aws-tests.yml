@@ -159,7 +159,7 @@ jobs:
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: localstack
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
@@ -209,7 +209,7 @@ jobs:
       cloudformation-v2: ${{ steps.changes.outputs.cloudformation-v2 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -308,7 +308,7 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-preflight
 
@@ -317,7 +317,7 @@ jobs:
         if: success() || failure()
         with:
           files: |
-            test-results-preflight/*.xml
+            **/pytest-junit-*.xml
           check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
           test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
@@ -365,13 +365,13 @@ jobs:
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
       - name: Download Lambda Common packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: lambda-common-${{ env.PLATFORM }}
           path: |
@@ -384,7 +384,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -452,7 +452,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -511,13 +511,13 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Bootstrap Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         if: ${{ matrix.arch == 'amd64' }}
         with:
           pattern: test-results-bootstrap
 
       - name: Download Integration Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-integration-${{ matrix.arch }}-*
 
@@ -572,7 +572,7 @@ jobs:
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -631,7 +631,7 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Acceptance Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-acceptance-${{ matrix.arch }}
 
@@ -659,14 +659,14 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -709,14 +709,14 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -758,14 +758,14 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -809,14 +809,14 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -859,22 +859,22 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Cloudformation v2 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-cloudformation-v2
 
       - name: Download EventBridge v1 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-events-v1
 
       - name: Download DynamoDB v2 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-dynamodb-v2
 
       - name: Download CloudWatch v1 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-cloudwatch-v1
 
@@ -905,7 +905,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0

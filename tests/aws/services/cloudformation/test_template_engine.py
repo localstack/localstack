@@ -114,7 +114,7 @@ class TestIntrinsicFunctions:
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
         assert converted_string == deployed.outputs["Encoded"]
 
-    @skip_if_v2_provider(reason="CFNV2:LanguageExtensions")
+    @skip_if_v2_provider("LanguageExtensions")
     @markers.aws.validated
     def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(
@@ -276,6 +276,16 @@ class TestIntrinsicFunctions:
 
         snapshot.match("join-output", stack.outputs)
 
+    @markers.aws.validated
+    def test_fn_select_has_intrinsic_function(self, deploy_cfn_template, snapshot, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/fn_select_fn_mapp.yml"
+            )
+        )
+
+        snapshot.match("fn-select-fn-map-output", stack.outputs)
+
 
 class TestImports:
     @markers.aws.validated
@@ -340,7 +350,6 @@ class TestSsmParameters:
         )
 
     @markers.aws.validated
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -356,7 +365,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
+    @skip_if_v2_provider("Resolve")
     @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
         parameter_key = f"param-key-{short_uid()}"
@@ -383,7 +392,6 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
-    @skip_if_v2_provider(reason="CFNV2:Resolve")
     @markers.aws.needs_fixing
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
@@ -401,7 +409,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
-    @skip_if_v1_provider(reason="Not supported in the v1 provider")
+    @skip_if_v1_provider("Not supported in the v1 provider")
     @markers.aws.validated
     def test_resolve_ssm_missing_parameter(self, snapshot, deploy_cfn_template):
         template = {
@@ -461,7 +469,6 @@ class TestSsmParameters:
 
         assert ssm_parameter == key_value
 
-    @skip_if_v2_provider("CFNV2:Resolve stringlist type not supported yet")
     @markers.aws.validated
     def test_create_change_set_with_ssm_parameter_list(
         self, deploy_cfn_template, aws_client, region_name, account_id, snapshot
@@ -575,7 +582,6 @@ class TestPreviousValues:
         assert len(stack_describe_response["Outputs"]) == 2
 
 
-@skip_if_v2_provider(reason="CFNV2:Imports")
 class TestImportValues:
     @markers.aws.validated
     def test_cfn_with_exports(self, deploy_cfn_template, aws_client, snapshot):
@@ -661,7 +667,6 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @skip_if_v2_provider(reason="CFNV2:Macros")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -722,9 +727,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(
-        reason="CFNV2:Fn::Transform as resource property with missing Name and Parameters fields"
-    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -785,7 +787,6 @@ class TestMacros:
         snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(reason="Fn::Transform")
     @markers.aws.validated
     def test_attribute_uses_macro(self, deploy_cfn_template, create_lambda_function, aws_client):
         macro_function_path = os.path.join(
@@ -821,7 +822,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
+    @skip_if_v1_provider("V1 is unable to resolve fn::transform with lists")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -862,7 +863,6 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -932,7 +932,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.key_value("RoleName", "role-name"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(reason="CFNV2:GetTemplate")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -994,7 +993,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1047,7 +1045,6 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1069,7 +1066,6 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @skip_if_v2_provider(reason="CFNV2:GetTemplate")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
@@ -1120,7 +1116,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @pytest.mark.parametrize(
         "macro_function",
         [
@@ -1215,7 +1210,7 @@ class TestMacros:
         assert bucket_name_output
 
         tagging = aws_client.s3.get_bucket_tagging(Bucket=bucket_name_output)
-        tags_s3 = [tag for tag in tagging["TagSet"]]
+        tags_s3 = list(tagging["TagSet"])
 
         resp = []
         for tag in tags_s3:
@@ -1227,7 +1222,6 @@ class TestMacros:
 
 
 class TestStackEvents:
-    @skip_if_v2_provider(reason="CFNV2:Validation")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

@@ -2,7 +2,8 @@ name: Update test durations
 
 on:
   schedule:
-    - cron: 0 4 * 1-12 MON
+    # trigger on the 5th of each month at 4 AM UTC
+    - cron: 0 4 5 * *
   workflow_dispatch:
     inputs:
       publishMethod:
@@ -22,7 +23,7 @@ jobs:
     name: "Download, merge and create PR with test durations"
     runs-on: ubuntu-latest
     steps:
-        - uses: actions/checkout@v4
+        - uses: actions/checkout@v5
           with:
             path: localstack
 
@@ -37,7 +38,7 @@ jobs:
             echo "AWS_MAIN_LATEST_SCHEDULED_RUN_ID=${latest_run_id}" >> $GITHUB_ENV
 
         - name: Load test durations
-          uses: actions/download-artifact@v4
+          uses: actions/download-artifact@v5
           with:
             pattern: pytest-split-durations-${{ env.PLATFORM }}-*
             path: artifacts-test-durations

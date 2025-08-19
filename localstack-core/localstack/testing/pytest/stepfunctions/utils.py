@@ -189,7 +189,7 @@ def await_state_machine_version_listed(
 def await_on_execution_events(
     stepfunctions_client, execution_arn: str, check_func: Callable[[HistoryEventList], bool]
 ) -> HistoryEventList:
-    events: HistoryEventList = list()
+    events: HistoryEventList = []
 
     def _run_check():
         nonlocal events
@@ -376,7 +376,7 @@ def await_on_execution_logs(
     log_stream_name = _await_on_execution_log_stream_created(target_aws_client, log_group_name)
 
     logs_client = target_aws_client.logs
-    events: HistoryEventList = list()
+    events: HistoryEventList = []
 
     def _run_check():
         nonlocal events
@@ -889,7 +889,7 @@ def create_and_record_events(
         stepfunctions_client=target_aws_client.stepfunctions, execution_arn=execution_arn
     )
 
-    stepfunctions_events = list()
+    stepfunctions_events = []
 
     def _get_events():
         received = target_aws_client.sqs.receive_message(QueueUrl=queue_url)
@@ -905,7 +905,7 @@ def create_and_record_events(
 
 
 def record_sqs_events(target_aws_client, queue_url, sfn_snapshot, num_events):
-    stepfunctions_events = list()
+    stepfunctions_events = []
 
     def _get_events():
         received = target_aws_client.sqs.receive_message(QueueUrl=queue_url)
@@ -916,7 +916,7 @@ def record_sqs_events(target_aws_client, queue_url, sfn_snapshot, num_events):
         return len(stepfunctions_events) == num_events
 
     poll_condition(_get_events, timeout=60)
-    stepfunctions_events.sort(key=lambda e: json.dumps(e.get("detail", dict())))
+    stepfunctions_events.sort(key=lambda e: json.dumps(e.get("detail", {})))
     sfn_snapshot.match("stepfunctions_events", stepfunctions_events)
 
 
@@ -931,7 +931,7 @@ class SfnNoneRecursiveParallelTransformer:
     @staticmethod
     def _normalise_events(events: list[dict]) -> None:
         start_idx = None
-        sublist = list()
+        sublist = []
         in_sublist = False
         for i, event in enumerate(events):
             event_type = event.get("type")

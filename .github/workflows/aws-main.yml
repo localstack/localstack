@@ -100,7 +100,7 @@ jobs:
     if: ${{ !(inputs.onlyAcceptanceTests == true || inputs.enableTestSelection == true || github.event_name == 'push') && !failure() && !cancelled() && github.repository == 'localstack/localstack' }}
     steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
 
         - name: Set up Python
           uses: actions/setup-python@v5
@@ -114,7 +114,7 @@ jobs:
           run: make install-dev
 
         - name: Load all test results
-          uses: actions/download-artifact@v4
+          uses: actions/download-artifact@v5
           with:
             pattern: test-results-*
             path: target/coverage/
@@ -199,7 +199,7 @@ jobs:
       - test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0

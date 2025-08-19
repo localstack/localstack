@@ -43,7 +43,7 @@ def test_immutable_dict():
     d1 = ImmutableDict({"a": ["b"], "c": 1})
 
     assert dict(d1) == {"a": ["b"], "c": 1}
-    assert {k for k in d1} == {"a", "c"}
+    assert set(d1) == {"a", "c"}
     assert d1["a"] == ["b"]
     assert d1["c"] == 1
     assert len(d1) == 2

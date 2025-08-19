@@ -29,9 +29,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==45.2.0
+aws-cdk-cloud-assembly-schema==48.4.0
     # via aws-cdk-lib
-aws-cdk-lib==2.208.0
+aws-cdk-lib==2.211.0
     # via localstack-core
 aws-sam-translator==1.99.0
     # via
@@ -39,17 +39,17 @@ aws-sam-translator==1.99.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.42.1
+awscli==1.42.11
     # via localstack-core
-awscrt==0.27.5
+awscrt==0.27.6
     # via localstack-core
-boto3==1.40.1
+boto3==1.40.11
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.40.1
+botocore==1.40.11
     # via
     #   aws-xray-sdk
     #   awscli
@@ -68,7 +68,7 @@ cachetools==6.1.0
     #   localstack-core (pyproject.toml)
 cattrs==25.1.1
     # via jsii
-cbor2==5.6.5
+cbor2==5.7.0
     # via localstack-core
 certifi==2025.8.3
     # via
@@ -80,9 +80,9 @@ cffi==1.17.1
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.38.1
+cfn-lint==1.39.0
     # via moto-ext
-charset-normalizer==3.4.2
+charset-normalizer==3.4.3
     # via requests
 click==8.2.1
     # via
@@ -94,7 +94,7 @@ constantly==23.10.4
     # via localstack-twisted
 constructs==10.4.2
     # via aws-cdk-lib
-coverage==7.10.2
+coverage==7.10.4
     # via
     #   coveralls
     #   localstack-core
@@ -102,18 +102,18 @@ coveralls==4.0.1
     # via localstack-core (pyproject.toml)
 crontab==1.0.5
     # via localstack-core
-cryptography==45.0.5
+cryptography==45.0.6
     # via
     #   joserfc
     #   localstack-core
     #   localstack-core (pyproject.toml)
     #   moto-ext
     #   pyopenssl
-cython==3.1.2
+cython==3.1.3
     # via localstack-core (pyproject.toml)
 decorator==5.2.1
     # via jsonpath-rw
-deepdiff==8.5.0
+deepdiff==8.6.0
     # via
     #   localstack-core
     #   localstack-snapshot
@@ -142,7 +142,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.18.0
+filelock==3.19.1
     # via virtualenv
 graphql-core==3.2.6
     # via moto-ext
@@ -168,7 +168,7 @@ hyperframe==6.1.0
     # via h2
 hyperlink==21.0.0
     # via localstack-twisted
-identify==2.6.12
+identify==2.6.13
     # via pre-commit
 idna==3.10
     # via
@@ -193,7 +193,7 @@ jmespath==1.0.1
     #   botocore
 joserfc==1.2.2
     # via moto-ext
-jpype1-ext==0.0.2
+jpype1==1.6.0
     # via localstack-core
 jsii==1.113.0
     # via
@@ -202,7 +202,7 @@ jsii==1.113.0
     #   aws-cdk-cloud-assembly-schema
     #   aws-cdk-lib
     #   constructs
-json5==0.12.0
+json5==0.12.1
     # via localstack-core
 jsonpatch==1.33
     # via
@@ -221,7 +221,7 @@ jsonpickle==4.1.1
     #   localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
-jsonschema==4.25.0
+jsonschema==4.25.1
     # via
     #   aws-sam-translator
     #   moto-ext
@@ -244,7 +244,7 @@ localstack-snapshot==0.3.0
     # via localstack-core
 localstack-twisted==24.3.0
     # via localstack-core
-markdown-it-py==3.0.0
+markdown-it-py==4.0.0
     # via rich
 markupsafe==3.0.2
     # via
@@ -289,7 +289,7 @@ packaging==25.0
     # via
     #   apispec
     #   build
-    #   jpype1-ext
+    #   jpype1
     #   pytest
     #   pytest-rerunfailures
 pandoc==2.4
@@ -317,7 +317,7 @@ ply==3.11
     #   jsonpath-ng
     #   jsonpath-rw
     #   pandoc
-pre-commit==4.2.0
+pre-commit==4.3.0
     # via localstack-core (pyproject.toml)
 priority==1.3.0
     # via
@@ -349,7 +349,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pymongo==4.13.2
+pymongo==4.14.0
     # via localstack-core
 pyopenssl==25.1.0
     # via
@@ -404,7 +404,7 @@ referencing==0.36.2
     #   jsonschema-specifications
 regex==2025.7.34
     # via cfn-lint
-requests==2.32.4
+requests==2.32.5
     # via
     #   coveralls
     #   docker
@@ -419,7 +419,7 @@ requests==2.32.4
     #   rolo
 requests-aws4auth==1.3.1
     # via localstack-core
-responses==0.25.7
+responses==0.25.8
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
@@ -429,7 +429,7 @@ rich==14.1.0
     #   localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core
-rpds-py==0.26.0
+rpds-py==0.27.0
     # via
     #   jsonschema
     #   referencing
@@ -437,7 +437,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.12.7
+ruff==0.12.9
     # via localstack-core (pyproject.toml)
 s3transfer==0.13.1
     # via
@@ -494,7 +494,7 @@ urllib3==2.5.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.33.0
+virtualenv==20.34.0
     # via pre-commit
 websocket-client==1.8.0
     # via localstack-core
@@ -505,7 +505,7 @@ werkzeug==3.1.3
     #   openapi-core
     #   pytest-httpserver
     #   rolo
-wrapt==1.17.2
+wrapt==1.17.3
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn

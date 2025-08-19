@@ -54,9 +54,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.40.1",
+    "boto3==1.40.11",
     # pinned / updated by ASF update action
-    "botocore==1.40.1",
+    "botocore==1.40.11",
     "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
@@ -79,7 +79,7 @@ base-runtime = [
 runtime = [
     "localstack-core[base-runtime]",
     # pinned / updated by ASF update action
-    "awscli==1.42.1",
+    "awscli==1.42.11",
     "airspeed-ext>=0.6.3",
     # version that has a built wheel
     "kclpy-ext>=3.0.0",
@@ -89,8 +89,8 @@ runtime = [
     "aws-sam-translator>=1.15.1",
     "crontab>=0.22.6",
     "cryptography>=41.0.5",
-    # allow Python programs full access to Java class libraries. Used for opt-in event ruler.
-    "jpype1-ext>=0.0.1",
+    # allow Python programs full access to Java class libraries. Used for stepfunctions jsonata support
+    "jpype1>=1.6.0",
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
@@ -213,12 +213,9 @@ ignore = [
     "B024", # TODO x is an abstract base class, but it has no abstract methods
     "B027", # TODO `Server.do_shutdown` is an empty method in an abstract base class, but has no abstract decorator
     "B904", # TODO Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
-    "C408", # TODO Unnecessary `list` call (rewrite as a literal)
-    "C416", # TODO Unnecessary `set` comprehension
     "C901", # TODO function is too complex
     "E402", # TODO Module level import not at top of file
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
-    "E721", # TODO Do not compare types, use `isinstance()`
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
     "UP008",# TODO Use `super()` instead of `super(__class__, self)`

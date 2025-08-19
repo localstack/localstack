@@ -1,12 +1,14 @@
 import copy
 import json
 import logging
+import re
 from collections import defaultdict
 from datetime import UTC, datetime
-from typing import Any
 
+from localstack import config
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudformation import (
+    AlreadyExistsException,
     CallAs,
     Changes,
     ChangeSetNameOrId,
@@ -48,7 +50,6 @@ from localstack.aws.api.cloudformation import (
     ListStacksOutput,
     LogicalResourceId,
     NextToken,
-    Output,
     Parameter,
     PhysicalResourceId,
     RetainExceptOnCreate,
@@ -80,6 +81,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.transformers import FailedTransformationException
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
@@ -110,16 +112,20 @@ from localstack.services.cloudformation.stores import (
 )
 from localstack.services.cloudformation.v2.entities import (
     ChangeSet,
-    EngineParameter,
     Stack,
     StackInstance,
     StackSet,
 )
+from localstack.services.cloudformation.v2.types import EngineParameter
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
+
+SSM_PARAMETER_TYPE_RE = re.compile(
+    r"^AWS::SSM::Parameter::Value<(?P<listtype>List<)?(?P<innertype>[^>]+)>?>$"
+)
 
 
 def is_stack_arn(stack_name_or_id: str) -> bool:
@@ -173,7 +179,7 @@ def find_change_set_v2(
     state: CloudFormationStore, change_set_name: str, stack_name: str | None = None
 ) -> ChangeSet | None:
     if is_changeset_arn(change_set_name):
-        return state.change_sets[change_set_name]
+        return state.change_sets.get(change_set_name)
     else:
         if stack_name is not None:
             stack = find_stack_v2(state, stack_name)
@@ -185,7 +191,9 @@ def find_change_set_v2(
                 if change_set_candidate.change_set_name == change_set_name:
                     return change_set_candidate
         else:
-            raise ValueError("No stack name specified when finding change set")
+            raise ValidationError(
+                "StackName must be specified if ChangeSetName is not specified as an ARN."
+            )
 
 
 def find_stack_set_v2(state: CloudFormationStore, stack_set_name: str) -> StackSet | None:
@@ -213,6 +221,7 @@ class CloudformationProviderV2(CloudformationProvider):
     ) -> dict[str, EngineParameter]:
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
+        invalid_parameters = []
         for name, parameter in template_parameters.items():
             given_value = parameters.get(name)
             default_value = parameter.get("Default")
@@ -220,20 +229,38 @@ class CloudformationProviderV2(CloudformationProvider):
                 type_=parameter["Type"], given_value=given_value, default_value=default_value
             )
 
-            if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
-                # TODO: support other parameter types
-                try:
-                    resolved_parameter["resolved_value"] = resolve_ssm_parameter(
-                        account_id, region_name, given_value or default_value
-                    )
-                except Exception:
-                    raise ValidationError(
-                        f"Parameter {name} should either have input value or default value"
-                    )
+            # TODO: support other parameter types
+            if match := SSM_PARAMETER_TYPE_RE.match(parameter["Type"]):
+                inner_type = match.group("innertype")
+                is_list_type = match.group("listtype") is not None
+                if is_list_type or inner_type == "CommaDelimitedList":
+                    # list types
+                    try:
+                        resolved_value = resolve_ssm_parameter(
+                            account_id, region_name, given_value or default_value
+                        )
+                        resolved_parameter["resolved_value"] = resolved_value.split(",")
+                    except Exception:
+                        raise ValidationError(
+                            f"Parameter {name} should either have input value or default value"
+                        )
+                else:
+                    try:
+                        resolved_parameter["resolved_value"] = resolve_ssm_parameter(
+                            account_id, region_name, given_value or default_value
+                        )
+                    except Exception:
+                        raise ValidationError(
+                            f"Parameter {name} should either have input value or default value"
+                        )
             elif given_value is None and default_value is None:
-                raise ValidationError(f"Parameters: [{name}] must have values")
+                invalid_parameters.append(name)
+                continue
 
             resolved_parameters[name] = resolved_parameter
+
+        if invalid_parameters:
+            raise ValidationError(f"Parameters: [{','.join(invalid_parameters)}] must have values")
 
         for name, parameter in resolved_parameters.items():
             if (
@@ -292,9 +319,18 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template=before_template,
             after_template=after_template,
         )
-        transformed_before_template, transformed_after_template = (
-            change_set_model_transform.transform()
-        )
+        try:
+            transformed_before_template, transformed_after_template = (
+                change_set_model_transform.transform()
+            )
+        except FailedTransformationException as e:
+            change_set.status = ChangeSetStatus.FAILED
+            change_set.status_reason = e.message
+            change_set.stack.set_stack_status(
+                status=StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message
+            )
+            change_set.stack.set_stack_status(status=StackStatus.CREATE_FAILED)
+            return
 
         # Remodel the update graph after the applying the global transforms.
         change_set_model = ChangeSetModel(
@@ -356,6 +392,12 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
+
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
         if is_stack_arn(stack_name):
@@ -416,19 +458,9 @@ class CloudformationProviderV2(CloudformationProvider):
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
-        request_parameters = request.get("Parameters", list())
+        request_parameters = request.get("Parameters", [])
         # TODO: handle parameter defaults and resolution
-        after_parameters = {}
-        for parameter in request_parameters:
-            key = parameter["ParameterKey"]
-            if parameter.get("UsePreviousValue", False):
-                # todo: what if the parameter does not exist in the before parameters
-                after_parameters[key] = before_parameters[key]
-                continue
-
-            if "ParameterValue" in parameter:
-                after_parameters[key] = parameter["ParameterValue"]
-                continue
+        after_parameters = self._extract_after_parameters(request_parameters, before_parameters)
 
         # TODO: update this logic to always pass the clean template object if one exists. The
         #  current issue with relaying on stack.template_original is that this appears to have
@@ -471,7 +503,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
             change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
 
-        stack.change_set_id = change_set.change_set_id
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
 
@@ -530,16 +561,26 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.resolved_resources = result.resources
                 change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
-                change_set.stack.resolved_exports = result.exports
+
+                change_set.stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        change_set.stack.resolved_exports[export_name] = output["OutputValue"]
+
+                change_set.stack.change_set_id = change_set.change_set_id
+                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 change_set.stack.template = change_set.template
+                change_set.stack.description = change_set.template.get("Description")
                 change_set.stack.processed_template = change_set.processed_template
                 change_set.stack.template_body = change_set.template_body
             except Exception as e:
                 LOG.error(
-                    "Execute change set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                    "Execute change set failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 new_stack_status = StackStatus.UPDATE_FAILED
                 if change_set.change_set_type == ChangeSetType.CREATE:
@@ -547,6 +588,8 @@ class CloudformationProviderV2(CloudformationProvider):
 
                 change_set.stack.set_stack_status(new_stack_status)
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
+                change_set.stack.change_set_id = change_set.change_set_id
+                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
         start_worker_thread(_run)
 
@@ -576,15 +619,33 @@ class CloudformationProviderV2(CloudformationProvider):
             StackId=change_set.stack.stack_id,
             StackName=change_set.stack.stack_name,
             CreationTime=change_set.creation_time,
-            Parameters=[
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.resolved_parameters.items()
-            ],
             Changes=changes,
             Capabilities=change_set.stack.capabilities,
             StatusReason=change_set.status_reason,
+            Description=change_set.description,
+            # TODO: static information
+            IncludeNestedStacks=False,
+            NotificationARNs=[],
         )
+        if change_set.resolved_parameters:
+            result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
+        return result
+
+    @staticmethod
+    def _render_resolved_parameters(
+        resolved_parameters: dict[str, EngineParameter],
+    ) -> list[Parameter]:
+        result = []
+        for name, resolved_parameter in resolved_parameters.items():
+            parameter = Parameter(
+                ParameterKey=name,
+                ParameterValue=resolved_parameter.get("given_value")
+                or resolved_parameter.get("default_value"),
+            )
+            if resolved_value := resolved_parameter.get("resolved_value"):
+                parameter["ResolvedValue"] = resolved_value
+            result.append(parameter)
+
         return result
 
     @handler("DescribeChangeSet")
@@ -618,16 +679,7 @@ class CloudformationProviderV2(CloudformationProvider):
         **kwargs,
     ) -> DeleteChangeSetOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-
-        if is_changeset_arn(change_set_name):
-            change_set = state.change_sets.get(change_set_name)
-        elif not is_changeset_arn(change_set_name) and stack_name:
-            change_set = find_change_set_v2(state, change_set_name, stack_name)
-        else:
-            raise ValidationError(
-                "StackName must be specified if ChangeSetName is not specified as an ARN."
-            )
-
+        change_set = find_change_set_v2(state, change_set_name, stack_name)
         if not change_set:
             return DeleteChangeSetOutput()
 
@@ -645,6 +697,26 @@ class CloudformationProviderV2(CloudformationProvider):
             raise ValidationError("StackName must be specified")
 
         state = get_cloudformation_store(context.account_id, context.region)
+
+        active_stack_candidates = [
+            stack
+            for stack in state.stacks_v2.values()
+            if stack.stack_name == stack_name and stack.status not in [StackStatus.DELETE_COMPLETE]
+        ]
+
+        # TODO: fix/implement this code path
+        #   this needs more investigation how Cloudformation handles it (e.g. normal stack create or does it create a separate changeset?)
+        # REVIEW_IN_PROGRESS is another special status
+        # in this case existing changesets are set to obsolete and the stack is created
+        # review_stack_candidates = [s for s in stack_candidates if s.status == StackStatus.REVIEW_IN_PROGRESS]
+        # if review_stack_candidates:
+        # set changesets to obsolete
+        # for cs in review_stack_candidates[0].change_sets:
+        #     cs.execution_status = ExecutionStatus.OBSOLETE
+
+        if active_stack_candidates:
+            raise AlreadyExistsException(f"Stack [{stack_name}] already exists")
+
         # TODO: copied from create_change_set, consider unifying
         template_body = request.get("TemplateBody")
         # s3 or secretsmanager url
@@ -663,6 +735,12 @@ class CloudformationProviderV2(CloudformationProvider):
 
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
+
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
 
         if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
             "Transform" in structured_template.keys() or "Fn::Transform" in template_body
@@ -683,12 +761,9 @@ class CloudformationProviderV2(CloudformationProvider):
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
-        request_parameters = request.get("Parameters", list())
+        request_parameters = request.get("Parameters", [])
         # TODO: handle parameter defaults and resolution
-        after_parameters: dict[str, Any] = {
-            parameter["ParameterKey"]: parameter["ParameterValue"]
-            for parameter in request_parameters
-        }
+        after_parameters = self._extract_after_parameters(request_parameters)
         after_template = structured_template
 
         # Create internal change set to execute
@@ -706,6 +781,8 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
             previous_update_model=None,
         )
+        if change_set.status == ChangeSetStatus.FAILED:
+            return CreateStackOutput(StackId=stack.stack_id)
 
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
@@ -721,10 +798,18 @@ class CloudformationProviderV2(CloudformationProvider):
                 # which was just deployed
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
+                stack.processed_template = change_set.processed_template
                 stack.resolved_parameters = change_set.resolved_parameters
+                stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        stack.resolved_exports[export_name] = output["OutputValue"]
+                stack.processed_template = change_set.processed_template
             except Exception as e:
                 LOG.error(
-                    "Create Stack set failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING)
+                    "Create Stack set failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.CREATE_FAILED)
 
@@ -754,67 +839,52 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack_name:
             stack = find_stack_v2(state, stack_name)
             if not stack:
-                raise StackNotFoundError(
-                    stack_name, message_override=f"Stack with id {stack_name} does not exist"
-                )
+                raise ValidationError(f"Stack with id {stack_name} does not exist")
             stacks = [stack]
         else:
             stacks = state.stacks_v2.values()
 
         describe_stack_output: list[ApiStack] = []
         for stack in stacks:
-            stack_description = ApiStack(
-                CreationTime=stack.creation_time,
-                DeletionTime=stack.deletion_time,
-                StackId=stack.stack_id,
-                StackName=stack.stack_name,
-                StackStatus=stack.status,
-                StackStatusReason=stack.status_reason,
-                # fake values
-                DisableRollback=False,
-                DriftInformation=StackDriftInformation(
-                    StackDriftStatus=StackDriftStatus.NOT_CHECKED
-                ),
-                EnableTerminationProtection=stack.enable_termination_protection,
-                LastUpdatedTime=stack.creation_time,
-                RollbackConfiguration=RollbackConfiguration(),
-                Tags=[],
-                NotificationARNs=[],
-                Capabilities=stack.capabilities,
-                # "Parameters": stack.resolved_parameters,
-            )
-            # TODO: confirm the logic for this
-            if change_set_id := stack.change_set_id:
-                stack_description["ChangeSetId"] = change_set_id
-
-            if stack.resolved_parameters:
-                stack_description["Parameters"] = []
-                for name, resolved_parameter in stack.resolved_parameters.items():
-                    parameter = Parameter(
-                        ParameterKey=name,
-                        ParameterValue=resolved_parameter.get("given_value")
-                        or resolved_parameter.get("default_value"),
-                    )
-                    if resolved_value := resolved_parameter.get("resolved_value"):
-                        parameter["ResolvedValue"] = resolved_value
-                    stack_description["Parameters"].append(parameter)
-
-            if stack.resolved_outputs:
-                describe_outputs = []
-                for key, value in stack.resolved_outputs.items():
-                    describe_outputs.append(
-                        Output(
-                            # TODO(parity): Description, ExportName
-                            # TODO(parity): what happens on describe stack when the stack has not been deployed yet?
-                            OutputKey=key,
-                            OutputValue=value,
-                        )
-                    )
-                stack_description["Outputs"] = describe_outputs
-
-            describe_stack_output.append(stack_description)
+            describe_stack_output.append(self._describe_stack(stack))
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
+
+    def _describe_stack(self, stack: Stack) -> ApiStack:
+        stack_description = ApiStack(
+            Description=stack.description,
+            CreationTime=stack.creation_time,
+            DeletionTime=stack.deletion_time,
+            StackId=stack.stack_id,
+            StackName=stack.stack_name,
+            StackStatus=stack.status,
+            StackStatusReason=stack.status_reason,
+            # fake values
+            DisableRollback=False,
+            DriftInformation=StackDriftInformation(StackDriftStatus=StackDriftStatus.NOT_CHECKED),
+            EnableTerminationProtection=stack.enable_termination_protection,
+            RollbackConfiguration=RollbackConfiguration(),
+            Tags=[],
+            NotificationARNs=[],
+        )
+        if stack.status != StackStatus.REVIEW_IN_PROGRESS:
+            # TODO: actually track updated time
+            stack_description["LastUpdatedTime"] = stack.creation_time
+        if stack.capabilities:
+            stack_description["Capabilities"] = stack.capabilities
+        # TODO: confirm the logic for this
+        if change_set_id := stack.change_set_id:
+            stack_description["ChangeSetId"] = change_set_id
+
+        if stack.resolved_parameters:
+            stack_description["Parameters"] = self._render_resolved_parameters(
+                stack.resolved_parameters
+            )
+
+        if stack.resolved_outputs:
+            stack_description["Outputs"] = stack.resolved_outputs
+
+        return stack_description
 
     @handler("ListStacks")
     def list_stacks(
@@ -827,7 +897,7 @@ class CloudformationProviderV2(CloudformationProvider):
         state = get_cloudformation_store(context.account_id, context.region)
 
         stacks = [
-            s.describe_details()
+            self._describe_stack(s)
             for s in state.stacks_v2.values()
             if not stack_status_filter or s.status in stack_status_filter
         ]
@@ -1306,12 +1376,10 @@ class CloudformationProviderV2(CloudformationProvider):
         #  The options might be reduce to using the current style, or passing the extra information
         #  as a metadata object. The choice should be made considering when the extra information
         #  is needed for the update graph building, or only looked up in downstream tasks (metadata).
-        request_parameters = request.get("Parameters", list())
+        request_parameters = request.get("Parameters", [])
         # TODO: handle parameter defaults and resolution
-        after_parameters: dict[str, Any] = {
-            parameter["ParameterKey"]: parameter["ParameterValue"]
-            for parameter in request_parameters
-        }
+        after_parameters = self._extract_after_parameters(request_parameters, before_parameters)
+
         before_template = stack.template
         after_template = structured_template
 
@@ -1355,14 +1423,44 @@ class CloudformationProviderV2(CloudformationProvider):
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
                 stack.resolved_parameters = change_set.resolved_parameters
+                stack.resolved_exports = {}
+                for output in result.outputs:
+                    if export_name := output.get("ExportName"):
+                        stack.resolved_exports[export_name] = output["OutputValue"]
             except Exception as e:
-                LOG.error("Update Stack failed: %s", e, exc_info=LOG.isEnabledFor(logging.WARNING))
+                LOG.error(
+                    "Update Stack failed: %s",
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
+                )
                 stack.set_stack_status(StackStatus.UPDATE_FAILED)
 
         start_worker_thread(_run)
 
-        # TODO: stack id
         return UpdateStackOutput(StackId=stack.stack_id)
+
+    @staticmethod
+    def _extract_after_parameters(
+        request_parameters, before_parameters: dict[str, str] | None = None
+    ) -> dict[str, str]:
+        before_parameters = before_parameters or {}
+        after_parameters = {}
+        for parameter in request_parameters:
+            key = parameter["ParameterKey"]
+            if parameter.get("UsePreviousValue", False):
+                # todo: what if the parameter does not exist in the before parameters
+                before = before_parameters[key]
+                after_parameters[key] = (
+                    before.get("resolved_value")
+                    or before.get("given_value")
+                    or before.get("default_value")
+                )
+                continue
+
+            if "ParameterValue" in parameter:
+                after_parameters[key] = parameter["ParameterValue"]
+                continue
+        return after_parameters
 
     @handler("DeleteStack")
     def delete_stack(
@@ -1419,7 +1517,7 @@ class CloudformationProviderV2(CloudformationProvider):
                     "Failed to delete stack '%s': %s",
                     stack.stack_name,
                     e,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
 

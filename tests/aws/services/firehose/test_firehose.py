@@ -518,7 +518,7 @@ class TestFirehoseIntegration:
         )
 
         # poll file from s3 buckets
-        s3_data = dict()
+        s3_data = {}
         for bucket_name in [bucket_a_name, bucket_b_name]:
             s3_data_bucket = read_s3_data(bucket_name, timeout=300)
             assert len(s3_data_bucket.keys()) == 1

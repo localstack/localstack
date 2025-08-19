@@ -8,6 +8,7 @@ from typing import Final, Protocol
 from localstack import config
 from localstack.aws.api.cloudformation import (
     ChangeAction,
+    Output,
     ResourceStatus,
     StackStatus,
 )
@@ -50,8 +51,7 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 @dataclass
 class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
-    outputs: dict
-    exports: dict
+    outputs: list[Output]
 
 
 class DeferredAction(Protocol):
@@ -61,16 +61,14 @@ class DeferredAction(Protocol):
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict[str, ResolvedResource]]
-    outputs: Final[dict]
-    exports: Final[dict]
+    outputs: Final[list[Output]]
     _deferred_actions: list[DeferredAction]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
-        self.resources = dict()
-        self.outputs = dict()
-        self.exports = dict()
-        self._deferred_actions = list()
+        self.resources = {}
+        self.outputs = []
+        self._deferred_actions = []
         self.resource_provider_executor = ResourceProviderExecutor(
             stack_name=change_set.stack.stack_name,
             stack_id=change_set.stack.stack_id,
@@ -92,7 +90,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return ChangeSetModelExecutorResult(
             resources=self.resources,
             outputs=self.outputs,
-            exports=self.exports,
         )
 
     def _defer_action(self, action: DeferredAction):
@@ -208,7 +205,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # references or other downstream operations.
             if not is_nothing(before):
                 before_logical_id = delta.before.logical_id
-                before_resource = self._before_resolved_resources.get(before_logical_id, dict())
+                before_resource = self._before_resolved_resources.get(before_logical_id, {})
                 self.resources[before_logical_id] = before_resource
 
         # Update the latest version of this resource for downstream references.
@@ -228,11 +225,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
 
-        # TODO validate export name duplication in same template and all exports
-        if delta.after.export:
-            self.exports[delta.after.export.get("Name")] = delta.after.value
-
-        self.outputs[delta.after.name] = delta.after.value
+        output = Output(
+            OutputKey=delta.after.name,
+            OutputValue=delta.after.value,
+            # TODO
+            # Description=delta.after.description
+        )
+        if after.export:
+            output["ExportName"] = after.export["Name"]
+        self.outputs.append(output)
         return delta
 
     def _execute_resource_change(
@@ -441,7 +442,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 LOG.warning(
                     "Resource provider operation failed: '%s'",
                     reason,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 event = ProgressEvent(
                     OperationStatus.FAILED,

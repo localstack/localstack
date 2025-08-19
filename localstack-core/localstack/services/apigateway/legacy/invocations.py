@@ -142,8 +142,9 @@ class RequestValidator:
         # try to get the resolved model first
         resolved_schema = model_resolver.get_resolved_model()
         if not resolved_schema:
-            LOG.exception(
-                "An exception occurred while trying to validate the request: could not find the model"
+            LOG.error(
+                "An exception occurred while trying to validate the request: could not find the model",
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return False
 
@@ -334,7 +335,7 @@ def invoke_rest_api_integration(invocation_context: ApiInvocationContext):
         return e.to_response()
     except Exception as e:
         msg = f"Error invoking integration for API Gateway ID '{invocation_context.api_id}': {e}"
-        LOG.exception(msg)
+        LOG.error(msg, exc_info=LOG.isEnabledFor(logging.DEBUG))
         return make_error_response(msg, 400)
 
 

@@ -2,13 +2,14 @@ import os
 
 import pytest
 from localstack_snapshot.snapshots.transformer import RegexTransformer
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@pytest.mark.skip("CFnv2 implementation missing")
+@skip_if_v1_provider("change sets")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
@@ -16,7 +17,6 @@ from localstack.utils.strings import short_uid
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
@@ -39,7 +39,7 @@ class TestChangeSetFnTransform:
 
             deploy_cfn_template(
                 template_path=os.path.join(
-                    os.path.dirname(__file__), "../../../templates/macro_resource.yml"
+                    os.path.dirname(__file__), "../../templates/macro_resource.yml"
                 ),
                 parameters={"FunctionName": func_name, "MacroName": macro_name},
             )
@@ -208,7 +208,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(RegexTransformer(name1, "name-1"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "Substitution"
         create_macro(macro_name, macro_function_path)
@@ -245,7 +245,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(RegexTransformer(name1, "name-1"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/add_standard_tags.py"
+            os.path.dirname(__file__), "../../templates/macros/add_standard_tags.py"
         )
         macro_name = "AddTags"
         create_macro(macro_name, macro_function_path)
@@ -286,7 +286,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
         )
         macro_name = "GenerateRandom"
         create_macro(macro_name, macro_function_path)
@@ -333,7 +333,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
         create_macro(macro_name, macro_function_path)
@@ -387,7 +387,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
         create_macro(macro_name, macro_function_path)
@@ -434,7 +434,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/replace_string.py"
+            os.path.dirname(__file__), "../../templates/macros/replace_string.py"
         )
         macro_name = "ReplaceString"
         create_macro(macro_name, macro_function_path)
@@ -481,7 +481,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
         )
         macro_name = "GenerateRandom"
         create_macro(macro_name, macro_function_path)
@@ -527,7 +527,7 @@ class TestChangeSetFnTransform:
         snapshot.add_transformer(snapshot.transform.key_value("Value", "value"))
 
         macro_function_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/macros/return_random_string.py"
+            os.path.dirname(__file__), "../../templates/macros/return_random_string.py"
         )
         macro_name = "GenerateRandom"
         create_macro(macro_name, macro_function_path)

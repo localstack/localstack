@@ -254,6 +254,12 @@ class PiiEntityType(StrEnum):
     ALL = "ALL"
 
 
+class Pronouns(StrEnum):
+    HE_HIM = "HE_HIM"
+    SHE_HER = "SHE_HER"
+    THEY_THEM = "THEY_THEM"
+
+
 class RedactionOutput(StrEnum):
     redacted = "redacted"
     redacted_and_unredacted = "redacted_and_unredacted"
@@ -736,6 +742,7 @@ class MedicalScribeJob(TypedDict, total=False):
     Settings: Optional[MedicalScribeSettings]
     DataAccessRoleArn: Optional[DataAccessRoleArn]
     ChannelDefinitions: Optional[MedicalScribeChannelDefinitions]
+    MedicalScribeContextProvided: Optional[Boolean]
     Tags: Optional[TagList]
 
 
@@ -1097,6 +1104,14 @@ class ListVocabularyFiltersResponse(TypedDict, total=False):
     VocabularyFilters: Optional[VocabularyFilters]
 
 
+class MedicalScribePatientContext(TypedDict, total=False):
+    Pronouns: Optional[Pronouns]
+
+
+class MedicalScribeContext(TypedDict, total=False):
+    PatientContext: Optional[MedicalScribePatientContext]
+
+
 class StartCallAnalyticsJobRequest(ServiceRequest):
     CallAnalyticsJobName: CallAnalyticsJobName
     Media: Media
@@ -1122,6 +1137,7 @@ class StartMedicalScribeJobRequest(ServiceRequest):
     Settings: MedicalScribeSettings
     ChannelDefinitions: Optional[MedicalScribeChannelDefinitions]
     Tags: Optional[TagList]
+    MedicalScribeContext: Optional[MedicalScribeContext]
 
 
 class StartMedicalScribeJobResponse(TypedDict, total=False):
@@ -1576,6 +1592,7 @@ class TranscribeApi:
         kms_encryption_context: KMSEncryptionContextMap | None = None,
         channel_definitions: MedicalScribeChannelDefinitions | None = None,
         tags: TagList | None = None,
+        medical_scribe_context: MedicalScribeContext | None = None,
         **kwargs,
     ) -> StartMedicalScribeJobResponse:
         raise NotImplementedError

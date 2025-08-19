@@ -817,7 +817,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_clone = copy.deepcopy(unsafe_state_machine)
 
         if input is None:
-            input_data = dict()
+            input_data = {}
         else:
             try:
                 input_data = json.loads(input)
@@ -906,7 +906,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_clone = copy.deepcopy(unsafe_state_machine)
 
         if input is None:
-            input_data = dict()
+            input_data = {}
         else:
             try:
                 input_data = json.loads(input)
@@ -1097,7 +1097,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if not isinstance(state_machine_revision, StateMachineRevision):
             raise InvalidArn(f"Invalid arn: {state_machine_arn}")
 
-        state_machine_aliases: StateMachineAliasList = list()
+        state_machine_aliases: StateMachineAliasList = []
         valid_token_found = next_token is None
 
         for alias in state_machine_revision.aliases:
@@ -1141,7 +1141,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if not isinstance(state_machine_revision, StateMachineRevision):
             raise InvalidArn(f"Invalid arn: {state_machine_arn}")
 
-        state_machine_version_items = list()
+        state_machine_version_items = []
         for version_arn in state_machine_revision.versions.values():
             state_machine_version = state_machines[version_arn]
             if isinstance(state_machine_version, StateMachineVersion):
@@ -1237,7 +1237,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         if (
             state_machine_revision := state_machines.get(state_machine_version.source_arn)
         ) and isinstance(state_machine_revision, StateMachineRevision):
-            referencing_alias_names: list[str] = list()
+            referencing_alias_names: list[str] = []
             for alias in state_machine_revision.aliases:
                 if alias.is_router_for(state_machine_version_arn=state_machine_version_arn):
                     referencing_alias_names.append(alias.name)
@@ -1635,13 +1635,13 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         state_machine_type: StateMachineType = request.get("type", StateMachineType.STANDARD)
         definition: str = request["definition"]
 
-        static_analysers = list()
+        static_analysers = []
         if state_machine_type == StateMachineType.STANDARD:
             static_analysers.append(StaticAnalyser())
         else:
             static_analysers.append(ExpressStaticAnalyser())
 
-        diagnostics: ValidateStateMachineDefinitionDiagnosticList = list()
+        diagnostics: ValidateStateMachineDefinitionDiagnosticList = []
         try:
             StepFunctionsProvider._validate_definition(
                 definition=definition, static_analysers=static_analysers

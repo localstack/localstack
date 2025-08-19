@@ -28,15 +28,12 @@ def execute_change_set(aws_client):
     return inner
 
 
-@skip_if_v1_provider(reason="Not supported on V1")
+@skip_if_v1_provider("Not supported on V1")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Changes..ResourceChange.Details",
         "$..Changes..ResourceChange.Scope",
-        "$..IncludeNestedStacks",
-        "$..NotificationARNs",
         "$..Parameters",
-        "$..Capabilities",
     ]
 )
 class TestChangeSetImportExport:

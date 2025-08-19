@@ -60,4 +60,4 @@ class TestInfoEndpoint:
         assert doc["session_id"]
         assert doc["machine_id"]
         assert doc["system"]
-        assert type(doc["is_license_activated"]) == bool
+        assert isinstance(doc["is_license_activated"], bool)

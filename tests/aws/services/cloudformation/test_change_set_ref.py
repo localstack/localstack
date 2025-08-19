@@ -5,7 +5,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid
 
 
-@skip_if_v1_provider(reason="Requires the V2 engine")
+@skip_if_v1_provider("Requires the V2 engine")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
@@ -13,7 +13,6 @@ from localstack.utils.strings import long_uid
         #
         # Before/After Context
         "$..Capabilities",
-        "$..NotificationARNs",
         "$..IncludeNestedStacks",
         "$..Scope",
         "$..Details",
