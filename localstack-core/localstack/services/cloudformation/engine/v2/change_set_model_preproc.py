@@ -630,8 +630,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def visit_node_intrinsic_function_fn_not(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_fn_not(arg: bool) -> bool:
-            return not arg
+        def _compute_fn_not(arg: list[bool] | bool) -> bool:
+            # Is the argument ever a lone boolean?
+            if isinstance(arg, list):
+                return not arg[0]
+            else:
+                return not arg
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         delta = self._cached_apply(

@@ -2,7 +2,6 @@ import os.path
 
 import aws_cdk as cdk
 import pytest
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -80,7 +79,6 @@ def test_sns_subscription(deploy_cfn_template, aws_client):
     assert len(subscriptions["Subscriptions"]) > 0
 
 
-@skip_if_v2_provider("Engine")
 @markers.aws.validated
 def test_deploy_stack_with_sns_topic(deploy_cfn_template, aws_client):
     stack = deploy_cfn_template(
