@@ -100,6 +100,11 @@ def format_template_transformations_into_list(transforms: list | dict | str) -> 
 
 
 class ResolverVisitor:
+    """
+    Resolver for statically resolvable values, i.e. before template deployment
+    """
+
+    # TODO: I don't think conditions can be resolved before transformation
     def __init__(
         self, stack_parameters: dict[str, EngineParameter], mappings: dict, conditions: dict
     ):
@@ -108,44 +113,59 @@ class ResolverVisitor:
         self._conditions = conditions
 
     def visit(self, obj: Any) -> Any:
-        method_name = f"visit_{obj.__class__.__name__}"
+        method_name = f"_visit_{obj.__class__.__name__}"
         if method := getattr(self, method_name, None):
             return method(obj)
 
         raise RuntimeError(f"No method '{method_name}' found for {self.__class__.__name__}")
 
-    def visit_dict(self, obj: dict) -> dict | str:
+    def find_intrinsic_function_calls(self, template: dict, function_name: str) -> list[dict]:
+        found = []
+
+        def visit(obj: Any, path: str, **_):
+            if isinstance(obj, dict) and function_name in obj:
+                found.append(obj)
+            return obj
+
+        recurse_object(template, visit)
+
+        return found
+
+    def _visit_dict(self, obj: dict) -> dict | str:
         # visit children
         out = {}
         for key, value in obj.items():
             # handle intrinsic functions
-            if "Ref" in value:
-                out[key] = self.visit_ref(value["Ref"])
+            if isinstance(value, dict) and "Ref" in value:
+                out[key] = self._visit_ref(value["Ref"])
             else:
                 out[key] = self.visit(value)
 
         if "Ref" in out:
-            return self.visit_ref(out["Ref"])
+            return self._visit_ref(out["Ref"])
 
         if "Fn::Sub" in out:
-            return self.visit_sub(out["Fn::Sub"])
+            return self._visit_sub(out["Fn::Sub"])
+
+        if "Fn::FindInMap" in out:
+            return self._visit_find_in_map(out["Fn::FindInMap"])
 
         return out
 
-    def visit_str(self, obj: str) -> str:
+    def _visit_str(self, obj: str) -> str:
         return obj
 
-    def visit_list(self, obj: list) -> list:
+    def _visit_list(self, obj: list) -> list:
         out = []
         for item in obj:
             out.append(self.visit(item))
         return out
 
-    def visit_ref(self, name: str) -> str | list:
+    def _visit_ref(self, name: str) -> str | list:
         # Try to resolve the variable name as pseudo parameter.
         value: str | list | None = None
         if name in _PSEUDO_PARAMETERS:
-            value = self.visit_pseudo_parameter(name)
+            value = self._visit_pseudo_parameter(name)
 
         # try to resolve the reference from the stack parameters
         if stack_parameter := self._stack_parameters.get(name):
@@ -161,7 +181,7 @@ class ResolverVisitor:
 
         return value
 
-    def visit_sub(self, payload: Any) -> str:
+    def _visit_sub(self, payload: Any) -> str:
         string_template: str
         sub_parameters: dict
         if isinstance(payload, str):
@@ -180,7 +200,7 @@ class ResolverVisitor:
             if sub_parameter := sub_parameters.get(template_variable_name):
                 template_variable_name = sub_parameter
 
-            template_variable_value = self.visit_ref(template_variable_name)
+            template_variable_value = self._visit_ref(template_variable_name)
 
             sub_string = sub_string.replace(
                 f"${{{template_variable_name}}}", template_variable_value
@@ -188,7 +208,25 @@ class ResolverVisitor:
 
         return sub_string
 
-    def visit_pseudo_parameter(self, name: str) -> str:
+    def _visit_find_in_map(self, payload: list) -> str | list:
+        if len(payload) != 3:
+            raise ValidationError("MESSAGE TODO")
+
+        map_name, top_level_key, second_level_key = [self.visit(item) for item in payload]
+        error_key = "::".join([map_name, top_level_key, second_level_key])
+        mapping = self._mappings.get(map_name)
+        if not mapping:
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
+        top_level_map = mapping.get(top_level_key)
+        if not top_level_map:
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
+        value = top_level_map.get(second_level_key)
+        if value is None:
+            raise ValidationError(f"Template error: Unable to get mapping for {error_key}")
+
+        return self.visit(value)
+
+    def _visit_pseudo_parameter(self, name: str) -> str:
         raise RuntimeError("TODO")
 
 

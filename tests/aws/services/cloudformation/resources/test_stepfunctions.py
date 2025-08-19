@@ -4,7 +4,6 @@ import urllib.parse
 
 import pytest
 from localstack_snapshot.snapshots.transformer import JsonpathTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
 
 from localstack import config
 from localstack.testing.pytest import markers

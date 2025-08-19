@@ -93,6 +93,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_describer imp
 from localstack.services.cloudformation.engine.v2.change_set_model_executor import (
     ChangeSetModelExecutor,
 )
+from localstack.services.cloudformation.engine.v2.transforms import ResolverVisitor
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -208,6 +209,59 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str) -> Stack
     return None
 
 
+# TODO: move to validations.py
+class Validator:
+    def __init__(self, stack_parameters: dict[str, EngineParameter]):
+        self._stack_parameters = stack_parameters
+
+    def validate(self, template: dict):
+        self.validate_mappings(template)
+        self.validate_ref_targets(template)
+
+    def validate_mappings(self, template: dict):
+        mappings = template.get("Mappings", {})
+        conditions = template.get("Conditions", {})
+
+        # TODO: visit the template to look for usages of `FindInMap`
+        resolver = ResolverVisitor(self._stack_parameters, mappings, conditions)
+        map_lookups = resolver.find_intrinsic_function_calls(template, "Fn::FindInMap")
+
+        for map_lookup in map_lookups:
+            try:
+                resolver.visit(map_lookup)
+            except RuntimeError:
+                raise ValidationError("MESSAGE TODO")
+
+    def validate_ref_targets(self, template: dict):
+        mappings = template.get("Mappings", {})
+        conditions = template.get("Conditions", {})
+        # TODO: validate top level fields
+        resources = template["Resources"]
+
+        resolver = ResolverVisitor(self._stack_parameters, mappings, conditions)
+        refs = resolver.find_intrinsic_function_calls(template, "Ref")
+
+        invalid_refs = []
+        for ref in refs:
+            try:
+                resolver.visit(ref)
+            except RuntimeError:
+                # we could not find the reference in the parameters, so try in conditions, mappings and resources
+                ref_target = ref["Ref"]
+                if (
+                    ref_target not in mappings
+                    and ref_target not in conditions
+                    and ref_target not in resources
+                ):
+                    invalid_refs.append(ref_target)
+
+        if invalid_refs:
+            invalid_ref_str = "[" + ",".join(invalid_refs) + "]"
+            raise ValidationError(
+                f"Template format error: Unresolved resource dependencies {invalid_ref_str} in the Resources block of the template"
+            )
+
+
 class CloudformationProviderV2(CloudformationProvider):
     @staticmethod
     def _resolve_parameters(
@@ -300,6 +354,10 @@ class CloudformationProviderV2(CloudformationProvider):
                 template=after_template,
                 resolved_parameters=resolved_parameters,
             )
+
+            # perform synchronous validations
+            validator = Validator(resolved_parameters)
+            validator.validate(transformed_after_template)
         else:
             transformed_after_template = None
 
@@ -317,12 +375,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 # global transforms should always be considered "MODIFIED"
                 update_model.node_template.change_type = ChangeType.MODIFIED
         change_set.set_update_model(update_model)
-
-        # TODO: perform validations
-        # validator = ChangeSetModelValidator(
-        #     change_set=change_set,
-        # )
-        # validator.validate()
 
         change_set.processed_template = transformed_after_template
 
