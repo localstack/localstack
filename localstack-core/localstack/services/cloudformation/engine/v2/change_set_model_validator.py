@@ -147,3 +147,21 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
         # Function is already resolved in the template reaching this point
         # But transformation is still present in update model
         return self.visit(node_intrinsic_function.arguments)
+
+    def visit_node_intrinsic_function_fn_split(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        try:
+            # If an argument is a Parameter it should be resolved, any other case, ignore it
+            return super().visit_node_intrinsic_function_fn_split(node_intrinsic_function)
+        except RuntimeError:
+            return self.visit(node_intrinsic_function.arguments)
+
+    def visit_node_intrinsic_function_fn_select(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        try:
+            # If an argument is a Parameter it should be resolved, any other case, ignore it
+            return super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
+        except RuntimeError:
+            return self.visit(node_intrinsic_function.arguments)
