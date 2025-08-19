@@ -349,6 +349,7 @@ class CloudformationProviderV2(CloudformationProvider):
         # the transformations.
         update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
         update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
+        change_set.set_update_model(update_model)
 
         # perform validations
         validator = ChangeSetModelValidator(
@@ -361,7 +362,6 @@ class CloudformationProviderV2(CloudformationProvider):
             if transform.global_transforms:
                 # global transforms should always be considered "MODIFIED"
                 update_model.node_template.change_type = ChangeType.MODIFIED
-        change_set.set_update_model(update_model)
         change_set.processed_template = transformed_after_template
 
     @handler("CreateChangeSet", expand=False)

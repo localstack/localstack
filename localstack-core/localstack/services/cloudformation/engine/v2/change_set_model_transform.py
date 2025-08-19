@@ -23,6 +23,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     FnTransform,
     Maybe,
+    NodeForEach,
     NodeGlobalTransform,
     NodeIntrinsicFunction,
     NodeIntrinsicFunctionFnTransform,
@@ -355,6 +356,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         result_template = pattern.update(template, result)
 
         return result_template
+
+    def visit_node_for_each(self, node_foreach: NodeForEach) -> PreprocEntityDelta:
+        return PreprocEntityDelta()
 
     def visit_node_intrinsic_function_fn_transform(
         self, node_intrinsic_function: NodeIntrinsicFunctionFnTransform
