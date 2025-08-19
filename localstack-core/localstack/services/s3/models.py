@@ -638,7 +638,7 @@ class KeyStore:
 
     def values(self, *_, **__) -> list[S3Object | S3DeleteMarker]:
         # we create a shallow copy with dict to avoid size changed during iteration
-        return [value for value in dict(self._store).values()]
+        return list(dict(self._store).values())
 
     def is_empty(self) -> bool:
         return not self._store

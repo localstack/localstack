@@ -1210,7 +1210,7 @@ class TestMacros:
         assert bucket_name_output
 
         tagging = aws_client.s3.get_bucket_tagging(Bucket=bucket_name_output)
-        tags_s3 = [tag for tag in tagging["TagSet"]]
+        tags_s3 = list(tagging["TagSet"])
 
         resp = []
         for tag in tags_s3:
