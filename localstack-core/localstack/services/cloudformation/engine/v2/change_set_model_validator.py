@@ -2,12 +2,12 @@ import re
 from typing import Any
 
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    _PSEUDO_PARAMETERS,
     Maybe,
     NodeIntrinsicFunction,
     NodeTemplate,
     Nothing,
     is_nothing,
-    _PSEUDO_PARAMETERS,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
     ChangeSetModelPreproc,

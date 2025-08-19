@@ -12,6 +12,7 @@ from localstack import config
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.v2.change_set_model import (
+    _PSEUDO_PARAMETERS,
     ChangeSetEntity,
     ChangeType,
     Maybe,
@@ -39,7 +40,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     TerminalValueRemoved,
     TerminalValueUnchanged,
     is_nothing,
-    _PSEUDO_PARAMETERS,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,

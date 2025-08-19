@@ -20,10 +20,10 @@ from localstack.services.cloudformation.engine.validations import ValidationErro
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import Stack
 from localstack.services.cloudformation.v2.types import (
-    EngineParameter,
-    engine_parameter_value,
     AWSNoValue,
+    EngineParameter,
     _AWSNoValueType,
+    engine_parameter_value,
 )
 from localstack.utils import testutil
 from localstack.utils.aws.arns import get_partition
