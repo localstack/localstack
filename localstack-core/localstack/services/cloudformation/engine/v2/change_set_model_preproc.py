@@ -39,6 +39,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     TerminalValueRemoved,
     TerminalValueUnchanged,
     is_nothing,
+    _PSEUDO_PARAMETERS,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
@@ -59,17 +60,6 @@ from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
 
 _AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
-
-_PSEUDO_PARAMETERS: Final[set[str]] = {
-    "AWS::Partition",
-    "AWS::AccountId",
-    "AWS::Region",
-    "AWS::StackName",
-    "AWS::StackId",
-    "AWS::URLSuffix",
-    "AWS::NoValue",
-    "AWS::NotificationARNs",
-}
 
 TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")

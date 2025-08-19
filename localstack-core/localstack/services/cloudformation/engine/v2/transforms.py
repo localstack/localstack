@@ -18,14 +18,24 @@ from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
-from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
+from localstack.services.cloudformation.v2.entities import Stack
+from localstack.services.cloudformation.v2.types import (
+    EngineParameter,
+    engine_parameter_value,
+    AWSNoValue,
+    _AWSNoValueType,
+)
 from localstack.utils import testutil
+from localstack.utils.aws.arns import get_partition
 from localstack.utils.objects import recurse_object
 from localstack.utils.strings import long_uid
+from localstack.utils.urls import localstack_host
 
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
+
+_AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
 
 _PSEUDO_PARAMETERS: Final[set[str]] = {
     "AWS::Partition",
@@ -37,6 +47,7 @@ _PSEUDO_PARAMETERS: Final[set[str]] = {
     "AWS::NoValue",
     "AWS::NotificationARNs",
 }
+
 
 policy_loader = None
 
@@ -106,11 +117,16 @@ class ResolverVisitor:
 
     # TODO: I don't think conditions can be resolved before transformation
     def __init__(
-        self, stack_parameters: dict[str, EngineParameter], mappings: dict, conditions: dict
+        self,
+        stack_parameters: dict[str, EngineParameter],
+        mappings: dict,
+        conditions: dict,
+        stack: Stack,
     ):
         self._stack_parameters = stack_parameters
         self._mappings = mappings
         self._conditions = conditions
+        self._stack = stack
 
     def visit(self, obj: Any) -> Any:
         method_name = f"_visit_{obj.__class__.__name__}"
@@ -195,7 +211,6 @@ class ResolverVisitor:
 
         sub_string = string_template
         template_variable_names = re.findall("\\${([^}]+)}", string_template)
-        template_variable_value: str | None = None
         for template_variable_name in template_variable_names:
             if sub_parameter := sub_parameters.get(template_variable_name):
                 template_variable_name = sub_parameter
@@ -226,14 +241,34 @@ class ResolverVisitor:
 
         return self.visit(value)
 
-    def _visit_pseudo_parameter(self, name: str) -> str:
-        raise RuntimeError("TODO")
+    def _visit_pseudo_parameter(self, name: str) -> str | _AWSNoValueType:
+        match name:
+            case "AWS::Partition":
+                return get_partition(self._stack.region_name)
+            case "AWS::AccountId":
+                return self._stack.account_id
+            case "AWS::Region":
+                return self._stack.region_name
+            case "AWS::StackName":
+                return self._stack.stack_name
+            case "AWS::StackId":
+                return self._stack.stack_id
+            case "AWS::URLSuffix":
+                return _AWS_URL_SUFFIX
+            case "AWS::NoValue":
+                return AWSNoValue
+            case _:
+                raise RuntimeError(f"The use of '{name}' is currently unsupported")
 
 
 def resolve_transform_refs(
-    payload: dict, stack_parameters: dict[str, EngineParameter], mappings: dict, conditions: dict
+    payload: dict,
+    stack_parameters: dict[str, EngineParameter],
+    mappings: dict,
+    conditions: dict,
+    stack: Stack,
 ) -> dict:
-    resolver = ResolverVisitor(stack_parameters, mappings, conditions)
+    resolver = ResolverVisitor(stack_parameters, mappings, conditions, stack)
     return resolver.visit(payload)
 
 
@@ -271,6 +306,7 @@ def apply_language_extensions_transform(
     stack_parameters: dict[str, EngineParameter],
     mappings: dict,
     conditions: dict,
+    stack: Stack,
 ) -> dict:
     """
     Resolve language extensions constructs
@@ -291,6 +327,7 @@ def apply_language_extensions_transform(
                     stack_parameters=stack_parameters,
                     mappings=mappings,
                     conditions=conditions,
+                    stack=stack,
                 )
                 newobj.update(**new_entries)
             return newobj
@@ -303,6 +340,7 @@ def apply_language_extensions_transform(
                     stack_parameters=stack_parameters,
                     mappings=mappings,
                     conditions=conditions,
+                    stack=stack,
                 )
 
             if isinstance(value, list):
@@ -328,6 +366,7 @@ def expand_fn_foreach(
     stack_parameters: dict[str, EngineParameter],
     mappings: dict,
     conditions: dict,
+    stack: Stack,
     extra_replace_mapping: dict | None = None,
 ) -> dict:
     if len(foreach_defn) != 3:
@@ -344,7 +383,7 @@ def expand_fn_foreach(
         # we have a reference
         if "Ref" in iteration_value:
             iteration_value = resolve_transform_refs(
-                iteration_value, stack_parameters, mappings, conditions
+                iteration_value, stack_parameters, mappings, conditions, stack
             )
         else:
             raise NotImplementedError(
@@ -371,6 +410,7 @@ def expand_fn_foreach(
                     stack_parameters,
                     mappings,
                     conditions,
+                    stack,
                     {iteration_name: variable},
                 )
                 output.update(**result)
@@ -423,13 +463,14 @@ def expand_fn_foreach(
 
 
 def apply_global_transformations(
-    account_id: str,
-    region_name: str,
+    stack: Stack,
     template: dict,
     mappings: dict,
     conditions: dict[str, bool],
     stack_parameters: dict,
 ) -> dict:
+    account_id = stack.account_id
+    region_name = stack.region_name
     processed_template = deepcopy(template)
     transformations = format_template_transformations_into_list(template.get("Transform", []))
     for transformation in transformations:
@@ -438,6 +479,7 @@ def apply_global_transformations(
             stack_parameters=stack_parameters,
             mappings=mappings,
             conditions=conditions,
+            stack=stack,
         )
 
         if not isinstance(transformation["Name"], str):
@@ -463,6 +505,7 @@ def apply_global_transformations(
                 stack_parameters=stack_parameters,
                 mappings=mappings,
                 conditions=conditions,
+                stack=stack,
             )
         elif transform_name == SECRETSMANAGER_TRANSFORM:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
@@ -519,14 +562,15 @@ transformers: dict[str, type] = {"AWS::Include": AwsIncludeTransformer}
 
 
 def apply_intrinsic_transformations(
-    account_id: str,
-    region_name: str,
+    stack: Stack,
     template: dict,
     mappings: dict,
     conditions: dict[str, bool],
     stack_parameters: dict,
 ) -> dict:
     """Resolve constructs using the 'Fn::Transform' intrinsic function."""
+    account_id = stack.account_id
+    region_name = stack.region_name
 
     def _visit(obj, path, **_):
         if isinstance(obj, dict) and "Fn::Transform" in obj:
@@ -542,6 +586,7 @@ def apply_intrinsic_transformations(
                     stack_parameters=stack_parameters,
                     mappings=mappings,
                     conditions=conditions,
+                    stack=stack,
                 )
                 if transformer_class:
                     transformer = transformer_class()
@@ -644,8 +689,7 @@ def execute_macro(
 
 
 def transform_template(
-    account_id: str,
-    region_name: str,
+    stack: Stack,
     template: dict,
     resolved_parameters: dict,
 ) -> dict:
@@ -655,8 +699,7 @@ def transform_template(
     # apply 'Fn::Transform' intrinsic functions (note: needs to be applied before global
     #  transforms below, as some utils - incl samtransformer - expect them to be resolved already)
     processed_template = apply_intrinsic_transformations(
-        account_id,
-        region_name,
+        stack,
         template,
         mappings,
         conditions,
@@ -665,8 +708,7 @@ def transform_template(
 
     # apply global transforms
     processed_template = apply_global_transformations(
-        account_id,
-        region_name,
+        stack,
         processed_template,
         mappings,
         conditions,

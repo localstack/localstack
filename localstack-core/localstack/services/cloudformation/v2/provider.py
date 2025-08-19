@@ -211,7 +211,8 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str) -> Stack
 
 # TODO: move to validations.py
 class Validator:
-    def __init__(self, stack_parameters: dict[str, EngineParameter]):
+    def __init__(self, stack: Stack, stack_parameters: dict[str, EngineParameter]):
+        self._stack = stack
         self._stack_parameters = stack_parameters
 
     def validate(self, template: dict):
@@ -223,7 +224,7 @@ class Validator:
         conditions = template.get("Conditions", {})
 
         # TODO: visit the template to look for usages of `FindInMap`
-        resolver = ResolverVisitor(self._stack_parameters, mappings, conditions)
+        resolver = ResolverVisitor(self._stack_parameters, mappings, conditions, self._stack)
         map_lookups = resolver.find_intrinsic_function_calls(template, "Fn::FindInMap")
 
         for map_lookup in map_lookups:
@@ -238,7 +239,7 @@ class Validator:
         # TODO: validate top level fields
         resources = template["Resources"]
 
-        resolver = ResolverVisitor(self._stack_parameters, mappings, conditions)
+        resolver = ResolverVisitor(self._stack_parameters, mappings, conditions, self._stack)
         refs = resolver.find_intrinsic_function_calls(template, "Ref")
 
         invalid_refs = []
@@ -349,14 +350,13 @@ class CloudformationProviderV2(CloudformationProvider):
         # apply transforms
         if after_template:
             transformed_after_template = transforms.transform_template(
-                account_id=change_set.account_id,
-                region_name=change_set.region_name,
+                stack=change_set.stack,
                 template=after_template,
                 resolved_parameters=resolved_parameters,
             )
 
             # perform synchronous validations
-            validator = Validator(resolved_parameters)
+            validator = Validator(change_set.stack, resolved_parameters)
             validator.validate(transformed_after_template)
         else:
             transformed_after_template = None

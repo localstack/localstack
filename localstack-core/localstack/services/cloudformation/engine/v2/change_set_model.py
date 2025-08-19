@@ -1047,7 +1047,10 @@ class ChangeSetModel:
         after_resource: Maybe[dict],
     ) -> NodeResource:
         # Validation: ensure the resource name is valid
-        if not VALID_LOGICAL_RESOURCE_ID_RE.match(resource_name):
+        if (
+            not VALID_LOGICAL_RESOURCE_ID_RE.match(resource_name)
+            and resource_name not in _PSEUDO_PARAMETERS
+        ):
             raise ValidationError(
                 f"Template format error: Resource name {resource_name} is non alphanumeric."
             )
@@ -1682,3 +1685,15 @@ class ChangeSetModel:
     @staticmethod
     def _is_array(value: Any) -> bool:
         return isinstance(value, list)
+
+
+_PSEUDO_PARAMETERS: Final[set[str]] = {
+    "AWS::Partition",
+    "AWS::AccountId",
+    "AWS::Region",
+    "AWS::StackName",
+    "AWS::StackId",
+    "AWS::URLSuffix",
+    "AWS::NoValue",
+    "AWS::NotificationARNs",
+}

@@ -1,3 +1,4 @@
+from __future__ import annotations
 from datetime import datetime
 from typing import NotRequired, TypedDict
 
@@ -31,3 +32,14 @@ class ResolvedResource(TypedDict):
     ResourceStatus: ResourceStatus
     PhysicalResourceId: str | None
     LastUpdatedTimestamp: datetime | None
+
+
+class _AWSNoValueType:
+    def __repr__(self) -> str:
+        return "AWS::NoValue"
+
+    def __str__(self) -> str:
+        return repr(self)
+
+
+AWSNoValue = _AWSNoValueType()
