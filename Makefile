@@ -132,10 +132,12 @@ check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have pro
 	($(VENV_RUN); python -m pytest --co tests/aws/)
 
 format:            		  ## Run ruff to format the whole codebase
-	($(VENV_RUN); python -m ruff format .; python -m ruff check --output-format=full --fix .)
+	($(VENV_RUN); python -m ruff check --output-format=full --fix .; python -m ruff format .)
 
 format-modified:          ## Run ruff to format only modified code
-	($(VENV_RUN); python -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+	($(VENV_RUN); \
+	  python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; \
+	  python -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
