@@ -1,3 +1,4 @@
+import json
 import logging
 import re
 from dataclasses import dataclass
@@ -6,7 +7,6 @@ from typing import Any
 from botocore.exceptions import ClientError
 
 from localstack.aws.connect import connect_to
-from localstack.utils import json
 
 LOG = logging.getLogger(__name__)
 
