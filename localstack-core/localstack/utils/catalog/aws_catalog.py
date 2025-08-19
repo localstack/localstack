@@ -1,16 +1,12 @@
 import logging
 
-from localstack.utils.catalog.common import FeatureSupportInLatestVersion
+from localstack.utils.catalog.common import AwsServicesSupportInLatest
 from localstack.utils.objects import singleton_factory
 
 LOG = logging.getLogger(__name__)
 
 
 class AwsServicesCatalog:
-    # Build catalog in constructor
-    # def __init__(self):
-    #     catalog = self._build_catalog()
-
     @staticmethod
     @singleton_factory
     def get() -> "AwsServicesCatalog":
@@ -26,5 +22,5 @@ class AwsServicesCatalog:
 
     def get_support_status(
         self, service_name: str, operation_name: str
-    ) -> FeatureSupportInLatestVersion:
+    ) -> AwsServicesSupportInLatest:
         raise NotImplementedError()

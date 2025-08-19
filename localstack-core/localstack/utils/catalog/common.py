@@ -1,8 +1,14 @@
 from enum import StrEnum
 
 
-class FeatureSupportInLatestVersion(StrEnum):
+class AwsServicesSupportInLatest(StrEnum):
     SUPPORTED = "SUPPORTED"
     SUPPORTED_WITH_LICENSE_UPGRADE = "SUPPORTED_WITH_LICENSE_UPGRADE"
     NOT_SUPPORTED = "NOT_SUPPORTED"
     NON_DEFAULT_PROVIDER = "NON_DEFAULT_PROVIDER"
+
+
+class CloudFormationResourcesSupportInLatest(StrEnum):
+    SUPPORTED = "SUPPORTED"
+    SUPPORTED_WITH_LICENSE_UPGRADE = "SUPPORTED_WITH_LICENSE_UPGRADE"
+    NOT_SUPPORTED = "NOT_SUPPORTED"
