@@ -90,6 +90,14 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
 
+    def transform(self) -> tuple[dict, dict]:
+        self._setup_runtime_cache()
+        self._execute_local_transforms()
+        transformed_before_template, transformed_after_template = self._execute_global_transforms()
+        self._save_runtime_cache()
+
+        return transformed_before_template, transformed_after_template
+
     # Ported from v1:
     @staticmethod
     def _apply_global_serverless_transformation(
@@ -174,16 +182,15 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             )
         return transformed_template
 
-    def transform(self) -> tuple[dict, dict]:
-        self._setup_runtime_cache()
-
+    def _execute_local_transforms(self):
         node_template = self._change_set.update_model.node_template
+        self.visit_node_resources(node_template.resources)
 
+    def _execute_global_transforms(self) -> tuple[dict, dict]:
+        node_template = self._change_set.update_model.node_template
         parameters_delta = self.visit_node_parameters(node_template.parameters)
         parameters_before = parameters_delta.before
         parameters_after = parameters_delta.after
-
-        self.visit_node_resources(node_template.resources)
 
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
@@ -223,8 +230,6 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             if "Transform" in transformed_after_template:
                 transformed_after_template.pop("Transform")
             self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
-
-        self._save_runtime_cache()
 
         return transformed_before_template, transformed_after_template
 
