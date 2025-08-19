@@ -240,14 +240,12 @@ class RequestParser(abc.ABC):
                     # Header lists can contain optional whitespace, so we strip it
                     # https://www.rfc-editor.org/rfc/rfc9110.html#name-lists-rule-abnf-extension
                     # It can also directly contain a list of headers
+                    # See https://datatracker.ietf.org/doc/html/rfc2616
                     payload = request.headers.getlist(header_name)
-                    if len(payload) == 1:
-                        header_values = payload[0].split(",")
-                        payload = [value.strip() for value in header_values]
+                    if payload:
+                        headers = ",".join(payload)
+                        payload = [value.strip() for value in headers.split(",")]
 
-                    # we set the payload to None in case the list in empty, as `getlist` returns an empty list
-                    if not payload:
-                        payload = None
                 else:
                     payload = request.headers.get(header_name)
 
