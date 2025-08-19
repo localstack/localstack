@@ -8,6 +8,7 @@ ArchivalReason = str
 AttributeName = str
 AutoScalingPolicyName = str
 AutoScalingRoleArn = str
+AvailabilityErrorMessage = str
 Backfilling = bool
 BackupArn = str
 BackupName = str
@@ -61,10 +62,12 @@ PartiQLStatement = str
 PolicyRevisionId = str
 PositiveIntegerObject = int
 ProjectionExpression = str
+Reason = str
 RecoveryPeriodInDays = int
 RegionName = str
 ReplicaStatusDescription = str
 ReplicaStatusPercentProgress = str
+Resource = str
 ResourceArnString = str
 ResourcePolicy = str
 RestoreInProgress = bool
@@ -167,6 +170,11 @@ class ContinuousBackupsStatus(StrEnum):
 class ContributorInsightsAction(StrEnum):
     ENABLE = "ENABLE"
     DISABLE = "DISABLE"
+
+
+class ContributorInsightsMode(StrEnum):
+    ACCESSED_AND_THROTTLED_KEYS = "ACCESSED_AND_THROTTLED_KEYS"
+    THROTTLED_KEYS = "THROTTLED_KEYS"
 
 
 class ContributorInsightsStatus(StrEnum):
@@ -509,10 +517,19 @@ class PolicyNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class ThrottlingReason(TypedDict, total=False):
+    reason: Optional[Reason]
+    resource: Optional[Resource]
+
+
+ThrottlingReasonList = List[ThrottlingReason]
+
+
 class ProvisionedThroughputExceededException(ServiceException):
     code: str = "ProvisionedThroughputExceededException"
     sender_fault: bool = False
     status_code: int = 400
+    ThrottlingReasons: Optional[ThrottlingReasonList]
 
 
 class ReplicaAlreadyExistsException(ServiceException):
@@ -537,6 +554,7 @@ class RequestLimitExceeded(ServiceException):
     code: str = "RequestLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
+    ThrottlingReasons: Optional[ThrottlingReasonList]
 
 
 class ResourceInUseException(ServiceException):
@@ -567,6 +585,13 @@ class TableNotFoundException(ServiceException):
     code: str = "TableNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
+    throttlingReasons: Optional[ThrottlingReasonList]
 
 
 class CancellationReason(TypedDict, total=False):
@@ -981,6 +1006,7 @@ class ContributorInsightsSummary(TypedDict, total=False):
     TableName: Optional[TableName]
     IndexName: Optional[IndexName]
     ContributorInsightsStatus: Optional[ContributorInsightsStatus]
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 ContributorInsightsSummaries = List[ContributorInsightsSummary]
@@ -1375,6 +1401,7 @@ class DescribeContributorInsightsOutput(TypedDict, total=False):
     ContributorInsightsStatus: Optional[ContributorInsightsStatus]
     LastUpdateDateTime: Optional[LastUpdateDateTime]
     FailureException: Optional[FailureException]
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 class DescribeEndpointsRequest(ServiceRequest):
@@ -2200,12 +2227,14 @@ class UpdateContributorInsightsInput(ServiceRequest):
     TableName: TableArn
     IndexName: Optional[IndexName]
     ContributorInsightsAction: ContributorInsightsAction
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 class UpdateContributorInsightsOutput(TypedDict, total=False):
     TableName: Optional[TableName]
     IndexName: Optional[IndexName]
     ContributorInsightsStatus: Optional[ContributorInsightsStatus]
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 class UpdateGlobalTableInput(ServiceRequest):
@@ -2858,6 +2887,7 @@ class DynamodbApi:
         table_name: TableArn,
         contributor_insights_action: ContributorInsightsAction,
         index_name: IndexName | None = None,
+        contributor_insights_mode: ContributorInsightsMode | None = None,
         **kwargs,
     ) -> UpdateContributorInsightsOutput:
         raise NotImplementedError

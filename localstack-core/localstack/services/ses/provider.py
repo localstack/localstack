@@ -626,7 +626,7 @@ class SNSEmitter:
                 Subject="Amazon SES Email Event Notification",
             )
         except ClientError:
-            LOGGER.exception("sending SNS message")
+            LOGGER.error("sending SNS message", exc_info=LOGGER.isEnabledFor(logging.DEBUG))
 
     def emit_delivery_event(self, payload: EventDestinationPayload, sns_topic_arn: str):
         now = datetime.now(tz=UTC)
@@ -659,7 +659,7 @@ class SNSEmitter:
                 Subject="Amazon SES Email Event Notification",
             )
         except ClientError:
-            LOGGER.exception("sending SNS message")
+            LOGGER.error("sending SNS message", exc_info=LOGGER.isEnabledFor(logging.DEBUG))
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> "SNSClient":

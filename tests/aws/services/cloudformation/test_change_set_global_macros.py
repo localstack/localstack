@@ -103,8 +103,15 @@ class TestChangeSetGlobalMacros:
         snapshot,
         deploy_cfn_template,
         create_lambda_function,
-        capture_update_process,
     ):
+        """
+        1. create the macro
+        2. deploy the first version of the template including the template
+        3. delete the first macro
+        4. create a second macro (same implementation)
+        5. update the stack adding a second SSM parameter
+        6. the deploy should work as the new macro is in place
+        """
         snapshot.add_transformer(
             JsonpathTransformer(
                 jsonpath="$..Outputs..OutputValue",
@@ -119,7 +126,7 @@ class TestChangeSetGlobalMacros:
 
         # Create the macro to be used in the first version of the template.
         macro_name_first = f"SubstitutionMacroFirst-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(macro_name_first, "macro-name-first"))
+        snapshot.add_transformer(RegexTransformer(macro_name_first, "<macro-name-first>"))
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,
@@ -200,7 +207,7 @@ class TestChangeSetGlobalMacros:
 
         # Create the macro to be used in the second version of the template.
         macro_name_second = f"SubstitutionMacroSecond-{short_uid()}"
-        snapshot.add_transformer(RegexTransformer(macro_name_second, "macro-name-second"))
+        snapshot.add_transformer(RegexTransformer(macro_name_second, "<macro-name-second>"))
         func_name = f"test_lambda_{short_uid()}"
         create_lambda_function(
             func_name=func_name,

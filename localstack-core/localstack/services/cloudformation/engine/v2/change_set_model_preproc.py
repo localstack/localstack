@@ -924,7 +924,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         def _resolve_parameter_type(value: str, type_: str) -> Any:
             match type_:
-                case "List<String>":
+                case "List<String>" | "CommaDelimitedList":
                     return [item.strip() for item in value.split(",")]
             return value
 
@@ -965,6 +965,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         def _compute_fn_ref(logical_id: str) -> PreprocEntityDelta:
+            if logical_id == "AWS::NoValue":
+                return Nothing
+
             reference_delta: PreprocEntityDelta = self._resolve_reference(logical_id=logical_id)
             if isinstance(before := reference_delta.before, PreprocResource):
                 reference_delta.before = before.physical_resource_id
@@ -1216,3 +1219,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             resolver=_compute_fn_import_value,
         )
         return delta
+
+    def visit_node_intrinsic_function_fn_transform(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        raise RuntimeError("Fn::Transform should have been handled by the Transformer")

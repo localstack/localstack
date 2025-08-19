@@ -1,6 +1,7 @@
 import copy
 import json
 import logging
+import re
 from collections import defaultdict
 from datetime import UTC, datetime
 
@@ -80,6 +81,7 @@ from localstack.aws.connect import connect_to
 from localstack.services.cloudformation import api_utils
 from localstack.services.cloudformation.engine import template_preparer
 from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.engine.transformers import FailedTransformationException
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeSetModel,
     ChangeType,
@@ -120,6 +122,10 @@ from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
 
 LOG = logging.getLogger(__name__)
+
+SSM_PARAMETER_TYPE_RE = re.compile(
+    r"^AWS::SSM::Parameter::Value<(?P<listtype>List<)?(?P<innertype>[^>]+)>?>$"
+)
 
 
 def is_stack_arn(stack_name_or_id: str) -> bool:
@@ -223,16 +229,30 @@ class CloudformationProviderV2(CloudformationProvider):
                 type_=parameter["Type"], given_value=given_value, default_value=default_value
             )
 
-            if parameter["Type"] == "AWS::SSM::Parameter::Value<String>":
-                # TODO: support other parameter types
-                try:
-                    resolved_parameter["resolved_value"] = resolve_ssm_parameter(
-                        account_id, region_name, given_value or default_value
-                    )
-                except Exception:
-                    raise ValidationError(
-                        f"Parameter {name} should either have input value or default value"
-                    )
+            # TODO: support other parameter types
+            if match := SSM_PARAMETER_TYPE_RE.match(parameter["Type"]):
+                inner_type = match.group("innertype")
+                is_list_type = match.group("listtype") is not None
+                if is_list_type or inner_type == "CommaDelimitedList":
+                    # list types
+                    try:
+                        resolved_value = resolve_ssm_parameter(
+                            account_id, region_name, given_value or default_value
+                        )
+                        resolved_parameter["resolved_value"] = resolved_value.split(",")
+                    except Exception:
+                        raise ValidationError(
+                            f"Parameter {name} should either have input value or default value"
+                        )
+                else:
+                    try:
+                        resolved_parameter["resolved_value"] = resolve_ssm_parameter(
+                            account_id, region_name, given_value or default_value
+                        )
+                    except Exception:
+                        raise ValidationError(
+                            f"Parameter {name} should either have input value or default value"
+                        )
             elif given_value is None and default_value is None:
                 invalid_parameters.append(name)
                 continue
@@ -299,9 +319,18 @@ class CloudformationProviderV2(CloudformationProvider):
             before_template=before_template,
             after_template=after_template,
         )
-        transformed_before_template, transformed_after_template = (
-            change_set_model_transform.transform()
-        )
+        try:
+            transformed_before_template, transformed_after_template = (
+                change_set_model_transform.transform()
+            )
+        except FailedTransformationException as e:
+            change_set.status = ChangeSetStatus.FAILED
+            change_set.status_reason = e.message
+            change_set.stack.set_stack_status(
+                status=StackStatus.ROLLBACK_IN_PROGRESS, reason=e.message
+            )
+            change_set.stack.set_stack_status(status=StackStatus.CREATE_FAILED)
+            return
 
         # Remodel the update graph after the applying the global transforms.
         change_set_model = ChangeSetModel(
@@ -362,6 +391,12 @@ class CloudformationProviderV2(CloudformationProvider):
 
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
+
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
 
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
         # handle ARN stack_name here (not valid for initial CREATE, since stack doesn't exist yet)
@@ -593,11 +628,24 @@ class CloudformationProviderV2(CloudformationProvider):
             NotificationARNs=[],
         )
         if change_set.resolved_parameters:
-            result["Parameters"] = [
-                # TODO: add masking support.
-                Parameter(ParameterKey=key, ParameterValue=value)
-                for (key, value) in change_set.resolved_parameters.items()
-            ]
+            result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
+        return result
+
+    @staticmethod
+    def _render_resolved_parameters(
+        resolved_parameters: dict[str, EngineParameter],
+    ) -> list[Parameter]:
+        result = []
+        for name, resolved_parameter in resolved_parameters.items():
+            parameter = Parameter(
+                ParameterKey=name,
+                ParameterValue=resolved_parameter.get("given_value")
+                or resolved_parameter.get("default_value"),
+            )
+            if resolved_value := resolved_parameter.get("resolved_value"):
+                parameter["ResolvedValue"] = resolved_value
+            result.append(parameter)
+
         return result
 
     @handler("DescribeChangeSet")
@@ -688,6 +736,12 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
+        if len(template_body) > 51200:
+            raise ValidationError(
+                f"1 validation error detected: Value '{template_body}' at 'templateBody' "
+                "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
+
         if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
             "Transform" in structured_template.keys() or "Fn::Transform" in template_body
         ):
@@ -727,6 +781,8 @@ class CloudformationProviderV2(CloudformationProvider):
             after_parameters=after_parameters,
             previous_update_model=None,
         )
+        if change_set.status == ChangeSetStatus.FAILED:
+            return CreateStackOutput(StackId=stack.stack_id)
 
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
@@ -742,6 +798,7 @@ class CloudformationProviderV2(CloudformationProvider):
                 # which was just deployed
                 stack.template = change_set.template
                 stack.template_body = change_set.template_body
+                stack.processed_template = change_set.processed_template
                 stack.resolved_parameters = change_set.resolved_parameters
                 stack.resolved_exports = {}
                 for output in result.outputs:
@@ -793,8 +850,7 @@ class CloudformationProviderV2(CloudformationProvider):
 
         return DescribeStacksOutput(Stacks=describe_stack_output)
 
-    @staticmethod
-    def _describe_stack(stack: Stack) -> ApiStack:
+    def _describe_stack(self, stack: Stack) -> ApiStack:
         stack_description = ApiStack(
             Description=stack.description,
             CreationTime=stack.creation_time,
@@ -810,7 +866,6 @@ class CloudformationProviderV2(CloudformationProvider):
             RollbackConfiguration=RollbackConfiguration(),
             Tags=[],
             NotificationARNs=[],
-            # "Parameters": stack.resolved_parameters,
         )
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
             # TODO: actually track updated time
@@ -822,16 +877,9 @@ class CloudformationProviderV2(CloudformationProvider):
             stack_description["ChangeSetId"] = change_set_id
 
         if stack.resolved_parameters:
-            stack_description["Parameters"] = []
-            for name, resolved_parameter in stack.resolved_parameters.items():
-                parameter = Parameter(
-                    ParameterKey=name,
-                    ParameterValue=resolved_parameter.get("given_value")
-                    or resolved_parameter.get("default_value"),
-                )
-                if resolved_value := resolved_parameter.get("resolved_value"):
-                    parameter["ResolvedValue"] = resolved_value
-                stack_description["Parameters"].append(parameter)
+            stack_description["Parameters"] = self._render_resolved_parameters(
+                stack.resolved_parameters
+            )
 
         if stack.resolved_outputs:
             stack_description["Outputs"] = stack.resolved_outputs

@@ -1479,10 +1479,11 @@ class TemplateDeployer:
                         # correct order yet.
                         continue
                     case OperationStatus.FAILED:
-                        LOG.exception(
+                        LOG.error(
                             "Failed to delete resource with id %s. Reason: %s",
                             resource_id,
                             event.message or "unknown",
+                            exc_info=LOG.isEnabledFor(logging.DEBUG),
                         )
                     case OperationStatus.IN_PROGRESS:
                         # the resource provider executor should not return this state, so
@@ -1494,10 +1495,11 @@ class TemplateDeployer:
                         raise Exception(f"Use of unsupported status found: {other_status}")
 
             except Exception as e:
-                LOG.exception(
+                LOG.error(
                     "Failed to delete resource with id %s. Final exception: %s",
                     resource_id,
                     e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
         # update status

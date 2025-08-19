@@ -166,7 +166,11 @@ def handle_request(request: Request, region: str) -> Response:
         op = service.operation_model(service.operation_names[0])
         return serializer.serialize_error_to_response(e, op, request.headers, request_id)
     except Exception as e:
-        LOG.exception("exception")
+        LOG.error(
+            "Internal Server exception while executing SQS Query operation: '%s'",
+            e,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
         op = service.operation_model(service.operation_names[0])
         return serializer.serialize_error_to_response(
             CommonServiceException(

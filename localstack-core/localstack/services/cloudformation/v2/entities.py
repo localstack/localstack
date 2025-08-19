@@ -29,7 +29,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     UpdateModel,
 )
-from localstack.services.cloudformation.v2.types import ResolvedResource
+from localstack.services.cloudformation.v2.types import EngineParameter, ResolvedResource
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
 
@@ -192,7 +192,7 @@ class ChangeSet:
     execution_status: ExecutionStatus
     creation_time: datetime
     processed_template: dict | None
-    resolved_parameters: list[ApiParameter]
+    resolved_parameters: dict[str, EngineParameter]
     description: str | None
 
     def __init__(
@@ -210,7 +210,7 @@ class ChangeSet:
         self.execution_status = ExecutionStatus.AVAILABLE
         self.update_model = None
         self.creation_time = datetime.now(tz=UTC)
-        self.resolved_parameters = []
+        self.resolved_parameters = {}
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)

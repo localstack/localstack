@@ -580,6 +580,7 @@ class TestApiGatewayCommon:
         snapshot.match("failed-validation-bad-data", response_post_bad_body.json())
 
     @markers.aws.validated
+    @markers.requires_in_process  # uses pytest httpserver
     def test_integration_request_parameters_mapping(
         self, create_rest_apigw, aws_client, echo_http_server_post
     ):
@@ -791,6 +792,7 @@ class TestApiGatewayCommon:
         assert split_trace[1] != hardcoded_parent
 
     @markers.aws.validated
+    @markers.requires_in_process  # uses pytest httpserver
     def test_input_path_template_formatting(
         self, aws_client, create_rest_apigw, echo_http_server_post, snapshot
     ):

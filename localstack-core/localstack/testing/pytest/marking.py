@@ -58,13 +58,23 @@ class Markers:
 
     # test selection
     acceptance_test = pytest.mark.acceptance_test
+    """This test is an acceptance test"""
     skip_offline = pytest.mark.skip_offline
+    """Test is skipped if offline, as it requires some sort of internet connection to run"""
     only_on_amd64 = pytest.mark.only_on_amd64
+    """Test requires ability of the system to execute amd64 binaries"""
     only_on_arm64 = pytest.mark.only_on_arm64
+    """Test requires ability of the system to execute arm64 binaries"""
     resource_heavy = pytest.mark.resource_heavy
-    only_in_docker = pytest.mark.only_in_docker
-    # Tests to execute when updating snapshots for a new Lambda runtime
+    """Test is very resource heavy, and might be skipped in CI"""
+    requires_in_container = pytest.mark.requires_in_container
+    """Test requires LocalStack to run inside a container"""
+    requires_in_process = pytest.mark.requires_in_process
+    """The test and the LS instance have to be run in the same process"""
+    requires_docker = pytest.mark.requires_docker
+    """The test requires docker or a compatible container engine - will not work on kubernetes"""
     lambda_runtime_update = pytest.mark.lambda_runtime_update
+    """Tests to execute when updating snapshots for a new Lambda runtime"""
 
 
 # pytest plugin
@@ -131,8 +141,8 @@ def filter_by_markers(config: "Config", items: list[pytest.Item]):
         "Add network connectivity and remove the --offline option when running "
         "the test."
     )
-    only_in_docker = pytest.mark.skip(
-        reason="Test requires execution inside Docker (e.g., to install system packages)"
+    requires_in_container = pytest.mark.skip(
+        reason="Test requires execution inside a container (e.g., to install system packages)"
     )
     only_on_amd64 = pytest.mark.skip(
         reason="Test uses features that are currently only supported for AMD64. Skipping in CI."
@@ -144,8 +154,8 @@ def filter_by_markers(config: "Config", items: list[pytest.Item]):
     for item in items:
         if is_offline and "skip_offline" in item.keywords:
             item.add_marker(skip_offline)
-        if not is_in_docker and "only_in_docker" in item.keywords:
-            item.add_marker(only_in_docker)
+        if not is_in_docker and "requires_in_container" in item.keywords:
+            item.add_marker(requires_in_container)
         if is_in_ci and not is_amd64 and "only_on_amd64" in item.keywords:
             item.add_marker(only_on_amd64)
         if is_in_ci and not is_arm64 and "only_on_arm64" in item.keywords:
@@ -177,7 +187,7 @@ def pytest_configure(config):
     )
     config.addinivalue_line(
         "markers",
-        "only_in_docker: mark the test as running only in Docker (e.g., requires installation of system packages)",
+        "requires_in_container: mark the test as running only in a container (e.g., requires installation of system packages)",
     )
     config.addinivalue_line(
         "markers",
@@ -207,4 +217,12 @@ def pytest_configure(config):
     config.addinivalue_line(
         "markers",
         "multiruntime: parametrize test against multiple Lambda runtimes",
+    )
+    config.addinivalue_line(
+        "markers",
+        "requires_docker: mark the test as requiring docker (or a compatible container engine) - will not work on kubernetes.",
+    )
+    config.addinivalue_line(
+        "markers",
+        "requires_in_process: mark the test as requiring the test to run inside the same process as LocalStack - will not work if tests are run against a running LS container.",
     )

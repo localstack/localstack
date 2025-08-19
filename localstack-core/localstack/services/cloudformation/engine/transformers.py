@@ -257,10 +257,11 @@ def execute_macro(
     formatted_stack_parameters = {}
     for key, value in stack_parameters.items():
         # TODO: we want to support other types of parameters
-        if value.get("ParameterType") == "CommaDelimitedList":
-            formatted_stack_parameters[key] = value.get("ParameterValue").split(",")
+        parameter_value = value.get("ParameterValue")
+        if value.get("ParameterType") == "CommaDelimitedList" and isinstance(parameter_value, str):
+            formatted_stack_parameters[key] = parameter_value.split(",")
         else:
-            formatted_stack_parameters[key] = value.get("ParameterValue")
+            formatted_stack_parameters[key] = parameter_value
 
     transformation_id = f"{account_id}::{macro['Name']}"
     event = {

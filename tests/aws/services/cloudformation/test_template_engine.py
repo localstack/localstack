@@ -350,7 +350,6 @@ class TestSsmParameters:
         )
 
     @markers.aws.validated
-    @skip_if_v2_provider("Resolve")
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
@@ -393,7 +392,6 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value_v1
 
-    @skip_if_v2_provider("Resolve")
     @markers.aws.needs_fixing
     def test_resolve_ssm_secure(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
@@ -471,7 +469,6 @@ class TestSsmParameters:
 
         assert ssm_parameter == key_value
 
-    @skip_if_v2_provider("Resolve", reason="stringlist type not supported yet")
     @markers.aws.validated
     def test_create_change_set_with_ssm_parameter_list(
         self, deploy_cfn_template, aws_client, region_name, account_id, snapshot
@@ -670,7 +667,6 @@ class TestMacros:
         snapshot.match("stack_outputs", stack_with_macro.outputs)
         snapshot.match("stack_resource_descriptions", description)
 
-    @skip_if_v2_provider("Macros")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -731,9 +727,6 @@ class TestMacros:
         snapshot.add_transformer(snapshot.transform.regex(new_value, "new-value"))
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider(
-        "Transform", reason="as resource property with missing Name and Parameters fields"
-    )
     @markers.aws.validated
     @pytest.mark.parametrize(
         "template_to_transform",
@@ -794,7 +787,6 @@ class TestMacros:
         snapshot.match("original_template", original_template)
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider("Fn::Transform")
     @markers.aws.validated
     def test_attribute_uses_macro(self, deploy_cfn_template, create_lambda_function, aws_client):
         macro_function_path = os.path.join(
@@ -830,7 +822,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
+    @skip_if_v1_provider("V1 is unable to resolve fn::transform with lists")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -871,7 +863,6 @@ class TestMacros:
         )
         snapshot.match("processed_template", processed_template)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -1002,7 +993,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_to_validate_template_limit_for_macro(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
@@ -1055,7 +1045,6 @@ class TestMacros:
         )
         snapshot.match("error_response", response)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_error_pass_macro_as_reference(self, snapshot, aws_client):
         """
@@ -1077,7 +1066,6 @@ class TestMacros:
             )
         snapshot.match("error", ex.value.response)
 
-    @skip_if_v2_provider("Transform")
     @markers.aws.validated
     def test_functions_and_references_during_transformation(
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
@@ -1128,7 +1116,6 @@ class TestMacros:
             processed_template["TemplateBody"]["Resources"]["Parameter"]["Properties"]["Value"],
         )
 
-    @skip_if_v2_provider("Transform")
     @pytest.mark.parametrize(
         "macro_function",
         [
@@ -1223,7 +1210,7 @@ class TestMacros:
         assert bucket_name_output
 
         tagging = aws_client.s3.get_bucket_tagging(Bucket=bucket_name_output)
-        tags_s3 = [tag for tag in tagging["TagSet"]]
+        tags_s3 = list(tagging["TagSet"])
 
         resp = []
         for tag in tags_s3:

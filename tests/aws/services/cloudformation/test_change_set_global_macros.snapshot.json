@@ -339,7 +339,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_change_set_global_macros.py::TestChangeSetGlobalMacros::test_update_after_macro_for_before_version_is_deleted": {
-    "recorded-date": "26-06-2025, 11:59:06",
+    "recorded-date": "14-08-2025, 14:14:38",
     "recorded-content": {
       "describe-change-set-1-prop-values": {
         "Capabilities": [],

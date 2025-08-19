@@ -993,6 +993,9 @@ class Ec2InstanceConnectEndpointState(StrEnum):
     delete_in_progress = "delete-in-progress"
     delete_complete = "delete-complete"
     delete_failed = "delete-failed"
+    update_in_progress = "update-in-progress"
+    update_complete = "update-complete"
+    update_failed = "update-failed"
 
 
 class EkPubKeyFormat(StrEnum):
@@ -5110,6 +5113,7 @@ class AssociateRouteServerResult(TypedDict, total=False):
 
 class AssociateRouteTableRequest(ServiceRequest):
     GatewayId: Optional[RouteGatewayId]
+    PublicIpv4Pool: Optional[Ipv4PoolEc2Id]
     DryRun: Optional[Boolean]
     SubnetId: Optional[SubnetId]
     RouteTableId: RouteTableId
@@ -6604,6 +6608,7 @@ class DiskImageDescription(TypedDict, total=False):
 
 class ImportVolumeTaskDetails(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     BytesConverted: Optional[Long]
     Description: Optional[String]
     Image: Optional[DiskImageDescription]
@@ -6612,6 +6617,7 @@ class ImportVolumeTaskDetails(TypedDict, total=False):
 
 class ImportInstanceVolumeDetailItem(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     BytesConverted: Optional[Long]
     Description: Optional[String]
     Image: Optional[DiskImageDescription]
@@ -6888,9 +6894,10 @@ class CreateCustomerGatewayResult(TypedDict, total=False):
 
 
 class CreateDefaultSubnetRequest(ServiceRequest):
-    AvailabilityZone: AvailabilityZoneName
+    AvailabilityZone: Optional[AvailabilityZoneName]
     DryRun: Optional[Boolean]
     Ipv6Native: Optional[Boolean]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
 
 
 class PrivateDnsNameOptionsOnLaunch(TypedDict, total=False):
@@ -7280,6 +7287,7 @@ FleetBlockDeviceMappingRequestList = List[FleetBlockDeviceMappingRequest]
 
 
 class Placement(TypedDict, total=False):
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
     PartitionNumber: Optional[Integer]
@@ -7453,6 +7461,16 @@ class CreateInstanceConnectEndpointRequest(ServiceRequest):
     IpAddressType: Optional[IpAddressType]
 
 
+class InstanceConnectEndpointDnsNames(TypedDict, total=False):
+    DnsName: Optional[String]
+    FipsDnsName: Optional[String]
+
+
+class InstanceConnectEndpointPublicDnsNames(TypedDict, total=False):
+    Ipv4: Optional[InstanceConnectEndpointDnsNames]
+    Dualstack: Optional[InstanceConnectEndpointDnsNames]
+
+
 SecurityGroupIdSet = List[SecurityGroupId]
 NetworkInterfaceIdSet = List[String]
 
@@ -7474,6 +7492,7 @@ class Ec2InstanceConnectEndpoint(TypedDict, total=False):
     SecurityGroupIds: Optional[SecurityGroupIdSet]
     Tags: Optional[TagList]
     IpAddressType: Optional[IpAddressType]
+    PublicDnsNames: Optional[InstanceConnectEndpointPublicDnsNames]
 
 
 class CreateInstanceConnectEndpointResult(TypedDict, total=False):
@@ -7873,6 +7892,7 @@ LaunchTemplateTagSpecificationRequestList = List[LaunchTemplateTagSpecificationR
 
 class LaunchTemplatePlacementRequest(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
     HostId: Optional[DedicatedHostId]
@@ -8168,6 +8188,7 @@ LaunchTemplateTagSpecificationList = List[LaunchTemplateTagSpecification]
 
 class LaunchTemplatePlacement(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Affinity: Optional[String]
     GroupName: Optional[String]
     HostId: Optional[String]
@@ -9132,6 +9153,7 @@ class RouteTableAssociation(TypedDict, total=False):
     RouteTableId: Optional[String]
     SubnetId: Optional[String]
     GatewayId: Optional[String]
+    PublicIpv4Pool: Optional[String]
     AssociationState: Optional[RouteTableAssociationState]
 
 
@@ -10007,7 +10029,8 @@ class CreateVolumePermissionModifications(TypedDict, total=False):
 
 
 class CreateVolumeRequest(ServiceRequest):
-    AvailabilityZone: AvailabilityZoneName
+    AvailabilityZone: Optional[AvailabilityZoneName]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Encrypted: Optional[Boolean]
     Iops: Optional[Integer]
     KmsKeyId: Optional[KmsKeyId]
@@ -10210,6 +10233,7 @@ class ServiceConfiguration(TypedDict, total=False):
     ServiceId: Optional[String]
     ServiceName: Optional[String]
     ServiceState: Optional[ServiceState]
+    AvailabilityZoneIds: Optional[ValueStringList]
     AvailabilityZones: Optional[ValueStringList]
     AcceptanceRequired: Optional[Boolean]
     ManagesVpcEndpoints: Optional[Boolean]
@@ -12877,6 +12901,7 @@ InstanceStatusEventList = List[InstanceStatusEvent]
 
 class InstanceStatus(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     OutpostArn: Optional[String]
     Operator: Optional[OperatorResponse]
     Events: Optional[InstanceStatusEventList]
@@ -15149,6 +15174,7 @@ class SpotInstanceRequest(TypedDict, total=False):
     LaunchGroup: Optional[String]
     LaunchSpecification: Optional[LaunchSpecification]
     LaunchedAvailabilityZone: Optional[String]
+    LaunchedAvailabilityZoneId: Optional[String]
     ProductDescription: Optional[RIProductDescription]
     SpotInstanceRequestId: Optional[String]
     SpotPrice: Optional[String]
@@ -15174,6 +15200,7 @@ InstanceTypeList = List[InstanceType]
 
 
 class DescribeSpotPriceHistoryRequest(ServiceRequest):
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     DryRun: Optional[Boolean]
     StartTime: Optional[DateTime]
     EndTime: Optional[DateTime]
@@ -15187,6 +15214,7 @@ class DescribeSpotPriceHistoryRequest(ServiceRequest):
 
 class SpotPrice(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     InstanceType: Optional[InstanceType]
     ProductDescription: Optional[RIProductDescription]
     SpotPrice: Optional[String]
@@ -15889,6 +15917,7 @@ VolumeAttachmentList = List[VolumeAttachment]
 
 
 class Volume(TypedDict, total=False):
+    AvailabilityZoneId: Optional[String]
     OutpostArn: Optional[String]
     Iops: Optional[Integer]
     Tags: Optional[TagList]
@@ -16126,6 +16155,7 @@ class ServiceDetail(TypedDict, total=False):
     ServiceId: Optional[String]
     ServiceType: Optional[ServiceTypeDetailSet]
     ServiceRegion: Optional[String]
+    AvailabilityZoneIds: Optional[ValueStringList]
     AvailabilityZones: Optional[ValueStringList]
     Owner: Optional[String]
     BaseEndpointDnsNames: Optional[ValueStringList]
@@ -18361,8 +18391,9 @@ class ImportSnapshotResult(TypedDict, total=False):
 
 
 class ImportVolumeRequest(ServiceRequest):
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     DryRun: Optional[Boolean]
-    AvailabilityZone: String
+    AvailabilityZone: Optional[String]
     Image: DiskImageDetail
     Description: Optional[String]
     Volume: VolumeDetail
@@ -18758,6 +18789,18 @@ class ModifyInstanceCapacityReservationAttributesRequest(ServiceRequest):
 
 
 class ModifyInstanceCapacityReservationAttributesResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
+class ModifyInstanceConnectEndpointRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    InstanceConnectEndpointId: InstanceConnectEndpointId
+    IpAddressType: Optional[IpAddressType]
+    SecurityGroupIds: Optional[SecurityGroupIdStringListRequest]
+    PreserveClientIp: Optional[Boolean]
+
+
+class ModifyInstanceConnectEndpointResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
@@ -21108,6 +21151,7 @@ class Ec2Api:
         context: RequestContext,
         route_table_id: RouteTableId,
         gateway_id: RouteGatewayId | None = None,
+        public_ipv4_pool: Ipv4PoolEc2Id | None = None,
         dry_run: Boolean | None = None,
         subnet_id: SubnetId | None = None,
         **kwargs,
@@ -21646,9 +21690,10 @@ class Ec2Api:
     def create_default_subnet(
         self,
         context: RequestContext,
-        availability_zone: AvailabilityZoneName,
+        availability_zone: AvailabilityZoneName | None = None,
         dry_run: Boolean | None = None,
         ipv6_native: Boolean | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         **kwargs,
     ) -> CreateDefaultSubnetResult:
         raise NotImplementedError
@@ -22699,7 +22744,8 @@ class Ec2Api:
     def create_volume(
         self,
         context: RequestContext,
-        availability_zone: AvailabilityZoneName,
+        availability_zone: AvailabilityZoneName | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         encrypted: Boolean | None = None,
         iops: Integer | None = None,
         kms_key_id: KmsKeyId | None = None,
@@ -25330,6 +25376,7 @@ class Ec2Api:
     def describe_spot_price_history(
         self,
         context: RequestContext,
+        availability_zone_id: AvailabilityZoneId | None = None,
         dry_run: Boolean | None = None,
         start_time: DateTime | None = None,
         end_time: DateTime | None = None,
@@ -27266,10 +27313,11 @@ class Ec2Api:
     def import_volume(
         self,
         context: RequestContext,
-        availability_zone: String,
         image: DiskImageDetail,
         volume: VolumeDetail,
+        availability_zone_id: AvailabilityZoneId | None = None,
         dry_run: Boolean | None = None,
+        availability_zone: String | None = None,
         description: String | None = None,
         **kwargs,
     ) -> ImportVolumeResult:
@@ -27519,6 +27567,19 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ModifyInstanceCapacityReservationAttributesResult:
+        raise NotImplementedError
+
+    @handler("ModifyInstanceConnectEndpoint")
+    def modify_instance_connect_endpoint(
+        self,
+        context: RequestContext,
+        instance_connect_endpoint_id: InstanceConnectEndpointId,
+        dry_run: Boolean | None = None,
+        ip_address_type: IpAddressType | None = None,
+        security_group_ids: SecurityGroupIdStringListRequest | None = None,
+        preserve_client_ip: Boolean | None = None,
+        **kwargs,
+    ) -> ModifyInstanceConnectEndpointResult:
         raise NotImplementedError
 
     @handler("ModifyInstanceCpuOptions")
