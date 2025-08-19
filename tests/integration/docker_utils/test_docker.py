@@ -888,16 +888,20 @@ class TestDockerClient:
         container_names = docker_client.get_all_container_names()
         assert cn1 not in container_names
 
-    def test_remove_container_should_skip_when_container_doesnt_exist_and_checking_container_existence(
+    def test_remove_container_should_throw_exception_when_container_doesnt_exist_and_not_forcing(
         self, docker_client: ContainerClient
     ):
-        docker_client.remove_container("mygiganonexistingcontainer", check_existence=True)
+        with pytest.raises(NoSuchContainer):
+            docker_client.remove_container(
+                "mygiganonexistingcontainer", check_existence=False, force=False
+            )
 
-    def test_remove_container_should_throw_exception_when_container_doesnt_exist_and_not_checking_container_existence(
+    def test_remove_container_should_work_even_when_container_doesnt_exist_because_of_forcing(
         self, docker_client: ContainerClient
     ):
-        with pytest.raises(ContainerException):
-            docker_client.remove_container("mygiganonexistingcontainer", check_existence=False)
+        docker_client.remove_container(
+            "mygiganonexistingcontainer", check_existence=False, force=True
+        )
 
     def test_list_containers_filter(self, docker_client: ContainerClient, create_container):
         name_prefix = "filter_tests_"
