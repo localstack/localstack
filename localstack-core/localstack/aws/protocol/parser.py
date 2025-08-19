@@ -241,7 +241,7 @@ class RequestParser(abc.ABC):
                     # https://www.rfc-editor.org/rfc/rfc9110.html#name-lists-rule-abnf-extension
                     # It can also directly contain a list of headers
                     # See https://datatracker.ietf.org/doc/html/rfc2616
-                    payload = request.headers.getlist(header_name)
+                    payload = request.headers.getlist(header_name) or None
                     if payload:
                         headers = ",".join(payload)
                         payload = [value.strip() for value in headers.split(",")]
