@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import abc
 import enum
+import re
 from collections.abc import Generator
 from itertools import zip_longest
 from typing import Any, Final, TypedDict, cast
@@ -9,6 +10,7 @@ from typing import Any, Final, TypedDict, cast
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
 from localstack.services.cloudformation.v2.types import (
     EngineParameter,
@@ -16,6 +18,8 @@ from localstack.services.cloudformation.v2.types import (
 )
 from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import camel_to_snake_case
+
+VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
 
 T = TypeVar("T")
 
@@ -1042,6 +1046,12 @@ class ChangeSetModel:
         before_resource: Maybe[dict],
         after_resource: Maybe[dict],
     ) -> NodeResource:
+        # Validation: ensure the resource name is valid
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(resource_name):
+            raise ValidationError(
+                f"Template format error: Resource name {resource_name} is non alphanumeric."
+            )
+
         node_resource = self._visited_scopes.get(scope)
         if isinstance(node_resource, NodeResource):
             return node_resource

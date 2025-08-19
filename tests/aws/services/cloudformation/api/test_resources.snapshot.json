@@ -12,7 +12,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_resources.py::test_invalid_logical_resource_id": {
-    "recorded-date": "25-07-2025, 22:21:31",
+    "recorded-date": "19-08-2025, 10:10:33",
     "recorded-content": {
       "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: Resource name my-bad-resource-id is non alphanumeric."
     }

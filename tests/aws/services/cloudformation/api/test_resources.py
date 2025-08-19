@@ -3,6 +3,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
+from localstack.utils.strings import short_uid
 from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.pytest import markers
@@ -37,7 +38,7 @@ def test_describe_non_existent_resource(aws_client, deploy_cfn_template, snapsho
 
 @skip_if_v1_provider("Not implemented for v1")
 @markers.aws.validated
-def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
+def test_invalid_logical_resource_id(aws_client, snapshot):
     template = {
         "Resources": {
             "my-bad-resource-id": {
@@ -49,7 +50,14 @@ def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
             }
         }
     }
+    change_set_name = f"cs-{short_uid()}"
+    stack_name = f"stack-{short_uid()}"
     with pytest.raises(ClientError) as err:
-        deploy_cfn_template(template=json.dumps(template))
+        aws_client.cloudformation.create_change_set(
+            ChangeSetName=change_set_name,
+            StackName=stack_name,
+            ChangeSetType="CREATE",
+            TemplateBody=json.dumps(template),
+        )
 
     snapshot.match("error", err.value)
