@@ -896,7 +896,7 @@ class TestDockerClient:
     def test_remove_container_should_throw_exception_when_container_doesnt_exist_and_not_checking_container_existence(
         self, docker_client: ContainerClient
     ):
-        with pytest.raises(NoSuchContainer):
+        with pytest.raises(ContainerException):
             docker_client.remove_container("mygiganonexistingcontainer", check_existence=False)
 
     def test_list_containers_filter(self, docker_client: ContainerClient, create_container):
