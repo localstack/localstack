@@ -715,12 +715,12 @@ def validate_layer_runtimes_and_architectures(
 
     if compatible_runtimes and set(compatible_runtimes).difference(ALL_RUNTIMES):
         constraint = f"Member must satisfy enum value set: {VALID_RUNTIMES}"
-        validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
+        validation_msg = f"Value '[{', '.join(list(compatible_runtimes))}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
     if compatible_architectures and set(compatible_architectures).difference(ARCHITECTURES):
         constraint = "[Member must satisfy enum value set: [x86_64, arm64]]"
-        validation_msg = f"Value '[{', '.join([s for s in compatible_architectures])}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
+        validation_msg = f"Value '[{', '.join(list(compatible_architectures))}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
     return validations

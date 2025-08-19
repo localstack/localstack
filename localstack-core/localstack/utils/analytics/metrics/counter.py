@@ -200,10 +200,7 @@ class LabeledCounter(Metric):
                 )
 
             # Create labels dictionary
-            labels_dict = {
-                label_name: label_value
-                for label_name, label_value in zip(self._labels, label_values)
-            }
+            labels_dict = dict(zip(self._labels, label_values))
 
             payload.append(
                 LabeledCounterPayload(
