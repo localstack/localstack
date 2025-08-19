@@ -8,6 +8,12 @@ class AwsServicesSupportInLatest(StrEnum):
     NON_DEFAULT_PROVIDER = "NON_DEFAULT_PROVIDER"
 
 
+class AwsServiceOperationsSupportInLatest(StrEnum):
+    SUPPORTED = "SUPPORTED"
+    SUPPORTED_WITH_LICENSE_UPGRADE = "SUPPORTED_WITH_LICENSE_UPGRADE"
+    NOT_SUPPORTED = "NOT_SUPPORTED"
+
+
 class CloudFormationResourcesSupportInLatest(StrEnum):
     SUPPORTED = "SUPPORTED"
     SUPPORTED_WITH_LICENSE_UPGRADE = "SUPPORTED_WITH_LICENSE_UPGRADE"
