@@ -7,7 +7,7 @@ from typing import Any, Final, TypedDict
 
 import boto3
 import jsonpath_ng
-from botocore.exceptions import ClientError
+from botocore.exceptions import ClientError, ParamValidationError
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.connect import connect_to
@@ -28,6 +28,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeIntrinsicFunctionFnTransform,
     NodeProperties,
+    NodeProperty,
     NodeResource,
     NodeResources,
     NodeTransform,
@@ -528,3 +529,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             return super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
         except RuntimeError:
             return self.visit(node_intrinsic_function.arguments)
+
+    def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
+        try:
+            return super().visit_node_property(node_property)
+        except ParamValidationError:
+            return self.visit(node_property.value)
