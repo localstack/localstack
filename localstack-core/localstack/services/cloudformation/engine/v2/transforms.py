@@ -7,7 +7,7 @@ import os
 import re
 from collections.abc import Callable
 from copy import deepcopy
-from typing import Any
+from typing import Any, Final
 
 import boto3
 from botocore.exceptions import ClientError
@@ -26,6 +26,17 @@ from localstack.utils.strings import long_uid
 SERVERLESS_TRANSFORM = "AWS::Serverless-2016-10-31"
 EXTENSIONS_TRANSFORM = "AWS::LanguageExtensions"
 SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
+
+_PSEUDO_PARAMETERS: Final[set[str]] = {
+    "AWS::Partition",
+    "AWS::AccountId",
+    "AWS::Region",
+    "AWS::StackName",
+    "AWS::StackId",
+    "AWS::URLSuffix",
+    "AWS::NoValue",
+    "AWS::NotificationARNs",
+}
 
 policy_loader = None
 
@@ -116,6 +127,9 @@ class ResolverVisitor:
         if "Ref" in out:
             return self.visit_ref(out["Ref"])
 
+        if "Fn::Sub" in out:
+            return self.visit_sub(out["Fn::Sub"])
+
         return out
 
     def visit_str(self, obj: str) -> str:
@@ -128,14 +142,54 @@ class ResolverVisitor:
         return out
 
     def visit_ref(self, name: str) -> str | list:
-        if param := self._stack_parameters.get(name):
-            value = param.get("resolved_value") or engine_parameter_value(param)
-            if param["type_"] == "CommaDelimitedList":
+        # Try to resolve the variable name as pseudo parameter.
+        value: str | list | None = None
+        if name in _PSEUDO_PARAMETERS:
+            value = self.visit_pseudo_parameter(name)
+
+        # try to resolve the reference from the stack parameters
+        if stack_parameter := self._stack_parameters.get(name):
+            value = stack_parameter.get("resolved_value") or engine_parameter_value(stack_parameter)
+            if stack_parameter["type_"] == "CommaDelimitedList":
                 value = value.split(",")
-            return value
-        raise RuntimeError(
-            f"Could not resolve reference '{name}' to parameter, mapping or condition"
-        )
+
+        # TODO: mappings
+
+        if value is None:
+            # TODO: error message validation
+            raise RuntimeError(f"Undefined variable name in Fn::Sub string template '{name}'")
+
+        return value
+
+    def visit_sub(self, payload: Any) -> str:
+        string_template: str
+        sub_parameters: dict
+        if isinstance(payload, str):
+            string_template = payload
+            sub_parameters = {}
+        elif isinstance(payload, list):
+            string_template = payload[0]
+            sub_parameters = self.visit(payload[1])
+        else:
+            raise RuntimeError(f"Unhandled type '{payload.__class__.__name__}' for Fn::Sub payload")
+
+        sub_string = string_template
+        template_variable_names = re.findall("\\${([^}]+)}", string_template)
+        template_variable_value: str | None = None
+        for template_variable_name in template_variable_names:
+            if sub_parameter := sub_parameters.get(template_variable_name):
+                template_variable_name = sub_parameter
+
+            template_variable_value = self.visit_ref(template_variable_name)
+
+            sub_string = sub_string.replace(
+                f"${{{template_variable_name}}}", template_variable_value
+            )
+
+        return sub_string
+
+    def visit_pseudo_parameter(self, name: str) -> str:
+        raise RuntimeError("TODO")
 
 
 def resolve_transform_refs(

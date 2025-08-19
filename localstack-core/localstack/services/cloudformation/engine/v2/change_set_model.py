@@ -1152,6 +1152,7 @@ class ChangeSetModel:
         requires_replacement = self._resolve_requires_replacement(
             node_properties=properties, resource_type=terminal_value_type
         )
+
         node_resource = NodeResource(
             scope=scope,
             change_type=change_type,
