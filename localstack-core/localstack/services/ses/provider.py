@@ -518,7 +518,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         backend.create_receipt_rule_set(rule_set_name)
         original_rule_set = backend.describe_receipt_rule_set(original_rule_set_name)
 
-        for rule in original_rule_set:
+        for rule in original_rule_set.rules:
             backend.create_receipt_rule(rule_set_name, rule)
 
         return CloneReceiptRuleSetResponse()
