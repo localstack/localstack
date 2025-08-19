@@ -1414,7 +1414,7 @@ class CloudformationProviderV2(CloudformationProvider):
         # TODO: handle parameter defaults and resolution
         after_parameters = self._extract_after_parameters(request_parameters, before_parameters)
 
-        before_template = stack.template
+        before_template = stack.processed_template
         after_template = structured_template
 
         previous_update_model = None
@@ -1536,7 +1536,7 @@ class CloudformationProviderV2(CloudformationProvider):
         )  # noqa
         self._setup_change_set_model(
             change_set=change_set,
-            before_template=stack.template,
+            before_template=stack.processed_template,
             after_template=None,
             before_parameters=stack.resolved_parameters,
             after_parameters=None,
