@@ -2813,17 +2813,162 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayTestInvoke::test_invoke_test_method": {
-    "recorded-date": "15-04-2024, 20:48:35",
+    "recorded-date": "19-08-2025, 17:20:41",
     "recorded-content": {
-      "test-invoke-method-get": {
+      "test-invoke-method-get-pets": {
+        "body": {
+          "pets": "all the pets"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-1>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-1>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /pets",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"pets\": \"all the pets\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-get-pets-bad-path": {
+        "body": {
+          "pets": "all the pets"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-2>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-2>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /random/test",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"pets\": \"all the pets\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-get-pets-id": {
         "body": {
           "petId": "123"
         },
         "headers": {
           "Content-Type": "application/json"
         },
-        "latency": "latency",
-        "log": "log",
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-3>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-3>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /pets/123",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {petId=123}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"petId\": \"123\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-get-pets-id-no-path": {
+        "body": {
+          "petId": "{petId}"
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-4>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-4>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /pets/{petId}",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {petId={petId}}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"petId\": \"{petId}\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
+        "multiValueHeaders": {
+          "Content-Type": [
+            "application/json"
+          ]
+        },
+        "status": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "test-invoke-method-get-pets-id-bad-path": {
+        "body": {
+          "petId": ""
+        },
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-5>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-5>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /random/test",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"petId\": \"\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
         "multiValueHeaders": {
           "Content-Type": [
             "application/json"
@@ -2842,8 +2987,21 @@
         "headers": {
           "Content-Type": "application/json"
         },
-        "latency": "latency",
-        "log": "log",
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-6>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-6>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /pets/123",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {petId=123}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {foo=bar}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"petId\": \"123\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
         "multiValueHeaders": {
           "Content-Type": [
             "application/json"
@@ -2862,8 +3020,21 @@
         "headers": {
           "Content-Type": "application/json"
         },
-        "latency": "latency",
-        "log": "log",
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-7>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-7>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: POST, Resource Path: /pets/123",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {petId=123}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: {\"foo\": \"bar\"}",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Method response body after transformations: {\"petId\": \"123\"}",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method response headers: {Content-Type=application/json}",
+          "line09": "DDD MMM dd hh:mm:ss UTC yyyy : Successfully completed execution",
+          "line10": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 200",
+          "line11": ""
+        },
         "multiValueHeaders": {
           "Content-Type": [
             "application/json"

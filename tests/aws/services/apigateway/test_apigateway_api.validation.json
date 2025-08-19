@@ -372,6 +372,12 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayTestInvoke::test_invoke_test_method": {
-    "last_validated_date": "2024-04-15T20:48:35+00:00"
+    "last_validated_date": "2025-08-19T17:20:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 4.12,
+      "teardown": 0.67,
+      "total": 5.62
+    }
   }
 }
