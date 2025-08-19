@@ -583,10 +583,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: MessageDeduplicationId Reason: The request includes MessageDeduplicationId parameter that is not valid for this topic type"
             )
-        elif message_group_id:
-            raise InvalidParameterException(
-                "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type"
-            )
+
         is_endpoint_publish = target_arn and ":endpoint/" in target_arn
         if message_structure == "json":
             try:
