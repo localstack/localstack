@@ -112,30 +112,6 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             delta.after = CHANGESET_KNOWN_AFTER_APPLY
         return delta
 
-    def visit_node_intrinsic_function_fn_select(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ):
-        # TODO: should this not _ALWAYS_ return CHANGESET_KNOWN_AFTER_APPLY?
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        delta = PreprocEntityDelta()
-        if not is_nothing(arguments_delta.before):
-            idx = arguments_delta.before[0]
-            arr = arguments_delta.before[1]
-            try:
-                delta.before = arr[int(idx)]
-            except Exception:
-                delta.before = CHANGESET_KNOWN_AFTER_APPLY
-
-        if not is_nothing(arguments_delta.after):
-            idx = arguments_delta.after[0]
-            arr = arguments_delta.after[1]
-            try:
-                delta.after = arr[int(idx)]
-            except Exception:
-                delta.after = CHANGESET_KNOWN_AFTER_APPLY
-
-        return delta
-
     def _register_resource_change(
         self,
         logical_id: str,
@@ -264,6 +240,25 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             export_name = node_intrinsic_function.arguments.value
 
             self._change_set.status_reason = f"[WARN] --include-property-values option can return incomplete ChangeSet data because: ChangeSet creation failed for resource [{resource_name}] because: No export named {export_name}"
-            delta.after = "{{changeSet:KNOWN_AFTER_APPLY}}"
+            delta.after = CHANGESET_KNOWN_AFTER_APPLY
 
         return delta
+
+    def visit_node_intrinsic_function_fn_split(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_split(node_intrinsic_function)
+        if isinstance(delta.after, list) and ":".join(delta.after) == CHANGESET_KNOWN_AFTER_APPLY:
+            delta.after = [CHANGESET_KNOWN_AFTER_APPLY]
+        return delta
+
+    def visit_node_intrinsic_function_fn_select(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        args_delta = self.visit(node_intrinsic_function.arguments)
+
+        if not is_nothing(args_delta.after) and CHANGESET_KNOWN_AFTER_APPLY in args_delta.after[1]:
+            args_delta.after = CHANGESET_KNOWN_AFTER_APPLY
+            return args_delta
+
+        return super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
