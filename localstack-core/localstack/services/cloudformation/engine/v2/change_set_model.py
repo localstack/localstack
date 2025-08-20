@@ -1687,10 +1687,6 @@ class ChangeSetModel:
         return keys
 
     @staticmethod
-    def _safe_at_index(objects: Maybe[list[T]]) -> list[T]:
-        pass
-
-    @staticmethod
     def _name_if_intrinsic_function(value: Maybe[Any]) -> str | None:
         if isinstance(value, dict):
             keys = ChangeSetModel._safe_keys_of(value)
