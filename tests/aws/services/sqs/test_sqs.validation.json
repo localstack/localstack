@@ -30,10 +30,22 @@
     "last_validated_date": "2024-04-30T13:50:41+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes[sqs]": {
-    "last_validated_date": "2024-04-30T13:33:21+00:00"
+    "last_validated_date": "2025-08-19T13:29:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.66,
+      "teardown": 0.18,
+      "total": 0.84
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes[sqs_query]": {
-    "last_validated_date": "2024-04-30T13:33:22+00:00"
+    "last_validated_date": "2025-08-19T13:29:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.6,
+      "teardown": 0.18,
+      "total": 0.78
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_fifo_queue_with_different_attributes_raises_error[sqs]": {
     "last_validated_date": "2024-04-30T13:33:13+00:00"
@@ -135,16 +147,40 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
-    "last_validated_date": "2024-05-24T10:00:47+00:00"
+    "last_validated_date": "2025-08-19T13:29:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.37,
+      "teardown": 0.18,
+      "total": 2.55
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs_query]": {
-    "last_validated_date": "2024-05-24T10:00:53+00:00"
+    "last_validated_date": "2025-08-19T13:29:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.35,
+      "teardown": 0.2,
+      "total": 2.55
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs]": {
-    "last_validated_date": "2024-04-30T13:52:02+00:00"
+    "last_validated_date": "2025-08-19T13:29:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.51,
+      "teardown": 0.18,
+      "total": 1.69
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs_query]": {
-    "last_validated_date": "2024-04-30T13:52:06+00:00"
+    "last_validated_date": "2025-08-19T13:29:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.5,
+      "teardown": 0.18,
+      "total": 1.68
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_deduplication_arrives_once_after_delete[sqs-False]": {
     "last_validated_date": "2024-04-30T13:34:04+00:00"
@@ -219,10 +255,22 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs]": {
-    "last_validated_date": "2024-04-30T13:47:39+00:00"
+    "last_validated_date": "2025-08-19T13:29:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.6,
+      "teardown": 0.21,
+      "total": 0.81
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs_query]": {
-    "last_validated_date": "2024-04-30T13:47:41+00:00"
+    "last_validated_date": "2025-08-19T13:29:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.59,
+      "teardown": 0.19,
+      "total": 0.78
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_invalid_batch_id[sqs]": {
     "last_validated_date": "2024-04-30T13:33:40+00:00"
@@ -372,10 +420,22 @@
     "last_validated_date": "2024-04-30T13:40:12+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents[sqs]": {
-    "last_validated_date": "2024-04-30T13:33:06+00:00"
+    "last_validated_date": "2025-08-19T13:29:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.17,
+      "call": 2.42,
+      "teardown": 0.21,
+      "total": 2.8
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents[sqs_query]": {
-    "last_validated_date": "2024-04-30T13:33:08+00:00"
+    "last_validated_date": "2025-08-19T13:29:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.17,
+      "call": 0.56,
+      "teardown": 0.18,
+      "total": 0.91
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents_with_updated_maximum_message_size[sqs]": {
     "last_validated_date": "2024-04-30T13:33:09+00:00"
@@ -435,10 +495,22 @@
     "last_validated_date": "2024-04-30T13:33:04+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message[sqs]": {
-    "last_validated_date": "2024-04-30T13:32:59+00:00"
+    "last_validated_date": "2025-08-19T13:29:40+00:00",
+    "durations_in_seconds": {
+      "setup": 1.49,
+      "call": 3.69,
+      "teardown": 0.18,
+      "total": 5.36
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message[sqs_query]": {
-    "last_validated_date": "2024-04-30T13:33:01+00:00"
+    "last_validated_date": "2025-08-19T13:29:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.18,
+      "call": 2.55,
+      "teardown": 0.18,
+      "total": 2.91
+    }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_receive_max_number_of_messages[sqs]": {
     "last_validated_date": "2024-04-30T13:32:56+00:00"
