@@ -400,7 +400,7 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
-        if len(template_body) > 51200:
+        if len(template_body) > 51200 and not template_url:
             raise ValidationError(
                 f"1 validation error detected: Value '{template_body}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
@@ -734,7 +734,7 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
-        if len(template_body) > 51200:
+        if len(template_body) > 51200 and not template_url:
             raise ValidationError(
                 f"1 validation error detected: Value '{template_body}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
