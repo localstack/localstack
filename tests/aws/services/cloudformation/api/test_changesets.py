@@ -8,6 +8,7 @@ from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
 from tests.aws.services.cloudformation.conftest import (
+    skip_if_v1_provider,
     skipped_v2_items,
 )
 
@@ -632,6 +633,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
+@skip_if_v1_provider("Requires the v1 engine")
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
