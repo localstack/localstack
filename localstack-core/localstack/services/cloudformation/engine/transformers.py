@@ -14,6 +14,7 @@ from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.api import CommonServiceException
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.template_deployer import resolve_refs_recursively
 from localstack.services.cloudformation.engine.validations import ValidationError
@@ -39,7 +40,7 @@ class ResolveRefsRecursivelyContext:
     resources: dict
     mappings: dict
     conditions: dict
-    parameters: dict
+    parameters: dict[str, StackParameter]
 
     def resolve(self, value: Any) -> Any:
         return resolve_refs_recursively(
