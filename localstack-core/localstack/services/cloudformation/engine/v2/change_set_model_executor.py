@@ -481,6 +481,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 message=f"Resource type {resource_type} not supported",
             )
 
+        status_from_action = EventOperationFromAction[action.value]
+        resolved_resource = ResolvedResource(
+            Properties=event.resource_model,
+            LogicalResourceId=logical_resource_id,
+            Type=resource_type,
+            LastUpdatedTimestamp=datetime.now(UTC),
+        )
         match event.status:
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
@@ -495,24 +502,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
                 # Don't update the resolved resources if we have deleted that resource
                 if action != ChangeAction.Remove:
-                    status_from_action = EventOperationFromAction[action.value]
                     physical_resource_id = (
                         extra_resource_properties["PhysicalResourceId"]
                         if resource_provider
                         else MOCKED_REFERENCE
                     )
-                    resolved_resource = ResolvedResource(
-                        Properties=event.resource_model,
-                        LogicalResourceId=logical_resource_id,
-                        Type=resource_type,
-                        LastUpdatedTimestamp=datetime.now(UTC),
-                        ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
-                        PhysicalResourceId=physical_resource_id,
+                    resolved_resource["PhysicalResourceId"] = physical_resource_id
+                    resolved_resource["ResourceStatus"] = ResourceStatus(
+                        f"{status_from_action}_COMPLETE"
                     )
                     # TODO: do we actually need this line?
                     resolved_resource.update(extra_resource_properties)
-
-                    self.resources[logical_resource_id] = resolved_resource
 
             case OperationStatus.FAILED:
                 reason = event.message
@@ -520,8 +520,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     "Resource provider operation failed: '%s'",
                     reason,
                 )
+                resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
+
+        self.resources[logical_resource_id] = resolved_resource
         return event
 
     def create_resource_provider_payload(
