@@ -37,9 +37,6 @@ from localstack.utils.strings import first_char_to_upper, to_str
 
 LOG = logging.getLogger(__name__)
 
-# consider different error messages for Docker/Podman
-_container_not_found_error_messages = ("No such container", "no container with name or ID")
-
 
 class CancellableProcessStream(CancellableStream):
     process: subprocess.Popen
@@ -933,7 +930,8 @@ class CmdDockerClient(ContainerClient):
         Check the given client invocation output and raise a `NoSuchContainer` exception if it
         represents a `no such container` exception from Docker or Podman.
         """
-        if any(msg.lower() in output.lower() for msg in _container_not_found_error_messages):
+        possible_not_found_messages = ("No such container", "no container with name or ID")
+        if any(msg.lower() in output.lower() for msg in possible_not_found_messages):
             raise NoSuchContainer(container_name_or_id, stdout=output, stderr=error)
 
     def _transform_container_labels(self, labels: Union[str, dict[str, str]]) -> dict[str, str]:
