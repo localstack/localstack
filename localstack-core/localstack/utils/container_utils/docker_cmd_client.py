@@ -924,7 +924,7 @@ class CmdDockerClient(ContainerClient):
         )
 
     def _check_output_and_raise_no_such_container_error(
-        self, container_name_or_id: str, output: str, error: str | None = None
+        self, container_name_or_id: str, output: str, error: Optional[str] = None
     ):
         """
         Check the given client invocation output and raise a `NoSuchContainer` exception if it
