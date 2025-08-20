@@ -280,25 +280,3 @@ def get_schema_path(file_path: Path) -> dict:
     file_name_base = file_path.name.removesuffix(".py").removesuffix(".py.enc")
     with Path(file_path).parent.joinpath(f"{file_name_base}.schema.json").open() as fd:
         return json.load(fd)
-
-
-def flatten_dict(d, parent_key="", sep="."):
-    """
-    Recursively flattens a nested dictionary.
-
-    Parameters:
-        d (dict): The input dictionary to be flattened.
-        parent_key (str): Used for recursion; the key from the parent level.
-        sep (str): Separator used between nested keys. Default is '_'.
-
-    Returns:
-        dict: A flat dictionary with nested keys joined by `sep`.
-    """
-    items = {}
-    for k, v in d.items():
-        new_key = f"{parent_key}{sep}{k}" if parent_key else k
-        if isinstance(v, dict):
-            items.update(flatten_dict(v, new_key, sep=sep))
-        else:
-            items[new_key] = v
-    return items
