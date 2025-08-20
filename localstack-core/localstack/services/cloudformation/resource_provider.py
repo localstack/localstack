@@ -563,6 +563,8 @@ class ResourceProviderExecutor:
     @staticmethod
     def try_load_resource_provider(resource_type: str) -> ResourceProvider | None:
         # TODO: unify namespace of plugins
+        if resource_type.startswith("Custom"):
+            resource_type = "AWS::CloudFormation::CustomResource"
 
         # 1. try to load pro resource provider
         # prioritise pro resource providers
