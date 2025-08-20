@@ -415,7 +415,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 node_intrinsic_function=node_resource.fn_transform
             )
 
-        return super().visit_node_resource(node_resource)
+        try:
+            if delta := super().visit_node_resource(node_resource):
+                return delta
+            return super().visit_node_properties(node_resource.properties)
+        except RuntimeError:
+            return super().visit_node_properties(node_resource.properties)
 
     def visit_node_resources(self, node_resources: NodeResources) -> PreprocEntityDelta:
         if not is_nothing(node_resources.fn_transform):
