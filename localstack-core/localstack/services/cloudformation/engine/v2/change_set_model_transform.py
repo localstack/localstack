@@ -42,7 +42,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
-from localstack.services.cloudformation.v2.types import engine_parameter_value
+from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
 from localstack.utils import testutil
 from localstack.utils.strings import long_uid
 
@@ -54,6 +54,20 @@ SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
 INCLUDE_TRANSFORM = "AWS::Include"
 
 _SCOPE_TRANSFORM_TEMPLATE_OUTCOME: Final[Scope] = Scope("TRANSFORM_TEMPLATE_OUTCOME")
+
+
+def engine_parameters_to_stack_parameters(
+    engine_parameters: dict[str, EngineParameter],
+) -> dict[str, StackParameter]:
+    out = {}
+    for name, engine_param in engine_parameters.items():
+        out[name] = StackParameter(
+            ParameterKey=name,
+            ParameterValue=engine_parameter_value(engine_param),
+            ResolvedValue=engine_param.get("resolved_value"),
+            ParameterType=engine_param["type_"],
+        )
+    return out
 
 
 # TODO: evaluate the use of subtypes to represent and validate types of transforms
@@ -74,8 +88,8 @@ class TransformPreprocParameter(TypedDict):
 
 
 class ChangeSetModelTransform(ChangeSetModelPreproc):
-    _before_parameters: Final[dict]
-    _after_parameters: Final[dict]
+    _before_parameters: Final[dict[str, EngineParameter] | None]
+    _after_parameters: Final[dict[str, EngineParameter] | None]
     _before_template: Final[Maybe[dict]]
     _after_template: Final[Maybe[dict]]
 
@@ -153,7 +167,10 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         return {**fragment, **template_to_include}
 
     def _apply_global_transform(
-        self, global_transform: GlobalTransform, template: dict, parameters: dict
+        self,
+        global_transform: GlobalTransform,
+        template: dict,
+        parameters: dict[str, EngineParameter],
     ) -> dict:
         transform_name = global_transform.name
         if transform_name == EXTENSIONS_TRANSFORM:
@@ -168,14 +185,20 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 resources,
                 mappings,
                 conditions,
-                parameters,
+                parameters=engine_parameters_to_stack_parameters(parameters),
             )
             transformed_template = apply_language_extensions_transform(template, resolve_context)
         elif transform_name == SERVERLESS_TRANSFORM:
+            # serverless transform just requires the key/value pairs
+            serverless_parameters = {}
+            for name, param in parameters.items():
+                serverless_parameters[name] = param.get("resolved_value") or engine_parameter_value(
+                    param
+                )
             transformed_template = self._apply_global_serverless_transformation(
                 region_name=self._change_set.region_name,
                 template=template,
-                parameters=parameters,
+                parameters=serverless_parameters,
             )
         elif transform_name == SECRETSMANAGER_TRANSFORM:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
@@ -217,11 +240,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             else:
                 for before_global_transform in transform_before:
                     if not is_nothing(before_global_transform.name):
-                        before_parameters = {}
-
                         transformed_before_template = self._apply_global_transform(
                             global_transform=before_global_transform,
-                            parameters=before_parameters,
+                            parameters=self._before_parameters,
                             template=transformed_before_template,
                         )
 
@@ -235,17 +256,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             transformed_after_template = self._after_template
             for after_global_transform in transform_after:
                 if not is_nothing(after_global_transform.name):
-                    after_parameters: dict[str, StackParameter] = {}
-                    for name, engine_param in self._after_parameters.items():
-                        after_parameters[name] = StackParameter(
-                            ParameterKey=name,
-                            ParameterValue=engine_parameter_value(engine_param),
-                            ResolvedValue=engine_param.get("resolved_value"),
-                            ParameterType=engine_param["type_"],
-                        )
                     transformed_after_template = self._apply_global_transform(
                         global_transform=after_global_transform,
-                        parameters=after_parameters,
+                        parameters=self._after_parameters,
                         template=transformed_after_template,
                     )
             # Macro transformations won't remove the transform from the template
