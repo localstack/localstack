@@ -1,7 +1,7 @@
 from urllib.parse import urlparse
 
 import pytest
-from neo4j.exceptions import ClientError
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
