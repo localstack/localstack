@@ -265,7 +265,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 f"No deployed instances of resource '{resource_logical_id}' were found"
             )
         properties = resolved_resource.get("Properties", {})
-        # support structured properties, e.g. NestedStack.Outputs.OutputName
+        # TODO support structured properties, e.g. NestedStack.Outputs.OutputName
         property_value: Any | None = get_value_from_path(properties, property_name)
 
         if property_value:
