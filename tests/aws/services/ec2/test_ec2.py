@@ -749,6 +749,7 @@ class TestEc2Integrations:
             "$..Tags",  # Tags can differ between environments
             "$..Vpc.IsDefault",  # TODO: CreateVPC should return an IsDefault param
             "$..Vpc.DhcpOptionsId",  # FIXME: DhcpOptionsId uses different reference formats in AWS vs LocalStack
+            "$..Vpc.State",  # Moto VPC immediately reaches the 'available' state, vs. AWS VPC which has a 'pending' state
         ]
     )
     @markers.aws.validated
