@@ -137,9 +137,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         else:
             status = f"{status_from_action}_{event_status.name}"
 
+        if action == ChangeAction.Add:
+            physical_resource_id = ""
+        else:
+            physical_resource_id = self._get_physical_id(logical_resource_id, False)
         self._change_set.stack.set_resource_status(
             logical_resource_id=logical_resource_id,
-            physical_resource_id=self._get_physical_id(logical_resource_id, False) or "",
+            physical_resource_id=physical_resource_id,
             resource_type=resource_type,
             status=ResourceStatus(status),
             resource_status_reason=reason,
@@ -219,10 +223,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         # Update the latest version of this resource for downstream references.
         if not is_nothing(after):
             after_logical_id = after.logical_id
-            after_physical_id: str = self._after_resource_physical_id(
-                resource_logical_id=after_logical_id
-            )
-            after.physical_resource_id = after_physical_id
+            resource = self.resources[after_logical_id]
+            if resource["ResourceStatus"] not in {
+                ResourceStatus.CREATE_FAILED,
+                ResourceStatus.UPDATE_FAILED,
+            }:
+                after_physical_id: str = self._after_resource_physical_id(
+                    resource_logical_id=after_logical_id
+                )
+                after.physical_resource_id = after_physical_id
         return delta
 
     def visit_node_output(
