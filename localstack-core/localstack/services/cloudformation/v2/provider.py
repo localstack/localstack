@@ -52,6 +52,7 @@ from localstack.aws.api.cloudformation import (
     NextToken,
     Parameter,
     PhysicalResourceId,
+    ResourceStatus,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
@@ -787,6 +788,8 @@ class CloudformationProviderV2(CloudformationProvider):
         if change_set.status == ChangeSetStatus.FAILED:
             return CreateStackOutput(StackId=stack.stack_id)
 
+        stack.processed_template = change_set.processed_template
+
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
         change_set_executor = ChangeSetModelExecutor(change_set)
@@ -794,9 +797,16 @@ class CloudformationProviderV2(CloudformationProvider):
         def _run(*args):
             try:
                 result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.CREATE_COMPLETE)
                 stack.resolved_resources = result.resources
                 stack.resolved_outputs = result.outputs
+                if all(
+                    resource["ResourceStatus"] == ResourceStatus.CREATE_COMPLETE
+                    for resource in stack.resolved_resources.values()
+                ):
+                    stack.set_stack_status(StackStatus.CREATE_COMPLETE)
+                else:
+                    stack.set_stack_status(StackStatus.CREATE_FAILED)
+
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 stack.template = change_set.template
@@ -807,7 +817,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 for output in result.outputs:
                     if export_name := output.get("ExportName"):
                         stack.resolved_exports[export_name] = output["OutputValue"]
-                stack.processed_template = change_set.processed_template
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s",
@@ -1489,6 +1498,8 @@ class CloudformationProviderV2(CloudformationProvider):
             stack.deletion_time = datetime.now(tz=UTC)
             return
 
+        stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
+
         previous_update_model = None
         if stack.change_set_id:
             if previous_change_set := find_change_set_v2(state, stack.change_set_id):
@@ -1511,7 +1522,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
         def _run(*args):
             try:
-                stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
                 change_set_executor.execute()
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
                 stack.deletion_time = datetime.now(tz=UTC)
