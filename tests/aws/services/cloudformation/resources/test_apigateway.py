@@ -5,7 +5,7 @@ from operator import itemgetter
 import requests
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.apigateway.apigateway_fixtures import api_invoke_url
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider, skipped_v2_items
+from tests.aws.services.cloudformation.conftest import skipped_v2_items
 
 from localstack import constants
 from localstack.aws.api.lambda_ import Runtime
@@ -166,11 +166,6 @@ def test_cfn_apigateway_swagger_import(
     assert content["url"].endswith("/post")
 
 
-@skip_if_v2_provider(
-    "Provider",
-    reason="The v2 provider appears to instead return the correct url: "
-    "https://e1i3grfiws.execute-api.us-east-1.localhost.localstack.cloud/prod/",
-)
 @markers.aws.only_localstack
 def test_url_output(httpserver, deploy_cfn_template):
     httpserver.expect_request("").respond_with_data(b"", 200)
@@ -581,9 +576,6 @@ def test_api_gateway_with_policy_as_dict(deploy_cfn_template, snapshot, aws_clie
     snapshot.match("rest-api", rest_api)
 
 
-@skip_if_v2_provider(
-    "Other", reason="lambda function fails on creation due to invalid function name"
-)
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[

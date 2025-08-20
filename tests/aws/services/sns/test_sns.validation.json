@@ -152,6 +152,15 @@
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_batch_messages_without_topic": {
     "last_validated_date": "2023-08-24T21:36:13+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_message_group_id": {
+    "last_validated_date": "2025-08-18T15:21:27+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 1.56,
+      "teardown": 0.52,
+      "total": 3.22
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQS::test_publish_sqs_from_sns": {
     "last_validated_date": "2023-08-24T21:36:09+00:00"
   },
@@ -180,16 +189,40 @@
     "last_validated_date": "2023-08-24T21:36:32+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_fifo_topic_to_regular_sqs[False]": {
-    "last_validated_date": "2023-08-24T21:54:05+00:00"
+    "last_validated_date": "2025-08-18T16:18:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.09,
+      "teardown": 0.56,
+      "total": 5.65
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_fifo_topic_to_regular_sqs[True]": {
-    "last_validated_date": "2023-08-24T21:53:59+00:00"
+    "last_validated_date": "2025-08-18T16:18:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 5.91,
+      "teardown": 0.54,
+      "total": 6.97
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[False]": {
-    "last_validated_date": "2023-11-09T20:12:07+00:00"
+    "last_validated_date": "2025-08-18T16:25:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.09,
+      "teardown": 0.53,
+      "total": 3.62
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs[True]": {
-    "last_validated_date": "2023-11-09T20:12:03+00:00"
+    "last_validated_date": "2025-08-18T16:25:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 3.81,
+      "teardown": 0.59,
+      "total": 4.9
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_message_to_fifo_sqs_ordering": {
     "last_validated_date": "2025-02-19T01:29:14+00:00"
@@ -216,7 +249,13 @@
     "last_validated_date": "2023-08-24T21:38:14+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionSQSFifo::test_validations_for_fifo": {
-    "last_validated_date": "2023-08-24T21:55:19+00:00"
+    "last_validated_date": "2025-08-18T16:21:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 3.5,
+      "teardown": 1.25,
+      "total": 5.21
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_duplicate_topic_check_idempotency": {
     "last_validated_date": "2023-08-24T20:30:47+00:00"

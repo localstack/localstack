@@ -1,4 +1,5 @@
 import datetime
+import logging
 from urllib.parse import parse_qs
 
 from rolo import Request
@@ -22,6 +23,9 @@ from .variables import (
     ContextVarsResponseOverride,
 )
 
+LOG = logging.getLogger(__name__)
+
+
 # TODO: we probably need to write and populate those logs as part of the handler chain itself
 #  and store it in the InvocationContext. That way, we could also retrieve in when calling TestInvoke
 
@@ -39,6 +43,19 @@ TEST_INVOKE_TEMPLATE = """Execution log for request {request_id}
 {formatted_date} : Received response. Status: {endpoint_response_status_code}, Integration latency: {endpoint_response_latency} ms
 {formatted_date} : Endpoint response headers: {endpoint_response_headers}
 {formatted_date} : Endpoint response body before transformations: {endpoint_response_body}
+{formatted_date} : Method response body after transformations: {method_response_body}
+{formatted_date} : Method response headers: {method_response_headers}
+{formatted_date} : Successfully completed execution
+{formatted_date} : Method completed with status: {method_response_status}
+"""
+
+TEST_INVOKE_TEMPLATE_MOCK = """Execution log for request {request_id}
+{formatted_date} : Starting execution for request: {request_id}
+{formatted_date} : HTTP Method: {request_method}, Resource Path: {resource_path}
+{formatted_date} : Method request path: {method_request_path_parameters}
+{formatted_date} : Method request query string: {method_request_query_string}
+{formatted_date} : Method request headers: {method_request_headers}
+{formatted_date} : Method request body before transformations: {method_request_body}
 {formatted_date} : Method response body after transformations: {method_response_body}
 {formatted_date} : Method response headers: {method_response_headers}
 {formatted_date} : Successfully completed execution
@@ -93,6 +110,29 @@ def log_template(invocation_context: RestApiInvocationContext, response_headers:
     )
 
 
+def log_mock_template(
+    invocation_context: RestApiInvocationContext, response_headers: Headers
+) -> str:
+    formatted_date = datetime.datetime.now(tz=datetime.UTC).strftime("%a %b %d %H:%M:%S %Z %Y")
+    request = invocation_context.invocation_request
+    context_var = invocation_context.context_variables
+    method_resp = invocation_context.invocation_response
+
+    return TEST_INVOKE_TEMPLATE_MOCK.format(
+        formatted_date=formatted_date,
+        request_id=context_var["requestId"],
+        resource_path=request["path"],
+        request_method=request["http_method"],
+        method_request_path_parameters=dict_to_string(request["path_parameters"]),
+        method_request_query_string=dict_to_string(request["query_string_parameters"]),
+        method_request_headers=_dump_headers(request.get("headers")),
+        method_request_body=to_str(request.get("body", "")),
+        method_response_status=method_resp.get("status_code"),
+        method_response_body=to_str(method_resp.get("body", "")),
+        method_response_headers=_dump_headers(response_headers),
+    )
+
+
 def create_test_chain() -> HandlerChain[RestApiInvocationContext]:
     return HandlerChain(
         request_handlers=[
@@ -114,13 +154,16 @@ def create_test_invocation_context(
 ) -> RestApiInvocationContext:
     parse_handler = handlers.parse_request
     http_method = test_request["httpMethod"]
+    resource = deployment.rest_api.resources[test_request["resourceId"]]
+    resource_path = resource["path"]
 
     # we do not need a true HTTP request for the context, as we are skipping all the parsing steps and using the
     # provider data
     invocation_context = RestApiInvocationContext(
         request=Request(method=http_method),
     )
-    path_query = test_request.get("pathWithQueryString", "/").split("?")
+    test_request_path = test_request.get("pathWithQueryString") or resource_path
+    path_query = test_request_path.split("?")
     path = path_query[0]
     multi_query_args: dict[str, list[str]] = {}
 
@@ -140,9 +183,22 @@ def create_test_invocation_context(
         # TODO: handle multiValueHeaders
         body=to_bytes(test_request.get("body") or ""),
     )
-    invocation_context.invocation_request = invocation_request
 
-    _, path_parameters = RestAPIResourceRouter(deployment).match(invocation_context)
+    invocation_context.invocation_request = invocation_request
+    try:
+        # this is AWS behavior, it will accept any value for the `pathWithQueryString`, even if it doesn't match
+        # the expected format. It will just fall back to no value if it cannot parse the path parameters out of it
+        _, path_parameters = RestAPIResourceRouter(deployment).match(invocation_context)
+    except Exception as e:
+        LOG.warning(
+            "Error while trying to extract path parameters from user-provided 'pathWithQueryString=%s' "
+            "for the following resource path: '%s'. Error: '%s'",
+            path,
+            resource_path,
+            e,
+        )
+        path_parameters = {}
+
     invocation_request["path_parameters"] = path_parameters
 
     invocation_context.deployment = deployment
@@ -160,7 +216,6 @@ def create_test_invocation_context(
         responseOverride=ContextVarsResponseOverride(header={}, status=0),
     )
     invocation_context.trace_id = parse_handler.populate_trace_id({})
-    resource = deployment.rest_api.resources[test_request["resourceId"]]
     resource_method = resource["resourceMethods"][http_method]
     invocation_context.resource = resource
     invocation_context.resource_method = resource_method
@@ -179,8 +234,10 @@ def run_test_invocation(
     invocation_context = create_test_invocation_context(test_request, deployment)
 
     test_chain = create_test_chain()
+    is_mock_integration = invocation_context.integration["type"] == "MOCK"
+
     # header order is important
-    if invocation_context.integration["type"] == "MOCK":
+    if is_mock_integration:
         base_headers = {"Content-Type": APPLICATION_JSON}
     else:
         # we manually add the trace-id, as it is normally added by handlers.response_enricher which adds to much data
@@ -199,7 +256,11 @@ def run_test_invocation(
     # AWS does not return the Content-Length for TestInvokeMethod
     response_headers.remove("Content-Length")
 
-    log = log_template(invocation_context, response_headers)
+    if is_mock_integration:
+        # TODO: revisit how we're building the logs
+        log = log_mock_template(invocation_context, response_headers)
+    else:
+        log = log_template(invocation_context, response_headers)
 
     headers = dict(response_headers)
     multi_value_headers = build_multi_value_headers(response_headers)

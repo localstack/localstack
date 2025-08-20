@@ -117,21 +117,21 @@
     "last_validated_date": "2024-04-30T13:49:31+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs]": {
-    "last_validated_date": "2025-07-30T09:52:07+00:00",
+    "last_validated_date": "2025-08-18T15:27:03+00:00",
     "durations_in_seconds": {
-      "setup": 1.2,
-      "call": 0.17,
-      "teardown": 0.18,
-      "total": 1.55
+      "setup": 1.05,
+      "call": 0.28,
+      "teardown": 0.16,
+      "total": 1.49
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs_query]": {
-    "last_validated_date": "2025-07-30T09:52:07+00:00",
+    "last_validated_date": "2025-08-18T15:27:04+00:00",
     "durations_in_seconds": {
-      "setup": 0.18,
-      "call": 0.58,
-      "teardown": 0.19,
-      "total": 0.95
+      "setup": 0.14,
+      "call": 0.56,
+      "teardown": 0.16,
+      "total": 0.86
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {

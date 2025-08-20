@@ -1234,42 +1234,8 @@ class TestAPIGateway:
         create_role_with_policy,
         region_name,
         snapshot,
+        apigw_test_invoke_response_formatter,
     ):
-        snapshot.add_transformers_list(
-            [
-                snapshot.transform.key_value(
-                    "latency", value_replacement="<latency>", reference_replacement=False
-                ),
-                snapshot.transform.jsonpath(
-                    "$..headers.X-Amzn-Trace-Id", value_replacement="x-amz-trace-id"
-                ),
-                snapshot.transform.regex(
-                    r"URI: https:\/\/.*?\/2015-03-31", "URI: https://<endpoint_url>/2015-03-31"
-                ),
-                snapshot.transform.regex(
-                    r"Integration latency: \d*? ms", "Integration latency: <latency> ms"
-                ),
-                snapshot.transform.regex(
-                    r"Date=[a-zA-Z]{3},\s\d{2}\s[a-zA-Z]{3}\s\d{4}\s\d{2}:\d{2}:\d{2}\sGMT",
-                    "Date=Day, dd MMM yyyy hh:mm:ss GMT",
-                ),
-                snapshot.transform.regex(
-                    r"x-amzn-RequestId=[a-f0-9-]{36}", "x-amzn-RequestId=<request-id-lambda>"
-                ),
-                snapshot.transform.regex(
-                    r"[a-zA-Z]{3}\s[a-zA-Z]{3}\s\d{2}\s\d{2}:\d{2}:\d{2}\sUTC\s\d{4} :",
-                    "DDD MMM dd hh:mm:ss UTC yyyy :",
-                ),
-                snapshot.transform.regex(
-                    r"Authorization=.*?,", "Authorization=<authorization-header>,"
-                ),
-                snapshot.transform.regex(
-                    r"X-Amz-Security-Token=.*?\s\[", "X-Amz-Security-Token=<token> ["
-                ),
-                snapshot.transform.regex(r"\d{8}T\d{6}Z", "<date>"),
-            ]
-        )
-
         _, role_arn = create_role_with_policy(
             "Allow", "lambda:InvokeFunction", json.dumps(APIGATEWAY_ASSUME_ROLE_POLICY), "*"
         )
@@ -1346,18 +1312,10 @@ class TestAPIGateway:
 
         invoke_simple = retry(_test_invoke_call, retries=15, sleep=1, path_with_qs="/foo")
 
-        def _transform_log(_log: str) -> dict[str, str]:
-            return {f"line{index:02d}": line for index, line in enumerate(_log.split("\n"))}
-
-        # we want to do very precise matching on the log, and splitting on new lines will help in case the snapshot
-        # fails
-        # the snapshot library does not allow to ignore an array index as the last node, so we need to put it in a dict
-        invoke_simple["log"] = _transform_log(invoke_simple["log"])
-        request_id_1 = invoke_simple["log"]["line00"].split(" ")[-1]
-        snapshot.add_transformer(
-            snapshot.transform.regex(request_id_1, "<request-id-1>"), priority=-1
+        snapshot.match(
+            "test_invoke_method_response",
+            apigw_test_invoke_response_formatter(invoke_simple),
         )
-        snapshot.match("test_invoke_method_response", invoke_simple)
 
         # run test_invoke_method API #2
         invoke_with_parameters = retry(
@@ -1371,12 +1329,10 @@ class TestAPIGateway:
         response_body = json.loads(invoke_with_parameters.get("body")).get("body")
         assert "response from" in response_body
         assert "val123" in response_body
-        invoke_with_parameters["log"] = _transform_log(invoke_with_parameters["log"])
-        request_id_2 = invoke_with_parameters["log"]["line00"].split(" ")[-1]
-        snapshot.add_transformer(
-            snapshot.transform.regex(request_id_2, "<request-id-2>"), priority=-1
+        snapshot.match(
+            "test_invoke_method_response_with_body",
+            apigw_test_invoke_response_formatter(invoke_with_parameters),
         )
-        snapshot.match("test_invoke_method_response_with_body", invoke_with_parameters)
 
     @markers.aws.validated
     @pytest.mark.parametrize("stage_name", ["local", "dev"])

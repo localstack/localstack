@@ -18,6 +18,7 @@ from localstack.services.cloudformation.deployment_utils import log_not_availabl
 from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
+    NodeIntrinsicFunction,
     NodeOutput,
     NodeResource,
     TerminalValueCreated,
@@ -58,11 +59,17 @@ class DeferredAction(Protocol):
     def __call__(self) -> None: ...
 
 
+@dataclass
+class Deferred:
+    name: str
+    action: DeferredAction
+
+
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
     resources: Final[dict[str, ResolvedResource]]
     outputs: Final[list[Output]]
-    _deferred_actions: list[DeferredAction]
+    _deferred_actions: list[Deferred]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
@@ -84,16 +91,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # perform all deferred actions such as deletions. These must happen in reverse from their
             # defined order so that resource dependencies are honoured
             # TODO: errors will stop all rollbacks; get parity on this behaviour
-            for action in self._deferred_actions[::-1]:
-                action()
+            for deferred in self._deferred_actions[::-1]:
+                LOG.debug("executing deferred action: '%s'", deferred.name)
+                deferred.action()
 
         return ChangeSetModelExecutorResult(
             resources=self.resources,
             outputs=self.outputs,
         )
 
-    def _defer_action(self, action: DeferredAction):
-        self._deferred_actions.append(action)
+    def _defer_action(self, name: str, action: DeferredAction):
+        self._deferred_actions.append(Deferred(name=name, action=action))
 
     def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str | None:
         physical_resource_id = None
@@ -292,7 +300,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                             reason=event.message,
                         )
 
-                    self._defer_action(cleanup)
+                    self._defer_action(f"cleanup-from-replacement-{name}", cleanup)
                 else:
                     event = self._execute_resource_action(
                         action=ChangeAction.Modify,
@@ -331,7 +339,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                         reason=event.message,
                     )
 
-                self._defer_action(perform_deletion)
+                self._defer_action(f"type-migration-{name}", perform_deletion)
 
                 event = self._execute_resource_action(
                     action=ChangeAction.Add,
@@ -375,7 +383,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason=event.message,
                 )
 
-            self._defer_action(perform_deletion)
+            self._defer_action(f"remove-{name}", perform_deletion)
         elif not is_nothing(after):
             # Case: addition
             self._process_event(
@@ -585,6 +593,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
         return value
 
+    def _replace_url_outputs_in_delta_if_required(
+        self, delta: PreprocEntityDelta
+    ) -> PreprocEntityDelta:
+        if isinstance(delta.before, str):
+            delta.before = self._replace_url_outputs_if_required(delta.before)
+        if isinstance(delta.after, str):
+            delta.after = self._replace_url_outputs_if_required(delta.after)
+        return delta
+
     def visit_terminal_value_created(
         self, value: TerminalValueCreated
     ) -> PreprocEntityDelta[str, str]:
@@ -612,3 +629,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         else:
             value = terminal_value_unchanged.value
         return PreprocEntityDelta(before=value, after=value)
+
+    def visit_node_intrinsic_function_fn_join(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_join(node_intrinsic_function)
+        return self._replace_url_outputs_in_delta_if_required(delta)
+
+    def visit_node_intrinsic_function_fn_sub(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
+        return self._replace_url_outputs_in_delta_if_required(delta)
+
+    # TODO: other intrinsic functions

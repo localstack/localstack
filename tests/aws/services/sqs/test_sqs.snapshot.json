@@ -3963,7 +3963,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs]": {
-    "recorded-date": "30-07-2025, 09:52:06",
+    "recorded-date": "18-08-2025, 15:27:03",
     "recorded-content": {
       "send_message": {
         "MD5OfMessageBody": "78e731027d8fd50ed642340b7c9a63b3",
@@ -3972,15 +3972,57 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
+      },
+      "get-message-with-deduplication-id": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageGroupId": "test",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "message",
+            "MD5OfBody": "78e731027d8fd50ed642340b7c9a63b3",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
       }
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fair_queue_with_message_group_id[sqs_query]": {
-    "recorded-date": "30-07-2025, 09:52:07",
+    "recorded-date": "18-08-2025, 15:27:04",
     "recorded-content": {
       "send_message": {
         "MD5OfMessageBody": "78e731027d8fd50ed642340b7c9a63b3",
         "MessageId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-message-with-deduplication-id": {
+        "Messages": [
+          {
+            "Attributes": {
+              "ApproximateFirstReceiveTimestamp": "timestamp",
+              "ApproximateReceiveCount": "1",
+              "MessageGroupId": "test",
+              "SenderId": "<sender-id:1>",
+              "SentTimestamp": "timestamp"
+            },
+            "Body": "message",
+            "MD5OfBody": "78e731027d8fd50ed642340b7c9a63b3",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

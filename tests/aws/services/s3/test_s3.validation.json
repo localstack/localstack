@@ -317,6 +317,15 @@
   "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure": {
     "last_validated_date": "2025-01-21T18:41:38+00:00"
   },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_response_structure_get_obj_attrs": {
+    "last_validated_date": "2025-08-18T16:12:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.71,
+      "call": 1.55,
+      "teardown": 1.3,
+      "total": 3.56
+    }
+  },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_analytics_configurations": {
     "last_validated_date": "2025-01-21T18:42:41+00:00"
   },

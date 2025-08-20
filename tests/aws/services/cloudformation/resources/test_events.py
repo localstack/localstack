@@ -2,8 +2,6 @@ import json
 import logging
 import os
 
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
-
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import wait_until
@@ -105,7 +103,6 @@ def test_eventbus_policy_statement(deploy_cfn_template, aws_client):
     assert event_bus_name in statement["Resource"]
 
 
-@skip_if_v2_provider("Other")
 @markers.aws.validated
 def test_event_rule_to_logs(deploy_cfn_template, aws_client):
     event_rule_name = f"event-rule-{short_uid()}"
