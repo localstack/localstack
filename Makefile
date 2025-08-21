@@ -9,9 +9,9 @@ PYTEST_LOGLEVEL ?= warning
 
 uname_m := $(shell uname -m)
 ifeq ($(uname_m),x86_64)
-platform = amd64
+PLATFORM ?= amd64
 else
-platform = arm64
+PLATFORM ?= arm64
 endif
 
 ifeq ($(OS), Windows_NT)
@@ -143,7 +143,7 @@ init-precommit:    		  ## install te pre-commit hook into your local git reposit
 	($(VENV_RUN); pre-commit install)
 
 docker-build:
-	IMAGE_NAME=$(IMAGE_NAME) PLATFORM=$(platform) ./bin/docker-helper.sh build
+	IMAGE_NAME=$(IMAGE_NAME) PLATFORM=$(PLATFORM) ./bin/docker-helper.sh build
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem
