@@ -633,7 +633,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@skip_if_v1_provider("Requires the v1 engine")
+@skip_if_v1_provider("Unsupported in v1 engine")
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
