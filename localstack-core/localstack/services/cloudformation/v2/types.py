@@ -28,7 +28,7 @@ class ResolvedResource(TypedDict):
     LogicalResourceId: str
     Type: str
     Properties: dict
-    ResourceStatus: ResourceStatus
-    PhysicalResourceId: str | None
-    LastUpdatedTimestamp: datetime | None
-    ResourceStatusReason: str | None
+    LastUpdatedTimestamp: datetime
+    ResourceStatus: NotRequired[ResourceStatus]
+    PhysicalResourceId: NotRequired[str]
+    ResourceStatusReason: NotRequired[str]

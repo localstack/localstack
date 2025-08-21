@@ -336,6 +336,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                             resource_type=before.resource_type,
                             before_properties=before_properties,
                             after_properties=None,
+                            part_of_replacement=True,
                         )
                         self._process_event(
                             action=ChangeAction.Remove,
@@ -470,6 +471,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_type: str,
         before_properties: PreprocProperties | None,
         after_properties: PreprocProperties | None,
+        part_of_replacement: bool = False,
     ) -> ProgressEvent:
         LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
         payload = self.create_resource_provider_payload(
@@ -525,6 +527,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 resource_model={},
                 message=f"Resource type {resource_type} not supported",
             )
+
+        if part_of_replacement and action == ChangeAction.Remove:
+            # Early return as we don't want to update internal state of the executor if this is a
+            # cleanup of an old resource. The new resource has already been created and the state
+            # updated
+            return event
 
         status_from_action = EventOperationFromAction[action.value]
         resolved_resource = ResolvedResource(
