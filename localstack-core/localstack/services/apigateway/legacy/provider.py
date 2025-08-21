@@ -725,6 +725,17 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
 
         return response
 
+    def delete_integration_response(
+        self,
+        context: RequestContext,
+        rest_api_id: String,
+        resource_id: String,
+        http_method: String,
+        status_code: StatusCode,
+        **kwargs,
+    ) -> None:
+        pass
+
     def update_resource(
         self,
         context: RequestContext,
