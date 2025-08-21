@@ -269,12 +269,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         property_value: Any | None = get_value_from_path(properties, property_name)
 
         if property_value:
-            if not isinstance(property_value, str):
+            if not isinstance(property_value, (str, list)):
                 # TODO: is this correct? If there is a bug in the logic here, it's probably
                 #  better to know about it with a clear error message than to receive some form
                 #  of message about trying to use a dictionary in place of a string
                 raise RuntimeError(
-                    f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value"
+                    f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value nor list"
                 )
             return property_value
         elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
