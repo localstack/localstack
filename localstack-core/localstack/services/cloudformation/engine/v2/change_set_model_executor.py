@@ -164,10 +164,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         else:
             status = f"{status_from_action}_{event_status.name}"
 
-        if action == ChangeAction.Add:
-            physical_resource_id = ""
-        else:
-            physical_resource_id = self._get_physical_id(logical_resource_id, False)
+        physical_resource_id = self._get_physical_id(logical_resource_id, False)
         self._change_set.stack.set_resource_status(
             logical_resource_id=logical_resource_id,
             physical_resource_id=physical_resource_id,
