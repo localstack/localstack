@@ -10,6 +10,6 @@ jobs:
   sync-labels:
     uses: localstack/meta/.github/workflows/sync-labels.yml@main
     with:
-        categories: status,aws,semver
+        categories: status,aws,semver,docs
     secrets:
       github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
