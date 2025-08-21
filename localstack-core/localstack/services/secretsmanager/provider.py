@@ -65,9 +65,13 @@ from localstack.aws.api.secretsmanager import (
 )
 from localstack.aws.connect import connect_to
 from localstack.services.moto import call_moto
+from localstack.services.plugins import ServiceLifecycleHook
+from localstack.state import StateVisitor
 from localstack.utils.aws import arns
 from localstack.utils.patch import patch
 from localstack.utils.time import today_no_time
+
+from . import persistence
 
 # Constants.
 AWSPREVIOUS: Final[str] = "AWSPREVIOUS"
@@ -100,10 +104,40 @@ class SecretNotFoundException(CommonServiceException):
         )
 
 
-class SecretsmanagerProvider(SecretsmanagerApi):
+class SecretsmanagerProvider(SecretsmanagerApi, ServiceLifecycleHook):
     def __init__(self):
         super().__init__()
         apply_patches()
+
+    def accept_state_visitor(self, visitor: StateVisitor):
+        visitor.visit(secretsmanager_backends)
+
+    def on_after_init(self):
+        """Called after the provider is initialized."""
+        # Load persisted state if persistence is enabled
+        # Note: This is a workaround for missing persistence framework in Community Edition
+        persistence.load_secretsmanager_state()
+
+    def on_before_state_save(self):
+        """Called before the state is saved during persistence."""
+        # In Pro, this would be called by the persistence framework
+        # Here we use it as a hook to save state manually
+        pass
+
+    def on_after_state_load(self):
+        """Called after the state is loaded during persistence."""
+        # In Pro, this would be called after the persistence framework loads state
+        # Here we handle the load in on_after_init instead
+        pass
+
+    def on_before_stop(self):
+        """Called before the service stops."""
+        # Save state when service is stopping (respecting save strategy)
+        from localstack import config
+
+        # Only save on shutdown if explicitly using ON_SHUTDOWN strategy
+        if config.SNAPSHOT_SAVE_STRATEGY == "ON_SHUTDOWN":
+            persistence.save_secretsmanager_state()
 
     @staticmethod
     def get_moto_backend_for_resource(
