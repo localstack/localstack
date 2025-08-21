@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
+from tests.aws.services.cloudformation.conftest import skipped_v2_items
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -238,7 +238,6 @@ class TestLanguageExtensionsTransform:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..PhysicalResourceId", "$..StackId"])
-    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_foreach(self, transform_template, snapshot):
         topic_names = [
             f"mytopic1{short_uid()}",
@@ -268,7 +267,6 @@ class TestLanguageExtensionsTransform:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..StackResources..PhysicalResourceId", "$..StackResources..StackId"]
     )
-    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_foreach_multiple_resources(self, transform_template, snapshot):
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
@@ -294,8 +292,12 @@ class TestLanguageExtensionsTransform:
             "$..StackResources..PhysicalResourceId",
             "$..StackResources..StackId",
         ]
+        + skipped_v2_items(
+            # we now set this with the v2 provider for extra clarity but this field is not set on
+            # AWS
+            "$..StackResources..ResourceStatusReason",
+        )
     )
-    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_foreach_use_case(self, aws_client, transform_template, snapshot):
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])
@@ -336,7 +338,6 @@ class TestLanguageExtensionsTransform:
             "$..StackResources..StackId",
         ]
     )
-    @skip_if_v2_provider("LanguageExtensions")
     def test_transform_to_json_string(self, aws_client, transform_template, snapshot):
         snapshot.add_transformer(
             SortingTransformer("StackResources", lambda resource: resource["LogicalResourceId"])

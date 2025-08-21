@@ -372,17 +372,20 @@ class NodeTransform(ChangeSetNode):
 class NodeResources(ChangeSetNode):
     resources: Final[list[NodeResource]]
     fn_transform: Final[Maybe[NodeIntrinsicFunctionFnTransform]]
+    fn_foreaches: Final[list[NodeForEach]]
 
     def __init__(
         self,
         scope: Scope,
         resources: list[NodeResource],
         fn_transform: Maybe[NodeIntrinsicFunctionFnTransform],
+        fn_foreaches: list[NodeForEach],
     ):
-        change_type = parent_change_type_of(resources)
+        change_type = parent_change_type_of(resources + [fn_transform] + fn_foreaches)
         super().__init__(scope=scope, change_type=change_type)
         self.resources = resources
         self.fn_transform = fn_transform
+        self.fn_foreaches = fn_foreaches
 
 
 class NodeResource(ChangeSetNode):
@@ -490,6 +493,20 @@ class NodeIntrinsicFunctionFnTransform(NodeIntrinsicFunction):
         )
         self.before_siblings = before_siblings
         self.after_siblings = after_siblings
+
+
+class NodeForEach(ChangeSetNode):
+    def __init__(
+        self,
+        scope: Scope,
+        change_type: Final[ChangeType],
+        arguments: Final[ChangeSetEntity],
+    ):
+        super().__init__(
+            scope=scope,
+            change_type=change_type,
+        )
+        self.arguments = arguments
 
 
 class NodeObject(ChangeSetNode):
@@ -708,6 +725,18 @@ class ChangeSetModel:
             )
         self._visited_scopes[scope] = node_intrinsic_function
         return node_intrinsic_function
+
+    def _visit_foreach(
+        self, scope: Scope, before_arguments: Maybe[list], after_arguments: Maybe[list]
+    ) -> NodeForEach:
+        node_foreach = self._visited_scopes.get(scope)
+        if isinstance(node_foreach, NodeForEach):
+            return node_foreach
+        arguments_scope = scope.open_scope("args")
+        arguments = self._visit_array(
+            arguments_scope, before_array=before_arguments, after_array=after_arguments
+        )
+        return NodeForEach(scope=scope, change_type=arguments.change_type, arguments=arguments)
 
     def _resolve_intrinsic_function_fn_sub(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: This routine should instead export the implicit Ref and GetAtt calls within the first
@@ -1165,6 +1194,7 @@ class ChangeSetModel:
         resources: list[NodeResource] = []
         resource_names = self._safe_keys_of(before_resources, after_resources)
         fn_transform = Nothing
+        fn_foreaches = []
         for resource_name in resource_names:
             resource_scope, (before_resource, after_resource) = self._safe_access_in(
                 scope, resource_name, before_resources, after_resources
@@ -1177,6 +1207,14 @@ class ChangeSetModel:
                     after_arguments=after_resource,
                 )
                 continue
+            elif resource_name.startswith("Fn::ForEach"):
+                fn_for_each = self._visit_foreach(
+                    scope=resource_scope,
+                    before_arguments=before_resource,
+                    after_arguments=after_resource,
+                )
+                fn_foreaches.append(fn_for_each)
+                continue
             resource = self._visit_resource(
                 scope=resource_scope,
                 resource_name=resource_name,
@@ -1184,7 +1222,12 @@ class ChangeSetModel:
                 after_resource=after_resource,
             )
             resources.append(resource)
-        return NodeResources(scope=scope, resources=resources, fn_transform=fn_transform)
+        return NodeResources(
+            scope=scope,
+            resources=resources,
+            fn_transform=fn_transform,
+            fn_foreaches=fn_foreaches,
+        )
 
     def _visit_mapping(
         self, scope: Scope, name: str, before_mapping: Maybe[dict], after_mapping: Maybe[dict]
