@@ -1495,11 +1495,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
         stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
 
-        previous_update_model = None
-        if stack.change_set_id:
-            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-                previous_update_model = previous_change_set.update_model
-
         # create a dummy change set
         change_set = ChangeSet(
             stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"}, template_body=""
