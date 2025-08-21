@@ -3323,6 +3323,85 @@ class TestApigatewayIntegration:
         snapshot.match("delete-integration-response", delete_response)
 
     @markers.aws.validated
+    def test_delete_integration_response_errors(
+        self, aws_client_factory, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        put_response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseTemplates={"application/json": '"created"'},
+            selectionPattern="",
+        )
+        snapshot.match("put-integration-response", put_response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId="bad-resource",
+                httpMethod="GET",
+                statusCode="200",
+            )
+        snapshot.match("non-existent-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId="bad-api-id",
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+            )
+        snapshot.match("non-existent-api-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="POST",
+                statusCode="200",
+            )
+        snapshot.match("non-existent-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="201",
+            )
+        snapshot.match("non-existent-status-code", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="WRONG",
+                statusCode="201",
+            )
+        snapshot.match("bad-method", e.value.response)
+
+    @markers.aws.validated
     def test_update_method_wrong_param_names(self, aws_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
         apigw_client = aws_client.apigateway
