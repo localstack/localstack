@@ -979,6 +979,7 @@ class CloudformationProviderV2(CloudformationProvider):
             ResourceType=resource["Type"],
             LastUpdatedTimestamp=resource["LastUpdatedTimestamp"],
             ResourceStatus=resource["ResourceStatus"],
+            DriftInformation={"StackResourceDriftStatus": "NOT_CHECKED"},
         )
         return DescribeStackResourceOutput(StackResourceDetail=resource_detail)
 
