@@ -558,15 +558,15 @@ class CloudformationProviderV2(CloudformationProvider):
         )
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
+            result = change_set_executor.execute()
+            change_set.stack.resolved_parameters = change_set.resolved_parameters
+            if not result.failure_message:
                 new_stack_status = StackStatus.UPDATE_COMPLETE
                 if change_set.change_set_type == ChangeSetType.CREATE:
                     new_stack_status = StackStatus.CREATE_COMPLETE
                 change_set.stack.set_stack_status(new_stack_status)
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
                 change_set.stack.resolved_resources = result.resources
-                change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
 
                 change_set.stack.resolved_exports = {}
@@ -583,20 +583,15 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.description = change_set.template.get("Description")
                 change_set.stack.processed_template = change_set.processed_template
                 change_set.stack.template_body = change_set.template_body
-            except Exception as e:
+            else:
                 LOG.error(
                     "Execute change set failed: %s",
-                    e,
+                    result.failure_message,
                     exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
-                new_stack_status = StackStatus.UPDATE_FAILED
-                if change_set.change_set_type == ChangeSetType.CREATE:
-                    new_stack_status = StackStatus.CREATE_FAILED
-
-                change_set.stack.set_stack_status(new_stack_status)
+                # stack status is taken care of in the executor
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
-                change_set.stack.change_set_id = change_set.change_set_id
-                change_set.stack.change_set_ids.append(change_set.change_set_id)
+                change_set.stack.deletion_time = datetime.now(tz=UTC)
 
         start_worker_thread(_run)
 
@@ -866,7 +861,6 @@ class CloudformationProviderV2(CloudformationProvider):
         stack_description = ApiStack(
             Description=stack.description,
             CreationTime=stack.creation_time,
-            DeletionTime=stack.deletion_time,
             StackId=stack.stack_id,
             StackName=stack.stack_name,
             StackStatus=stack.status,
@@ -882,6 +876,8 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
             # TODO: actually track updated time
             stack_description["LastUpdatedTime"] = stack.creation_time
+        if stack.deletion_time:
+            stack_description["DeletionTime"] = stack.deletion_time
         if stack.capabilities:
             stack_description["Capabilities"] = stack.capabilities
         # TODO: confirm the logic for this

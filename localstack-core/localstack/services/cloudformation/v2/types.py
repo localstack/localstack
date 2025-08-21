@@ -31,3 +31,4 @@ class ResolvedResource(TypedDict):
     ResourceStatus: ResourceStatus
     PhysicalResourceId: str | None
     LastUpdatedTimestamp: datetime | None
+    ResourceStatusReason: str | None

@@ -1,12 +1,13 @@
 import os.path
 
 import aws_cdk as cdk
-import pytest
 
+from localstack.aws.api.cloudformation import Stack
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import short_uid
+from localstack.utils.sync import wait_until
 
 
 @markers.aws.validated
@@ -39,26 +40,68 @@ def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client, snap
     snapshot.match("get-topic-attrs", topic_attrs)
 
 
-@markers.aws.needs_fixing
-def test_sns_topic_fifo_without_suffix_fails(deploy_cfn_template, aws_client):
+@markers.aws.validated
+def test_sns_topic_fifo_without_suffix_fails(cleanups, aws_client, snapshot):
     stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"))
+
     path = os.path.join(
         os.path.dirname(__file__),
         "../../../templates/sns_topic_fifo_dedup.yaml",
     )
+    with open(path) as infile:
+        template_body = infile.read()
 
-    with pytest.raises(Exception) as ex:
-        deploy_cfn_template(
-            stack_name=stack_name, template_path=path, parameters={"TopicName": topic_name}
-        )
-    assert ex.typename == "StackDeployError"
-
-    stack = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
+    delay = 1
+    max_attempts = 30
     if is_aws_cloud():
-        assert stack.get("StackStatus") in ["ROLLBACK_COMPLETED", "ROLLBACK_IN_PROGRESS"]
-    else:
-        assert stack.get("StackStatus") == "CREATE_FAILED"
+        delay = 5
+        max_attempts = 100
+    waiter_config = {"Delay": delay, "MaxAttempts": max_attempts}
+
+    change_set = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name}],
+    )
+    change_set_id = change_set["Id"]
+    stack_id = change_set["StackId"]
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=change_set_id,
+        StackName=stack_name,
+        WaiterConfig=waiter_config,
+    )
+
+    def _cleanup():
+        aws_client.cloudformation.delete_stack(StackName=stack_id)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
+            StackName=stack_id, WaiterConfig=waiter_config
+        )
+
+    cleanups.append(_cleanup)
+
+    aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id, StackName=stack_id)
+
+    # we cannot use a waiter here since they all check for success
+    def describe_stack() -> Stack:
+        result = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+        return result
+
+    assert wait_until(
+        lambda: describe_stack()["StackStatus"] in {"ROLLBACK_COMPLETE", "CREATE_FAILED"},
+        strategy="static",
+        wait=delay,
+        max_retries=max_attempts,
+    )
+
+    stack = describe_stack()
+    snapshot.match("describe-stack", stack)
 
 
 @markers.aws.validated

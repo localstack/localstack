@@ -115,6 +115,7 @@ class PreprocResource:
     properties: PreprocProperties
     depends_on: list[str] | None
     requires_replacement: bool
+    status: ResourceStatus | None
 
     def __init__(
         self,
@@ -125,6 +126,7 @@ class PreprocResource:
         properties: PreprocProperties,
         depends_on: list[str] | None,
         requires_replacement: bool,
+        status: ResourceStatus | None = None,
     ):
         self.logical_id = logical_id
         self.physical_resource_id = physical_resource_id
@@ -133,6 +135,7 @@ class PreprocResource:
         self.properties = properties
         self.depends_on = depends_on
         self.requires_replacement = requires_replacement
+        self.status = status
 
     @staticmethod
     def _compare_conditions(c1: bool, c2: bool):

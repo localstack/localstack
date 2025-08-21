@@ -53,6 +53,7 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
     outputs: list[Output]
+    failure_message: str | None = None
 
 
 class DeferredAction(Protocol):
@@ -63,6 +64,16 @@ class DeferredAction(Protocol):
 class Deferred:
     name: str
     action: DeferredAction
+
+
+class TriggerRollback(Exception):
+    """
+    Sentinel exception to signal that the deployment should be stopped for a reason
+    """
+
+    def __init__(self, logical_resource_id: str, reason: str | None):
+        self.logical_resource_id = logical_resource_id
+        self.reason = reason
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
@@ -83,10 +94,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def execute(self) -> ChangeSetModelExecutorResult:
         # constructive process
-        self.process()
+        failure_message = None
+        try:
+            self.process()
+        except TriggerRollback as e:
+            failure_message = e.reason
+        except Exception as e:
+            failure_message = str(e)
 
         if self._deferred_actions:
-            self._change_set.stack.set_stack_status(StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS)
+            if failure_message:
+                # TODO: differentiate between update and create
+                self._change_set.stack.set_stack_status(StackStatus.ROLLBACK_IN_PROGRESS)
+            else:
+                # TODO: correct status
+                self._change_set.stack.set_stack_status(
+                    StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+                )
 
             # perform all deferred actions such as deletions. These must happen in reverse from their
             # defined order so that resource dependencies are honoured
@@ -95,9 +119,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 LOG.debug("executing deferred action: '%s'", deferred.name)
                 deferred.action()
 
+        if failure_message:
+            # TODO: differentiate between update and create
+            self._change_set.stack.set_stack_status(StackStatus.ROLLBACK_COMPLETE)
+
         return ChangeSetModelExecutorResult(
-            resources=self.resources,
-            outputs=self.outputs,
+            resources=self.resources, outputs=self.outputs, failure_message=failure_message
         )
 
     def _defer_action(self, name: str, action: DeferredAction):
@@ -224,14 +251,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         if not is_nothing(after):
             after_logical_id = after.logical_id
             resource = self.resources[after_logical_id]
-            if resource["ResourceStatus"] not in {
+            resource_failed_to_deploy = resource["ResourceStatus"] in {
                 ResourceStatus.CREATE_FAILED,
                 ResourceStatus.UPDATE_FAILED,
-            }:
+            }
+            if not resource_failed_to_deploy:
                 after_physical_id: str = self._after_resource_physical_id(
                     resource_logical_id=after_logical_id
                 )
                 after.physical_resource_id = after_physical_id
+            after.status = resource["ResourceStatus"]
+
+            # terminate the deployment process
+            if resource_failed_to_deploy:
+                raise TriggerRollback(
+                    logical_resource_id=after_logical_id,
+                    reason=resource.get("ResourceStatusReason"),
+                )
         return delta
 
     def visit_node_output(
@@ -530,6 +566,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     reason,
                 )
                 resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
+                resolved_resource["ResourceStatusReason"] = reason
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
 
