@@ -209,7 +209,7 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version-file: 'localstack/.python-version'
 
       - name: Set up Node 22.x
         uses: actions/setup-node@v5
