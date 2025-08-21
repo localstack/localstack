@@ -52,6 +52,7 @@ from localstack.aws.api.cloudformation import (
     NextToken,
     Parameter,
     PhysicalResourceId,
+    ResourceStatus,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
@@ -557,15 +558,15 @@ class CloudformationProviderV2(CloudformationProvider):
         )
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
+            result = change_set_executor.execute()
+            change_set.stack.resolved_parameters = change_set.resolved_parameters
+            change_set.stack.resolved_resources = result.resources
+            if not result.failure_message:
                 new_stack_status = StackStatus.UPDATE_COMPLETE
                 if change_set.change_set_type == ChangeSetType.CREATE:
                     new_stack_status = StackStatus.CREATE_COMPLETE
                 change_set.stack.set_stack_status(new_stack_status)
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
-                change_set.stack.resolved_resources = result.resources
-                change_set.stack.resolved_parameters = change_set.resolved_parameters
                 change_set.stack.resolved_outputs = result.outputs
 
                 change_set.stack.resolved_exports = {}
@@ -582,20 +583,15 @@ class CloudformationProviderV2(CloudformationProvider):
                 change_set.stack.description = change_set.template.get("Description")
                 change_set.stack.processed_template = change_set.processed_template
                 change_set.stack.template_body = change_set.template_body
-            except Exception as e:
+            else:
                 LOG.error(
                     "Execute change set failed: %s",
-                    e,
+                    result.failure_message,
                     exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
-                new_stack_status = StackStatus.UPDATE_FAILED
-                if change_set.change_set_type == ChangeSetType.CREATE:
-                    new_stack_status = StackStatus.CREATE_FAILED
-
-                change_set.stack.set_stack_status(new_stack_status)
+                # stack status is taken care of in the executor
                 change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
-                change_set.stack.change_set_id = change_set.change_set_id
-                change_set.stack.change_set_ids.append(change_set.change_set_id)
+                change_set.stack.deletion_time = datetime.now(tz=UTC)
 
         start_worker_thread(_run)
 
@@ -787,6 +783,8 @@ class CloudformationProviderV2(CloudformationProvider):
         if change_set.status == ChangeSetStatus.FAILED:
             return CreateStackOutput(StackId=stack.stack_id)
 
+        stack.processed_template = change_set.processed_template
+
         # deployment process
         stack.set_stack_status(StackStatus.CREATE_IN_PROGRESS)
         change_set_executor = ChangeSetModelExecutor(change_set)
@@ -794,9 +792,16 @@ class CloudformationProviderV2(CloudformationProvider):
         def _run(*args):
             try:
                 result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.CREATE_COMPLETE)
                 stack.resolved_resources = result.resources
                 stack.resolved_outputs = result.outputs
+                if all(
+                    resource["ResourceStatus"] == ResourceStatus.CREATE_COMPLETE
+                    for resource in stack.resolved_resources.values()
+                ):
+                    stack.set_stack_status(StackStatus.CREATE_COMPLETE)
+                else:
+                    stack.set_stack_status(StackStatus.CREATE_FAILED)
+
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed
                 stack.template = change_set.template
@@ -807,7 +812,6 @@ class CloudformationProviderV2(CloudformationProvider):
                 for output in result.outputs:
                     if export_name := output.get("ExportName"):
                         stack.resolved_exports[export_name] = output["OutputValue"]
-                stack.processed_template = change_set.processed_template
             except Exception as e:
                 LOG.error(
                     "Create Stack set failed: %s",
@@ -857,7 +861,6 @@ class CloudformationProviderV2(CloudformationProvider):
         stack_description = ApiStack(
             Description=stack.description,
             CreationTime=stack.creation_time,
-            DeletionTime=stack.deletion_time,
             StackId=stack.stack_id,
             StackName=stack.stack_name,
             StackStatus=stack.status,
@@ -873,6 +876,8 @@ class CloudformationProviderV2(CloudformationProvider):
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
             # TODO: actually track updated time
             stack_description["LastUpdatedTime"] = stack.creation_time
+        if stack.deletion_time:
+            stack_description["DeletionTime"] = stack.deletion_time
         if stack.capabilities:
             stack_description["Capabilities"] = stack.capabilities
         # TODO: confirm the logic for this
@@ -1489,6 +1494,8 @@ class CloudformationProviderV2(CloudformationProvider):
             stack.deletion_time = datetime.now(tz=UTC)
             return
 
+        stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
+
         previous_update_model = None
         if stack.change_set_id:
             if previous_change_set := find_change_set_v2(state, stack.change_set_id):
@@ -1511,7 +1518,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
         def _run(*args):
             try:
-                stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
                 change_set_executor.execute()
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
                 stack.deletion_time = datetime.now(tz=UTC)

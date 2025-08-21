@@ -513,5 +513,11 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_and_then_update_refreshes_template_metadata": {
+    "recorded-date": "20-08-2025, 22:16:11",
+    "recorded-content": {
+      "waiter-error": "Waiter ChangeSetCreateComplete failed: Waiter encountered a terminal failure state: For expression \"Status\" we matched expected path: \"FAILED\""
+    }
   }
 }

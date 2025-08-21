@@ -53,6 +53,7 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 class ChangeSetModelExecutorResult:
     resources: dict[str, ResolvedResource]
     outputs: list[Output]
+    failure_message: str | None = None
 
 
 class DeferredAction(Protocol):
@@ -63,6 +64,16 @@ class DeferredAction(Protocol):
 class Deferred:
     name: str
     action: DeferredAction
+
+
+class TriggerRollback(Exception):
+    """
+    Sentinel exception to signal that the deployment should be stopped for a reason
+    """
+
+    def __init__(self, logical_resource_id: str, reason: str | None):
+        self.logical_resource_id = logical_resource_id
+        self.reason = reason
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
@@ -83,10 +94,23 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def execute(self) -> ChangeSetModelExecutorResult:
         # constructive process
-        self.process()
+        failure_message = None
+        try:
+            self.process()
+        except TriggerRollback as e:
+            failure_message = e.reason
+        except Exception as e:
+            failure_message = str(e)
 
         if self._deferred_actions:
-            self._change_set.stack.set_stack_status(StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS)
+            if failure_message:
+                # TODO: differentiate between update and create
+                self._change_set.stack.set_stack_status(StackStatus.ROLLBACK_IN_PROGRESS)
+            else:
+                # TODO: correct status
+                self._change_set.stack.set_stack_status(
+                    StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+                )
 
             # perform all deferred actions such as deletions. These must happen in reverse from their
             # defined order so that resource dependencies are honoured
@@ -95,9 +119,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 LOG.debug("executing deferred action: '%s'", deferred.name)
                 deferred.action()
 
+        if failure_message:
+            # TODO: differentiate between update and create
+            self._change_set.stack.set_stack_status(StackStatus.ROLLBACK_COMPLETE)
+
         return ChangeSetModelExecutorResult(
-            resources=self.resources,
-            outputs=self.outputs,
+            resources=self.resources, outputs=self.outputs, failure_message=failure_message
         )
 
     def _defer_action(self, name: str, action: DeferredAction):
@@ -137,9 +164,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         else:
             status = f"{status_from_action}_{event_status.name}"
 
+        physical_resource_id = self._get_physical_id(logical_resource_id, False)
         self._change_set.stack.set_resource_status(
             logical_resource_id=logical_resource_id,
-            physical_resource_id=self._get_physical_id(logical_resource_id, False) or "",
+            physical_resource_id=physical_resource_id,
             resource_type=resource_type,
             status=ResourceStatus(status),
             resource_status_reason=reason,
@@ -219,10 +247,24 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         # Update the latest version of this resource for downstream references.
         if not is_nothing(after):
             after_logical_id = after.logical_id
-            after_physical_id: str = self._after_resource_physical_id(
-                resource_logical_id=after_logical_id
-            )
-            after.physical_resource_id = after_physical_id
+            resource = self.resources[after_logical_id]
+            resource_failed_to_deploy = resource["ResourceStatus"] in {
+                ResourceStatus.CREATE_FAILED,
+                ResourceStatus.UPDATE_FAILED,
+            }
+            if not resource_failed_to_deploy:
+                after_physical_id: str = self._after_resource_physical_id(
+                    resource_logical_id=after_logical_id
+                )
+                after.physical_resource_id = after_physical_id
+            after.status = resource["ResourceStatus"]
+
+            # terminate the deployment process
+            if resource_failed_to_deploy:
+                raise TriggerRollback(
+                    logical_resource_id=after_logical_id,
+                    reason=resource.get("ResourceStatusReason"),
+                )
         return delta
 
     def visit_node_output(
@@ -291,6 +333,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                             resource_type=before.resource_type,
                             before_properties=before_properties,
                             after_properties=None,
+                            part_of_replacement=True,
                         )
                         self._process_event(
                             action=ChangeAction.Remove,
@@ -425,6 +468,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         resource_type: str,
         before_properties: PreprocProperties | None,
         after_properties: PreprocProperties | None,
+        part_of_replacement: bool = False,
     ) -> ProgressEvent:
         LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
         payload = self.create_resource_provider_payload(
@@ -481,6 +525,19 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 message=f"Resource type {resource_type} not supported",
             )
 
+        if part_of_replacement and action == ChangeAction.Remove:
+            # Early return as we don't want to update internal state of the executor if this is a
+            # cleanup of an old resource. The new resource has already been created and the state
+            # updated
+            return event
+
+        status_from_action = EventOperationFromAction[action.value]
+        resolved_resource = ResolvedResource(
+            Properties=event.resource_model,
+            LogicalResourceId=logical_resource_id,
+            Type=resource_type,
+            LastUpdatedTimestamp=datetime.now(UTC),
+        )
         match event.status:
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
@@ -495,24 +552,17 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
                 # Don't update the resolved resources if we have deleted that resource
                 if action != ChangeAction.Remove:
-                    status_from_action = EventOperationFromAction[action.value]
                     physical_resource_id = (
                         extra_resource_properties["PhysicalResourceId"]
                         if resource_provider
                         else MOCKED_REFERENCE
                     )
-                    resolved_resource = ResolvedResource(
-                        Properties=event.resource_model,
-                        LogicalResourceId=logical_resource_id,
-                        Type=resource_type,
-                        LastUpdatedTimestamp=datetime.now(UTC),
-                        ResourceStatus=ResourceStatus(f"{status_from_action}_COMPLETE"),
-                        PhysicalResourceId=physical_resource_id,
+                    resolved_resource["PhysicalResourceId"] = physical_resource_id
+                    resolved_resource["ResourceStatus"] = ResourceStatus(
+                        f"{status_from_action}_COMPLETE"
                     )
                     # TODO: do we actually need this line?
                     resolved_resource.update(extra_resource_properties)
-
-                    self.resources[logical_resource_id] = resolved_resource
 
             case OperationStatus.FAILED:
                 reason = event.message
@@ -520,8 +570,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     "Resource provider operation failed: '%s'",
                     reason,
                 )
+                resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
+                resolved_resource["ResourceStatusReason"] = reason
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
+
+        self.resources[logical_resource_id] = resolved_resource
         return event
 
     def create_resource_provider_payload(

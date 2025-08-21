@@ -9,6 +9,7 @@ from typing import Any, Final, Generic, TypeVar
 from botocore.exceptions import ClientError
 
 from localstack import config
+from localstack.aws.api.cloudformation import ResourceStatus
 from localstack.aws.api.ec2 import AvailabilityZoneList, DescribeAvailabilityZonesResult
 from localstack.aws.connect import connect_to
 from localstack.services.cloudformation.engine.v2.change_set_model import (
@@ -52,6 +53,7 @@ from localstack.services.cloudformation.stores import (
     exports_map,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.services.cloudformation.v2.types import ResolvedResource
 from localstack.utils.aws.arns import get_partition
 from localstack.utils.objects import get_value_from_path
 from localstack.utils.run import to_str
@@ -113,6 +115,7 @@ class PreprocResource:
     properties: PreprocProperties
     depends_on: list[str] | None
     requires_replacement: bool
+    status: ResourceStatus | None
 
     def __init__(
         self,
@@ -123,6 +126,7 @@ class PreprocResource:
         properties: PreprocProperties,
         depends_on: list[str] | None,
         requires_replacement: bool,
+        status: ResourceStatus | None = None,
     ):
         self.logical_id = logical_id
         self.physical_resource_id = physical_resource_id
@@ -131,6 +135,7 @@ class PreprocResource:
         self.properties = properties
         self.depends_on = depends_on
         self.requires_replacement = requires_replacement
+        self.status = status
 
     @staticmethod
     def _compare_conditions(c1: bool, c2: bool):
@@ -946,11 +951,17 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return delta
 
     def _resource_physical_resource_id_from(
-        self, logical_resource_id: str, resolved_resources: dict
-    ) -> str:
+        self, logical_resource_id: str, resolved_resources: dict[str, ResolvedResource]
+    ) -> str | None:
         # TODO: typing around resolved resources is needed and should be reflected here.
         resolved_resource = resolved_resources.get(logical_resource_id, {})
-        physical_resource_id: str | None = resolved_resource.get("PhysicalResourceId")
+        if resolved_resource.get("ResourceStatus") not in {
+            ResourceStatus.CREATE_COMPLETE,
+            ResourceStatus.UPDATE_COMPLETE,
+        }:
+            return None
+
+        physical_resource_id = resolved_resource.get("PhysicalResourceId")
         if not isinstance(physical_resource_id, str):
             raise RuntimeError(f"No PhysicalResourceId found for resource '{logical_resource_id}'")
         return physical_resource_id

@@ -14,6 +14,15 @@
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_fifo_with_deduplication": {
     "last_validated_date": "2023-11-27T20:27:29+00:00"
   },
+  "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_fifo_without_suffix_fails": {
+    "last_validated_date": "2025-08-21T11:30:22+00:00",
+    "durations_in_seconds": {
+      "setup": 1.54,
+      "call": 158.1,
+      "teardown": 5.32,
+      "total": 164.96
+    }
+  },
   "tests/aws/services/cloudformation/resources/test_sns.py::test_sns_topic_policy_resets_to_default": {
     "last_validated_date": "2025-07-04T00:04:32+00:00",
     "durations_in_seconds": {

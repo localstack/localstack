@@ -4,6 +4,7 @@ from typing import Any
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     Maybe,
     NodeIntrinsicFunction,
+    NodeResource,
     NodeTemplate,
     Nothing,
     is_nothing,
@@ -165,3 +166,11 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
             return super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
         except RuntimeError:
             return self.visit(node_intrinsic_function.arguments)
+
+    def visit_node_resource(self, node_resource: NodeResource) -> PreprocEntityDelta:
+        try:
+            if delta := super().visit_node_resource(node_resource):
+                return delta
+            return super().visit_node_properties(node_resource.properties)
+        except RuntimeError:
+            return super().visit_node_properties(node_resource.properties)
