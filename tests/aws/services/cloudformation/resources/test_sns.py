@@ -1,6 +1,7 @@
 import os.path
 
 import aws_cdk as cdk
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.aws.api.cloudformation import Stack
 from localstack.testing.aws.util import is_aws_cloud
@@ -41,6 +42,7 @@ def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client, snap
 
 
 @markers.aws.validated
+@skip_if_v1_provider("Not supported with v1 provider")
 def test_sns_topic_fifo_without_suffix_fails(cleanups, aws_client, snapshot):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"cs-{short_uid()}"
