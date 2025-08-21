@@ -785,6 +785,9 @@ class ChangeSetModel:
 
         logical_id = arguments.value
 
+        if isinstance(logical_id, str) and logical_id.startswith("AWS::"):
+            return arguments.change_type
+
         node_condition = self._retrieve_condition_if_exists(condition_name=logical_id)
         if isinstance(node_condition, NodeCondition):
             return node_condition.change_type
@@ -863,6 +866,7 @@ class ChangeSetModel:
     ) -> bool:
         # a bit hacky but we have to load the resource provider executor _and_ resource provider to get the schema
         # Note: we don't log the attempt to load the resource provider, we need to make sure this is only done once and we already do this in the executor
+
         resource_provider = ResourceProviderExecutor.try_load_resource_provider(resource_type.value)
         if not resource_provider:
             # if we don't support a resource, assume an in-place update for simplicity
