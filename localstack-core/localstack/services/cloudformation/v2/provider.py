@@ -286,7 +286,7 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template: dict | None,
         before_parameters: dict | None,
         after_parameters: dict | None,
-        previous_update_model: UpdateModel | None,
+        previous_update_model: UpdateModel | None = None,
     ):
         resolved_parameters = None
         if after_parameters is not None:
@@ -1510,7 +1510,6 @@ class CloudformationProviderV2(CloudformationProvider):
             after_template=None,
             before_parameters=stack.resolved_parameters,
             after_parameters=None,
-            previous_update_model=previous_update_model,
         )
 
         change_set_executor = ChangeSetModelExecutor(change_set)
