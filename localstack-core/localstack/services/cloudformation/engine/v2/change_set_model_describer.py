@@ -99,8 +99,11 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_join(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: investigate the behaviour and impact of this logic with the user defining
-        #       {{changeSet:KNOWN_AFTER_APPLY}} string literals as delimiters or arguments.
+        delta_args = super().visit(node_intrinsic_function.arguments)
+        if isinstance(delta_args.after, list) and CHANGESET_KNOWN_AFTER_APPLY in delta_args.after:
+            delta_args.after = CHANGESET_KNOWN_AFTER_APPLY
+            return delta_args
+
         delta = super().visit_node_intrinsic_function_fn_join(
             node_intrinsic_function=node_intrinsic_function
         )
