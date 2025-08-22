@@ -107,8 +107,7 @@ def test_proxy_server_with_chunked_request(httpserver, httpserver_echo_request_m
     proxy_server = ProxyServer(httpserver.url_for("/"), gateway_listen, use_ssl=True)
 
     def chunk_generator():
-        for chunk in chunks:
-            yield chunk
+        yield from chunks
 
     with server_context(proxy_server):
         response = requests.get(
@@ -121,8 +120,7 @@ def test_proxy_server_with_streamed_response(httpserver):
     chunks = [bytes(f"{n:2}", "utf-8") for n in range(0, 100)]
 
     def chunk_generator():
-        for chunk in chunks:
-            yield chunk
+        yield from chunks
 
     def stream_response_handler(_: WerkzeugRequest) -> Response:
         return Response(response=chunk_generator())
