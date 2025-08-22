@@ -1,5 +1,6 @@
 import copy
 import logging
+import re
 import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -15,7 +16,6 @@ from localstack.aws.api.cloudformation import (
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
-from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeIntrinsicFunction,
@@ -27,6 +27,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    _AWS_URL_SUFFIX,
     MOCKED_REFERENCE,
     ChangeSetModelPreproc,
     PreprocEntityDelta,
@@ -42,11 +43,14 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
-from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
+
+REGEX_OUTPUT_APIGATEWAY = re.compile(
+    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
+)
 
 
 @dataclass
@@ -645,8 +649,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
-            port = localstack_host().port
-            value = f"{prefix}{host}:{port}/{path}"
+            value = f"{prefix}{host}/{path}"
             return value
 
         return value
@@ -698,6 +701,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         delta = super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
+        return self._replace_url_outputs_in_delta_if_required(delta)
+
+    def visit_node_intrinsic_function_fn_select(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
         return self._replace_url_outputs_in_delta_if_required(delta)
 
     # TODO: other intrinsic functions
