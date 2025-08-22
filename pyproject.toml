@@ -220,7 +220,6 @@ ignore = [
     "T203", # TODO `pprint` found
     "UP028",# TODO Replace `yield` over `for` loop with `yield from`
     "UP031",# TODO Use format specifiers instead of percent format
-    "UP036",# TODO Version block is outdated for minimum Python version
     "UP038",# TODO Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
 select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G", "UP"]
