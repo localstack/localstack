@@ -783,7 +783,7 @@ class HTTPIntegration(BackendIntegration):
             instances = client.list_instances(ServiceId=service_id)["Instances"]
             instance = (instances or [None])[0]
             if instance and instance.get("Id"):
-                uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
+                uri = "http://{}/{}".format(instance["Id"], invocation_path.lstrip("/"))
 
         # apply custom request template
         invocation_context.context = get_event_request_context(invocation_context)
@@ -977,8 +977,9 @@ class StepFunctionIntegration(BackendIntegration):
                     headers={"Content-Type": APPLICATION_JSON},
                     data=json.dumps(
                         {
-                            "message": "StepFunctions execution %s failed with status '%s'"
-                            % (result["executionArn"], result_status)
+                            "message": "StepFunctions execution {} failed with status '{}'".format(
+                                result["executionArn"], result_status
+                            )
                         }
                     ),
                 )

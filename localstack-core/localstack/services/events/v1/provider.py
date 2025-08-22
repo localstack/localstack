@@ -206,12 +206,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 raise ValueError("If the value is greater than 1, the unit must be plural")
 
             if "minute" in unit:
-                return "*/%s * * * *" % value
+                return f"*/{value} * * * *"
             if "hour" in unit:
-                return "0 */%s * * *" % value
+                return f"0 */{value} * * *"
             if "day" in unit:
-                return "0 0 */%s * *" % value
-            raise ValueError("Unable to parse events schedule expression: %s" % schedule)
+                return f"0 0 */{value} * *"
+            raise ValueError(f"Unable to parse events schedule expression: {schedule}")
         return schedule
 
     @staticmethod
@@ -374,7 +374,7 @@ def _dump_events_to_files(events_with_added_uuid):
         for event in events_with_added_uuid:
             target = os.path.join(
                 _get_events_tmp_dir(),
-                "%s_%s" % (current_time_millis, event["uuid"]),
+                "{}_{}".format(current_time_millis, event["uuid"]),
             )
             save_file(target, json.dumps(event["event"]))
     except Exception as e:

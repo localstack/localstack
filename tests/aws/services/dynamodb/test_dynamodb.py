@@ -94,7 +94,7 @@ class TestDynamoDB:
         # Create a large amount of items
         num_items = 20
         for i in range(0, num_items):
-            item = {PARTITION_KEY: {"S": "id%s" % i}, "data1": {"S": "foobar123 " * 1000}}
+            item = {PARTITION_KEY: {"S": f"id{i}"}, "data1": {"S": "foobar123 " * 1000}}
             aws_client.dynamodb.put_item(TableName=ddb_test_table, Item=item)
 
         # Retrieve the items. The data will be transmitted to the client with chunked transfer encoding
@@ -251,7 +251,7 @@ class TestDynamoDB:
 
     @markers.aws.only_localstack
     def test_list_tags_of_resource(self, aws_client):
-        table_name = "ddb-table-%s" % short_uid()
+        table_name = f"ddb-table-{short_uid()}"
 
         rs = aws_client.dynamodb.create_table(
             TableName=table_name,

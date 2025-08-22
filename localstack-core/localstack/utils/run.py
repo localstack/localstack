@@ -114,7 +114,7 @@ def run(
         return process
     except subprocess.CalledProcessError as e:
         if print_error:
-            print("ERROR: '%s': exit code %s; output: %s" % (cmd, e.returncode, e.output))
+            print(f"ERROR: '{cmd}': exit code {e.returncode}; output: {e.output}")
             sys.stdout.flush()
         raise e
 
@@ -268,7 +268,7 @@ class ShellCommandThread(FuncThread):
             if self.strip_color:
                 # strip color codes
                 line = re.sub(r"\x1b(\[.*?[@-~]|\].*?(\x07|\x1b\\))", "", line)
-            return "%s\r\n" % line.strip()
+            return f"{line.strip()}\r\n"
 
         def filter_line(line):
             """Return True if this line should be filtered, i.e., not printed"""

@@ -194,18 +194,11 @@ class ServiceExceptionSerializer(ExceptionHandler):
             # wrap exception for serialization
             if operation:
                 operation_name = operation.name
-                msg = "exception while calling %s.%s: %s" % (
-                    service_name,
-                    operation_name,
-                    exception,
-                )
+                msg = f"exception while calling {service_name}.{operation_name}: {exception}"
             else:
                 # just use any operation for mocking purposes (the parser needs it to populate the default response)
                 operation = context.service.operation_model(context.service.operation_names[0])
-                msg = "exception while calling %s with unknown operation: %s" % (
-                    service_name,
-                    exception,
-                )
+                msg = f"exception while calling {service_name} with unknown operation: {exception}"
 
             status_code = 501 if config.FAIL_FAST else 500
 

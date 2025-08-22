@@ -64,14 +64,14 @@ def setup_test(account_id, region_name):
         }
 
         run(
-            "cd %s; %s apply -input=false tfplan" % (get_base_dir(), TERRAFORM_BIN),
+            f"cd {get_base_dir()}; {TERRAFORM_BIN} apply -input=false tfplan",
             env_vars=env_vars,
         )
 
     yield
 
     # clean up
-    run("cd %s; %s destroy -auto-approve" % (get_base_dir(), TERRAFORM_BIN), env_vars=env_vars)
+    run(f"cd {get_base_dir()}; {TERRAFORM_BIN} destroy -auto-approve", env_vars=env_vars)
 
 
 def get_base_dir():

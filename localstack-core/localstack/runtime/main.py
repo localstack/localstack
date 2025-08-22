@@ -20,13 +20,13 @@ def print_runtime_information(in_docker: bool = False):
     if in_docker:
         try:
             container_name = get_main_container_name()
-            print("LocalStack Docker container name: %s" % container_name)
+            print(f"LocalStack Docker container name: {container_name}")
             inspect_result = DOCKER_CLIENT.inspect_container(container_name)
             container_id = inspect_result["Id"]
-            print("LocalStack Docker container id: %s" % container_id[:12])
+            print(f"LocalStack Docker container id: {container_id[:12]}")
             image_details = DOCKER_CLIENT.inspect_image(inspect_result["Image"])
             digests = image_details.get("RepoDigests") or ["Unavailable"]
-            print("LocalStack Docker image sha: %s" % digests[0])
+            print(f"LocalStack Docker image sha: {digests[0]}")
         except ContainerException:
             print(
                 "LocalStack Docker container info: Failed to inspect the LocalStack docker container. "
@@ -44,10 +44,10 @@ def print_runtime_information(in_docker: bool = False):
                 )
 
     if config.LOCALSTACK_BUILD_DATE:
-        print("LocalStack build date: %s" % config.LOCALSTACK_BUILD_DATE)
+        print(f"LocalStack build date: {config.LOCALSTACK_BUILD_DATE}")
 
     if config.LOCALSTACK_BUILD_GIT_HASH:
-        print("LocalStack build git hash: %s" % config.LOCALSTACK_BUILD_GIT_HASH)
+        print(f"LocalStack build git hash: {config.LOCALSTACK_BUILD_GIT_HASH}")
 
     print()
 

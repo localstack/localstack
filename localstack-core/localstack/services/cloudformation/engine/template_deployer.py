@@ -329,7 +329,7 @@ def _resolve_refs_recursively(
                 account_id, region_name, stack_name, resources, parameters, value["Ref"]
             )
             if ref is None:
-                msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
+                msg = 'Unable to resolve Ref for resource "{}" (yet)'.format(value["Ref"])
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
 
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
@@ -450,7 +450,7 @@ def _resolve_refs_recursively(
                     raise DependencyNotYetSatisfied(
                         resource_ids=key, message=f"Could not resolve {val} to terminal value type"
                     )
-                result = result.replace("${%s}" % key, str(resolved_val))
+                result = result.replace(f"${{{key}}}", str(resolved_val))
 
             # resolve placeholders
             result = resolve_placeholders_in_string(

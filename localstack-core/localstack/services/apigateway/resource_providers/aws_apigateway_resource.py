@@ -72,7 +72,7 @@ class ApiGatewayResourceProvider(ResourceProvider[ApiGatewayResourceProperties])
             root_resource = ([r for r in resources if r["path"] == "/"] or [None])[0]
             if not root_resource:
                 raise Exception(
-                    "Unable to find root resource for REST API %s" % params["restApiId"]
+                    "Unable to find root resource for REST API {}".format(params["restApiId"])
                 )
             params["parentId"] = root_resource["id"]
         response = apigw.create_resource(**params)

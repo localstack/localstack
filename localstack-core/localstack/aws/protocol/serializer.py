@@ -527,7 +527,7 @@ class ResponseSerializer(abc.ABC):
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
         datetime_obj = parse_to_aware_datetime(value)
-        converter = getattr(self, "_timestamp_%s" % timestamp_format)
+        converter = getattr(self, f"_timestamp_{timestamp_format}")
         final_value = converter(datetime_obj)
         return final_value
 
@@ -689,7 +689,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             name = shape.serialization.get("resultWrapper")
 
         try:
-            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method = getattr(self, f"_serialize_type_{shape.type_name}", self._default_serialize)
             method(xmlnode, params, shape, name, mime_type)
         except (TypeError, ValueError, AttributeError) as e:
             raise ProtocolSerializerError(
@@ -705,7 +705,7 @@ class BaseXMLResponseSerializer(ResponseSerializer):
             namespace_metadata = shape.serialization["xmlNamespace"]
             attribute_name = "xmlns"
             if namespace_metadata.get("prefix"):
-                attribute_name += ":%s" % namespace_metadata["prefix"]
+                attribute_name += ":{}".format(namespace_metadata["prefix"])
             structure_node.attrib[attribute_name] = namespace_metadata["uri"]
         for key, value in params.items():
             if value is None:
@@ -1261,7 +1261,7 @@ class JSONResponseSerializer(ResponseSerializer):
         else:
             json_version = operation_model.metadata.get("jsonVersion")
             if json_version is not None:
-                response.headers["Content-Type"] = "application/x-amz-json-%s" % json_version
+                response.headers["Content-Type"] = f"application/x-amz-json-{json_version}"
         response.set_response(
             self._serialize_body_params(parameters, shape, operation_model, mime_type, request_id)
         )
@@ -1286,7 +1286,7 @@ class JSONResponseSerializer(ResponseSerializer):
     def _serialize(self, body: dict, value: Any, shape, key: str | None, mime_type: str):
         """This method dynamically invokes the correct `_serialize_type_*` method for each shape type."""
         try:
-            method = getattr(self, "_serialize_type_%s" % shape.type_name, self._default_serialize)
+            method = getattr(self, f"_serialize_type_{shape.type_name}", self._default_serialize)
             method(body, value, shape, key, mime_type)
         except (TypeError, ValueError, AttributeError) as e:
             raise ProtocolSerializerError(

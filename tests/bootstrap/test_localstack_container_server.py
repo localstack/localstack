@@ -19,16 +19,13 @@ class TestLocalstackContainerServer:
             assert server.wait_is_up(60)
 
             health_response = requests.get("http://localhost:4566/_localstack/health")
-            assert health_response.ok, (
-                "expected health check to return OK: %s" % health_response.text
-            )
+            assert health_response.ok, f"expected health check to return OK: {health_response.text}"
 
             restart_response = requests.post(
                 "http://localhost:4566/_localstack/health", json={"action": "restart"}
             )
             assert restart_response.ok, (
-                "expected restart command via health endpoint to return OK: %s"
-                % restart_response.text
+                f"expected restart command via health endpoint to return OK: {restart_response.text}"
             )
 
             def check_restart_successful():

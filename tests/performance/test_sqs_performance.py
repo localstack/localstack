@@ -18,7 +18,7 @@ def print_duration(start, num_msgs, action):
     duration = datetime.now() - start
     duration = duration.total_seconds()
     req_sec = num_msgs / duration
-    print("%s %s messages in %s seconds (%s req/sec)" % (action, num_msgs, duration, req_sec))
+    print(f"{action} {num_msgs} messages in {duration} seconds ({req_sec} req/sec)")
 
 
 def send_messages():
@@ -29,7 +29,7 @@ def send_messages():
     ).sqs
     queue_url = sqs.create_queue(QueueName=QUEUE_NAME)["QueueUrl"]
 
-    print("Starting to send %s messages" % NUM_MESSAGES)
+    print(f"Starting to send {NUM_MESSAGES} messages")
     start = datetime.now()
     for i in range(1, NUM_MESSAGES + 1):
         sqs.send_message(QueueUrl=queue_url, MessageBody="test123")
@@ -50,7 +50,7 @@ def receive_messages():
         result = sqs.receive_message(QueueUrl=queue_url)
         messages.extend(result.get("Messages") or [])
         print_duration(start, len(messages), action="Received")
-    print("All %s messages received" % len(messages))
+    print(f"All {len(messages)} messages received")
 
 
 def main():

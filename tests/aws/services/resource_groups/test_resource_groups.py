@@ -35,7 +35,7 @@ def sqs_create_queue_in_region(aws_client_factory):
 
     def factory(region, **kwargs):
         if "QueueName" not in kwargs:
-            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+            kwargs["QueueName"] = f"test-queue-{short_uid()}"
         response = aws_client_factory(region_name=region).sqs.create_queue(**kwargs)
         url = response["QueueUrl"]
         region_queue_urls.setdefault(region, []).append(url)

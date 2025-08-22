@@ -6,7 +6,7 @@ PORT_DYNAMODB = 4566
 
 
 def connect():
-    return boto3.client("dynamodb", endpoint_url="http://localhost:%s" % PORT_DYNAMODB)
+    return boto3.client("dynamodb", endpoint_url=f"http://localhost:{PORT_DYNAMODB}")
 
 
 def create():
@@ -25,7 +25,7 @@ def insert(count):
     for i in range(count):
         if i > 0 and i % 100 == 0:
             delta = time.time() - start
-            print("%s sec for %s items = %s req/sec" % (delta, i, i / delta))
+            print(f"{delta} sec for {i} items = {i / delta} req/sec")
         client.put_item(
             TableName="customers",
             Item={

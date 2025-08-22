@@ -162,7 +162,7 @@ class DynamodbServer(Server):
         cmd = [
             "java",
             *self._get_java_vm_options(),
-            "-Xmx%s" % self.heap_size,
+            f"-Xmx{self.heap_size}",
             f"-javaagent:{dynamodblocal_package.get_installer().get_ddb_agent_jar_path()}",
             f"-Djava.library.path={self.library_path}",
             "-jar",

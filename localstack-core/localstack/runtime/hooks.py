@@ -65,7 +65,7 @@ class HookManager(PluginManager):
             fn_plugin(*args, **kwargs)
 
     def __str__(self):
-        return "HookManager(%s)" % self.namespace
+        return f"HookManager({self.namespace})"
 
     def __repr__(self):
         return self.__str__()

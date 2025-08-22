@@ -367,10 +367,7 @@ def resolve_references(data: dict, rest_api_id, allow_recursive=True) -> dict:
 
 def path_based_url(api_id: str, stage_name: str, path: str) -> str:
     """Return URL for inbound API gateway for given API ID, stage name, and path"""
-    pattern = "%s/restapis/{api_id}/{stage_name}/%s{path}" % (
-        config.external_service_url(),
-        PATH_USER_REQUEST,
-    )
+    pattern = f"{config.external_service_url()}/restapis/{{api_id}}/{{stage_name}}/{PATH_USER_REQUEST}{{path}}"
     return pattern.format(api_id=api_id, stage_name=stage_name, path=path)
 
 
