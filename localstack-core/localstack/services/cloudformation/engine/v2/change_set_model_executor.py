@@ -2,9 +2,10 @@ import copy
 import logging
 import re
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Final, Protocol
+from typing import Final, Protocol, TypeVar
 
 from localstack import config
 from localstack.aws.api.cloudformation import (
@@ -18,12 +19,8 @@ from localstack.services.cloudformation.analytics import track_resource_operatio
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
-    NodeIntrinsicFunction,
     NodeOutput,
     NodeResource,
-    TerminalValueCreated,
-    TerminalValueModified,
-    TerminalValueUnchanged,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
@@ -51,6 +48,8 @@ EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELE
 REGEX_OUTPUT_APIGATEWAY = re.compile(
     rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
 )
+
+_T = TypeVar("_T")
 
 
 @dataclass
@@ -648,77 +647,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         }
         return resource_provider_payload
 
-    @staticmethod
-    def _perform_static_replacements(value: str) -> str:
-        api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
-        if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
-            prefix = api_match[1]
-            host = api_match[2]
-            path = api_match[3]
-            value = f"{prefix}{host}/{path}"
-            return value
-
-        return value
-
-    def _perform_static_replacements_in_delta(
-        self, delta: PreprocEntityDelta
+    def _maybe_perform_on_delta(
+        self, delta: PreprocEntityDelta, f: Callable[[_T], _T]
     ) -> PreprocEntityDelta:
-        if isinstance(delta.before, str):
-            delta.before = self._perform_static_replacements(delta.before)
+        # we only care about the after state
         if isinstance(delta.after, str):
-            delta.after = self._perform_static_replacements(delta.after)
+            delta.after = f(delta.after)
         return delta
-
-    def visit_terminal_value_created(
-        self, value: TerminalValueCreated
-    ) -> PreprocEntityDelta[str, str]:
-        if isinstance(value.value, str):
-            after = self._perform_static_replacements(value.value)
-        else:
-            after = value.value
-        return PreprocEntityDelta(after=after)
-
-    def visit_terminal_value_modified(
-        self, value: TerminalValueModified
-    ) -> PreprocEntityDelta[str, str]:
-        # we only need to transform the after
-        if isinstance(value.modified_value, str):
-            after = self._perform_static_replacements(value.modified_value)
-        else:
-            after = value.modified_value
-        return PreprocEntityDelta(before=value.value, after=after)
-
-    def visit_terminal_value_unchanged(
-        self, terminal_value_unchanged: TerminalValueUnchanged
-    ) -> PreprocEntityDelta:
-        if isinstance(terminal_value_unchanged.value, str):
-            value = self._perform_static_replacements(terminal_value_unchanged.value)
-        else:
-            value = terminal_value_unchanged.value
-        return PreprocEntityDelta(before=value, after=value)
-
-    def visit_node_intrinsic_function_fn_join(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_join(node_intrinsic_function)
-        return self._perform_static_replacements_in_delta(delta)
-
-    def visit_node_intrinsic_function_fn_sub(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
-        return self._perform_static_replacements_in_delta(delta)
-
-    def visit_node_intrinsic_function_fn_select(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
-        return self._perform_static_replacements_in_delta(delta)
-
-    def visit_node_intrinsic_function_fn_get_att(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_get_att(node_intrinsic_function)
-        return self._perform_static_replacements_in_delta(delta)
-
-    # TODO: other intrinsic functions
