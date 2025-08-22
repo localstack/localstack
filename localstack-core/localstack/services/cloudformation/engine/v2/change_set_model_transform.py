@@ -535,3 +535,10 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             return super().visit_node_property(node_property)
         except ParamValidationError:
             return self.visit(node_property.value)
+
+    # ignore errors from dynamic replacements
+    def _maybe_perform_dynamic_replacements(self, delta: PreprocEntityDelta) -> PreprocEntityDelta:
+        try:
+            return super()._maybe_perform_dynamic_replacements(delta)
+        except Exception:
+            return delta
