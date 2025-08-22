@@ -643,7 +643,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         return resource_provider_payload
 
     @staticmethod
-    def _replace_url_outputs_if_required(value: str) -> str:
+    def _perform_static_replacements(value: str) -> str:
         api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
         if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
             prefix = api_match[1]
@@ -654,20 +654,20 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
         return value
 
-    def _replace_url_outputs_in_delta_if_required(
+    def _perform_static_replacements_in_delta(
         self, delta: PreprocEntityDelta
     ) -> PreprocEntityDelta:
         if isinstance(delta.before, str):
-            delta.before = self._replace_url_outputs_if_required(delta.before)
+            delta.before = self._perform_static_replacements(delta.before)
         if isinstance(delta.after, str):
-            delta.after = self._replace_url_outputs_if_required(delta.after)
+            delta.after = self._perform_static_replacements(delta.after)
         return delta
 
     def visit_terminal_value_created(
         self, value: TerminalValueCreated
     ) -> PreprocEntityDelta[str, str]:
         if isinstance(value.value, str):
-            after = self._replace_url_outputs_if_required(value.value)
+            after = self._perform_static_replacements(value.value)
         else:
             after = value.value
         return PreprocEntityDelta(after=after)
@@ -677,7 +677,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
     ) -> PreprocEntityDelta[str, str]:
         # we only need to transform the after
         if isinstance(value.modified_value, str):
-            after = self._replace_url_outputs_if_required(value.modified_value)
+            after = self._perform_static_replacements(value.modified_value)
         else:
             after = value.modified_value
         return PreprocEntityDelta(before=value.value, after=after)
@@ -686,7 +686,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self, terminal_value_unchanged: TerminalValueUnchanged
     ) -> PreprocEntityDelta:
         if isinstance(terminal_value_unchanged.value, str):
-            value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
+            value = self._perform_static_replacements(terminal_value_unchanged.value)
         else:
             value = terminal_value_unchanged.value
         return PreprocEntityDelta(before=value, after=value)
@@ -695,18 +695,18 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         delta = super().visit_node_intrinsic_function_fn_join(node_intrinsic_function)
-        return self._replace_url_outputs_in_delta_if_required(delta)
+        return self._perform_static_replacements_in_delta(delta)
 
     def visit_node_intrinsic_function_fn_sub(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         delta = super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
-        return self._replace_url_outputs_in_delta_if_required(delta)
+        return self._perform_static_replacements_in_delta(delta)
 
     def visit_node_intrinsic_function_fn_select(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
         delta = super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
-        return self._replace_url_outputs_in_delta_if_required(delta)
+        return self._perform_static_replacements_in_delta(delta)
 
     # TODO: other intrinsic functions
