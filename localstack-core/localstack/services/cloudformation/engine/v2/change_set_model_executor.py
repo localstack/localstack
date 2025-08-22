@@ -224,6 +224,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         try:
             delta = super().visit_node_resource(node_resource=node_resource)
         except Exception as e:
+            LOG.debug(
+                "preprocessing resource '%s' failed: %s",
+                node_resource.name,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
+            )
             self._process_event(
                 action=node_resource.change_type.to_change_action(),
                 logical_resource_id=node_resource.name,
