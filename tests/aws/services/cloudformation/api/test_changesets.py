@@ -3,7 +3,7 @@ import json
 import os.path
 
 import pytest
-from botocore.exceptions import ClientError, WaiterError
+from botocore.exceptions import ClientError, ParamValidationError, WaiterError
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
@@ -377,7 +377,7 @@ def test_create_change_set_missing_stackname(aws_client):
     template_path = os.path.join(
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
-    with pytest.raises(ClientError):
+    with pytest.raises(ParamValidationError):
         aws_client.cloudformation.create_change_set(
             StackName="",
             ChangeSetName=change_set_name,
