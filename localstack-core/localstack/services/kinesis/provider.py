@@ -49,7 +49,7 @@ def find_stream_for_consumer(consumer_arn):
         for cons in kinesis.list_stream_consumers(StreamARN=stream_arn)["Consumers"]:
             if cons["ConsumerARN"] == consumer_arn:
                 return stream_name
-    raise Exception("Unable to find stream for stream consumer %s" % consumer_arn)
+    raise Exception(f"Unable to find stream for stream consumer {consumer_arn}")
 
 
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):

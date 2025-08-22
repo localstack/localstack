@@ -42,7 +42,7 @@ def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="s
 
 def truncate(data: str, max_length: int = 100) -> str:
     data = str(data or "")
-    return ("%s..." % data[:max_length]) if len(data) > max_length else data
+    return (f"{data[:max_length]}...") if len(data) > max_length else data
 
 
 def is_string(s, include_unicode=True, exclude_binary=False):
@@ -104,11 +104,11 @@ def convert_to_printable_chars(value: Union[list, dict, str]) -> str:
 
 
 def first_char_to_lower(s: str) -> str:
-    return s and "%s%s" % (s[0].lower(), s[1:])
+    return s and f"{s[0].lower()}{s[1:]}"
 
 
 def first_char_to_upper(s: str) -> str:
-    return s and "%s%s" % (s[0].upper(), s[1:])
+    return s and f"{s[0].upper()}{s[1:]}"
 
 
 def str_to_bool(value):
@@ -121,13 +121,13 @@ def str_to_bool(value):
 
 def str_insert(string, index, content):
     """Insert a substring into an existing string at a certain index."""
-    return "%s%s%s" % (string[:index], content, string[index:])
+    return f"{string[:index]}{content}{string[index:]}"
 
 
 def str_remove(string, index, end_index=None):
     """Remove a substring from an existing string at a certain from-to index range."""
     end_index = end_index or (index + 1)
-    return "%s%s" % (string[:index], string[end_index:])
+    return f"{string[:index]}{string[end_index:]}"
 
 
 def str_startswith_ignore_case(value: str, prefix: str) -> bool:

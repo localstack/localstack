@@ -62,10 +62,7 @@ class TestChangeSetFnTransform:
         file = tmp_path / "bucket_definition.yml"
 
         if include_format == "json":
-            template = (
-                '{"Parameter": { "Type": "AWS::SSM::Parameter","Properties": {"Name": "%s", "Type": "String", "Value": "foo"}}}'
-                % name2
-            )
+            template = f'{{"Parameter": {{ "Type": "AWS::SSM::Parameter","Properties": {{"Name": "{name2}", "Type": "String", "Value": "foo"}}}}}}'
         else:
             template = f"""
             Parameter2:

@@ -3025,7 +3025,7 @@ def to_documentation_part_response_json(api_id, data):
 
 
 def to_base_mapping_response_json(domain_name, base_path, data):
-    self_link = "/domainnames/%s/basepathmappings/%s" % (domain_name, base_path)
+    self_link = f"/domainnames/{domain_name}/basepathmappings/{base_path}"
     result = to_response_json("basepathmapping", data, self_link=self_link)
     result = select_from_typed_dict(BasePathMapping, result)
     return result
@@ -3061,9 +3061,9 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
     id_attr = id_attr or "id"
     result = deepcopy(data)
     if not self_link:
-        self_link = "/%ss/%s" % (model_type, data[id_attr])
+        self_link = f"/{model_type}s/{data[id_attr]}"
         if api_id:
-            self_link = "/restapis/%s/%s" % (api_id, self_link)
+            self_link = f"/restapis/{api_id}/{self_link}"
     # TODO: check if this is still required - "_links" are listed in the sample responses in the docs, but
     #  recent parity tests indicate that this field is not returned by real AWS...
     # https://docs.aws.amazon.com/apigateway/latest/api/API_GetAuthorizers.html#API_GetAuthorizers_Example_1_Response
@@ -3075,7 +3075,7 @@ def to_response_json(model_type, data, api_id=None, self_link=None, id_attr=None
         "name": model_type,
         "templated": True,
     }
-    result["_links"]["%s:delete" % model_type] = {"href": self_link}
+    result["_links"][f"{model_type}:delete"] = {"href": self_link}
     return result
 
 

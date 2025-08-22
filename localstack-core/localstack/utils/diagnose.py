@@ -134,7 +134,7 @@ def traverse_file_tree(root: str) -> list[str]:
                 result.append(dirpath)
         return result
     except Exception as e:
-        return ["traversing files failed %s" % e]
+        return [f"traversing files failed {e}"]
 
 
 def get_docker_image_details() -> dict[str, str]:

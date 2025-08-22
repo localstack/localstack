@@ -59,11 +59,7 @@ def _send_to_dead_letter_queue(source_arn: str, dlq_arn: str, event: dict, error
         except Exception as e:
             error = e
         if error or not result_code or result_code >= 400:
-            msg = "Unable to send message to dead letter queue %s (code %s): %s" % (
-                queue_url,
-                result_code,
-                error,
-            )
+            msg = f"Unable to send message to dead letter queue {queue_url} (code {result_code}): {error}"
             if "InvalidMessageContents" in str(error):
                 msg += f" - messages: {messages}"
             LOG.info(msg)

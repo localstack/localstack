@@ -286,7 +286,7 @@ def ping(host):
     """Returns True if the host responds to a ping request"""
     is_in_windows = is_windows()
     ping_opts = "-n 1 -w 2000" if is_in_windows else "-c 1 -W 2"
-    args = "ping %s %s" % (ping_opts, host)
+    args = f"ping {ping_opts} {host}"
     return (
         subprocess.call(
             args, shell=not is_in_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -435,8 +435,8 @@ TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
 VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
-if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
-    TMP_FOLDER = "/private%s" % TMP_FOLDER
+if TMP_FOLDER.startswith("/var/folders/") and os.path.exists(f"/private{TMP_FOLDER}"):
+    TMP_FOLDER = f"/private{TMP_FOLDER}"
 
 # whether to enable verbose debug logging ("LOG" is used when using the CLI with LOCALSTACK_LOG instead of LS_LOG)
 LS_LOG = eval_log_type("LS_LOG") or eval_log_type("LOG")
@@ -1237,8 +1237,8 @@ def use_custom_dns():
 
 
 # s3 virtual host name
-S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALSTACK_HOST.host
-S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALSTACK_HOST.host
+S3_VIRTUAL_HOSTNAME = f"s3.{LOCALSTACK_HOST.host}"
+S3_STATIC_WEBSITE_HOSTNAME = f"s3-website.{LOCALSTACK_HOST.host}"
 
 BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
 BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")

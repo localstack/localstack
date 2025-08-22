@@ -159,7 +159,7 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str):
 
 def stack_not_found_error(stack_name: str):
     # FIXME
-    raise ValidationError("Stack with id %s does not exist" % stack_name)
+    raise ValidationError(f"Stack with id {stack_name} does not exist")
 
 
 def not_found_error(message: str):
@@ -305,7 +305,7 @@ class CloudformationProvider(CloudformationApi):
             deployer.deploy_stack()
         except Exception as e:
             stack.set_stack_status("CREATE_FAILED")
-            msg = 'Unable to create stack "%s": %s' % (stack.stack_name, e)
+            msg = f'Unable to create stack "{stack.stack_name}": {e}'
             LOG.error("%s", exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError(msg) from e
 

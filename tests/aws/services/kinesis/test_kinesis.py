@@ -807,7 +807,7 @@ class TestKinesisPythonClient:
             num_events_kinesis = 10
             kinesis.put_records(
                 Records=[
-                    {"Data": "{}", "PartitionKey": "test_%s" % i}
+                    {"Data": "{}", "PartitionKey": f"test_{i}"}
                     for i in range(0, num_events_kinesis)
                 ],
                 StreamName=stream_name,

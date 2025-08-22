@@ -77,9 +77,7 @@ def get_remote_template_body(url: str) -> str:
             result = client.get_object(Bucket=parts[0], Key=parts[2])
             body = to_str(result["Body"].read())
             return body
-        raise RuntimeError(
-            "Unable to fetch template body (code %s) from URL %s" % (status_code, url)
-        )
+        raise RuntimeError(f"Unable to fetch template body (code {status_code}) from URL {url}")
     else:
         raise RuntimeError(
             f"Bad status code from fetching template from url '{url}' ({status_code})",
@@ -112,11 +110,9 @@ def get_template_body(req_data: dict) -> str:
                 result = client.get_object(Bucket=parts[0], Key=parts[2])
                 body = to_str(result["Body"].read())
                 return body
-            raise Exception(
-                "Unable to fetch template body (code %s) from URL %s" % (status_code, url)
-            )
+            raise Exception(f"Unable to fetch template body (code {status_code}) from URL {url}")
         return to_str(response.content)
-    raise Exception("Unable to get template body from input: %s" % req_data)
+    raise Exception(f"Unable to get template body from input: {req_data}")
 
 
 def is_local_service_url(url: str) -> bool:
@@ -127,7 +123,7 @@ def is_local_service_url(url: str) -> bool:
         constants.LOCALHOST_HOSTNAME,
         localstack_host().host,
     )
-    if any(re.match(r"^[^:]+://[^:/]*%s([:/]|$)" % host, url) for host in candidates):
+    if any(re.match(rf"^[^:]+://[^:/]*{host}([:/]|$)", url) for host in candidates):
         return True
     host = url.split("://")[-1].split("/")[0]
     return "localhost" in host

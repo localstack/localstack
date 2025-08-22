@@ -164,8 +164,9 @@ def wait_for_port_status(
         status = is_port_open(port, http_path=http_path, expect_success=expect_success)
         if bool(status) != (not expect_closed):
             raise Exception(
-                "Port %s (path: %s) was not %s"
-                % (port, http_path, "closed" if expect_closed else "open")
+                "Port {} (path: {}) was not {}".format(
+                    port, http_path, "closed" if expect_closed else "open"
+                )
             )
 
     return retry(check, sleep=sleep_time, retries=retries)

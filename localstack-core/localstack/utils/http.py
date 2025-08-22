@@ -43,12 +43,12 @@ def create_chunked_data(data, chunk_size: int = 80):
     dl = len(data)
     ret = ""
     for i in range(dl // chunk_size):
-        ret += "%s\r\n" % (hex(chunk_size)[2:])
-        ret += "%s\r\n\r\n" % (data[i * chunk_size : (i + 1) * chunk_size])
+        ret += f"{hex(chunk_size)[2:]}\r\n"
+        ret += f"{data[i * chunk_size : (i + 1) * chunk_size]}\r\n\r\n"
 
     if len(data) % chunk_size != 0:
-        ret += "%s\r\n" % (hex(len(data) % chunk_size)[2:])
-        ret += "%s\r\n" % (data[-(len(data) % chunk_size) :])
+        ret += f"{hex(len(data) % chunk_size)[2:]}\r\n"
+        ret += f"{data[-(len(data) % chunk_size) :]}\r\n"
 
     ret += "0\r\n\r\n"
     return ret
@@ -202,7 +202,7 @@ def download(
         r = s.get(url, stream=True, verify=_verify, timeout=timeout, headers=request_headers)
         # check status code before attempting to read body
         if not r.ok:
-            raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
+            raise Exception(f"Failed to download {url}, response code {r.status_code}")
 
         total_size = 0
         if r.headers.get("Content-Length"):

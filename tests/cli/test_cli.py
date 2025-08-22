@@ -88,7 +88,7 @@ class TestCliContainerLifecycle:
         # Note: if `LOCALSTACK_HOST` is set to a domain that does not resolve to `127.0.0.1` then
         # this test will fail
         health = requests.get(config.external_service_url() + "/_localstack/health")
-        assert health.ok, "health request did not return OK: %s" % health.text
+        assert health.ok, f"health request did not return OK: {health.text}"
 
         result = runner.invoke(cli, ["stop"])
         assert result.exit_code == 0

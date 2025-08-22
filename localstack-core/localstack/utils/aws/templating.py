@@ -66,7 +66,7 @@ class VtlTemplate:
         empty_placeholder = " __pLaCe-HoLdEr__ "
         template = re.sub(
             r"([^\s]+)#\$({)?(.*)",
-            r"\1#%s$\2\3" % empty_placeholder,
+            rf"\1#{empty_placeholder}$\2\3",
             template,
             count=re.MULTILINE,
         )
