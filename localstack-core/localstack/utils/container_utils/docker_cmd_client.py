@@ -266,7 +266,7 @@ class CmdDockerClient(ContainerClient):
             ) from e
 
     def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        if check_existence and container_name not in self.get_running_container_names():
+        if check_existence and container_name not in self.get_all_container_names():
             return
         cmd = self._docker_cmd() + ["rm"]
         if force:
@@ -274,9 +274,13 @@ class CmdDockerClient(ContainerClient):
         cmd.append(container_name)
         LOG.debug("Removing container with cmd %s", cmd)
         try:
-            run(cmd)
+            output = run(cmd)
+            # When the container does not exist, the output could have the error message without any exception
+            if isinstance(output, str) and not force:
+                self._check_output_and_raise_no_such_container_error(container_name, output=output)
         except subprocess.CalledProcessError as e:
-            self._check_and_raise_no_such_container_error(container_name, error=e)
+            if not force:
+                self._check_and_raise_no_such_container_error(container_name, error=e)
             raise ContainerException(
                 "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
             ) from e
@@ -915,12 +919,20 @@ class CmdDockerClient(ContainerClient):
         Check the given client invocation error and raise a `NoSuchContainer` exception if it
         represents a `no such container` exception from Docker or Podman.
         """
+        self._check_output_and_raise_no_such_container_error(
+            container_name_or_id, str(error.stdout), error=str(error.stderr)
+        )
 
-        # consider different error messages for Docker/Podman
-        error_messages = ("No such container", "no container with name or ID")
-        process_stdout_lower = to_str(error.stdout).lower()
-        if any(msg.lower() in process_stdout_lower for msg in error_messages):
-            raise NoSuchContainer(container_name_or_id, stdout=error.stdout, stderr=error.stderr)
+    def _check_output_and_raise_no_such_container_error(
+        self, container_name_or_id: str, output: str, error: Optional[str] = None
+    ):
+        """
+        Check the given client invocation output and raise a `NoSuchContainer` exception if it
+        represents a `no such container` exception from Docker or Podman.
+        """
+        possible_not_found_messages = ("No such container", "no container with name or ID")
+        if any(msg.lower() in output.lower() for msg in possible_not_found_messages):
+            raise NoSuchContainer(container_name_or_id, stdout=output, stderr=error)
 
     def _transform_container_labels(self, labels: Union[str, dict[str, str]]) -> dict[str, str]:
         """
