@@ -201,7 +201,7 @@ def rm_rf(path: str):
     # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
     if is_debian():
         try:
-            return run('rm -rf "%s"' % path)
+            return run(f'rm -rf "{path}"')
         except Exception:
             pass
     # Make sure all files are writeable and dirs executable to remove
@@ -247,11 +247,7 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
     except Exception as e:
 
         def _info(_path):
-            return "%s (file=%s, symlink=%s)" % (
-                _path,
-                os.path.isfile(_path),
-                os.path.islink(_path),
-            )
+            return f"{_path} (file={os.path.isfile(_path)}, symlink={os.path.islink(_path)})"
 
         LOG.debug("Error copying files from %s to %s: %s", _info(src), _info(dst), e)
         raise

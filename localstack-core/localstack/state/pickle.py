@@ -64,7 +64,7 @@ def register(cls: type = None, subclasses: bool = False):
         elif callable(fn):
             add_dispatch_entry(cls, fn, subclasses=subclasses)
         else:
-            raise ValueError("cannot register %s" % fn)
+            raise ValueError(f"cannot register {fn}")
 
         return fn
 

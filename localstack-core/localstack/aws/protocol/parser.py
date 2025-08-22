@@ -265,12 +265,12 @@ class RequestParser(abc.ABC):
                 if uri_param_name in uri_params:
                     payload = uri_params[uri_param_name]
             else:
-                raise UnknownParserError("Unknown shape location '%s'." % location)
+                raise UnknownParserError(f"Unknown shape location '{location}'.")
         else:
             # If we don't have to use a specific location, we use the node
             payload = node
 
-        fn_name = "_parse_%s" % shape.type_name
+        fn_name = f"_parse_{shape.type_name}"
         handler = getattr(self, fn_name, self._noop_parser)
         try:
             return handler(request, shape, payload, uri_params) if payload is not None else None
@@ -322,7 +322,7 @@ class RequestParser(abc.ABC):
             return True
         if value == "false":
             return False
-        raise ValueError("cannot parse boolean value %s" % node)
+        raise ValueError(f"cannot parse boolean value {node}")
 
     @_text_content
     def _noop_parser(self, _, __, node: Any, ___):
@@ -336,7 +336,7 @@ class RequestParser(abc.ABC):
         if timestamp_format is None:
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
-        converter = getattr(self, "_timestamp_%s" % timestamp_format)
+        converter = getattr(self, f"_timestamp_{timestamp_format}")
         final_value = converter(value)
         return final_value
 
@@ -740,7 +740,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 elif tag_name == value_location_name:
                     val_name = self._parse_shape(request, value_shape, single_pair, uri_params)
                 else:
-                    raise ProtocolParserError("Unknown tag: %s" % tag_name)
+                    raise ProtocolParserError(f"Unknown tag: {tag_name}")
             parsed[key_name] = val_name
         return parsed
 
@@ -786,7 +786,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
             root = parser.close()
         except ETree.ParseError as e:
             raise ProtocolParserError(
-                "Unable to parse request (%s), invalid XML received:\n%s" % (e, xml_string)
+                f"Unable to parse request ({e}), invalid XML received:\n{xml_string}"
             ) from e
         return root
 

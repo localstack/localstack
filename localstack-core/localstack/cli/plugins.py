@@ -56,7 +56,7 @@ def find(where, exclude, include, output):
     elif output == "dict":
         rprint(dict(plugins))
     else:
-        raise CLIError("unknown output format %s" % output)
+        raise CLIError(f"unknown output format {output}")
 
 
 @cli.command("list")

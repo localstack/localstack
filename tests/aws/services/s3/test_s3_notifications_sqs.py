@@ -158,7 +158,7 @@ def sqs_create_queue_with_client():
 
     def factory(sqs_client, **kwargs):
         if "QueueName" not in kwargs:
-            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+            kwargs["QueueName"] = f"test-queue-{short_uid()}"
 
         response = sqs_client.create_queue(**kwargs)
         url = response["QueueUrl"]
@@ -221,8 +221,8 @@ class TestS3NotificationsToSQS:
         queue_url = sqs_create_queue()
         s3_create_sqs_bucket_notification(s3_bucket, queue_url, ["s3:ObjectCreated:Copy"])
 
-        src_key = "src-dest-%s" % short_uid()
-        dest_key = "key-dest-%s" % short_uid()
+        src_key = f"src-dest-{short_uid()}"
+        dest_key = f"key-dest-{short_uid()}"
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key=src_key, Body="something")
 
@@ -315,7 +315,7 @@ class TestS3NotificationsToSQS:
         queue_url = sqs_create_queue()
         s3_create_sqs_bucket_notification(s3_bucket, queue_url, ["s3:ObjectRemoved:*"])
 
-        key = "key-%s" % short_uid()
+        key = f"key-{short_uid()}"
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="something")
 
@@ -528,7 +528,7 @@ class TestS3NotificationsToSQS:
         queue_url = sqs_create_queue()
         s3_create_sqs_bucket_notification(s3_bucket, queue_url, ["s3:ObjectTagging:Delete"])
 
-        dest_key = "key-dest-%s" % short_uid()
+        dest_key = f"key-dest-{short_uid()}"
 
         aws_client.s3.put_object(Bucket=s3_bucket, Key=dest_key, Body="FooBarBlitz")
 

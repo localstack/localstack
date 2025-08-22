@@ -360,8 +360,7 @@ class Stack:
         resource = resource_map.get(resource_id)
         if not resource:
             raise Exception(
-                'Unable to find details for resource "%s" in stack "%s"'
-                % (resource_id, self.stack_name)
+                f'Unable to find details for resource "{resource_id}" in stack "{self.stack_name}"'
             )
         return resource
 

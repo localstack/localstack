@@ -220,7 +220,6 @@ ignore = [
     "T203", # TODO `pprint` found
     "UP008",# TODO Use `super()` instead of `super(__class__, self)`
     "UP028",# TODO Replace `yield` over `for` loop with `yield from`
-    "UP031",# TODO Use format specifiers instead of percent format
     "UP036",# TODO Version block is outdated for minimum Python version
     "UP038",# TODO Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]

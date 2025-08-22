@@ -72,7 +72,7 @@ def start_component(
                 default_port=constants.DEFAULT_PORT_EDGE,
             ),
         )
-    raise Exception("Unexpected component name '%s' received during start up" % component)
+    raise Exception(f"Unexpected component name '{component}' received during start up")
 
 
 def start_proxy(

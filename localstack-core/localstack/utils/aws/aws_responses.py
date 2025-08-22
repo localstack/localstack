@@ -42,7 +42,7 @@ def requests_error_response_xml(
     xmlns: Optional[str] = None,
 ):
     response = RequestsResponse()
-    xmlns = xmlns or "http://%s.amazonaws.com/doc/2010-03-31/" % service
+    xmlns = xmlns or f"http://{service}.amazonaws.com/doc/2010-03-31/"
     response._content = f"""<ErrorResponse xmlns="{xmlns}"><Error>
         <Type>Sender</Type>
         <Code>{code_string}</Code>

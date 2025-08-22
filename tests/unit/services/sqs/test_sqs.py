@@ -25,13 +25,13 @@ def test_sqs_message_attrs_md5():
 
 
 def test_convert_non_printable_chars():
-    string = "invalid characters - %s %s %s" % (chr(8), chr(11), chr(12))
+    string = f"invalid characters - {chr(8)} {chr(11)} {chr(12)}"
     result = convert_to_printable_chars(string)
     assert result == "invalid characters -   "
     result = convert_to_printable_chars({"foo": [string]})
     assert result == {"foo": ["invalid characters -   "]}
 
-    string = "valid characters - %s %s %s %s" % (chr(9), chr(10), chr(13), chr(32))
+    string = f"valid characters - {chr(9)} {chr(10)} {chr(13)} {chr(32)}"
     result = convert_to_printable_chars(string)
     assert result == string
 

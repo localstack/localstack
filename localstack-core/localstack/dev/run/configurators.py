@@ -363,10 +363,7 @@ def _list_files_in_container_image(container_client: ContainerClient, image_name
         try:
             # docker export yields paths without prefixed slashes, so we add them here
             # since the file is pretty big (~4MB for community, ~7MB for pro) we gzip it
-            cmd = "docker export %s | tar -t | awk '{ print \"/\" $0 }' | gzip > %s" % (
-                container_id,
-                cache_file,
-            )
+            cmd = f"docker export {container_id} | tar -t | awk '{{ print \"/\" $0 }}' | gzip > {cache_file}"
             run(cmd, shell=True)
         finally:
             container_client.remove_container(container_id)
