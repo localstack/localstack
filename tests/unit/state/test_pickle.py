@@ -26,8 +26,7 @@ class ClassWithGenerator:
         self.gen = self._count()
 
     def _count(self):
-        for i in range(self.n):
-            yield i
+        yield from range(self.n)
 
 
 class SubclassWithGenerator(ClassWithGenerator):

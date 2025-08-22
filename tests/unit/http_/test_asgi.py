@@ -175,8 +175,7 @@ def test_close_iterable_response(serve_asgi_adapter):
             self.closed = False
 
         def __iter__(self):
-            for packet in self.data:
-                yield packet
+            yield from self.data
 
         def close(self):
             # should be called through the werkzeug layers
