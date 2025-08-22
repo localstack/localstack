@@ -1008,7 +1008,7 @@ class FifoQueue(SqsQueue):
         }
 
     def update_delay_seconds(self, value: int):
-        super(FifoQueue, self).update_delay_seconds(value)
+        super().update_delay_seconds(value)
         for message in self.delayed:
             message.delay_seconds = value
 

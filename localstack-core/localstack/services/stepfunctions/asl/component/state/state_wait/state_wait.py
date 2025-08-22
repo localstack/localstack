@@ -19,7 +19,7 @@ class StateWait(CommonStateField):
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateWait, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.wait_function = state_props.get(
             typ=WaitFunction,
             raise_on_missing=ValueError(f"Undefined WaitFunction for StateWait: '{self}'."),

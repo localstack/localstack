@@ -13,4 +13,4 @@ class IdentifiedMember(Member):
 
 class DollarMember(IdentifiedMember):
     def __init__(self):
-        super(DollarMember, self).__init__(identifier="$")
+        super().__init__(identifier="$")

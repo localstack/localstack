@@ -66,7 +66,7 @@ class ThreadSafeCounter:
     _count: int
 
     def __init__(self):
-        super(ThreadSafeCounter, self).__init__()
+        super().__init__()
         self._mutex = threading.Lock()
         self._count = 0
 
@@ -146,9 +146,7 @@ class LabeledCounter(Metric):
     ]
 
     def __init__(self, namespace: str, name: str, labels: list[str], schema_version: int = 1):
-        super(LabeledCounter, self).__init__(
-            namespace=namespace, name=name, schema_version=schema_version
-        )
+        super().__init__(namespace=namespace, name=name, schema_version=schema_version)
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")

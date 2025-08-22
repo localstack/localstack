@@ -254,7 +254,7 @@ class NonLoggingHandler(DNSHandler):
             THREAD_LOCAL.client_address = self.client_address
             THREAD_LOCAL.server = self.server
             THREAD_LOCAL.request = self.request
-            return super(NonLoggingHandler, self).handle(*args, **kwargs)
+            return super().handle(*args, **kwargs)
         except Exception:
             pass
 
