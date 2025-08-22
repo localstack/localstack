@@ -190,7 +190,7 @@ class TestCommon:
 
         def fn():
             i = next(count)
-            e = RuntimeError("exception %d" % i)
+            e = RuntimeError(f"exception {i:d}")
             exceptions.append(e)
 
             if i == 2:
@@ -208,7 +208,7 @@ class TestCommon:
 
         def fn():
             i = next(count)
-            e = RuntimeError("exception %d" % i)
+            e = RuntimeError(f"exception {i:d}")
             exceptions.append(e)
 
             raise e
