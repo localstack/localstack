@@ -478,7 +478,7 @@ class TestIntegration:
 
             for i, event in enumerate(inserts):
                 assert "old_image" not in event
-                item_id = "testId%d" % i
+                item_id = f"testId{i:d}"
                 matching = [i for i in inserts if i["new_image"]["id"] == item_id][0]
                 assert matching["new_image"] == {"id": item_id, "data": "foobar123"}
 
@@ -526,7 +526,7 @@ class TestIntegration:
 
             for i, event in enumerate(removes):
                 assert "new_image" not in event
-                item_id = "testId%d" % i
+                item_id = f"testId{i:d}"
                 matching = [i for i in removes if i["old_image"]["id"] == item_id][0]
                 assert matching["old_image"] == {"id": item_id, "data": "foobar123"}
 
