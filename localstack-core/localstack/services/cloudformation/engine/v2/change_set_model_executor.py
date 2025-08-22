@@ -709,4 +709,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         delta = super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
         return self._perform_static_replacements_in_delta(delta)
 
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_get_att(node_intrinsic_function)
+        return self._perform_static_replacements_in_delta(delta)
+
     # TODO: other intrinsic functions
