@@ -185,31 +185,28 @@ class ServiceExceptionSerializer(ExceptionHandler):
                 return
 
             if config.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE:
-                exception = "".join(
+                message = "".join(
                     traceback.format_exception(
                         type(exception), value=exception, tb=exception.__traceback__
                     )
                 )
+            else:
+                message = str(exception)
 
             # wrap exception for serialization
             if operation:
                 operation_name = operation.name
-                msg = "exception while calling %s.%s: %s" % (
-                    service_name,
-                    operation_name,
-                    exception,
-                )
+                msg = f"exception while calling {service_name}.{operation_name}: {message}"
             else:
                 # just use any operation for mocking purposes (the parser needs it to populate the default response)
                 operation = context.service.operation_model(context.service.operation_names[0])
-                msg = "exception while calling %s with unknown operation: %s" % (
-                    service_name,
-                    exception,
-                )
+                msg = f"exception while calling {service_name} with unknown operation: {message}"
 
             status_code = 501 if config.FAIL_FAST else 500
 
-            error = CommonServiceException("InternalError", msg, status_code=status_code)
+            error = CommonServiceException(
+                "InternalError", msg, status_code=status_code
+            ).with_traceback(exception.__traceback__)
             context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
