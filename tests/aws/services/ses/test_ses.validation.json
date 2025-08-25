@@ -17,6 +17,15 @@
   "tests/aws/services/ses/test_ses.py::TestSES::test_deleting_non_existent_configuration_set_event_destination": {
     "last_validated_date": "2023-08-25T22:04:53+00:00"
   },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_describe_config_set_event_destinations": {
+    "last_validated_date": "2025-08-20T12:00:48+00:00",
+    "durations_in_seconds": {
+      "setup": 2.09,
+      "call": 1.15,
+      "teardown": 0.58,
+      "total": 3.82
+    }
+  },
   "tests/aws/services/ses/test_ses.py::TestSES::test_invalid_tags_send_email[-]": {
     "last_validated_date": "2024-07-30T10:18:09+00:00"
   },
