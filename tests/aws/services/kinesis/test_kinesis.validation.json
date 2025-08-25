@@ -24,7 +24,13 @@
     "last_validated_date": "2022-08-26T08:23:46+00:00"
   },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
-    "last_validated_date": "2022-08-26T07:33:29+00:00"
+    "last_validated_date": "2025-08-19T13:10:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.73,
+      "call": 10.61,
+      "teardown": 0.43,
+      "total": 11.77
+    }
   },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard_with_at_timestamp": {
     "last_validated_date": "2024-06-21T15:20:46+00:00"

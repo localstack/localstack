@@ -144,38 +144,44 @@
     }
   },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_subscribe_to_shard": {
-    "recorded-date": "26-08-2022, 09:33:29",
+    "recorded-date": "19-08-2025, 13:10:10",
     "recorded-content": {
-      "Records": [
+      "Events": [
         {
-          "SequenceNumber": "<sequence_number:1>",
-          "ApproximateArrivalTimestamp": "timestamp",
-          "Data": "b'Hello world_0'",
-          "PartitionKey": "1"
-        },
-        {
-          "SequenceNumber": "<sequence_number:2>",
-          "ApproximateArrivalTimestamp": "timestamp",
-          "Data": "b'Hello world_1'",
-          "PartitionKey": "1"
-        },
-        {
-          "SequenceNumber": "<sequence_number:3>",
-          "ApproximateArrivalTimestamp": "timestamp",
-          "Data": "b'Hello world_2'",
-          "PartitionKey": "1"
-        },
-        {
-          "SequenceNumber": "<sequence_number:4>",
-          "ApproximateArrivalTimestamp": "timestamp",
-          "Data": "b'Hello world_3'",
-          "PartitionKey": "1"
-        },
-        {
-          "SequenceNumber": "<sequence_number:5>",
-          "ApproximateArrivalTimestamp": "timestamp",
-          "Data": "b'Hello world_4'",
-          "PartitionKey": "1"
+          "Records": [
+            {
+              "SequenceNumber": "<sequence_number:1>",
+              "ApproximateArrivalTimestamp": "timestamp",
+              "Data": "b'Hello world_0'",
+              "PartitionKey": "1"
+            },
+            {
+              "SequenceNumber": "<sequence_number:2>",
+              "ApproximateArrivalTimestamp": "timestamp",
+              "Data": "b'Hello world_1'",
+              "PartitionKey": "1"
+            },
+            {
+              "SequenceNumber": "<sequence_number:3>",
+              "ApproximateArrivalTimestamp": "timestamp",
+              "Data": "b'Hello world_2'",
+              "PartitionKey": "1"
+            },
+            {
+              "SequenceNumber": "<sequence_number:4>",
+              "ApproximateArrivalTimestamp": "timestamp",
+              "Data": "b'Hello world_3'",
+              "PartitionKey": "1"
+            },
+            {
+              "SequenceNumber": "<sequence_number:5>",
+              "ApproximateArrivalTimestamp": "timestamp",
+              "Data": "b'Hello world_4'",
+              "PartitionKey": "1"
+            }
+          ],
+          "ContinuationSequenceNumber": "<continuation_sequence_number:1>",
+          "MillisBehindLatest": 0
         }
       ]
     }
