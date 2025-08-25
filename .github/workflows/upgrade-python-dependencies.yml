@@ -11,3 +11,5 @@ jobs:
     uses: localstack/meta/.github/workflows/upgrade-python-dependencies.yml@main
     secrets:
       github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
+    with:
+      labels: "area: dependencies, semver: patch, skip-docs"
