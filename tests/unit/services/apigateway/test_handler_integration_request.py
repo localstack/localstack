@@ -10,6 +10,7 @@ from localstack.services.apigateway.next_gen.execute_api.context import (
     RestApiInvocationContext,
 )
 from localstack.services.apigateway.next_gen.execute_api.gateway_response import (
+    InternalServerError,
     UnsupportedMediaTypeError,
 )
 from localstack.services.apigateway.next_gen.execute_api.handlers import (
@@ -328,7 +329,7 @@ class TestIntegrationRequestBinaryHandling:
 
         outcome = possible_values.get(expected, input_data)
         if outcome is None:
-            with pytest.raises(Exception):
+            with pytest.raises(InternalServerError):
                 convert(context=default_context)
         else:
             converted_body = convert(context=default_context)

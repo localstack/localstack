@@ -56,6 +56,15 @@
       "total": 89.06
     }
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_missing_stackname": {
+    "last_validated_date": "2025-08-22T12:49:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.6,
+      "call": 0.51,
+      "teardown": 0.0,
+      "total": 1.11
+    }
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
   },

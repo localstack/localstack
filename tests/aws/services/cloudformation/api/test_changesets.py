@@ -3,6 +3,7 @@ import json
 import os.path
 
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError, WaiterError
 from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
@@ -336,7 +337,7 @@ def test_create_change_set_update_nonexisting(aws_client):
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
 
-    with pytest.raises(Exception) as ex:
+    with pytest.raises(ClientError) as ex:
         response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
@@ -371,14 +372,17 @@ def test_create_change_set_invalid_params(aws_client):
 
 
 @markers.aws.validated
-def test_create_change_set_missing_stackname(aws_client):
+def test_create_change_set_missing_stackname(aws_client_factory):
     """in this case boto doesn't even let us send the request"""
     change_set_name = f"change-set-{short_uid()}"
     template_path = os.path.join(
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
-    with pytest.raises(Exception):
-        aws_client.cloudformation.create_change_set(
+
+    # A client with parameter validation enabled would result in a client-side ParamValidationError.
+    cfn_client = aws_client_factory(config=Config(parameter_validation=False)).cloudformation
+    with pytest.raises(ClientError):
+        cfn_client.create_change_set(
             StackName="",
             ChangeSetName=change_set_name,
             TemplateBody=load_template_raw(template_path),

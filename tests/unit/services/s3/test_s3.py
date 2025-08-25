@@ -9,7 +9,7 @@ from urllib.parse import urlparse
 import pytest
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.s3 import InvalidArgument
+from localstack.aws.api.s3 import AccessDenied, AuthorizationQueryParametersError, InvalidArgument
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.constants import LOCALHOST
 from localstack.http import Request
@@ -454,7 +454,7 @@ class TestS3PresignedUrl:
             if not will_raise:
                 assert presigned_url.is_valid_sig_v2(query_args) == is_sig_v2
             else:
-                with pytest.raises(Exception):
+                with pytest.raises(AccessDenied):
                     presigned_url.is_valid_sig_v2(query_args)
 
     def test_is_valid_presigned_url_v4(self):
@@ -512,7 +512,7 @@ class TestS3PresignedUrl:
             if not will_raise:
                 assert presigned_url.is_valid_sig_v4(query_args) == is_sig_v4
             else:
-                with pytest.raises(Exception):
+                with pytest.raises(AuthorizationQueryParametersError):
                     presigned_url.is_valid_sig_v4(query_args)
 
 

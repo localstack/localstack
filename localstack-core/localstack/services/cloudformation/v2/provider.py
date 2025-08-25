@@ -369,9 +369,8 @@ class CloudformationProviderV2(CloudformationProvider):
     def create_change_set(
         self, context: RequestContext, request: CreateChangeSetInput
     ) -> CreateChangeSetOutput:
-        try:
-            stack_name = request["StackName"]
-        except KeyError:
+        stack_name = request.get("StackName")
+        if not stack_name:
             # TODO: proper exception
             raise ValidationError("StackName must be specified")
         try:

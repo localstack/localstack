@@ -22,7 +22,7 @@ def test_subtypes_instance_manager():
     assert instance1
     assert BaseClass.get("c1") == instance1
     assert instance1.foo() == "bar"
-    with pytest.raises(Exception):
+    with pytest.raises(NotImplementedError):
         assert BaseClass.get("c2")
 
     class C2(BaseClass):

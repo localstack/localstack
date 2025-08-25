@@ -134,7 +134,7 @@ def test_custom_id_context_manager(default_resource_identifier):
 def test_custom_id_context_manager_exception_handling(default_resource_identifier):
     custom_id = "set_id"
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         with localstack_id_manager.custom_id(default_resource_identifier, custom_id):
             assert default_resource_identifier.generate() == custom_id
             raise Exception()

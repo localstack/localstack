@@ -15,7 +15,7 @@ from localstack.services.kms.utils import (
 
 
 def test_alias_name_validator():
-    with pytest.raises(Exception):
+    with pytest.raises(ValidationException):
         validate_alias_name("test-alias")
 
 

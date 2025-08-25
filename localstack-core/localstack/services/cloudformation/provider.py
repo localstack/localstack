@@ -605,6 +605,8 @@ class CloudformationProvider(CloudformationApi):
         req_params = request
         change_set_type = req_params.get("ChangeSetType", "UPDATE")
         stack_name = req_params.get("StackName")
+        if not stack_name:
+            raise ValidationError("Member must have length greater than or equal to 1")
         change_set_name = req_params.get("ChangeSetName")
         template_body = req_params.get("TemplateBody")
         # s3 or secretsmanager url
