@@ -72,5 +72,5 @@ jobs:
             commit-message: "CI: update .test_durations to latest version"
             path: localstack
             add-paths: .test_durations
-            labels: "semver: patch, area: testing, area: ci"
+            labels: "semver: patch, area: testing, area: ci, skip-docs"
             token: ${{ secrets.PRO_ACCESS_TOKEN }}

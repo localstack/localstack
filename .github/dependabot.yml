@@ -12,6 +12,7 @@ updates:
     labels:
       - "area: dependencies"
       - "semver: patch"
+      - "skip-docs"
     groups:
       docker-base-images:
         patterns:
@@ -23,6 +24,7 @@ updates:
     labels:
       - "area: dependencies"
       - "semver: patch"
+      - "skip-docs"
     groups:
       github-actions:
         patterns:
