@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v2_provider
+from tests.aws.services.cloudformation.conftest import skipped_v2_items
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -215,7 +215,6 @@ def transform_template(aws_client: ServiceLevelClientFactory, snapshot, cleanups
         call_safe(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
 
 
-@skip_if_v2_provider("LanguageExtensions")
 class TestLanguageExtensionsTransform:
     """
     Manual testing of the language extensions trasnform
@@ -293,6 +292,11 @@ class TestLanguageExtensionsTransform:
             "$..StackResources..PhysicalResourceId",
             "$..StackResources..StackId",
         ]
+        + skipped_v2_items(
+            # we now set this with the v2 provider for extra clarity but this field is not set on
+            # AWS
+            "$..StackResources..ResourceStatusReason",
+        )
     )
     def test_transform_foreach_use_case(self, aws_client, transform_template, snapshot):
         snapshot.add_transformer(

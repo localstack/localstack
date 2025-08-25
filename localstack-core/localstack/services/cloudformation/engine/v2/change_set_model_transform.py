@@ -11,15 +11,19 @@ from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.connect import connect_to
+from localstack.services.cloudformation.engine.parameters import StackParameter
 from localstack.services.cloudformation.engine.policy_loader import create_policy_loader
 from localstack.services.cloudformation.engine.template_preparer import parse_template
 from localstack.services.cloudformation.engine.transformers import (
     FailedTransformationException,
+    ResolveRefsRecursivelyContext,
+    apply_language_extensions_transform,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     FnTransform,
     Maybe,
+    NodeForEach,
     NodeGlobalTransform,
     NodeIntrinsicFunction,
     NodeIntrinsicFunctionFnTransform,
@@ -39,7 +43,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.stores import get_cloudformation_store
 from localstack.services.cloudformation.v2.entities import ChangeSet
-from localstack.services.cloudformation.v2.types import engine_parameter_value
+from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
 from localstack.utils import testutil
 from localstack.utils.strings import long_uid
 
@@ -51,6 +55,20 @@ SECRETSMANAGER_TRANSFORM = "AWS::SecretsManager-2020-07-23"
 INCLUDE_TRANSFORM = "AWS::Include"
 
 _SCOPE_TRANSFORM_TEMPLATE_OUTCOME: Final[Scope] = Scope("TRANSFORM_TEMPLATE_OUTCOME")
+
+
+def engine_parameters_to_stack_parameters(
+    engine_parameters: dict[str, EngineParameter],
+) -> dict[str, StackParameter]:
+    out = {}
+    for name, engine_param in engine_parameters.items():
+        out[name] = StackParameter(
+            ParameterKey=name,
+            ParameterValue=engine_parameter_value(engine_param),
+            ResolvedValue=engine_param.get("resolved_value"),
+            ParameterType=engine_param["type_"],
+        )
+    return out
 
 
 # TODO: evaluate the use of subtypes to represent and validate types of transforms
@@ -71,8 +89,8 @@ class TransformPreprocParameter(TypedDict):
 
 
 class ChangeSetModelTransform(ChangeSetModelPreproc):
-    _before_parameters: Final[dict]
-    _after_parameters: Final[dict]
+    _before_parameters: Final[dict[str, EngineParameter] | None]
+    _after_parameters: Final[dict[str, EngineParameter] | None]
     _before_template: Final[Maybe[dict]]
     _after_template: Final[Maybe[dict]]
 
@@ -89,6 +107,14 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         self._after_parameters = after_parameters
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
+
+    def transform(self) -> tuple[dict, dict]:
+        self._setup_runtime_cache()
+        self._execute_local_transforms()
+        transformed_before_template, transformed_after_template = self._execute_global_transforms()
+        self._save_runtime_cache()
+
+        return transformed_before_template, transformed_after_template
 
     # Ported from v1:
     @staticmethod
@@ -142,17 +168,38 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         return {**fragment, **template_to_include}
 
     def _apply_global_transform(
-        self, global_transform: GlobalTransform, template: dict, parameters: dict
+        self,
+        global_transform: GlobalTransform,
+        template: dict,
+        parameters: dict[str, EngineParameter],
     ) -> dict:
         transform_name = global_transform.name
         if transform_name == EXTENSIONS_TRANSFORM:
-            # Applied lazily in downstream tasks (see ChangeSetModelPreproc).
-            transformed_template = template
+            resources = template["Resources"]
+            mappings = template.get("Mappings", {})
+            conditions = template.get("Conditions", {})
+
+            resolve_context = ResolveRefsRecursivelyContext(
+                self._change_set.account_id,
+                self._change_set.region_name,
+                self._change_set.stack.stack_name,
+                resources,
+                mappings,
+                conditions,
+                parameters=engine_parameters_to_stack_parameters(parameters),
+            )
+            transformed_template = apply_language_extensions_transform(template, resolve_context)
         elif transform_name == SERVERLESS_TRANSFORM:
+            # serverless transform just requires the key/value pairs
+            serverless_parameters = {}
+            for name, param in parameters.items():
+                serverless_parameters[name] = param.get("resolved_value") or engine_parameter_value(
+                    param
+                )
             transformed_template = self._apply_global_serverless_transformation(
                 region_name=self._change_set.region_name,
                 template=template,
-                parameters=parameters,
+                parameters=serverless_parameters,
             )
         elif transform_name == SECRETSMANAGER_TRANSFORM:
             # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/transform-aws-secretsmanager.html
@@ -174,16 +221,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
             )
         return transformed_template
 
-    def transform(self) -> tuple[dict, dict]:
-        self._setup_runtime_cache()
-
+    def _execute_local_transforms(self):
         node_template = self._change_set.update_model.node_template
-
-        parameters_delta = self.visit_node_parameters(node_template.parameters)
-        parameters_before = parameters_delta.before
-        parameters_after = parameters_delta.after
-
         self.visit_node_resources(node_template.resources)
+
+    def _execute_global_transforms(self) -> tuple[dict, dict]:
+        node_template = self._change_set.update_model.node_template
 
         transform_delta: PreprocEntityDelta[list[GlobalTransform], list[GlobalTransform]] = (
             self.visit_node_transform(node_template.transform)
@@ -200,7 +243,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                     if not is_nothing(before_global_transform.name):
                         transformed_before_template = self._apply_global_transform(
                             global_transform=before_global_transform,
-                            parameters=parameters_before,
+                            parameters=self._before_parameters,
                             template=transformed_before_template,
                         )
 
@@ -216,15 +259,13 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 if not is_nothing(after_global_transform.name):
                     transformed_after_template = self._apply_global_transform(
                         global_transform=after_global_transform,
-                        parameters=parameters_after,
+                        parameters=self._after_parameters,
                         template=transformed_after_template,
                     )
             # Macro transformations won't remove the transform from the template
             if "Transform" in transformed_after_template:
                 transformed_after_template.pop("Transform")
             self._after_cache[_SCOPE_TRANSFORM_TEMPLATE_OUTCOME] = transformed_after_template
-
-        self._save_runtime_cache()
 
         return transformed_before_template, transformed_after_template
 
@@ -316,6 +357,9 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
 
         return result_template
 
+    def visit_node_for_each(self, node_foreach: NodeForEach) -> PreprocEntityDelta:
+        return PreprocEntityDelta()
+
     def visit_node_intrinsic_function_fn_transform(
         self, node_intrinsic_function: NodeIntrinsicFunctionFnTransform
     ) -> PreprocEntityDelta:
@@ -371,7 +415,12 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
                 node_intrinsic_function=node_resource.fn_transform
             )
 
-        return super().visit_node_resource(node_resource)
+        try:
+            if delta := super().visit_node_resource(node_resource):
+                return delta
+            return super().visit_node_properties(node_resource.properties)
+        except RuntimeError:
+            return super().visit_node_properties(node_resource.properties)
 
     def visit_node_resources(self, node_resources: NodeResources) -> PreprocEntityDelta:
         if not is_nothing(node_resources.fn_transform):

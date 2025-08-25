@@ -9,6 +9,7 @@ from localstack.constants import DEFAULT_VOLUME_DIR, DOCKER_IMAGE_NAME
 from localstack.utils.collections import ensure_list
 from localstack.utils.container_utils.container_client import (
     ContainerClient,
+    DockerNotAvailable,
     PortMappings,
     VolumeInfo,
 )
@@ -153,10 +154,14 @@ def container_ports_can_be_bound(
             ports=port_mappings,
             remove=True,
         )
+    except DockerNotAvailable as e:
+        LOG.warning("Cannot perform port check because Docker is not available.")
+        raise e
     except Exception as e:
         if "port is already allocated" not in str(e) and "address already in use" not in str(e):
             LOG.warning(
-                "Unexpected error when attempting to determine container port status", exc_info=e
+                "Unexpected error when attempting to determine container port status",
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
         return False
     # TODO(srw): sometimes the command output from the docker container is "None", particularly when this function is

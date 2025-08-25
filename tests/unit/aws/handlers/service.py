@@ -128,10 +128,12 @@ class TestServiceResponseHandler:
         assert context.service_response is None
         assert isinstance(context.service_exception, ValueError)
 
+
+class TestServiceExceptionSerializer:
     @pytest.mark.parametrize(
         "message, output", [("", "not yet implemented or pro feature"), ("Ups!", "Ups!")]
     )
-    def test_not_implemented_error(self, service_response_handler_chain, message, output):
+    def test_not_implemented_error(self, message, output):
         context = create_aws_request_context(
             "opensearch", "DescribeDomain", {"DomainName": "foobar"}
         )
@@ -143,3 +145,37 @@ class TestServiceResponseHandler:
         assert context.service_exception.code == "InternalFailure"
         assert not context.service_exception.sender_fault
         assert context.service_exception.status_code == 501
+
+    def test_internal_error_propagate_traceback(self, service_response_handler_chain):
+        raised_exception: Exception | None = None
+
+        def raise_internal_error_handler(*args, **kwargs):
+            raise ValueError("error")
+
+        def capture_original_exception_handler(
+            chain: HandlerChain,
+            exception: Exception,
+            context: RequestContext,
+            response: Response,
+        ):
+            nonlocal raised_exception
+            raised_exception = exception
+            return
+
+        err_chain = HandlerChain(
+            request_handlers=[raise_internal_error_handler],
+            exception_handlers=[
+                capture_original_exception_handler,
+                ServiceExceptionSerializer(),
+            ],
+        )
+
+        err_context = create_aws_request_context(
+            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+        )
+        err_chain.handle(err_context, Response())
+
+        assert err_context.service_exception.code == "InternalError"
+        assert err_context.service_exception.__traceback__
+        assert err_context.service_exception.__traceback__ == raised_exception.__traceback__
+        assert err_context.service_exception.status_code == 500

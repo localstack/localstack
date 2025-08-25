@@ -236,6 +236,15 @@
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayGatewayResponse::test_update_gateway_response": {
     "last_validated_date": "2024-04-15T20:47:11+00:00"
   },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_delete_integration_response_errors": {
+    "last_validated_date": "2025-08-21T17:53:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.84,
+      "call": 2.14,
+      "teardown": 0.33,
+      "total": 3.31
+    }
+  },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_integration_response_invalid_integration": {
     "last_validated_date": "2025-06-26T11:21:05+00:00",
     "durations_in_seconds": {

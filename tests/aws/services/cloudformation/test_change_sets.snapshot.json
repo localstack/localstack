@@ -95,7 +95,7 @@
     }
   },
   "tests/aws/services/cloudformation/test_change_sets.py::TestCaptureUpdateProcess::test_direct_update": {
-    "recorded-date": "05-08-2025, 14:15:57",
+    "recorded-date": "21-08-2025, 11:39:10",
     "recorded-content": {
       "create-change-set-1": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
@@ -106,7 +106,11 @@
         }
       },
       "describe-change-set-1-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -140,7 +144,11 @@
         }
       },
       "describe-change-set-1": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -175,6 +183,11 @@
         }
       },
       "post-create-1-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -199,7 +212,11 @@
         }
       },
       "describe-change-set-2-prop-values": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -257,7 +274,11 @@
         }
       },
       "describe-change-set-2": {
-        "Capabilities": [],
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "ChangeSetName": "<change-set-id:1>",
         "Changes": [
@@ -307,6 +328,11 @@
         }
       },
       "post-create-2-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "CreationTime": "datetime",
         "DisableRollback": false,
@@ -323,6 +349,11 @@
         "Tags": []
       },
       "delete-describe": {
+        "Capabilities": [
+          "CAPABILITY_IAM",
+          "CAPABILITY_NAMED_IAM",
+          "CAPABILITY_AUTO_EXPAND"
+        ],
         "CreationTime": "datetime",
         "DeletionTime": "datetime",
         "DisableRollback": false,

@@ -137,7 +137,7 @@ function cmd-build() {
     # --add-host: Fix for Centos host OS
     # --build-arg BUILDKIT_INLINE_CACHE=1: Instruct buildkit to inline the caching information into the image
     # --cache-from: Use the inlined caching information when building the image
-    DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
+    DOCKER_BUILDKIT=1 docker buildx build --platform linux/$PLATFORM --pull --progress=plain \
       --cache-from "$IMAGE_NAME" --build-arg BUILDKIT_INLINE_CACHE=1 \
       --build-arg LOCALSTACK_PRE_RELEASE=$(_is_release_commit && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \

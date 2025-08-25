@@ -4763,5 +4763,76 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_delete_integration_response_errors": {
+    "recorded-date": "21-08-2025, 17:53:19",
+    "recorded-content": {
+      "put-integration-response": {
+        "responseTemplates": {
+          "application/json": "\"created\""
+        },
+        "selectionPattern": "",
+        "statusCode": "200",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "non-existent-resource": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "non-existent-api-id": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Resource identifier specified"
+        },
+        "message": "Invalid Resource identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "non-existent-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Integration identifier specified"
+        },
+        "message": "Invalid Integration identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "non-existent-status-code": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Response status code specified"
+        },
+        "message": "Invalid Response status code specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      },
+      "bad-method": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Integration identifier specified"
+        },
+        "message": "Invalid Integration identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

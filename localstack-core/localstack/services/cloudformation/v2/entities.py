@@ -9,6 +9,7 @@ from localstack.aws.api.cloudformation import (
     CreateStackInput,
     CreateStackSetInput,
     ExecutionStatus,
+    Output,
     ResourceStatus,
     StackEvent,
     StackInstanceComprehensiveStatus,
@@ -51,9 +52,9 @@ class Stack:
     template_body: str | None
 
     # state after deploy
-    resolved_parameters: dict[str, str]
+    resolved_parameters: dict[str, EngineParameter]
     resolved_resources: dict[str, ResolvedResource]
-    resolved_outputs: dict[str, str]
+    resolved_outputs: list[Output]
     resource_states: dict[str, StackResource]
     resolved_exports: dict[str, str]
 
@@ -94,7 +95,7 @@ class Stack:
         # state after deploy
         self.resolved_parameters = {}
         self.resolved_resources = {}
-        self.resolved_outputs = {}
+        self.resolved_outputs = []
         self.resource_states = {}
         self.events = []
         self.resolved_exports = {}

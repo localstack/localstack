@@ -8,7 +8,7 @@ import botocore.exceptions
 import pytest
 import yaml
 from botocore.exceptions import ClientError
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skip_if_v2_provider
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
@@ -114,7 +114,6 @@ class TestIntrinsicFunctions:
         converted_string = base64.b64encode(bytes(original_string, "utf-8")).decode("utf-8")
         assert converted_string == deployed.outputs["Encoded"]
 
-    @skip_if_v2_provider("LanguageExtensions")
     @markers.aws.validated
     def test_split_length_and_join_functions(self, deploy_cfn_template):
         template_path = os.path.join(
