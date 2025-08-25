@@ -280,7 +280,7 @@ class DockerRuntimeExecutor(RuntimeExecutor):
     container_name: str
 
     def __init__(self, id: str, function_version: FunctionVersion) -> None:
-        super(DockerRuntimeExecutor, self).__init__(id=id, function_version=function_version)
+        super().__init__(id=id, function_version=function_version)
         self.ip = None
         self.executor_endpoint = ExecutorEndpoint(self.id)
         self.container_name = self._generate_container_name()

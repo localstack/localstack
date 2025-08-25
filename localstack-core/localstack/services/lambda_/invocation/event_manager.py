@@ -42,7 +42,7 @@ def get_sqs_client(function_version: FunctionVersion, client_config=None):
 # TODO: remove once DLQ handling is refactored following the removal of the legacy lambda provider
 class LegacyInvocationException(Exception):
     def __init__(self, message, log_output=None, result=None):
-        super(LegacyInvocationException, self).__init__(message)
+        super().__init__(message)
         self.log_output = log_output
         self.result = result
 

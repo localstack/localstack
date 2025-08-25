@@ -159,7 +159,7 @@ class ParamValidator(BotocoreParamValidator):
             if required_member in params and params[required_member] is None:
                 params.pop(required_member)
 
-        super(ParamValidator, self)._validate_structure(params, shape, errors, name)
+        super()._validate_structure(params, shape, errors, name)
 
 
 def validate_request(operation: OperationModel, request: ServiceRequest) -> ValidationErrors:

@@ -38,14 +38,14 @@ def patch_urllib3_connection_pool(**constructor_kwargs):
         class MyHTTPSConnectionPool(connectionpool.HTTPSConnectionPool):
             def __init__(self, *args, **kwargs):
                 kwargs.update(constructor_kwargs)
-                super(MyHTTPSConnectionPool, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
 
         poolmanager.pool_classes_by_scheme["https"] = MyHTTPSConnectionPool
 
         class MyHTTPConnectionPool(connectionpool.HTTPConnectionPool):
             def __init__(self, *args, **kwargs):
                 kwargs.update(constructor_kwargs)
-                super(MyHTTPConnectionPool, self).__init__(*args, **kwargs)
+                super().__init__(*args, **kwargs)
 
         poolmanager.pool_classes_by_scheme["http"] = MyHTTPConnectionPool
     except Exception:

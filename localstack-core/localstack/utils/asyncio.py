@@ -40,12 +40,12 @@ class AdaptiveThreadPool(DaemonAwareThreadPool):
 
     def __init__(self, core_size=None):
         self.core_size = core_size or self.DEFAULT_CORE_POOL_SIZE
-        super(AdaptiveThreadPool, self).__init__(max_workers=self.core_size)
+        super().__init__(max_workers=self.core_size)
 
     def submit(self, fn, *args, **kwargs):
         # if idle threads are available, don't spin new threads
         if self.has_idle_threads():
-            return super(AdaptiveThreadPool, self).submit(fn, *args, **kwargs)
+            return super().submit(fn, *args, **kwargs)
 
         def _run(*tmpargs):
             return fn(*args, **kwargs)

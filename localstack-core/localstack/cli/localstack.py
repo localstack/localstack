@@ -47,7 +47,7 @@ class LocalStackCliGroup(click.Group):
 
     def invoke(self, ctx: click.Context):
         try:
-            return super(LocalStackCliGroup, self).invoke(ctx)
+            return super().invoke(ctx)
         except click.exceptions.Exit:
             # raise Exit exceptions unmodified (e.g., raised on --help)
             raise

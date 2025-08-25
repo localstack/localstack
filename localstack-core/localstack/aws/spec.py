@@ -69,7 +69,7 @@ class PatchingLoader(Loader):
 
     @instance_cache
     def load_data(self, name: str):
-        result = super(PatchingLoader, self).load_data(name)
+        result = super().load_data(name)
 
         if patches := self.patches.get(name):
             return jsonpatch.apply_patch(result, patches)

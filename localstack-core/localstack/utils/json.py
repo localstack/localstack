@@ -42,7 +42,7 @@ class CustomEncoder(json.JSONEncoder):
         try:
             if isinstance(o, bytes):
                 return to_str(o)
-            return super(CustomEncoder, self).default(o)
+            return super().default(o)
         except Exception:
             return None
 

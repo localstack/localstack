@@ -24,7 +24,7 @@ class StateFail(CommonStateField):
         self.error: ErrorDecl | None = None
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateFail, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.cause = state_props.get(CauseDecl)
         self.error = state_props.get(ErrorDecl)
 

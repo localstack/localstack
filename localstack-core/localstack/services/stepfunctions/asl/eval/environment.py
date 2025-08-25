@@ -73,7 +73,7 @@ class Environment:
         variable_store: VariableStore | None = None,
         mock_test_case: MockTestCase | None = None,
     ):
-        super(Environment, self).__init__()
+        super().__init__()
         self._state_mutex = threading.RLock()
         self._program_state = None
         self.program_state_event = threading.Event()

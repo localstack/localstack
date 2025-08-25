@@ -74,7 +74,7 @@ class LambdaLayerVersionIdentifier(ResourceIdentifier):
     resource = "layer-version"
 
     def __init__(self, account_id: str, region: str, layer_name: str):
-        super(LambdaLayerVersionIdentifier, self).__init__(account_id, region, layer_name)
+        super().__init__(account_id, region, layer_name)
 
     def generate(
         self, existing_ids: ExistingIds = None, tags: Tags = None, next_version: int = None
