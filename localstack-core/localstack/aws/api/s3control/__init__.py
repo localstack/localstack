@@ -147,6 +147,20 @@ class BucketVersioningStatus(StrEnum):
     Suspended = "Suspended"
 
 
+class ComputeObjectChecksumAlgorithm(StrEnum):
+    CRC32 = "CRC32"
+    CRC32C = "CRC32C"
+    CRC64NVME = "CRC64NVME"
+    MD5 = "MD5"
+    SHA1 = "SHA1"
+    SHA256 = "SHA256"
+
+
+class ComputeObjectChecksumType(StrEnum):
+    FULL_OBJECT = "FULL_OBJECT"
+    COMPOSITE = "COMPOSITE"
+
+
 class DeleteMarkerReplicationStatus(StrEnum):
     Enabled = "Enabled"
     Disabled = "Disabled"
@@ -272,6 +286,7 @@ class OperationName(StrEnum):
     S3PutObjectLegalHold = "S3PutObjectLegalHold"
     S3PutObjectRetention = "S3PutObjectRetention"
     S3ReplicateObject = "S3ReplicateObject"
+    S3ComputeObjectChecksum = "S3ComputeObjectChecksum"
 
 
 class OutputSchemaVersion(StrEnum):
@@ -980,6 +995,12 @@ class JobReport(TypedDict, total=False):
     Enabled: Boolean
     Prefix: Optional[ReportPrefixString]
     ReportScope: Optional[JobReportScope]
+    ExpectedBucketOwner: Optional[AccountId]
+
+
+class S3ComputeObjectChecksumOperation(TypedDict, total=False):
+    ChecksumAlgorithm: Optional[ComputeObjectChecksumAlgorithm]
+    ChecksumType: Optional[ComputeObjectChecksumType]
 
 
 class S3ReplicateObjectOperation(TypedDict, total=False):
@@ -1111,6 +1132,7 @@ class JobOperation(TypedDict, total=False):
     S3PutObjectLegalHold: Optional[S3SetObjectLegalHoldOperation]
     S3PutObjectRetention: Optional[S3SetObjectRetentionOperation]
     S3ReplicateObject: Optional[S3ReplicateObjectOperation]
+    S3ComputeObjectChecksum: Optional[S3ComputeObjectChecksumOperation]
 
 
 class CreateJobRequest(ServiceRequest):

@@ -2,14 +2,8 @@ from datetime import datetime
 from enum import StrEnum
 from typing import List, Optional, TypedDict
 
-from localstack.aws.api import (
-    RequestContext,
-    ServiceRequest,
-    handler,
-)
-from localstack.aws.api import (
-    ServiceException as ServiceException,
-)
+from localstack.aws.api import RequestContext, ServiceRequest, handler
+from localstack.aws.api import ServiceException as ServiceException
 
 AccountID = str
 AddressMaxResults = int
@@ -3832,6 +3826,7 @@ class VolumeStatusInfoStatus(StrEnum):
     ok = "ok"
     impaired = "impaired"
     insufficient_data = "insufficient-data"
+    warning = "warning"
 
 
 class VolumeStatusName(StrEnum):
