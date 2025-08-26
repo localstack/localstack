@@ -34,12 +34,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message[sqs]": {
-    "recorded-date": "30-04-2024, 13:32:59",
+    "recorded-date": "19-08-2025, 13:29:40",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
-          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1048576 bytes.",
           "QueryErrorCode": "InvalidParameterValueException",
           "Type": "Sender"
         },
@@ -51,13 +51,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_oversized_message[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:33:01",
+    "recorded-date": "19-08-2025, 13:29:43",
     "recorded-content": {
       "send_oversized_message": {
         "Error": {
           "Code": "InvalidParameterValue",
           "Detail": null,
-          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 262144 bytes.",
+          "Message": "One or more parameters are invalid. Reason: Message must be shorter than 1048576 bytes.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -102,12 +102,12 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents[sqs]": {
-    "recorded-date": "30-04-2024, 13:33:06",
+    "recorded-date": "19-08-2025, 13:29:46",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
           "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
-          "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
+          "Message": "Batch requests cannot be longer than 1048576 bytes. You have sent 1048577 bytes.",
           "QueryErrorCode": "BatchRequestTooLong",
           "Type": "Sender"
         },
@@ -119,13 +119,13 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch_with_oversized_contents[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:33:08",
+    "recorded-date": "19-08-2025, 13:29:47",
     "recorded-content": {
       "send_oversized_message_batch": {
         "Error": {
           "Code": "AWS.SimpleQueueService.BatchRequestTooLong",
           "Detail": null,
-          "Message": "Batch requests cannot be longer than 262144 bytes. You have sent 262145 bytes.",
+          "Message": "Batch requests cannot be longer than 1048576 bytes. You have sent 1048577 bytes.",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -338,7 +338,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes[sqs]": {
-    "recorded-date": "30-04-2024, 13:33:21",
+    "recorded-date": "19-08-2025, 13:29:48",
     "recorded-content": {
       "get_queue_attributes": {
         "Attributes": {
@@ -348,7 +348,7 @@
           "CreatedTimestamp": "timestamp",
           "DelaySeconds": "0",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "604800",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
@@ -383,7 +383,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_create_and_update_queue_attributes[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:33:22",
+    "recorded-date": "19-08-2025, 13:29:49",
     "recorded-content": {
       "get_queue_attributes": {
         "Attributes": {
@@ -393,7 +393,7 @@
           "CreatedTimestamp": "timestamp",
           "DelaySeconds": "0",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "604800",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "10",
@@ -690,7 +690,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs]": {
-    "recorded-date": "30-04-2024, 13:47:39",
+    "recorded-date": "19-08-2025, 13:29:49",
     "recorded-content": {
       "before-update": {
         "Attributes": {
@@ -704,7 +704,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -728,7 +728,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -743,7 +743,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_set_content_based_deduplication_strategy[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:47:41",
+    "recorded-date": "19-08-2025, 13:29:50",
     "recorded-content": {
       "before-update": {
         "Attributes": {
@@ -757,7 +757,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -781,7 +781,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -1818,7 +1818,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {
-    "recorded-date": "24-05-2024, 09:41:13",
+    "recorded-date": "19-08-2025, 13:29:53",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1852,7 +1852,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perMessageGroupId",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -1899,7 +1899,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs_query]": {
-    "recorded-date": "24-05-2024, 09:41:19",
+    "recorded-date": "19-08-2025, 13:29:55",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -1933,7 +1933,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perMessageGroupId",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -1980,7 +1980,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs]": {
-    "recorded-date": "30-04-2024, 13:52:03",
+    "recorded-date": "19-08-2025, 13:29:57",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -2022,7 +2022,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",
@@ -2051,7 +2051,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_regular_throughput_after_creation[sqs_query]": {
-    "recorded-date": "30-04-2024, 13:52:06",
+    "recorded-date": "19-08-2025, 13:29:59",
     "recorded-content": {
       "same-dedup-different-grp-1": {
         "Messages": [
@@ -2093,7 +2093,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
           "ReceiveMessageWaitTimeSeconds": "0",

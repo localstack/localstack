@@ -835,6 +835,24 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def get_store(account_id: str, region: str) -> SqsStore:
         return sqs_stores[account_id][region]
 
+    def on_after_init(self):
+        # this configuration increases the processing power for Query protocol requests, which are form-encoded and by
+        # default are limited to 500kb payload size by Werkzeug. we make sure we only *increase* the limit if it's
+        # already set, and if it's already set to unlimited we leave it.
+        from rolo import Request as RoloRequest
+        from werkzeug import Request as WerkzeugRequest
+
+        # needed for the webserver integration (webservers create Werkzeug request objects)
+        if WerkzeugRequest.max_form_memory_size is not None:
+            WerkzeugRequest.max_form_memory_size = max(
+                WerkzeugRequest.max_form_memory_size, sqs_constants.DEFAULT_MAXIMUM_MESSAGE_SIZE * 2
+            )
+        # needed for internal/proxy requests (which create rolo request objects)
+        if RoloRequest.max_form_memory_size is not None:
+            RoloRequest.max_form_memory_size = max(
+                RoloRequest.max_form_memory_size, sqs_constants.DEFAULT_MAXIMUM_MESSAGE_SIZE * 2
+            )
+
     def on_before_start(self):
         query_api.register(ROUTER)
         self._router_rules = ROUTER.add(SqsDeveloperEndpoints())
