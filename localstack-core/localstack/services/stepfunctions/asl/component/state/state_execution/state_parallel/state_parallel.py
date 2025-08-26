@@ -33,7 +33,7 @@ class StateParallel(ExecutionState):
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateParallel, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.branches = state_props.get(
             typ=BranchesDecl,
             raise_on_missing=ValueError(f"Missing Branches definition in props '{state_props}'."),

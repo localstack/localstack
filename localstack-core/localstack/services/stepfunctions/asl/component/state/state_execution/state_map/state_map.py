@@ -115,13 +115,13 @@ class StateMap(ExecutionState):
     result_writer: ResultWriter | None
 
     def __init__(self):
-        super(StateMap, self).__init__(
+        super().__init__(
             state_entered_event_type=HistoryEventType.MapStateEntered,
             state_exited_event_type=HistoryEventType.MapStateExited,
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateMap, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         if self._is_language_query_jsonpath():
             self.items = None
             self.items_path = state_props.get(ItemsPath) or ItemsPath(

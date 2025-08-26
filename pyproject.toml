@@ -217,10 +217,8 @@ ignore = [
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
-    "UP008",# TODO Use `super()` instead of `super(__class__, self)`
     "UP028",# TODO Replace `yield` over `for` loop with `yield from`
     "UP031",# TODO Use format specifiers instead of percent format
-    "UP036",# TODO Version block is outdated for minimum Python version
     "UP038",# TODO Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
 select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G", "UP"]

@@ -68,7 +68,7 @@ class AttributeDict(dict):
     """
 
     def __init__(self, *args, **kwargs):
-        super(AttributeDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for key, value in self.items():
             if isinstance(value, dict):
                 self[key] = AttributeDict(value)

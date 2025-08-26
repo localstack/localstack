@@ -1662,7 +1662,7 @@ class ComparableBytesIO(BytesIO):
         if isinstance(other, ResponseStream):
             return other.response.data == self.read()
 
-        return super(ComparableBytesIO, self).__eq__(other)
+        return super().__eq__(other)
 
 
 class ComparableBytesList(list):
@@ -1674,7 +1674,7 @@ class ComparableBytesList(list):
         if isinstance(other, str):
             return b"".join(self) == other.encode("utf-8")
 
-        return super(ComparableBytesList, self).__eq__(other)
+        return super().__eq__(other)
 
 
 class ComparableBytesIterator(Iterator[bytes]):
@@ -1695,7 +1695,7 @@ class ComparableBytesIterator(Iterator[bytes]):
         if isinstance(other, ResponseStream):
             return other.response.data == self.value
 
-        return super(ComparableBytesIterator, self).__eq__(other)
+        return super().__eq__(other)
 
 
 @pytest.mark.parametrize(

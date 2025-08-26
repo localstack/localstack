@@ -671,7 +671,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
     """
 
     def __init__(self, service_model: ServiceModel):
-        super(RestXMLRequestParser, self).__init__(service_model)
+        super().__init__(service_model)
         self.ignore_get_body_errors = True
         self._namespace_re = re.compile("{.*}")
 
@@ -758,7 +758,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         # it's flattened, and if it's not, then we make it a one element list.
         if shape.serialization.get("flattened") and not isinstance(node, list):
             node = [node]
-        return super(RestXMLRequestParser, self)._parse_list(request, shape, node, uri_params)
+        return super()._parse_list(request, shape, node, uri_params)
 
     def _node_tag(self, node: ETree.Element) -> str:
         return self._namespace_re.sub("", node.tag)

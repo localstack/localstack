@@ -17,7 +17,7 @@ class StateChoice(CommonStateField):
     default_state: DefaultDecl | None
 
     def __init__(self):
-        super(StateChoice, self).__init__(
+        super().__init__(
             state_entered_event_type=HistoryEventType.ChoiceStateEntered,
             state_exited_event_type=HistoryEventType.ChoiceStateExited,
         )
@@ -25,7 +25,7 @@ class StateChoice(CommonStateField):
         self._next_state_name = None
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateChoice, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.choices_decl = state_props.get(ChoicesDecl)
         self.default_state = state_props.get(DefaultDecl)
 
