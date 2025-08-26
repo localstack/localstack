@@ -105,8 +105,7 @@ class TestWerkzeugIntegration:
         chunks = [bytes(f"{n:2}", "utf-8") for n in range(0, 100)]
 
         def chunk_generator():
-            for chunk in chunks:
-                yield chunk
+            yield from chunks
 
         def stream_response_handler(_request) -> Response:
             return Response(response=chunk_generator())
@@ -133,8 +132,7 @@ class TestWerkzeugIntegration:
         cleanups.append(lambda: ROUTER.remove(rule))
 
         def chunk_generator():
-            for chunk in chunks:
-                yield chunk
+            yield from chunks
 
         response = requests.post(
             config.internal_service_url() + "/_test/test_chunked_request", data=chunk_generator()

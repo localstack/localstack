@@ -397,8 +397,7 @@ class QueueUpdateWorker:
 
     def iter_queues(self) -> Iterable[SqsQueue]:
         for account_id, region, store in sqs_stores.iter_stores():
-            for queue in store.queues.values():
-                yield queue
+            yield from store.queues.values()
 
     def do_update_all_queues(self):
         for queue in self.iter_queues():

@@ -217,7 +217,6 @@ ignore = [
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
-    "UP028",# TODO Replace `yield` over `for` loop with `yield from`
     "UP031",# TODO Use format specifiers instead of percent format
     "UP038",# TODO Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
