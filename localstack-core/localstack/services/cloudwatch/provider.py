@@ -3,7 +3,6 @@ import logging
 import uuid
 from datetime import datetime
 from typing import Any
-from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import Alarm, CloudWatchBackend, MetricDatum
@@ -129,8 +128,6 @@ def put_metric_alarm(
     rule: str | None = None,
     tags: list[dict[str, str]] | None = None,
 ) -> Alarm:
-    if description:
-        description = escape(description)
     return target(
         self,
         name,
