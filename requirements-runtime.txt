@@ -49,7 +49,7 @@ build==1.3.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==6.1.0
+cachetools==6.2.0
     # via
     #   airspeed-ext
     #   localstack-core
@@ -112,7 +112,7 @@ h11==0.16.0
     # via
     #   hypercorn
     #   wsproto
-h2==4.2.0
+h2==4.3.0
     # via
     #   hypercorn
     #   localstack-twisted
@@ -139,7 +139,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.2.2
+joserfc==1.3.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core (pyproject.toml)
@@ -178,7 +178,7 @@ jsonschema-specifications==2025.4.1
     #   openapi-schema-validator
 kclpy-ext==3.0.5
     # via localstack-core (pyproject.toml)
-lazy-object-proxy==1.11.0
+lazy-object-proxy==1.12.0
     # via openapi-spec-validator
 localstack-twisted==24.3.0
     # via localstack-core
@@ -249,7 +249,7 @@ pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
     # via rich
-pymongo==4.14.0
+pymongo==4.14.1
     # via localstack-core (pyproject.toml)
 pyopenssl==25.1.0
     # via
@@ -336,7 +336,7 @@ tailer==0.4.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-typing-extensions==4.14.1
+typing-extensions==4.15.0
     # via
     #   aws-sam-translator
     #   cfn-lint
