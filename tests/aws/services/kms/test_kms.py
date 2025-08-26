@@ -110,7 +110,7 @@ class TestKMS:
     def test_create_alias(self, kms_create_alias, kms_create_key, snapshot):
         alias_name = f"{short_uid()}"
         alias_key_id = kms_create_key()["KeyId"]
-        with pytest.raises(Exception) as e:
+        with pytest.raises(ClientError) as e:
             kms_create_alias(AliasName=alias_name, TargetKeyId=alias_key_id)
 
         snapshot.match("create_alias", e.value.response)

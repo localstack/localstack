@@ -1,6 +1,7 @@
 import json
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.testing.config import TEST_AWS_ACCOUNT_ID, TEST_AWS_REGION_NAME
@@ -55,7 +56,7 @@ class TestSSM:
 
         _assert(f"/{param_a}/b/c", f"/{param_a}/b/c", aws_client.ssm)
         pname = param_name_pattern.replace("<param>", param_a)
-        with pytest.raises(Exception) as exc:
+        with pytest.raises(ClientError) as exc:
             _assert(pname, f"/{param_a}/b/c", aws_client.ssm)
         exc.match("ValidationException")
         exc.match("sub-paths divided by slash symbol")
@@ -82,7 +83,7 @@ class TestSSM:
         assert ":secretsmanager:" in source_result["ARN"]
 
         # negative test for https://github.com/localstack/localstack/issues/6551
-        with pytest.raises(Exception):
+        with pytest.raises(ClientError):
             aws_client.ssm.get_parameter(Name=secret_name, WithDecryption=True)
 
     @markers.aws.validated

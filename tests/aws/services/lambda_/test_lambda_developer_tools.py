@@ -3,6 +3,7 @@ import os
 import time
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -146,7 +147,7 @@ class TestHotReloading:
         """Tests validation of hot reloading paths"""
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
-        with pytest.raises(Exception):
+        with pytest.raises(ClientError):
             aws_client.lambda_.create_function(
                 FunctionName=function_name,
                 Handler="handler.handler",

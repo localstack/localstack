@@ -1,6 +1,7 @@
 from urllib.parse import urlparse
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import short_uid
@@ -54,7 +55,7 @@ class TestRoute53:
         assert response["HealthCheck"]["Id"] == health_check_id
         response = aws_client.route53.delete_health_check(HealthCheckId=health_check_id)
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
-        with pytest.raises(Exception) as ctx:
+        with pytest.raises(ClientError) as ctx:
             aws_client.route53.delete_health_check(HealthCheckId=health_check_id)
         assert "NoSuchHealthCheck" in str(ctx.value)
 
@@ -171,7 +172,7 @@ class TestRoute53:
         )
         assert response["ResponseMetadata"]["HTTPStatusCode"] in [200, 201]
         # subsequent call (after disassociation) should fail with 404 error
-        with pytest.raises(Exception):
+        with pytest.raises(ClientError):
             aws_client.route53.disassociate_vpc_from_hosted_zone(
                 HostedZoneId=zone_id,
                 VPC={"VPCRegion": vpc_region, "VPCId": vpc2_id},
