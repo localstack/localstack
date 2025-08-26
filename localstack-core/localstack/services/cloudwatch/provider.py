@@ -1,8 +1,8 @@
 import json
 import logging
 import uuid
+from datetime import datetime
 from typing import Any
-from xml.sax.saxutils import escape
 
 from moto.cloudwatch import cloudwatch_backends
 from moto.cloudwatch.models import Alarm, CloudWatchBackend, MetricDatum
@@ -128,8 +128,6 @@ def put_metric_alarm(
     rule: str | None = None,
     tags: list[dict[str, str]] | None = None,
 ) -> Alarm:
-    if description:
-        description = escape(description)
     return target(
         self,
         name,
@@ -189,12 +187,12 @@ def create_message_response_update_state_lambda(
             "state": {
                 "value": alarm.state_value,
                 "reason": alarm.state_reason,
-                "timestamp": alarm.state_updated_timestamp,
+                "timestamp": _to_iso_8601_datetime_with_nanoseconds(alarm.state_updated_timestamp),
             },
             "previousState": {
                 "value": old_state,
                 "reason": old_state_reason,
-                "timestamp": old_state_timestamp,
+                "timestamp": _to_iso_8601_datetime_with_nanoseconds(old_state_timestamp),
             },
             "configuration": {
                 "description": alarm.description or "",
@@ -204,7 +202,7 @@ def create_message_response_update_state_lambda(
                 ),  # TODO: add test with metric_data_queries
             },
         },
-        "time": alarm.state_updated_timestamp,
+        "time": _to_iso_8601_datetime_with_nanoseconds(alarm.state_updated_timestamp),
         "region": alarm.region_name,
         "source": "aws.cloudwatch",
     }
@@ -217,10 +215,12 @@ def create_message_response_update_state_sns(alarm, old_state):
         "OldStateValue": old_state,
         "AlarmName": alarm.name,
         "AlarmDescription": alarm.description or "",
-        "AlarmConfigurationUpdatedTimestamp": alarm.configuration_updated_timestamp,
+        "AlarmConfigurationUpdatedTimestamp": _to_iso_8601_datetime_with_nanoseconds(
+            alarm.configuration_updated_timestamp
+        ),
         "NewStateValue": alarm.state_value,
         "NewStateReason": alarm.state_reason,
-        "StateChangeTime": alarm.state_updated_timestamp,
+        "StateChangeTime": _to_iso_8601_datetime_with_nanoseconds(alarm.state_updated_timestamp),
         # the long-name for 'region' should be used - as we don't have it, we use the short name
         # which needs to be slightly changed to make snapshot tests work
         "Region": alarm.region_name.replace("-", " ").capitalize(),
@@ -266,6 +266,11 @@ def create_message_response_update_state_sns(alarm, old_state):
 class ValidationError(CommonServiceException):
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
+
+
+def _to_iso_8601_datetime_with_nanoseconds(date: datetime | None) -> str | None:
+    if date is not None:
+        return date.strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
 
 
 def _set_alarm_actions(context, alarm_names, enabled):
