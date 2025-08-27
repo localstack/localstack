@@ -1,5 +1,7 @@
+import json
 import logging
 import os
+import re
 import time
 from random import random
 
@@ -8,14 +10,18 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.kinesis import (
     ConsumerARN,
     Data,
+    GetResourcePolicyOutput,
     HashKey,
     KinesisApi,
     PartitionKey,
+    Policy,
     ProvisionedThroughputExceededException,
     PutRecordOutput,
     PutRecordsOutput,
     PutRecordsRequestEntryList,
     PutRecordsResultEntry,
+    ResourceARN,
+    ResourceNotFoundException,
     SequenceNumber,
     ShardId,
     StartingPosition,
@@ -24,6 +30,7 @@ from localstack.aws.api.kinesis import (
     SubscribeToShardEvent,
     SubscribeToShardEventStream,
     SubscribeToShardOutput,
+    ValidationException,
 )
 from localstack.aws.connect import connect_to
 from localstack.constants import LOCALHOST
@@ -39,6 +46,13 @@ LOG = logging.getLogger(__name__)
 MAX_SUBSCRIPTION_SECONDS = 300
 SERVER_STARTUP_TIMEOUT = 120
 
+DATA_STREAM_ARN_REGEX = re.compile(
+    r"^arn:aws(?:-[a-z]+)*:kinesis:[a-z0-9-]+:\d{12}:stream\/[a-zA-Z0-9_.\-]+$"
+)
+CONSUMER_ARN_REGEX = re.compile(
+    r"^arn:aws(?:-[a-z]+)*:kinesis:[a-z0-9-]+:\d{12}:stream\/[a-zA-Z0-9_.\-]+\/consumer\/[a-zA-Z0-9_.\-]+:\d+$"
+)
+
 
 def find_stream_for_consumer(consumer_arn):
     account_id = extract_account_id_from_arn(consumer_arn)
@@ -50,6 +64,11 @@ def find_stream_for_consumer(consumer_arn):
             if cons["ConsumerARN"] == consumer_arn:
                 return stream_name
     raise Exception(f"Unable to find stream for stream consumer {consumer_arn}")
+
+
+def is_valid_kinesis_arn(resource_arn: ResourceARN) -> bool:
+    """Check if the provided ARN is a valid Kinesis ARN."""
+    return bool(CONSUMER_ARN_REGEX.match(resource_arn) or DATA_STREAM_ARN_REGEX.match(resource_arn))
 
 
 class KinesisProvider(KinesisApi, ServiceLifecycleHook):
@@ -80,6 +99,60 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region_name: str) -> KinesisStore:
         return kinesis_stores[account_id][region_name]
+
+    def put_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceARN,
+        policy: Policy,
+        **kwargs,
+    ) -> None:
+        if not is_valid_kinesis_arn(resource_arn):
+            raise ValidationException(f"invalid kinesis arn {resource_arn}")
+
+        kinesis = connect_to().kinesis
+        try:
+            kinesis.describe_stream_summary(StreamARN=resource_arn)
+        except kinesis.exceptions.ResourceNotFoundException:
+            raise ResourceNotFoundException(f"Stream with ARN {resource_arn} not found")
+
+        store = self.get_store(context.account_id, context.region)
+        store.resource_policies[resource_arn] = policy
+
+    def get_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceARN,
+        **kwargs,
+    ) -> GetResourcePolicyOutput:
+        if not is_valid_kinesis_arn(resource_arn):
+            raise ValidationException(f"invalid kinesis arn {resource_arn}")
+
+        kinesis = connect_to().kinesis
+        try:
+            kinesis.describe_stream_summary(StreamARN=resource_arn)
+        except kinesis.exceptions.ResourceNotFoundException:
+            raise ResourceNotFoundException(f"Stream with ARN {resource_arn} not found")
+
+        store = self.get_store(context.account_id, context.region)
+        policy = store.resource_policies.get(resource_arn, json.dumps({}))
+        return GetResourcePolicyOutput(Policy=policy)
+
+    def delete_resource_policy(
+        self,
+        context: RequestContext,
+        resource_arn: ResourceARN,
+        **kwargs,
+    ) -> None:
+        if not is_valid_kinesis_arn(resource_arn):
+            raise ValidationException(f"invalid kinesis arn {resource_arn}")
+
+        store = self.get_store(context.account_id, context.region)
+        if resource_arn not in store.resource_policies:
+            raise ResourceNotFoundException(
+                f"No resource policy found for resource ARN {resource_arn}"
+            )
+        del store.resource_policies[resource_arn]
 
     def subscribe_to_shard(
         self,
