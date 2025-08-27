@@ -376,7 +376,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_sqs_source": {
-    "recorded-date": "30-10-2024, 14:48:16",
+    "recorded-date": "27-08-2025, 09:35:51",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -548,7 +548,7 @@
           "CreatedTimestamp": "timestamp",
           "DelaySeconds": "0",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<resource:2>",
           "ReceiveMessageWaitTimeSeconds": "0",
