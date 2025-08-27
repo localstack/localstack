@@ -126,6 +126,12 @@
     "last_validated_date": "2023-06-12T15:08:47+00:00"
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestTypes::test_implicit_type_conversion": {
-    "last_validated_date": "2023-08-29T13:21:22+00:00"
+    "last_validated_date": "2025-08-27T09:39:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.91,
+      "call": 39.47,
+      "teardown": 50.06,
+      "total": 90.44
+    }
   }
 }
