@@ -77,8 +77,6 @@ jmespath==1.0.1
     #   botocore
 jsonpatch==1.33
     # via localstack-core (pyproject.toml)
-jsonpickle==4.1.1
-    # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
     # via jsonpatch
 jsonschema==4.25.1
@@ -168,7 +166,7 @@ rich==14.1.0
     # via localstack-core (pyproject.toml)
 rolo==0.7.6
     # via localstack-core (pyproject.toml)
-rpds-py==0.27.0
+rpds-py==0.27.1
     # via
     #   jsonschema
     #   referencing
