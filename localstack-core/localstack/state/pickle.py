@@ -36,8 +36,6 @@ import dill
 import jsonpickle
 from dill._dill import MetaCatchingDict
 
-from localstack import config
-
 from .core import Decoder, Encoder
 
 _T = TypeVar("_T")
@@ -288,23 +286,15 @@ class JsonDecoder(Decoder):
 
 
 def get_default_encoder() -> Encoder:
-    match config.STATE_SERIALIZATION_BACKEND:
-        case "jsonpickle":
-            return JsonEncoder()
-        case "dill":
-            return PickleEncoder()
-        case _:
-            return PickleEncoder()
+    from .codecs import get_default_encoder
+
+    return get_default_encoder()
 
 
 def get_default_decoder() -> Decoder:
-    match config.STATE_SERIALIZATION_BACKEND:
-        case "jsonpickle":
-            return JsonDecoder()
-        case "dill":
-            return PickleDecoder()
-        case _:
-            return PickleDecoder()
+    from .codecs import get_default_decoder
+
+    return get_default_decoder()
 
 
 class ObjectStateReducer(Generic[_T]):
