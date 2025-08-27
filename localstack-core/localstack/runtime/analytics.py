@@ -53,6 +53,7 @@ TRACKED_ENV_VAR = [
     "LAMBDA_RUNTIME_ENVIRONMENT_TIMEOUT",
     "LEGACY_EDGE_PROXY",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "LS_LOG",
+    "LOCALSTACK_K8S_DEPLOYMENT_METHOD",
     "MOCK_UNIMPLEMENTED",  # Not functional; deprecated in 1.3.0, removed in 3.0.0
     "OPENSEARCH_ENDPOINT_STRATEGY",
     "PERSISTENCE",
@@ -78,6 +79,7 @@ PRESENCE_ENV_VAR = [
     "HOSTNAME_FROM_LAMBDA",
     "HOST_TMP_FOLDER",  # Not functional; deprecated in 1.0.0, removed in 2.0.0
     "INIT_SCRIPTS_PATH",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
+    "KUBERNETES_SERVICE_HOST",
     "LAMBDA_DEBUG_MODE_CONFIG_PATH",
     "LEGACY_DIRECTORIES",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
     "LEGACY_INIT_DIR",  # Not functional; deprecated in 1.1.0, removed in 2.0.0
