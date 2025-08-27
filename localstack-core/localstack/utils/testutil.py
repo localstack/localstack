@@ -94,7 +94,7 @@ def create_lambda_archive(
         chmod_r(script_file, 0o777)
         # copy libs
         for lib in libs:
-            paths = [lib, "%s.py" % lib]
+            paths = [lib, f"{lib}.py"]
             try:
                 module = importlib.import_module(lib)
                 paths.append(module.__file__)
@@ -382,7 +382,7 @@ def assert_object(expected_object, all_objects):
         all_objects = [all_objects]
     found = find_object(expected_object, all_objects)
     if not found:
-        raise Exception("Expected object not found: %s in list %s" % (expected_object, all_objects))
+        raise Exception(f"Expected object not found: {expected_object} in list {all_objects}")
 
 
 def find_object(expected_object, object_list):
@@ -522,8 +522,7 @@ def check_expected_lambda_log_events_length(
     events = [line for line in events if line not in ["\x1b[0m", "\\x1b[0m"]]
     if len(events) != expected_length:
         print(
-            "Invalid # of Lambda %s log events: %s / %s: %s"
-            % (
+            "Invalid # of Lambda {} log events: {} / {}: {}".format(
                 function_name,
                 len(events),
                 expected_length,

@@ -44,7 +44,7 @@ class Server(abc.ABC):
 
     @property
     def url(self):
-        return "%s://%s:%s" % (self.protocol, self.host, self.port)
+        return f"{self.protocol}://{self.host}:{self.port}"
 
     def get_error(self) -> Optional[Exception]:
         """

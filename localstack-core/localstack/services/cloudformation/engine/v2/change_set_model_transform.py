@@ -146,7 +146,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         if not location or not location.startswith("s3://"):
             raise FailedTransformationException(
                 transformation=INCLUDE_TRANSFORM,
-                message="Unexpected Location parameter for AWS::Include transformer: %s" % location,
+                message=f"Unexpected Location parameter for AWS::Include transformer: {location}",
             )
 
         s3_client = connect_to(
@@ -158,7 +158,7 @@ class ChangeSetModelTransform(ChangeSetModelPreproc):
         except ClientError:
             raise FailedTransformationException(
                 transformation=INCLUDE_TRANSFORM,
-                message="Error downloading S3 object '%s/%s'" % (bucket, path),
+                message=f"Error downloading S3 object '{bucket}/{path}'",
             )
         try:
             template_to_include = parse_template(content)

@@ -286,19 +286,19 @@ class ServiceManager:
         container = self.get_service_container(name)
 
         if not container:
-            raise ValueError("no such service %s" % name)
+            raise ValueError(f"no such service {name}")
 
         if container.state == ServiceState.STARTING:
             if not poll_condition(lambda: container.state != ServiceState.STARTING, timeout=30):
-                raise TimeoutError("gave up waiting for service %s to start" % name)
+                raise TimeoutError(f"gave up waiting for service {name} to start")
 
         if container.state == ServiceState.STOPPING:
             if not poll_condition(lambda: container.state == ServiceState.STOPPED, timeout=30):
-                raise TimeoutError("gave up waiting for service %s to stop" % name)
+                raise TimeoutError(f"gave up waiting for service {name} to stop")
 
         with container.lock:
             if container.state == ServiceState.DISABLED:
-                raise ServiceDisabled("service %s is disabled" % name)
+                raise ServiceDisabled(f"service {name} is disabled")
 
             if container.state == ServiceState.RUNNING:
                 return container.service
@@ -314,7 +314,7 @@ class ServiceManager:
                     raise container.errors[-1]
 
         raise ServiceStateException(
-            "service %s is not ready (%s) and could not be started" % (name, container.state)
+            f"service {name} is not ready ({container.state}) and could not be started"
         )
 
     # legacy map compatibility
@@ -692,7 +692,7 @@ def check_service_health(api, expect_shutdown=False):
             LOG.warning('Service "%s" not yet available, retrying...', api)
         else:
             LOG.warning('Service "%s" still shutting down, retrying...', api)
-        raise Exception("Service check failed for api: %s" % api)
+        raise Exception(f"Service check failed for api: {api}")
 
 
 @hooks.on_infra_start(should_load=lambda: config.EAGER_SERVICE_LOADING)

@@ -280,7 +280,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
 
     extracted_path, resource = get_target_resource_details(invocation_context)
     if not resource:
-        return make_error_response("Unable to find path %s" % invocation_context.path, 404)
+        return make_error_response(f"Unable to find path {invocation_context.path}", 404)
 
     # validate request
     validator = RequestValidator(invocation_context)
@@ -307,7 +307,7 @@ def invoke_rest_api(invocation_context: ApiInvocationContext):
             # default to returning CORS headers if this is an OPTIONS request
             return get_cors_response(headers)
         return make_error_response(
-            "Unable to find integration for: %s %s (%s)" % (method, invocation_path, raw_path),
+            f"Unable to find integration for: {method} {invocation_path} ({raw_path})",
             404,
         )
 

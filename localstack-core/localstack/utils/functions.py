@@ -32,7 +32,7 @@ def call_safe(
     :return: whatever the func returns
     """
     if exception_message is None:
-        exception_message = "error calling function %s" % func.__name__
+        exception_message = f"error calling function {func.__name__}"
     if args is None:
         args = ()
     if kwargs is None:

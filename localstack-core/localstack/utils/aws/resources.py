@@ -86,7 +86,7 @@ def create_api_gateway(
     resources = resources or []
     stage_name = stage_name or "testing"
     usage_plan_name = usage_plan_name or "Basic Usage"
-    description = description or 'Test description for API "%s"' % name
+    description = description or f'Test description for API "{name}"'
 
     LOG.info('Creating API resources under API Gateway "%s".', name)
     api = client.create_rest_api(name=name, description=description)

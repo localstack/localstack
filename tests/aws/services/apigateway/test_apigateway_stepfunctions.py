@@ -132,13 +132,12 @@ class TestApigatewayStepfunctions:
         url = api_invoke_url(api_id=rest_api, stage="dev", path="/")
 
         req_template = {
-            "application/json": """
-            {
+            "application/json": f"""
+            {{
             "input": "$util.escapeJavaScript($input.json('$'))",
-            "stateMachineArn": "%s"
-            }
+            "stateMachineArn": "{sm_arn}"
+            }}
             """
-            % sm_arn
         }
         match action:
             case "StartExecution":

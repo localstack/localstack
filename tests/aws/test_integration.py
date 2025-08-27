@@ -86,7 +86,7 @@ class TestIntegration:
         bucket_name = s3_create_bucket()
 
         s3_prefix = "/testdata"
-        test_data = '{"test": "firehose_data_%s"}' % short_uid()
+        test_data = f'{{"test": "firehose_data_{short_uid()}"}}'
         # create Firehose stream
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
@@ -122,7 +122,7 @@ class TestIntegration:
         bucket_name = s3_create_bucket()
 
         s3_prefix = "/testdata2"
-        test_data = '{"test": "firehose_data_%s"}' % short_uid()
+        test_data = f'{{"test": "firehose_data_{short_uid()}"}}'
         # create Firehose stream
         stream = firehose_create_delivery_stream(
             DeliveryStreamName=stream_name,
@@ -160,7 +160,7 @@ class TestIntegration:
         kinesis_stream_name = kinesis_create_stream()
 
         s3_prefix = "/testdata"
-        test_data = '{"test": "firehose_data_%s"}' % short_uid()
+        test_data = f'{{"test": "firehose_data_{short_uid()}"}}'
 
         # create Firehose stream
         stream = aws_client.firehose.create_delivery_stream(
@@ -462,10 +462,7 @@ class TestIntegration:
 
         def check_events():
             if len(events) != num_events:
-                msg = "DynamoDB updates retrieved (actual/expected): %s/%s" % (
-                    len(events),
-                    num_events,
-                )
+                msg = f"DynamoDB updates retrieved (actual/expected): {len(events)}/{num_events}"
                 LOGGER.warning(msg)
             assert len(events) == num_events
             event_items = [json.loads(base64.b64decode(e["data"])) for e in events]
@@ -481,7 +478,7 @@ class TestIntegration:
 
             for i, event in enumerate(inserts):
                 assert "old_image" not in event
-                item_id = "testId%d" % i
+                item_id = f"testId{i:d}"
                 matching = [i for i in inserts if i["new_image"]["id"] == item_id][0]
                 assert matching["new_image"] == {"id": item_id, "data": "foobar123"}
 
@@ -529,7 +526,7 @@ class TestIntegration:
 
             for i, event in enumerate(removes):
                 assert "new_image" not in event
-                item_id = "testId%d" % i
+                item_id = f"testId{i:d}"
                 matching = [i for i in removes if i["old_image"]["id"] == item_id][0]
                 assert matching["old_image"] == {"id": item_id, "data": "foobar123"}
 
@@ -584,9 +581,9 @@ def test_kinesis_lambda_forward_chain(
     )
 
     # publish test record
-    test_data = {"test_data": "forward_chain_data_%s with 'quotes\\\"" % short_uid()}
+    test_data = {"test_data": f"forward_chain_data_{short_uid()} with 'quotes\\\""}
     data = clone(test_data)
-    data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = "kinesis:%s" % stream2_name
+    data[lambda_integration.MSG_BODY_MESSAGE_TARGET] = f"kinesis:{stream2_name}"
     LOGGER.debug("put record")
     aws_client.kinesis.put_record(
         Data=to_bytes(json.dumps(data)),

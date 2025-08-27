@@ -52,7 +52,7 @@ def parse_timestamp(ts_str: str) -> datetime:
             return datetime.strptime(ts_str, ts_format)
         except ValueError:
             pass
-    raise Exception("Unable to parse timestamp string with any known formats: %s" % ts_str)
+    raise Exception(f"Unable to parse timestamp string with any known formats: {ts_str}")
 
 
 def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:

@@ -190,7 +190,7 @@ class TestCommon:
 
         def fn():
             i = next(count)
-            e = RuntimeError("exception %d" % i)
+            e = RuntimeError(f"exception {i:d}")
             exceptions.append(e)
 
             if i == 2:
@@ -208,7 +208,7 @@ class TestCommon:
 
         def fn():
             i = next(count)
-            e = RuntimeError("exception %d" % i)
+            e = RuntimeError(f"exception {i:d}")
             exceptions.append(e)
 
             raise e
@@ -507,9 +507,9 @@ class TestCommonFileOperations:
 
 
 def test_save_load_file(tmp_path):
-    file_name = tmp_path / ("normal_permissions_%s" % short_uid())
-    content = "some_content_%s" % short_uid()
-    more_content = "some_more_content_%s" % short_uid()
+    file_name = tmp_path / (f"normal_permissions_{short_uid()}")
+    content = f"some_content_{short_uid()}"
+    more_content = f"some_more_content_{short_uid()}"
 
     save_file(file_name, content)
     assert content == load_file(file_name)
@@ -518,9 +518,9 @@ def test_save_load_file(tmp_path):
 
 
 def test_save_load_file_with_permissions(tmp_path):
-    file_name = tmp_path / ("special_permissions_%s" % short_uid())
-    content = "some_content_%s" % short_uid()
-    more_content = "some_more_content_%s" % short_uid()
+    file_name = tmp_path / (f"special_permissions_{short_uid()}")
+    content = f"some_content_{short_uid()}"
+    more_content = f"some_more_content_{short_uid()}"
     permissions = 0o600
 
     save_file(file_name, content, permissions=permissions)
@@ -532,9 +532,9 @@ def test_save_load_file_with_permissions(tmp_path):
 
 
 def test_save_load_file_with_changing_permissions(tmp_path):
-    file_name = tmp_path / ("changing_permissions_%s" % short_uid())
-    content = "some_content_%s" % short_uid()
-    more_content = "some_more_content_%s" % short_uid()
+    file_name = tmp_path / (f"changing_permissions_{short_uid()}")
+    content = f"some_content_{short_uid()}"
+    more_content = f"some_more_content_{short_uid()}"
     permissions = 0o600
 
     save_file(file_name, content)

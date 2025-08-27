@@ -427,7 +427,7 @@ def validate_localstack_config(name: str):
 
     def port_exposed(port):
         for exposed in docker_ports:
-            if re.match(r"^([0-9]+-)?%s(-[0-9]+)?$" % port, exposed):
+            if re.match(rf"^([0-9]+-)?{port}(-[0-9]+)?$", exposed):
                 return True
 
     if not port_exposed(edge_port):
@@ -455,7 +455,7 @@ def get_docker_image_to_start():
 
 def extract_port_flags(user_flags, port_mappings: PortMappings):
     regex = r"-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?"
-    matches = re.match(".*%s" % regex, user_flags)
+    matches = re.match(f".*{regex}", user_flags)
     if matches:
         for match in re.findall(regex, user_flags):
             start = int(match[0])
@@ -1115,7 +1115,7 @@ class LocalstackContainerServer(Server):
     def do_run(self):
         if self.is_container_running():
             raise ContainerExists(
-                'LocalStack container named "%s" is already running' % self.container.name
+                f'LocalStack container named "{self.container.name}" is already running'
             )
 
         config.dirs.mkdirs()
@@ -1156,7 +1156,7 @@ def prepare_docker_start():
     container_name = config.MAIN_CONTAINER_NAME
 
     if DOCKER_CLIENT.is_container_running(container_name):
-        raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
+        raise ContainerExists(f'LocalStack container named "{container_name}" is already running')
 
     config.dirs.mkdirs()
 

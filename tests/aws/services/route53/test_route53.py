@@ -146,7 +146,7 @@ class TestRoute53:
         ]
         expected = {
             "HostedZoneId": zone_id,
-            "Name": "%s." % name,
+            "Name": f"{name}.",
             "Owner": {"OwningAccount": account_id},
         }
         assert expected in result
@@ -154,9 +154,7 @@ class TestRoute53:
         # list zones by name
         result = aws_client.route53.list_hosted_zones_by_name(DNSName=name).get("HostedZones")
         assert result[0]["Name"] == "zone123."
-        result = aws_client.route53.list_hosted_zones_by_name(DNSName="%s." % name).get(
-            "HostedZones"
-        )
+        result = aws_client.route53.list_hosted_zones_by_name(DNSName=f"{name}.").get("HostedZones")
         assert result[0]["Name"] == "zone123."
 
         # assert that VPC is attached in Zone response
@@ -194,13 +192,13 @@ class TestRoute53:
 
         sets_before = client.list_reusable_delegation_sets().get("DelegationSets", [])
 
-        call_ref_1 = "c-%s" % short_uid()
+        call_ref_1 = f"c-{short_uid()}"
         result_1 = client.create_reusable_delegation_set(CallerReference=call_ref_1)[
             "DelegationSet"
         ]
         set_id_1 = result_1["Id"]
 
-        call_ref_2 = "c-%s" % short_uid()
+        call_ref_2 = f"c-{short_uid()}"
         result_2 = client.create_reusable_delegation_set(CallerReference=call_ref_2)[
             "DelegationSet"
         ]

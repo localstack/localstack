@@ -37,7 +37,7 @@ PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za
 
 # regex path pattern for user requests, handles stages like $default
 PATH_REGEX_USER_REQUEST = (
-    r"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%%24)\\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
+    rf"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%24)\\-]+))?/{PATH_USER_REQUEST}/(.*)$"
 )
 # URL pattern for invocations
 HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9]+)(?:(-vpce-[^.]+))?\.execute-api\.(.*)"
@@ -375,12 +375,12 @@ def get_apigateway_path_for_resource(
     path_part = target_resource.get("pathPart", "")
     if path_suffix:
         if path_part:
-            path_suffix = "%s/%s" % (path_part, path_suffix)
+            path_suffix = f"{path_part}/{path_suffix}"
     else:
         path_suffix = path_part
     parent_id = target_resource.get("parentId")
     if not parent_id:
-        return "/%s" % path_suffix
+        return f"/{path_suffix}"
     return get_apigateway_path_for_resource(
         api_id,
         parent_id,
@@ -419,7 +419,7 @@ def get_resource_for_path(
     for api_path, details in path_map.items():
         api_path_regex = re.sub(r"{[^+]+\+}", r"[^\?#]+", api_path)
         api_path_regex = re.sub(r"{[^}]+}", r"[^/]+", api_path_regex)
-        if re.match(r"^%s$" % api_path_regex, path):
+        if re.match(rf"^{api_path_regex}$", path):
             matches.append((api_path, details))
 
     # if there are no matches, it's not worth to proceed, bail here!
@@ -508,8 +508,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
             "integrations": [
                 {
                     "type": "AWS",
-                    "uri": "arn:%s:apigateway:%s:sqs:path/%s/%s"
-                    % (partition, sqs_region, sqs_account, queue_name),
+                    "uri": f"arn:{partition}:apigateway:{sqs_region}:sqs:path/{sqs_account}/{queue_name}",
                     "requestTemplates": {"application/json": template},
                     "requestParameters": {
                         "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
@@ -660,11 +659,11 @@ def set_api_id_stage_invocation_path(
     if path_match:
         api_id = path_match.group(1)
         stage = path_match.group(2)
-        relative_path_w_query_params = "/%s" % path_match.group(3)
+        relative_path_w_query_params = f"/{path_match.group(3)}"
     elif host_match:
         api_id = extract_api_id_from_hostname_in_url(host_header)
         stage = path.strip("/").split("/")[0]
-        relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+        relative_path_w_query_params = "/{}".format(path.lstrip("/").partition("/")[2])
     elif test_invoke_match:
         stage = invocation_context.stage
         api_id = invocation_context.api_id

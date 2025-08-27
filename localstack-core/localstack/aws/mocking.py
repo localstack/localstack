@@ -224,7 +224,7 @@ custom_arns = {
 def generate_instance(shape: Shape, graph: ShapeGraph) -> Instance | None:
     if shape is None:
         return None
-    raise ValueError("could not generate shape for type %s" % shape.type_name)
+    raise ValueError(f"could not generate shape for type {shape.type_name}")
 
 
 @generate_instance.register
@@ -383,7 +383,7 @@ def _(shape: Shape, graph: ShapeGraph) -> int | float | bool | bytes | date:
     if shape.type_name == "timestamp":
         return datetime.now()
 
-    raise ValueError("unknown type %s" % shape.type_name)
+    raise ValueError(f"unknown type {shape.type_name}")
 
 
 def generate_response(operation: OperationModel):

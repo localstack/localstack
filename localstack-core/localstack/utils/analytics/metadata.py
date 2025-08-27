@@ -41,7 +41,7 @@ class ClientMetadata:
             k = "*" * len(k)
         d["api_key"] = k
 
-        return "ClientMetadata(%s)" % d
+        return f"ClientMetadata({d})"
 
 
 def get_version_string() -> str:

@@ -366,7 +366,7 @@ class SsmProvider(SsmApi, ABC):
         param_name = param_name.strip("/")
         param_name = param_name.replace("//", "/")
         if "/" in param_name:
-            param_name = "/%s" % param_name
+            param_name = f"/{param_name}"
         return param_name
 
     @staticmethod

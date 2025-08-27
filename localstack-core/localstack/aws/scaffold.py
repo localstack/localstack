@@ -221,7 +221,7 @@ class ShapeNode:
 
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = to_valid_python_name(self.shape.name)
-        output.write('%s = TypedDict("%s", {\n' % (name, name))
+        output.write(f'{name} = TypedDict("{name}", {{\n')
         for k, v in self.shape.members.items():
             member_name = to_valid_python_name(v.name)
             # check if the member name is the same as the type name (recursive types need to use forward references)

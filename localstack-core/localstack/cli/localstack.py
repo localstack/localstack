@@ -602,7 +602,7 @@ def cmd_stop() -> None:
 
     try:
         DOCKER_CLIENT.stop_container(container_name)
-        console.print("container stopped: %s" % container_name)
+        console.print(f"container stopped: {container_name}")
     except NoSuchContainer:
         raise CLIError(
             f'Expected a running LocalStack container named "{container_name}", but found none'

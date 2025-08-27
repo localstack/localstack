@@ -232,7 +232,7 @@ def s3_create_bucket(s3_empty_bucket, aws_client):
 
     def factory(**kwargs) -> str:
         if "Bucket" not in kwargs:
-            kwargs["Bucket"] = "test-bucket-%s" % short_uid()
+            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
 
         if (
             "CreateBucketConfiguration" not in kwargs
@@ -335,7 +335,7 @@ def sqs_create_queue(aws_client):
 
     def factory(**kwargs):
         if "QueueName" not in kwargs:
-            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+            kwargs["QueueName"] = f"test-queue-{short_uid()}"
 
         response = aws_client.sqs.create_queue(**kwargs)
         url = response["QueueUrl"]
@@ -503,7 +503,7 @@ def sns_create_topic(aws_client):
 
     def _create_topic(**kwargs):
         if "Name" not in kwargs:
-            kwargs["Name"] = "test-topic-%s" % short_uid()
+            kwargs["Name"] = f"test-topic-{short_uid()}"
         response = aws_client.sns.create_topic(**kwargs)
         topic_arns.append(response["TopicArn"])
         return response

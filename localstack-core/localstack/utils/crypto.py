@@ -43,8 +43,8 @@ def generate_ssl_cert(
         return all(os.path.exists(f) for f in files)
 
     def store_cert_key_files(base_filename):
-        key_file_name = "%s.key" % base_filename
-        cert_file_name = "%s.crt" % base_filename
+        key_file_name = f"{base_filename}.key"
+        cert_file_name = f"{base_filename}.crt"
         # TODO: Cleaner code to load the cert dynamically
         # extract key and cert from target_file and store into separate files
         content = load_file(target_file)
@@ -74,9 +74,9 @@ def generate_ssl_cert(
             return target_file, cert_file_name, key_file_name
     if random and target_file:
         if "." in target_file:
-            target_file = target_file.replace(".", ".%s." % short_uid(), 1)
+            target_file = target_file.replace(".", f".{short_uid()}.", 1)
         else:
-            target_file = "%s.%s" % (target_file, short_uid())
+            target_file = f"{target_file}.{short_uid()}"
 
     # create a key pair
     k = crypto.PKey()
@@ -123,10 +123,10 @@ def generate_ssl_cert(
     key_file.write(to_str(crypto.dump_privatekey(crypto.FILETYPE_PEM, k)))
     cert_file_content = cert_file.getvalue().strip()
     key_file_content = key_file.getvalue().strip()
-    file_content = "%s\n%s" % (key_file_content, cert_file_content)
+    file_content = f"{key_file_content}\n{cert_file_content}"
     if target_file:
-        key_file_name = "%s.key" % target_file
-        cert_file_name = "%s.crt" % target_file
+        key_file_name = f"{target_file}.key"
+        cert_file_name = f"{target_file}.crt"
         # check existence to avoid permission denied issues:
         # https://github.com/localstack/localstack/issues/1607
         if not all_exist(target_file, key_file_name, cert_file_name):
@@ -145,9 +145,9 @@ def generate_ssl_cert(
                         e,
                     )
                     # Fix for https://github.com/localstack/localstack/issues/1743
-                    target_file = "%s.pem" % new_tmp_file()
-                    key_file_name = "%s.key" % target_file
-                    cert_file_name = "%s.crt" % target_file
+                    target_file = f"{new_tmp_file()}.pem"
+                    key_file_name = f"{target_file}.key"
+                    cert_file_name = f"{target_file}.crt"
             TMP_FILES.append(target_file)
             TMP_FILES.append(key_file_name)
             TMP_FILES.append(cert_file_name)

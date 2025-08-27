@@ -163,7 +163,7 @@ def keys_to(
     skip_children_of = ensure_list(skip_children_of or [])
 
     def fix_keys(o, path="", **kwargs):
-        if any(re.match(r"(^|.*\.)%s($|[.\[].*)" % k, path) for k in skip_children_of):
+        if any(re.match(rf"(^|.*\.){k}($|[.\[].*)", path) for k in skip_children_of):
             return o
         if isinstance(o, dict):
             for k, v in dict(o).items():
