@@ -258,7 +258,7 @@ class HotReloadingCode(ArchiveCode):
     code_size: int = 0
 
     def generate_presigned_url(self, endpoint_url: str | None = None) -> str:
-        return f"Code location: {self.host_path}"
+        return f"file://{self.host_path}"
 
     def get_unzipped_code_location(self) -> Path:
         path = os.path.expandvars(self.host_path)
