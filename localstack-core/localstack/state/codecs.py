@@ -2,16 +2,14 @@
 
 from localstack import config
 from localstack.state import Decoder, Encoder
-from localstack.state.pickle import JsonDecoder, JsonEncoder, PickleDecoder, PickleEncoder
+from localstack.state.pickle import PickleDecoder, PickleEncoder
 
 ENCODERS = {
-    "jsonpickle": JsonEncoder,
     "dill": PickleEncoder,
 }
 """Encoders that map to the name of ``STATE_SERIALIZATION_BACKEND``."""
 
 DECODERS = {
-    "jsonpickle": JsonDecoder,
     "dill": PickleDecoder,
 }
 """Decoders that map to the name of ``STATE_SERIALIZATION_BACKEND``."""

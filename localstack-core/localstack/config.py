@@ -1257,7 +1257,6 @@ IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_not_false("LOCALSTACK_RESPONSE_HEADER_ENABLED")
 
 # Serialization backend for the LocalStack internal state (`dill` is used by default`).
-# `jsonpickle` enables the new experimental backend.
 STATE_SERIALIZATION_BACKEND = os.environ.get("STATE_SERIALIZATION_BACKEND", "").strip() or "dill"
 
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.

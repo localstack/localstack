@@ -5,7 +5,7 @@ import pytest
 from localstack.state import pickle
 
 
-def test_pickle_priority_queue(patch_default_encoder):
+def test_pickle_priority_queue():
     obj = PriorityQueue()
     obj.put(2)
     obj.put(1)

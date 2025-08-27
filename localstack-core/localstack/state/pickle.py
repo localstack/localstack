@@ -30,10 +30,9 @@ https://dill.readthedocs.io/en/latest/index.html?highlight=register#dill.Pickler
 
 import inspect
 from collections.abc import Callable
-from typing import IO, Any, BinaryIO, Generic, TypeVar
+from typing import Any, BinaryIO, Generic, TypeVar
 
 import dill
-import jsonpickle
 from dill._dill import MetaCatchingDict
 
 from .core import Decoder, Encoder
@@ -255,34 +254,6 @@ class PickleDecoder(Decoder):
 
     def decode(self, file: BinaryIO) -> Any:
         return self.unpickler_class(file).load()
-
-
-class JsonEncoder(Encoder):
-    """
-    An Encoder that uses ``jsonpickle`` under the hood.
-    """
-
-    def __init__(self, pickler_class: type[jsonpickle.Pickler] = None):
-        self.pickler_class = pickler_class or jsonpickle.Pickler()
-
-    def encode(self, obj: Any, file: IO[bytes]):
-        json_str = jsonpickle.encode(obj, context=self.pickler_class)
-        file.write(json_str.encode("utf-8"))
-
-
-class JsonDecoder(Decoder):
-    """
-    A Decoder that uses ``jsonpickle`` under the hood.
-    """
-
-    unpickler_class: type[jsonpickle.Unpickler]
-
-    def __init__(self, unpickler_class: type[jsonpickle.Unpickler] = None):
-        self.unpickler_class = unpickler_class or jsonpickle.Unpickler()
-
-    def decode(self, file: IO[bytes]) -> Any:
-        json_str = file.read().decode("utf-8")
-        return jsonpickle.decode(json_str, context=self.unpickler_class)
 
 
 def get_default_encoder() -> Encoder:

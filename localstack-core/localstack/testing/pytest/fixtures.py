@@ -2747,9 +2747,3 @@ def clean_up(
             call_safe(_delete_log_group)
 
     yield _clean_up
-
-
-@pytest.fixture(params=["dill", "jsonpickle"])
-def patch_default_encoder(request, monkeypatch):
-    backend = request.param
-    monkeypatch.setattr(config, "STATE_SERIALIZATION_BACKEND", backend)
