@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_cfn_deploy_apigateway_integration": {
     "recorded-date": "15-07-2025, 19:28:45",
     "recorded-content": {
       "rest_api": {
@@ -66,7 +66,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_api_gateway_with_policy_as_dict": {
     "recorded-date": "15-07-2025, 19:30:54",
     "recorded-content": {
       "rest-api": {
@@ -108,7 +108,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_cfn_deploy_apigateway_from_s3_swagger": {
     "recorded-date": "15-07-2025, 20:30:26",
     "recorded-content": {
       "rest-api": {
@@ -211,7 +211,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_deploy_apigateway_models": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_cfn_deploy_apigateway_models": {
     "recorded-date": "21-06-2024, 00:09:05",
     "recorded-content": {
       "get-resources": {
@@ -343,7 +343,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_with_apigateway_resources": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_cfn_with_apigateway_resources": {
     "recorded-date": "20-06-2024, 23:54:26",
     "recorded-content": {
       "get-method-post": {
@@ -478,7 +478,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_rest_api_serverless_ref_resolving": {
     "recorded-date": "06-07-2023, 21:01:08",
     "recorded-content": {
       "get-resources": {
@@ -579,7 +579,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_usage_plan": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_update_usage_plan": {
     "recorded-date": "13-09-2024, 09:57:21",
     "recorded-content": {
       "usage-plan": {
@@ -636,7 +636,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_update_apigateway_stage": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_update_apigateway_stage": {
     "recorded-date": "07-11-2024, 05:35:20",
     "recorded-content": {
       "created-stage": {
@@ -679,7 +679,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_swagger_import": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_cfn_apigateway_swagger_import": {
     "recorded-date": "05-05-2025, 14:23:13",
     "recorded-content": {
       "imported-api": {
@@ -707,7 +707,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_cfn_apigateway_rest_api": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_cfn_apigateway_rest_api": {
     "recorded-date": "05-05-2025, 14:50:14",
     "recorded-content": {
       "rest-api": {
@@ -735,7 +735,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_apigateway.py::test_apigateway_deployment_canary_settings": {
+  "tests/aws/services/apigateway/resource_providers/test_apigateway.py::test_apigateway_deployment_canary_settings": {
     "recorded-date": "23-07-2025, 23:07:05",
     "recorded-content": {
       "get-stages": {
