@@ -18,7 +18,7 @@
             "arn:<partition>:sns:<region>:111111111111:<alarm-action-name:1>"
           ],
           "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighResourceUsage",
-          "AlarmConfigurationUpdatedTimestamp": "timestamp",
+          "AlarmConfigurationUpdatedTimestamp": "<timestamp>",
           "AlarmDescription": "Indicates that the system resource usage is high while no known deployment is in progress",
           "AlarmName": "HighResourceUsage",
           "AlarmRule": "(ALARM(HighCPUUsage) OR ALARM(HighMemoryUsage))",
@@ -43,9 +43,9 @@
               }
             ]
           },
-          "StateUpdatedTimestamp": "timestamp",
+          "StateUpdatedTimestamp": "<timestamp>",
           "StateValue": "OK",
-          "StateTransitionedTimestamp": "timestamp"
+          "StateTransitionedTimestamp": "<timestamp>"
         }
       ],
       "metric_alarm": [
@@ -53,14 +53,14 @@
           "AlarmName": "HighMemoryUsage",
           "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
           "AlarmDescription": "Memory usage is high",
-          "AlarmConfigurationUpdatedTimestamp": "timestamp",
+          "AlarmConfigurationUpdatedTimestamp": "<timestamp>",
           "ActionsEnabled": true,
           "OKActions": [],
           "AlarmActions": [],
           "InsufficientDataActions": [],
           "StateValue": "INSUFFICIENT_DATA",
           "StateReason": "Unchecked: Initial alarm creation",
-          "StateUpdatedTimestamp": "timestamp",
+          "StateUpdatedTimestamp": "<timestamp>",
           "MetricName": "MemoryUsage",
           "Namespace": "CustomNamespace",
           "Statistic": "Average",
@@ -70,7 +70,7 @@
           "Threshold": 65.0,
           "ComparisonOperator": "GreaterThanThreshold",
           "TreatMissingData": "breaching",
-          "StateTransitionedTimestamp": "timestamp"
+          "StateTransitionedTimestamp": "<timestamp>"
         }
       ]
     }
@@ -87,14 +87,14 @@
           "AlarmName": "<alarm-name:1>",
           "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
           "AlarmDescription": "uses extended statistic",
-          "AlarmConfigurationUpdatedTimestamp": "timestamp",
+          "AlarmConfigurationUpdatedTimestamp": "<timestamp>",
           "ActionsEnabled": true,
           "OKActions": [],
           "AlarmActions": [],
           "InsufficientDataActions": [],
           "StateValue": "INSUFFICIENT_DATA",
           "StateReason": "Unchecked: Initial alarm creation",
-          "StateUpdatedTimestamp": "timestamp",
+          "StateUpdatedTimestamp": "<timestamp>",
           "MetricName": "Duration",
           "Namespace": "<namespace:1>",
           "ExtendedStatistic": "p99",
@@ -111,7 +111,7 @@
           "Threshold": 10.0,
           "ComparisonOperator": "GreaterThanOrEqualToThreshold",
           "TreatMissingData": "ignore",
-          "StateTransitionedTimestamp": "timestamp"
+          "StateTransitionedTimestamp": "<timestamp>"
         }
       ]
     }

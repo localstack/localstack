@@ -21,9 +21,7 @@ def test_deploy_instance_with_key_pair(deploy_cfn_template, aws_client, snapshot
     snapshot.add_transformer(snapshot.transform.key_value("KeyFingerprint"))
 
     stack = deploy_cfn_template(
-        template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/ec2_keypair.yml"
-        )
+        template_path=os.path.join(os.path.dirname(__file__), "../../../templates/ec2_keypair.yml")
     )
 
     key_name = stack.outputs["KeyPairName"]
@@ -42,7 +40,7 @@ def test_deploy_instance_with_key_pair(deploy_cfn_template, aws_client, snapshot
 def test_deploy_prefix_list(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/ec2_prefixlist.yml"
+            os.path.dirname(__file__), "../../../templates/ec2_prefixlist.yml"
         )
     )
 
@@ -61,7 +59,7 @@ def test_deploy_security_group_with_tags(deploy_cfn_template, aws_client, snapsh
     """Create security group in default VPC with tags."""
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/ec2_security_group_with_tags.yml"
+            os.path.dirname(__file__), "../../../templates/ec2_security_group_with_tags.yml"
         )
     )
 
@@ -89,7 +87,7 @@ def test_deploy_security_group_with_tags(deploy_cfn_template, aws_client, snapsh
 def test_deploy_vpc_endpoint(deploy_cfn_template, aws_client, snapshot):
     stack = deploy_cfn_template(
         template_path=os.path.join(
-            os.path.dirname(__file__), "../../../../templates/ec2_vpc_endpoint.yml"
+            os.path.dirname(__file__), "../../../templates/ec2_vpc_endpoint.yml"
         )
     )
 

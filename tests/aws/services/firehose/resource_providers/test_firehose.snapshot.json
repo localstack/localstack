@@ -7,7 +7,7 @@
       },
       "delivery_stream": {
         "DeliveryStreamDescription": {
-          "CreateTimestamp": "timestamp",
+          "CreateTimestamp": "<datetime>",
           "DeliveryStreamARN": "arn:<partition>:firehose:<region>:111111111111:deliverystream/<resource:1>",
           "DeliveryStreamName": "<resource:1>",
           "DeliveryStreamStatus": "ACTIVE",
@@ -82,7 +82,7 @@
           "HasMoreDestinations": false,
           "Source": {
             "KinesisStreamSourceDescription": {
-              "DeliveryStartTimestamp": "timestamp",
+              "DeliveryStartTimestamp": "<datetime>",
               "KinesisStreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:4>",
               "RoleARN": "arn:<partition>:iam::111111111111:role/<resource:3>"
             }

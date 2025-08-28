@@ -18,7 +18,7 @@
             "ResourceType": "AWS::Kinesis::Stream",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<timestamp>"
           }
         ],
         "ResponseMetadata": {
@@ -49,7 +49,7 @@
             }
           ],
           "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<resource:1>",
-          "StreamCreationTimestamp": "timestamp",
+          "StreamCreationTimestamp": "<timestamp>",
           "StreamModeDetails": {
             "StreamMode": "PROVISIONED"
           },
@@ -244,7 +244,7 @@
             }
           ],
           "StreamARN": "arn:<partition>:kinesis:<region>:111111111111:stream/<stream-name:1>",
-          "StreamCreationTimestamp": "timestamp",
+          "StreamCreationTimestamp": "<timestamp>",
           "StreamModeDetails": {
             "StreamMode": "PROVISIONED"
           },

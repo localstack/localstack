@@ -1,6 +1,6 @@
 {
   "tests/aws/services/ec2/resource_providers/test_ec2.py::test_internet_gateway_ref_and_attr": {
-    "recorded-date": "13-02-2023, 17:13:41",
+    "recorded-date": "28-08-2025, 21:21:49",
     "recorded-content": {
       "outputs": {
         "IdAttachment": "<internet-gateway-ref:1>",
@@ -10,7 +10,7 @@
         "DriftInformation": {
           "StackResourceDriftStatus": "NOT_CHECKED"
         },
-        "LastUpdatedTimestamp": "timestamp",
+        "LastUpdatedTimestamp": "<datetime>",
         "LogicalResourceId": "Gateway",
         "Metadata": {},
         "PhysicalResourceId": "<internet-gateway-ref:1>",
@@ -98,7 +98,7 @@
           "State": "associated",
           "TransitGatewayRouteTableId": "<transit-gateway-route-table-id:1>"
         },
-        "CreationTime": "datetime",
+        "CreationTime": "<datetime>",
         "ResourceId": "<resource-id:1>",
         "ResourceOwnerId": "111111111111",
         "ResourceType": "vpc",
@@ -114,7 +114,7 @@
         "TransitGatewayOwnerId": "111111111111"
       },
       "gateway": {
-        "CreationTime": "datetime",
+        "CreationTime": "<datetime>",
         "Description": "TGW Route Integration Test",
         "Options": {
           "AmazonSideAsn": 65000,

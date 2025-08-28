@@ -5,7 +5,7 @@
       "key_pair": {
         "KeyPairs": [
           {
-            "CreateTime": "datetime",
+            "CreateTime": "<datetime>",
             "KeyFingerprint": "<key-fingerprint:1>",
             "KeyName": "<key-name:1>",
             "KeyPairId": "<key-pair-id:1>",
@@ -45,7 +45,7 @@
             "ResourceType": "AWS::EC2::PrefixList",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<datetime>"
           }
         ],
         "ResponseMetadata": {
@@ -94,7 +94,7 @@
             "ResourceType": "AWS::EC2::VPCEndpoint",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<datetime>"
           },
           {
             "DriftInformation": {
@@ -106,7 +106,7 @@
             "ResourceType": "AWS::EC2::SecurityGroup",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<datetime>"
           },
           {
             "DriftInformation": {
@@ -118,7 +118,7 @@
             "ResourceType": "AWS::EC2::VPC",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<datetime>"
           },
           {
             "DriftInformation": {
@@ -130,7 +130,7 @@
             "ResourceType": "AWS::EC2::Subnet",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<datetime>"
           },
           {
             "DriftInformation": {
@@ -142,7 +142,7 @@
             "ResourceType": "AWS::EC2::Subnet",
             "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
             "StackName": "<stack-name:1>",
-            "Timestamp": "timestamp"
+            "Timestamp": "<datetime>"
           }
         ],
         "ResponseMetadata": {
@@ -153,7 +153,7 @@
       "endpoint": {
         "VpcEndpoints": [
           {
-            "CreationTimestamp": "timestamp",
+            "CreationTimestamp": "<datetime>",
             "DnsEntries": [
               {
                 "DnsName": "<vpc-endpoint-id:1>-g5hws96k.logs.<region>.vpce.amazonaws.com",

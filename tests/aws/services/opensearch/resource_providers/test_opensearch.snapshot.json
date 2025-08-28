@@ -152,8 +152,8 @@
             "ChangeId": "<uuid:1>",
             "ConfigChangeStatus": "Completed",
             "InitiatedBy": "CUSTOMER",
-            "LastUpdatedTime": "datetime",
-            "StartTime": "datetime"
+            "LastUpdatedTime": "<datetime>",
+            "StartTime": "<datetime>"
           },
           "ClusterConfig": {
             "ColdStorageOptions": {

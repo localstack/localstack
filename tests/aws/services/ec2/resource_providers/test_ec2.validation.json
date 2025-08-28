@@ -12,7 +12,13 @@
     "last_validated_date": "2024-07-19T15:53:16+00:00"
   },
   "tests/aws/services/ec2/resource_providers/test_ec2.py::test_internet_gateway_ref_and_attr": {
-    "last_validated_date": "2023-02-13T16:13:41+00:00"
+    "last_validated_date": "2025-08-28T21:21:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.91,
+      "call": 24.79,
+      "teardown": 6.44,
+      "total": 32.14
+    }
   },
   "tests/aws/services/ec2/resource_providers/test_ec2.py::test_keypair_create_import": {
     "last_validated_date": "2024-08-12T21:51:36+00:00"

@@ -6,7 +6,7 @@
         "DriftInformation": {
           "StackResourceDriftStatus": "NOT_CHECKED"
         },
-        "LastUpdatedTimestamp": "timestamp",
+        "LastUpdatedTimestamp": "<datetime>",
         "LogicalResourceId": "MySchedule",
         "Metadata": {},
         "PhysicalResourceId": "<physical_resource_id:1>",
@@ -19,7 +19,7 @@
         "DriftInformation": {
           "StackResourceDriftStatus": "NOT_CHECKED"
         },
-        "LastUpdatedTimestamp": "timestamp",
+        "LastUpdatedTimestamp": "<datetime>",
         "LogicalResourceId": "MyScheduleGroup",
         "Metadata": {},
         "PhysicalResourceId": "<physical_resource_id:2>",
@@ -31,13 +31,13 @@
       "ScheduleDesc": {
         "ActionAfterCompletion": "NONE",
         "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/<physical_resource_id:2>/<physical_resource_id:1>",
-        "CreationDate": "datetime",
+        "CreationDate": "<datetime>",
         "FlexibleTimeWindow": {
           "MaximumWindowInMinutes": 60,
           "Mode": "FLEXIBLE"
         },
         "GroupName": "<physical_resource_id:2>",
-        "LastModificationDate": "datetime",
+        "LastModificationDate": "<datetime>",
         "Name": "<physical_resource_id:1>",
         "ScheduleExpression": "cron(0 0 * * ? *)",
         "ScheduleExpressionTimezone": "UTC",
@@ -57,8 +57,8 @@
       },
       "GroupDesc": {
         "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<physical_resource_id:2>",
-        "CreationDate": "datetime",
-        "LastModificationDate": "datetime",
+        "CreationDate": "<datetime>",
+        "LastModificationDate": "<datetime>",
         "Name": "<physical_resource_id:2>",
         "State": "ACTIVE",
         "ResponseMetadata": {

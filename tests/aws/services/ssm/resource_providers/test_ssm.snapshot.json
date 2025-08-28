@@ -6,7 +6,7 @@
         "DriftInformation": {
           "StackResourceDriftStatus": "NOT_CHECKED"
         },
-        "LastUpdatedTimestamp": "timestamp",
+        "LastUpdatedTimestamp": "<datetime>",
         "LogicalResourceId": "myPatchBaseline",
         "Metadata": {},
         "PhysicalResourceId": "<physical_resource_id:1>",
@@ -27,7 +27,7 @@
           "LogicalResourceId": "PatchBaselineAML",
           "PhysicalResourceId": "<physical_resource_id:1>",
           "ResourceType": "AWS::SSM::PatchBaseline",
-          "Timestamp": "timestamp",
+          "Timestamp": "<datetime>",
           "ResourceStatus": "CREATE_COMPLETE",
           "DriftInformation": {
             "StackResourceDriftStatus": "NOT_CHECKED"
@@ -39,7 +39,7 @@
           "LogicalResourceId": "PatchBaselineAML2",
           "PhysicalResourceId": "<physical_resource_id:2>",
           "ResourceType": "AWS::SSM::PatchBaseline",
-          "Timestamp": "timestamp",
+          "Timestamp": "<datetime>",
           "ResourceStatus": "CREATE_COMPLETE",
           "DriftInformation": {
             "StackResourceDriftStatus": "NOT_CHECKED"
@@ -51,7 +51,7 @@
           "LogicalResourceId": "PatchServerMaintenanceWindow",
           "PhysicalResourceId": "<physical_resource_id:3>",
           "ResourceType": "AWS::SSM::MaintenanceWindow",
-          "Timestamp": "timestamp",
+          "Timestamp": "<datetime>",
           "ResourceStatus": "CREATE_COMPLETE",
           "DriftInformation": {
             "StackResourceDriftStatus": "NOT_CHECKED"
@@ -63,7 +63,7 @@
           "LogicalResourceId": "PatchServerMaintenanceWindowTarget",
           "PhysicalResourceId": "<physical_resource_id:4>",
           "ResourceType": "AWS::SSM::MaintenanceWindowTarget",
-          "Timestamp": "timestamp",
+          "Timestamp": "<datetime>",
           "ResourceStatus": "CREATE_COMPLETE",
           "DriftInformation": {
             "StackResourceDriftStatus": "NOT_CHECKED"
@@ -75,7 +75,7 @@
           "LogicalResourceId": "PatchServerTask",
           "PhysicalResourceId": "<physical_resource_id:5>",
           "ResourceType": "AWS::SSM::MaintenanceWindowTask",
-          "Timestamp": "timestamp",
+          "Timestamp": "<datetime>",
           "ResourceStatus": "CREATE_COMPLETE",
           "DriftInformation": {
             "StackResourceDriftStatus": "NOT_CHECKED"
@@ -91,7 +91,7 @@
         "Parameter": {
           "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<name:1>",
           "DataType": "text",
-          "LastModifiedDate": "datetime",
+          "LastModifiedDate": "<datetime>",
           "Name": "<name:1>",
           "Type": "String",
           "Value": "<value:1>",
