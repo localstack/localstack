@@ -318,6 +318,14 @@ def sns():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
+@aws_provider(api="sns", name="v2")
+def sns_v2():
+    from localstack.services.sns.v2.provider import SnsProvider
+
+    provider = SnsProvider()
+    return Service.for_provider(provider)
+
+
 @aws_provider()
 def sqs():
     from localstack.services.sqs.provider import SqsProvider

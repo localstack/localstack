@@ -1184,6 +1184,8 @@ elif _override_dynamodb_v2 == "v2":
     os.environ["PROVIDER_OVERRIDE_DYNAMODBSTREAMS"] = "v2"
     DDB_STREAMS_PROVIDER_V2 = True
 
+SNS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_SNS", "") == "v2"
+
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
