@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resource_providers/ec2/aws_ec2_networkacl/test_basic.py::TestBasicCRD::test_black_box": {
+  "tests/aws/services/ec2/resource_providers/aws_ec2_networkacl/test_basic.py::TestBasicCRD::test_black_box": {
     "recorded-date": "31-10-2023, 13:22:34",
     "recorded-content": {
       "stack-outputs": {
