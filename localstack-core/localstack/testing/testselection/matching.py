@@ -1,4 +1,5 @@
 import fnmatch
+import glob
 import pathlib
 import re
 from collections import defaultdict
@@ -162,6 +163,34 @@ def generic_service_test_matching_rule(
     return set()
 
 
+def cloudformation_resource_provider_rule(
+    changed_file_path: str,
+    search_patterns: Iterable[str] = DEFAULT_SEARCH_PATTERNS,
+    test_dirs: Iterable[str] = ("tests/aws/services",),
+) -> Iterable[str]:
+    root_dir = (pathlib.Path(__file__).parent / ".." / ".." / ".." / "..").resolve()
+    match = None
+    for pattern in search_patterns:
+        match = re.findall(pattern, changed_file_path)
+        if match:
+            break
+
+    if not match:
+        return []
+
+    changed_service = match[0]
+    if changed_service != "cloudformation":
+        return []
+
+    out = set()
+    for test_dir in test_dirs:
+        resources_dirs = list(glob.iglob(f"{root_dir / test_dir}/*/resource_providers"))
+        for resource_dir in resources_dirs:
+            out.add(str(pathlib.Path(resource_dir).relative_to(root_dir)))
+
+    return out
+
+
 MatchingRule = Callable[[str], Iterable[str]]
 
 
@@ -206,4 +235,6 @@ MATCHING_RULES: list[MatchingRule] = [
     Matchers.glob(".git-blame-ignore-revs").ignore(),
     # lambda
     Matchers.glob("tests/aws/services/lambda_/functions/**").service_tests(services=["lambda"]),
+    # CloudFormation
+    cloudformation_resource_provider_rule,
 ]
