@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resources/test_elasticsearch.py::test_cfn_handle_elasticsearch_domain": {
+  "tests/aws/services/opensearch/resource_providers/test_elasticsearch.py::test_cfn_handle_elasticsearch_domain": {
     "recorded-date": "02-07-2024, 17:30:21",
     "recorded-content": {
       "domain": {
