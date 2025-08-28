@@ -7,7 +7,6 @@ from botocore import xform_name
 from botocore.model import ServiceModel
 
 from localstack.aws.api import (
-    CommonServiceException,
     RequestContext,
     ServiceException,
 )
@@ -16,8 +15,6 @@ from localstack.aws.protocol.parser import create_parser
 from localstack.aws.protocol.serializer import ResponseSerializer, create_serializer
 from localstack.aws.spec import load_service
 from localstack.http import Response
-from localstack.utils import analytics
-from localstack.utils.coverage_docs import get_coverage_link_for_service
 
 LOG = logging.getLogger(__name__)
 
@@ -153,8 +150,6 @@ class Skeleton:
             return self.dispatch_request(serializer, context, instance)
         except ServiceException as e:
             return self.on_service_exception(serializer, context, e)
-        except NotImplementedError as e:
-            return self.on_not_implemented_error(serializer, context, e)
 
     def dispatch_request(
         self, serializer: ResponseSerializer, context: RequestContext, instance: ServiceRequest
@@ -192,36 +187,4 @@ class Skeleton:
 
         return serializer.serialize_error_to_response(
             exception, context.operation, context.request.headers, context.request_id
-        )
-
-    def on_not_implemented_error(
-        self,
-        serializer: ResponseSerializer,
-        context: RequestContext,
-        exception: NotImplementedError,
-    ) -> Response:
-        """
-        Called by invoke if either the dispatch table did not contain an entry for the operation, or the service
-        provider raised a NotImplementedError
-        :param serializer: the serialzier which should be used to serialize the NotImplementedError
-        :param context: the request context
-        :param exception: the NotImplementedError that was raised
-        :return: a Response object
-        """
-        operation = context.operation
-
-        action_name = operation.name
-        service_name = operation.service_model.service_name
-        exception_message: str | None = exception.args[0] if exception.args else None
-        message = exception_message or get_coverage_link_for_service(service_name, action_name)
-        LOG.info(message)
-        error = CommonServiceException("InternalFailure", message, status_code=501)
-        # record event
-        analytics.log.event(
-            "services_notimplemented", payload={"s": service_name, "a": action_name}
-        )
-        context.service_exception = error
-
-        return serializer.serialize_error_to_response(
-            error, operation, context.request.headers, context.request_id
         )
