@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resource_providers/scheduler/test_scheduler.py::test_schedule_and_group": {
+  "tests/aws/services/scheduler/resource_providers/test_scheduler.py::test_schedule_and_group": {
     "recorded-date": "21-09-2023, 10:21:19",
     "recorded-content": {
       "Schedule": {
