@@ -70,7 +70,7 @@
           },
           "Processing": false,
           "ServiceSoftwareOptions": {
-            "AutomatedUpdateDate": "datetime",
+            "AutomatedUpdateDate": "<datetime>",
             "Cancellable": false,
             "CurrentVersion": "OpenSearch_2_5_R20230308-P4",
             "Description": "There is no software update available for this domain.",
@@ -212,7 +212,7 @@
           },
           "Processing": false,
           "ServiceSoftwareOptions": {
-            "AutomatedUpdateDate": "datetime",
+            "AutomatedUpdateDate": "<datetime>",
             "Cancellable": false,
             "CurrentVersion": "OpenSearch_1_0_R20250625",
             "Description": "There is no software update available for this domain.",

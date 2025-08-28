@@ -278,7 +278,7 @@
           },
           "Processing": false,
           "ServiceSoftwareOptions": {
-            "AutomatedUpdateDate": "datetime",
+            "AutomatedUpdateDate": "<datetime>",
             "Cancellable": false,
             "CurrentVersion": "<current-version:1>",
             "Description": "<description:1>",
