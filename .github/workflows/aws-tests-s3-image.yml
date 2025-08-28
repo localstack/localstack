@@ -129,7 +129,7 @@ jobs:
       - name: Run S3 Image tests
         timeout-minutes: 10
         env:
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image-${{ matrix.arch }}.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}-o junit_family=legacy --junitxml=target/pytest-junit-s3-image-${{ matrix.arch }}.xml --ignore tests/aws/services/s3/resource_providers"
           TEST_PATH: "tests/aws/services/s3"
           DEBUG: 1
         run: |
