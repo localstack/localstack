@@ -43,6 +43,7 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
+from tests.aws.services.sns.conftest import skip_if_sns_v2
 
 LOG = logging.getLogger(__name__)
 
@@ -97,6 +98,7 @@ class TestSNSTopicCrud:
             "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
+    @skip_if_sns_v2
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
         create_topic = sns_create_topic(
             Name="topictest.fifo",
@@ -125,6 +127,7 @@ class TestSNSTopicCrud:
         snapshot.match("get-attrs-malformed-topic", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_tags(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         with pytest.raises(ClientError) as exc:
@@ -169,6 +172,7 @@ class TestSNSTopicCrud:
             # SNS:Receive is added by moto but not returned in AWS
         ]
     )
+    @skip_if_sns_v2
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
@@ -193,6 +197,7 @@ class TestSNSTopicCrud:
         snapshot.match("topic-not-exists", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_delete_topic_idempotency(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -206,6 +211,7 @@ class TestSNSTopicCrud:
         snapshot.match("delete-topic-again", delete_topic)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_create_duplicate_topic_with_more_tags(self, sns_create_topic, snapshot, aws_client):
         topic_name = "test-duplicated-topic-more-tags"
         sns_create_topic(Name=topic_name)
@@ -216,6 +222,7 @@ class TestSNSTopicCrud:
         snapshot.match("exception-duplicate", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_create_duplicate_topic_check_idempotency(self, sns_create_topic, snapshot):
         topic_name = f"test-{short_uid()}"
         tags = [{"Key": "a", "Value": "1"}, {"Key": "b", "Value": "2"}]
@@ -235,6 +242,7 @@ class TestSNSTopicCrud:
             snapshot.match(f"response-same-arn-{index}", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_create_topic_after_delete_with_new_tags(self, sns_create_topic, snapshot, aws_client):
         topic_name = f"test-{short_uid()}"
         topic = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "pqr"}])
@@ -246,6 +254,7 @@ class TestSNSTopicCrud:
 
     @markers.aws.validated
     @pytest.mark.skip(reason="Not properly implemented in Moto, only mocked")
+    @skip_if_sns_v2
     def test_topic_delivery_policy_crud(self, sns_create_topic, snapshot, aws_client):
         # https://docs.aws.amazon.com/sns/latest/dg/sns-message-delivery-retries.html
         create_topic = sns_create_topic(
@@ -327,6 +336,7 @@ class TestSNSPublishCrud:
     """
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_by_path_parameters(
         self,
         sns_create_topic,
@@ -385,6 +395,7 @@ class TestSNSPublishCrud:
         assert msg_body["Message"] == message
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_wrong_arn_format(self, snapshot, aws_client):
         message = "Good news everyone!"
         with pytest.raises(ClientError) as e:
@@ -403,6 +414,7 @@ class TestSNSPublishCrud:
         snapshot.match("empty-topic", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_message_by_target_arn(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -437,6 +449,7 @@ class TestSNSPublishCrud:
         snapshot.match("receive-target-arn", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_message_before_subscribe_topic(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -465,6 +478,7 @@ class TestSNSPublishCrud:
         snapshot.match("receive-messages", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_unknown_topic_publish(self, sns_create_topic, snapshot, aws_client):
         # create topic to get the basic arn structure
         # otherwise you get InvalidClientTokenId exception because of account id
@@ -484,6 +498,7 @@ class TestSNSPublishCrud:
         snapshot.match("error", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_topic_publish_another_region(
         self, sns_create_topic, snapshot, aws_client, aws_client_factory, secondary_region_name
     ):
@@ -523,6 +538,7 @@ class TestSNSPublishCrud:
         snapshot.match("error-batch", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_non_existent_target(self, sns_create_topic, snapshot, aws_client, region_name):
         topic_arn = sns_create_topic()["TopicArn"]
         account_id = parse_arn(topic_arn)["account"]
@@ -534,6 +550,7 @@ class TestSNSPublishCrud:
         snapshot.match("non-existent-endpoint", ex.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_with_empty_subject(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -554,6 +571,7 @@ class TestSNSPublishCrud:
         snapshot.match("response-with-empty-subject", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_empty_sns_message(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -572,6 +590,7 @@ class TestSNSPublishCrud:
         snapshot.match("queue-attrs", queue_attrs)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_too_long_message(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # simulate payload over 256kb
@@ -603,6 +622,7 @@ class TestSNSPublishCrud:
         assert publish["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_batch_too_long_message(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # simulate payload over 256kb
@@ -667,6 +687,7 @@ class TestSNSPublishCrud:
         assert publish_batch["ResponseMetadata"]["HTTPStatusCode"] == 200
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_message_structure_json_exc(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         # TODO: add batch
@@ -714,6 +735,7 @@ class TestSNSPublishCrud:
 
 class TestSNSSubscriptionCrud:
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_with_invalid_protocol(self, sns_create_topic, sns_subscription, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -725,6 +747,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("exception", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_unsubscribe_from_non_existing_subscription(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -737,6 +760,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("empty-unsubscribe", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_create_subscriptions_with_attributes(
         self,
         sns_create_topic,
@@ -789,6 +813,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("get-attrs-nonexistent-sub", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_not_found_error_on_set_subscription_attributes(
         self,
         sns_create_topic,
@@ -843,6 +868,7 @@ class TestSNSSubscriptionCrud:
             "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS, assert instead
         ]
     )
+    @skip_if_sns_v2
     def test_validate_set_sub_attributes(
         self,
         sns_create_topic,
@@ -916,6 +942,7 @@ class TestSNSSubscriptionCrud:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$.invalid-token.Error.Message"]  # validate the token shape
     )
+    @skip_if_sns_v2
     def test_sns_confirm_subscription_wrong_token(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -946,6 +973,7 @@ class TestSNSSubscriptionCrud:
         paths=["$.list-subscriptions.Subscriptions"],
         # there could be cleanup issues and don't want to flake, manually assert
     )
+    @skip_if_sns_v2
     def test_list_subscriptions(
         self,
         sns_create_topic,
@@ -992,6 +1020,7 @@ class TestSNSSubscriptionCrud:
         assert all((sub["TopicArn"], sub["Endpoint"]) in sorting_list for sub in all_subs)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_list_subscriptions_by_topic_pagination(
         self, sns_create_topic, sns_subscription, snapshot, aws_client
     ):
@@ -1033,6 +1062,7 @@ class TestSNSSubscriptionCrud:
         assert len(response["Subscriptions"]) <= 100
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_idempotency(
         self, aws_client, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, snapshot
     ):
@@ -1104,6 +1134,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("subscribe-diff-attributes", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_unsubscribe_idempotency(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1120,6 +1151,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("unsubscribe-2", unsubscribe_2)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
         with pytest.raises(ClientError) as e:
             aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
@@ -1137,6 +1169,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_with_invalid_topic(self, sns_create_topic, sns_subscription, snapshot):
         with pytest.raises(ClientError) as e:
             sns_subscription(
@@ -1166,6 +1199,7 @@ class TestSNSSubscriptionCrud:
 
 class TestSNSSubscriptionLambda:
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_python_lambda_subscribe_sns_topic(
         self,
         sns_create_topic,
@@ -1227,6 +1261,7 @@ class TestSNSSubscriptionLambda:
         snapshot.match("notification", notification)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_sns_topic_as_lambda_dead_letter_queue(
         self,
         lambda_su_role,
@@ -1319,6 +1354,7 @@ class TestSNSSubscriptionLambda:
         snapshot.match("messages", messages)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_redrive_policy_lambda_subscription(
         self,
         sns_create_topic,
@@ -1374,6 +1410,7 @@ class TestSNSSubscriptionLambda:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["1", "2"])
+    @skip_if_sns_v2
     def test_publish_lambda_verify_signature(
         self,
         aws_client,
@@ -1478,6 +1515,7 @@ class TestSNSSubscriptionLambda:
 
 class TestSNSSubscriptionSQS:
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_sqs_queue(
         self, sqs_create_queue, sns_create_topic, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1518,6 +1556,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_unicode_chars(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1536,6 +1575,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("received-message", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_attribute_raw_subscribe(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1579,6 +1619,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages-response", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_sqs_topic_subscription_confirmation(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1602,6 +1643,7 @@ class TestSNSSubscriptionSQS:
         assert poll_condition(check_subscription, timeout=5)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_sqs_from_sns(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1669,6 +1711,7 @@ class TestSNSSubscriptionSQS:
         }
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_batch_messages_from_sns_to_sqs(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1746,6 +1789,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages", {"Messages": messages})
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_batch_messages_without_topic(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         fake_topic_arn = topic_arn + "fake-topic"
@@ -1764,6 +1808,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("publish-batch-no-topic", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_batch_exceptions(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1829,6 +1874,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("no-default-key-json", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_to_sqs_with_queue_url(
         self, sns_create_topic, sqs_create_queue, sns_subscription, snapshot
     ):
@@ -1840,6 +1886,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("sub-queue-url", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_sqs_from_sns_with_xray_propagation(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1878,6 +1925,7 @@ class TestSNSSubscriptionSQS:
 
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_redrive_policy_sqs_queue_subscription(
         self,
         sns_create_topic,
@@ -1952,6 +2000,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("messages", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_message_attributes_not_missing(
         self, sns_create_sqs_subscription, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -2023,6 +2072,7 @@ class TestSNSSubscriptionSQS:
         # https://docs.aws.amazon.com/sns/latest/api/API_MessageAttributeValue.html
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscription_after_failure_to_deliver(
         self,
         sns_create_topic,
@@ -2121,6 +2171,7 @@ class TestSNSSubscriptionSQS:
             snapshot.match(f"message-{i}-after-delete", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_empty_or_wrong_message_attributes(
         self,
         sns_create_sqs_subscription,
@@ -2185,6 +2236,7 @@ class TestSNSSubscriptionSQS:
             snapshot.match(f"batch-{error_type}", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_message_attributes_prefixes(
         self, sns_create_sqs_subscription, sns_create_topic, sqs_create_queue, snapshot, aws_client
     ):
@@ -2230,6 +2282,7 @@ class TestSNSSubscriptionSQS:
         snapshot.match("publish-ok-2", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_message_structure_json_to_sqs(
         self, aws_client, sns_create_topic, sqs_create_queue, snapshot, sns_create_sqs_subscription
     ):
@@ -2266,6 +2319,7 @@ class TestSNSSubscriptionSQS:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["1", "2"])
+    @skip_if_sns_v2
     def test_publish_sqs_verify_signature(
         self,
         aws_client,
@@ -2330,6 +2384,7 @@ class TestSNSSubscriptionSQS:
         assert is_valid is None
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_message_group_id(
         self,
         aws_client,
@@ -2360,6 +2415,7 @@ class TestSNSSubscriptionSQS:
 class TestSNSSubscriptionSQSFifo:
     @markers.aws.validated
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
+    @skip_if_sns_v2
     def test_message_to_fifo_sqs(
         self,
         sns_create_topic,
@@ -2421,6 +2477,7 @@ class TestSNSSubscriptionSQSFifo:
             "$.dedup-messages.Messages"
         ],  # FIXME: introduce deduplication at Topic level, not only SQS
     )
+    @skip_if_sns_v2
     def test_fifo_topic_to_regular_sqs(
         self,
         sns_create_topic,
@@ -2479,6 +2536,7 @@ class TestSNSSubscriptionSQSFifo:
         snapshot.match("dedup-messages", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_validations_for_fifo(
         self,
         sns_create_topic,
@@ -2570,6 +2628,7 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @skip_if_sns_v2
     def test_publish_fifo_messages_to_dlq(
         self,
         sns_create_topic,
@@ -2734,6 +2793,7 @@ class TestSNSSubscriptionSQSFifo:
         ]
     )
     @pytest.mark.parametrize("content_based_deduplication", [True, False])
+    @skip_if_sns_v2
     def test_publish_batch_messages_from_fifo_topic_to_fifo_queue(
         self,
         sns_create_topic,
@@ -2870,6 +2930,7 @@ class TestSNSSubscriptionSQSFifo:
 
     @markers.aws.validated
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @skip_if_sns_v2
     def test_publish_to_fifo_topic_to_sqs_queue_no_content_dedup(
         self,
         sns_create_topic,
@@ -2951,6 +3012,7 @@ class TestSNSSubscriptionSQSFifo:
         snapshot.match("messages", {"Messages": messages})
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_to_fifo_topic_deduplication_on_topic_level(
         self,
         sns_create_topic,
@@ -3011,6 +3073,7 @@ class TestSNSSubscriptionSQSFifo:
         snapshot.match("dedup-messages", response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_to_fifo_with_target_arn(self, sns_create_topic, aws_client):
         topic_name = f"topic-{short_uid()}.fifo"
         topic_attributes = {
@@ -3033,6 +3096,7 @@ class TestSNSSubscriptionSQSFifo:
         assert "MessageId" in response
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_message_to_fifo_sqs_ordering(
         self,
         sns_create_topic,
@@ -3089,6 +3153,7 @@ class TestSNSSubscriptionSQSFifo:
 
 class TestSNSSubscriptionSES:
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_topic_email_subscription_confirmation(
         self, sns_create_topic, sns_subscription, aws_client
     ):
@@ -3121,6 +3186,7 @@ class TestSNSSubscriptionSES:
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_email_sender(
         self,
         sns_create_topic,
@@ -3166,6 +3232,7 @@ class TestSNSSubscriptionSES:
 
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_subscribe_platform_endpoint(
         self,
         sns_create_topic,
@@ -3212,6 +3279,7 @@ class TestSNSPlatformEndpoint:
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
     # TODO: AWS validate this test
     # See https://github.com/getmoto/moto/pull/6953 where Moto updated errors.
+    @skip_if_sns_v2
     def test_create_platform_endpoint_check_idempotency(
         self, sns_create_platform_application, aws_client
     ):
@@ -3257,6 +3325,7 @@ class TestSNSPlatformEndpoint:
 
     @markers.aws.needs_fixing
     # AWS validating this is hard because we need real credentials for a GCM/Apple mobile app
+    @skip_if_sns_v2
     def test_publish_disabled_endpoint(self, sns_create_platform_application, aws_client):
         response = sns_create_platform_application(
             Name=f"test-{short_uid()}",
@@ -3293,6 +3362,7 @@ class TestSNSPlatformEndpoint:
 
     @markers.aws.only_localstack  # needs real credentials for GCM/FCM
     @pytest.mark.skip(reason="Need to implement credentials validation when creating platform")
+    @skip_if_sns_v2
     def test_publish_to_gcm(self, sns_create_platform_application, aws_client):
         key = "mock_server_key"
         token = "mock_token"
@@ -3320,6 +3390,7 @@ class TestSNSPlatformEndpoint:
         assert ex.value.response["Error"]["Code"] == "InvalidParameter"
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_publish_to_platform_endpoint_is_dispatched(
         self,
         sns_create_topic,
@@ -3383,6 +3454,7 @@ class TestSNSPlatformEndpoint:
 
 class TestSNSSMS:
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_publish_sms(self, aws_client, account_id, region_name):
         phone_number = "+33000000000"
         response = aws_client.sns.publish(PhoneNumber=phone_number, Message="This is a SMS")
@@ -3406,6 +3478,7 @@ class TestSNSSMS:
         retry(check_messages, sleep=0.5)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_sms_endpoint(self, sns_create_topic, sns_subscription, snapshot, aws_client):
         phone_number = "+123123123"
         topic_arn = sns_create_topic()["TopicArn"]
@@ -3418,6 +3491,7 @@ class TestSNSSMS:
         snapshot.match("subscribe-sms-attrs", sub_attrs)
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_publish_sms_endpoint(
         self, sns_create_topic, sns_subscription, aws_client, account_id, region_name
     ):
@@ -3449,6 +3523,7 @@ class TestSNSSMS:
         retry(check_messages, sleep=0.5)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_wrong_phone_format(
         self, sns_create_topic, sns_subscription, snapshot, aws_client
     ):
@@ -3471,6 +3546,7 @@ class TestSNSSMS:
 
 class TestSNSSubscriptionHttp:
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_http_subscription_response(
         self,
         sns_create_topic,
@@ -3500,6 +3576,7 @@ class TestSNSSubscriptionHttp:
         snapshot.match("subscription-with-arn", subscription_with_arn)
 
     @markers.aws.manual_setup_required
+    @skip_if_sns_v2
     def test_redrive_policy_http_subscription(
         self, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, sns_subscription, aws_client
     ):
@@ -3548,6 +3625,7 @@ class TestSNSSubscriptionHttp:
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
     @markers.aws.manual_setup_required
+    @skip_if_sns_v2
     def test_multiple_subscriptions_http_endpoint(
         self, sns_create_topic, sns_subscription, aws_client
     ):
@@ -3641,6 +3719,7 @@ class TestSNSSubscriptionHttp:
             "$.http-confirm-sub-headers.Accept",
         ]
     )
+    @skip_if_sns_v2
     def test_subscribe_external_http_endpoint(
         self, sns_create_http_endpoint, raw_message_delivery, aws_client, snapshot
     ):
@@ -3816,6 +3895,7 @@ class TestSNSSubscriptionHttp:
 
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
+    @skip_if_sns_v2
     def test_dlq_external_http_endpoint(
         self,
         sqs_create_queue,
@@ -3916,6 +3996,7 @@ class TestSNSSubscriptionHttp:
             "$.topic-attrs.Attributes.Policy.Statement..Action",
         ]
     )
+    @skip_if_sns_v2
     def test_subscribe_external_http_endpoint_content_type(
         self,
         sns_create_http_endpoint,
@@ -4011,6 +4092,7 @@ class TestSNSSubscriptionHttp:
             snapshot.match("http-message-headers", _clean_headers(notification_request.headers))
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_subscribe_external_http_endpoint_lambda_url_sig_validation(
         self,
         create_sns_http_endpoint_and_queue,
@@ -4180,6 +4262,7 @@ class TestSNSSubscriptionHttp:
 
 class TestSNSSubscriptionFirehose:
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_publish_to_firehose_with_s3(
         self,
         create_role,
@@ -4305,6 +4388,7 @@ class TestSNSMultiAccounts:
         return secondary_aws_client.sqs
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_cross_account_access(self, sns_primary_client, sns_secondary_client, sns_create_topic):
         # Cross-account access is supported for below operations.
         # This list is taken from ActionName param of the AddPermissions operation
@@ -4359,6 +4443,7 @@ class TestSNSMultiAccounts:
         assert sns_secondary_client.delete_topic(TopicArn=topic_arn)
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_cross_account_publish_to_sqs(
         self,
         sns_create_topic,
@@ -4482,6 +4567,7 @@ class TestSNSMultiRegions:
         return aws_client_factory(region_name=secondary_region_name).sqs
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_cross_region_access(self, sns_region1_client, sns_region2_client, snapshot, cleanups):
         # We do not have a list of supported Cross-region access for operations.
         # This test is validating that Cross-account does not mean Cross-region most of the time
@@ -4519,6 +4605,7 @@ class TestSNSMultiRegions:
         snapshot.match("delete-topic", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_cross_region_delivery_sqs(
         self,
         sns_region1_client,
@@ -4598,6 +4685,7 @@ class TestSNSPublishDelivery:
             "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
+    @skip_if_sns_v2
     def test_delivery_lambda(
         self,
         sns_create_topic,
@@ -4766,6 +4854,7 @@ class TestSNSPublishDelivery:
 class TestSNSCertEndpoint:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("cert_host", ["", "sns.us-east-1.amazonaws.com"])
+    @skip_if_sns_v2
     def test_cert_endpoint_host(
         self,
         aws_client,
@@ -4811,6 +4900,7 @@ class TestSNSCertEndpoint:
 @pytest.mark.usefixtures("openapi_validate")
 class TestSNSRetrospectionEndpoints:
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_publish_to_platform_endpoint_can_retrospect(
         self,
         sns_create_topic,
@@ -4967,6 +5057,7 @@ class TestSNSRetrospectionEndpoints:
         assert not msg_with_region["platform_endpoint_messages"]
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_publish_sms_can_retrospect(
         self,
         sns_create_topic,
@@ -5070,6 +5161,7 @@ class TestSNSRetrospectionEndpoints:
         assert not msg_with_region["sms_messages"]
 
     @markers.aws.only_localstack
+    @skip_if_sns_v2
     def test_subscription_tokens_can_retrospect(
         self,
         sns_create_topic,
