@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
+  "tests/aws/services/cloudformation/resource_providers/test_stack_sets.py::test_create_stack_set_with_stack_instances": {
     "recorded-date": "24-05-2023, 15:32:47",
     "recorded-content": {
       "create_stack_set": {
@@ -18,7 +18,7 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/resources/test_stack_sets.py::test_fetch_non_existent_stack_set_instances": {
+  "tests/aws/services/cloudformation/resource_providers/test_stack_sets.py::test_fetch_non_existent_stack_set_instances": {
     "recorded-date": "01-08-2025, 09:56:22",
     "recorded-content": {
       "non-existent-stack-set-name": "An error occurred (StackSetNotFoundException) when calling the CreateStackInstances operation: StackSet non-existent-stack-set-id not found",
