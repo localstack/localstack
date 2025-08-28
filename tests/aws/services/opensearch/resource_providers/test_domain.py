@@ -39,7 +39,7 @@ class TestAttributeAccess:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "templates/domain.yaml",
+                "../../templates/domain.yaml",
             ),
             parameters={"AttributeName": attribute},
         )
