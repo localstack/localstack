@@ -15,7 +15,7 @@ class TestBasicCRD:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "templates/aws_ssm_parameter_minimal.yaml",
+                "../../templates/aws_ssm_parameter_minimal.yaml",
             ),
         )
 
@@ -42,7 +42,7 @@ class TestUpdates:
         stack = deploy_cfn_template(
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "templates/aws_ssm_parameter_update_without_replacement.yaml",
+                "../../templates/aws_ssm_parameter_update_without_replacement.yaml",
             ),
             parameters={"AttributeValue": "first"},
         )
@@ -56,7 +56,7 @@ class TestUpdates:
             stack_name=stack.stack_name,
             template_path=os.path.join(
                 os.path.dirname(__file__),
-                "templates/aws_ssm_parameter_update_without_replacement.yaml",
+                "../../templates/aws_ssm_parameter_update_without_replacement.yaml",
             ),
             parameters={"AttributeValue": "second"},
             is_update=True,

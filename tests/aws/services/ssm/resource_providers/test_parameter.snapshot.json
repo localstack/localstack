@@ -1,5 +1,5 @@
 {
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Type]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Type]": {
     "recorded-date": "19-05-2023, 16:57:19",
     "recorded-content": {
       "stack_outputs": {
@@ -9,23 +9,23 @@
       "physical_resource_id": "CFN-MyResource-ywXNmT4uRH69"
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Description]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Description]": {
     "recorded-date": "19-05-2023, 16:57:31",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Policies]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Policies]": {
     "recorded-date": "19-05-2023, 16:57:43",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[AllowedPattern]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[AllowedPattern]": {
     "recorded-date": "19-05-2023, 16:57:55",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Tier]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Tier]": {
     "recorded-date": "19-05-2023, 16:58:06",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Value]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Value]": {
     "recorded-date": "19-05-2023, 16:58:18",
     "recorded-content": {
       "stack_outputs": {
@@ -35,19 +35,19 @@
       "physical_resource_id": "CFN-MyResource-FzHcjgYfVinF"
     }
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[DataType]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[DataType]": {
     "recorded-date": "19-05-2023, 16:58:29",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Id]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Id]": {
     "recorded-date": "19-05-2023, 16:58:41",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestAttributeAccess::test_getattr[Name]": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestAttributeAccess::test_getattr[Name]": {
     "recorded-date": "19-05-2023, 16:58:53",
     "recorded-content": {}
   },
-  "tests/aws/services/cloudformation/resource_providers/ssm/test_parameter.py::TestBasicCRD::test_black_box": {
+  "tests/aws/services/ssm/resource_providers/test_parameter.py::TestBasicCRD::test_black_box": {
     "recorded-date": "21-06-2023, 16:57:04",
     "recorded-content": {
       "describe-resource": {
