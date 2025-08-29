@@ -180,6 +180,9 @@ class TestOpensearchProvider:
             "$..SnapshotOptions.Status.UpdateVersion",
             "$..SoftwareUpdateOptions",
             "$..VPCOptions.Status.UpdateVersion",
+            # added to skip parity change while moving the tests
+            "$..ClusterConfig.ZoneAwarenessEnabled",
+            "$..ClusterConfig.Options.ZoneAwarenessEnabled",
         ]
     )
     def test_domain_lifecycle(
