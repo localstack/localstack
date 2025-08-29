@@ -97,42 +97,48 @@ class AssetDirectory:
 
 
 class Encoder:
-    def encodes(self, obj: Any) -> bytes:
+    def encodes(self, obj: Any, py_type: type = None) -> bytes:
         """
         Encode an object into bytes.
 
         :param obj: the object to encode
+        :param py_type: the type of the object. needed by some encoders that don't have implicit type knowledge.
         :return: the encoded object
         """
         b = io.BytesIO()
         self.encode(obj, b)
         return b.getvalue()
 
-    def encode(self, obj: Any, file: IO[bytes]):
+    def encode(self, obj: Any, file: IO[bytes], py_type: type = None):
         """
         Encode an object into bytes.
 
         :param obj: the object to encode
+        :param py_type: the type of the object. needed by some encoders that don't have implicit type knowledge.
         :param file: the file to write the encoded data into
         """
         raise NotImplementedError
 
 
 class Decoder:
-    def decodes(self, data: bytes) -> Any:
+    def decodes(self, data: bytes, py_type: type = None) -> Any:
         """
         Decode a previously encoded object.
 
         :param data: the encoded object to decode
+        :param py_type: the type that is expected as return type. Needed by some decoders that don't have implicit
+        type knowledge.
         :return: the decoded object
         """
-        return self.decode(io.BytesIO(data))
+        return self.decode(io.BytesIO(data), py_type)
 
-    def decode(self, file: IO[bytes]) -> Any:
+    def decode(self, file: IO[bytes], py_type: type = None) -> Any:
         """
         Decode a previously encoded object.
 
         :param file: the io object containing the object to decode
+        :param py_type: the type that is expected as return type. Needed by some decoders that don't have implicit
+        type knowledge.
         :return: the decoded object
         """
         raise NotImplementedError
