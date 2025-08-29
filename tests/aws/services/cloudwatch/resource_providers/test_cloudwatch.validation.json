@@ -3,9 +3,21 @@
     "last_validated_date": "2023-09-25T08:28:42+00:00"
   },
   "tests/aws/services/cloudwatch/resource_providers/test_cloudwatch.py::test_alarm_ext_statistic": {
-    "last_validated_date": "2023-11-27T09:09:46+00:00"
+    "last_validated_date": "2025-08-29T09:42:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.58,
+      "teardown": 0.09,
+      "total": 14.67
+    }
   },
   "tests/aws/services/cloudwatch/resource_providers/test_cloudwatch.py::test_composite_alarm_creation": {
-    "last_validated_date": "2024-07-16T10:43:30+00:00"
+    "last_validated_date": "2025-08-29T09:42:14+00:00",
+    "durations_in_seconds": {
+      "setup": 1.03,
+      "call": 64.76,
+      "teardown": 0.1,
+      "total": 65.89
+    }
   }
 }

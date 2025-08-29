@@ -66,6 +66,8 @@ def test_default_parameters_kinesis(deploy_cfn_template, aws_client, snapshot):
     snapshot.add_transformer(snapshot.transform.key_value("StreamName"))
     snapshot.add_transformer(snapshot.transform.key_value("ShardId"))
     snapshot.add_transformer(snapshot.transform.key_value("StartingSequenceNumber"))
+    snapshot.add_transformer(snapshot.transform.key_value("StartingHashKey"))
+    snapshot.add_transformer(snapshot.transform.key_value("EndingHashKey"))
 
 
 @markers.aws.validated

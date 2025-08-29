@@ -48,6 +48,8 @@ def test_alarm_creation(deploy_cfn_template, snapshot):
         "$..StateReason",
         "$..StateReasonData",
         "$..StateValue",
+        # For v1
+        "$..StateTransitionedTimestamp",
     ]
 )
 def test_composite_alarm_creation(aws_client, deploy_cfn_template, snapshot):
@@ -94,6 +96,11 @@ def test_composite_alarm_creation(aws_client, deploy_cfn_template, snapshot):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..StateTransitionedTimestamp",
+    ]
+)
 def test_alarm_ext_statistic(aws_client, deploy_cfn_template, snapshot):
     snapshot.add_transformer(snapshot.transform.cloudwatch_api())
     stack = deploy_cfn_template(

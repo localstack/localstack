@@ -9,7 +9,7 @@
     }
   },
   "tests/aws/services/cloudwatch/resource_providers/test_cloudwatch.py::test_composite_alarm_creation": {
-    "recorded-date": "16-07-2024, 10:41:22",
+    "recorded-date": "29-08-2025, 09:42:14",
     "recorded-content": {
       "composite_alarm": [
         {
@@ -28,14 +28,14 @@
           "StateReasonData": {
             "triggeringAlarms": [
               {
-                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighCPUUsage",
+                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
                 "state": {
                   "value": "INSUFFICIENT_DATA",
                   "timestamp": "date"
                 }
               },
               {
-                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighMemoryUsage",
+                "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:HighCPUUsage",
                 "state": {
                   "value": "INSUFFICIENT_DATA",
                   "timestamp": "date"
@@ -80,7 +80,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/cloudwatch/resource_providers/test_cloudwatch.py::test_alarm_ext_statistic": {
-    "recorded-date": "27-11-2023, 10:09:46",
+    "recorded-date": "29-08-2025, 09:42:28",
     "recorded-content": {
       "simple_alarm": [
         {
