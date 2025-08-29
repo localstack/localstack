@@ -5,6 +5,11 @@ from typing import Literal
 import click
 import yaml
 
+EDGE_SERVICE_NODE_PORT = 30066
+NODE_PORT_START = 30010
+SERVICE_PORT_START = 4510
+NUMBER_OF_SERVICE_PORTS = 50
+
 
 @dataclasses.dataclass
 class MountPoint:
@@ -148,9 +153,46 @@ def generate_k8s_cluster_config(mount_points: list[MountPoint], port: int = 4566
         for mount_point in mount_points
     ]
 
-    ports = [{"port": f"{port}:31566", "nodeFilters": ["server:0"]}]
+    ports = [
+        # main gateway port
+        {
+            "nodeFilters": [
+                "server:0",
+            ],
+            "port": f"{port}:{EDGE_SERVICE_NODE_PORT}",
+        },
+        # 443 https port for main gateway
+        {
+            "nodeFilters": [
+                "server:0",
+            ],
+            "port": f"443:{EDGE_SERVICE_NODE_PORT}",
+        },
+        # Node ports
+        {
+            "nodeFilters": [
+                "server:0",
+            ],
+            "port": f"{SERVICE_PORT_START}-{SERVICE_PORT_START + NUMBER_OF_SERVICE_PORTS - 1}:{NODE_PORT_START}-{NODE_PORT_START + NUMBER_OF_SERVICE_PORTS - 1}",
+        },
+    ]
 
-    config = {"apiVersion": "k3d.io/v1alpha5", "kind": "Simple", "volumes": volumes, "ports": ports}
+    config = {
+        "apiVersion": "k3d.io/v1alpha5",
+        "kind": "Simple",
+        "volumes": volumes,
+        "ports": ports,
+        "options": {
+            "k3s": {
+                "extraArgs": [
+                    {
+                        "arg": "--kubelet-arg=container-log-max-size=1Gi",
+                        "nodeFilters": ["server:*"],
+                    },
+                ],
+            },
+        },
+    }
 
     return config
 
@@ -159,7 +201,7 @@ def snake_to_kebab_case(string: str):
     return string.lower().replace("_", "-")
 
 
-def generate_k8s_cluster_overrides(
+def generate_k8s_helm_overrides(
     mount_points: list[MountPoint], pro: bool = False, env: list[str] | None = None
 ):
     volumes = [
@@ -200,10 +242,45 @@ def generate_k8s_cluster_overrides(
                 "name": "CONTAINER_RUNTIME",
                 "value": "kubernetes",
             },
+            {
+                "name": "RDS_MYSQL_DOCKER",
+                "value": "1",
+            },
+            {
+                "name": "ENABLE_DMS",
+                "value": "1",
+            },
+            {
+                "name": "ENABLE_BEDROCK",
+                "value": "1",
+            },
+            {
+                "name": "DOCDB_PROXY_CONTAINER",
+                "value": "1",
+            },
+            {
+                "name": "GLUE_JOB_EXECUTOR_PROVIDER",
+                "value": "v2",
+            },
+            {
+                "name": "CLOUDFRONT_LAMBDA_EDGE",
+                "value": "1",
+            },
         ]
 
     image_repository = "localstack/localstack-pro" if pro else "localstack/localstack"
 
+    service = {
+        "edgeService": {
+            "nodePort": EDGE_SERVICE_NODE_PORT,
+        },
+        "externalServicePorts": {
+            "start": SERVICE_PORT_START,
+            "end": SERVICE_PORT_START + NUMBER_OF_SERVICE_PORTS,
+            "nodePortStart": NODE_PORT_START,
+        },
+        "dnsService": True,
+    }
     overrides = {
         "debug": True,
         "volumes": volumes,
@@ -211,6 +288,9 @@ def generate_k8s_cluster_overrides(
         "extraEnvVars": extra_env_vars,
         "image": {"repository": image_repository},
         "lambda": {"executor": "kubernetes"},
+        "service": service,
+        "readinessProbe": {"initialDelaySeconds": 10},
+        "livenessProbe": {"initialDelaySeconds": 10},
     }
 
     return overrides
@@ -295,7 +375,7 @@ def run(
 
     config = generate_k8s_cluster_config(mount_points, port=port)
 
-    overrides = generate_k8s_cluster_overrides(mount_points, pro=pro, env=env)
+    overrides = generate_k8s_helm_overrides(mount_points, pro=pro, env=env)
 
     output_dir = output_dir or os.getcwd()
     overrides_file = overrides_file or "overrides.yml"
