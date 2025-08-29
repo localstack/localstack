@@ -265,12 +265,16 @@ class CmdDockerClient(ContainerClient):
                 f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
-    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
+    def remove_container(
+        self, container_name: str, force=True, check_existence=False, volumes=False
+    ) -> None:
         if check_existence and container_name not in self.get_all_container_names():
             return
         cmd = self._docker_cmd() + ["rm"]
         if force:
             cmd.append("-f")
+        if volumes:
+            cmd.append("--volumes")
         cmd.append(container_name)
         LOG.debug("Removing container with cmd %s", cmd)
         try:

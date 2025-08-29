@@ -686,8 +686,16 @@ class ContainerClient(metaclass=ABCMeta):
         """Unpauses a container with the given name."""
 
     @abstractmethod
-    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        """Removes container with given name"""
+    def remove_container(
+        self, container_name: str, force=True, check_existence=False, volumes=False
+    ) -> None:
+        """Removes container
+
+        :param container_name: Name of the container
+        :param force: Force the removal of a running container (uses SIGKILL)
+        :param check_existence: Return if container doesn't exist
+        :param volumes: Remove anonymous volumes associated with the container
+        """
 
     @abstractmethod
     def remove_image(self, image: str, force: bool = True) -> None:
