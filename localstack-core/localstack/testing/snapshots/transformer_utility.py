@@ -500,7 +500,7 @@ class TransformerUtility:
                 replacement="<stream-name>",
             ),
             TransformerUtility.key_value(
-                "ContinuationSequenceNumber", "<continuation_sequence_number>"
+                "ContinuationSequenceNumber", "continuation_sequence_number"
             ),
         ]
 
