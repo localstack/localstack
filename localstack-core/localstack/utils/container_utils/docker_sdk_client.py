@@ -264,14 +264,16 @@ class SdkDockerClient(ContainerClient):
         except APIError as e:
             raise ContainerException() from e
 
-    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        LOG.debug("Removing container: %s", container_name)
+    def remove_container(
+        self, container_name: str, force=True, check_existence=False, volumes=False
+    ) -> None:
+        LOG.debug("Removing container: %s, with volumes: %s", container_name, volumes)
         if check_existence and container_name not in self.get_all_container_names():
             LOG.debug("Aborting removing due to check_existence check")
             return
         try:
             container = self.client().containers.get(container_name)
-            container.remove(force=force)
+            container.remove(force=force, v=volumes)
         except NotFound:
             if not force:
                 raise NoSuchContainer(container_name)
