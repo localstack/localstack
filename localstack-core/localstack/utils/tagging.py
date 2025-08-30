@@ -2,7 +2,7 @@ from typing import Optional
 
 
 class TaggingService:
-    def __init__(self, key_field: str = None, value_field: str = None):
+    def __init__(self, key_field: str | None = None, value_field: str | None = None):
         """
         :param key_field: the field name representing the tag key as used by botocore specs
         :param value_field: the field name representing the tag value as used by botocore specs
@@ -10,7 +10,7 @@ class TaggingService:
         self.key_field = key_field or "Key"
         self.value_field = value_field or "Value"
 
-        self.tags = {}
+        self.tags: dict[str, dict[str, str]] = {}
 
     def list_tags_for_resource(self, arn: str, root_name: Optional[str] = None):
         root_name = root_name or "Tags"
