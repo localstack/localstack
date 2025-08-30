@@ -63,7 +63,10 @@ class TestServiceResponseHandler:
         context.service_exception = ResourceAlreadyExistsException("oh noes")
 
         response = create_serializer(context.service).serialize_error_to_response(
-            context.service_exception, context.operation, context.request.headers
+            context.service_exception,
+            context.operation,
+            context.request.headers,
+            context.request_id,
         )
 
         service_response_handler_chain.handle(context, response)
@@ -83,14 +86,17 @@ class TestServiceResponseHandler:
         context.service_exception = QueueDoesNotExist()
 
         response = create_serializer(context.service).serialize_error_to_response(
-            context.service_exception, context.operation, context.request.headers
+            context.service_exception,
+            context.operation,
+            context.request.headers,
+            context.request_id,
         )
 
         service_response_handler_chain.handle(context, response)
 
         assert context.service_exception.message == ""
-        assert context.service_exception.code == "AWS.SimpleQueueService.NonExistentQueue"
-        assert context.service_exception.sender_fault
+        assert context.service_exception.code == "QueueDoesNotExist"
+        assert not context.service_exception.sender_fault
         assert context.service_exception.status_code == 400
 
     def test_sets_exception_from_error_response(self, service_response_handler_chain):
@@ -131,7 +137,11 @@ class TestServiceResponseHandler:
 
 class TestServiceExceptionSerializer:
     @pytest.mark.parametrize(
-        "message, output", [("", "not yet implemented or pro feature"), ("Ups!", "Ups!")]
+        "message, output",
+        [
+            ("", "not available in your current license plan or has not yet been emulated"),
+            ("Ups!", "Ups!"),
+        ],
     )
     def test_not_implemented_error(self, message, output):
         context = create_aws_request_context(
