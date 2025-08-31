@@ -70,6 +70,7 @@ setup_file() {
 # build
 
 @test "build creates image from custom Dockerfile" {
+  export PLATFORM="amd64"
   export IMAGE_NAME="localstack/test"
   export DOCKERFILE="tests/bin/files/Dockerfile"
   export TEST_SPECIFIC_VERSION="3.6.1.dev45"
@@ -297,6 +298,7 @@ setup_file() {
 
 
 @test "cmd-build throws error when setuptools-scm is not installed" {
+  export PLATFORM="amd64"
   export TEST_PIP_FAIL=1
   export IMAGE_NAME="localstack/test"
 
@@ -319,4 +321,21 @@ setup_file() {
   run bin/docker-helper.sh get-release-version
   [ "$status" -eq 1 ]
   [[ "$output" == "Not a release commit." ]]
+}
+
+@test "build fails without PLATFORM" {
+  export IMAGE_NAME="localstack/test"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
+  run bin/docker-helper.sh build
+  [ "$status" -ne 0 ]
+  [[ "$output" =~ "PLATFORM is missing" ]]
+}
+
+@test "build succeeds with PLATFORM" {
+  export IMAGE_NAME="localstack/test"
+  export PLATFORM="amd64"
+  export TEST_SPECIFIC_VERSION="3.6.1.dev45"
+  run bin/docker-helper.sh build
+  [ "$status" -eq 0 ]
+  [[ "$output" =~ "docker buildx build --platform linux/amd64" ]]
 }
