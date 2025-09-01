@@ -913,8 +913,8 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
-    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
+    # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
+    if: always() && !cancelled() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure'))
     steps:
       - name: Download Cloudformation v2 Artifacts
         uses: actions/download-artifact@v5
