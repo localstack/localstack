@@ -213,9 +213,9 @@
 /tests/aws/services/s3control/ @bentsku
 
 # secretsmanager
-/localstack-core/localstack/aws/api/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
-/localstack-core/localstack/services/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
-/tests/aws/services/secretsmanager/ @dominikschubert @macnev2013 @MEPalma
+/localstack-core/localstack/aws/api/secretsmanager/ @dominikschubert @macnev2013
+/localstack-core/localstack/services/secretsmanager/ @dominikschubert @macnev2013
+/tests/aws/services/secretsmanager/ @dominikschubert @macnev2013
 
 # ses
 /localstack-core/localstack/aws/api/ses/ @viren-nadkarni
@@ -240,10 +240,10 @@
 /tests/aws/services/ssm/ @dominikschubert
 
 # stepfunctions
-/localstack-core/localstack/aws/api/stepfunctions/ @MEPalma @joe4dev @gregfurman
-/localstack-core/localstack/services/stepfunctions/ @MEPalma @joe4dev @gregfurman
-/tests/aws/services/stepfunctions/ @MEPalma @joe4dev @gregfurman
-/tests/unit/services/stepfunctions/ @MEPalma @joe4dev @gregfurman
+/localstack-core/localstack/aws/api/stepfunctions/ @dominikschubert @joe4dev @gregfurman
+/localstack-core/localstack/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman
+/tests/aws/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman
+/tests/unit/services/stepfunctions/ @dominikschubert @joe4dev @gregfurman
 
 # sts
 /localstack-core/localstack/aws/api/sts/ @pinzon @dfangl
