@@ -53,8 +53,6 @@ MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 
 LOG = logging.getLogger(__name__)
 
-# TODO: remove this, triggering CloudWatch v1
-
 
 @patch(target=Alarm.update_state)
 def update_state(target, self, reason, reason_data, state_value):
