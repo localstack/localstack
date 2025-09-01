@@ -915,6 +915,8 @@ jobs:
       issues: read
     env:
       DEBUG_VAR_VISIBILITY: ${{ toJSON(needs.*.result) }}
+      DEBUG_VAR_VISIBILITY2: ${{ contains(needs.*.result, 'success') || contains(needs.*.result, 'failure') }}
+      DEBUG_VAR_VISIBILITY3: ${{ always() && !cancelled() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) }}
     # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
     if: ${{ always() && !cancelled() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) }}
     steps:
