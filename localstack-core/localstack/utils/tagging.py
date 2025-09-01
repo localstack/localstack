@@ -2,17 +2,18 @@ from typing import Optional
 
 
 class TaggingService:
-    key_field: str = "Key"
-    value_field: str = "Value"
+    key_field: str
+    value_field: str
+
     tags: dict[str, dict[str, str]]
 
-    def __init__(self, key_field: str | None = None, value_field: str | None = None):
+    def __init__(self, key_field: str = "Key", value_field: str = "Value"):
         """
         :param key_field: the field name representing the tag key as used by botocore specs
         :param value_field: the field name representing the tag value as used by botocore specs
         """
-        self.key_field = key_field or self.key_field
-        self.value_field = value_field or self.value_field
+        self.key_field = key_field
+        self.value_field = value_field
 
         self.tags = {}
 
