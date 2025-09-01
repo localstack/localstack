@@ -913,12 +913,8 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    env:
-      DEBUG_VAR_VISIBILITY0: ${{ toJSON(needs) }}
-      DEBUG_VAR_VISIBILITY1: ${{ toJSON(needs.*.result) }}
-      DEBUG_VAR_VISIBILITY2: ${{ true && (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) }}
     # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
-    if: ${{ always() && !cancelled() && (contains(needs.*.result, 'success') || contains(needs.*.result, 'failure')) }}
+    if: ${{ !cancelled() && ( contains(needs.*.result, 'success') || contains(needs.*.result, 'failure') ) }}
     steps:
       - name: Download Cloudformation v2 Artifacts
         uses: actions/download-artifact@v5
