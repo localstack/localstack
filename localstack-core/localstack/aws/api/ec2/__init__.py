@@ -83,6 +83,9 @@ DescribeFpgaImagesMaxResults = int
 DescribeFutureCapacityMaxResults = int
 DescribeHostReservationsMaxResults = int
 DescribeIamInstanceProfileAssociationsMaxResults = int
+DescribeImageReferencesMaxResults = int
+DescribeImageUsageReportEntriesMaxResults = int
+DescribeImageUsageReportsMaxResults = int
 DescribeInstanceCreditSpecificationsMaxResults = int
 DescribeInstanceImageMetadataMaxResults = int
 DescribeInstanceTopologyMaxResults = int
@@ -170,6 +173,11 @@ IamInstanceProfileAssociationId = str
 ImageId = str
 ImageProvider = str
 ImageProviderRequest = str
+ImageUsageReportId = str
+ImageUsageReportState = str
+ImageUsageReportStateReason = str
+ImageUsageResourceTypeName = str
+ImageUsageResourceTypeOptionValue = str
 ImportImageTaskId = str
 ImportManifestUrl = str
 ImportSnapshotTaskId = str
@@ -298,6 +306,7 @@ ReservedInstancesModificationId = str
 ReservedInstancesOfferingId = str
 ResourceArn = str
 ResourceConfigurationArn = str
+ResourceTypeOptionValue = str
 RestoreSnapshotTierRequestTemporaryRestoreDays = int
 ResultRange = int
 RetentionPeriodRequestDays = int
@@ -1022,6 +1031,12 @@ class EndDateType(StrEnum):
     limited = "limited"
 
 
+class EndpointIpAddressType(StrEnum):
+    ipv4 = "ipv4"
+    ipv6 = "ipv6"
+    dual_stack = "dual-stack"
+
+
 class EphemeralNvmeSupport(StrEnum):
     unsupported = "unsupported"
     supported = "supported"
@@ -1247,6 +1262,19 @@ class ImageBlockPublicAccessDisabledState(StrEnum):
 
 class ImageBlockPublicAccessEnabledState(StrEnum):
     block_new_sharing = "block-new-sharing"
+
+
+class ImageReferenceOptionName(StrEnum):
+    state_name = "state-name"
+    version_depth = "version-depth"
+
+
+class ImageReferenceResourceType(StrEnum):
+    ec2_Instance = "ec2:Instance"
+    ec2_LaunchTemplate = "ec2:LaunchTemplate"
+    ssm_Parameter = "ssm:Parameter"
+    imagebuilder_ImageRecipe = "imagebuilder:ImageRecipe"
+    imagebuilder_ContainerRecipe = "imagebuilder:ContainerRecipe"
 
 
 class ImageState(StrEnum):
@@ -3112,6 +3140,7 @@ class ResourceType(StrEnum):
     fpga_image = "fpga-image"
     host_reservation = "host-reservation"
     image = "image"
+    image_usage_report = "image-usage-report"
     import_image_task = "import-image-task"
     import_snapshot_task = "import-snapshot-task"
     instance = "instance"
@@ -3204,6 +3233,7 @@ class RouteOrigin(StrEnum):
     CreateRouteTable = "CreateRouteTable"
     CreateRoute = "CreateRoute"
     EnableVgwRoutePropagation = "EnableVgwRoutePropagation"
+    Advertisement = "Advertisement"
 
 
 class RouteServerAssociationState(StrEnum):
@@ -3288,6 +3318,7 @@ class RouteServerState(StrEnum):
 class RouteState(StrEnum):
     active = "active"
     blackhole = "blackhole"
+    filtered = "filtered"
 
 
 class RouteTableAssociationStateCode(StrEnum):
@@ -3552,6 +3583,12 @@ class TpmSupportValues(StrEnum):
 class TrafficDirection(StrEnum):
     ingress = "ingress"
     egress = "egress"
+
+
+class TrafficIpAddressType(StrEnum):
+    ipv4 = "ipv4"
+    ipv6 = "ipv6"
+    dual_stack = "dual-stack"
 
 
 class TrafficMirrorFilterRuleField(StrEnum):
@@ -6421,6 +6458,7 @@ class ClientVpnConnection(TypedDict, total=False):
     IngressPackets: Optional[String]
     EgressPackets: Optional[String]
     ClientIp: Optional[String]
+    ClientIpv6Address: Optional[String]
     CommonName: Optional[String]
     Status: Optional[ClientVpnConnectionStatus]
     ConnectionEndTime: Optional[String]
@@ -6467,6 +6505,8 @@ class ClientVpnEndpoint(TypedDict, total=False):
     ClientLoginBannerOptions: Optional[ClientLoginBannerResponseOptions]
     ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementResponseOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
+    EndpointIpAddressType: Optional[EndpointIpAddressType]
+    TrafficIpAddressType: Optional[TrafficIpAddressType]
 
 
 ClientVpnEndpointIdList = List[ClientVpnEndpointId]
@@ -6666,6 +6706,8 @@ class CopyImageRequest(ServiceRequest):
     CopyImageTags: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
     SnapshotCopyCompletionDurationMinutes: Optional[Long]
+    DestinationAvailabilityZone: Optional[String]
+    DestinationAvailabilityZoneId: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -6684,6 +6726,7 @@ class CopySnapshotRequest(ServiceRequest):
     SourceSnapshotId: String
     TagSpecifications: Optional[TagSpecificationList]
     CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesRequest]
+    DestinationAvailabilityZone: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -6799,7 +6842,7 @@ class CreateCarrierGatewayResult(TypedDict, total=False):
 
 
 class CreateClientVpnEndpointRequest(ServiceRequest):
-    ClientCidrBlock: String
+    ClientCidrBlock: Optional[String]
     ServerCertificateArn: String
     AuthenticationOptions: ClientVpnAuthenticationRequestList
     ConnectionLogOptions: ConnectionLogOptions
@@ -6819,6 +6862,8 @@ class CreateClientVpnEndpointRequest(ServiceRequest):
     ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
     ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
+    EndpointIpAddressType: Optional[EndpointIpAddressType]
+    TrafficIpAddressType: Optional[TrafficIpAddressType]
 
 
 class CreateClientVpnEndpointResult(TypedDict, total=False):
@@ -7441,6 +7486,39 @@ class CreateImageRequest(ServiceRequest):
 
 class CreateImageResult(TypedDict, total=False):
     ImageId: Optional[String]
+
+
+ImageUsageReportUserIdStringList = List[String]
+ImageUsageResourceTypeOptionValuesList = List[ImageUsageResourceTypeOptionValue]
+
+
+class ImageUsageResourceTypeOptionRequest(TypedDict, total=False):
+    OptionName: Optional[String]
+    OptionValues: Optional[ImageUsageResourceTypeOptionValuesList]
+
+
+ImageUsageResourceTypeOptionRequestList = List[ImageUsageResourceTypeOptionRequest]
+
+
+class ImageUsageResourceTypeRequest(TypedDict, total=False):
+    ResourceType: Optional[ImageUsageResourceTypeName]
+    ResourceTypeOptions: Optional[ImageUsageResourceTypeOptionRequestList]
+
+
+ImageUsageResourceTypeRequestList = List[ImageUsageResourceTypeRequest]
+
+
+class CreateImageUsageReportRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+    ResourceTypes: ImageUsageResourceTypeRequestList
+    AccountIds: Optional[ImageUsageReportUserIdStringList]
+    ClientToken: Optional[String]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class CreateImageUsageReportResult(TypedDict, total=False):
+    ReportId: Optional[ImageUsageReportId]
 
 
 SecurityGroupIdStringListRequest = List[SecurityGroupId]
@@ -10726,6 +10804,15 @@ class DeleteFpgaImageResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
+class DeleteImageUsageReportRequest(ServiceRequest):
+    ReportId: ImageUsageReportId
+    DryRun: Optional[Boolean]
+
+
+class DeleteImageUsageReportResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
 class DeleteInstanceConnectEndpointRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     InstanceConnectEndpointId: InstanceConnectEndpointId
@@ -12556,6 +12643,127 @@ class DescribeImageAttributeRequest(ServiceRequest):
     Attribute: ImageAttributeName
     ImageId: ImageId
     DryRun: Optional[Boolean]
+
+
+DescribeImageReferencesImageIdStringList = List[ImageId]
+ResourceTypeOptionValuesList = List[ResourceTypeOptionValue]
+
+
+class ResourceTypeOption(TypedDict, total=False):
+    OptionName: Optional[ImageReferenceOptionName]
+    OptionValues: Optional[ResourceTypeOptionValuesList]
+
+
+ResourceTypeOptionList = List[ResourceTypeOption]
+
+
+class ResourceTypeRequest(TypedDict, total=False):
+    ResourceType: Optional[ImageReferenceResourceType]
+    ResourceTypeOptions: Optional[ResourceTypeOptionList]
+
+
+ResourceTypeRequestList = List[ResourceTypeRequest]
+
+
+class DescribeImageReferencesRequest(ServiceRequest):
+    ImageIds: DescribeImageReferencesImageIdStringList
+    IncludeAllResourceTypes: Optional[Boolean]
+    ResourceTypes: Optional[ResourceTypeRequestList]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeImageReferencesMaxResults]
+
+
+class ImageReference(TypedDict, total=False):
+    ImageId: Optional[ImageId]
+    ResourceType: Optional[ImageReferenceResourceType]
+    Arn: Optional[String]
+
+
+ImageReferenceList = List[ImageReference]
+
+
+class DescribeImageReferencesResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    ImageReferences: Optional[ImageReferenceList]
+
+
+ImageUsageReportIdStringList = List[ImageUsageReportId]
+DescribeImageUsageReportsImageIdStringList = List[ImageId]
+
+
+class DescribeImageUsageReportEntriesRequest(ServiceRequest):
+    ImageIds: Optional[DescribeImageUsageReportsImageIdStringList]
+    ReportIds: Optional[ImageUsageReportIdStringList]
+    NextToken: Optional[String]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeImageUsageReportEntriesMaxResults]
+
+
+class ImageUsageReportEntry(TypedDict, total=False):
+    ResourceType: Optional[ImageUsageResourceTypeName]
+    ReportId: Optional[ImageUsageReportId]
+    UsageCount: Optional[Long]
+    AccountId: Optional[String]
+    ImageId: Optional[ImageId]
+    ReportCreationTime: Optional[MillisecondDateTime]
+
+
+ImageUsageReportEntryList = List[ImageUsageReportEntry]
+
+
+class DescribeImageUsageReportEntriesResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    ImageUsageReportEntries: Optional[ImageUsageReportEntryList]
+
+
+class DescribeImageUsageReportsRequest(ServiceRequest):
+    ImageIds: Optional[DescribeImageUsageReportsImageIdStringList]
+    ReportIds: Optional[ImageUsageReportIdStringList]
+    NextToken: Optional[String]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeImageUsageReportsMaxResults]
+
+
+UserIdList = List[String]
+
+
+class ImageUsageResourceTypeOption(TypedDict, total=False):
+    OptionName: Optional[String]
+    OptionValues: Optional[ImageUsageResourceTypeOptionValuesList]
+
+
+ImageUsageResourceTypeOptionList = List[ImageUsageResourceTypeOption]
+
+
+class ImageUsageResourceType(TypedDict, total=False):
+    ResourceType: Optional[ImageUsageResourceTypeName]
+    ResourceTypeOptions: Optional[ImageUsageResourceTypeOptionList]
+
+
+ImageUsageResourceTypeList = List[ImageUsageResourceType]
+
+
+class ImageUsageReport(TypedDict, total=False):
+    ImageId: Optional[ImageId]
+    ReportId: Optional[ImageUsageReportId]
+    ResourceTypes: Optional[ImageUsageResourceTypeList]
+    AccountIds: Optional[UserIdList]
+    State: Optional[ImageUsageReportState]
+    StateReason: Optional[ImageUsageReportStateReason]
+    CreationTime: Optional[MillisecondDateTime]
+    ExpirationTime: Optional[MillisecondDateTime]
+    Tags: Optional[TagList]
+
+
+ImageUsageReportList = List[ImageUsageReport]
+
+
+class DescribeImageUsageReportsResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    ImageUsageReports: Optional[ImageUsageReportList]
 
 
 ImageIdStringList = List[ImageId]
@@ -21518,6 +21726,8 @@ class Ec2Api:
         copy_image_tags: Boolean | None = None,
         tag_specifications: TagSpecificationList | None = None,
         snapshot_copy_completion_duration_minutes: Long | None = None,
+        destination_availability_zone: String | None = None,
+        destination_availability_zone_id: String | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> CopyImageResult:
@@ -21537,6 +21747,7 @@ class Ec2Api:
         presigned_url: CopySnapshotRequestPSU | None = None,
         tag_specifications: TagSpecificationList | None = None,
         completion_duration_minutes: SnapshotCompletionDurationMinutesRequest | None = None,
+        destination_availability_zone: String | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> CopySnapshotResult:
@@ -21615,10 +21826,10 @@ class Ec2Api:
     def create_client_vpn_endpoint(
         self,
         context: RequestContext,
-        client_cidr_block: String,
         server_certificate_arn: String,
         authentication_options: ClientVpnAuthenticationRequestList,
         connection_log_options: ConnectionLogOptions,
+        client_cidr_block: String | None = None,
         dns_servers: ValueStringList | None = None,
         transport_protocol: TransportProtocol | None = None,
         vpn_port: Integer | None = None,
@@ -21635,6 +21846,8 @@ class Ec2Api:
         client_login_banner_options: ClientLoginBannerOptions | None = None,
         client_route_enforcement_options: ClientRouteEnforcementOptions | None = None,
         disconnect_on_session_timeout: Boolean | None = None,
+        endpoint_ip_address_type: EndpointIpAddressType | None = None,
+        traffic_ip_address_type: TrafficIpAddressType | None = None,
         **kwargs,
     ) -> CreateClientVpnEndpointResult:
         raise NotImplementedError
@@ -21792,6 +22005,20 @@ class Ec2Api:
         block_device_mappings: BlockDeviceMappingRequestList | None = None,
         **kwargs,
     ) -> CreateImageResult:
+        raise NotImplementedError
+
+    @handler("CreateImageUsageReport")
+    def create_image_usage_report(
+        self,
+        context: RequestContext,
+        image_id: ImageId,
+        resource_types: ImageUsageResourceTypeRequestList,
+        dry_run: Boolean | None = None,
+        account_ids: ImageUsageReportUserIdStringList | None = None,
+        client_token: String | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateImageUsageReportResult:
         raise NotImplementedError
 
     @handler("CreateInstanceConnectEndpoint")
@@ -22996,6 +23223,16 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DeleteFpgaImageResult:
+        raise NotImplementedError
+
+    @handler("DeleteImageUsageReport")
+    def delete_image_usage_report(
+        self,
+        context: RequestContext,
+        report_id: ImageUsageReportId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteImageUsageReportResult:
         raise NotImplementedError
 
     @handler("DeleteInstanceConnectEndpoint")
@@ -24378,6 +24615,48 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ImageAttribute:
+        raise NotImplementedError
+
+    @handler("DescribeImageReferences")
+    def describe_image_references(
+        self,
+        context: RequestContext,
+        image_ids: DescribeImageReferencesImageIdStringList,
+        include_all_resource_types: Boolean | None = None,
+        resource_types: ResourceTypeRequestList | None = None,
+        next_token: String | None = None,
+        dry_run: Boolean | None = None,
+        max_results: DescribeImageReferencesMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeImageReferencesResult:
+        raise NotImplementedError
+
+    @handler("DescribeImageUsageReportEntries")
+    def describe_image_usage_report_entries(
+        self,
+        context: RequestContext,
+        image_ids: DescribeImageUsageReportsImageIdStringList | None = None,
+        report_ids: ImageUsageReportIdStringList | None = None,
+        next_token: String | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        max_results: DescribeImageUsageReportEntriesMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeImageUsageReportEntriesResult:
+        raise NotImplementedError
+
+    @handler("DescribeImageUsageReports")
+    def describe_image_usage_reports(
+        self,
+        context: RequestContext,
+        image_ids: DescribeImageUsageReportsImageIdStringList | None = None,
+        report_ids: ImageUsageReportIdStringList | None = None,
+        next_token: String | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        max_results: DescribeImageUsageReportsMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeImageUsageReportsResult:
         raise NotImplementedError
 
     @handler("DescribeImages")
