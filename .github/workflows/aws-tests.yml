@@ -901,6 +901,8 @@ jobs:
 
   publish-alternative-provider-test-results:
     name: Publish Alternative Provider Test Results
+    # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
+    if: ${{ !inputs.onlyAcceptanceTests && !cancelled() && ( contains(needs.*.result, 'success') || contains(needs.*.result, 'failure') ) }}
     needs:
       - test-cfn-v2-engine
       - test-events-v1
@@ -913,8 +915,6 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
-    if: ${{ !cancelled() && ( contains(needs.*.result, 'success') || contains(needs.*.result, 'failure') ) }}
     steps:
       - name: Download Cloudformation v2 Artifacts
         uses: actions/download-artifact@v5
