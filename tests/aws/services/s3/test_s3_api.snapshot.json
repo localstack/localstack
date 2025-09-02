@@ -4708,5 +4708,33 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_bucket_tagging_none_value": {
+    "recorded-date": "02-09-2025, 22:48:59",
+    "recorded-content": {
+      "put-bucket-tags-origin": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "put-none-tag-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      },
+      "no-such-tag-set": {
+        "Error": {
+          "BucketName": "<bucket-name:1>",
+          "Code": "NoSuchTagSet",
+          "Message": "The TagSet does not exist"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

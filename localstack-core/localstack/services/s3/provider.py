@@ -3166,11 +3166,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if "TagSet" not in tagging:
             raise MalformedXML()
 
-        validate_tag_set(tagging["TagSet"], type_set="bucket")
+        tag_set = tagging["TagSet"] or []
+        validate_tag_set(tag_set, type_set="bucket")
 
         # remove the previous tags before setting the new ones, it overwrites the whole TagSet
         store.TAGS.tags.pop(s3_bucket.bucket_arn, None)
-        store.TAGS.tag_resource(s3_bucket.bucket_arn, tags=tagging["TagSet"])
+        store.TAGS.tag_resource(s3_bucket.bucket_arn, tags=tag_set)
 
     def get_bucket_tagging(
         self,

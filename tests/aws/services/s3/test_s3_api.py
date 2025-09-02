@@ -962,6 +962,26 @@ class TestS3BucketObjectTagging:
         snapshot.match("put-no-bucket-tags", e.value.response)
 
     @markers.aws.validated
+    def test_put_bucket_tagging_none_value(
+        self, s3_bucket, aws_client_factory, snapshot, region_name
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("BucketName"))
+        s3_client = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).s3
+        tag_set_origin = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
+
+        put_bucket_tags = s3_client.put_bucket_tagging(Bucket=s3_bucket, Tagging=tag_set_origin)
+        snapshot.match("put-bucket-tags-origin", put_bucket_tags)
+
+        put_obj_tagging = s3_client.put_bucket_tagging(Bucket=s3_bucket, Tagging={"TagSet": None})
+        snapshot.match("put-none-tag-set", put_obj_tagging)
+
+        with pytest.raises(ClientError) as e:
+            s3_client.get_bucket_tagging(Bucket=s3_bucket)
+        snapshot.match("no-such-tag-set", e.value.response)
+
+    @markers.aws.validated
     def test_object_tagging_crud(self, s3_bucket, aws_client, snapshot):
         object_key = "test-object-tagging"
         put_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=object_key, Body="test-tagging")
