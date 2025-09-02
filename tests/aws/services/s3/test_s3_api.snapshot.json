@@ -2167,7 +2167,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_object_tagging_exc": {
-    "recorded-date": "21-01-2025, 18:11:13",
+    "recorded-date": "02-09-2025, 22:43:24",
     "recorded-content": {
       "get-no-bucket-tags": {
         "Error": {
@@ -4687,6 +4687,24 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 501
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_tagging_none_value": {
+    "recorded-date": "02-09-2025, 22:43:06",
+    "recorded-content": {
+      "put-none-tag-set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-object-tags-none": {
+        "TagSet": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -5,6 +5,7 @@ from operator import itemgetter
 from urllib.parse import urlencode
 
 import pytest
+from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 
@@ -1042,6 +1043,24 @@ class TestS3BucketObjectTagging:
             tagging = "key1=val1,key2=val2"
             aws_client.s3.put_object(Bucket=s3_bucket, Key=fake_key, Body="", Tagging=tagging)
         snapshot.match("put-obj-wrong-format", e.value.response)
+
+    @markers.aws.validated
+    def test_put_object_tagging_none_value(
+        self, s3_bucket, aws_client_factory, snapshot, region_name
+    ):
+        s3_client = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).s3
+        object_key = "test-empty-tag-set"
+        s3_client.put_object(Bucket=s3_bucket, Key=object_key, Body="test-tagging")
+
+        put_obj_tagging = s3_client.put_object_tagging(
+            Bucket=s3_bucket, Key=object_key, Tagging={"TagSet": None}
+        )
+        snapshot.match("put-none-tag-set", put_obj_tagging)
+
+        get_object_tags = s3_client.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-none", get_object_tags)
 
     @markers.aws.validated
     def test_object_tagging_versioned(self, s3_bucket, aws_client, snapshot):
