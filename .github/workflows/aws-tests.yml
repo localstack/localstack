@@ -902,7 +902,7 @@ jobs:
   publish-alternative-provider-test-results:
     name: Publish Alternative Provider Test Results
     # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
-    if: ${{ !cancelled() && false && ( contains(needs.*.result, 'success') || contains(needs.*.result, 'failure') ) }}
+    if: ${{ !cancelled() && ( contains(needs.*.result, 'success') || contains(needs.*.result, 'failure') ) }}
     needs:
       - test-cfn-v2-engine
       - test-events-v1
