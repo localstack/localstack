@@ -21,6 +21,7 @@ from localstack.aws.api.s3 import (
     Event,
     EventBridgeConfiguration,
     EventList,
+    InvalidArgument,
     LambdaFunctionArn,
     LambdaFunctionConfiguration,
     NotificationConfiguration,
@@ -34,8 +35,8 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.s3.exceptions import MalformedXML
 from localstack.services.s3.models import S3Bucket, S3DeleteMarker, S3Object
-from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition, parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -272,25 +273,28 @@ class BaseNotifier:
         arn, argument_name = self._get_arn_value_and_name(configuration)
 
         if not re.match(f"{ARN_PARTITION_REGEX}:{self.service_name}:", arn):
-            raise _create_invalid_argument_exc(
-                "The ARN could not be parsed", name=argument_name, value=arn
+            raise InvalidArgument(
+                "The ARN could not be parsed",
+                ArgumentName=argument_name,
+                ArgumentValue=arn,
             )
+
         if not verification_ctx.skip_destination_validation:
             self._verify_target(arn, verification_ctx)
 
         if filter_rules := configuration.get("Filter", {}).get("Key", {}).get("FilterRules"):
             for rule in filter_rules:
-                rule["Name"] = rule["Name"].capitalize()
-                if rule["Name"] not in ["Suffix", "Prefix"]:
-                    raise _create_invalid_argument_exc(
+                if "Name" not in rule or "Value" not in rule:
+                    raise MalformedXML()
+
+                if rule["Name"].lower() not in ["suffix", "prefix"]:
+                    raise InvalidArgument(
                         "filter rule name must be either prefix or suffix",
-                        rule["Name"],
-                        rule["Value"],
+                        ArgumentName="FilterRule.Name",
+                        ArgumentValue=rule["Name"],
                     )
-                if not rule["Value"]:
-                    raise _create_invalid_argument_exc(
-                        "filter value cannot be empty", rule["Name"], rule["Value"]
-                    )
+
+                rule["Name"] = rule["Name"].capitalize()
 
     @staticmethod
     def _get_test_payload(verification_ctx: BucketVerificationContext):
@@ -382,7 +386,7 @@ class SqsNotifier(BaseNotifier):
 
     @staticmethod
     def _get_arn_value_and_name(queue_configuration: QueueConfiguration) -> tuple[QueueArn, str]:
-        return queue_configuration.get("QueueArn", ""), "QueueArn"
+        return queue_configuration.get("QueueArn", ""), "Queue"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         if not is_api_enabled("sqs"):
@@ -410,11 +414,12 @@ class SqsNotifier(BaseNotifier):
                 code,
                 exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="The destination queue does not exist",
+                ArgumentName=target_arn,
+                ArgumentValue="The destination queue does not exist",
             )
+
         # send test event with the request metadata for permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
         sqs_client = connect_to(region_name=arn_data["region"]).sqs.request_metadata(
@@ -430,10 +435,10 @@ class SqsNotifier(BaseNotifier):
                 verification_ctx.bucket_name,
                 target_arn,
             )
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="Permissions on the destination queue do not allow S3 to publish notifications from this bucket",
+                ArgumentName=target_arn,
+                ArgumentValue="Permissions on the destination queue do not allow S3 to publish notifications from this bucket",
             ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: QueueConfiguration):
@@ -490,10 +495,10 @@ class SnsNotifier(BaseNotifier):
         try:
             sns_client.get_topic_attributes(TopicArn=target_arn)
         except ClientError:
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="The destination topic does not exist",
+                ArgumentName=target_arn,
+                ArgumentValue="The destination topic does not exist",
             )
 
         sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
@@ -513,10 +518,10 @@ class SnsNotifier(BaseNotifier):
                 verification_ctx.bucket_name,
                 target_arn,
             )
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="Permissions on the destination topic do not allow S3 to publish notifications from this bucket",
+                ArgumentName=target_arn,
+                ArgumentValue="Permissions on the destination topic do not allow S3 to publish notifications from this bucket",
             ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: TopicConfiguration):
@@ -575,10 +580,10 @@ class LambdaNotifier(BaseNotifier):
         try:
             lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="The destination Lambda does not exist",
+                ArgumentName=target_arn,
+                ArgumentValue="The destination Lambda does not exist",
             )
         lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name, region=verification_ctx.region),
@@ -587,10 +592,10 @@ class LambdaNotifier(BaseNotifier):
         try:
             lambda_client.invoke(FunctionName=target_arn, InvocationType=InvocationType.DryRun)
         except ClientError as e:
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=f"{target_arn}, null",
-                value=f"Not authorized to invoke function [{target_arn}]",
+                ArgumentName=f"{target_arn}, null",
+                ArgumentValue=f"Not authorized to invoke function [{target_arn}]",
             ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: LambdaFunctionConfiguration):

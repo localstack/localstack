@@ -2448,3 +2448,78 @@ class TestS3DeletePrecondition:
                 IfMatchLastModifiedTime=earlier,
             )
         snapshot.match("delete-obj-if-match-all", e.value.response)
+
+
+class TestS3BucketNotificationConfiguration:
+    @markers.aws.validated
+    def test_bucket_notification_with_missing_values_in_rule(
+        self,
+        s3_bucket,
+        sqs_create_queue,
+        snapshot,
+        aws_client,
+        aws_client_factory,
+        region_name,
+    ):
+        s3_client = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).s3
+        queue_url = sqs_create_queue()
+        queue_attributes = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )
+        filter_rule = {}
+        cfg = {
+            "QueueConfigurations": [
+                {
+                    "QueueArn": queue_attributes["Attributes"]["QueueArn"],
+                    "Events": ["s3:ObjectCreated:*"],
+                    "Filter": {"Key": {"FilterRules": [filter_rule]}},
+                }
+            ]
+        }
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=s3_bucket, NotificationConfiguration=cfg
+            )
+        snapshot.match("invalid-rule-no-values", e.value.response)
+
+        filter_rule["Name"] = "prefix"
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=s3_bucket, NotificationConfiguration=cfg
+            )
+        snapshot.match("invalid-rule-no-value", e.value.response)
+
+        filter_rule["Value"] = "test"
+        del filter_rule["Name"]
+        with pytest.raises(ClientError) as e:
+            s3_client.put_bucket_notification_configuration(
+                Bucket=s3_bucket, NotificationConfiguration=cfg
+            )
+        snapshot.match("invalid-rule-no-name", e.value.response)
+
+    @markers.aws.validated
+    def test_bucket_notification_with_invalid_filter_rules(
+        self, s3_bucket, sqs_create_queue, snapshot, aws_client
+    ):
+        queue_url = sqs_create_queue()
+        queue_attributes = aws_client.sqs.get_queue_attributes(
+            QueueUrl=queue_url, AttributeNames=["QueueArn"]
+        )
+        cfg = {
+            "QueueConfigurations": [
+                {
+                    "QueueArn": queue_attributes["Attributes"]["QueueArn"],
+                    "Events": ["s3:ObjectCreated:*"],
+                    "Filter": {
+                        "Key": {"FilterRules": [{"Name": "INVALID", "Value": "does not matter"}]}
+                    },
+                }
+            ]
+        }
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.put_bucket_notification_configuration(
+                Bucket=s3_bucket, NotificationConfiguration=cfg
+            )
+        snapshot.match("invalid_filter_name", e.value.response)

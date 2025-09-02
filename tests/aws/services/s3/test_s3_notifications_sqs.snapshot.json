@@ -702,23 +702,6 @@
       }
     }
   },
-  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
-    "recorded-date": "21-01-2025, 23:22:02",
-    "recorded-content": {
-      "invalid_filter_name": {
-        "Error": {
-          "ArgumentName": "FilterRule.Name",
-          "ArgumentValue": "INVALID",
-          "Code": "InvalidArgument",
-          "Message": "filter rule name must be either prefix or suffix"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
     "recorded-date": "21-01-2025, 23:22:05",
     "recorded-content": {
@@ -1377,6 +1360,36 @@
           }
         }
       ]
+    }
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_empty_value": {
+    "recorded-date": "02-09-2025, 21:50:09",
+    "recorded-content": {
+      "bucket_notification_configuration": {
+        "QueueConfigurations": [
+          {
+            "Events": [
+              "s3:ObjectCreated:*"
+            ],
+            "Filter": {
+              "Key": {
+                "FilterRules": [
+                  {
+                    "Name": "Suffix",
+                    "Value": ""
+                  }
+                ]
+              }
+            },
+            "Id": "<id:1>",
+            "QueueArn": "arn:<partition>:sqs:<region>:111111111111:my-queue-<queue_id>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
     }
   }
 }

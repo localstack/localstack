@@ -4691,6 +4691,58 @@
       }
     }
   },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketNotificationConfiguration::test_bucket_notification_with_missing_values_in_rule": {
+    "recorded-date": "02-09-2025, 21:38:48",
+    "recorded-content": {
+      "invalid-rule-no-values": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-rule-no-value": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-rule-no-name": {
+        "Error": {
+          "Code": "MalformedXML",
+          "Message": "The XML you provided was not well-formed or did not validate against our published schema"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3BucketNotificationConfiguration::test_bucket_notification_with_invalid_filter_rules": {
+    "recorded-date": "02-09-2025, 21:37:07",
+    "recorded-content": {
+      "invalid_filter_name": {
+        "Error": {
+          "ArgumentName": "FilterRule.Name",
+          "ArgumentValue": "INVALID",
+          "Code": "InvalidArgument",
+          "Message": "filter rule name must be either prefix or suffix"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_object_tagging_none_value": {
     "recorded-date": "02-09-2025, 22:43:06",
     "recorded-content": {
