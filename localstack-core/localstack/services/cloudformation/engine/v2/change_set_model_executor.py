@@ -516,7 +516,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 f'No resource provider found for "{resource_type}"',
             )
             LOG.warning(
-                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES"
+                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
+                resource_type,
             )
             LOG.warning(
                 "Deployment of resource type %s will fail in upcoming LocalStack releases unless CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is explicitly enabled.",
