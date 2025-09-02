@@ -2481,3 +2481,35 @@ class TestKMSGenerateKeys:
 
         err = exc.value.response
         snapshot.match("dryrun_exception", err)
+
+    @markers.aws.needs_fixing
+    def test_replicate_replica_key_should_fail(
+        self,
+        kms_client_for_region,
+        kms_create_key,
+        kms_replicate_key,
+        region_name,
+        secondary_region_name,
+    ):
+        """Tes that attempting to replicate a replica key should raise ValidationException"""
+        primary_key_id = kms_create_key(
+            region_name=region_name, MultiRegion=True, Description="test primary key"
+        )["KeyId"]
+
+        kms_replicate_key(
+            region_from=region_name, KeyId=primary_key_id, ReplicaRegion=secondary_region_name
+        )
+
+        # attempt to replicate the replica key from the secondary region
+        # This should fail because we're trying to replicate a replica
+        secondary_client = kms_client_for_region(secondary_region_name)
+
+        with pytest.raises(ClientError) as exc_info:
+            secondary_client.replicate_key(
+                KeyId=primary_key_id, ReplicaRegion=secondary_region_name
+            )
+
+        # TODO: add validation against AWS snapshot.
+        error = exc_info.value.response["Error"]
+        assert error["Code"] == "ValidationException"
+        assert "not a multi-region primary key" in error["Message"]
