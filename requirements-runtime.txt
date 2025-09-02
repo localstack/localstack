@@ -21,7 +21,7 @@ attrs==25.3.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-aws-sam-translator==1.99.0
+aws-sam-translator==1.100.0
     # via
     #   cfn-lint
     #   localstack-core (pyproject.toml)
@@ -76,7 +76,7 @@ constantly==23.10.4
     # via localstack-twisted
 crontab==1.0.5
     # via localstack-core (pyproject.toml)
-cryptography==45.0.6
+cryptography==45.0.7
     # via
     #   joserfc
     #   localstack-core
@@ -281,7 +281,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2025.7.34
+regex==2025.9.1
     # via cfn-lint
 requests==2.32.5
     # via
