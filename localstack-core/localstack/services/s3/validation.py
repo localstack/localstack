@@ -151,7 +151,7 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         raise InvalidArgument(
             "Invalid id",
             ArgumentName="CanonicalUser/ID",
-            Argumentvalue=owner_id,
+            ArgumentValue=owner_id,
         )
 
     for grant in acp["Grants"]:
@@ -178,7 +178,7 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
             raise InvalidArgument(
                 "Invalid group uri",
                 ArgumentName="Group/URI",
-                Argumentvalue=grant_uri,
+                ArgumentValue=grant_uri,
             )
 
         elif grant_type == GranteeType.AmazonCustomerByEmail:
@@ -191,7 +191,7 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
             raise InvalidArgument(
                 "Invalid id",
                 ArgumentName="CanonicalUser/ID",
-                Argumentvalue=grantee_id,
+                ArgumentValue=grantee_id,
             )
 
 
