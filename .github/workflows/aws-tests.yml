@@ -267,6 +267,7 @@ jobs:
                - 'localstack-core/localstack/services/cloudwatch/**'
                - 'tests/aws/services/cloudwatch/**'
             dynamodb-v2:
+               - 'localstack-core/localstack/services/dynamodb/**'
                - 'tests/aws/services/dynamodb/**'
                - 'tests/aws/services/dynamodbstreams/**'
                - 'tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py'
@@ -274,6 +275,7 @@ jobs:
                - 'localstack-core/localstack/services/events/**'
                - 'tests/aws/services/events/**'
             cloudformation-v2:
+               - 'localstack-core/localstack/services/cloudformation/**'
                - 'tests/aws/services/cloudformation/**'
             sns-v2:
                - 'tests/aws/services/sns/**' # todo: potentially add more locations (lambda/sqs tests?)
