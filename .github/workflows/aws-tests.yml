@@ -135,7 +135,11 @@ env:
   TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && '--report-to-tinybird ' || '' }}"
   DOCKER_PULL_SECRET_AVAILABLE: ${{ secrets.DOCKERHUB_PULL_USERNAME != '' && secrets.DOCKERHUB_PULL_TOKEN != '' && 'true' || 'false' }}
 
-
+# Only one pull-request triggered run should be executed at a time
+# (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   build:
