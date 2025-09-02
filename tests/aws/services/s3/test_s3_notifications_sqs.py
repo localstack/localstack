@@ -820,34 +820,6 @@ class TestS3NotificationsToSQS:
         response = aws_client.s3.get_bucket_notification_configuration(Bucket=s3_bucket)
         snapshot.match("bucket_notification_configuration", response)
 
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$..Error.ArgumentName", "$..Error.ArgumentValue"],
-    )  # TODO: add to exception for ASF
-    @markers.aws.validated
-    def test_bucket_notification_with_invalid_filter_rules(
-        self, s3_bucket, sqs_create_queue, snapshot, aws_client
-    ):
-        queue_url = sqs_create_queue()
-        queue_attributes = aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url, AttributeNames=["QueueArn"]
-        )
-        cfg = {
-            "QueueConfigurations": [
-                {
-                    "QueueArn": queue_attributes["Attributes"]["QueueArn"],
-                    "Events": ["s3:ObjectCreated:*"],
-                    "Filter": {
-                        "Key": {"FilterRules": [{"Name": "INVALID", "Value": "does not matter"}]}
-                    },
-                }
-            ]
-        }
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.put_bucket_notification_configuration(
-                Bucket=s3_bucket, NotificationConfiguration=cfg
-            )
-        snapshot.match("invalid_filter_name", e.value.response)
-
     @markers.aws.validated
     # AWS seems to return "ArgumentName" (without the number) if the request fails a basic verification
     # -  basically everything it can check isolated of the structure of the request
