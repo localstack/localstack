@@ -1120,21 +1120,30 @@ class TestSNSSubscriptionCrud:
         snapshot.match("unsubscribe-2", unsubscribe_2)
 
     @markers.aws.validated
-    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client):
+    def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client_factory, region_name):
+        sns_client = aws_client_factory(
+            region_name=region_name, config=Config(parameter_validation=False)
+        ).sns
+
         with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="randomstring")
+            sns_client.unsubscribe(SubscriptionArn="randomstring")
 
         snapshot.match("invalid-unsubscribe-arn-1", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
+            sns_client.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:random")
 
         snapshot.match("invalid-unsubscribe-arn-2", e.value.response)
 
         with pytest.raises(ClientError) as e:
-            aws_client.sns.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
+            sns_client.unsubscribe(SubscriptionArn="arn:aws:sns:us-east-1:111111111111:random")
 
         snapshot.match("invalid-unsubscribe-arn-3", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_client.unsubscribe()
+
+        snapshot.match("invalid-unsubscribe-arn-4", e.value.response)
 
     @markers.aws.validated
     def test_subscribe_with_invalid_topic(self, sns_create_topic, sns_subscription, snapshot):

@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import copy
 import functools
 import json
@@ -419,6 +420,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def unsubscribe(
         self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
     ) -> None:
+        if subscription_arn is None:
+            raise InvalidParameterException(
+                "Invalid parameter: SubscriptionArn Reason: no value for required parameter",
+            )
         count = len(subscription_arn.split(":"))
         try:
             parsed_arn = parse_arn(subscription_arn)
@@ -469,7 +474,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 subscription_arn=subscription_arn,
             )
 
-        store.topic_subscriptions[subscription["TopicArn"]].remove(subscription_arn)
+        with contextlib.suppress(ValueError):
+            store.topic_subscriptions[subscription["TopicArn"]].remove(subscription_arn)
         store.subscription_filter_policy.pop(subscription_arn, None)
         store.subscriptions.pop(subscription_arn, None)
 

@@ -90,7 +90,13 @@
     "last_validated_date": "2023-11-06T23:36:06+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
-    "last_validated_date": "2023-10-20T10:52:36+00:00"
+    "last_validated_date": "2025-09-02T20:17:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 0.73,
+      "teardown": 0.0,
+      "total": 1.18
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_validate_set_sub_attributes": {
     "last_validated_date": "2024-03-29T19:30:23+00:00"

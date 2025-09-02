@@ -4021,7 +4021,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
-    "recorded-date": "20-10-2023, 12:52:36",
+    "recorded-date": "02-09-2025, 20:17:36",
     "recorded-content": {
       "invalid-unsubscribe-arn-1": {
         "Error": {
@@ -4049,6 +4049,17 @@
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: SubscriptionId",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-unsubscribe-arn-4": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: no value for required parameter",
           "Type": "Sender"
         },
         "ResponseMetadata": {
