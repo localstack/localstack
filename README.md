@@ -179,7 +179,7 @@ upvote 👍 [feature requests](https://github.com/localstack/localstack/issues?q
 🙋🏽 ask [support questions](https://docs.localstack.cloud/getting-started/help-and-support/),
 or 🗣️ discuss local cloud development:
 
-- [LocalStack Slack Community](https://localstack.cloud/contact/)
+- [LocalStack Slack Community](https://localstack.cloud/slack/)
 - [LocalStack GitHub Issue tracker](https://github.com/localstack/localstack/issues)
 
 ### Contributors
