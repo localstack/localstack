@@ -2450,6 +2450,7 @@ class TestS3DeletePrecondition:
         snapshot.match("delete-obj-if-match-all", e.value.response)
 
 
+@pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="SQS not enabled in S3 image")
 class TestS3BucketNotificationConfiguration:
     @markers.aws.validated
     def test_bucket_notification_with_missing_values_in_rule(
