@@ -13,6 +13,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid, short_uid
 from tests.aws.services.s3.conftest import TEST_S3_IMAGE
 
+
 class TestS3BucketCRUD:
     @markers.aws.validated
     def test_delete_bucket_with_objects(self, s3_bucket, aws_client, snapshot):
@@ -612,8 +613,11 @@ class TestS3Multipart:
         list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
         snapshot.match("list-parts", list_parts)
 
+    # AIDEN
     @markers.aws.validated
-    def test_upload_part_copy_with_copy_source_if_match_failed(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_match_failed(
+        self, aws_client, s3_bucket, snapshot
+    ):
         """
         Providing CopySourceIfMatch with an ETag which doesn't match with the specified source key ETag should fail.
         """
@@ -624,7 +628,7 @@ class TestS3Multipart:
                 snapshot.transform.key_value("UploadId"),
                 snapshot.transform.key_value("DisplayName", reference_replacement=False),
                 snapshot.transform.key_value("ID", reference_replacement=False),
-                snapshot.transform.key_value("ETag")
+                snapshot.transform.key_value("ETag"),
             ]
         )
 
@@ -636,18 +640,27 @@ class TestS3Multipart:
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
-        create_multipart_upload = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=multi_part_upload_key)
+        create_multipart_upload = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multi_part_upload_key
+        )
         snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         with pytest.raises(ClientError) as error:
             aws_client.s3.upload_part_copy(
-                Bucket=s3_bucket, UploadId=upload_id, Key=multi_part_upload_key, PartNumber=1, CopySource=f"{s3_bucket}/{source_key}", CopySourceIfMatch="not-matching"
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=multi_part_upload_key,
+                PartNumber=1,
+                CopySource=f"{s3_bucket}/{source_key}",
+                CopySourceIfMatch="not-matching",
             )
         snapshot.match("upload-part-copy-source-if-match", error.value.response)
 
     @markers.aws.validated
-    def test_upload_part_copy_with_copy_source_if_none_match_failed(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_none_match_failed(
+        self, aws_client, s3_bucket, snapshot
+    ):
         """
         Providing CopySourceIfNoneMatch with an ETag which does match with the specified source key ETag should fail.
         """
@@ -658,7 +671,7 @@ class TestS3Multipart:
                 snapshot.transform.key_value("UploadId"),
                 snapshot.transform.key_value("DisplayName", reference_replacement=False),
                 snapshot.transform.key_value("ID", reference_replacement=False),
-                snapshot.transform.key_value("ETag")
+                snapshot.transform.key_value("ETag"),
             ]
         )
 
@@ -670,19 +683,31 @@ class TestS3Multipart:
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
-        create_multipart_upload = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=multi_part_upload_key)
+        create_multipart_upload = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multi_part_upload_key
+        )
         snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         with pytest.raises(ClientError) as error:
-            # Provide the correct ETag to cause a failure
+            # Provide the correct ETag to cause a failure
             aws_client.s3.upload_part_copy(
-                Bucket=s3_bucket, UploadId=upload_id, Key=multi_part_upload_key, PartNumber=1, CopySource=f"{s3_bucket}/{source_key}", CopySourceIfNoneMatch=put_source_object["ETag"]
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=multi_part_upload_key,
+                PartNumber=1,
+                CopySource=f"{s3_bucket}/{source_key}",
+                CopySourceIfNoneMatch=put_source_object["ETag"],
             )
         snapshot.match("upload-part-copy-source-if-none-match", error.value.response)
 
     @markers.aws.validated
-    def test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed(
+        self, aws_client, s3_bucket, snapshot
+    ):
+        """
+        Providing CopySourceIfUnmodifiedSince with a datetime where the object has been modified since this datetime should fail.
+        """
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -690,7 +715,7 @@ class TestS3Multipart:
                 snapshot.transform.key_value("UploadId"),
                 snapshot.transform.key_value("DisplayName", reference_replacement=False),
                 snapshot.transform.key_value("ID", reference_replacement=False),
-                snapshot.transform.key_value("ETag")
+                snapshot.transform.key_value("ETag"),
             ]
         )
 
@@ -702,15 +727,22 @@ class TestS3Multipart:
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
-        create_multipart_upload = aws_client.s3.create_multipart_upload(Bucket=s3_bucket, Key=multi_part_upload_key)
+        create_multipart_upload = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multi_part_upload_key
+        )
         snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
-        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
+        earlier_datetime = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
         with pytest.raises(ClientError) as error:
             # Provide a time earler than it's last modified time which should fail.
             aws_client.s3.upload_part_copy(
-                Bucket=s3_bucket, UploadId=upload_id, Key=multi_part_upload_key, PartNumber=1, CopySource=f"{s3_bucket}/{source_key}", CopySourceIfUnmodifiedSince=earlier
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=multi_part_upload_key,
+                PartNumber=1,
+                CopySource=f"{s3_bucket}/{source_key}",
+                CopySourceIfUnmodifiedSince=earlier_datetime,
             )
         snapshot.match("upload-part-copy-source-unmodified-since-match", error.value.response)
 
@@ -765,7 +797,9 @@ class TestS3Multipart:
                 CopySourceIfNoneMatch="not-matching",
                 CopySourceIfUnmodifiedSince=earlier_datetime,
             )
-        snapshot.match("upload-part-copy-source-unmodified-since-and-if-none-match", error.value.response)
+        snapshot.match(
+            "upload-part-copy-source-unmodified-since-and-if-none-match", error.value.response
+        )
 
 
 class TestS3BucketVersioning:
