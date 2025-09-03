@@ -505,8 +505,8 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             source_key.metadata.get("MultiRegionConfiguration", {}).get("MultiRegionKeyType")
             != "PRIMARY"
         ):
-            raise ValidationException(
-                "The key cannot be replicated because it is not a multi-region primary key."
+            raise UnsupportedOperationException(
+                "You can only replicate a multi-Region primary key."
             )
 
         if key_id in replicate_to_store.keys:
