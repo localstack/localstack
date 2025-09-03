@@ -125,6 +125,7 @@ function _set_version_defaults() {
 function cmd-build() {
     # start build of a platform-specific image (this target will get called for multiple archs like AMD64/ARM64)
     _enforce_image_name
+    _enforce_platform
     _set_version_defaults
 
     if [ ! -f "pyproject.toml" ]; then
