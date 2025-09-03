@@ -424,7 +424,7 @@ def get_failed_upload_part_copy_source_preconditions(
 
     if if_match and if_match != f'"{etag}"':
         # CopySourceIfMatch is unaffected by CopySourceIfModified and CopySourceIfUnmodified.
-        preconditions += "x-amz-copy-source-If-Match"
+        return "x-amz-copy-source-If-Match"
     elif if_none_match:
         # If both CopySourceIfNoneMatch and CopySourceIfUnmodifiedSince, the CopySourceIfUnmodifiedSince condition takes priority.
         if if_unmodified_since and if_unmodified_since < last_modified:
