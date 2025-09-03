@@ -2490,6 +2490,7 @@ class TestKMSGenerateKeys:
         kms_replicate_key,
         region_name,
         secondary_region_name,
+        snapshot,
     ):
         """Tes that attempting to replicate a replica key should raise ValidationException"""
         primary_key_id = kms_create_key(
@@ -2509,7 +2510,5 @@ class TestKMSGenerateKeys:
                 KeyId=primary_key_id, ReplicaRegion=secondary_region_name
             )
 
-        # TODO: add validation against AWS snapshot.
-        error = exc_info.value.response["Error"]
-        assert error["Code"] == "ValidationException"
-        assert "not a multi-region primary key" in error["Message"]
+        error = exc_info.value.response
+        snapshot.match("fail-replicate-non-primary-key", error)
