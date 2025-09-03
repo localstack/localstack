@@ -2483,10 +2483,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: UploadPartCopyRequest,
     ) -> UploadPartCopyOutput:
         # TODO: handle following parameters:
-        #  CopySourceIfMatch: Optional[CopySourceIfMatch]
-        #  CopySourceIfModifiedSince: Optional[CopySourceIfModifiedSince]
-        #  CopySourceIfNoneMatch: Optional[CopySourceIfNoneMatch]
-        #  CopySourceIfUnmodifiedSince: Optional[CopySourceIfUnmodifiedSince]
         #  SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
         #  SSECustomerKey: Optional[SSECustomerKey]
         #  SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
@@ -2549,6 +2545,17 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
+        # Unknown issue where regardless of whether CopySourceIfModifiedSince condition is met, it will always pass in AWS.
+        if source_etag_match := request.get("CopySourceIfMatch"):
+            if source_etag_match != f'"{src_s3_object.etag}"':
+                raise PreconditionFailed("At least one of the pre-conditions you specified did not hold", Condition="x-amz-copy-source-If-Match")
+        if source_etag_none_match := request.get("CopySourceIfNoneMatch"):
+            if source_etag_none_match == f'"{src_s3_object.etag}"':
+                raise PreconditionFailed("At least one of the pre-conditions you specified did not hold", Condition="x-amz-copy-source-If-None-Match")
+        if source_unmodified_since := request.get("CopySourceIfUnmodifiedSince"):
+            if source_unmodified_since < src_s3_object.last_modified:
+                raise PreconditionFailed("At least one of the pre-conditions you specified did not hold", Condition="x-amz-copy-source-If-Unmodified-Since")
+        
         s3_part = S3Part(part_number=part_number)
         if s3_multipart.checksum_algorithm:
             s3_part.checksum_algorithm = s3_multipart.checksum_algorithm
