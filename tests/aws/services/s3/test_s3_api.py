@@ -683,7 +683,6 @@ class TestS3Multipart:
 
     @markers.aws.validated
     def test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed(self, aws_client, s3_bucket, snapshot):
-        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
