@@ -4834,5 +4834,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApiGatewayApiResource::test_update_resource_on_root": {
+    "recorded-date": "03-09-2025, 15:58:00",
+    "recorded-content": {
+      "update-root-path-part": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Root resource cannot update its pathPart."
+        },
+        "message": "Root resource cannot update its pathPart.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-root-parent": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Root resource cannot update its parentId."
+        },
+        "message": "Root resource cannot update its parentId.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

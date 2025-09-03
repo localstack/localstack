@@ -697,6 +697,9 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     f"Invalid patch path  '{path}' specified for op '{op}'. Please choose supported operations"
                 )
 
+            if moto_resource.parent_id is None:
+                raise BadRequestException(f"Root resource cannot update its {path.strip('/')}.")
+
             if path == "/parentId":
                 value = patch_operation.get("value")
                 future_parent_resource = moto_rest_api.resources.get(value)
@@ -733,7 +736,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
                     api_resources.pop(current_parent_id)
 
         # add it to the new parent children
-        future_sibling_resources = api_resources[moto_resource.parent_id]
+        future_sibling_resources = api_resources.setdefault(moto_resource.parent_id, [])
         future_sibling_resources.append(resource_id)
 
         response = moto_resource.to_dict()

@@ -851,6 +851,33 @@ class TestApiGatewayApiResource:
         snapshot.match("add-unsupported", e.value.response)
 
     @markers.aws.validated
+    def test_update_resource_on_root(self, apigw_create_rest_api, snapshot, aws_client):
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource behaviour"
+        )
+        api_id = response["id"]
+        root_id = response["rootResourceId"]
+
+        patch_operations = [
+            {"op": "replace", "path": "/pathPart", "value": "dogs"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_resource(
+                restApiId=api_id, resourceId=root_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-root-path-part", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/parentId", "value": root_id},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_resource(
+                restApiId=api_id, resourceId=root_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-root-parent", e.value.response)
+
+    @markers.aws.validated
     def test_delete_resource(self, apigw_create_rest_api, snapshot, aws_client):
         response = apigw_create_rest_api(
             name=f"test-api-{short_uid()}", description="testing resource behaviour"
