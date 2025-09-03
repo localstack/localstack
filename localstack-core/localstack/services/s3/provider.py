@@ -277,6 +277,7 @@ from localstack.services.s3.utils import (
     get_canned_acl,
     get_class_attrs_from_spec_class,
     get_failed_precondition_copy_source,
+    get_failed_upload_part_copy_source_preconditions,
     get_full_default_bucket_location,
     get_kms_key_arn,
     get_lifecycle_rule_from_object,
@@ -2476,6 +2477,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: RequestCharged: Optional[RequestCharged]
         return response
 
+    # AIDEN
     @handler("UploadPartCopy", expand=False)
     def upload_part_copy(
         self,
@@ -2545,17 +2547,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
 
-        # Unknown issue where regardless of whether CopySourceIfModifiedSince condition is met, it will always pass in AWS.
-        if source_etag_match := request.get("CopySourceIfMatch"):
-            if source_etag_match != f'"{src_s3_object.etag}"':
-                raise PreconditionFailed("At least one of the pre-conditions you specified did not hold", Condition="x-amz-copy-source-If-Match")
-        if source_etag_none_match := request.get("CopySourceIfNoneMatch"):
-            if source_etag_none_match == f'"{src_s3_object.etag}"':
-                raise PreconditionFailed("At least one of the pre-conditions you specified did not hold", Condition="x-amz-copy-source-If-None-Match")
-        if source_unmodified_since := request.get("CopySourceIfUnmodifiedSince"):
-            if source_unmodified_since < src_s3_object.last_modified:
-                raise PreconditionFailed("At least one of the pre-conditions you specified did not hold", Condition="x-amz-copy-source-If-Unmodified-Since")
-        
+        if precondition := get_failed_upload_part_copy_source_preconditions(
+            request, src_s3_object.last_modified, src_s3_object.etag
+        ):
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition=precondition,
+            )
+
         s3_part = S3Part(part_number=part_number)
         if s3_multipart.checksum_algorithm:
             s3_part.checksum_algorithm = s3_multipart.checksum_algorithm

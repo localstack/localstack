@@ -50,6 +50,7 @@ from localstack.aws.api.s3 import (
     SSEKMSKeyId,
     TaggingHeader,
     TagSet,
+    UploadPartCopyRequest,
     UploadPartRequest,
 )
 from localstack.aws.api.s3 import Type as GranteeType
@@ -401,6 +402,37 @@ def parse_copy_source_range_header(copy_source_range: str, object_size: int) -> 
         begin=begin,
         end=end,
     )
+
+
+# AIDEN
+def get_failed_upload_part_copy_source_preconditions(
+    request: UploadPartCopyRequest, last_modified: datetime.datetime, etag: ETag
+) -> str | None:
+    """
+    Utility which parses the conditions from a S3 UploadPartCopy request.
+    Currently doesn't support CopySourceIfModifiedSince due to unknown behaviour.
+
+    :param UploadPartCopyRequest request: The S3 UploadPartCopy request
+    :param datetime last_modified: The time the source object was last modified
+    :param ETag etag: The ETag of the source object
+
+    :returns: The failed precondition name
+    """
+    if_match = request.get("CopySourceIfMatch")
+    if_none_match = request.get("CopySourceIfNoneMatch")
+    if_unmodified_since = request.get("CopySourceIfUnmodifiedSince")
+
+    if if_match and if_match != f'"{etag}"':
+        # CopySourceIfMatch is unaffected by CopySourceIfModified and CopySourceIfUnmodified.
+        preconditions += "x-amz-copy-source-If-Match"
+    elif if_none_match:
+        # If both CopySourceIfNoneMatch and CopySourceIfUnmodifiedSince, the CopySourceIfUnmodifiedSince condition takes priority.
+        if if_unmodified_since and if_unmodified_since < last_modified:
+            return "x-amz-copy-source-If-Unmodified-Since"
+        if if_none_match == f'"{etag}"':
+            return "x-amz-copy-source-If-None-Match"
+    elif if_unmodified_since and if_unmodified_since < last_modified:
+        return "x-amz-copy-source-If-Unmodified-Since"
 
 
 def get_full_default_bucket_location(bucket_name: BucketName) -> str:
