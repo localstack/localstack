@@ -1,5 +1,23 @@
 {
   "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp": {
     "last_validated_date": "2024-06-21T13:58:29+00:00"
+  },
+  "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp[CBORRequestParser]": {
+    "last_validated_date": "2025-09-04T16:01:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.01,
+      "teardown": 0.0,
+      "total": 0.01
+    }
+  },
+  "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp[create_parser]": {
+    "last_validated_date": "2025-09-04T16:01:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.0,
+      "teardown": 0.0,
+      "total": 0.0
+    }
   }
 }
