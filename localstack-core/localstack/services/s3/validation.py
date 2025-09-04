@@ -38,7 +38,6 @@ from localstack.aws.api.s3 import Type as GranteeType
 from localstack.services.s3 import constants as s3_constants
 from localstack.services.s3.exceptions import InvalidRequest, MalformedACLError, MalformedXML
 from localstack.services.s3.utils import (
-    _create_invalid_argument_exc,
     get_class_attrs_from_spec_class,
     get_permission_header_name,
     is_bucket_name_valid,
@@ -87,8 +86,11 @@ def validate_canned_acl(canned_acl: str) -> None:
     Validate the canned ACL value, or raise an Exception
     """
     if canned_acl and canned_acl not in VALID_CANNED_ACLS:
-        ex = _create_invalid_argument_exc(None, "x-amz-acl", canned_acl)
-        raise ex
+        raise InvalidArgument(
+            None,
+            ArgumentName="x-amz-acl",
+            ArgumentValue=canned_acl,
+        )
 
 
 def parse_grants_in_headers(permission: Permission, grantees: str) -> Grants:
@@ -98,16 +100,18 @@ def parse_grants_in_headers(permission: Permission, grantees: str) -> Grants:
         grantee_type, grantee_id = seralized_grantee.split("=")
         grantee_id = grantee_id.strip('"')
         if grantee_type not in ("uri", "id", "emailAddress"):
-            ex = _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Argument format not recognized",
-                get_permission_header_name(permission),
-                seralized_grantee,
+                ArgumentName=get_permission_header_name(permission),
+                ArgumentValue=seralized_grantee,
             )
-            raise ex
         elif grantee_type == "uri":
             if grantee_id not in s3_constants.VALID_ACL_PREDEFINED_GROUPS:
-                ex = _create_invalid_argument_exc("Invalid group uri", "uri", grantee_id)
-                raise ex
+                raise InvalidArgument(
+                    "Invalid group uri",
+                    ArgumentName="uri",
+                    ArgumentValue=grantee_id,
+                )
             grantee = Grantee(
                 Type=GranteeType.Group,
                 URI=grantee_id,
@@ -115,8 +119,11 @@ def parse_grants_in_headers(permission: Permission, grantees: str) -> Grants:
 
         elif grantee_type == "id":
             if not is_valid_canonical_id(grantee_id):
-                ex = _create_invalid_argument_exc("Invalid id", "id", grantee_id)
-                raise ex
+                raise InvalidArgument(
+                    "Invalid id",
+                    ArgumentName="id",
+                    ArgumentValue=grantee_id,
+                )
             grantee = Grantee(
                 Type=GranteeType.CanonicalUser,
                 ID=grantee_id,
@@ -141,8 +148,11 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         )
 
     if not is_valid_canonical_id(owner_id := acp["Owner"].get("ID", "")):
-        ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", owner_id)
-        raise ex
+        raise InvalidArgument(
+            "Invalid id",
+            ArgumentName="CanonicalUser/ID",
+            ArgumentValue=owner_id,
+        )
 
     for grant in acp["Grants"]:
         if grant.get("Permission") not in s3_constants.VALID_GRANTEE_PERMISSIONS:
@@ -165,8 +175,11 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
             and (grant_uri := grantee.get("URI", ""))
             not in s3_constants.VALID_ACL_PREDEFINED_GROUPS
         ):
-            ex = _create_invalid_argument_exc("Invalid group uri", "Group/URI", grant_uri)
-            raise ex
+            raise InvalidArgument(
+                "Invalid group uri",
+                ArgumentName="Group/URI",
+                ArgumentValue=grant_uri,
+            )
 
         elif grant_type == GranteeType.AmazonCustomerByEmail:
             # TODO: add validation here
@@ -175,8 +188,11 @@ def validate_acl_acp(acp: AccessControlPolicy) -> None:
         elif grant_type == GranteeType.CanonicalUser and not is_valid_canonical_id(
             grantee_id := grantee.get("ID", "")
         ):
-            ex = _create_invalid_argument_exc("Invalid id", "CanonicalUser/ID", grantee_id)
-            raise ex
+            raise InvalidArgument(
+                "Invalid id",
+                ArgumentName="CanonicalUser/ID",
+                ArgumentValue=grantee_id,
+            )
 
 
 def validate_lifecycle_configuration(lifecycle_conf: BucketLifecycleConfiguration) -> None:
@@ -242,12 +258,12 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
     """
     if redirect_all_req := website_config.get("RedirectAllRequestsTo", {}):
         if len(website_config) > 1:
-            ex = _create_invalid_argument_exc(
-                message="RedirectAllRequestsTo cannot be provided in conjunction with other Routing Rules.",
-                name="RedirectAllRequestsTo",
-                value="not null",
+            raise InvalidArgument(
+                "RedirectAllRequestsTo cannot be provided in conjunction with other Routing Rules.",
+                ArgumentName="RedirectAllRequestsTo",
+                ArgumentValue="not null",
             )
-            raise ex
+
         if "HostName" not in redirect_all_req:
             raise MalformedXML()
 
@@ -261,20 +277,18 @@ def validate_website_configuration(website_config: WebsiteConfiguration) -> None
     # required
     # https://docs.aws.amazon.com/AmazonS3/latest/API/API_IndexDocument.html
     if not (index_configuration := website_config.get("IndexDocument")):
-        ex = _create_invalid_argument_exc(
-            message="A value for IndexDocument Suffix must be provided if RedirectAllRequestsTo is empty",
-            name="IndexDocument",
-            value="null",
+        raise InvalidArgument(
+            "A value for IndexDocument Suffix must be provided if RedirectAllRequestsTo is empty",
+            ArgumentName="IndexDocument",
+            ArgumentValue="null",
         )
-        raise ex
 
     if not (index_suffix := index_configuration.get("Suffix")) or "/" in index_suffix:
-        ex = _create_invalid_argument_exc(
-            message="The IndexDocument Suffix is not well formed",
-            name="IndexDocument",
-            value=index_suffix or None,
+        raise InvalidArgument(
+            "The IndexDocument Suffix is not well formed",
+            ArgumentName="IndexDocument",
+            ArgumentValue=index_suffix or None,
         )
-        raise ex
 
     if "ErrorDocument" in website_config and not website_config.get("ErrorDocument", {}).get("Key"):
         raise MalformedXML()

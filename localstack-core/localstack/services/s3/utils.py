@@ -574,17 +574,6 @@ def get_bucket_and_key_from_presign_url(presign_url: str) -> tuple[str, str]:
     return bucket, key
 
 
-def _create_invalid_argument_exc(
-    message: str | None, name: str, value: str, host_id: str = None
-) -> InvalidArgument:
-    ex = InvalidArgument(message)
-    ex.ArgumentName = name
-    ex.ArgumentValue = value
-    if host_id:
-        ex.HostId = host_id
-    return ex
-
-
 def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 

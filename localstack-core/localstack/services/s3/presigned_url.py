@@ -45,7 +45,6 @@ from localstack.services.s3.constants import (
 )
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
-    _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     extract_bucket_name_and_key_from_headers_and_path,
     forwarded_from_virtual_host_addressed_request,
@@ -772,13 +771,12 @@ def validate_post_policy(
     :return: None
     """
     if not request_form.get("key"):
-        ex: InvalidArgument = _create_invalid_argument_exc(
-            message="Bucket POST must contain a field named 'key'.  If it is specified, please check the order of the fields.",
-            name="key",
-            value="",
-            host_id=FAKE_HOST_ID,
+        raise InvalidArgument(
+            "Bucket POST must contain a field named 'key'.  If it is specified, please check the order of the fields.",
+            ArgumentName="key",
+            ArgumentValue="",
+            HostId=FAKE_HOST_ID,
         )
-        raise ex
 
     form_dict = {k.lower(): v for k, v in request_form.items()}
 
@@ -932,13 +930,12 @@ def _is_match_with_signature_fields(
                 if argument_name == "Awsaccesskeyid":
                     argument_name = "AWSAccessKeyId"
 
-                ex: InvalidArgument = _create_invalid_argument_exc(
-                    message=f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
-                    name=argument_name,
-                    value="",
-                    host_id=FAKE_HOST_ID,
+                raise InvalidArgument(
+                    f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
+                    ArgumentName=argument_name,
+                    ArgumentValue="",
+                    HostId=FAKE_HOST_ID,
                 )
-                raise ex
 
         return True
     return False
