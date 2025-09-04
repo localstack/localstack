@@ -60,7 +60,7 @@ from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
 
-_AWS_URL_SUFFIX = localstack_host().host_and_port()  # The value in AWS is "amazonaws.com"
+_AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
 
 _PSEUDO_PARAMETERS: Final[set[str]] = {
     "AWS::Partition",
@@ -450,7 +450,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
-            value = f"{prefix}{host}/{path}"
+            port = localstack_host().port
+            value = f"{prefix}{host}:{port}/{path}"
             return value
 
         return value
