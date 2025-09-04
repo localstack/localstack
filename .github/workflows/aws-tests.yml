@@ -273,6 +273,7 @@ jobs:
             events-v1:
                - 'tests/aws/services/events/**'
             cloudformation-v2:
+               - 'localstack-core/localstack/services/cloudformation/**'
                - 'tests/aws/services/cloudformation/**'
             sns-v2:
                - 'tests/aws/services/sns/**' # todo: potentially add more locations (lambda/sqs tests?)
