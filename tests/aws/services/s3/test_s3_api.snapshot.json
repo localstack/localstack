@@ -4784,7 +4784,7 @@
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
-          "HTTPStatusCode": 404
+          "HTTPStatusCode": 412
         }
       }
     }
