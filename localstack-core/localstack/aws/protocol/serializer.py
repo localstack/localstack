@@ -73,6 +73,7 @@ be sent back to the calling client.
 
 import abc
 import base64
+import copy
 import functools
 import json
 import logging
@@ -89,7 +90,15 @@ from typing import IO, Any
 from xml.etree import ElementTree as ETree
 
 import xmltodict
-from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
+from botocore.model import (
+    ListShape,
+    MapShape,
+    OperationModel,
+    ServiceModel,
+    Shape,
+    StringShape,
+    StructureShape,
+)
 from botocore.serialize import ISO8601, ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 
@@ -1661,29 +1670,28 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
         body = bytearray()
         response.content_type = mime_type
         response.headers["X-Amzn-Errortype"] = error.code
-        # we need to manually encode the `__type` field as it is not part of the specs
-        # TODO: think about a better way
-        # body["__type"] = error.code
 
         if shape:
-            remaining_params = {}
-            for member in shape.members:
-                if hasattr(error, member):
-                    remaining_params[member] = getattr(error, member)
+            # FIXME: we need to manually add the `__type` field to the shape as it is not part of the specs
+            #  think about a better way, this is very hacky
+            shape_copy = copy.deepcopy(shape)
+            shape_copy.members["__type"] = StringShape(
+                shape_name="__type", shape_model={"type": "string"}
+            )
+            remaining_params = {"__type": error.code}
+
+            for member_name in shape_copy.members:
+                if hasattr(error, member_name):
+                    remaining_params[member_name] = getattr(error, member_name)
                 # Default error message fields can sometimes have different casing in the specs
-                elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                    remaining_params[member] = getattr(error, member.lower())
-            self._serialize_data_item(body, remaining_params, shape, None)
+                elif member_name.lower() in ["code", "message"] and hasattr(
+                    error, member_name.lower()
+                ):
+                    remaining_params[member_name] = getattr(error, member_name.lower())
 
-        # Only set the message if it has not been set with the shape members
-        # if "message" not in body and "Message" not in body:
-        #     message = self._get_error_message(error)
-        #     if message is not None:
-        # serialize body
-        # body["message"] = message
-        # pass
+            self._serialize_data_item(body, remaining_params, shape_copy, None)
 
-        response.set_response(body)
+        response.set_response(bytes(body))
 
     def _serialize_response(
         self,
