@@ -85,6 +85,7 @@ from localstack.aws.api.kms import (
     MacAlgorithmSpec,
     MarkerType,
     MultiRegionKey,
+    MultiRegionKeyType,
     NotFoundException,
     NullableBooleanType,
     OriginType,
@@ -503,7 +504,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # Ensure it's a primary key (covers cases where MultiRegionKeyType might be missing or have other values)
         if (
             source_key.metadata.get("MultiRegionConfiguration", {}).get("MultiRegionKeyType")
-            != "PRIMARY"
+            != MultiRegionKeyType.PRIMARY
         ):
             raise UnsupportedOperationException(
                 "You can only replicate a multi-Region primary key."
