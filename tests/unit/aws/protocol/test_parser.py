@@ -7,6 +7,7 @@ from botocore.awsrequest import prepare_request_dict
 from botocore.serialize import create_serializer
 
 from localstack.aws.protocol.parser import (
+    CBORRequestParser,
     OperationNotFoundParserError,
     ProtocolParserError,
     QueryRequestParser,
@@ -626,7 +627,10 @@ def test_json_parser_cognito_with_botocore():
     )
 
 
-def test_json_cbor_blob_parsing():
+# TODO: once Kinesis supports multi protocols (json/cbor), update this test to select the protocol instead when
+#  creating the parser
+@pytest.mark.parametrize("parser_factory", [CBORRequestParser, create_parser])
+def test_json_cbor_blob_parsing(parser_factory):
     serialized_request = {
         "url_path": "/",
         "query_string": "",
@@ -655,7 +659,7 @@ def test_json_cbor_blob_parsing():
     # Load the appropriate service
     service = load_service("kinesis")
     operation_model = service.operation_model("PutRecord")
-    parser = create_parser(service)
+    parser = parser_factory(service)
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
@@ -678,7 +682,10 @@ def test_json_cbor_blob_parsing():
     assert parsed_request["PartitionKey"] == "partitionkey"
 
 
-def test_json_cbor_blob_parsing_w_timestamp(snapshot):
+# TODO: once Kinesis supports multi protocols (json/cbor), update this test to select the protocol instead when
+#  creating the parser
+@pytest.mark.parametrize("parser_factory", [CBORRequestParser, create_parser])
+def test_json_cbor_blob_parsing_w_timestamp(snapshot, parser_factory):
     serialized_request = {
         "url_path": "/",
         "query_string": "",
@@ -707,7 +714,7 @@ def test_json_cbor_blob_parsing_w_timestamp(snapshot):
     # Load the appropriate service
     service = load_service("kinesis")
     operation_model = service.operation_model("SubscribeToShard")
-    parser = create_parser(service)
+    parser = parser_factory(service)
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method"),
@@ -721,6 +728,7 @@ def test_json_cbor_blob_parsing_w_timestamp(snapshot):
 
     # Check if the determined operation_model is correct
     assert parsed_operation_model == operation_model
+    assert isinstance(parsed_request["StartingPosition"]["Timestamp"], datetime)
     snapshot.match("parsed_request", parsed_request)
 
 
