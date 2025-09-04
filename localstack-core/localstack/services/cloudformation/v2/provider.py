@@ -4,6 +4,7 @@ import logging
 import re
 from collections import defaultdict
 from datetime import UTC, datetime
+from urllib.parse import urlencode
 
 from localstack import config
 from localstack.aws.api import RequestContext, handler
@@ -118,6 +119,7 @@ from localstack.services.cloudformation.v2.entities import (
     StackSet,
 )
 from localstack.services.cloudformation.v2.types import EngineParameter
+from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import select_attributes
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
@@ -215,7 +217,28 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str) -> Stack
     return None
 
 
-class CloudformationProviderV2(CloudformationProvider):
+class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
+    def on_before_start(self):
+        base = "https://github.com/localstack/localstack/issues/new"
+        query_args = {
+            "template": "bug-report.yml",
+            "labels": ",".join(
+                [
+                    "aws:cloudformation:v2",
+                    "status: triage needed",
+                    "type: bug",
+                ]
+            ),
+            "title": "CFNV2: ",
+        }
+        issue_url = "?".join([base, urlencode(query_args)])
+        LOG.info(
+            "You have opted in to the new CloudFormation deployment engine. "
+            "You can opt in to using the old engine by setting PROVIDER_OVERRIDE_CLOUDFORMATION=legacy. "
+            "If you experience issues, please submit a bug report at this URL: %s",
+            issue_url,
+        )
+
     @staticmethod
     def _resolve_parameters(
         template: dict | None, parameters: dict | None, account_id: str, region_name: str
