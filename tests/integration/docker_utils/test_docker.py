@@ -1353,6 +1353,57 @@ class TestDockerClient:
         assert "45329/tcp" in result["Config"]["ExposedPorts"]
 
     @markers.skip_offline
+    def test_remove_anonymous_volumes(
+        self, docker_client: ContainerClient, create_container, tmp_path, cleanups
+    ):
+        dockerfile_dir = tmp_path / "dockerfile"
+        tmp_file = short_uid()
+        ctx_dir = dockerfile_dir
+        dockerfile_path = os.path.join(dockerfile_dir, "Dockerfile")
+
+        # Create a custom Dockerfile that creates an anonymous volume
+        dockerfile = f"""
+        FROM alpine
+        ADD {tmp_file} .
+        VOLUME [ "/tmp" ]
+        ENV foo=bar
+        EXPOSE 45329
+        """
+        save_file(dockerfile_path, dockerfile)
+        save_file(os.path.join(ctx_dir, tmp_file), "test content 123")
+
+        dockerfile_ref = str(dockerfile_dir)
+
+        # Using the SDK directly, as our abstraction doesn't directly expose volumes yet
+        docker_sdk = SdkDockerClient().docker_client
+
+        image_name = f"img-{short_uid()}"
+        docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name)
+        cleanups.append(lambda: docker_client.remove_image(image_name, force=True))
+
+        container = create_container(
+            image_name,
+            command=["sh", "-c", "while true; do sleep 1; done"],
+        )
+
+        volumes = docker_client.inspect_container_volumes(container.container_id)
+        assert len(volumes) == 1, "We should have a single (anonymous) volume in our custom image"
+        anon_volume_name = [v.name for v in volumes][0]
+
+        # Verify that the anonymous volume exists
+        current_volumes = docker_sdk.volumes.list()
+        current_volume_names = [v.name for v in current_volumes]
+        assert anon_volume_name in current_volume_names
+
+        # Remove the container, and explicilty remove anonymous volumes
+        docker_client.remove_container(container_name=container.container_name, volumes=True)
+
+        # Verify that the anonymous volume has been removed
+        current_volumes = docker_sdk.volumes.list()
+        current_volume_names = [v.name for v in current_volumes]
+        assert anon_volume_name not in current_volume_names
+
+    @markers.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):
         try:
             docker_client.remove_image("alpine")
