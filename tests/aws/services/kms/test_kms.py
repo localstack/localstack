@@ -2490,7 +2490,7 @@ class TestKMSGenerateKeys:
         kms_replicate_key,
         region_name,
         secondary_region_name,
-        snapshot,
+        # snapshot,  # TODO: needs fixing iam:CreateServiceLinkedRole permission
     ):
         """Tes that attempting to replicate a replica key should raise ValidationException"""
         primary_key_id = kms_create_key(
@@ -2511,4 +2511,8 @@ class TestKMSGenerateKeys:
             )
 
         error = exc_info.value.response
-        snapshot.match("fail-replicate-non-primary-key", error)
+        # TODO: move to snapshot when permission issue is resolved
+        assert error["Error"]["Code"] == "UnsupportedOperationException"
+        assert error["Error"]["Message"] == "You can only replicate a multi-Region primary key."
+        assert error["ResponseMetadata"]["HTTPStatusCode"] == 400
+        # snapshot.match("fail-replicate-non-primary-key", error)
