@@ -275,7 +275,6 @@ class RequestParser(abc.ABC):
 
         fn_name = f"_parse_{shape.type_name}"
         handler = getattr(self, fn_name, self._noop_parser)
-        print(f"{fn_name=}, {shape=}, {payload=}")
         try:
             return handler(request, shape, payload, uri_params) if payload is not None else None
         except (TypeError, ValueError, AttributeError) as e:
@@ -1254,9 +1253,7 @@ class CBORRequestParser(BaseCBORRequestParser):
         uri_params: Mapping[str, Any] = None,
     ):
         original_parsed = self._initial_body_parse(request)
-        print(f"{original_parsed=}")
         body_parsed = self._parse_shape(request, shape, original_parsed, uri_params)
-        print(f"{body_parsed=}")
         final_parsed.update(body_parsed)
 
 

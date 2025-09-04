@@ -751,6 +751,7 @@ class TestKinesis:
         cbor_content = describe_response_raw.content
         describe_response_data = cbor2_loads(cbor_content)
         snapshot.match("cbor-error", describe_response_data)
+        assert describe_response_data["__type"] == "ResourceNotFoundException"
         # TODO: add manual assertion on CBOR body?
 
 
