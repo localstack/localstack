@@ -38,6 +38,7 @@ from localstack.aws.api.sqs import (
 )
 from localstack.aws.api.sts import Credentials, GetSessionTokenResponse
 from localstack.aws.protocol.serializer import (
+    CBORResponseSerializer,
     ProtocolSerializerError,
     QueryResponseSerializer,
     UnknownSerializerError,
@@ -246,6 +247,10 @@ def _botocore_event_streaming_test(
     actual_events = list(parsed_response[response_root_tag])
     assert len(actual_events) == len(expected_events)
     assert actual_events == expected_events
+
+
+def _cbor_serializer_factory(service):
+    return CBORResponseSerializer()
 
 
 def test_rest_xml_serializer_cloudfront_with_botocore():
@@ -1844,9 +1849,10 @@ def test_query_protocol_json_serialization(headers_dict):
     "headers_dict",
     [{"Content-Type": "application/cbor"}, {"Accept": "application/cbor"}],
 )
-def test_json_protocol_cbor_serialization(headers_dict):
+@pytest.mark.parametrize("serializer_factory", [create_serializer, _cbor_serializer_factory])
+def test_json_protocol_cbor_serialization(headers_dict, serializer_factory):
     service = load_service("kinesis")
-    response_serializer = create_serializer(service)
+    response_serializer = serializer_factory(service)
     headers = Headers(headers_dict)
     response_data = GetRecordsOutput(
         Records=[
