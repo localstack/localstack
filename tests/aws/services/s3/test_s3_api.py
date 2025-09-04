@@ -790,7 +790,7 @@ class TestS3Multipart:
             Key=multi_part_upload_key,
             PartNumber=1,
             CopySource=f"{s3_bucket}/{source_key}",
-            CopySourceIfMatch=put_source_object["ETag"], 
+            CopySourceIfMatch=put_source_object["ETag"],
             CopySourceIfUnmodifiedSince=earlier_datetime,
         )
         snapshot.match("upload-part-copy", upload_part_copy)

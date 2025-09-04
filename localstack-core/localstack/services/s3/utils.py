@@ -410,7 +410,7 @@ def get_failed_upload_part_copy_source_preconditions(
 ) -> str | None:
     """
     Utility which parses the conditions from a S3 UploadPartCopy request.
-    
+
     Few things to note:
     1. Certain conditions are checked first, and take the order of:
         - CopySourceIfMatch -> CopySourceIfUnmodifiedSince -> CopySourceIfNoneMatch
@@ -432,10 +432,10 @@ def get_failed_upload_part_copy_source_preconditions(
         # CopySourceIfMatch is unaffected by CopySourceIfUnmodifiedSince
         if if_unmodified_since:
             return None
-        
+
     if if_unmodified_since and if_unmodified_since < last_modified:
         return "x-amz-copy-source-If-Unmodified-Since"
-    
+
     if if_none_match and if_none_match == f'"{etag}"':
         return "x-amz-copy-source-If-None-Match"
 
