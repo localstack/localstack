@@ -5,6 +5,15 @@
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_cbor_blob_handling": {
     "last_validated_date": "2024-07-31T11:17:28+00:00"
   },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_cbor_exceptions": {
+    "last_validated_date": "2025-09-04T16:59:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 0.47,
+      "teardown": 0.0,
+      "total": 0.97
+    }
+  },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_create_stream_without_shard_count": {
     "last_validated_date": "2022-08-26T07:30:59+00:00"
   },
