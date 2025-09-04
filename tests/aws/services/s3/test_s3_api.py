@@ -613,7 +613,6 @@ class TestS3Multipart:
         list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
         snapshot.match("list-parts", list_parts)
 
-    # AIDEN
     @markers.aws.validated
     def test_upload_part_copy_with_copy_source_if_match_failed(
         self, aws_client, s3_bucket, snapshot

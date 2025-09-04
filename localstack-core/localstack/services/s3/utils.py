@@ -404,7 +404,6 @@ def parse_copy_source_range_header(copy_source_range: str, object_size: int) -> 
     )
 
 
-# AIDEN
 def get_failed_upload_part_copy_source_preconditions(
     request: UploadPartCopyRequest, last_modified: datetime.datetime, etag: ETag
 ) -> str | None:
