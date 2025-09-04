@@ -351,11 +351,13 @@ class RequestParser(abc.ABC):
 
     @staticmethod
     def _timestamp_unixtimestamp(timestamp_string: str) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(int(timestamp_string), datetime.UTC)
+        dt = datetime.datetime.fromtimestamp(int(timestamp_string), tz=datetime.UTC)
+        return dt.replace(tzinfo=None)
 
     @staticmethod
     def _timestamp_unixtimestampmillis(timestamp_string: str) -> datetime.datetime:
-        return datetime.datetime.fromtimestamp(float(timestamp_string) / 1000, datetime.UTC)
+        dt = datetime.datetime.fromtimestamp(float(timestamp_string) / 1000, tz=datetime.UTC)
+        return dt.replace(tzinfo=None)
 
     @staticmethod
     def _timestamp_rfc822(datetime_string: str) -> datetime.datetime:

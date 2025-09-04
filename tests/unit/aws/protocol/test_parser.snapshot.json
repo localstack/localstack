@@ -1,25 +1,25 @@
 {
   "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp[CBORRequestParser]": {
-    "recorded-date": "04-09-2025, 16:01:56",
+    "recorded-date": "04-09-2025, 18:32:21",
     "recorded-content": {
       "parsed_request": {
         "ConsumerARN": "<test-consumer-arn>",
         "ShardId": "<test-shard-id>",
         "StartingPosition": {
-          "Timestamp": "2024-06-21 08:54:08.123000+00:00",
+          "Timestamp": "2024-06-21 08:54:08.123000",
           "Type": "AT_TIMESTAMP"
         }
       }
     }
   },
   "tests/unit/aws/protocol/test_parser.py::test_json_cbor_blob_parsing_w_timestamp[create_parser]": {
-    "recorded-date": "04-09-2025, 16:01:56",
+    "recorded-date": "04-09-2025, 18:32:21",
     "recorded-content": {
       "parsed_request": {
         "ConsumerARN": "<test-consumer-arn>",
         "ShardId": "<test-shard-id>",
         "StartingPosition": {
-          "Timestamp": "2024-06-21 08:54:08.123000+00:00",
+          "Timestamp": "2024-06-21 08:54:08.123000",
           "Type": "AT_TIMESTAMP"
         }
       }
