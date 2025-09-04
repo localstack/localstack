@@ -668,6 +668,8 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -718,6 +720,8 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -767,6 +771,8 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -818,6 +824,8 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -852,6 +860,7 @@ jobs:
             ${{ env.COVERAGE_FILE }}
             ${{ env.JUNIT_REPORTS_FILE }}
           retention-days: 30
+
   test-sns-v2:
     name: Test SNS V2
     if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || needs.test-preflight.outputs.sns-v2 == 'true') }}
@@ -864,6 +873,8 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -905,7 +916,8 @@ jobs:
   publish-alternative-provider-test-results:
     name: Publish Alternative Provider Test Results
     # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
-    if: ${{ !cancelled() && (contains(fromJSON('["success", "failure"]'), needs.test-cfn-v2-engine.result) || contains(fromJSON('["success", "failure"]'), needs.test-events-v1.result) || contains(fromJSON('["success", "failure"]'), needs.test-ddb-v2.result) || contains(fromJSON('["success", "failure"]'), needs.test-cloudwatch-v1.result)) }}
+    # if: ${{ !cancelled() && (contains(fromJSON('["success", "failure"]'), needs.test-cfn-v2-engine.result) || contains(fromJSON('["success", "failure"]'), needs.test-events-v1.result) || contains(fromJSON('["success", "failure"]'), needs.test-ddb-v2.result) || contains(fromJSON('["success", "failure"]'), needs.test-cloudwatch-v1.result)) }}
+    if: ${{ !cancelled() && (contains(needs.*.outputs.job_status, 'executed')) }}
     needs:
       - test-cfn-v2-engine
       - test-events-v1
