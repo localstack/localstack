@@ -1154,6 +1154,10 @@ class BaseCBORRequestParser(RequestParser, ABC):
             f"This indicates an unsupported simple type or an indefinite float value"
         )
 
+    @_text_content
+    def _parse_blob(self, _, __, node: bytes, ___) -> bytes:
+        return node
+
     # This helper method is intended for use when parsing indefinite length items.
     # It does nothing if the next byte is not the break code.  If the next byte is
     # the break code, it advances past that byte and returns True so the calling
