@@ -33,7 +33,7 @@ from localstack.services.sns.v2.publisher import PublishDispatcher, SnsPublishCo
 from localstack.services.sns.v2.utils import (
     create_subscription_arn,
     encode_subscription_token_with_region,
-    is_e164,
+    is_valid_e164_number,
     parse_and_validate_topic_arn,
     validate_subscription_attribute,
 )
@@ -81,7 +81,7 @@ class SnsProvider(SnsApi):
             raise InvalidParameterException(
                 "Invalid parameter: Endpoint must match the specified protocol"
             )
-        elif protocol == "sms" and not is_e164(endpoint):
+        elif protocol == "sms" and not is_valid_e164_number(endpoint):
             raise InvalidParameterException(f"Invalid SMS endpoint: {endpoint}")
 
         elif protocol == "sqs":

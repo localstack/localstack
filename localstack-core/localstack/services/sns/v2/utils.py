@@ -20,7 +20,7 @@ def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
         )
 
 
-def is_e164(number: str) -> bool:
+def is_valid_e164_number(number: str) -> bool:
     return E164_REGEX.match(number) is not None
 
 
