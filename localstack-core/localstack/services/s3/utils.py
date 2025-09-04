@@ -410,29 +410,34 @@ def get_failed_upload_part_copy_source_preconditions(
 ) -> str | None:
     """
     Utility which parses the conditions from a S3 UploadPartCopy request.
-    Currently doesn't support CopySourceIfModifiedSince due to unknown behaviour.
+    
+    Few things to note:
+    1. Certain conditions are checked first, and take the order of:
+        - CopySourceIfMatch -> CopySourceIfUnmodifiedSince -> CopySourceIfNoneMatch
+    2. The CopySourceIfModifiedSince had no impact on the request so it has been omitted.
 
-    :param UploadPartCopyRequest request: The S3 UploadPartCopy request
-    :param datetime last_modified: The time the source object was last modified
-    :param ETag etag: The ETag of the source object
+    :param UploadPartCopyRequest request: The S3 UploadPartCopy request.
+    :param datetime last_modified: The time the source object was last modified.
+    :param ETag etag: The ETag of the source object.
 
-    :returns: The failed precondition name
+    :returns: The name of the failed precondition.
     """
     if_match = request.get("CopySourceIfMatch")
     if_none_match = request.get("CopySourceIfNoneMatch")
     if_unmodified_since = request.get("CopySourceIfUnmodifiedSince")
 
-    if if_match and if_match != f'"{etag}"':
-        # CopySourceIfMatch is unaffected by CopySourceIfModified and CopySourceIfUnmodified.
-        return "x-amz-copy-source-If-Match"
-    elif if_none_match:
-        # If both CopySourceIfNoneMatch and CopySourceIfUnmodifiedSince, the CopySourceIfUnmodifiedSince condition takes priority.
-        if if_unmodified_since and if_unmodified_since < last_modified:
-            return "x-amz-copy-source-If-Unmodified-Since"
-        if if_none_match == f'"{etag}"':
-            return "x-amz-copy-source-If-None-Match"
-    elif if_unmodified_since and if_unmodified_since < last_modified:
+    if if_match:
+        if if_match != f'"{etag}"':
+            return "x-amz-copy-source-If-Match"
+        # CopySourceIfMatch is unaffected by CopySourceIfUnmodifiedSince
+        if if_unmodified_since:
+            return None
+        
+    if if_unmodified_since and if_unmodified_since < last_modified:
         return "x-amz-copy-source-If-Unmodified-Since"
+    
+    if if_none_match and if_none_match == f'"{etag}"':
+        return "x-amz-copy-source-If-None-Match"
 
 
 def get_full_default_bucket_location(bucket_name: BucketName) -> str:
