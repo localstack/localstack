@@ -450,7 +450,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             prefix = api_match[1]
             host = api_match[2]
             path = api_match[3]
-            value = f"{prefix}{host}/{path}"
+            port = localstack_host().port
+            value = f"{prefix}{host}:{port}/{path}"
             return value
 
         return value
