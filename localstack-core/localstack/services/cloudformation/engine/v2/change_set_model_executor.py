@@ -1,9 +1,11 @@
 import copy
 import logging
+import re
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Final, Protocol
+from typing import Final, Protocol, TypeVar
 
 from localstack import config
 from localstack.aws.api.cloudformation import (
@@ -15,18 +17,14 @@ from localstack.aws.api.cloudformation import (
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import log_not_available_message
-from localstack.services.cloudformation.engine.template_deployer import REGEX_OUTPUT_APIGATEWAY
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
-    NodeIntrinsicFunction,
     NodeOutput,
     NodeResource,
-    TerminalValueCreated,
-    TerminalValueModified,
-    TerminalValueUnchanged,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    _AWS_URL_SUFFIX,
     MOCKED_REFERENCE,
     ChangeSetModelPreproc,
     PreprocEntityDelta,
@@ -42,11 +40,16 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
-from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
+
+REGEX_OUTPUT_APIGATEWAY = re.compile(
+    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
+)
+
+_T = TypeVar("_T")
 
 
 @dataclass
@@ -220,6 +223,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         try:
             delta = super().visit_node_resource(node_resource=node_resource)
         except Exception as e:
+            LOG.debug(
+                "preprocessing resource '%s' failed: %s",
+                node_resource.name,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
+            )
             self._process_event(
                 action=node_resource.change_type.to_change_action(),
                 logical_resource_id=node_resource.name,
@@ -507,7 +516,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 f'No resource provider found for "{resource_type}"',
             )
             LOG.warning(
-                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES"
+                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
+                resource_type,
             )
             LOG.warning(
                 "Deployment of resource type %s will fail in upcoming LocalStack releases unless CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is explicitly enabled.",
@@ -638,66 +648,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         }
         return resource_provider_payload
 
-    @staticmethod
-    def _replace_url_outputs_if_required(value: str) -> str:
-        api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
-        if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
-            prefix = api_match[1]
-            host = api_match[2]
-            path = api_match[3]
-            port = localstack_host().port
-            value = f"{prefix}{host}:{port}/{path}"
-            return value
-
-        return value
-
-    def _replace_url_outputs_in_delta_if_required(
-        self, delta: PreprocEntityDelta
+    def _maybe_perform_on_delta(
+        self, delta: PreprocEntityDelta, f: Callable[[_T], _T]
     ) -> PreprocEntityDelta:
-        if isinstance(delta.before, str):
-            delta.before = self._replace_url_outputs_if_required(delta.before)
+        # we only care about the after state
         if isinstance(delta.after, str):
-            delta.after = self._replace_url_outputs_if_required(delta.after)
+            delta.after = f(delta.after)
         return delta
-
-    def visit_terminal_value_created(
-        self, value: TerminalValueCreated
-    ) -> PreprocEntityDelta[str, str]:
-        if isinstance(value.value, str):
-            after = self._replace_url_outputs_if_required(value.value)
-        else:
-            after = value.value
-        return PreprocEntityDelta(after=after)
-
-    def visit_terminal_value_modified(
-        self, value: TerminalValueModified
-    ) -> PreprocEntityDelta[str, str]:
-        # we only need to transform the after
-        if isinstance(value.modified_value, str):
-            after = self._replace_url_outputs_if_required(value.modified_value)
-        else:
-            after = value.modified_value
-        return PreprocEntityDelta(before=value.value, after=after)
-
-    def visit_terminal_value_unchanged(
-        self, terminal_value_unchanged: TerminalValueUnchanged
-    ) -> PreprocEntityDelta:
-        if isinstance(terminal_value_unchanged.value, str):
-            value = self._replace_url_outputs_if_required(terminal_value_unchanged.value)
-        else:
-            value = terminal_value_unchanged.value
-        return PreprocEntityDelta(before=value, after=value)
-
-    def visit_node_intrinsic_function_fn_join(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_join(node_intrinsic_function)
-        return self._replace_url_outputs_in_delta_if_required(delta)
-
-    def visit_node_intrinsic_function_fn_sub(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        delta = super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
-        return self._replace_url_outputs_in_delta_if_required(delta)
-
-    # TODO: other intrinsic functions

@@ -286,7 +286,7 @@ class CloudformationProviderV2(CloudformationProvider):
         after_template: dict | None,
         before_parameters: dict | None,
         after_parameters: dict | None,
-        previous_update_model: UpdateModel | None,
+        previous_update_model: UpdateModel | None = None,
     ):
         resolved_parameters = None
         if after_parameters is not None:
@@ -400,7 +400,7 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
-        if len(template_body) > 51200:
+        if len(template_body) > 51200 and not template_url:
             raise ValidationError(
                 f"1 validation error detected: Value '{template_body}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
@@ -734,7 +734,7 @@ class CloudformationProviderV2(CloudformationProvider):
         template_body = api_utils.extract_template_body(request)
         structured_template = template_preparer.parse_template(template_body)
 
-        if len(template_body) > 51200:
+        if len(template_body) > 51200 and not template_url:
             raise ValidationError(
                 f"1 validation error detected: Value '{template_body}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
@@ -978,6 +978,7 @@ class CloudformationProviderV2(CloudformationProvider):
             ResourceType=resource["Type"],
             LastUpdatedTimestamp=resource["LastUpdatedTimestamp"],
             ResourceStatus=resource["ResourceStatus"],
+            DriftInformation={"StackResourceDriftStatus": "NOT_CHECKED"},
         )
         return DescribeStackResourceOutput(StackResourceDetail=resource_detail)
 
@@ -1495,11 +1496,6 @@ class CloudformationProviderV2(CloudformationProvider):
 
         stack.set_stack_status(StackStatus.DELETE_IN_PROGRESS)
 
-        previous_update_model = None
-        if stack.change_set_id:
-            if previous_change_set := find_change_set_v2(state, stack.change_set_id):
-                previous_update_model = previous_change_set.update_model
-
         # create a dummy change set
         change_set = ChangeSet(
             stack, {"ChangeSetName": f"delete-stack_{stack.stack_name}"}, template_body=""
@@ -1510,7 +1506,6 @@ class CloudformationProviderV2(CloudformationProvider):
             after_template=None,
             before_parameters=stack.resolved_parameters,
             after_parameters=None,
-            previous_update_model=previous_update_model,
         )
 
         change_set_executor = ChangeSetModelExecutor(change_set)

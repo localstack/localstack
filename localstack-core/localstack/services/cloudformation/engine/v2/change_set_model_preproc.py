@@ -60,7 +60,7 @@ from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
 
-_AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
+_AWS_URL_SUFFIX = localstack_host().host_and_port()  # The value in AWS is "amazonaws.com"
 
 _PSEUDO_PARAMETERS: Final[set[str]] = {
     "AWS::Partition",
@@ -75,7 +75,11 @@ _PSEUDO_PARAMETERS: Final[set[str]] = {
 
 TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
+_T = TypeVar("_T")
 
+REGEX_OUTPUT_APIGATEWAY = re.compile(
+    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
+)
 MOCKED_REFERENCE = "unknown"
 
 VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
@@ -265,16 +269,16 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 f"No deployed instances of resource '{resource_logical_id}' were found"
             )
         properties = resolved_resource.get("Properties", {})
-        # support structured properties, e.g. NestedStack.Outputs.OutputName
+        # TODO support structured properties, e.g. NestedStack.Outputs.OutputName
         property_value: Any | None = get_value_from_path(properties, property_name)
 
         if property_value:
-            if not isinstance(property_value, str):
+            if not isinstance(property_value, (str, list)):
                 # TODO: is this correct? If there is a bug in the logic here, it's probably
                 #  better to know about it with a clear error message than to receive some form
                 #  of message about trying to use a dictionary in place of a string
                 raise RuntimeError(
-                    f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value"
+                    f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value nor list"
                 )
             return property_value
         elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
@@ -400,9 +404,56 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return PreprocEntityDelta(before=before, after=after)
         delta = super().visit(change_set_entity=change_set_entity)
         if isinstance(delta, PreprocEntityDelta):
+            delta = self._maybe_perform_replacements(delta)
             self._before_cache[entity_scope] = delta.before
             self._after_cache[entity_scope] = delta.after
         return delta
+
+    def _maybe_perform_replacements(self, delta: PreprocEntityDelta) -> PreprocEntityDelta:
+        delta = self._maybe_perform_static_replacements(delta)
+        delta = self._maybe_perform_dynamic_replacements(delta)
+        return delta
+
+    def _maybe_perform_static_replacements(self, delta: PreprocEntityDelta) -> PreprocEntityDelta:
+        return self._maybe_perform_on_delta(delta, self._perform_static_replacements)
+
+    def _maybe_perform_dynamic_replacements(self, delta: PreprocEntityDelta) -> PreprocEntityDelta:
+        return self._maybe_perform_on_delta(delta, self._perform_dynamic_replacements)
+
+    def _maybe_perform_on_delta(
+        self, delta: PreprocEntityDelta | None, f: Callable[[_T], _T]
+    ) -> PreprocEntityDelta | None:
+        if isinstance(delta.before, str):
+            delta.before = f(delta.before)
+        if isinstance(delta.after, str):
+            delta.after = f(delta.after)
+        return delta
+
+    def _perform_dynamic_replacements(self, value: _T) -> _T:
+        if not isinstance(value, str):
+            return value
+        if dynamic_ref := extract_dynamic_reference(value):
+            new_value = perform_dynamic_reference_lookup(
+                reference=dynamic_ref,
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+            )
+            if new_value:
+                return new_value
+
+        return value
+
+    @staticmethod
+    def _perform_static_replacements(value: str) -> str:
+        api_match = REGEX_OUTPUT_APIGATEWAY.match(value)
+        if api_match and value not in config.CFN_STRING_REPLACEMENT_DENY_LIST:
+            prefix = api_match[1]
+            host = api_match[2]
+            path = api_match[3]
+            value = f"{prefix}{host}/{path}"
+            return value
+
+        return value
 
     def _cached_apply(
         self, scope: Scope, arguments_delta: PreprocEntityDelta, resolver: Callable[[Any], Any]
@@ -451,6 +502,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 after = after.after
 
         return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
+        return self.visit(node_property.value)
 
     def visit_terminal_value_modified(
         self, terminal_value_modified: TerminalValueModified
@@ -1030,25 +1084,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             if not is_nothing(after) and not is_nothing(delta_after):
                 after.append(delta_after)
         return PreprocEntityDelta(before=before, after=after)
-
-    def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
-        # TODO: what about other positions?
-        value = self.visit(node_property.value)
-        if not is_nothing(value.before):
-            if dynamic_ref := extract_dynamic_reference(value.before):
-                value.before = perform_dynamic_reference_lookup(
-                    reference=dynamic_ref,
-                    account_id=self._change_set.account_id,
-                    region_name=self._change_set.region_name,
-                )
-        if not is_nothing(value.after):
-            if dynamic_ref := extract_dynamic_reference(value.after):
-                value.after = perform_dynamic_reference_lookup(
-                    reference=dynamic_ref,
-                    account_id=self._change_set.account_id,
-                    region_name=self._change_set.region_name,
-                )
-        return value
 
     def visit_node_properties(
         self, node_properties: NodeProperties
