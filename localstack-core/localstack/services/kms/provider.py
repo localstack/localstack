@@ -500,8 +500,6 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         replica_region = request.get("ReplicaRegion")
         replicate_to_store = kms_stores[account_id][replica_region]
 
-        # replica keys cannot be replicated.
-        # Ensure it's a primary key (covers cases where MultiRegionKeyType might be missing or have other values)
         if (
             source_key.metadata.get("MultiRegionConfiguration", {}).get("MultiRegionKeyType")
             != MultiRegionKeyType.PRIMARY
