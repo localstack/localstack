@@ -63,6 +63,8 @@ EVENTS_TMP_DIR = "cw_events"
 DEFAULT_EVENT_BUS_NAME = "default"
 CONNECTION_NAME_PATTERN = re.compile("^[\\.\\-_A-Za-z0-9]+$")
 
+# TODO: remove, test trigger
+
 
 class ValidationException(ServiceException):
     code: str = "ValidationException"
