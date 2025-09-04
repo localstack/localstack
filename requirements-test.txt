@@ -105,7 +105,7 @@ cryptography==45.0.7
     #   pyopenssl
 decorator==5.2.1
     # via jsonpath-rw
-deepdiff==8.6.0
+deepdiff==8.6.1
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-snapshot
