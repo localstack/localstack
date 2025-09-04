@@ -14,18 +14,19 @@ The different protocols have many similarities. The class hierarchy is
 designed such that the serializers share as much logic as possible.
 The class hierarchy looks as follows:
 ::
-                                      ┌───────────────────┐
-                                      │ResponseSerializer │
-                                      └───────────────────┘
-                                          ▲    ▲      ▲
-                   ┌──────────────────────┘    │      └──────────────────┐
-      ┌────────────┴────────────┐ ┌────────────┴─────────────┐ ┌─────────┴────────────┐
-      │BaseXMLResponseSerializer│ │BaseRestResponseSerializer│ │JSONResponseSerializer│
-      └─────────────────────────┘ └──────────────────────────┘ └──────────────────────┘
-                         ▲    ▲             ▲             ▲              ▲
-  ┌──────────────────────┴─┐ ┌┴─────────────┴──────────┐ ┌┴──────────────┴──────────┐
-  │QueryResponseSerializer │ │RestXMLResponseSerializer│ │RestJSONResponseSerializer│
-  └────────────────────────┘ └─────────────────────────┘ └──────────────────────────┘
+                                    ┌────────────────────┐
+                                    │ ResponseSerializer │
+                                    └────────────────────┘
+                                         ▲   ▲   ▲   ▲
+                                         │   │   │   └─────────────────────────────────────────────┐
+                 ┌───────────────────────┘   │   └─────────────────────┐                           │
+    ┌────────────┴────────────┐ ┌────────────┴─────────────┐ ┌─────────┴────────────┐ ┌────────────┴─────────────┐
+    │BaseXMLResponseSerializer│ │BaseRestResponseSerializer│ │JSONResponseSerializer│ │BaseCBORResponseSerializer│
+    └─────────────────────────┘ └──────────────────────────┘ └──────────────────────┘ └──────────────────────────┘
+                        ▲    ▲             ▲             ▲              ▲                          ▲
+ ┌──────────────────────┴─┐ ┌┴─────────────┴──────────┐ ┌┴──────────────┴──────────┐   ┌───────────┴────────────┐
+ │QueryResponseSerializer │ │RestXMLResponseSerializer│ │RestJSONResponseSerializer│   │ CBORResponseSerializer │
+ └────────────────────────┘ └─────────────────────────┘ └──────────────────────────┘   └────────────────────────┘
               ▲
    ┌──────────┴──────────┐
    │EC2ResponseSerializer│
@@ -33,8 +34,8 @@ The class hierarchy looks as follows:
 ::
 
 The ``ResponseSerializer`` contains the logic that is used among all the
-different protocols (``query``, ``json``, ``rest-json``, ``rest-xml``, and
-``ec2``).
+different protocols (``query``, ``json``, ``rest-json``, ``rest-xml``, ``cbor``
+and ``ec2``).
 The protocols relate to each other in the following ways:
 
 * The ``query`` and the ``rest-xml`` protocols both have XML bodies in their
@@ -42,8 +43,10 @@ The protocols relate to each other in the following ways:
   type).
 * The ``json`` and the ``rest-json`` protocols both have JSON bodies in their
   responses which are serialized the same way.
+* The ``cbor`` protocol is not properly defined in the spec, but mirrors the
+  ``json`` protocol.
 * The ``rest-json`` and ``rest-xml`` protocols serialize some metadata in
-  the HTTP response's header fields
+  the HTTP response's header fields.
 * The ``ec2`` protocol is basically similar to the ``query`` protocol with a
   specific error response formatting.
 
@@ -54,13 +57,17 @@ The classes are structured as follows:
 
 * The ``ResponseSerializer`` contains all the basic logic for the
   serialization which is shared among all different protocols.
-* The ``BaseXMLResponseSerializer`` and the ``JSONResponseSerializer``
-  contain the logic for the XML and the JSON serialization respectively.
+* The ``BaseXMLResponseSerializer``, ``JSONResponseSerializer`` and
+  ``BaseCBORResponseSerializer`` contain the logic for the XML, JSON
+  and the CBOR serialization respectively.
 * The ``BaseRestResponseSerializer`` contains the logic for the REST
   protocol specifics (i.e. specific HTTP header serializations).
 * The ``RestXMLResponseSerializer`` and the ``RestJSONResponseSerializer``
   inherit the ReST specific logic from the ``BaseRestResponseSerializer``
   and the XML / JSON body serialization from their second super class.
+* The ``CBORResponseSerializer`` contains the logic specific to the
+  non-official ``cbor`` protocol, mirroring the ``json`` protocol but
+  with CBOR encoded body
 
 The services and their protocols are defined by using AWS's Smithy
 (a language to define services in a - somewhat - protocol-agnostic
