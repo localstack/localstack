@@ -49,6 +49,8 @@ class SnsProvider(SnsApi):
         self._publisher = PublishDispatcher()
         self._signature_cert_pem: str = SNS_SERVER_CERT
 
+    ## Subscribe operations
+
     def subscribe(
         self,
         context: RequestContext,
@@ -89,7 +91,7 @@ class SnsProvider(SnsApi):
                 raise InvalidParameterException("Invalid parameter: SQS endpoint ARN")
 
         elif protocol == "application":
-            # TODO: This needs to be implemented once applications are ported to the new provider
+            # TODO: This needs to be implemented once applications are ported from moto to the new provider
             raise NotImplementedError(
                 "This functionality needs yet to be ported to the new SNS provider"
             )
@@ -182,7 +184,7 @@ class SnsProvider(SnsApi):
                 message=message_ctx,
                 store=store,
                 request_headers=context.request.headers,
-                # TODO: add topic attributes once they are ported from Moto to LocalStack
+                # TODO: add topic attributes once they are ported from moto to LocalStack
                 # topic_attributes=vars(self._get_topic(topic_arn, context)),
             )
             self._publisher.publish_to_topic_subscriber(
