@@ -1114,7 +1114,7 @@ class LocalstackContainerServer(Server):
 
     def do_run(self):
         if self.is_container_running():
-            raise ContainerExists(
+            raise ContainerRunning(
                 f'LocalStack container named "{self.container.name}" is already running'
             )
 
@@ -1151,12 +1151,19 @@ class ContainerExists(Exception):
     pass
 
 
+class ContainerRunning(Exception):
+    pass
+
+
 def prepare_docker_start():
     # prepare environment for docker start
     container_name = config.MAIN_CONTAINER_NAME
 
     if DOCKER_CLIENT.is_container_running(container_name):
-        raise ContainerExists(f'LocalStack container named "{container_name}" is already running')
+        raise ContainerRunning(f'LocalStack container named "{container_name}" is already running')
+
+    if container_name in DOCKER_CLIENT.get_all_container_names():
+        raise ContainerExists(f'LocalStack container named "{container_name}" already exists')
 
     config.dirs.mkdirs()
 
@@ -1308,7 +1315,7 @@ def start_infra_in_docker_detached(console, cli_params: dict[str, Any] = None):
     console.log("preparing environment")
     try:
         prepare_docker_start()
-    except ContainerExists as e:
+    except ContainerRunning as e:
         console.print(str(e))
         return
 
