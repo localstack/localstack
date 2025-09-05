@@ -875,7 +875,7 @@ class TestS3Multipart:
         snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
-        # Don't do this, but required for behaviour with CopySourceIfModifiedSince which will pass if a future time is provided.
+        # Don't do this, but required for behaviour with CopySourceIfModifiedSince which will pass if a future time is provided.
         sleep(1)
 
         with pytest.raises(ClientError) as error:
@@ -888,6 +888,7 @@ class TestS3Multipart:
                 CopySourceIfModifiedSince=datetime.datetime.now(tz=datetime.UTC),
             )
         snapshot.match("upload-part-copy-source-modified-since-match", error.value.response)
+
 
 class TestS3BucketVersioning:
     @markers.aws.validated
