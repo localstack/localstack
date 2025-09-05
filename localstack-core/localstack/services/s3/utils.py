@@ -409,11 +409,7 @@ def get_failed_upload_part_copy_source_preconditions(
 ) -> str | None:
     """
     Utility which parses the conditions from a S3 UploadPartCopy request.
-
-    Few things to note:
-    1. Certain conditions are checked first, and take the order of:
-        - CopySourceIfMatch -> CopySourceIfUnmodifiedSince -> CopySourceIfNoneMatch
-    2. The CopySourceIfModifiedSince had no impact on the request so it has been omitted.
+    Note: The order in which these conditions are checked if used in conjunction matters
 
     :param UploadPartCopyRequest request: The S3 UploadPartCopy request.
     :param datetime last_modified: The time the source object was last modified.
@@ -424,20 +420,25 @@ def get_failed_upload_part_copy_source_preconditions(
     if_match = request.get("CopySourceIfMatch")
     if_none_match = request.get("CopySourceIfNoneMatch")
     if_unmodified_since = request.get("CopySourceIfUnmodifiedSince")
+    if_modified_since = request.get("CopySourceIfModifiedSince")
 
     if if_match:
         if if_match != f'"{etag}"':
             return "x-amz-copy-source-If-Match"
-        # CopySourceIfMatch is unaffected by CopySourceIfUnmodifiedSince
+        if if_modified_since and if_modified_since > last_modified:
+            return "x-amz-copy-source-If-Modified-Since"
+        # CopySourceIfMatch is unaffected by CopySourceIfUnmodifiedSince so return early
         if if_unmodified_since:
             return None
-
+        
     if if_unmodified_since and if_unmodified_since < last_modified:
         return "x-amz-copy-source-If-Unmodified-Since"
-
+    
     if if_none_match and if_none_match == f'"{etag}"':
         return "x-amz-copy-source-If-None-Match"
 
+    if if_modified_since and if_modified_since > last_modified:
+        return "x-amz-copy-source-If-Modified-Since"
 
 def get_full_default_bucket_location(bucket_name: BucketName) -> str:
     host_definition = localstack_host()
