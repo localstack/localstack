@@ -14,7 +14,17 @@ class AwsServiceOperationsSupportInLatest(StrEnum):
     NOT_SUPPORTED = "NOT_SUPPORTED"
 
 
+class AwsServiceSupportAtRuntime(StrEnum):
+    AVAILABLE = "AVAILABLE"
+    AVAILABLE_WITH_LICENSE_UPGRADE = "AVAILABLE_WITH_LICENSE_UPGRADE"
+    NOT_IMPLEMENTED = "NOT_IMPLEMENTED"
+
+
 class CloudFormationResourcesSupportInLatest(StrEnum):
     SUPPORTED = "SUPPORTED"
     SUPPORTED_WITH_LICENSE_UPGRADE = "SUPPORTED_WITH_LICENSE_UPGRADE"
     NOT_SUPPORTED = "NOT_SUPPORTED"
+
+
+class CloudFormationResourcesSupportAtRuntime(StrEnum):
+    AVAILABLE = "AVAILABLE"
