@@ -4925,5 +4925,113 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_failed": {
+    "recorded-date": "05-09-2025, 08:15:02",
+    "recorded-content": {
+      "put-src-object": {
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "<e-tag:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "destination_file.txt",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-source-if-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_failed": {
+    "recorded-date": "05-09-2025, 08:15:14",
+    "recorded-content": {
+      "put-src-object": {
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "<e-tag:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "destination_file.txt",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-source-if-none-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed": {
+    "recorded-date": "05-09-2025, 08:15:32",
+    "recorded-content": {
+      "put-src-object": {
+        "ChecksumCRC32": "poTHxg==",
+        "ChecksumType": "FULL_OBJECT",
+        "ETag": "<e-tag:1>",
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-multipart": {
+        "Bucket": "bucket",
+        "Key": "destination_file.txt",
+        "ServerSideEncryption": "AES256",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "upload-part-copy-source-unmodified-since-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-Unmodified-Since",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
   }
 }
