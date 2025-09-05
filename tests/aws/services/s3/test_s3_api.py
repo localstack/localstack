@@ -755,7 +755,7 @@ class TestS3Multipart:
     ):
         """
         If CopySourceIfMatch is provided with CopySourceIfUnmodifiedSince it should proceed even if the latter evaluates to false.
-        See documentation: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/s3/client/upload_part_copy.html
+        See documentation: https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html
         """
         snapshot.add_transformer(
             [
