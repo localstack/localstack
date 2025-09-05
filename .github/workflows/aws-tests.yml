@@ -267,10 +267,12 @@ jobs:
                - 'localstack-core/localstack/services/cloudwatch/**'
                - 'tests/aws/services/cloudwatch/**'
             dynamodb-v2:
+               - 'localstack-core/localstack/services/dynamodb/**'
                - 'tests/aws/services/dynamodb/**'
                - 'tests/aws/services/dynamodbstreams/**'
                - 'tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py'
             events-v1:
+               - 'localstack-core/localstack/services/events/**'
                - 'tests/aws/services/events/**'
             cloudformation-v2:
                - 'localstack-core/localstack/services/cloudformation/**'
@@ -666,6 +668,9 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -716,6 +721,9 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -765,6 +773,9 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -816,6 +827,9 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -850,6 +864,7 @@ jobs:
             ${{ env.COVERAGE_FILE }}
             ${{ env.JUNIT_REPORTS_FILE }}
           retention-days: 30
+
   test-sns-v2:
     name: Test SNS V2
     if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || needs.test-preflight.outputs.sns-v2 == 'true') }}
@@ -862,6 +877,9 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
         uses: actions/checkout@v5
@@ -902,6 +920,8 @@ jobs:
 
   publish-alternative-provider-test-results:
     name: Publish Alternative Provider Test Results
+    # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
+    if: ${{ !cancelled() && (contains(needs.*.outputs.job_status, 'executed')) }}
     needs:
       - test-cfn-v2-engine
       - test-events-v1
@@ -914,8 +934,6 @@ jobs:
       pull-requests: write
       contents: read
       issues: read
-    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
-    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Cloudformation v2 Artifacts
         uses: actions/download-artifact@v5
