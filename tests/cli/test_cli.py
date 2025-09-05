@@ -140,6 +140,7 @@ class TestCliContainerLifecycle:
         runner.invoke(cli, ["wait", "-t", "180"])
 
         # normal start
+        # - non-idempotent: non-zero exit code + error log if the container is already running
         result = runner.invoke(cli, ["start"])
         assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
         assert result.exit_code == 1
@@ -147,6 +148,7 @@ class TestCliContainerLifecycle:
         assert "is already running" in result.output
 
         # detached start
+        # - idempotent - zero exit code + no error log if the container is already running
         result = runner.invoke(cli, ["start", "-d"])
         assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
         assert result.exit_code == 0

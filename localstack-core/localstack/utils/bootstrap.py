@@ -1316,6 +1316,7 @@ def start_infra_in_docker_detached(console, cli_params: dict[str, Any] = None):
     try:
         prepare_docker_start()
     except ContainerRunning as e:
+        # starting in detached mode is idempotent, return if container is already running
         console.print(str(e))
         return
 
