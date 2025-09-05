@@ -2,6 +2,7 @@ import datetime
 import json
 import string
 from operator import itemgetter
+from time import sleep
 from urllib.parse import urlencode
 
 import pytest
@@ -800,7 +801,7 @@ class TestS3Multipart:
         )
         snapshot.match("list-parts", list_parts)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_upload_part_copy_with_copy_source_if_none_match_and_if_unmodified_since_match_failed(
         self, aws_client, s3_bucket, snapshot
     ):
@@ -847,6 +848,46 @@ class TestS3Multipart:
             "upload-part-copy-source-unmodified-since-and-if-none-match", error.value.response
         )
 
+    @markers.aws.validated
+    def test_upload_part_copy_with_if_modified_since_failed(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+                snapshot.transform.key_value("ETag"),
+            ]
+        )
+
+        # Set up the source object.
+        source_key = "source_file.txt"
+        content = "0123456789"
+        put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        snapshot.match("put-src-object", put_source_object)
+
+        # Set up the multi-part upload.
+        multi_part_upload_key = "destination_file.txt"
+        create_multipart_upload = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multi_part_upload_key
+        )
+        snapshot.match("create-multipart", create_multipart_upload)
+        upload_id = create_multipart_upload["UploadId"]
+
+        # Don't do this, but required for behaviour with CopySourceIfModifiedSince which will pass if a future time is provided.
+        sleep(1)
+
+        with pytest.raises(ClientError) as error:
+            aws_client.s3.upload_part_copy(
+                Bucket=s3_bucket,
+                UploadId=upload_id,
+                Key=multi_part_upload_key,
+                PartNumber=1,
+                CopySource=f"{s3_bucket}/{source_key}",
+                CopySourceIfModifiedSince=datetime.datetime.now(tz=datetime.UTC),
+            )
+        snapshot.match("upload-part-copy-source-modified-since-match", error.value.response)
 
 class TestS3BucketVersioning:
     @markers.aws.validated
