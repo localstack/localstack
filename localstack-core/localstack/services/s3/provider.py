@@ -2477,7 +2477,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: RequestCharged: Optional[RequestCharged]
         return response
 
-    # AIDEN
     @handler("UploadPartCopy", expand=False)
     def upload_part_copy(
         self,
