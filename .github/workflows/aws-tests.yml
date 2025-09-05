@@ -272,7 +272,7 @@ jobs:
                - 'tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py'
             events-v1:
                - 'tests/aws/services/events/**'
-            cloudformation-v2:
+            cloudformation-legacy:
                - 'localstack-core/localstack/services/cloudformation/**'
                - 'tests/aws/services/cloudformation/**'
             sns-v2:
