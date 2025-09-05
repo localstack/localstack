@@ -220,5 +220,14 @@
         }
       ]
     }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_cbor_exceptions": {
+    "recorded-date": "04-09-2025, 16:59:26",
+    "recorded-content": {
+      "cbor-error": {
+        "__type": "ResourceNotFoundException",
+        "message": "Stream wrong-stream-name under account 111111111111 not found."
+      }
+    }
   }
 }
