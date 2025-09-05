@@ -36,6 +36,7 @@ TRACKED_ENV_VAR = [
     "ES_ENDPOINT_STRATEGY",  # deprecated in 0.14.0, removed in 3.0.0
     "EVENT_RULE_ENGINE",
     "IAM_SOFT_MODE",
+    "IDE_SESSION_ID",
     "KINESIS_PROVIDER",  # Not functional; deprecated in 2.0.0, removed in 3.0.0
     "KINESIS_ERROR_PROBABILITY",
     "KMS_PROVIDER",  # defunct since 1.4.0
