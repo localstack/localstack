@@ -11,6 +11,7 @@ from localstack import config
 from localstack.http import Response
 from localstack.utils.coverage_docs import get_coverage_link_for_service
 
+from ...utils import analytics
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
 from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, HandlerChain
@@ -178,6 +179,9 @@ class ServiceExceptionSerializer(ExceptionHandler):
             message = exception_message or get_coverage_link_for_service(service_name, action_name)
             LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
+            analytics.log.event(
+                "services_notimplemented", payload={"s": service_name, "a": action_name}
+            )
             context.service_exception = error
 
         elif not isinstance(exception, ServiceException):
