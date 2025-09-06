@@ -438,7 +438,7 @@ def get_failed_upload_part_copy_source_preconditions(
         return "x-amz-copy-source-If-None-Match"
 
     if if_modified_since and last_modified < if_modified_since < datetime.datetime.now(
-        tz=datetime.UTC
+        tz=_gmt_zone_info
     ):
         return "x-amz-copy-source-If-Modified-Since"
 
