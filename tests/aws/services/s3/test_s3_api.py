@@ -797,7 +797,7 @@ class TestS3Multipart:
         )
         snapshot.match("list-parts", list_parts)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
     )
