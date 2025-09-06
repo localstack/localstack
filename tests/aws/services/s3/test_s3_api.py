@@ -616,6 +616,70 @@ class TestS3Multipart:
 
     # AIDEN
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Owner.DisplayName"],
+    )
+    def test_upload_part_copy_with_copy_source_if_match_success(self, aws_client, s3_bucket, snapshot):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Bucket", reference_replacement=False),
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("UploadId"),
+                snapshot.transform.key_value("DisplayName", reference_replacement=False),
+                snapshot.transform.key_value("ID", reference_replacement=False),
+                snapshot.transform.key_value("ETag"),
+            ]
+        )
+
+        # Set up the source object.
+        source_key = "source_file.txt"
+        content = "0123456789"
+        put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+
+        # Set up the multi-part upload.
+        multi_part_upload_key = "destination_file.txt"
+        create_multipart_upload = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multi_part_upload_key
+        )
+        upload_id = create_multipart_upload["UploadId"]
+
+        # Uploading shouldn't raise an exception
+        upload_part_copy = aws_client.s3.upload_part_copy(
+            Bucket=s3_bucket,
+            UploadId=upload_id,
+            Key=multi_part_upload_key,
+            PartNumber=1,
+            CopySource=f"{s3_bucket}/{source_key}",
+            CopySourceIfMatch=put_source_object["ETag"],
+        )
+        snapshot.match("upload-part-copy-if-match", upload_part_copy)
+
+        # Check parts were uploaded successfully
+        list_parts = aws_client.s3.list_parts(
+            Bucket=s3_bucket, Key=multi_part_upload_key, UploadId=upload_id
+        )
+        snapshot.match("list-parts", list_parts)
+
+    @markers.aws.unknown
+    def test_upload_part_copy_with_copy_source_if_match_none_success(self, aws_client, s3_bucket, snapshot):
+        pass
+
+    @markers.aws.unknown
+    def test_upload_part_copy_with_copy_source_if_unmodified_since_success(self, aws_client, s3_bucket, snapshot):
+        pass
+
+    @markers.aws.unknown
+    def test_upload_part_copy_with_copy_source_if_modified_since_success(self, aws_client, s3_bucket, snapshot):
+        pass
+
+    @markers.aws.unknown
+    def test_upload_part_copy_with_copy_source_if_modified_since_in_future_success(self, aws_client, s3_bucket, snapshot):
+        """
+        Providing CopyIfModifiedSince with a datetime which is in the future will always pass. This is AWS defined behaviour.
+        """
+        pass
+
+    @markers.aws.validated
     def test_upload_part_copy_with_copy_source_if_match_failed(
         self, aws_client, s3_bucket, snapshot
     ):
