@@ -614,6 +614,7 @@ class TestS3Multipart:
         list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
         snapshot.match("list-parts", list_parts)
 
+    # AIDEN
     @markers.aws.validated
     def test_upload_part_copy_with_copy_source_if_match_failed(
         self, aws_client, s3_bucket, snapshot
@@ -635,15 +636,13 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
-        snapshot.match("put-src-object", put_source_object)
+        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
         create_multipart_upload = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=multi_part_upload_key
         )
-        snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         with pytest.raises(ClientError) as error:
@@ -679,14 +678,12 @@ class TestS3Multipart:
         source_key = "source_file.txt"
         content = "0123456789"
         put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
-        snapshot.match("put-src-object", put_source_object)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
         create_multipart_upload = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=multi_part_upload_key
         )
-        snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         with pytest.raises(ClientError) as error:
@@ -722,15 +719,13 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
-        snapshot.match("put-src-object", put_source_object)
+        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
         create_multipart_upload = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=multi_part_upload_key
         )
-        snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         earlier_datetime = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
@@ -772,14 +767,12 @@ class TestS3Multipart:
         source_key = "source_file.txt"
         content = "0123456789"
         put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
-        snapshot.match("put-src-object", put_source_object)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
         create_multipart_upload = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=multi_part_upload_key
         )
-        snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         # Uploading shouldn't raise an exception
@@ -822,15 +815,13 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
-        snapshot.match("put-src-object", put_source_object)
+        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
         create_multipart_upload = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=multi_part_upload_key
         )
-        snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         earlier_datetime = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
@@ -864,15 +855,13 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        put_source_object = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
-        snapshot.match("put-src-object", put_source_object)
+        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
         create_multipart_upload = aws_client.s3.create_multipart_upload(
             Bucket=s3_bucket, Key=multi_part_upload_key
         )
-        snapshot.match("create-multipart", create_multipart_upload)
         upload_id = create_multipart_upload["UploadId"]
 
         # Don't do this, but required for behaviour with CopySourceIfModifiedSince which will pass if a future time is provided.
