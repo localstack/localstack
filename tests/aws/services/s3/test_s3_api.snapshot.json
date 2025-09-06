@@ -4790,28 +4790,8 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_and_if_unmodified_since_match": {
-    "recorded-date": "04-09-2025, 22:34:32",
+    "recorded-date": "06-09-2025, 09:23:25",
     "recorded-content": {
-      "put-src-object": {
-        "ChecksumCRC32": "poTHxg==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "<e-tag:1>",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-multipart": {
-        "Bucket": "bucket",
-        "Key": "destination_file.txt",
-        "ServerSideEncryption": "AES256",
-        "UploadId": "<upload-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "upload-part-copy": {
         "CopyPartResult": {
           "ETag": "<e-tag:1>",
@@ -4855,28 +4835,8 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_and_if_unmodified_since_match_failed": {
-    "recorded-date": "04-09-2025, 22:34:53",
+    "recorded-date": "06-09-2025, 09:24:36",
     "recorded-content": {
-      "put-src-object": {
-        "ChecksumCRC32": "poTHxg==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "<e-tag:1>",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-multipart": {
-        "Bucket": "bucket",
-        "Key": "destination_file.txt",
-        "ServerSideEncryption": "AES256",
-        "UploadId": "<upload-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "upload-part-copy-source-unmodified-since-and-if-none-match": {
         "Error": {
           "Code": "PreconditionFailed",
@@ -4891,28 +4851,8 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_if_modified_since_failed": {
-    "recorded-date": "05-09-2025, 07:42:33",
+    "recorded-date": "06-09-2025, 09:24:51",
     "recorded-content": {
-      "put-src-object": {
-        "ChecksumCRC32": "poTHxg==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "<e-tag:1>",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-multipart": {
-        "Bucket": "bucket",
-        "Key": "destination_file.txt",
-        "ServerSideEncryption": "AES256",
-        "UploadId": "<upload-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "upload-part-copy-source-modified-since-match": {
         "Error": {
           "Code": "PreconditionFailed",
@@ -4927,28 +4867,8 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_failed": {
-    "recorded-date": "05-09-2025, 08:15:02",
+    "recorded-date": "06-09-2025, 09:22:26",
     "recorded-content": {
-      "put-src-object": {
-        "ChecksumCRC32": "poTHxg==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "<e-tag:1>",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-multipart": {
-        "Bucket": "bucket",
-        "Key": "destination_file.txt",
-        "ServerSideEncryption": "AES256",
-        "UploadId": "<upload-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "upload-part-copy-source-if-match": {
         "Error": {
           "Code": "PreconditionFailed",
@@ -4963,28 +4883,8 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_failed": {
-    "recorded-date": "05-09-2025, 08:15:14",
+    "recorded-date": "06-09-2025, 09:22:50",
     "recorded-content": {
-      "put-src-object": {
-        "ChecksumCRC32": "poTHxg==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "<e-tag:1>",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-multipart": {
-        "Bucket": "bucket",
-        "Key": "destination_file.txt",
-        "ServerSideEncryption": "AES256",
-        "UploadId": "<upload-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "upload-part-copy-source-if-none-match": {
         "Error": {
           "Code": "PreconditionFailed",
@@ -4999,28 +4899,8 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed": {
-    "recorded-date": "05-09-2025, 08:15:32",
+    "recorded-date": "06-09-2025, 09:23:12",
     "recorded-content": {
-      "put-src-object": {
-        "ChecksumCRC32": "poTHxg==",
-        "ChecksumType": "FULL_OBJECT",
-        "ETag": "<e-tag:1>",
-        "ServerSideEncryption": "AES256",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-multipart": {
-        "Bucket": "bucket",
-        "Key": "destination_file.txt",
-        "ServerSideEncryption": "AES256",
-        "UploadId": "<upload-id:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
       "upload-part-copy-source-unmodified-since-match": {
         "Error": {
           "Code": "PreconditionFailed",
