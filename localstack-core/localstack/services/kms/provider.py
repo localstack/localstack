@@ -493,6 +493,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         account_id = context.account_id
         source_key = self._get_kms_key(account_id, context.region, request.get("KeyId"))
         key_id = source_key.metadata.get("KeyId")
+        key_arn = source_key.metadata.get("Arn")
         if not source_key.metadata.get("MultiRegion"):
             raise UnsupportedOperationException(
                 f"Unable to replicate a non-MultiRegion key {key_id}"
@@ -504,9 +505,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             source_key.metadata.get("MultiRegionConfiguration", {}).get("MultiRegionKeyType")
             != MultiRegionKeyType.PRIMARY
         ):
-            raise UnsupportedOperationException(
-                "You can only replicate a multi-Region primary key."
-            )
+            raise UnsupportedOperationException(f"{key_arn} is not a multi-region primary key.")
 
         if key_id in replicate_to_store.keys:
             raise AlreadyExistsException(
