@@ -423,7 +423,7 @@ def get_failed_upload_part_copy_source_preconditions(
     if_modified_since = request.get("CopySourceIfModifiedSince")
 
     if if_match:
-        if if_match != f'"{etag}"':
+        if if_match.strip('"') != etag.strip('"'):
             return "x-amz-copy-source-If-Match"
         if if_modified_since and if_modified_since > last_modified:
             return "x-amz-copy-source-If-Modified-Since"
@@ -434,7 +434,7 @@ def get_failed_upload_part_copy_source_preconditions(
     if if_unmodified_since and if_unmodified_since < last_modified:
         return "x-amz-copy-source-If-Unmodified-Since"
 
-    if if_none_match and if_none_match == f'"{etag}"':
+    if if_none_match and if_none_match.strip('"') == etag.strip('"'):
         return "x-amz-copy-source-If-None-Match"
 
     if if_modified_since and if_modified_since > last_modified:
