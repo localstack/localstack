@@ -2211,6 +2211,44 @@ class TestKMS:
         describe_response = aws_client.kms.describe_key(KeyId=alias_arn)
         snapshot.match("describe-key", describe_response)
 
+    @markers.aws.validated
+    def test_replicate_replica_key_should_fail(
+        self,
+        kms_client_for_region,
+        kms_create_key,
+        kms_replicate_key,
+        region_name,
+        secondary_region_name,
+        snapshot,
+    ):
+        """Tes that attempting to replicate a replica key should raise ValidationException"""
+        snapshot.add_transformer(
+            snapshot.transform.regex(secondary_region_name, "<secondary-region>")
+        )
+
+        primary_key_id = kms_create_key(
+            region_name=region_name, MultiRegion=True, Description="test primary key"
+        )["KeyId"]
+
+        replica_response = kms_replicate_key(
+            region_from=region_name, KeyId=primary_key_id, ReplicaRegion=secondary_region_name
+        )
+        replica_key_id = replica_response["ReplicaKeyMetadata"]["KeyId"]
+
+        snapshot.add_transformer(snapshot.transform.regex(replica_key_id, "<key-id:1>"))
+
+        # attempt to replicate the replica key from the secondary region
+        # This should fail because we're trying to replicate a replica
+        secondary_client = kms_client_for_region(secondary_region_name)
+
+        with pytest.raises(ClientError) as exc_info:
+            secondary_client.replicate_key(
+                KeyId=replica_key_id, ReplicaRegion=secondary_region_name
+            )
+
+        error = exc_info.value.response
+        snapshot.match("fail-replicate-non-primary-key", error)
+
 
 class TestKMSMultiAccounts:
     @markers.aws.needs_fixing

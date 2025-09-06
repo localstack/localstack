@@ -3195,5 +3195,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_replica_key_should_fail": {
+    "recorded-date": "06-09-2025, 10:00:43",
+    "recorded-content": {
+      "fail-replicate-non-primary-key": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1> is not a multi-region primary key."
+        },
+        "message": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1> is not a multi-region primary key.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
