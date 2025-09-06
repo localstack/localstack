@@ -437,7 +437,9 @@ def get_failed_upload_part_copy_source_preconditions(
     if if_none_match and if_none_match.strip('"') == etag.strip('"'):
         return "x-amz-copy-source-If-None-Match"
 
-    if if_modified_since and if_modified_since > last_modified:
+    if if_modified_since and last_modified < if_modified_since < datetime.datetime.now(
+        tz=datetime.UTC
+    ):
         return "x-amz-copy-source-If-Modified-Since"
 
 
