@@ -618,7 +618,9 @@ class TestS3Multipart:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
     )
-    def test_upload_part_copy_with_copy_source_if_match_success(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_match_success(
+        self, aws_client, s3_bucket, snapshot
+    ):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -663,7 +665,9 @@ class TestS3Multipart:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
     )
-    def test_upload_part_copy_with_copy_source_if_match_none_success(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_match_none_success(
+        self, aws_client, s3_bucket, snapshot
+    ):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -678,7 +682,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -708,7 +712,9 @@ class TestS3Multipart:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
     )
-    def test_upload_part_copy_with_copy_source_if_unmodified_since_success(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_unmodified_since_success(
+        self, aws_client, s3_bucket, snapshot
+    ):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -723,7 +729,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -740,7 +746,7 @@ class TestS3Multipart:
             Key=multi_part_upload_key,
             PartNumber=1,
             CopySource=f"{s3_bucket}/{source_key}",
-            CopySourceIfUnmodifiedSince=later_datetime
+            CopySourceIfUnmodifiedSince=later_datetime,
         )
         snapshot.match("upload-part-copy-if-unmodified-since", upload_part_copy)
 
@@ -754,7 +760,9 @@ class TestS3Multipart:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
     )
-    def test_upload_part_copy_with_copy_source_if_modified_since_success(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_modified_since_success(
+        self, aws_client, s3_bucket, snapshot
+    ):
         snapshot.add_transformer(
             [
                 snapshot.transform.key_value("Bucket", reference_replacement=False),
@@ -769,7 +777,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -786,7 +794,7 @@ class TestS3Multipart:
             Key=multi_part_upload_key,
             PartNumber=1,
             CopySource=f"{s3_bucket}/{source_key}",
-            CopySourceIfModifiedSince=earlier_datetime
+            CopySourceIfModifiedSince=earlier_datetime,
         )
         snapshot.match("upload-part-copy-if-modified-since", upload_part_copy)
 
@@ -800,7 +808,9 @@ class TestS3Multipart:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
     )
-    def test_upload_part_copy_with_copy_source_if_modified_since_in_future_success(self, aws_client, s3_bucket, snapshot):
+    def test_upload_part_copy_with_copy_source_if_modified_since_in_future_success(
+        self, aws_client, s3_bucket, snapshot
+    ):
         """
         Providing CopyIfModifiedSince with a datetime which is in the future will always pass (even though it evaluates to false). This is AWS defined behaviour.
         """
@@ -818,7 +828,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -835,7 +845,7 @@ class TestS3Multipart:
             Key=multi_part_upload_key,
             PartNumber=1,
             CopySource=f"{s3_bucket}/{source_key}",
-            CopySourceIfModifiedSince=later_datetime
+            CopySourceIfModifiedSince=later_datetime,
         )
         snapshot.match("upload-part-copy-if-modified-since-in-future", upload_part_copy)
 
@@ -866,7 +876,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -949,7 +959,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -1045,7 +1055,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
@@ -1085,7 +1095,7 @@ class TestS3Multipart:
         # Set up the source object.
         source_key = "source_file.txt"
         content = "0123456789"
-        _ = aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=source_key, Body=content)
 
         # Set up the multi-part upload.
         multi_part_upload_key = "destination_file.txt"
