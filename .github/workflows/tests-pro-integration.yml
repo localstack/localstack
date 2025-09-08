@@ -142,7 +142,7 @@ jobs:
 
       - name: "Determine Companion Ref"
         id: determine-companion-ref
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         with:
           github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
           result-encoding: string
@@ -207,12 +207,12 @@ jobs:
 
       - name: Set up Python 3.11
         id: setup-python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: '3.11'
 
       - name: Set up Node 22.x
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 22.x
 
