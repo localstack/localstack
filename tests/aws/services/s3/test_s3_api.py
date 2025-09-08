@@ -614,7 +614,6 @@ class TestS3Multipart:
         list_parts = aws_client.s3.list_parts(Bucket=s3_bucket, Key=key, UploadId=upload_id)
         snapshot.match("list-parts", list_parts)
 
-    # AIDEN
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..Owner.DisplayName"],
