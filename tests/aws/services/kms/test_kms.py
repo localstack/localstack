@@ -2222,10 +2222,6 @@ class TestKMS:
         snapshot,
     ):
         """Tes that attempting to replicate a replica key should raise ValidationException"""
-        snapshot.add_transformer(
-            snapshot.transform.regex(secondary_region_name, "<secondary-region>")
-        )
-
         primary_key_id = kms_create_key(
             region_name=region_name, MultiRegion=True, Description="test primary key"
         )["KeyId"]
@@ -2234,8 +2230,6 @@ class TestKMS:
             region_from=region_name, KeyId=primary_key_id, ReplicaRegion=secondary_region_name
         )
         replica_key_id = replica_response["ReplicaKeyMetadata"]["KeyId"]
-
-        snapshot.add_transformer(snapshot.transform.regex(replica_key_id, "<key-id:1>"))
 
         # attempt to replicate the replica key from the secondary region
         # This should fail because we're trying to replicate a replica

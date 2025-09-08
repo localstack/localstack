@@ -309,12 +309,12 @@
     "last_validated_date": "2024-04-11T15:53:44+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_replica_key_should_fail": {
-    "last_validated_date": "2025-09-06T10:00:43+00:00",
+    "last_validated_date": "2025-09-08T16:34:57+00:00",
     "durations_in_seconds": {
-      "setup": 1.05,
-      "call": 2.01,
-      "teardown": 0.38,
-      "total": 3.44
+      "setup": 0.85,
+      "call": 2.29,
+      "teardown": 0.34,
+      "total": 3.48
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_retire_grant_with_grant_token": {

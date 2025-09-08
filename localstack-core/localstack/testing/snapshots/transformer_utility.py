@@ -45,6 +45,10 @@ PATTERN_KEY_ARN = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
 
+PATTERN_MRK_KEY_ARN = re.compile(
+    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/mrk-[a-fA-F0-9]{32}"
+)
+
 
 # TODO: split into generic/aws and put into lib
 class TransformerUtility:
@@ -573,6 +577,7 @@ class TransformerUtility:
             TransformerUtility.key_value("CiphertextBlob", reference_replacement=False),
             TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
+            RegexTransformer(PATTERN_MRK_KEY_ARN, replacement="<mrk-key-arn>"),
         ]
 
     @staticmethod
