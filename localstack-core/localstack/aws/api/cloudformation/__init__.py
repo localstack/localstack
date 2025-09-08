@@ -47,10 +47,12 @@ FailureTolerancePercentage = int
 GeneratedTemplateId = str
 GeneratedTemplateName = str
 HookInvocationCount = int
+HookInvocationId = str
 HookResultId = str
 HookStatusReason = str
 HookTargetTypeName = str
 HookType = str
+HookTypeArn = str
 HookTypeConfigurationVersionId = str
 HookTypeName = str
 HookTypeVersionId = str
@@ -1603,6 +1605,7 @@ class StackEvent(TypedDict, total=False):
     HookStatus: Optional[HookStatus]
     HookStatusReason: Optional[HookStatusReason]
     HookInvocationPoint: Optional[HookInvocationPoint]
+    HookInvocationId: Optional[HookInvocationId]
     HookFailureMode: Optional[HookFailureMode]
     DetailedStatus: Optional[DetailedStatus]
 
@@ -2118,6 +2121,7 @@ class GetTemplateSummaryOutput(TypedDict, total=False):
 
 
 class HookResultSummary(TypedDict, total=False):
+    HookResultId: Optional[HookInvocationId]
     InvocationPoint: Optional[HookInvocationPoint]
     FailureMode: Optional[HookFailureMode]
     TypeName: Optional[HookTypeName]
@@ -2125,6 +2129,11 @@ class HookResultSummary(TypedDict, total=False):
     TypeConfigurationVersionId: Optional[HookTypeConfigurationVersionId]
     Status: Optional[HookStatus]
     HookStatusReason: Optional[HookStatusReason]
+    InvokedAt: Optional[Timestamp]
+    TargetType: Optional[ListHookResultsTargetType]
+    TargetId: Optional[HookResultId]
+    TypeArn: Optional[HookTypeArn]
+    HookExecutionTarget: Optional[HookResultId]
 
 
 HookResultSummaries = List[HookResultSummary]
@@ -2195,8 +2204,10 @@ class ListGeneratedTemplatesOutput(TypedDict, total=False):
 
 
 class ListHookResultsInput(ServiceRequest):
-    TargetType: ListHookResultsTargetType
-    TargetId: HookResultId
+    TargetType: Optional[ListHookResultsTargetType]
+    TargetId: Optional[HookResultId]
+    TypeArn: Optional[HookTypeArn]
+    Status: Optional[HookStatus]
     NextToken: Optional[NextToken]
 
 
@@ -3456,8 +3467,10 @@ class CloudformationApi:
     def list_hook_results(
         self,
         context: RequestContext,
-        target_type: ListHookResultsTargetType,
-        target_id: HookResultId,
+        target_type: ListHookResultsTargetType | None = None,
+        target_id: HookResultId | None = None,
+        type_arn: HookTypeArn | None = None,
+        status: HookStatus | None = None,
         next_token: NextToken | None = None,
         **kwargs,
     ) -> ListHookResultsOutput:

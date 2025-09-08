@@ -243,6 +243,7 @@ MaxNetworkInterfaces = int
 MaxResults = int
 MaxResultsParam = int
 MaximumBandwidthInMbps = int
+MaximumEbsAttachments = int
 MaximumEfaInterfaces = int
 MaximumEnaQueueCount = int
 MaximumEnaQueueCountPerInterface = int
@@ -550,6 +551,11 @@ class AssociationStatusCode(StrEnum):
     association_failed = "association-failed"
     disassociating = "disassociating"
     disassociated = "disassociated"
+
+
+class AttachmentLimitType(StrEnum):
+    shared = "shared"
+    dedicated = "dedicated"
 
 
 class AttachmentStatus(StrEnum):
@@ -2376,6 +2382,63 @@ class InstanceType(StrEnum):
     c8gn_metal_48xl = "c8gn.metal-48xl"
     f2_6xlarge = "f2.6xlarge"
     p6e_gb200_36xlarge = "p6e-gb200.36xlarge"
+    g6f_large = "g6f.large"
+    g6f_xlarge = "g6f.xlarge"
+    g6f_2xlarge = "g6f.2xlarge"
+    g6f_4xlarge = "g6f.4xlarge"
+    gr6f_4xlarge = "gr6f.4xlarge"
+    p5_4xlarge = "p5.4xlarge"
+    r8i_large = "r8i.large"
+    r8i_xlarge = "r8i.xlarge"
+    r8i_2xlarge = "r8i.2xlarge"
+    r8i_4xlarge = "r8i.4xlarge"
+    r8i_8xlarge = "r8i.8xlarge"
+    r8i_12xlarge = "r8i.12xlarge"
+    r8i_16xlarge = "r8i.16xlarge"
+    r8i_24xlarge = "r8i.24xlarge"
+    r8i_32xlarge = "r8i.32xlarge"
+    r8i_48xlarge = "r8i.48xlarge"
+    r8i_96xlarge = "r8i.96xlarge"
+    r8i_metal_48xl = "r8i.metal-48xl"
+    r8i_metal_96xl = "r8i.metal-96xl"
+    r8i_flex_large = "r8i-flex.large"
+    r8i_flex_xlarge = "r8i-flex.xlarge"
+    r8i_flex_2xlarge = "r8i-flex.2xlarge"
+    r8i_flex_4xlarge = "r8i-flex.4xlarge"
+    r8i_flex_8xlarge = "r8i-flex.8xlarge"
+    r8i_flex_12xlarge = "r8i-flex.12xlarge"
+    r8i_flex_16xlarge = "r8i-flex.16xlarge"
+    m8i_large = "m8i.large"
+    m8i_xlarge = "m8i.xlarge"
+    m8i_2xlarge = "m8i.2xlarge"
+    m8i_4xlarge = "m8i.4xlarge"
+    m8i_8xlarge = "m8i.8xlarge"
+    m8i_12xlarge = "m8i.12xlarge"
+    m8i_16xlarge = "m8i.16xlarge"
+    m8i_24xlarge = "m8i.24xlarge"
+    m8i_32xlarge = "m8i.32xlarge"
+    m8i_48xlarge = "m8i.48xlarge"
+    m8i_96xlarge = "m8i.96xlarge"
+    m8i_metal_48xl = "m8i.metal-48xl"
+    m8i_metal_96xl = "m8i.metal-96xl"
+    m8i_flex_large = "m8i-flex.large"
+    m8i_flex_xlarge = "m8i-flex.xlarge"
+    m8i_flex_2xlarge = "m8i-flex.2xlarge"
+    m8i_flex_4xlarge = "m8i-flex.4xlarge"
+    m8i_flex_8xlarge = "m8i-flex.8xlarge"
+    m8i_flex_12xlarge = "m8i-flex.12xlarge"
+    m8i_flex_16xlarge = "m8i-flex.16xlarge"
+    i8ge_large = "i8ge.large"
+    i8ge_xlarge = "i8ge.xlarge"
+    i8ge_2xlarge = "i8ge.2xlarge"
+    i8ge_3xlarge = "i8ge.3xlarge"
+    i8ge_6xlarge = "i8ge.6xlarge"
+    i8ge_12xlarge = "i8ge.12xlarge"
+    i8ge_18xlarge = "i8ge.18xlarge"
+    i8ge_24xlarge = "i8ge.24xlarge"
+    i8ge_48xlarge = "i8ge.48xlarge"
+    i8ge_metal_24xl = "i8ge.metal-24xl"
+    i8ge_metal_48xl = "i8ge.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -13354,6 +13417,8 @@ class EbsInfo(TypedDict, total=False):
     EncryptionSupport: Optional[EbsEncryptionSupport]
     EbsOptimizedInfo: Optional[EbsOptimizedInfo]
     NvmeSupport: Optional[EbsNvmeSupport]
+    MaximumEbsAttachments: Optional[MaximumEbsAttachments]
+    AttachmentLimitType: Optional[AttachmentLimitType]
 
 
 DiskSize = int
