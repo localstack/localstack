@@ -435,6 +435,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             stack = state.stacks_v2.get(stack_name)
             if not stack:
                 raise ValidationError(f"Stack '{stack_name}' does not exist.")
+            stack.capabilities = request.get("Capabilities") or []
         else:
             # stack name specified, so fetch the stack by name
             stack_candidates: list[Stack] = [
@@ -455,6 +456,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 if not active_stack_candidates:
                     raise ValidationError(f"Stack '{stack_name}' does not exist.")
                 stack = active_stack_candidates[0]
+                # propagate capabilities from create change set request
+                stack.capabilities = request.get("Capabilities") or []
 
         # TODO: test if rollback status is allowed as well
         if (
