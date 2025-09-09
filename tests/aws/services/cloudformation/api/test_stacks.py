@@ -106,9 +106,14 @@ class TestStacksApi:
             "$..StackStatusReason",
         ]
     )
-    def test_stack_description_lifecycle(self, snapshot, aws_client, cleanups):
+    @pytest.mark.parametrize(
+        "tags", [None, [{"Key": "foo", "Value": "bar"}]], ids=["no-tags", "with-tags"]
+    )
+    def test_stack_description_lifecycle(self, snapshot, aws_client, cleanups, tags):
         """
-        Test when and how the description gets set
+        Test when and how the stack metadata gets set:
+        * tags
+        * description
         """
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         template = {
@@ -126,12 +131,17 @@ class TestStacksApi:
         }
         stack_name = f"stack-{short_uid()}"
         change_set_name = f"cs-{short_uid()}"
-        change_set = aws_client.cloudformation.create_change_set(
-            StackName=stack_name,
-            ChangeSetName=change_set_name,
-            ChangeSetType="CREATE",
-            TemplateBody=json.dumps(template),
-        )
+
+        kwargs = {
+            "StackName": stack_name,
+            "ChangeSetName": change_set_name,
+            "ChangeSetType": "CREATE",
+            "TemplateBody": json.dumps(template),
+        }
+        if tags is not None:
+            kwargs["Tags"] = tags
+
+        change_set = aws_client.cloudformation.create_change_set(**kwargs)
         change_set_id = change_set["Id"]
         stack_id = change_set["StackId"]
 
