@@ -784,7 +784,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
-            tags=request.get("Tags") or [],
+            tags=request.get("Tags"),
         )
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
