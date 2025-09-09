@@ -1447,3 +1447,82 @@ def test_restxml_ignores_get_body():
     assert "Bucket" in parsed_request
     assert parsed_request["Bucket"] == "test-bucket"
     assert parsed_request["Key"] == "foo"
+
+
+def test_smithy_rpc_v2_cbor():
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+    # example taken from:
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/arc-region-switch/client/create_plan.html
+
+    _botocore_parser_integration_test(
+        service="arc-region-switch",
+        protocol="smithy-rpc-v2-cbor",
+        action="CreatePlan",
+        description="string",
+        workflows=[
+            {
+                "steps": [
+                    {
+                        "name": "string",
+                        "description": "string",
+                        "executionBlockConfiguration": {
+                            "customActionLambdaConfig": {
+                                "timeoutMinutes": 123,
+                                "lambdas": [
+                                    {
+                                        "crossAccountRole": "string",
+                                        "externalId": "string",
+                                        "arn": "string",
+                                    },
+                                ],
+                                "retryIntervalMinutes": 10.0,
+                                "regionToRun": "activatingRegion",
+                                "ungraceful": {"behavior": "skip"},
+                            },
+                        },
+                        "executionBlockType": "CustomActionLambda",
+                    },
+                ],
+                "workflowTargetAction": "activate",
+                "workflowTargetRegion": "string",
+                "workflowDescription": "string",
+            },
+        ],
+        executionRole="string",
+        recoveryTimeObjectiveMinutes=123,
+        associatedAlarms={
+            "string": {
+                "crossAccountRole": "string",
+                "externalId": "string",
+                "resourceIdentifier": "string",
+                "alarmType": "applicationHealth",
+            }
+        },
+        triggers=[
+            {
+                "description": "string",
+                "targetRegion": "string",
+                "action": "activate",
+                "conditions": [
+                    {
+                        "associatedAlarmName": "string",
+                        "condition": "red",
+                    },
+                ],
+                "minDelayMinutesBetweenExecutions": 123,
+            },
+        ],
+        name="string",
+        regions=[
+            "region1",
+            "region2",
+        ],
+        recoveryApproach="activeActive",
+        primaryRegion="string",
+        tags={"string": "string"},
+    )
+
+
+# arc-region-switch supports both `json` and `smithy-rpc-v2`. Testing that we can support both
+# @pytest.mark.parametrize("protocol", ["json", "smithy-rpc-v2"])
