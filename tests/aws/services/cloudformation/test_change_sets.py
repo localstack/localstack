@@ -939,6 +939,7 @@ def test_dynamic_ssm_parameter_lookup_no_change(
     )
 
 
+@skip_if_v1_provider("Requires the V2 engine")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StatusReason"])
 def test_describe_failed_change_set(aws_client: ServiceLevelClientFactory, snapshot, cleanups):
