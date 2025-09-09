@@ -190,7 +190,7 @@ def map_to_notimplemented(row: RowEntry) -> bool:
     Some simple heuristics to check the API responses and classify them into implemented/notimplemented
 
     Ideally they all should behave the same way when receiving requests for not yet implemented endpoints
-    (501 with a "not yet implemented" message)
+    (501 error code and avoids relying on static "not yet implemented" error message strings)
 
     :param row: the RowEntry
     :return: True if we assume it is not implemented, False otherwise
@@ -231,16 +231,6 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         and row["status_code"] == 404
         and row.get("error_message") is not None
         and "The requested URL was not found on the server" in row.get("error_message")
-    ):
-        return True
-    if (
-        row["status_code"] == 501
-        and row.get("error_message") is not None
-        and "not yet implemented" in row.get("error_message", "")
-    ):
-        return True
-    if row.get("error_message") is not None and "not yet implemented" in row.get(
-        "error_message", ""
     ):
         return True
     if row["status_code"] == 501:
