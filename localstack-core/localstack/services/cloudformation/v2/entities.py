@@ -19,6 +19,7 @@ from localstack.aws.api.cloudformation import (
     StackSetOperation,
     StackStatus,
     StackStatusReason,
+    Tag,
 )
 from localstack.aws.api.cloudformation import (
     Parameter as ApiParameter,
@@ -50,6 +51,7 @@ class Stack:
     enable_termination_protection: bool
     processed_template: dict | None
     template_body: str | None
+    tags: list[Tag]
 
     # state after deploy
     resolved_parameters: dict[str, EngineParameter]
@@ -64,6 +66,7 @@ class Stack:
         region_name: str,
         request_payload: CreateChangeSetInput | CreateStackInput,
         initial_status: StackStatus = StackStatus.CREATE_IN_PROGRESS,
+        tags: list[Tag] | None = None,
     ):
         self.account_id = account_id
         self.region_name = region_name
@@ -76,6 +79,7 @@ class Stack:
         self.enable_termination_protection = False
         self.processed_template = None
         self.template_body = None
+        self.tags = [] if tags is None else (request_payload.get("Tags") or [])
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])
@@ -195,6 +199,7 @@ class ChangeSet:
     processed_template: dict | None
     resolved_parameters: dict[str, EngineParameter]
     description: str | None
+    tags: list[Tag]
 
     def __init__(
         self,
@@ -212,6 +217,7 @@ class ChangeSet:
         self.update_model = None
         self.creation_time = datetime.now(tz=UTC)
         self.resolved_parameters = {}
+        self.tags = request_payload.get("Tags") or []
 
         self.change_set_name = request_payload["ChangeSetName"]
         self.change_set_type = request_payload.get("ChangeSetType", ChangeSetType.UPDATE)
