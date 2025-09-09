@@ -484,6 +484,7 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
     snapshot.match("exception", ex.value)
 
 
+@skip_if_v1_provider("Not supported in V1 engine")
 @markers.aws.validated
 def test_create_change_set_no_changes(
     snapshot,
