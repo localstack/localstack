@@ -33,6 +33,7 @@ class ServiceModelIdentifier(NamedTuple):
 
     name: ServiceName
     protocol: ProtocolName | None = None
+    protocols: list[ProtocolName] | None = None
 
 
 spec_patches_json = os.path.join(os.path.dirname(__file__), "spec-patches.json")
@@ -114,9 +115,15 @@ def load_service(
     :raises: UnknownServiceProtocolError if the specific protocol of the service cannot be found
     """
     service_description = loader.load_service_model(service, "service-2", version)
+    print(f"{service_description=}")
+    # TODO: look at this and verify it works!
+    service_metadata = service_description.get("metadata", {})
+    service_protocols = {service_metadata.get("protocol")}
+    if protocols := service_metadata.get("protocols"):
+        service_protocols.update(protocols)
 
     # check if the protocol is defined, and if so, if the loaded service defines this protocol
-    if protocol is not None and protocol != service_description.get("metadata", {}).get("protocol"):
+    if protocol is not None and protocol not in service_protocols:
         # if the protocol is defined, but not the one of the currently loaded service,
         # check if we already loaded the custom spec based on the naming convention (<service>-<protocol>),
         # f.e. "sqs-query"
@@ -132,7 +139,7 @@ def load_service(
 
     # remove potential protocol names from the service name
     # FIXME add more protocols here if we have to internalize more than just sqs-query
-    # TODO this should not contain specific internalized serivce names
+    # TODO this should not contain specific internalized service names
     service = {"sqs-query": "sqs"}.get(service, service)
     return ServiceModel(service_description, service)
 
@@ -147,6 +154,18 @@ def iterate_service_operations() -> Generator[tuple[ServiceModel, OperationModel
     for service in list_services():
         for op_name in service.operation_names:
             yield service, service.operation_model(op_name)
+
+
+def is_protocol_in_service_model_identifier(
+    protocol: ProtocolName, service_model_identifier: ServiceModelIdentifier
+) -> bool:
+    """
+    :param protocol: the protocol name to check
+    :param service_model_identifier:
+    :return: boolean to indicate if the protocol is available for that service
+    """
+    protocols = service_model_identifier.protocols or []
+    return protocol in protocols or protocol == service_model_identifier.protocol
 
 
 @dataclasses.dataclass
@@ -179,7 +198,11 @@ class LazyServiceCatalogIndex:
                 target_prefix = service_model.metadata.get("targetPrefix")
                 if target_prefix:
                     result[target_prefix].append(
-                        ServiceModelIdentifier(service_model.service_name, service_model.protocol)
+                        ServiceModelIdentifier(
+                            name=service_model.service_name,
+                            protocol=service_model.protocol,
+                            protocols=service_model.metadata.get("protocols"),
+                        )
                     )
         return dict(result)
 
@@ -189,7 +212,11 @@ class LazyServiceCatalogIndex:
         for service_models in self._services.values():
             for service_model in service_models:
                 result[service_model.signing_name].append(
-                    ServiceModelIdentifier(service_model.service_name, service_model.protocol)
+                    ServiceModelIdentifier(
+                        name=service_model.service_name,
+                        protocol=service_model.protocol,
+                        protocols=service_model.metadata.get("protocols"),
+                    )
                 )
         return dict(result)
 
@@ -203,7 +230,9 @@ class LazyServiceCatalogIndex:
                     for operation in operations:
                         result[operation].append(
                             ServiceModelIdentifier(
-                                service_model.service_name, service_model.protocol
+                                name=service_model.service_name,
+                                protocol=service_model.protocol,
+                                protocols=service_model.metadata.get("protocols"),
                             )
                         )
         return dict(result)
@@ -214,7 +243,11 @@ class LazyServiceCatalogIndex:
         for service_models in self._services.values():
             for service_model in service_models:
                 result[service_model.endpoint_prefix].append(
-                    ServiceModelIdentifier(service_model.service_name, service_model.protocol)
+                    ServiceModelIdentifier(
+                        name=service_model.service_name,
+                        protocol=service_model.protocol,
+                        protocols=service_model.metadata.get("protocols"),
+                    )
                 )
         return dict(result)
 

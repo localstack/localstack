@@ -17,7 +17,7 @@ from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, Handler
 from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
-from ..protocol.service_router import determine_aws_service_model
+from ..protocol.service_router import determine_aws_protocol, determine_aws_service_model
 from ..skeleton import Skeleton, create_skeleton
 
 LOG = logging.getLogger(__name__)
@@ -33,6 +33,8 @@ class ServiceNameParser(Handler):
         # example). If it is already set, we can skip the parsing of the request. It is very important for S3, because
         # parsing the request will consume the data stream and prevent streaming.
         if context.service:
+            if not context.protocol:
+                context.protocol = determine_aws_protocol(context.request, context.service)
             return
 
         service_model = determine_aws_service_model(context.request)
@@ -41,6 +43,7 @@ class ServiceNameParser(Handler):
             return
 
         context.service = service_model
+        context.protocol = determine_aws_protocol(context.request, service_model)
 
 
 class ServiceRequestParser(Handler):

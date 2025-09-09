@@ -2263,9 +2263,6 @@ def create_serializer(
         #  CBOR handling from JSONResponseParser
         # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
-    # TODO: even though our Service Name Parser will only use a protocol that is available for the service, we might
-    #  want to verify if the given protocol here is available for that service, in case we are manually calling
-    #  this factory. Revisit once we implement multi-protocol support
     service_protocol = protocol or service.protocol
 
     # Try to select a service- and protocol-specific serializer implementation

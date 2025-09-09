@@ -1580,8 +1580,6 @@ def create_parser(service: ServiceModel, protocol: ProtocolName | None = None) -
         # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
 
-    # TODO: do we want to add a check if the user-defined protocol is part of the available ones in the ServiceModel?
-    #  or should it be checked once
     service_protocol = protocol or service.protocol
 
     # Try to select a service- and protocol-specific parser implementation
