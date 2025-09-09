@@ -525,21 +525,19 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             after_parameters=after_parameters,
             previous_update_model=previous_update_model,
         )
+        if change_set.status != ChangeSetStatus.FAILED:
+            if not change_set.has_changes():
+                change_set.set_change_set_status(ChangeSetStatus.FAILED)
+                change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
+                change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
+            else:
+                if stack.status not in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
+                    stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS, "User Initiated")
 
-        # TODO: handle the empty change set case
-        if not change_set.has_changes():
-            change_set.set_change_set_status(ChangeSetStatus.FAILED)
-            change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
-            change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
-        else:
-            if stack.status not in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-                stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS, "User Initiated")
-
-            change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
+                change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
 
         stack.change_set_ids.append(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
-
         return CreateChangeSetOutput(StackId=stack.stack_id, Id=change_set.change_set_id)
 
     @handler("ExecuteChangeSet")
@@ -666,6 +664,27 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         if not change_set:
             raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
+
+        # if the change set failed to create, then we can return a blank response
+        if change_set.status == ChangeSetStatus.FAILED:
+            return DescribeChangeSetOutput(
+                Status=change_set.status,
+                ChangeSetId=change_set.change_set_id,
+                ChangeSetName=change_set.change_set_name,
+                ExecutionStatus=change_set.execution_status,
+                RollbackConfiguration=RollbackConfiguration(),
+                StackId=change_set.stack.stack_id,
+                StackName=change_set.stack.stack_name,
+                CreationTime=change_set.creation_time,
+                Changes=[],
+                Capabilities=change_set.stack.capabilities,
+                StatusReason=change_set.status_reason,
+                Description=change_set.description,
+                # TODO: static information
+                IncludeNestedStacks=False,
+                NotificationARNs=[],
+                Tags=change_set.tags or None,
+            )
 
         # TODO: The ChangeSetModelDescriber currently matches AWS behavior by listing
         #       resource changes in the order they appear in the template. However, when
