@@ -79,7 +79,7 @@ class Stack:
         self.enable_termination_protection = False
         self.processed_template = None
         self.template_body = None
-        self.tags = [] if tags is None else (request_payload.get("Tags") or [])
+        self.tags = tags or []
 
         self.stack_name = request_payload["StackName"]
         self.parameters = request_payload.get("Parameters", [])

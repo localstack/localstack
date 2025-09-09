@@ -449,8 +449,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                     region_name=context.region,
                     request_payload=request,
                     initial_status=StackStatus.REVIEW_IN_PROGRESS,
-                    # specifically don't take tags from the request payload
-                    tags=None,
                 )
                 state.stacks_v2[stack.stack_id] = stack
             else:
@@ -786,6 +784,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
+            tags=request.get("Tags") or [],
         )
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
