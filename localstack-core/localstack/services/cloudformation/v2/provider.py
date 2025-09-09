@@ -525,7 +525,9 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             after_parameters=after_parameters,
             previous_update_model=previous_update_model,
         )
-        if change_set.status != ChangeSetStatus.FAILED:
+        if change_set.status == ChangeSetStatus.FAILED:
+            change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
+        else:
             if not change_set.has_changes():
                 change_set.set_change_set_status(ChangeSetStatus.FAILED)
                 change_set.set_execution_status(ExecutionStatus.UNAVAILABLE)
