@@ -55,11 +55,13 @@ _skip_assert = {}
 
 
 def _botocore_serializer_integration_test(
+    *,
     service: str,
     action: str,
     response: dict,
-    status_code=200,
-    expected_response_content: dict = None,
+    status_code: int = 200,
+    expected_response_content: dict | None = None,
+    protocol: str | None = None,
 ) -> dict:
     """
     Performs an integration test for the serializer using botocore as parser.
@@ -76,14 +78,17 @@ def _botocore_serializer_integration_test(
     :param status_code: Optional - expected status code of the response - defaults to 200
     :param expected_response_content: Optional - if the input data ("response") differs from the actually expected data
                                       (because f.e. it contains None values)
+    :param: protocol: Optional: to specify which protocol to use for the service. If not provided,
+                    fallback to the service's default protocol
     :return: boto-parsed serialized response
     """
 
     # Load the appropriate service
     service = load_service(service)
+    service_protocol = protocol or service.protocol
 
     # Use our serializer to serialize the response
-    response_serializer = create_serializer(service)
+    response_serializer = create_serializer(service, protocol=service_protocol)
     # The serializer changes the incoming dict, therefore copy it before passing it to the serializer
     response_to_parse = copy.deepcopy(response)
     serialized_response = response_serializer.serialize_to_response(
@@ -91,7 +96,7 @@ def _botocore_serializer_integration_test(
     )
 
     # Use the parser from botocore to parse the serialized response
-    response_parser = create_parser(service.protocol)
+    response_parser = create_parser(service_protocol)
     parsed_response = response_parser.parse(
         serialized_response.to_readonly_response_dict(),
         service.operation_model(action).output_shape,

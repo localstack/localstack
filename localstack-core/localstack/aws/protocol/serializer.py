@@ -2074,11 +2074,14 @@ def gen_amzn_requestid():
 
 
 @functools.cache
-def create_serializer(service: ServiceModel) -> ResponseSerializer:
+def create_serializer(
+    service: ServiceModel, protocol: ProtocolName | None = None
+) -> ResponseSerializer:
     """
     Creates the right serializer for the given service model.
 
     :param service: to create the serializer for
+    :param protocol: the protocol for the serializer. If not provided, fallback to the service's default protocol
     :return: ResponseSerializer which can handle the protocol of the service
     """
 
@@ -2102,16 +2105,19 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         #  CBOR handling from JSONResponseParser
         # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
+    # TODO: do we want to add a check if the user-defined protocol is part of the available ones in the ServiceModel?
+    #  or should it be checked once
+    service_protocol = protocol or service.protocol
 
     # Try to select a service- and protocol-specific serializer implementation
     if (
         service.service_name in service_specific_serializers
-        and service.protocol in service_specific_serializers[service.service_name]
+        and service_protocol in service_specific_serializers[service.service_name]
     ):
-        return service_specific_serializers[service.service_name][service.protocol]()
+        return service_specific_serializers[service.service_name][service_protocol]()
     else:
         # Otherwise, pick the protocol-specific serializer for the protocol of the service
-        return protocol_specific_serializers[service.protocol]()
+        return protocol_specific_serializers[service_protocol]()
 
 
 def aws_response_serializer(
