@@ -511,7 +511,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             pass
 
         # create change set for the stack and apply changes
-        change_set = ChangeSet(stack, request, template=after_template, template_body=template_body)
+        change_set = ChangeSet(
+            stack,
+            request,
+            template=after_template,
+            template_body=template_body,
+        )
         self._setup_change_set_model(
             change_set=change_set,
             before_template=before_template,
@@ -528,7 +533,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             change_set.status_reason = "The submitted information didn't contain changes. Submit different information to create a change set."
         else:
             if stack.status not in [StackStatus.CREATE_COMPLETE, StackStatus.UPDATE_COMPLETE]:
-                stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS)
+                stack.set_stack_status(StackStatus.REVIEW_IN_PROGRESS, "User Initiated")
 
             change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
 
@@ -569,6 +574,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             raise RuntimeError("Programming error: no update graph found for change set")
 
         change_set.set_execution_status(ExecutionStatus.EXECUTE_IN_PROGRESS)
+        # propagate the tags as this is done during execution
+        change_set.stack.tags = change_set.tags
         change_set.stack.set_stack_status(
             StackStatus.UPDATE_IN_PROGRESS
             if change_set.change_set_type == ChangeSetType.UPDATE
@@ -580,6 +587,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
 
         def _run(*args):
+            # TODO: should this be cleared before or after execution?
+            change_set.stack.status_reason = None
             result = change_set_executor.execute()
             change_set.stack.resolved_parameters = change_set.resolved_parameters
             change_set.stack.resolved_resources = result.resources
@@ -686,6 +695,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             # TODO: static information
             IncludeNestedStacks=False,
             NotificationARNs=[],
+            Tags=change_set.tags or None,
         )
         if change_set.resolved_parameters:
             result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
@@ -774,6 +784,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             account_id=context.account_id,
             region_name=context.region,
             request_payload=request,
+            tags=request.get("Tags"),
         )
         # TODO: what is the correct initial status?
         state.stacks_v2[stack.stack_id] = stack
@@ -892,7 +903,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             DriftInformation=StackDriftInformation(StackDriftStatus=StackDriftStatus.NOT_CHECKED),
             EnableTerminationProtection=stack.enable_termination_protection,
             RollbackConfiguration=RollbackConfiguration(),
-            Tags=[],
+            Tags=stack.tags,
             NotificationARNs=[],
         )
         if stack.status != StackStatus.REVIEW_IN_PROGRESS:
