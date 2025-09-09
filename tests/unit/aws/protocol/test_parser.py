@@ -340,12 +340,19 @@ def test_query_parser_pass_str_as_int_raises_error():
 
 
 def _botocore_parser_integration_test(
-    service: str, action: str, headers: dict = None, expected: dict = None, **kwargs
+    *,
+    service: str,
+    action: str,
+    protocol: str = None,
+    headers: dict = None,
+    expected: dict = None,
+    **kwargs,
 ):
     # Load the appropriate service
     service = load_service(service)
+    service_protocol = protocol or service.protocol
     # Use the serializer from botocore to serialize the request params
-    serializer = create_serializer(service.protocol)
+    serializer = create_serializer(service_protocol)
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
@@ -366,12 +373,12 @@ def _botocore_parser_integration_test(
     # use custom headers (if provided), or headers from serialized request as default
     headers = serialized_request.get("headers") if headers is None else headers
 
-    if service.protocol in ["query", "ec2"]:
+    if service_protocol in ["query", "ec2"]:
         # Serialize the body as query parameter
         body = urlencode(serialized_request["body"])
 
     # Use our parser to parse the serialized body
-    parser = create_parser(service)
+    parser = create_parser(service, service_protocol)
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",

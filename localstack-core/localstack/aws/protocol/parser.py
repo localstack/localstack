@@ -94,6 +94,7 @@ from cbor2._decoder import loads as cbor2_loads
 from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.aws.spec import ProtocolName
 from localstack.http import Request
 
 
@@ -1443,11 +1444,12 @@ class SQSQueryRequestParser(QueryRequestParser):
 
 
 @functools.cache
-def create_parser(service: ServiceModel) -> RequestParser:
+def create_parser(service: ServiceModel, protocol: ProtocolName | None = None) -> RequestParser:
     """
     Creates the right parser for the given service model.
 
     :param service: to create the parser for
+    :param protocol: the protocol for the parser. If not provided, fallback to the service's default protocol
     :return: RequestParser which can handle the protocol of the service
     """
     # Unfortunately, some services show subtle differences in their parsing or operation detection behavior, even though
@@ -1470,12 +1472,16 @@ def create_parser(service: ServiceModel) -> RequestParser:
         "cbor": CBORRequestParser,
     }
 
+    # TODO: do we want to add a check if the user-defined protocol is part of the available ones in the ServiceModel?
+    #  or should it be checked once
+    service_protocol = protocol or service.protocol
+
     # Try to select a service- and protocol-specific parser implementation
     if (
         service.service_name in service_specific_parsers
-        and service.protocol in service_specific_parsers[service.service_name]
+        and service_protocol in service_specific_parsers[service.service_name]
     ):
-        return service_specific_parsers[service.service_name][service.protocol](service)
+        return service_specific_parsers[service.service_name][service_protocol](service)
     else:
         # Otherwise, pick the protocol-specific parser for the protocol of the service
-        return protocol_specific_parsers[service.protocol](service)
+        return protocol_specific_parsers[service_protocol](service)
