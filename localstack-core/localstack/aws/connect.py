@@ -577,7 +577,7 @@ class ExternalClientFactory(ClientFactory):
         if not endpoint_url:
             endpoint_url = get_service_endpoint()
             if service_name == "s3":
-                endpoint_url = f"{localstack_config.get_protocol()}://{get_s3_hostname()}"
+                endpoint_url = f"{localstack_config.get_protocol()}://{get_s3_hostname()}:{localstack_config.GATEWAY_LISTEN[0].port}"
 
         # Prevent `PartialCredentialsError` when only access key ID is provided
         # The value of secret access key is insignificant and can be set to anything
