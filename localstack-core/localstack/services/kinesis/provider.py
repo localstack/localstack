@@ -125,7 +125,13 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
                     raise
                 shard_iterator = result.get("NextShardIterator")
                 records = result.get("Records", [])
-                if not records:
+                if records:
+                    # Update the last sequence number to the last record's sequence number
+                    # TODO: This will suffice for now but does not properly capture checkpointing when
+                    # no data is written to a shard. See AWS docs:
+                    # https://docs.aws.amazon.com/kinesis/latest/APIReference/API_SubscribeToShardEvent.html#API_SubscribeToShardEvent_Contents
+                    last_sequence_number = records[-1].get("SequenceNumber", last_sequence_number)
+                else:
                     # On AWS there is *at least* 1 event every 5 seconds
                     # but this is not possible in this structure.
                     # In order to avoid a 5-second blocking call, we make the compromise of 3 seconds.
@@ -136,7 +142,7 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
                         Records=records,
                         ContinuationSequenceNumber=str(last_sequence_number),
                         MillisBehindLatest=0,
-                        ChildShards=[],
+                        ChildShards=None,  # TODO: Include shard children info
                     )
                 )
 

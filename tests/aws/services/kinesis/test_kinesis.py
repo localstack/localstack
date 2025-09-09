@@ -175,7 +175,15 @@ class TestKinesis:
         snapshot.match("One_consumer_by_describe_stream", consumer_description_by_arn)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Events..EncryptionType",
+            # TODO: We set this to the final sequence_number of returned records which is technically not correct,
+            # but will suffice as a checkpoint for now. See AWS docs:
+            # https://docs.aws.amazon.com/kinesis/latest/APIReference/API_SubscribeToShardEvent.html#API_SubscribeToShardEvent_Contents
+            "$..Events..ContinuationSequenceNumber",
+        ]
+    )
     def test_subscribe_to_shard(
         self,
         kinesis_create_stream,
@@ -210,21 +218,26 @@ class TestKinesis:
         # put records
         num_records = 5
         msg = "Hello world"
-        for i in range(num_records):
-            aws_client.kinesis.put_records(
-                StreamName=stream_name, Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"}]
-            )
+        aws_client.kinesis.put_records(
+            StreamName=stream_name,
+            Records=[{"Data": f"{msg}_{i}", "PartitionKey": "1"} for i in range(num_records)],
+        )
 
         # read out results
         results = []
         for entry in stream:
-            records = entry["SubscribeToShardEvent"]["Records"]
-            results.extend(records)
-            if len(results) >= num_records:
+            event = entry["SubscribeToShardEvent"]
+            records = event.get("Records", [])
+
+            if not records:
+                continue
+
+            results.append(event)
+            num_records -= len(records)
+            if num_records <= 0:
                 break
 
-        results.sort(key=lambda k: k.get("Data"))
-        snapshot.match("Records", results)
+        snapshot.match("Events", results)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Records..EncryptionType"])
