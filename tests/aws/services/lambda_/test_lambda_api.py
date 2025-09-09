@@ -32,6 +32,7 @@ from localstack.aws.api.lambda_ import (
     LogFormat,
     Runtime,
 )
+from localstack.config import HostAndPort
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.provider_utils import LambdaLayerVersionIdentifier
@@ -6954,3 +6955,36 @@ class TestLambdaSnapStart:
                 SnapStart={"ApplyOn": "invalidOption"},
             )
         snapshot.match("create_function_invalid_snapstart_apply", e.value.response)
+
+
+class TestLambdaEndpoints:
+    @markers.aws.only_localstack
+    @markers.requires_in_process
+    @pytest.mark.parametrize(
+        "localstack_host",
+        [
+            HostAndPort("localhost.localstack.cloud", 4566),
+            HostAndPort("127.0.0.1", 4566),
+            HostAndPort("localhost", 4566),
+        ],
+    )
+    def test_s3_code_url(
+        self, aws_client, create_lambda_function_aws, lambda_su_role, monkeypatch, localstack_host
+    ):
+        monkeypatch.setattr(config, "LOCALSTACK_HOST", localstack_host)
+        function_name = f"function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={"ZipFile": zip_file_bytes},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+        )
+        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
+        s3_code_url = get_function_response["Code"]["Location"]
+        assert s3_code_url.startswith(f"http://{localstack_host}/")
+
+        content = requests.get(s3_code_url).content
+        assert content == zip_file_bytes

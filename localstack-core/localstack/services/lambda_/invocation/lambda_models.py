@@ -14,6 +14,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import IO, Literal, TypedDict
 
+import boto3
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -40,7 +41,7 @@ from localstack.aws.api.lambda_ import (
     TracingMode,
 )
 from localstack.aws.connect import connect_to
-from localstack.constants import AWS_REGION_US_EAST_1
+from localstack.constants import AWS_REGION_US_EAST_1, INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.lambda_.api_utils import qualified_lambda_arn, unqualified_lambda_arn
 from localstack.utils.archives import unzip
 from localstack.utils.strings import long_uid, short_uid
@@ -74,7 +75,7 @@ InitializationType = Literal["on-demand", "provisioned-concurrency"]
 
 class ArchiveCode(metaclass=ABCMeta):
     @abstractmethod
-    def generate_presigned_url(self, endpoint_url: str | None = None):
+    def generate_presigned_url(self, endpoint_url: str):
         """
         Generates a presigned url pointing to the code archive
         """
@@ -168,15 +169,17 @@ class S3Code(ArchiveCode):
         )
         target_file.flush()
 
-    def generate_presigned_url(self, endpoint_url: str | None = None) -> str:
+    def generate_presigned_url(self, endpoint_url: str) -> str:
         """
         Generates a presigned url pointing to the code archive
         """
-        s3_client = connect_to(
+        s3_client = boto3.client(
+            "s3",
             region_name=AWS_REGION_US_EAST_1,
             aws_access_key_id=config.INTERNAL_RESOURCE_ACCOUNT,
+            aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
             endpoint_url=endpoint_url,
-        ).s3
+        )
         params = {"Bucket": self.s3_bucket, "Key": self.s3_key}
         if self.s3_object_version:
             params["VersionId"] = self.s3_object_version
@@ -257,7 +260,7 @@ class HotReloadingCode(ArchiveCode):
     code_sha256: str = "hot-reloading-hash-not-available"
     code_size: int = 0
 
-    def generate_presigned_url(self, endpoint_url: str | None = None) -> str:
+    def generate_presigned_url(self, endpoint_url: str) -> str:
         return f"file://{self.host_path}"
 
     def get_unzipped_code_location(self) -> Path:

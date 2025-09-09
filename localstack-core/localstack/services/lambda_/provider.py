@@ -1512,7 +1512,8 @@ class LambdaProvider(LambdaApi, ServiceLifecycleHook):
         code_location = None
         if code := version.config.code:
             code_location = FunctionCodeLocation(
-                Location=code.generate_presigned_url(), RepositoryType="S3"
+                Location=code.generate_presigned_url(endpoint_url=config.external_service_url()),
+                RepositoryType="S3",
             )
         elif image := version.config.image:
             code_location = FunctionCodeLocation(

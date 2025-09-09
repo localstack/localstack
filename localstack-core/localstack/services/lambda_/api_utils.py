@@ -8,6 +8,7 @@ import re
 import string
 from typing import TYPE_CHECKING, Any
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
@@ -665,7 +666,9 @@ def validate_and_set_batch_size(service: str, batch_size: int | None = None) -> 
 def map_layer_out(layer_version: "LayerVersion") -> PublishLayerVersionResponse:
     return PublishLayerVersionResponse(
         Content=LayerVersionContentOutput(
-            Location=layer_version.code.generate_presigned_url(),
+            Location=layer_version.code.generate_presigned_url(
+                endpoint_url=config.external_service_url()
+            ),
             CodeSha256=layer_version.code.code_sha256,
             CodeSize=layer_version.code.code_size,
             # SigningProfileVersionArn="", # same as in function configuration
