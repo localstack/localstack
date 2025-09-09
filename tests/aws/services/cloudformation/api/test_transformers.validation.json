@@ -62,6 +62,15 @@
       "total": 24.63
     }
   },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_redeployment_with_fn_include": {
+    "last_validated_date": "2025-09-09T16:00:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.7,
+      "call": 27.5,
+      "teardown": 5.29,
+      "total": 33.49
+    }
+  },
   "tests/aws/services/cloudformation/api/test_transformers.py::test_transformer_individual_resource_level": {
     "last_validated_date": "2024-06-13T06:43:21+00:00"
   },

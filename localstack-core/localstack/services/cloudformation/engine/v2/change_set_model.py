@@ -704,7 +704,7 @@ class ChangeSetModel:
                     "Invalid: Fn::Transforms cannot be nested inside another Fn::Transform"
                 )
 
-            path = "$" + ".".join(scope.split("/")[:-1])
+            path = scope.parent.jsonpath
             before_siblings = extract_jsonpath(self._before_template, path)
             after_siblings = extract_jsonpath(self._after_template, path)
 
