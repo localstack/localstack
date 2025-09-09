@@ -1137,9 +1137,16 @@ def deploy_cfn_template(
         change_set_id = response["Id"]
         stack_id = response["StackId"]
 
-        cfn_aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
-            ChangeSetName=change_set_id
-        )
+        try:
+            cfn_aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
+                ChangeSetName=change_set_id
+            )
+        except botocore.exceptions.WaiterError as e:
+            change_set = cfn_aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id
+            )
+            raise Exception(f"{change_set['Status']}: {change_set.get('StatusReason')}") from e
+
         cfn_aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         stack_waiter = cfn_aws_client.cloudformation.get_waiter(
             WAITER_STACK_UPDATE_COMPLETE if is_update else WAITER_STACK_CREATE_COMPLETE

@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skipped_v2_items
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skipped_v2_items
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -36,30 +36,12 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     aws_client.s3.put_object(Bucket=s3_bucket, Key="api.yaml", Body=to_bytes(api_spec))
 
     # deploy template
-    template = """
-    Parameters:
-      ApiName:
-        Type: String
-      BucketName:
-        Type: String
-    Resources:
-      RestApi:
-        Type: AWS::ApiGateway::RestApi
-        Properties:
-          Name: !Ref ApiName
-          Body:
-            'Fn::Transform':
-              Name: 'AWS::Include'
-              Parameters:
-                Location: !Sub "s3://${BucketName}/api.yaml"
-    Outputs:
-      RestApiId:
-        Value: !Ref RestApi
-    """
-
     api_name = f"api-{short_uid()}"
     result = deploy_cfn_template(
-        template=template, parameters={"ApiName": api_name, "BucketName": s3_bucket}
+        parameters={"ApiName": api_name, "BucketName": s3_bucket},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_apigw_with_include_fn.yml"
+        ),
     )
 
     # assert REST API is created properly
@@ -70,6 +52,51 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
 
     resources = aws_client.apigateway.get_resources(restApiId=api_id)
     snapshot.match("api-resources", resources)
+
+
+@skip_if_v1_provider(reason="update not supported in v1")
+@markers.aws.validated
+def test_redeployment_with_fn_include(deploy_cfn_template, s3_bucket, snapshot, aws_client):
+    snapshot.add_transformers_list(
+        [
+            *snapshot.transform.apigateway_api(),
+            snapshot.transform.key_value("aws:cloudformation:stack-id"),
+            snapshot.transform.key_value("aws:cloudformation:stack-name"),
+        ]
+    )
+
+    # put API spec to S3
+    api_spec = """
+    swagger: 2.0
+    info:
+      version: "1.2.3"
+      title: "Test API"
+    basePath: /base
+    """
+    aws_client.s3.put_object(Bucket=s3_bucket, Key="api.yaml", Body=to_bytes(api_spec))
+
+    # deploy template
+    api_name = f"api-{short_uid()}"
+    result = deploy_cfn_template(
+        parameters={"ApiName": api_name, "BucketName": s3_bucket},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_apigw_with_include_fn.yml"
+        ),
+    )
+
+    api_name = f"api-{short_uid()}"
+    updated_result = deploy_cfn_template(
+        stack_name=result.stack_name,
+        is_update=True,
+        parameters={"ApiName": api_name, "BucketName": s3_bucket},
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cfn_apigw_with_include_fn.yml"
+        ),
+    )
+
+    api_id = updated_result.outputs.get("RestApiId")
+    api = aws_client.apigateway.get_rest_api(restApiId=api_id)
+    snapshot.match("api-details", api)
 
 
 @markers.aws.validated

@@ -1,0 +1,18 @@
+  Parameters:
+    ApiName:
+      Type: String
+    BucketName:
+      Type: String
+  Resources:
+    RestApi:
+      Type: AWS::ApiGateway::RestApi
+      Properties:
+        Name: !Ref ApiName
+        Body:
+          'Fn::Transform':
+            Name: 'AWS::Include'
+            Parameters:
+              Location: !Sub "s3://${BucketName}/api.yaml"
+  Outputs:
+    RestApiId:
+      Value: !Ref RestApi

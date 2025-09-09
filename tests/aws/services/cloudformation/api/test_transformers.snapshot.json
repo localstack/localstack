@@ -725,5 +725,34 @@
       },
       "array-value": "[\"a\",\"b\",\"c\"]"
     }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_redeployment_with_fn_include": {
+    "recorded-date": "09-09-2025, 16:00:50",
+    "recorded-content": {
+      "api-details": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "RestApi",
+          "aws:cloudformation:stack-id": "<aws:cloudformation:stack-id:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "version": "1.2.3",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
