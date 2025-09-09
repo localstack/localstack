@@ -10,7 +10,7 @@ cachetools==6.2.0
     # via localstack-core (pyproject.toml)
 certifi==2025.8.3
     # via requests
-cffi==1.17.1
+cffi==2.0.0
     # via cryptography
 charset-normalizer==3.4.3
     # via requests
@@ -22,7 +22,7 @@ dill==0.3.6
     # via localstack-core (pyproject.toml)
 dnslib==0.9.26
     # via localstack-core (pyproject.toml)
-dnspython==2.7.0
+dnspython==2.8.0
     # via localstack-core (pyproject.toml)
 idna==3.10
     # via requests
