@@ -6962,7 +6962,11 @@ class TestLambdaEndpoints:
     @markers.requires_in_process
     @pytest.mark.parametrize(
         "localstack_host",
-        [HostAndPort("localhost.localstack.cloud", 4566), HostAndPort("127.0.0.1", 4566)],
+        [
+            HostAndPort("localhost.localstack.cloud", 4566),
+            HostAndPort("127.0.0.1", 4566),
+            HostAndPort("localhost", 4566),
+        ],
     )
     def test_s3_code_url(
         self, aws_client, create_lambda_function_aws, lambda_su_role, monkeypatch, localstack_host
