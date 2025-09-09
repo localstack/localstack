@@ -7,7 +7,6 @@ LocalStack providers.
 
 import json
 import logging
-import re
 import threading
 from abc import ABC, abstractmethod
 from collections.abc import Callable
@@ -515,9 +514,6 @@ class InternalClientFactory(ClientFactory):
             config = self._config.merge(config)
 
         endpoint_url = endpoint_url or get_service_endpoint()
-        if service_name == "s3" and endpoint_url:
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
 
         return self._get_client(
             service_name=service_name,
@@ -578,10 +574,10 @@ class ExternalClientFactory(ClientFactory):
             if region_name == AWS_REGION_US_EAST_1:
                 config = config.merge(Config(region_name=region_name))
 
-        endpoint_url = endpoint_url or get_service_endpoint()
-        if service_name == "s3":
-            if re.match(r"https?://localhost(:[0-9]+)?", endpoint_url):
-                endpoint_url = endpoint_url.replace("://localhost", f"://{get_s3_hostname()}")
+        if not endpoint_url:
+            endpoint_url = get_service_endpoint()
+            if service_name == "s3":
+                endpoint_url = f"{localstack_config.get_protocol()}://{get_s3_hostname()}"
 
         # Prevent `PartialCredentialsError` when only access key ID is provided
         # The value of secret access key is insignificant and can be set to anything
