@@ -516,13 +516,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 resource_type,
                 f'No resource provider found for "{resource_type}"',
             )
-            LOG.warning(
-                "Deployment of resource type %s successful due to config CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES",
-                resource_type,
-            )
             if "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES" not in os.environ:
                 LOG.warning(
-                    "Deployment of resource type %s will fail in upcoming LocalStack releases unless CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is explicitly enabled.",
+                    "Deployment of resource type %s succeeded, but will fail in upcoming LocalStack releases unless CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is explicitly enabled.",
                     resource_type,
                 )
             event = ProgressEvent(
