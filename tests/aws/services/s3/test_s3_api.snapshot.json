@@ -4762,7 +4762,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketObjectTagging::test_put_bucket_tagging_none_value": {
-    "recorded-date": "02-09-2025, 22:48:59",
+    "recorded-date": "05-09-2025, 11:35:52",
     "recorded-content": {
       "put-bucket-tags-origin": {
         "ResponseMetadata": {
@@ -4785,6 +4785,356 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_and_if_unmodified_since_match": {
+    "recorded-date": "06-09-2025, 09:23:25",
+    "recorded-content": {
+      "upload-part-copy": {
+        "CopyPartResult": {
+          "ETag": "<e-tag:1>",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "destination_file.txt",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "<e-tag:1>",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_and_if_unmodified_since_match_failed": {
+    "recorded-date": "06-09-2025, 09:24:36",
+    "recorded-content": {
+      "upload-part-copy-source-unmodified-since-and-if-none-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-Unmodified-Since",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_if_modified_since_failed": {
+    "recorded-date": "06-09-2025, 09:24:51",
+    "recorded-content": {
+      "upload-part-copy-source-modified-since-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-Modified-Since",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_failed": {
+    "recorded-date": "06-09-2025, 09:22:26",
+    "recorded-content": {
+      "upload-part-copy-source-if-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_none_match_failed": {
+    "recorded-date": "06-09-2025, 09:22:50",
+    "recorded-content": {
+      "upload-part-copy-source-if-none-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-None-Match",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_unmodified_since_match_failed": {
+    "recorded-date": "06-09-2025, 09:23:12",
+    "recorded-content": {
+      "upload-part-copy-source-unmodified-since-match": {
+        "Error": {
+          "Code": "PreconditionFailed",
+          "Condition": "x-amz-copy-source-If-Unmodified-Since",
+          "Message": "At least one of the pre-conditions you specified did not hold"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 412
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_success": {
+    "recorded-date": "06-09-2025, 09:36:51",
+    "recorded-content": {
+      "upload-part-copy-if-match": {
+        "CopyPartResult": {
+          "ETag": "<e-tag:1>",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "destination_file.txt",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "<e-tag:1>",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_match_none_success": {
+    "recorded-date": "06-09-2025, 09:39:55",
+    "recorded-content": {
+      "upload-part-copy-if-none-match": {
+        "CopyPartResult": {
+          "ETag": "<e-tag:1>",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "destination_file.txt",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "<e-tag:1>",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_unmodified_since_success": {
+    "recorded-date": "06-09-2025, 09:47:30",
+    "recorded-content": {
+      "upload-part-copy-if-unmodified-since": {
+        "CopyPartResult": {
+          "ETag": "<e-tag:1>",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "destination_file.txt",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "<e-tag:1>",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_modified_since_success": {
+    "recorded-date": "06-09-2025, 10:07:29",
+    "recorded-content": {
+      "upload-part-copy-if-modified-since": {
+        "CopyPartResult": {
+          "ETag": "<e-tag:1>",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "destination_file.txt",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "<e-tag:1>",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/s3/test_s3_api.py::TestS3Multipart::test_upload_part_copy_with_copy_source_if_modified_since_in_future_success": {
+    "recorded-date": "06-09-2025, 10:20:23",
+    "recorded-content": {
+      "upload-part-copy-if-modified-since-in-future": {
+        "CopyPartResult": {
+          "ETag": "<e-tag:1>",
+          "LastModified": "datetime"
+        },
+        "ServerSideEncryption": "AES256",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-parts": {
+        "Bucket": "bucket",
+        "Initiator": {
+          "DisplayName": "display-name",
+          "ID": "i-d"
+        },
+        "IsTruncated": false,
+        "Key": "destination_file.txt",
+        "MaxParts": 1000,
+        "NextPartNumberMarker": 1,
+        "Owner": {
+          "ID": "i-d"
+        },
+        "PartNumberMarker": 0,
+        "Parts": [
+          {
+            "ETag": "<e-tag:1>",
+            "LastModified": "datetime",
+            "PartNumber": 1,
+            "Size": 10
+          }
+        ],
+        "StorageClass": "STANDARD",
+        "UploadId": "<upload-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

@@ -277,6 +277,7 @@ from localstack.services.s3.utils import (
     get_canned_acl,
     get_class_attrs_from_spec_class,
     get_failed_precondition_copy_source,
+    get_failed_upload_part_copy_source_preconditions,
     get_full_default_bucket_location,
     get_kms_key_arn,
     get_lifecycle_rule_from_object,
@@ -2483,10 +2484,6 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         request: UploadPartCopyRequest,
     ) -> UploadPartCopyOutput:
         # TODO: handle following parameters:
-        #  CopySourceIfMatch: Optional[CopySourceIfMatch]
-        #  CopySourceIfModifiedSince: Optional[CopySourceIfModifiedSince]
-        #  CopySourceIfNoneMatch: Optional[CopySourceIfNoneMatch]
-        #  CopySourceIfUnmodifiedSince: Optional[CopySourceIfUnmodifiedSince]
         #  SSECustomerAlgorithm: Optional[SSECustomerAlgorithm]
         #  SSECustomerKey: Optional[SSECustomerKey]
         #  SSECustomerKeyMD5: Optional[SSECustomerKeyMD5]
@@ -2548,6 +2545,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         range_data: ObjectRange | None = None
         if source_range:
             range_data = parse_copy_source_range_header(source_range, src_s3_object.size)
+
+        if precondition := get_failed_upload_part_copy_source_preconditions(
+            request, src_s3_object.last_modified, src_s3_object.etag
+        ):
+            raise PreconditionFailed(
+                "At least one of the pre-conditions you specified did not hold",
+                Condition=precondition,
+            )
 
         s3_part = S3Part(part_number=part_number)
         if s3_multipart.checksum_algorithm:
