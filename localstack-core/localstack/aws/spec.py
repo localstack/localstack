@@ -21,7 +21,7 @@ from localstack.utils.objects import singleton_factory
 LOG = logging.getLogger(__name__)
 
 ServiceName = str
-ProtocolName = Literal["query", "json", "rest-json", "rest-xml", "ec2", "smithy-rpc-v2"]
+ProtocolName = Literal["query", "json", "rest-json", "rest-xml", "ec2", "smithy-rpc-v2-cbor"]
 
 
 class ServiceModelIdentifier(NamedTuple):

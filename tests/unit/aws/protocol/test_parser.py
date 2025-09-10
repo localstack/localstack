@@ -1522,7 +1522,3 @@ def test_smithy_rpc_v2_cbor():
         primaryRegion="string",
         tags={"string": "string"},
     )
-
-
-# arc-region-switch supports both `json` and `smithy-rpc-v2`. Testing that we can support both
-# @pytest.mark.parametrize("protocol", ["json", "smithy-rpc-v2"])
