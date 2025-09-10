@@ -94,6 +94,7 @@ from cbor2._decoder import loads as cbor2_loads
 from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.aws.spec import ProtocolName
 from localstack.http import Request
 
 
@@ -1002,7 +1003,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
             2: self._parse_byte_string,
             3: self._parse_text_string,
             4: self._parse_array,
-            5: self._parse_map,
+            5: self._parse_map_cbor,
             6: self._parse_tag,
             7: self._parse_simple_and_float,
         }
@@ -1011,7 +1012,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
     def get_peekable_stream_from_bytes(_bytes: bytes) -> io.BufferedReader:
         return io.BufferedReader(io.BytesIO(_bytes))
 
-    def parse_data_item(self, stream: io.BufferedReader):
+    def parse_data_item(self, stream: io.BufferedReader) -> Any:
         # CBOR data is divided into "data items", and each data item starts
         # with an initial byte that describes how the following bytes should be parsed
         initial_byte = self._read_bytes_as_int(stream, 1)
@@ -1087,8 +1088,8 @@ class BaseCBORRequestParser(RequestParser, ABC):
                 items.append(self.parse_data_item(stream))
             return items
 
-    # Major type 5 - maps
-    def _parse_map(self, stream: io.BufferedReader, additional_info: int):
+    # Major type 5 - maps (has the cbor suffix to avoid clash with shape parsing)
+    def _parse_map_cbor(self, stream: io.BufferedReader, additional_info: int):
         items = {}
         if additional_info != self.INDEFINITE_ITEM_ADDITIONAL_INFO:
             length = self._parse_unsigned_integer(stream, additional_info)
@@ -1233,7 +1234,7 @@ class CBORRequestParser(BaseCBORRequestParser):
                 raw_value = value.get(json_name)
                 parsed = self._parse_shape(request, member_shape, raw_value, uri_params)
                 if parsed is not None or member_name in shape.required_members:
-                    # If the member is required, but not existing, we set it to None anyways
+                    # If the member is required, but not existing, we set it to None anyway
                     final_parsed[member_name] = parsed
         return final_parsed
 
@@ -1263,6 +1264,134 @@ class CBORRequestParser(BaseCBORRequestParser):
         original_parsed = self._initial_body_parse(request)
         body_parsed = self._parse_shape(request, shape, original_parsed, uri_params)
         final_parsed.update(body_parsed)
+
+
+class BaseRpcV2RequestParser(RequestParser):
+    """
+    The ``BaseRpcV2RequestParser`` is the base class for all RPC V2-based AWS service protocols.
+    This base class handles the routing of the request, which is specific based on the path.
+    The body decoding is done in the respective subclasses.
+    """
+
+    def __init__(self, service: ServiceModel) -> None:
+        super().__init__(service)
+        # self.ignore_get_body_errors = False
+        self._operation_router = RestServiceOperationRouter(service)
+
+    @_handle_exceptions
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
+        # see https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+        headers = request.headers
+        if "X-Amz-Target" in headers or "X-Amzn-Target" in headers:
+            raise ProtocolParserError(
+                "RPC v2 CBOR does not accept 'X-Amz-Target' or 'X-Amzn-Target'. "
+                "Such requests are rejected for security reasons."
+            )
+        # TODO: add this special path handling to the ServiceNameParser to allow RPC v2 service to be properly extracted
+        #  path = '/service/{service_name}/operation/{operation_name}'
+        # The Smithy RPCv2 CBOR protocol will only use the last four segments of the URL when routing requests.
+        rpc_v2_params = request.path.lstrip("/").split("/")
+        if len(rpc_v2_params) < 4 or not (
+            operation := self.service.operation_model(rpc_v2_params[-1])
+        ):
+            raise OperationNotFoundParserError(
+                f"Unable to find operation for request to service "
+                f"{self.service.service_name}: {request.method} {request.path}"
+            )
+
+        # there are no URI params in RPC v2
+        uri_params = {}
+        shape: StructureShape = operation.input_shape
+        final_parsed = self._do_parse(request, shape, uri_params)
+        return operation, final_parsed
+
+    @_handle_exceptions
+    def _do_parse(
+        self, request: Request, shape: Shape, uri_params: Mapping[str, Any] = None
+    ) -> dict[str, Any]:
+        parsed = {}
+        if shape is not None:
+            event_stream_name = shape.event_stream_name
+            if event_stream_name:
+                parsed = self._handle_event_stream(request, shape, event_stream_name)
+            else:
+                parsed = {}
+                self._parse_payload(request, shape, parsed, uri_params)
+
+        return parsed
+
+    def _handle_event_stream(self, request: Request, shape: Shape, event_name: str):
+        # TODO handle event streams
+        raise NotImplementedError
+
+    def _parse_structure(
+        self,
+        request: Request,
+        shape: StructureShape,
+        node: dict | None,
+        uri_params: Mapping[str, Any] = None,
+    ):
+        if shape.is_document_type:
+            final_parsed = node
+        else:
+            if node is None:
+                # If the comes across the wire as "null" (None in python),
+                # we should be returning this unchanged, instead of as an
+                # empty dict.
+                return None
+            final_parsed = {}
+            members = shape.members
+            if shape.is_tagged_union:
+                cleaned_value = node.copy()
+                cleaned_value.pop("__type", None)
+                cleaned_value = {k: v for k, v in cleaned_value.items() if v is not None}
+                if len(cleaned_value) != 1:
+                    raise ProtocolParserError(
+                        f"Invalid service response: {shape.name} must have one and only one member set."
+                    )
+
+            for member_name, member_shape in members.items():
+                member_value = node.get(member_name)
+                if member_value is not None:
+                    final_parsed[member_name] = self._parse_shape(
+                        request, member_shape, member_value, uri_params
+                    )
+
+        return final_parsed
+
+    def _parse_payload(
+        self,
+        request: Request,
+        shape: Shape,
+        final_parsed: dict,
+        uri_params: Mapping[str, Any] = None,
+    ) -> None:
+        original_parsed = self._initial_body_parse(request)
+        body_parsed = self._parse_shape(request, shape, original_parsed, uri_params)
+        final_parsed.update(body_parsed)
+
+    def _initial_body_parse(self, request: Request):
+        # This method should do the initial parsing of the
+        # body.  We still need to walk the parsed body in order
+        # to convert types, but this method will do the first round
+        # of parsing.
+        raise NotImplementedError("_initial_body_parse")
+
+
+class RpcV2CBORRequestParser(BaseRpcV2RequestParser, BaseCBORRequestParser):
+    """
+    The ``RpcV2CBORRequestParser`` is responsible for parsing incoming requests for services which use the
+    ``rpc-v2-cbor`` protocol. The requests for these services encode all of their parameters as CBOR in the
+    request body.
+    """
+
+    # TODO: investigate datetime format for RpcV2CBOR protocol, which might be different than Kinesis CBOR
+    def _initial_body_parse(self, request: Request):
+        body_contents = request.data
+        if body_contents == b"":
+            return body_contents
+        body_contents_stream = self.get_peekable_stream_from_bytes(body_contents)
+        return self.parse_data_item(body_contents_stream)
 
 
 class EC2RequestParser(QueryRequestParser):
@@ -1443,11 +1572,12 @@ class SQSQueryRequestParser(QueryRequestParser):
 
 
 @functools.cache
-def create_parser(service: ServiceModel) -> RequestParser:
+def create_parser(service: ServiceModel, protocol: ProtocolName | None = None) -> RequestParser:
     """
     Creates the right parser for the given service model.
 
     :param service: to create the parser for
+    :param protocol: the protocol for the parser. If not provided, fallback to the service's default protocol
     :return: RequestParser which can handle the protocol of the service
     """
     # Unfortunately, some services show subtle differences in their parsing or operation detection behavior, even though
@@ -1465,17 +1595,22 @@ def create_parser(service: ServiceModel) -> RequestParser:
         "rest-json": RestJSONRequestParser,
         "rest-xml": RestXMLRequestParser,
         "ec2": EC2RequestParser,
+        "smithy-rpc-v2-cbor": RpcV2CBORRequestParser,
         # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
         #  CBOR handling from JSONRequestParser
         "cbor": CBORRequestParser,
     }
 
+    # TODO: do we want to add a check if the user-defined protocol is part of the available ones in the ServiceModel?
+    #  or should it be checked once
+    service_protocol = protocol or service.protocol
+
     # Try to select a service- and protocol-specific parser implementation
     if (
         service.service_name in service_specific_parsers
-        and service.protocol in service_specific_parsers[service.service_name]
+        and service_protocol in service_specific_parsers[service.service_name]
     ):
-        return service_specific_parsers[service.service_name][service.protocol](service)
+        return service_specific_parsers[service.service_name][service_protocol](service)
     else:
         # Otherwise, pick the protocol-specific parser for the protocol of the service
-        return protocol_specific_parsers[service.protocol](service)
+        return protocol_specific_parsers[service_protocol](service)
