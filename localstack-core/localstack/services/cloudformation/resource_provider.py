@@ -518,10 +518,14 @@ class ResourceProviderExecutor:
                 try:
                     return resource_provider.update(request)
                 except NotImplementedError:
+                    feature_request_url = "https://github.com/localstack/localstack/issues/new?template=feature-request.yml"
                     LOG.warning(
-                        'Unable to update resource type "%s", id "%s"',
+                        'Unable to update resource type "%s", id "%s", '
+                        "the update operation is not implemented for this resource. "
+                        "Please consider submitting a feature request at this URL: %s",
                         request.resource_type,
                         request.logical_resource_id,
+                        feature_request_url,
                     )
                     if request.previous_state is None:
                         # this is an issue with our update detection. We should never be in this state.
