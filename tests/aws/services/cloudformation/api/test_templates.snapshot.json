@@ -109,5 +109,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary_non_executed_change_set": {
+    "recorded-date": "10-09-2025, 23:25:47",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "GetTemplateSummary cannot be called on REVIEW_IN_PROGRESS stacks.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

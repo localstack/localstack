@@ -49,6 +49,7 @@ class Stack:
     events: list[StackEvent]
     capabilities: list[Capability]
     enable_termination_protection: bool
+    template: dict | None
     processed_template: dict | None
     template_body: str | None
     tags: list[Tag]
@@ -77,6 +78,7 @@ class Stack:
         self.deletion_time = None
         self.change_set_id = None
         self.enable_termination_protection = False
+        self.template = None
         self.processed_template = None
         self.template_body = None
         self.tags = tags or []
