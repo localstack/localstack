@@ -15,6 +15,7 @@ from tests.aws.services.cloudformation.conftest import (
 )
 
 from localstack.aws.api.cloudformation import Capability
+from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.cloudformation.engine.entities import StackIdentifier
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
 from localstack.testing.aws.util import is_aws_cloud
@@ -1234,3 +1235,35 @@ def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
     with pytest.raises(ClientError) as exc_info:
         deploy_cfn_template(template_path=template_path)
     snapshot.match("deploy-error", exc_info.value)
+
+
+@markers.aws.validated
+def test_blank_parameter_value(aws_client: ServiceLevelClientFactory, cleanups):
+    """
+    While testing the new engine, I found that we don't handle the parameter value being blank well
+    """
+    template = {
+        "Parameters": {
+            "MyFoo": {
+                "Type": "String",
+            },
+        },
+        "Resources": {
+            "MyTopic": {
+                "Type": "AWS::SNS::Topic",
+                "Properties": {
+                    "DisplayName": {"Ref": "MyFoo"},
+                },
+            },
+        },
+    }
+
+    res = aws_client.cloudformation.create_stack(
+        TemplateBody=json.dumps(template),
+        StackName=f"stack-{short_uid()}",
+        Parameters=[{"ParameterKey": "MyFoo", "ParameterValue": ""}],
+    )
+    stack_id = res["StackId"]
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)

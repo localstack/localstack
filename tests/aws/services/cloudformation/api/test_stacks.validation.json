@@ -68,6 +68,15 @@
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_update_stack_with_same_template_withoutchange_transformation": {
     "last_validated_date": "2024-05-07T09:26:39+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_blank_parameter_value": {
+    "last_validated_date": "2025-09-10T21:37:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.32,
+      "teardown": 0.16,
+      "total": 6.48
+    }
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_blocked_stack_deletion": {
     "last_validated_date": "2023-09-06T09:01:18+00:00"
   },
