@@ -85,6 +85,7 @@ from localstack.aws.api.kms import (
     MacAlgorithmSpec,
     MarkerType,
     MultiRegionKey,
+    MultiRegionKeyType,
     NotFoundException,
     NullableBooleanType,
     OriginType,
@@ -490,24 +491,32 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         self, context: RequestContext, request: ReplicateKeyRequest
     ) -> ReplicateKeyResponse:
         account_id = context.account_id
-        key = self._get_kms_key(account_id, context.region, request.get("KeyId"))
-        key_id = key.metadata.get("KeyId")
-        if not key.metadata.get("MultiRegion"):
+        primary_key = self._get_kms_key(account_id, context.region, request.get("KeyId"))
+        key_id = primary_key.metadata.get("KeyId")
+        key_arn = primary_key.metadata.get("Arn")
+        if not primary_key.metadata.get("MultiRegion"):
             raise UnsupportedOperationException(
                 f"Unable to replicate a non-MultiRegion key {key_id}"
             )
         replica_region = request.get("ReplicaRegion")
         replicate_to_store = kms_stores[account_id][replica_region]
+
+        if (
+            primary_key.metadata.get("MultiRegionConfiguration", {}).get("MultiRegionKeyType")
+            != MultiRegionKeyType.PRIMARY
+        ):
+            raise UnsupportedOperationException(f"{key_arn} is not a multi-region primary key.")
+
         if key_id in replicate_to_store.keys:
             raise AlreadyExistsException(
                 f"Unable to replicate key {key_id} to region {replica_region}, as the key "
                 f"already exist there"
             )
-        replica_key = copy.deepcopy(key)
+        replica_key = copy.deepcopy(primary_key)
         replica_key.replicate_metadata(request, account_id, replica_region)
         replicate_to_store.keys[key_id] = replica_key
 
-        self.update_primary_key_with_replica_keys(key, replica_key, replica_region)
+        self.update_primary_key_with_replica_keys(primary_key, replica_key, replica_region)
 
         return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
 

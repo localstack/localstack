@@ -263,7 +263,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_does_not_exist": {
-    "recorded-date": "13-04-2023, 11:29:34",
+    "recorded-date": "08-09-2025, 19:02:52",
     "recorded-content": {
       "describe-nonexistent-key-with-id": {
         "Error": {
@@ -290,9 +290,9 @@
       "describe-key-with-valid-id-mrk": {
         "Error": {
           "Code": "NotFoundException",
-          "Message": "Key 'arn:<partition>:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist"
+          "Message": "Key '<mrk-key-arn>' does not exist"
         },
-        "message": "Key 'arn:<partition>:kms:<region>:111111111111:key/mrk-d3b95762d3b95762d3b95762d3b95762' does not exist",
+        "message": "Key '<mrk-key-arn>' does not exist",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -3192,6 +3192,22 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_replica_key_should_fail": {
+    "recorded-date": "08-09-2025, 16:34:57",
+    "recorded-content": {
+      "fail-replicate-non-primary-key": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<mrk-key-arn> is not a multi-region primary key."
+        },
+        "message": "<mrk-key-arn> is not a multi-region primary key.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }

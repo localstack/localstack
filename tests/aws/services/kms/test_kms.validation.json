@@ -135,7 +135,13 @@
     "last_validated_date": "2024-04-11T15:52:50+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_does_not_exist": {
-    "last_validated_date": "2024-04-11T15:52:32+00:00"
+    "last_validated_date": "2025-09-08T19:02:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 1.5,
+      "teardown": 0.22,
+      "total": 2.55
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
     "last_validated_date": "2024-06-14T13:35:20+00:00"
@@ -307,6 +313,15 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
     "last_validated_date": "2024-04-11T15:53:44+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_replica_key_should_fail": {
+    "last_validated_date": "2025-09-08T16:34:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.85,
+      "call": 2.29,
+      "teardown": 0.34,
+      "total": 3.48
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_retire_grant_with_grant_token": {
     "last_validated_date": "2024-04-11T15:52:46+00:00"
