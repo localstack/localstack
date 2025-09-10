@@ -1,6 +1,7 @@
 import copy
 import json
 import os.path
+from collections.abc import Callable
 
 import pytest
 from botocore.config import Config
@@ -21,6 +22,7 @@ from localstack.testing.aws.cloudformation_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import DeployResult
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
 
@@ -480,6 +482,46 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
             StackName="somestack", ChangeSetName="DoesNotExist"
         )
     snapshot.match("exception", ex.value)
+
+
+@skip_if_v1_provider("Not supported in V1 engine")
+@markers.aws.validated
+def test_create_change_set_no_changes(
+    snapshot,
+    aws_client: ServiceLevelClientFactory,
+    deploy_cfn_template: Callable[..., DeployResult],
+):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/simple_no_change.yaml"
+    )
+    with open(template_path) as infile:
+        template_body = infile.read()
+
+    stack = deploy_cfn_template(
+        template_path=template_path,
+    )
+
+    change_set_name = f"cs-{short_uid()}"
+    change_set_result = aws_client.cloudformation.create_change_set(
+        ChangeSetName=change_set_name,
+        StackName=stack.stack_id,
+        ChangeSetType="UPDATE",
+        TemplateBody=template_body,
+    )
+    change_set_id = change_set_result["Id"]
+    with pytest.raises(WaiterError):
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_id,
+        )
+
+    snapshot.match(
+        "change-set-description",
+        aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id,
+        ),
+    )
 
 
 @pytest.mark.skipif(

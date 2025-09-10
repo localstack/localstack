@@ -2,6 +2,7 @@ import copy
 import json
 
 import pytest
+from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
@@ -936,3 +937,45 @@ def test_dynamic_ssm_parameter_lookup_no_change(
         p1={"InputValue": parameter_name},
         p2={"InputValue": parameter_name},
     )
+
+
+@skip_if_v1_provider("Requires the V2 engine")
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..StatusReason"])
+def test_describe_failed_change_set(aws_client: ServiceLevelClientFactory, snapshot, cleanups):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template = {
+        "Resources": {
+            "MyFoo": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Fn::Transform": {
+                        "Name": "AWS::Include",
+                        "Parameters": {
+                            "Location": "s3://doesnotexist/key.yml",
+                        },
+                    },
+                },
+            },
+        },
+    }
+
+    stack_name = f"cs-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
+    res = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        ChangeSetType="CREATE",
+        TemplateBody=json.dumps(template),
+    )
+
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=res["StackId"]))
+
+    with pytest.raises(WaiterError):
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=res["Id"]
+        )
+
+    describe = aws_client.cloudformation.describe_change_set(ChangeSetName=res["Id"])
+    snapshot.match("describe", describe)
