@@ -1246,6 +1246,12 @@ class CBORRequestParser(BaseCBORRequestParser, JSONRequestParser):
 
 
 class BaseRpcV2RequestParser(RequestParser):
+    """
+    The ``BaseRpcV2RequestParser`` is the base class for all RPC V2-based AWS service protocols.
+    This base class handles the routing of the request, which is specific based on the path.
+    The body decoding is done in the respective subclasses.
+    """
+
     def __init__(self, service: ServiceModel) -> None:
         super().__init__(service)
         # self.ignore_get_body_errors = False
@@ -1253,10 +1259,18 @@ class BaseRpcV2RequestParser(RequestParser):
 
     @_handle_exceptions
     def parse(self, request: Request) -> tuple[OperationModel, Any]:
+        # see https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+        headers = request.headers
+        if "X-Amz-Target" in headers or "X-Amzn-Target" in headers:
+            raise ProtocolParserError(
+                "RPC v2 CBOR does not accept 'X-Amz-Target' or 'X-Amzn-Target'. "
+                "Such requests are rejected for security reasons."
+            )
         # TODO: add this special path handling to the ServiceNameParser to allow RPC v2 service to be properly extracted
         #  path = '/service/{service_name}/operation/{operation_name}'
+        # The Smithy RPCv2 CBOR protocol will only use the last four segments of the URL when routing requests.
         rpc_v2_params = request.path.lstrip("/").split("/")
-        if len(rpc_v2_params) != 4 or not (
+        if len(rpc_v2_params) < 4 or not (
             operation := self.service.operation_model(rpc_v2_params[-1])
         ):
             raise OperationNotFoundParserError(
@@ -1344,6 +1358,13 @@ class BaseRpcV2RequestParser(RequestParser):
 
 
 class RpcV2CBORRequestParser(BaseRpcV2RequestParser, BaseCBORRequestParser):
+    """
+    The ``RpcV2CBORRequestParser`` is responsible for parsing incoming requests for services which use the
+    ``rpc-v2-cbor`` protocol. The requests for these services encode all of their parameters as CBOR in the
+    request body.
+    """
+
+    # TODO: investigate datetime format for RpcV2CBOR protocol, which might be different than Kinesis CBOR
     def _initial_body_parse(self, request: Request):
         body_contents = request.data
         if body_contents == b"":

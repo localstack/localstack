@@ -1426,6 +1426,8 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
 
 
 class BaseCBORResponseSerializer(ResponseSerializer):
+    SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
+
     UNSIGNED_INT_MAJOR_TYPE = 0
     NEGATIVE_INT_MAJOR_TYPE = 1
     BLOB_MAJOR_TYPE = 2
@@ -1661,8 +1663,6 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
     conceptually from the ``JSONResponseSerializer``
     """
 
-    SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
-
     TIMESTAMP_FORMAT = "unixtimestamp"
 
     def _serialize_error(
@@ -1731,6 +1731,114 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
         self, response: Response, operation_model: OperationModel, request_id: str
     ) -> Response:
         response.headers["x-amzn-requestid"] = request_id
+        response = super()._prepare_additional_traits_in_response(
+            response, operation_model, request_id
+        )
+        return response
+
+
+class BaseRpcV2Serializer(ResponseSerializer):
+    """
+    The BaseRpcV2Serializer performs the basic logic for the RPC V2 response serialization.
+    The only variance between the various RPCv2 protocols is the way the body is serialized for regular responses,
+    and the way they will encode exceptions.
+    """
+
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: Response,
+        shape: Shape | None,
+        shape_members: dict,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        response.content_type = mime_type
+        response.set_response(
+            self._serialize_body_params(parameters, shape, operation_model, mime_type, request_id)
+        )
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> bytes | None:
+        raise NotImplementedError
+
+
+class RpcV2CBORSerializer(BaseRpcV2Serializer, BaseCBORResponseSerializer):
+    """
+    The RpcV2CBORSerializer implements the CBOR body serialization part for the RPC v2 protocol, and implements the
+    specific exception serialization.
+    https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+    """
+
+    # the Smithy spec defines that only `application/cbor` is supported for RPC v2 CBOR
+    SUPPORTED_MIME_TYPES = [APPLICATION_CBOR]
+    # TODO: check the timestamp format for RpcV2CBOR, which might be different than Kinesis CBOR
+    TIMESTAMP_FORMAT = "unixtimestamp"
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> bytes | None:
+        body = bytearray()
+        self._serialize_data_item(body, params, shape)
+        return bytes(body)
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: Response,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        body = bytearray()
+        response.content_type = mime_type  # can only be 'application/cbor'
+        # TODO: the Botocore parser is able to look at the `x-amzn-query-error` header for the RpcV2 CBOR protocol
+        #  we'll need to investigate which services need it
+        # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
+        # Type information is always serialized in the payload. This is different than `json` protocol
+
+        if shape:
+            # FIXME: we need to manually add the `__type` field to the shape as it is not part of the specs
+            #  think about a better way, this is very hacky
+            # Error responses in the rpcv2Cbor protocol MUST be serialized identically to standard responses with one
+            # additional component to distinguish which error is contained: a body field named __type.
+            shape_copy = copy.deepcopy(shape)
+            shape_copy.members["__type"] = StringShape(
+                shape_name="__type", shape_model={"type": "string"}
+            )
+            remaining_params = {"__type": error.code}
+
+            for member_name in shape_copy.members:
+                if hasattr(error, member_name):
+                    remaining_params[member_name] = getattr(error, member_name)
+                # Default error message fields can sometimes have different casing in the specs
+                elif member_name.lower() in ["code", "message"] and hasattr(
+                    error, member_name.lower()
+                ):
+                    remaining_params[member_name] = getattr(error, member_name.lower())
+
+            self._serialize_data_item(body, remaining_params, shape_copy, None)
+
+        response.set_response(bytes(body))
+
+    def _prepare_additional_traits_in_response(
+        self, response: Response, operation_model: OperationModel, request_id: str
+    ):
+        response.headers["x-amzn-requestid"] = request_id
+        response.headers["Smithy-Protocol"] = "rpc-v2-cbor"
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id
         )
@@ -2101,6 +2209,7 @@ def create_serializer(
         "rest-json": RestJSONResponseSerializer,
         "rest-xml": RestXMLResponseSerializer,
         "ec2": EC2ResponseSerializer,
+        "smithy-rpc-v2-cbor": RpcV2CBORSerializer,
         # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
         #  CBOR handling from JSONResponseParser
         # this is not an "official" protocol defined from the spec, but is derived from ``json``
