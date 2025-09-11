@@ -609,7 +609,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                         change_set.stack.resolved_exports[export_name] = output["OutputValue"]
 
                 change_set.stack.change_set_id = change_set.change_set_id
-                change_set.stack.change_set_ids.append(change_set.change_set_id)
 
                 # if the deployment succeeded, update the stack's template representation to that
                 # which was just deployed

@@ -41,6 +41,7 @@ class Stack:
     description: str | None
     parameters: list[ApiParameter]
     change_set_id: str | None
+    change_set_ids: list[str]
     status: StackStatus
     status_reason: StackStatusReason | None
     stack_id: str
