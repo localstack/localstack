@@ -1,9 +1,11 @@
 import contextlib
+import json
 import os
 import textwrap
 
 import pytest
 from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import load_file
@@ -29,6 +31,41 @@ def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
     res = aws_client.cloudformation.get_template_summary(StackName=deployment.stack_name)
 
     snapshot.match("template-summary", res)
+
+
+@markers.aws.validated
+@skip_if_v1_provider("Not supported in legacy engine")
+def test_get_template_summary_non_executed_change_set(aws_client, snapshot, cleanups):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template_body = {
+        "Resources": {
+            "MyParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": short_uid(),
+                },
+            },
+        },
+    }
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+    response = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=json.dumps(template_body),
+        ChangeSetType="CREATE",
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=response["Id"]
+    )
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=response["StackId"]))
+
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template_summary(StackName=stack_name)
+
+    snapshot.match("error", exc_info.value.response)
 
 
 @markers.aws.validated

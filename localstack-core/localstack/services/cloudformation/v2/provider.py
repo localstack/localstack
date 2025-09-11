@@ -1312,6 +1312,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             stack = find_stack_v2(state, stack_name)
             if not stack:
                 raise StackNotFoundError(stack_name)
+
+            if stack.status == StackStatus.REVIEW_IN_PROGRESS:
+                raise ValidationError(
+                    "GetTemplateSummary cannot be called on REVIEW_IN_PROGRESS stacks."
+                )
+
             template = stack.template
         else:
             template_body = request.get("TemplateBody")
