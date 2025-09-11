@@ -1321,6 +1321,7 @@ cases = [
 ]
 
 
+@skip_if_v1_provider("Unsupported in V1 engine")
 @markers.aws.validated
 @pytest.mark.parametrize(
     "case",
