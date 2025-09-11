@@ -5,6 +5,7 @@ import textwrap
 
 import pytest
 from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import load_file
@@ -33,6 +34,7 @@ def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
+@skip_if_v1_provider("Not supported in legacy engine")
 def test_get_template_summary_non_executed_change_set(aws_client, snapshot, cleanups):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
