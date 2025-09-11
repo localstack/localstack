@@ -4,14 +4,14 @@ import json
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@skip_if_v1_provider("Requires the V2 engine")
+@skip_if_legacy_engine("Requires the V2 engine")
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "delete-describe..*",
@@ -781,7 +781,7 @@ class TestCaptureUpdateProcess:
         snapshot.match("parameter-2", parameter)
 
 
-@skip_if_v1_provider("Not supported with v1 engine")
+@skip_if_legacy_engine("Not supported with v1 engine")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -859,7 +859,7 @@ def test_dynamic_ssm_parameter_lookup(
     )
 
 
-@skip_if_v1_provider("Not supported with v1 engine")
+@skip_if_legacy_engine("Not supported with v1 engine")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -939,7 +939,7 @@ def test_dynamic_ssm_parameter_lookup_no_change(
     )
 
 
-@skip_if_v1_provider("Requires the V2 engine")
+@skip_if_legacy_engine("Requires the V2 engine")
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StatusReason"])
 def test_describe_failed_change_set(aws_client: ServiceLevelClientFactory, snapshot, cleanups):
