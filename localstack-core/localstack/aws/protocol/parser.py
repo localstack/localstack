@@ -1252,18 +1252,13 @@ class BaseRpcV2RequestParser(RequestParser):
     The body decoding is done in the respective subclasses.
     """
 
-    def __init__(self, service: ServiceModel) -> None:
-        super().__init__(service)
-        # self.ignore_get_body_errors = False
-        self._operation_router = RestServiceOperationRouter(service)
-
     @_handle_exceptions
     def parse(self, request: Request) -> tuple[OperationModel, Any]:
         # see https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
         headers = request.headers
         if "X-Amz-Target" in headers or "X-Amzn-Target" in headers:
             raise ProtocolParserError(
-                "RPC v2 CBOR does not accept 'X-Amz-Target' or 'X-Amzn-Target'. "
+                "RPC v2 does not accept 'X-Amz-Target' or 'X-Amzn-Target'. "
                 "Such requests are rejected for security reasons."
             )
         # TODO: add this special path handling to the ServiceNameParser to allow RPC v2 service to be properly extracted

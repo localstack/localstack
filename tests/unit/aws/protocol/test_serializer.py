@@ -67,7 +67,7 @@ def _botocore_serializer_integration_test(
     Performs an integration test for the serializer using botocore as parser.
     It executes the following steps:
     - Load the given service (f.e. "sqs")
-    - Serialize the response with the appropriate serializer from the AWS Serivce Framework
+    - Serialize the response with the appropriate serializer from the AWS Service Framework
     - Parse the serialized response using the botocore parser
     - Checks if the metadata is correct (status code, requestID,...)
     - Checks if the parsed response content is equal to the input to the serializer
@@ -1536,6 +1536,22 @@ def test_rpc_v2_cbor_serializer_arc_region_switch_with_botocore():
         action="ListPlans",
         response=parameters,
         protocol="smithy-rpc-v2-cbor",
+    )
+
+
+@pytest.mark.parametrize("protocol", ("json", "smithy-rpc-v2-cbor"))
+def test_protocol_selection(protocol):
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+    parameters = {
+        "resourceTags": {"string": "string"},
+    }
+
+    _botocore_serializer_integration_test(
+        service="arc-region-switch",
+        protocol=protocol,
+        action="ListTagsForResource",
+        response=parameters,
     )
 
 

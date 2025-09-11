@@ -1452,6 +1452,7 @@ def test_restxml_ignores_get_body():
 def test_smithy_rpc_v2_cbor():
     # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
     # we can replace this service by CloudWatch once it has support in Botocore
+    # TODO: test timestamp parsing
     # example taken from:
     # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/arc-region-switch/client/create_plan.html
 
@@ -1520,5 +1521,19 @@ def test_smithy_rpc_v2_cbor():
         ],
         recoveryApproach="activeActive",
         primaryRegion="string",
+        tags={"string": "string"},
+    )
+
+
+@pytest.mark.parametrize("protocol", ("json", "smithy-rpc-v2-cbor"))
+def test_protocol_selection(protocol):
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+
+    _botocore_parser_integration_test(
+        service="arc-region-switch",
+        protocol=protocol,
+        action="TagResource",
+        arn="string",
         tags={"string": "string"},
     )
