@@ -23,13 +23,17 @@ The class hierarchy looks as follows:
   ┌────────┴─────────┐ ┌─────────┴───────────┐ ┌──────────┴──────────┐ ┌──────────┴──────────┐
   │QueryRequestParser│ │BaseRestRequestParser│ │BaseJSONRequestParser│ │BaseCBORRequestParser│
   └──────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘
-          ▲                    ▲            ▲   ▲           ▲                     ▲
-  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │           │                     │
-  │EC2RequestParser│ │RestXMLRequestParser│ │   │           │                     │
-  └────────────────┘ └────────────────────┘ │   │           │                     │
-                           ┌────────────────┴───┴┐ ┌────────┴────────┐   ┌────────┴────────┐
-                           │RestJSONRequestParser│ │JSONRequestParser│   │CBORRequestParser│
-                           └─────────────────────┘ └─────────────────┘   └─────────────────┘
+          ▲                    ▲            ▲   ▲           ▲              ▲
+  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │           │              │
+  │EC2RequestParser│ │RestXMLRequestParser│ │   │           │              │
+  └────────────────┘ └────────────────────┘ │   │           │              │
+                           ┌────────────────┴───┴┐ ┌────────┴────────┐     │
+                           │RestJSONRequestParser│ │JSONRequestParser│     │
+                           └─────────────────────┘ └─────────────────┘     │
+                                                                    ▲      │
+                                                                  ┌─┴──────┴────────┐
+                                                                  │CBORRequestParser│
+                                                                  └─────────────────┘
 ::
 
 The ``RequestParser`` contains the logic that is used among all the
@@ -51,8 +55,11 @@ The classes are structured as follows:
 * The ``RestJSONRequestParser`` inherits the ReST specific logic from
   the ``BaseRestRequestParser`` and the JSON body parsing from the
   ``BaseJSONRequestParser``.
-* The ``QueryRequestParser``, ``RestXMLRequestParser``, ``JSONRequestParser``
-and the ``CBORRequestParser`` have a conventional inheritance structure.
+* The ``CBORRequestParser`` inherits the ``json``-protocol specific
+  logic from the ``JSONRequestParser`` and the CBOR body parsing
+  from the ``BaseCBORRequestParser``.
+* The ``QueryRequestParser``, ``RestXMLRequestParser`` and
+``JSONRequestParser`` have a conventional inheritance structure.
 
 The services and their protocols are defined by using AWS's Smithy
 (a language to define services in a - somewhat - protocol-agnostic
