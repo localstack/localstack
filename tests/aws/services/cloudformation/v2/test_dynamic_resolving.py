@@ -1,9 +1,9 @@
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
-pytestmark = skip_if_v1_provider(reason="Only valid for the V2 provider")
+pytestmark = skip_if_legacy_engine(reason="Only valid for the V2 provider")
 
 
 @markers.snapshot.skip_snapshot_verify(

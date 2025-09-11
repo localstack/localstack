@@ -6,7 +6,7 @@ from dataclasses import dataclass
 import pytest
 from botocore.exceptions import WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider, skipped_v2_items
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine, skipped_v2_items
 
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.testing.pytest import markers
@@ -54,7 +54,7 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     snapshot.match("api-resources", resources)
 
 
-@skip_if_v1_provider(reason="update not supported in v1")
+@skip_if_legacy_engine(reason="update not supported in v1")
 @markers.aws.validated
 def test_redeployment_with_fn_include(deploy_cfn_template, s3_bucket, snapshot, aws_client):
     snapshot.add_transformers_list(
