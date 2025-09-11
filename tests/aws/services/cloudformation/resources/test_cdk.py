@@ -3,7 +3,7 @@ from collections.abc import Callable
 
 import pytest
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.aws.api.cloudformation import Parameter
 from localstack.testing.pytest import markers
@@ -118,7 +118,7 @@ class TestCdkInit:
             "$..Outputs..Description",
         ]
     )
-    @skip_if_v1_provider("Changes array not in parity")
+    @skip_if_legacy_engine()
     def test_cdk_bootstrap_redeploy(
         self,
         aws_client,

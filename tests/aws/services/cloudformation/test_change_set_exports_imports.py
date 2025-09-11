@@ -3,7 +3,7 @@ import os
 
 import pytest
 from botocore.exceptions import WaiterError
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.aws.api.cloudformation import ChangeSetType
 from localstack.testing.pytest import markers
@@ -28,7 +28,7 @@ def execute_change_set(aws_client):
     return inner
 
 
-@skip_if_v1_provider("Not supported on V1")
+@skip_if_legacy_engine()
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..Changes..ResourceChange.Details",

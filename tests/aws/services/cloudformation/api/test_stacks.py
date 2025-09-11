@@ -10,7 +10,7 @@ import yaml
 from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.cloudformation.conftest import (
-    skip_if_v1_provider,
+    skip_if_legacy_engine,
     skipped_v2_items,
 )
 
@@ -98,7 +98,7 @@ class TestStacksApi:
         ]
         snapshot.match("describe_stack", response)
 
-    @skip_if_v1_provider(reason="Lots of fields not in parity")
+    @skip_if_legacy_engine()
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
@@ -960,7 +960,7 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     snapshot.match("events", filtered_events)
 
 
-@skip_if_v1_provider("Not supported with v1 provider")
+@skip_if_legacy_engine()
 @markers.aws.validated
 @pytest.mark.parametrize(
     "deletions",
@@ -1226,7 +1226,7 @@ def test_non_existing_stack_message(aws_client, snapshot):
     snapshot.match("Error", ex.value.response)
 
 
-@skip_if_v1_provider("Not implemented for V1 provider")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
     template_path = os.path.join(
