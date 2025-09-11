@@ -1254,6 +1254,7 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
         "$..Changes..ResourceChange.Scope",
     ]
 )
+@skip_if_v1_provider("Not supported in v1")
 def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
     """
     Test the behaviour of deleting a change set after it has been executed
