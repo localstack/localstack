@@ -1851,6 +1851,7 @@ def test_query_protocol_json_serialization(headers_dict):
 )
 @pytest.mark.parametrize("serializer_factory", [create_serializer, _cbor_serializer_factory])
 def test_json_protocol_cbor_serialization(headers_dict, serializer_factory):
+    # TODO: test datetime serialization format for Kinesis manually
     service = load_service("kinesis")
     response_serializer = serializer_factory(service)
     headers = Headers(headers_dict)
