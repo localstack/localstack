@@ -1437,7 +1437,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_data_item(
         self, serialized: bytearray, value: Any, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         method = getattr(self, f"_serialize_type_{shape.type_name}")
         if method is None:
             raise ValueError(
@@ -1447,7 +1447,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_integer(
         self, serialized: bytearray, value: int, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         if value >= 0:
             major_type = self.UNSIGNED_INT_MAJOR_TYPE
         else:
@@ -1465,7 +1465,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_long(
         self, serialized: bytearray, value: int, shape: Shape, name: str | None = None
-    ):
+    ) -> None:
         self._serialize_type_integer(serialized, value, shape, name)
 
     def _serialize_type_blob(
@@ -1474,7 +1474,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
         value: str | bytes | IO[bytes],
         shape: Shape | None,
         name: str | None = None,
-    ):
+    ) -> None:
         if isinstance(value, str):
             value = value.encode("utf-8")
         elif not isinstance(value, (bytes, bytearray)):
@@ -1492,7 +1492,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_string(
         self, serialized: bytearray, value: str, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         encoded = value.encode("utf-8")
         length = len(encoded)
         additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
@@ -1504,7 +1504,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_list(
         self, serialized: bytearray, value: str, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         length = len(value)
         additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
         initial_byte = self._get_initial_byte(self.LIST_MAJOR_TYPE, additional_info)
@@ -1517,7 +1517,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_map(
         self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         length = len(value)
         additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
         initial_byte = self._get_initial_byte(self.MAP_MAJOR_TYPE, additional_info)
@@ -1531,7 +1531,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_structure(
         self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         if name is not None:
             # For nested structures, we need to serialize the key first
             self._serialize_data_item(serialized, name, shape.key_shape)
@@ -1562,7 +1562,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
         value: int | str | datetime,
         shape: Shape | None,
         name: str | None = None,
-    ):
+    ) -> None:
         timestamp = int(self._convert_timestamp_to_str(value))
         tag = 1  # Use tag 1 for unix timestamp
         initial_byte = self._get_initial_byte(self.TAG_MAJOR_TYPE, tag)
@@ -1578,7 +1578,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_float(
         self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         if self._is_special_number(value):
             serialized.extend(
                 self._get_bytes_for_special_numbers(value)
@@ -1589,7 +1589,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_double(
         self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         if self._is_special_number(value):
             serialized.extend(
                 self._get_bytes_for_special_numbers(value)
@@ -1600,7 +1600,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
     def _serialize_type_boolean(
         self, serialized: bytearray, value: bool, shape: Shape | None, name: str | None = None
-    ):
+    ) -> None:
         additional_info = 21 if value else 20
         serialized.extend(self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, additional_info))
 
@@ -1729,7 +1729,7 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
 
     def _prepare_additional_traits_in_response(
         self, response: Response, operation_model: OperationModel, request_id: str
-    ):
+    ) -> Response:
         response.headers["x-amzn-requestid"] = request_id
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id

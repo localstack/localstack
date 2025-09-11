@@ -344,7 +344,7 @@ class RequestParser(abc.ABC):
     _parse_double = _parse_float
     _parse_long = _parse_integer
 
-    def _convert_str_to_timestamp(self, value: str, timestamp_format=None):
+    def _convert_str_to_timestamp(self, value: str, timestamp_format=None) -> datetime.datetime:
         if timestamp_format is None:
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
@@ -1018,7 +1018,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
     def get_peekable_stream_from_bytes(_bytes: bytes) -> io.BufferedReader:
         return io.BufferedReader(io.BytesIO(_bytes))
 
-    def parse_data_item(self, stream: io.BufferedReader):
+    def parse_data_item(self, stream: io.BufferedReader) -> Any:
         # CBOR data is divided into "data items", and each data item starts
         # with an initial byte that describes how the following bytes should be parsed
         initial_byte = self._read_bytes_as_int(stream, 1)
@@ -1039,7 +1039,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
             )
 
     # Major type 0 - unsigned integers
-    def _parse_type_unsigned_integer(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_unsigned_integer(self, stream: io.BufferedReader, additional_info: int) -> int:
         additional_info_to_num_bytes = {
             24: 1,
             25: 2,
@@ -1060,11 +1060,11 @@ class BaseCBORRequestParser(RequestParser, ABC):
             )
 
     # Major type 1 - negative integers
-    def _parse_type_negative_integer(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_negative_integer(self, stream: io.BufferedReader, additional_info: int) -> int:
         return -1 - self._parse_type_unsigned_integer(stream, additional_info)
 
     # Major type 2 - byte string
-    def _parse_type_byte_string(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_byte_string(self, stream: io.BufferedReader, additional_info: int) -> bytes:
         if additional_info != self.INDEFINITE_ITEM_ADDITIONAL_INFO:
             length = self._parse_type_unsigned_integer(stream, additional_info)
             return self._read_from_stream(stream, length)
@@ -1080,11 +1080,11 @@ class BaseCBORRequestParser(RequestParser, ABC):
             return b"".join(chunks)
 
     # Major type 3 - text string
-    def _parse_type_text_string(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_text_string(self, stream: io.BufferedReader, additional_info: int) -> str:
         return self._parse_type_byte_string(stream, additional_info).decode("utf-8")
 
     # Major type 4 - lists
-    def _parse_type_array(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_array(self, stream: io.BufferedReader, additional_info: int) -> list:
         if additional_info != self.INDEFINITE_ITEM_ADDITIONAL_INFO:
             length = self._parse_type_unsigned_integer(stream, additional_info)
             return [self.parse_data_item(stream) for _ in range(length)]
@@ -1095,7 +1095,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
             return items
 
     # Major type 5 - maps
-    def _parse_type_map(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_map(self, stream: io.BufferedReader, additional_info: int) -> dict:
         items = {}
         if additional_info != self.INDEFINITE_ITEM_ADDITIONAL_INFO:
             length = self._parse_type_unsigned_integer(stream, additional_info)
@@ -1108,7 +1108,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
                 self._parse_type_key_value_pair(stream, items)
             return items
 
-    def _parse_type_key_value_pair(self, stream: io.BufferedReader, items):
+    def _parse_type_key_value_pair(self, stream: io.BufferedReader, items: dict) -> None:
         key = self.parse_data_item(stream)
         value = self.parse_data_item(stream)
         if value is not None:
@@ -1124,7 +1124,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
         else:
             raise ProtocolParserError(f"Found CBOR tag not supported by botocore: {tag}")
 
-    def _parse_type_datetime(self, value: int | float):
+    def _parse_type_datetime(self, value: int | float) -> datetime.datetime:
         if isinstance(value, (int, float)):
             return self._convert_str_to_timestamp(str(value))
         else:
@@ -1133,7 +1133,9 @@ class BaseCBORRequestParser(RequestParser, ABC):
     # Major type 7 includes floats and "simple" types.  Supported simple types are
     # currently boolean values, CBOR's null, and CBOR's undefined type.  All other
     # values are either floats or invalid.
-    def _parse_type_simple_and_float(self, stream: io.BufferedReader, additional_info: int):
+    def _parse_type_simple_and_float(
+        self, stream: io.BufferedReader, additional_info: int
+    ) -> bool | float | None:
         # For major type 7, values 20-23 correspond to CBOR "simple" values
         additional_info_simple_values = {
             20: False,  # CBOR false
@@ -1225,12 +1227,12 @@ class CBORRequestParser(BaseCBORRequestParser, JSONRequestParser):
         shape: Shape,
         final_parsed: dict,
         uri_params: Mapping[str, Any] = None,
-    ):
+    ) -> None:
         original_parsed = self._initial_body_parse(request)
         body_parsed = self._parse_shape(request, shape, original_parsed, uri_params)
         final_parsed.update(body_parsed)
 
-    def _initial_body_parse(self, request: Request):
+    def _initial_body_parse(self, request: Request) -> Any:
         body_contents = request.data
         if body_contents == b"":
             return body_contents
