@@ -121,5 +121,14 @@
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_name_conflicts": {
     "last_validated_date": "2023-11-22T09:58:04+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_update_change_set_with_aws_novalue_repro": {
+    "last_validated_date": "2025-09-11T15:25:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.98,
+      "call": 21.48,
+      "teardown": 0.19,
+      "total": 22.65
+    }
   }
 }

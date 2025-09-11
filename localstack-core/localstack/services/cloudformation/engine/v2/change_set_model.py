@@ -681,9 +681,6 @@ class ChangeSetModel:
             scope=arguments_scope, before_value=before_arguments, after_value=after_arguments
         )
 
-        if intrinsic_function == "Ref" and arguments.value == "AWS::NoValue":
-            arguments.value = Nothing
-
         if is_created(before=before_arguments, after=after_arguments):
             change_type = ChangeType.CREATED
         elif is_removed(before=before_arguments, after=after_arguments):

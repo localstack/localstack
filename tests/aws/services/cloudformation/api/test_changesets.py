@@ -1319,3 +1319,49 @@ def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
     )
 
     snapshot.match("describe-2", describe_res)
+
+
+@markers.aws.validated
+@skip_if_v1_provider("Unsupported in V1 engine")
+def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
+    """
+    Fix a bug with trying to access falsy conditions when updating
+    """
+    stack_name = f"stack-{short_uid()}"
+    create_cs_name = f"cs-create-{short_uid()}"
+    update_cs_name = f"cs-update-{short_uid()}"
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/aws_novalue.yml")
+    template_body = load_template_raw(template_path)
+    fallback_bucket = f"my-bucket-{short_uid()}"
+
+    create_resp = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=create_cs_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+        Parameters=[
+            {"ParameterKey": "SetBucketName", "ParameterValue": "no"},
+            {"ParameterKey": "FallbackBucketName", "ParameterValue": fallback_bucket},
+        ],
+    )
+    create_cs_id = create_resp["Id"]
+    stack_id = create_resp["StackId"]
+
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=create_cs_id
+    )
+    aws_client.cloudformation.execute_change_set(ChangeSetName=create_cs_id)
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=update_cs_name,
+        TemplateBody=template_body,
+        ChangeSetType="UPDATE",
+        Parameters=[
+            {"ParameterKey": "SetBucketName", "ParameterValue": "no"},
+            {"ParameterKey": "FallbackBucketName", "ParameterValue": fallback_bucket},
+        ],
+    )
