@@ -42,7 +42,7 @@ def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client, snap
 
 
 @markers.aws.validated
-@skip_if_legacy_engine("Not supported with v1 provider")
+@skip_if_legacy_engine()
 def test_sns_topic_fifo_without_suffix_fails(cleanups, aws_client, snapshot):
     stack_name = f"stack-{short_uid()}"
     change_set_name = f"cs-{short_uid()}"

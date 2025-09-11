@@ -5,7 +5,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import long_uid
 
 
-@skip_if_legacy_engine("Requires the V2 engine")
+@skip_if_legacy_engine()
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",

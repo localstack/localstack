@@ -407,7 +407,7 @@ class TestSsmParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
-    @skip_if_legacy_engine("Not supported in the v1 provider")
+    @skip_if_legacy_engine()
     @markers.aws.validated
     def test_resolve_ssm_missing_parameter(self, snapshot, deploy_cfn_template):
         template = {
@@ -820,7 +820,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
-    @skip_if_legacy_engine("V1 is unable to resolve fn::transform with lists")
+    @skip_if_legacy_engine()
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):

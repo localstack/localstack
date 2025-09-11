@@ -8,7 +8,7 @@ from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 from localstack.testing.pytest import markers
 
 
-@skip_if_legacy_engine("Not implemented for v1")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_describe_non_existent_stack(aws_client, deploy_cfn_template, snapshot):
     with pytest.raises(ClientError) as err:
@@ -35,7 +35,7 @@ def test_describe_non_existent_resource(aws_client, deploy_cfn_template, snapsho
     snapshot.match("error", err.value)
 
 
-@skip_if_legacy_engine("Not implemented for v1")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
     template = {

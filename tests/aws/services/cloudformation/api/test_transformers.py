@@ -54,7 +54,7 @@ def test_duplicate_resources(deploy_cfn_template, s3_bucket, snapshot, aws_clien
     snapshot.match("api-resources", resources)
 
 
-@skip_if_legacy_engine(reason="update not supported in v1")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_redeployment_with_fn_include(deploy_cfn_template, s3_bucket, snapshot, aws_client):
     snapshot.add_transformers_list(

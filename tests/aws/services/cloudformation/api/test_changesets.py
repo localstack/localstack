@@ -486,7 +486,7 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
     snapshot.match("exception", ex.value)
 
 
-@skip_if_legacy_engine("Not supported in V1 engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_create_change_set_no_changes(
     snapshot,
@@ -681,7 +681,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@skip_if_legacy_engine("Unsupported in v1 engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
