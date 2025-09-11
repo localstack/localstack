@@ -17,11 +17,15 @@ class EngineParameter(TypedDict):
 
 
 def engine_parameter_value(parameter: EngineParameter) -> str:
-    value = parameter.get("given_value") or parameter.get("default_value")
-    if value is None:
-        raise RuntimeError("Parameter value is None")
+    given_value = parameter.get("given_value")
+    if given_value is not None:
+        return given_value
 
-    return value
+    default_value = parameter.get("default_value")
+    if default_value is not None:
+        return default_value
+
+    raise RuntimeError("Parameter value is None")
 
 
 class ResolvedResource(TypedDict):
