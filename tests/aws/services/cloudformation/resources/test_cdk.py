@@ -118,7 +118,7 @@ class TestCdkInit:
             "$..Outputs..Description",
         ]
     )
-    @skip_if_legacy_engine("Changes array not in parity")
+    @skip_if_legacy_engine()
     def test_cdk_bootstrap_redeploy(
         self,
         aws_client,

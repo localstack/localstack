@@ -9,7 +9,7 @@ from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
 
-@skip_if_legacy_engine("change sets")
+@skip_if_legacy_engine()
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "per-resource-events..*",
