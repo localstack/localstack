@@ -241,7 +241,7 @@ class ServiceExceptionTranslator(AbstractContextManager):
                 code=exc_val.code,
                 message=exc_val.message,
             )
-        return None
+        return False
 
 
 translate_service_exception = ServiceExceptionTranslator()
