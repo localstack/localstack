@@ -1658,7 +1658,7 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
     """
     The ``CBORResponseSerializer`` is responsible for the serialization of responses from services with the ``cbor``
     protocol. It implements the CBOR response body serialization, which is only currently used by Kinesis and is derived
-    from the ``JSONResponseSerializer``
+    conceptually from the ``JSONResponseSerializer``
     """
 
     SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
@@ -2098,7 +2098,9 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "rest-json": RestJSONResponseSerializer,
         "rest-xml": RestXMLResponseSerializer,
         "ec2": EC2ResponseSerializer,
-        "cbor": CBORResponseSerializer,
+        # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
+        #  CBOR handling from JSONResponseParser
+        # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
 
     # Try to select a service- and protocol-specific serializer implementation
