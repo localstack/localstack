@@ -541,7 +541,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
                 change_set.set_change_set_status(ChangeSetStatus.CREATE_COMPLETE)
 
-        stack.change_set_ids.append(change_set.change_set_id)
+        stack.change_set_ids.add(change_set.change_set_id)
         state.change_sets[change_set.change_set_id] = change_set
         return CreateChangeSetOutput(StackId=stack.stack_id, Id=change_set.change_set_id)
 
@@ -737,8 +737,22 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         if not change_set:
             return DeleteChangeSetOutput()
 
-        change_set.stack.change_set_ids.remove(change_set.change_set_id)
-        state.change_sets.pop(change_set.change_set_id)
+        try:
+            change_set.stack.change_set_ids.remove(change_set.change_set_id)
+        except KeyError:
+            LOG.warning(
+                "Could not disassociatei change set '%s' from stack '%s', it does not seem to be associated",
+                change_set.change_set_id,
+                change_set.stack.stack_id,
+            )
+        try:
+            state.change_sets.pop(change_set.change_set_id)
+        except KeyError:
+            # This _should_ never fail since if we cannot find the change set in the store (using
+            # `find_change_set_v2`) then we early return from this function
+            LOG.warning(
+                "Could not delete change set '%s', it does not exist", change_set.change_set_id
+            )
 
         return DeleteChangeSetOutput()
 
