@@ -11,9 +11,10 @@ from localstack.utils.collections import optional_list
 SKIP_TYPE_RE = re.compile(r"^CFNV2\((?P<reason>[^\)]+)\)")
 
 
-def skip_if_legacy_engine(reason: str):
+def skip_if_legacy_engine(reason: str | None = None):
     return pytest.mark.skipif(
-        condition=not is_v2_engine() and not is_aws_cloud(), reason=f"CFN(legacy): {reason}"
+        condition=not is_v2_engine() and not is_aws_cloud(),
+        reason=reason or "Not implemented in legacy engine",
     )
 
 
