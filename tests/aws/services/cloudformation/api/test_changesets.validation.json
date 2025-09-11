@@ -130,5 +130,32 @@
       "teardown": 0.19,
       "total": 22.65
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[condition]": {
+    "last_validated_date": "2025-09-11T22:15:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.64,
+      "teardown": 0.09,
+      "total": 3.73
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[parameter]": {
+    "last_validated_date": "2025-09-11T22:15:51+00:00",
+    "durations_in_seconds": {
+      "setup": 1.03,
+      "call": 0.32,
+      "teardown": 0.13,
+      "total": 1.48
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[resource]": {
+    "last_validated_date": "2025-09-11T22:15:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.16,
+      "teardown": 0.07,
+      "total": 0.23
+    }
   }
 }

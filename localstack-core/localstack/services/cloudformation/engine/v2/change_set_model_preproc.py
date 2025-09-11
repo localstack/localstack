@@ -975,6 +975,10 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before_parameters, after=after_parameters)
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_parameter.name):
+            raise ValidationError(
+                f"Template format error: Parameter name {node_parameter.name} is non alphanumeric."
+            )
         dynamic_value = node_parameter.dynamic_value
         dynamic_delta = self.visit(dynamic_value)
 
