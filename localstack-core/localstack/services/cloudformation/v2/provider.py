@@ -1295,10 +1295,19 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
     ) -> GetTemplateOutput:
         state = get_cloudformation_store(context.account_id, context.region)
         if change_set_name:
+            if not is_changeset_arn(change_set_name) and not stack_name:
+                raise ValidationError("StackName is a required parameter.")
+
             change_set = find_change_set_v2(state, change_set_name, stack_name=stack_name)
+            if not change_set:
+                raise ChangeSetNotFoundException(f"ChangeSet [{change_set_name}] does not exist")
             stack = change_set.stack
         elif stack_name:
             stack = find_stack_v2(state, stack_name)
+            if not stack:
+                raise StackNotFoundError(
+                    stack_name, message_override=f"Stack with id {stack_name} does not exist"
+                )
         else:
             raise StackNotFoundError(stack_name)
 
