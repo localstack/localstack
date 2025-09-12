@@ -281,7 +281,7 @@ jobs:
                - 'tests/aws/services/sns/**' # todo: potentially add more locations (lambda/sqs tests?)
 
       - name: Run Unit Tests
-        timeout-minutes: 8
+        timeout-minutes: 20
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
