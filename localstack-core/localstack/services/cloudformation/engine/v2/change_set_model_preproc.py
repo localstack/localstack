@@ -855,6 +855,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 raise ValidationError(
                     "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
                 ) from e
+
+            # defer evaluation if the selection list contains unresolved elements (e.g., unresolved intrinsics)
+            if any(v is None for v in values):
+                raise RuntimeError("Fn::Select list contains unresolved elements")
+
+            values_len = len(values)
             if index < 0 or index >= values_len:
                 raise ValidationError(
                     "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
