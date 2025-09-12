@@ -2,6 +2,8 @@ import copy
 import json
 import os.path
 from collections.abc import Callable
+from dataclasses import dataclass
+from typing import Any
 
 import pytest
 from botocore.config import Config
@@ -1246,6 +1248,126 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
     )
 
 
+@dataclass
+class NoValueScenario:
+    name: str
+    template: dict[str, Any]
+    should_fail: bool
+
+
+cases = [
+    NoValueScenario(
+        name="parameter",
+        template={
+            "Parameters": {
+                "AWS::NoValue": {
+                    "Type": "String",
+                    "Default": "foo",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {
+                            "Ref": "AWS::NoValue",
+                        },
+                    },
+                },
+            },
+        },
+        should_fail=True,
+    ),
+    NoValueScenario(
+        name="resource",
+        template={
+            "Resources": {
+                "AWS::NoValue": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": short_uid(),
+                    },
+                },
+            },
+        },
+        should_fail=True,
+    ),
+    NoValueScenario(
+        name="condition",
+        template={
+            "Conditions": {
+                "AWS::NoValue": {
+                    "Fn::Equals": [
+                        "a",
+                        "a",
+                    ],
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Condition": "AWS::NoValue",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": short_uid(),
+                    },
+                },
+            },
+        },
+        should_fail=False,
+    ),
+]
+
+
+@skip_if_v1_provider("Unsupported in V1 engine")
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "case",
+    cases,
+    ids=[case.name for case in cases],
+)
+def test_using_pseudoparameters_in_places(aws_client, snapshot, cleanups, case):
+    """
+    Test that AWS pseudoparameters (particularly AWS::NoValue) can
+    only be used in value positions of the template
+    """
+
+    stack_name = f"stack-{short_uid()}"
+    change_set_name = f"change-set-{short_uid()}"
+
+    cleanups.append(
+        lambda: aws_client.cloudformation.delete_change_set(
+            ChangeSetName=change_set_name,
+            StackName=stack_name,
+        )
+    )
+
+    if case.should_fail:
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                TemplateBody=json.dumps(case.template),
+                ChangeSetType="CREATE",
+            )
+
+        snapshot.match("error", exc_info.value.response)
+
+    else:
+        aws_client.cloudformation.create_change_set(
+            ChangeSetName=change_set_name,
+            StackName=stack_name,
+            TemplateBody=json.dumps(case.template),
+            ChangeSetType="CREATE",
+        )
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_name,
+            StackName=stack_name,
+        )
+
+
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
@@ -1319,3 +1441,49 @@ def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
     )
 
     snapshot.match("describe-2", describe_res)
+
+
+@markers.aws.validated
+@skip_if_v1_provider("Unsupported in V1 engine")
+def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
+    """
+    Fix a bug with trying to access falsy conditions when updating
+    """
+    stack_name = f"stack-{short_uid()}"
+    create_cs_name = f"cs-create-{short_uid()}"
+    update_cs_name = f"cs-update-{short_uid()}"
+    template_path = os.path.join(os.path.dirname(__file__), "../../../templates/aws_novalue.yml")
+    template_body = load_template_raw(template_path)
+    fallback_bucket = f"my-bucket-{short_uid()}"
+
+    create_resp = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=create_cs_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+        Parameters=[
+            {"ParameterKey": "SetBucketName", "ParameterValue": "no"},
+            {"ParameterKey": "FallbackBucketName", "ParameterValue": fallback_bucket},
+        ],
+    )
+    create_cs_id = create_resp["Id"]
+    stack_id = create_resp["StackId"]
+
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=create_cs_id
+    )
+    aws_client.cloudformation.execute_change_set(ChangeSetName=create_cs_id)
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=update_cs_name,
+        TemplateBody=template_body,
+        ChangeSetType="UPDATE",
+        Parameters=[
+            {"ParameterKey": "SetBucketName", "ParameterValue": "no"},
+            {"ParameterKey": "FallbackBucketName", "ParameterValue": fallback_bucket},
+        ],
+    )

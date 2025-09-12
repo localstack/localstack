@@ -619,5 +619,41 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[resource]": {
+    "recorded-date": "11-09-2025, 22:15:52",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Resource name AWS::NoValue is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[condition]": {
+    "recorded-date": "11-09-2025, 22:15:55",
+    "recorded-content": {}
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[parameter]": {
+    "recorded-date": "11-09-2025, 22:15:51",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Parameter name AWS::NoValue is non alphanumeric.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

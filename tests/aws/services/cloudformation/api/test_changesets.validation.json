@@ -121,5 +121,41 @@
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_name_conflicts": {
     "last_validated_date": "2023-11-22T09:58:04+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_update_change_set_with_aws_novalue_repro": {
+    "last_validated_date": "2025-09-11T15:25:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.98,
+      "call": 21.48,
+      "teardown": 0.19,
+      "total": 22.65
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[condition]": {
+    "last_validated_date": "2025-09-11T22:15:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.64,
+      "teardown": 0.09,
+      "total": 3.73
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[parameter]": {
+    "last_validated_date": "2025-09-11T22:15:51+00:00",
+    "durations_in_seconds": {
+      "setup": 1.03,
+      "call": 0.32,
+      "teardown": 0.13,
+      "total": 1.48
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_using_pseudoparameters_in_places[resource]": {
+    "last_validated_date": "2025-09-11T22:15:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.16,
+      "teardown": 0.07,
+      "total": 0.23
+    }
   }
 }
