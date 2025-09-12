@@ -125,5 +125,80 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_missing_resources": {
+    "recorded-date": "12-09-2025, 16:08:17",
+    "recorded-content": {
+      "stack-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack with id does-not-exist does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "change-set-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "StackName is a required parameter.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_missing_resources_stack": {
+    "recorded-date": "12-09-2025, 16:08:42",
+    "recorded-content": {
+      "stack-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack with id does-not-exist does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_missing_resources_change_set": {
+    "recorded-date": "12-09-2025, 16:08:55",
+    "recorded-content": {
+      "change-set-error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "StackName is a required parameter.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_missing_resources_change_set_id": {
+    "recorded-date": "12-09-2025, 17:32:31",
+    "recorded-content": {
+      "change-set-error": {
+        "Error": {
+          "Code": "ChangeSetNotFound",
+          "Message": "ChangeSet [<change-set-id>] does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }
