@@ -843,13 +843,22 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     ):
         # TODO: add further support for schema validation
         def _compute_fn_select(args: list[Any]) -> Any:
-            values: list[Any] = args[1]
+            values = args[1]
             if not isinstance(values, list) or not values:
-                raise RuntimeError(f"Invalid arguments list value for Fn::Select: '{values}'")
+                raise ValidationError(
+                    "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
+                )
             values_len = len(values)
-            index: int = int(args[0])
-            if not isinstance(index, int) or index < 0 or index > values_len:
-                raise RuntimeError(f"Invalid or out of range index value for Fn::Select: '{index}'")
+            try:
+                index: int = int(args[0])
+            except ValueError as e:
+                raise ValidationError(
+                    "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
+                ) from e
+            if index < 0 or index >= values_len:
+                raise ValidationError(
+                    "Template error: Fn::Select requires a list argument with two elements: an integer index and a list"
+                )
             selection = values[index]
             return selection
 
