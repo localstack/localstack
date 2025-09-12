@@ -9,10 +9,12 @@ from botocore.model import OperationModel, ServiceModel
 
 from localstack import config
 from localstack.http import Response
-from localstack.utils.coverage_docs import get_coverage_link_for_service
 
+from ...utils.catalog.plugins import get_aws_catalog
+from ...utils.coverage_docs import get_coverage_link_for_service
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
+from ..catalog_exceptions import map_catalog_availability_to_exception
 from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, HandlerChain
 from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
@@ -175,9 +177,20 @@ class ServiceExceptionSerializer(ExceptionHandler):
         if operation and isinstance(exception, NotImplementedError):
             action_name = operation.name
             exception_message: str | None = exception.args[0] if exception.args else None
-            message = exception_message or get_coverage_link_for_service(service_name, action_name)
+            if exception_message is not None:
+                message = exception_message or get_coverage_link_for_service(
+                    service_name, action_name
+                )
+                error = CommonServiceException("InternalFailure", message, status_code=501)
+            else:
+                support_in_latest = get_aws_catalog().get_aws_service_status(
+                    service_name, action_name
+                )
+                error = map_catalog_availability_to_exception(
+                    service_name, action_name, support_in_latest
+                )
+                message = error.message
             LOG.info(message)
-            error = CommonServiceException("InternalFailure", message, status_code=501)
             context.service_exception = error
 
         elif not isinstance(exception, ServiceException):
