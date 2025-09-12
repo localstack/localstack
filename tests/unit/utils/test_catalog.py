@@ -6,7 +6,11 @@ from localstack.utils.catalog.common import (
     AwsServicesSupportInLatest,
     CloudFormationResourcesSupportAtRuntime,
 )
-from localstack.utils.catalog.loader import AwsRemoteCatalog, RemoteCatalogLoader
+from localstack.utils.catalog.loader import (
+    AwsRemoteCatalog,
+    LocalStackMetadata,
+    RemoteCatalogLoader,
+)
 
 
 class FakeCatalogLoader(RemoteCatalogLoader):
@@ -19,12 +23,13 @@ class FakeCatalogLoader(RemoteCatalogLoader):
 
 CATALOG = AwsRemoteCatalog(
     schema_version="1.0",
-    localstack={},
+    localstack=LocalStackMetadata(version="4.7"),
     services={
         "athena": {
             "pro": {
                 "provider": "athena:pro",
                 "operations": ["StartQueryExecution", "GetQueryExecution"],
+                "plans": ["ultimate", "enterprise"],
             }
         },
         "s3": {
@@ -104,17 +109,24 @@ class TestAwsCatalog:
         )
 
     @pytest.mark.parametrize(
-        "resource_name,expected_status",
+        "resource_name,service_name,expected_status",
         [
-            ("AWS::S3::Bucket", CloudFormationResourcesSupportAtRuntime.AVAILABLE),
-            ("AWS::S3::NonExistent", AwsServicesSupportInLatest.SUPPORTED),
+            ("AWS::S3::Bucket", "s3", CloudFormationResourcesSupportAtRuntime.AVAILABLE),
+            ("AWS::S3::NonExistent", "s3", AwsServicesSupportInLatest.SUPPORTED),
             (
                 "AWS::Athena::CapacitiesReservation",
+                "athena",
                 AwsServicesSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE,
             ),
-            ("AWS::NonExistentService::NonExistent", AwsServicesSupportInLatest.NOT_SUPPORTED),
+            (
+                "AWS::NonExistentService::NonExistent",
+                "nonexistentservice",
+                AwsServicesSupportInLatest.NOT_SUPPORTED,
+            ),
         ],
     )
-    def test_get_cfn_resource_status(self, aws_catalog, resource_name, expected_status):
-        result = aws_catalog.get_cloudformation_resource_status(resource_name)
+    def test_get_cfn_resource_status(
+        self, aws_catalog, resource_name, service_name, expected_status
+    ):
+        result = aws_catalog.get_cloudformation_resource_status(resource_name, service_name)
         assert result == expected_status

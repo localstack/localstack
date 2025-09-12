@@ -22,7 +22,6 @@ class AwsServiceSupportAtRuntime(StrEnum):
 
 class CloudFormationResourcesSupportInLatest(StrEnum):
     SUPPORTED = "SUPPORTED"
-    SUPPORTED_WITH_LICENSE_UPGRADE = "SUPPORTED_WITH_LICENSE_UPGRADE"
     NOT_SUPPORTED = "NOT_SUPPORTED"
 
 

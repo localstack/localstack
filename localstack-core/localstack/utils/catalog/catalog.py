@@ -39,14 +39,9 @@ class CatalogPlugin(Plugin):
     @staticmethod
     def get_cfn_resources_catalog(cloudformation_resources: dict):
         cfn_resources_catalog = {}
-        for emulator_type in list(LocalstackEmulatorType):
-            if emulator_type in cloudformation_resources:
-                for resource_name in cloudformation_resources[emulator_type]:
-                    cfn_resources_catalog[emulator_type] = {
-                        resource_name: set(
-                            cloudformation_resources[emulator_type][resource_name]["methods"]
-                        )
-                    }
+        for emulator_type, resources in cloudformation_resources.items():
+            for resource_name, resource in resources.items():
+                cfn_resources_catalog[emulator_type] = {resource_name: set(resource.methods)}
         return cfn_resources_catalog
 
     @abstractmethod
@@ -57,8 +52,8 @@ class CatalogPlugin(Plugin):
 
     @abstractmethod
     def get_cloudformation_resource_status(
-        self, resource_name: str
-    ) -> CfnResourceSupportStatus | AwsServicesSupportStatus | None:
+        self, resource_name: str, service_name: str
+    ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         pass
 
 
@@ -84,13 +79,11 @@ class AwsCatalogPlugin(CatalogPlugin):
     def __init__(self, remote_catalog_loader: RemoteCatalogLoader | None = None) -> None:
         catalog_loader = remote_catalog_loader or RemoteCatalogLoader()
         remote_catalog = catalog_loader.get_remote_catalog()
-        for service_name in remote_catalog.services:
-            service = remote_catalog.services[service_name]
-            for emulator_type in list(LocalstackEmulatorType):
-                if emulator_type in service:
-                    service_provider = service[emulator_type]
-                    operations = service_provider.get("operations") or set()
-                    self.services_in_latest.setdefault(service_name, {})[emulator_type] = operations
+        for service_name, emulators in remote_catalog.services.items():
+            for emulator_type, service_provider in emulators.items():
+                self.services_in_latest.setdefault(service_name, {})[emulator_type] = set(
+                    service_provider.operations
+                )
 
         self.cfn_resources_in_latest = AwsCatalogPlugin.get_cfn_resources_catalog(
             remote_catalog.cloudformation_resources
@@ -119,22 +112,15 @@ class AwsCatalogPlugin(CatalogPlugin):
         return AwsServiceOperationsSupportInLatest.NOT_SUPPORTED
 
     def get_cloudformation_resource_status(
-        self, resource_name: str
-    ) -> CfnResourceSupportStatus | AwsServicesSupportStatus | None:
+        self, resource_name: str, service_name: str
+    ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         if resource_name in self.cfn_resources_at_runtime:
             return CloudFormationResourcesSupportAtRuntime.AVAILABLE
-        if len(rsc_name := resource_name.split("::")) >= 2:
-            service_name = rsc_name[1].lower()
-        else:
-            return None
         if service_name in self.services_at_runtime:
-            for emulator_type in list(LocalstackEmulatorType):
-                if resource_name in self.cfn_resources_in_latest[emulator_type]:
-                    if emulator_type is self.current_emulator_type:
-                        return CloudFormationResourcesSupportInLatest.SUPPORTED
-                    else:
-                        return CloudFormationResourcesSupportInLatest.SUPPORTED_WITH_LICENSE_UPGRADE
-            return CloudFormationResourcesSupportInLatest.NOT_SUPPORTED
+            if resource_name in self.cfn_resources_in_latest[self.current_emulator_type]:
+                return CloudFormationResourcesSupportInLatest.SUPPORTED
+            else:
+                return CloudFormationResourcesSupportInLatest.NOT_SUPPORTED
         if service_name in self.services_in_latest:
             return self.get_aws_service_status(service_name, operation_name=None)
         return AwsServicesSupportInLatest.NOT_SUPPORTED
