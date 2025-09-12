@@ -105,6 +105,9 @@ def test_put_and_get_object_md5(aws_client, snapshot, create_bucket):
     put_resp = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body=content)
     snapshot.match("put_object_response", put_resp)
 
+    head_resp = aws_client.s3.head_object(Bucket=bucket_name, Key=object_key)
+    snapshot.match("head_object_response", head_resp)
+
     get_resp = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
     body = get_resp["Body"].read()
     downloaded_md5 = hashlib.md5(body).hexdigest()
