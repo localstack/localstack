@@ -9,13 +9,6 @@ import threading
 import semver
 
 from localstack import config
-from localstack.constants import (
-    ELASTICSEARCH_DEFAULT_VERSION,
-    ELASTICSEARCH_DELETE_MODULES,
-    ELASTICSEARCH_PLUGIN_LIST,
-    OPENSEARCH_DEFAULT_VERSION,
-    OPENSEARCH_PLUGIN_LIST,
-)
 from localstack.packages import InstallTarget, Package, PackageInstaller
 from localstack.packages.java import java_package
 from localstack.services.opensearch import versions
@@ -32,6 +25,32 @@ from localstack.utils.sync import SynchronizedDefaultDict, retry
 
 LOG = logging.getLogger(__name__)
 
+# the version of opensearch which is used by default
+OPENSEARCH_DEFAULT_VERSION = "OpenSearch_3.1"
+
+# See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
+OPENSEARCH_PLUGIN_LIST = [
+    "ingest-attachment",
+    "analysis-kuromoji",
+]
+
+# the version of elasticsearch that is pre-seeded into the base image (sync with Dockerfile.base)
+ELASTICSEARCH_DEFAULT_VERSION = "Elasticsearch_7.10"
+
+# See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
+ELASTICSEARCH_PLUGIN_LIST = [
+    "analysis-icu",
+    "ingest-attachment",
+    "analysis-kuromoji",
+    "mapper-murmur3",
+    "mapper-size",
+    "analysis-phonetic",
+    "analysis-smartcn",
+    "analysis-stempel",
+    "analysis-ukrainian",
+]
+# Default ES modules to exclude (save apprx 66MB in the final image)
+ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
 
 _OPENSEARCH_INSTALL_LOCKS = SynchronizedDefaultDict(threading.RLock)
 

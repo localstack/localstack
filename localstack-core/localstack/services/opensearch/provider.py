@@ -75,7 +75,6 @@ from localstack.aws.api.opensearch import (
     VolumeType,
     VPCDerivedInfoStatus,
 )
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import SecurityOptions
 from localstack.services.opensearch.cluster_manager import (
@@ -84,6 +83,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
+from localstack.services.opensearch.packages import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import parse_arn
