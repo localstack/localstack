@@ -26,6 +26,7 @@ from localstack.aws.api.opensearch import (
     CognitoOptions,
     CognitoOptionsStatus,
     ColdStorageOptions,
+    CompatibleVersionsMap,
     CreateDomainRequest,
     CreateDomainResponse,
     DeleteDomainResponse,
@@ -650,6 +651,10 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                 for comp in versions.compatible_versions
                 if comp["SourceVersion"] == version_filter
             ]
+            if not compatible_versions:
+                compatible_versions = [
+                    CompatibleVersionsMap(SourceVersion=version_filter, TargetVersions=[])
+                ]
         return GetCompatibleVersionsResponse(CompatibleVersions=compatible_versions)
 
     def describe_domain_config(

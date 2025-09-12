@@ -9,12 +9,12 @@
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
-    "last_validated_date": "2025-09-12T07:49:30+00:00",
+    "last_validated_date": "2025-09-12T10:51:06+00:00",
     "durations_in_seconds": {
-      "setup": 0.69,
-      "call": 0.81,
+      "setup": 0.8,
+      "call": 0.82,
       "teardown": 0.01,
-      "total": 1.51
+      "total": 1.63
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_list_versions": {

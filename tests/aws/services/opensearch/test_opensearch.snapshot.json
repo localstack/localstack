@@ -1,6 +1,6 @@
 {
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
-    "recorded-date": "12-09-2025, 07:49:30",
+    "recorded-date": "12-09-2025, 10:51:06",
     "recorded-content": {
       "source_versions": [
         "Elasticsearch_5.1",
