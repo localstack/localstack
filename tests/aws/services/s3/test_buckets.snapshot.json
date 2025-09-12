@@ -1,0 +1,32 @@
+{
+  "tests/aws/services/s3/test_buckets.py::test_create_list_delete_bucket": {
+    "recorded-date": "12-09-2025, 14:44:26",
+    "recorded-content": {
+      "create_response": {
+        "Location": "<location>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_objects_v2_empty": {
+        "EncodingType": "url",
+        "IsTruncated": false,
+        "KeyCount": 0,
+        "MaxKeys": 1000,
+        "Name": "<name:1>",
+        "Prefix": "",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_response": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 204
+        }
+      }
+    }
+  }
+}

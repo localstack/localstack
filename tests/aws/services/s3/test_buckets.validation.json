@@ -1,0 +1,11 @@
+{
+  "tests/aws/services/s3/test_buckets.py::test_create_list_delete_bucket": {
+    "last_validated_date": "2025-09-12T14:44:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.94,
+      "call": 1.39,
+      "teardown": 0.0,
+      "total": 2.33
+    }
+  }
+}
