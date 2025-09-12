@@ -2388,5 +2388,53 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_invalid_select_index_type[non-integer-index]": {
+    "recorded-date": "12-09-2025, 11:09:16",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Fn::Select requires a list argument with two elements: an integer index and a list",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_invalid_select_index_type[non-list-list]": {
+    "recorded-date": "12-09-2025, 11:09:16",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Fn::Select requires a list argument with two elements: an integer index and a list",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_invalid_select_index_type[index-out-of-range]": {
+    "recorded-date": "12-09-2025, 11:09:16",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: Fn::Select requires a list argument with two elements: an integer index and a list",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
