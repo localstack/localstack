@@ -549,11 +549,20 @@
     }
   },
   "tests/aws/scenario/bookstore/test_bookstore.py::TestBookstoreApplication::test_opensearch_crud": {
-    "recorded-date": "15-07-2024, 12:55:29",
+    "recorded-date": "12-09-2025, 09:51:48",
     "recorded-content": {
       "describe_domains": {
         "DomainStatusList": [
           {
+            "AIMLOptions": {
+              "NaturalLanguageQueryGenerationOptions": {
+                "CurrentState": "NOT_ENABLED",
+                "DesiredState": "DISABLED"
+              },
+              "S3VectorsEngine": {
+                "Enabled": false
+              }
+            },
             "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
             "AccessPolicies": "",
             "AdvancedOptions": {
@@ -609,8 +618,9 @@
               "Enabled": false
             },
             "Endpoint": "<endpoint:1>",
-            "EngineVersion": "OpenSearch_2.11",
+            "EngineVersion": "OpenSearch_3.1",
             "IPAddressType": "ipv4",
+            "IdentityCenterOptions": {},
             "ModifyingProperties": [],
             "NodeToNodeEncryptionOptions": {
               "Enabled": false
@@ -628,7 +638,7 @@
             "ServiceSoftwareOptions": {
               "AutomatedUpdateDate": "datetime",
               "Cancellable": false,
-              "CurrentVersion": "OpenSearch_2_11_R20240502-P2",
+              "CurrentVersion": "OpenSearch_3_1_R20250904-P1",
               "Description": "There is no software update available for this domain.",
               "NewVersion": "",
               "OptionalDeployment": true,
@@ -663,6 +673,24 @@
       },
       "describe_domain_config": {
         "DomainConfig": {
+          "AIMLOptions": {
+            "Options": {
+              "NaturalLanguageQueryGenerationOptions": {
+                "CurrentState": "NOT_ENABLED",
+                "DesiredState": "DISABLED"
+              },
+              "S3VectorsEngine": {
+                "Enabled": false
+              }
+            },
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
           "AccessPolicies": {
             "Options": "",
             "Status": {
@@ -795,7 +823,7 @@
             }
           },
           "EngineVersion": {
-            "Options": "OpenSearch_2.11",
+            "Options": "OpenSearch_3.1",
             "Status": {
               "CreationDate": "datetime",
               "PendingDeletion": false,
@@ -806,6 +834,16 @@
           },
           "IPAddressType": {
             "Options": "ipv4",
+            "Status": {
+              "CreationDate": "datetime",
+              "PendingDeletion": false,
+              "State": "Active",
+              "UpdateDate": "datetime",
+              "UpdateVersion": "update-version"
+            }
+          },
+          "IdentityCenterOptions": {
+            "Options": {},
             "Status": {
               "CreationDate": "datetime",
               "PendingDeletion": false,
@@ -926,10 +964,8 @@
       "get_compatible_versions": {
         "CompatibleVersions": [
           {
-            "SourceVersion": "OpenSearch_2.11",
-            "TargetVersions": [
-              "OpenSearch_2.13"
-            ]
+            "SourceVersion": "OpenSearch_3.1",
+            "TargetVersions": []
           }
         ],
         "ResponseMetadata": {
@@ -939,6 +975,10 @@
       },
       "list_versions": {
         "Versions": [
+          "OpenSearch_3.1",
+          "OpenSearch_2.19",
+          "OpenSearch_2.17",
+          "OpenSearch_2.15",
           "OpenSearch_2.13",
           "OpenSearch_2.11",
           "OpenSearch_2.9",

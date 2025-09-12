@@ -5,8 +5,12 @@ import botocore.exceptions
 import pytest
 
 from localstack import config
-from localstack.constants import ELASTICSEARCH_DEFAULT_VERSION, OPENSEARCH_DEFAULT_VERSION
-from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
+from localstack.services.opensearch.packages import (
+    ELASTICSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_DEFAULT_VERSION,
+    elasticsearch_package,
+    opensearch_package,
+)
 from localstack.testing.pytest import markers
 from localstack.utils.common import safe_requests as requests
 from localstack.utils.common import short_uid, start_worker_thread

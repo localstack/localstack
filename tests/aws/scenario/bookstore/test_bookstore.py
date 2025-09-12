@@ -287,7 +287,9 @@ class TestBookstoreApplication:
             "$..ClusterConfig.DedicatedMasterType",  # added in LS
             "$..ClusterConfig.Options.DedicatedMasterCount",  # added in LS
             "$..ClusterConfig.Options.DedicatedMasterType",  # added in LS
+            "$..DomainStatusList..AIMLOptions",  # missing
             "$..DomainStatusList..EBSOptions.Iops",  # added in LS
+            "$..DomainStatusList..IdentityCenterOptions",  # missing
             "$..DomainStatusList..IPAddressType",  # missing
             "$..DomainStatusList..DomainProcessingStatus",  # missing
             "$..DomainStatusList..ModifyingProperties",  # missing
@@ -299,7 +301,9 @@ class TestBookstoreApplication:
             "$..ClusterConfig.MultiAZWithStandbyEnabled",  # missing
             "$..AdvancedSecurityOptions.AnonymousAuthEnabled",  # missing
             "$..AdvancedSecurityOptions.Options.AnonymousAuthEnabled",  # missing
+            "$..DomainConfig.AIMLOptions",  # missing
             "$..DomainConfig.ClusterConfig.Options.WarmEnabled",  # missing
+            "$..DomainConfig.IdentityCenterOptions",  # missing
             "$..DomainConfig.IPAddressType",  # missing
             "$..DomainConfig.ModifyingProperties",  # missing
             "$..ClusterConfig.Options.ColdStorageOptions",  # missing

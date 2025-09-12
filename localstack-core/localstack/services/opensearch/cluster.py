@@ -18,7 +18,12 @@ from localstack.http.client import SimpleRequestsClient
 from localstack.http.proxy import ProxyHandler
 from localstack.services.edge import ROUTER
 from localstack.services.opensearch import versions
-from localstack.services.opensearch.packages import elasticsearch_package, opensearch_package
+from localstack.services.opensearch.packages import (
+    ELASTICSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_DEFAULT_VERSION,
+    elasticsearch_package,
+    opensearch_package,
+)
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import (
     ShellCommandThread,
@@ -36,6 +41,9 @@ from localstack.utils.urls import localstack_host
 LOG = logging.getLogger(__name__)
 INTERNAL_USER_AUTH = ("localstack-internal", "localstack-internal")
 DEFAULT_BACKEND_HOST = "127.0.0.1"
+
+# user that starts the opensearch process if the current user is root
+OS_USER_OPENSEARCH = "localstack"
 
 CommandSettings = dict[str, str]
 
@@ -314,7 +322,7 @@ class OpensearchCluster(Server):
 
     @property
     def default_version(self) -> str:
-        return constants.OPENSEARCH_DEFAULT_VERSION
+        return OPENSEARCH_DEFAULT_VERSION
 
     @property
     def version(self) -> str:
@@ -336,7 +344,7 @@ class OpensearchCluster(Server):
 
     @property
     def os_user(self):
-        return constants.OS_USER_OPENSEARCH
+        return OS_USER_OPENSEARCH
 
     def health(self) -> str | None:
         return get_cluster_health_status(self.url, auth=self.auth)
@@ -580,7 +588,7 @@ class EdgeProxiedOpensearchCluster(Server):
 
     @property
     def default_version(self):
-        return constants.OPENSEARCH_DEFAULT_VERSION
+        return OPENSEARCH_DEFAULT_VERSION
 
     @property
     def url(self) -> str:
@@ -658,7 +666,7 @@ class ElasticsearchCluster(OpensearchCluster):
 
     @property
     def default_version(self) -> str:
-        return constants.ELASTICSEARCH_DEFAULT_VERSION
+        return ELASTICSEARCH_DEFAULT_VERSION
 
     @property
     def bin_name(self) -> str:
@@ -666,7 +674,7 @@ class ElasticsearchCluster(OpensearchCluster):
 
     @property
     def os_user(self):
-        return constants.OS_USER_OPENSEARCH
+        return OS_USER_OPENSEARCH
 
     def _ensure_installed(self):
         elasticsearch_package.install(self.version)
@@ -710,7 +718,7 @@ class ElasticsearchCluster(OpensearchCluster):
 class EdgeProxiedElasticsearchCluster(EdgeProxiedOpensearchCluster):
     @property
     def default_version(self):
-        return constants.ELASTICSEARCH_DEFAULT_VERSION
+        return ELASTICSEARCH_DEFAULT_VERSION
 
     def _backend_cluster(self) -> OpensearchCluster:
         return ElasticsearchCluster(

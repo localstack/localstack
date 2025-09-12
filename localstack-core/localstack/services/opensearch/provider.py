@@ -26,6 +26,7 @@ from localstack.aws.api.opensearch import (
     CognitoOptions,
     CognitoOptionsStatus,
     ColdStorageOptions,
+    CompatibleVersionsMap,
     CreateDomainRequest,
     CreateDomainResponse,
     DeleteDomainResponse,
@@ -75,7 +76,6 @@ from localstack.aws.api.opensearch import (
     VolumeType,
     VPCDerivedInfoStatus,
 )
-from localstack.constants import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.opensearch import versions
 from localstack.services.opensearch.cluster import SecurityOptions
 from localstack.services.opensearch.cluster_manager import (
@@ -84,6 +84,7 @@ from localstack.services.opensearch.cluster_manager import (
     create_cluster_manager,
 )
 from localstack.services.opensearch.models import OpenSearchStore, opensearch_stores
+from localstack.services.opensearch.packages import OPENSEARCH_DEFAULT_VERSION
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.state import AssetDirectory, StateVisitor
 from localstack.utils.aws.arns import parse_arn
@@ -650,6 +651,10 @@ class OpensearchProvider(OpensearchApi, ServiceLifecycleHook):
                 for comp in versions.compatible_versions
                 if comp["SourceVersion"] == version_filter
             ]
+            if not compatible_versions:
+                compatible_versions = [
+                    CompatibleVersionsMap(SourceVersion=version_filter, TargetVersions=[])
+                ]
         return GetCompatibleVersionsResponse(CompatibleVersions=compatible_versions)
 
     def describe_domain_config(

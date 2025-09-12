@@ -102,32 +102,6 @@ FALSE_STRINGS = ("0", "false", "False")
 # strings with valid log levels for LS_LOG
 LOG_LEVELS = ("trace-internal", "trace", "debug", "info", "warn", "error", "warning")
 
-# the version of elasticsearch that is pre-seeded into the base image (sync with Dockerfile.base)
-ELASTICSEARCH_DEFAULT_VERSION = "Elasticsearch_7.10"
-# See https://docs.aws.amazon.com/ja_jp/elasticsearch-service/latest/developerguide/aes-supported-plugins.html
-ELASTICSEARCH_PLUGIN_LIST = [
-    "analysis-icu",
-    "ingest-attachment",
-    "analysis-kuromoji",
-    "mapper-murmur3",
-    "mapper-size",
-    "analysis-phonetic",
-    "analysis-smartcn",
-    "analysis-stempel",
-    "analysis-ukrainian",
-]
-# Default ES modules to exclude (save apprx 66MB in the final image)
-ELASTICSEARCH_DELETE_MODULES = ["ingest-geoip"]
-
-# the version of opensearch which is used by default
-OPENSEARCH_DEFAULT_VERSION = "OpenSearch_2.11"
-
-# See https://docs.aws.amazon.com/opensearch-service/latest/developerguide/supported-plugins.html
-OPENSEARCH_PLUGIN_LIST = [
-    "ingest-attachment",
-    "analysis-kuromoji",
-]
-
 # API endpoint for analytics events
 API_ENDPOINT = os.environ.get("API_ENDPOINT") or "https://api.localstack.cloud/v1"
 # new analytics API endpoint
@@ -170,9 +144,6 @@ DEFAULT_DEVELOP_PORT = 5678
 # This name should be accepted by all IaC tools, so should respect s3 bucket naming conventions
 DEFAULT_BUCKET_MARKER_LOCAL = "hot-reload"
 LEGACY_DEFAULT_BUCKET_MARKER_LOCAL = "__local__"
-
-# user that starts the opensearch process if the current user is root
-OS_USER_OPENSEARCH = "localstack"
 
 # output string that indicates that the stack is ready
 READY_MARKER_OUTPUT = "Ready."
