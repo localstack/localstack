@@ -1,15 +1,16 @@
 """
-This module provides tools to call moto using moto and botocore internals without going through the moto HTTP server.
+This module provides tools to call Moto service implementations.
 """
 
 import copy
 import sys
 from collections.abc import Callable
+from contextlib import AbstractContextManager
 from functools import lru_cache
 
 import moto.backends as moto_backends
 from moto.core.base_backend import BackendDict
-from moto.core.exceptions import RESTError
+from moto.core.exceptions import RESTError, ServiceException
 from rolo.router import RegexConverter
 from werkzeug.exceptions import NotFound
 from werkzeug.routing import Map, Rule
@@ -209,3 +210,38 @@ class _PartIsolatingRegexConverter(RegexConverter):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
+
+
+class ServiceExceptionTranslator(AbstractContextManager):
+    """
+    This reentrant context manager translates Moto exceptions into ASF service exceptions. This allows ASF to properly
+    serialise and generate the correct error response.
+
+    This is useful when invoking Moto operations directly by importing the backend. For example:
+
+        from moto.ses import ses_backends
+
+        backend = ses_backend['000000000000']['us-east-1']
+
+        with ServiceExceptionTranslator():
+            message = backend.send_raw_email(...)
+
+    If `send_raw_email(...)` raises any `moto.core.exceptions.ServiceException`, this context manager will transparently
+    generate and raise a `localstack.aws.api.core.CommonServiceException`, maintaining the error code and message.
+
+    This only works for Moto services that are integrated with its new core AWS response serialiser.
+    """
+
+    def __enter__(self):
+        pass
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        if exc_type is not None and issubclass(exc_type, ServiceException):
+            raise CommonServiceException(
+                code=exc_val.code,
+                message=exc_val.message,
+            )
+        return False
+
+
+translate_service_exception = ServiceExceptionTranslator()

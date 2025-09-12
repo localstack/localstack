@@ -1122,3 +1122,13 @@ class TestSESRetrospection:
 
         assert requests.delete("http://localhost:4566/_aws/ses").status_code == 204
         assert requests.get("http://localhost:4566/_aws/ses").json() == {"messages": []}
+
+    @markers.aws.validated
+    def test_send_email_raises_message_rejected(self, aws_client):
+        raw_message_data = "From: origin@example.com\nTo: destination@example.com\nSubject: test\n\nThis is the message body.\n\n"
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.ses.send_raw_email(
+                Destinations=["invalid@example.com"], RawMessage={"Data": raw_message_data}
+            )
+        assert exc.value.response["Error"]["Code"] == "MessageRejected"

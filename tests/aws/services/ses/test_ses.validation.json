@@ -70,5 +70,14 @@
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_trying_to_delete_event_destination_from_non_existent_configuration_set": {
     "last_validated_date": "2023-08-25T22:05:02+00:00"
+  },
+  "tests/aws/services/ses/test_ses.py::TestSESRetrospection::test_send_email_raises_message_rejected": {
+    "last_validated_date": "2025-09-11T11:03:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.62,
+      "teardown": 0.0,
+      "total": 1.62
+    }
   }
 }
