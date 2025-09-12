@@ -1,7 +1,5 @@
 import contextlib
 
-import pytest
-
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
