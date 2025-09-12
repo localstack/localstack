@@ -62,6 +62,6 @@ def map_catalog_availability_to_exception(
             return ServiceNotSupportedException(service_name)
         case _:
             return AwsServiceAvailabilityException(
-                message=f"The API for service {service_name} is either not included in your current license plan or has not yet been emulated by LocalStack.",
+                message=f"The API for service '{service_name}' is either not included in your current license plan or has not yet been emulated by LocalStack. Please refer to {_DOCS_COVERAGE_URL} for more details.",
                 error_code=4,
             )

@@ -1,15 +1,14 @@
 import pytest
 
-from localstack.utils.catalog.catalog import AwsCatalogPlugin
+from localstack.utils.catalog.catalog import AwsCatalogRemoteStatePlugin
+from localstack.utils.catalog.catalog_loader import RemoteCatalogLoader
 from localstack.utils.catalog.common import (
+    AwsRemoteCatalog,
     AwsServiceOperationsSupportInLatest,
     AwsServicesSupportInLatest,
     CloudFormationResourcesSupportAtRuntime,
-)
-from localstack.utils.catalog.loader import (
-    AwsRemoteCatalog,
+    CloudFormationResourcesSupportInLatest,
     LocalStackMetadata,
-    RemoteCatalogLoader,
 )
 
 
@@ -61,7 +60,7 @@ CATALOG = AwsRemoteCatalog(
 
 @pytest.fixture(scope="class", autouse=True)
 def aws_catalog():
-    return AwsCatalogPlugin(FakeCatalogLoader(CATALOG))
+    return AwsCatalogRemoteStatePlugin(FakeCatalogLoader(CATALOG))
 
 
 class TestAwsCatalog:
@@ -112,7 +111,7 @@ class TestAwsCatalog:
         "resource_name,service_name,expected_status",
         [
             ("AWS::S3::Bucket", "s3", CloudFormationResourcesSupportAtRuntime.AVAILABLE),
-            ("AWS::S3::NonExistent", "s3", AwsServicesSupportInLatest.SUPPORTED),
+            ("AWS::S3::NonExistent", "s3", CloudFormationResourcesSupportInLatest.NOT_SUPPORTED),
             (
                 "AWS::Athena::CapacitiesReservation",
                 "athena",
