@@ -41,6 +41,7 @@ class Stack:
     description: str | None
     parameters: list[ApiParameter]
     change_set_id: str | None
+    change_set_ids: set[str]
     status: StackStatus
     status_reason: StackStatusReason | None
     stack_id: str
@@ -73,7 +74,7 @@ class Stack:
         self.region_name = region_name
         self.status = initial_status
         self.status_reason = None
-        self.change_set_ids = []
+        self.change_set_ids = set()
         self.creation_time = datetime.now(tz=UTC)
         self.deletion_time = None
         self.change_set_id = None

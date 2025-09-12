@@ -1244,3 +1244,78 @@ def test_describe_change_set_with_similarly_named_stacks(deploy_cfn_template, aw
         )["ChangeSetId"]
         == response["Id"]
     )
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.PolicyAction",
+        "$..Changes..ResourceChange.Scope",
+    ]
+)
+@skip_if_v1_provider("Not supported in v1")
+def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
+    """
+    Test the behaviour of deleting a change set after it has been executed
+    """
+    stack_name = f"stack-{short_uid()}"
+    cs_name_1 = f"cs-{short_uid()}"
+    cs_name_2 = f"cs-{short_uid()}"
+    topic_name_1 = f"topic-{short_uid()}"
+    topic_name_2 = f"topic-{short_uid()}"
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformers_list(
+        [
+            snapshot.transform.regex(cs_name_1, "<cs-1-name>"),
+            snapshot.transform.regex(cs_name_2, "<cs-2-name>"),
+            snapshot.transform.regex(topic_name_1, "<topic-1-name>"),
+            snapshot.transform.regex(topic_name_2, "<topic-2-name>"),
+        ]
+    )
+
+    cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_name))
+
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
+    )
+    with open(template_path) as infile:
+        template_body = infile.read()
+
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template_body,
+        ChangeSetName=cs_name_1,
+        ChangeSetType="CREATE",
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name_1}],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name, ChangeSetName=cs_name_1
+    )
+
+    aws_client.cloudformation.execute_change_set(StackName=stack_name, ChangeSetName=cs_name_1)
+    aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
+
+    aws_client.cloudformation.delete_change_set(StackName=stack_name, ChangeSetName=cs_name_1)
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.describe_change_set(StackName=stack_name, ChangeSetName=cs_name_1)
+
+    snapshot.match("describe-deleted-cs", exc_info.value.response)
+
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template_body,
+        ChangeSetName=cs_name_2,
+        ChangeSetType="UPDATE",
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name_2}],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name, ChangeSetName=cs_name_2
+    )
+
+    describe_res = aws_client.cloudformation.describe_change_set(
+        StackName=stack_name, ChangeSetName=cs_name_2
+    )
+
+    snapshot.match("describe-2", describe_res)
