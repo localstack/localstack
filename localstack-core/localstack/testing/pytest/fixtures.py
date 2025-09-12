@@ -153,13 +153,6 @@ def aws_http_client_factory(aws_session):
     return factory
 
 
-@pytest.fixture(scope="class")
-def s3_vhost_client(aws_client_factory, region_name):
-    return aws_client_factory(
-        config=botocore.config.Config(s3={"addressing_style": "virtual"}), region_name=region_name
-    ).s3
-
-
 @pytest.fixture
 def dynamodb_wait_for_table_active(aws_client):
     def wait_for_table_active(table_name: str, client=None):
@@ -224,109 +217,6 @@ def dynamodb_create_table(dynamodb_wait_for_table_active, aws_client):
             aws_client.dynamodb.delete_table(TableName=table)
         except Exception as e:
             LOG.debug("error cleaning up table %s: %s", table, e)
-
-
-@pytest.fixture
-def s3_create_bucket(s3_empty_bucket, aws_client):
-    buckets = []
-
-    def factory(**kwargs) -> str:
-        if "Bucket" not in kwargs:
-            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
-
-        if (
-            "CreateBucketConfiguration" not in kwargs
-            and aws_client.s3.meta.region_name != "us-east-1"
-        ):
-            kwargs["CreateBucketConfiguration"] = {
-                "LocationConstraint": aws_client.s3.meta.region_name
-            }
-
-        aws_client.s3.create_bucket(**kwargs)
-        buckets.append(kwargs["Bucket"])
-        return kwargs["Bucket"]
-
-    yield factory
-
-    # cleanup
-    for bucket in buckets:
-        try:
-            s3_empty_bucket(bucket)
-            aws_client.s3.delete_bucket(Bucket=bucket)
-        except Exception as e:
-            LOG.debug("error cleaning up bucket %s: %s", bucket, e)
-
-
-@pytest.fixture
-def s3_create_bucket_with_client(s3_empty_bucket, aws_client):
-    buckets = []
-
-    def factory(s3_client, **kwargs) -> str:
-        if "Bucket" not in kwargs:
-            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
-
-        response = s3_client.create_bucket(**kwargs)
-        buckets.append(kwargs["Bucket"])
-        return response
-
-    yield factory
-
-    # cleanup
-    for bucket in buckets:
-        try:
-            s3_empty_bucket(bucket)
-            aws_client.s3.delete_bucket(Bucket=bucket)
-        except Exception as e:
-            LOG.debug("error cleaning up bucket %s: %s", bucket, e)
-
-
-@pytest.fixture
-def s3_bucket(s3_create_bucket, aws_client) -> str:
-    region = aws_client.s3.meta.region_name
-    kwargs = {}
-    if region != "us-east-1":
-        kwargs["CreateBucketConfiguration"] = {"LocationConstraint": region}
-    return s3_create_bucket(**kwargs)
-
-
-@pytest.fixture
-def s3_empty_bucket(aws_client):
-    """
-    Returns a factory that given a bucket name, deletes all objects and deletes all object versions
-    """
-
-    # Boto resource would make this a straightforward task, but our internal client does not support Boto resource
-    # FIXME: this won't work when bucket has more than 1000 objects
-    def factory(bucket_name: str):
-        kwargs = {}
-        try:
-            aws_client.s3.get_object_lock_configuration(Bucket=bucket_name)
-            kwargs["BypassGovernanceRetention"] = True
-        except ClientError:
-            pass
-
-        response = aws_client.s3.list_objects_v2(Bucket=bucket_name)
-        objects = [{"Key": obj["Key"]} for obj in response.get("Contents", [])]
-        if objects:
-            aws_client.s3.delete_objects(
-                Bucket=bucket_name,
-                Delete={"Objects": objects},
-                **kwargs,
-            )
-
-        response = aws_client.s3.list_object_versions(Bucket=bucket_name)
-        versions = response.get("Versions", [])
-        versions.extend(response.get("DeleteMarkers", []))
-
-        object_versions = [{"Key": obj["Key"], "VersionId": obj["VersionId"]} for obj in versions]
-        if object_versions:
-            aws_client.s3.delete_objects(
-                Bucket=bucket_name,
-                Delete={"Objects": object_versions},
-                **kwargs,
-            )
-
-    yield factory
 
 
 @pytest.fixture
