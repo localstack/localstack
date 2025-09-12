@@ -7,5 +7,14 @@
       "teardown": 0.0,
       "total": 2.33
     }
+  },
+  "tests/aws/services/s3/test_buckets.py::test_put_and_get_object_md5": {
+    "last_validated_date": "2025-09-12T15:11:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.24,
+      "call": 1.07,
+      "teardown": 0.6,
+      "total": 2.91
+    }
   }
 }

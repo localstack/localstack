@@ -1,4 +1,5 @@
 import contextlib
+import hashlib
 
 import pytest
 
@@ -86,3 +87,30 @@ def test_create_list_delete_bucket(aws_client, region_name, snapshot, create_buc
     # delete bucket and snapshot response
     delete_resp = aws_client.s3.delete_bucket(Bucket=bucket_name)
     snapshot.match("delete_response", delete_resp)
+
+
+@markers.aws.validated
+def test_put_and_get_object_md5(aws_client, snapshot, create_bucket):
+    snapshot.add_transformer(snapshot.transform.key_value("x-amz-id-2"))
+    snapshot.add_transformer(snapshot.transform.key_value("x-amz-request-id"))
+    snapshot.add_transformer(snapshot.transform.key_value("date"))
+
+    bucket_name = f"test-bucket-{short_uid()}"
+    object_key = f"obj-{short_uid()}"
+    content = b"hello-localstack-s3-put-object"
+    uploaded_md5 = hashlib.md5(content).hexdigest()
+
+    create_bucket(Bucket=bucket_name)
+
+    put_resp = aws_client.s3.put_object(Bucket=bucket_name, Key=object_key, Body=content)
+    snapshot.match("put_object_response", put_resp)
+
+    get_resp = aws_client.s3.get_object(Bucket=bucket_name, Key=object_key)
+    body = get_resp["Body"].read()
+    downloaded_md5 = hashlib.md5(body).hexdigest()
+
+    assert downloaded_md5 == uploaded_md5
+
+    meta = dict(get_resp)
+    meta.pop("Body", None)
+    snapshot.match("get_object_response_meta", meta)
