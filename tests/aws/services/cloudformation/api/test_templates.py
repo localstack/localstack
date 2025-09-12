@@ -161,6 +161,7 @@ def test_get_template_missing_resources_stack(aws_client, snapshot):
     snapshot.match("stack-error", exc_info.value.response)
 
 
+@skip_if_v1_provider("Not supported in legacy engine")
 @markers.aws.validated
 def test_get_template_missing_resources_change_set(aws_client, snapshot):
     with pytest.raises(ClientError) as exc_info:
@@ -168,6 +169,7 @@ def test_get_template_missing_resources_change_set(aws_client, snapshot):
     snapshot.match("change-set-error", exc_info.value.response)
 
 
+@skip_if_v1_provider("Not supported in legacy engine")
 @markers.aws.validated
 def test_get_template_missing_resources_change_set_id(aws_client, snapshot):
     change_set_id = (
