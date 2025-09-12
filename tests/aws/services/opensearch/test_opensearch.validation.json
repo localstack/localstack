@@ -1,20 +1,38 @@
 {
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_domain_lifecycle": {
-    "last_validated_date": "2025-07-07T23:26:58+00:00",
+    "last_validated_date": "2025-09-12T08:04:43+00:00",
     "durations_in_seconds": {
-      "setup": 0.53,
-      "call": 839.91,
-      "teardown": 0.25,
-      "total": 840.69
+      "setup": 0.74,
+      "call": 839.36,
+      "teardown": 0.22,
+      "total": 840.32
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
-    "last_validated_date": "2024-07-16T13:05:15+00:00"
+    "last_validated_date": "2025-09-12T07:49:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.69,
+      "call": 0.81,
+      "teardown": 0.01,
+      "total": 1.51
+    }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_list_versions": {
-    "last_validated_date": "2024-07-16T13:18:18+00:00"
+    "last_validated_date": "2025-09-12T07:47:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.84,
+      "call": 0.92,
+      "teardown": 0.01,
+      "total": 1.77
+    }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_sql_plugin": {
-    "last_validated_date": "2024-12-03T21:07:16+00:00"
+    "last_validated_date": "2025-09-12T07:44:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.94,
+      "call": 1317.86,
+      "teardown": 0.96,
+      "total": 1319.76
+    }
   }
 }

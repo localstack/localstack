@@ -13,13 +13,17 @@ from localstack.utils.common import get_arch
 
 # Internal representation of the OpenSearch versions (without the "OpenSearch_" prefix)
 _opensearch_install_versions = {
+    "3.1": "3.1.0",
+    "2.19": "2.19.3",
+    "2.17": "2.17.1",
+    "2.15": "2.15.0",
     "2.13": "2.13.0",
     "2.11": "2.11.1",
     "2.9": "2.9.0",
     "2.7": "2.7.0",
     "2.5": "2.5.0",
     "2.3": "2.3.0",
-    "1.3": "1.3.12",
+    "1.3": "1.3.20",
     "1.2": "1.2.4",
     "1.1": "1.1.0",
     "1.0": "1.0.0",
@@ -221,6 +225,9 @@ compatible_versions = [
             "OpenSearch_2.9",
             "OpenSearch_2.11",
             "OpenSearch_2.13",
+            "OpenSearch_2.15",
+            "OpenSearch_2.17",
+            "OpenSearch_2.19",
         ],
     ),
     CompatibleVersionsMap(
@@ -231,28 +238,68 @@ compatible_versions = [
             "OpenSearch_2.9",
             "OpenSearch_2.11",
             "OpenSearch_2.13",
+            "OpenSearch_2.15",
+            "OpenSearch_2.17",
+            "OpenSearch_2.19",
         ],
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_2.5",
-        TargetVersions=["OpenSearch_2.7", "OpenSearch_2.9", "OpenSearch_2.11", "OpenSearch_2.13"],
+        TargetVersions=[
+            "OpenSearch_2.7",
+            "OpenSearch_2.9",
+            "OpenSearch_2.11",
+            "OpenSearch_2.13",
+            "OpenSearch_2.15",
+            "OpenSearch_2.17",
+            "OpenSearch_2.19",
+        ],
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_2.7",
-        TargetVersions=["OpenSearch_2.9", "OpenSearch_2.11", "OpenSearch_2.13"],
+        TargetVersions=[
+            "OpenSearch_2.9",
+            "OpenSearch_2.11",
+            "OpenSearch_2.13",
+            "OpenSearch_2.15",
+            "OpenSearch_2.17",
+            "OpenSearch_2.19",
+        ],
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_2.9",
-        TargetVersions=["OpenSearch_2.11", "OpenSearch_2.13"],
+        TargetVersions=[
+            "OpenSearch_2.11",
+            "OpenSearch_2.13",
+            "OpenSearch_2.15",
+            "OpenSearch_2.17",
+            "OpenSearch_2.19",
+        ],
     ),
     CompatibleVersionsMap(
         SourceVersion="OpenSearch_2.11",
-        TargetVersions=["OpenSearch_2.13"],
+        TargetVersions=["OpenSearch_2.13", "OpenSearch_2.15", "OpenSearch_2.17", "OpenSearch_2.19"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.13",
+        TargetVersions=["OpenSearch_2.15", "OpenSearch_2.17", "OpenSearch_2.19"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.15",
+        TargetVersions=["OpenSearch_2.17", "OpenSearch_2.19"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.17",
+        TargetVersions=["OpenSearch_2.19"],
+    ),
+    CompatibleVersionsMap(
+        SourceVersion="OpenSearch_2.19",
+        TargetVersions=["OpenSearch_3.1"],
     ),
 ]
 
 
-def get_install_type_and_version(version: str) -> (EngineType, str):
+def get_install_type_and_version(version: str) -> tuple[EngineType, str]:
     engine_type = EngineType(version.split("_")[0])
 
     if version not in install_versions:
@@ -297,6 +344,8 @@ def get_download_url(install_version: str, engine_type: EngineType) -> str:
         return _opensearch_url(install_version)
     elif engine_type == EngineType.Elasticsearch:
         return _es_url(install_version)
+    else:
+        raise ValueError(f"Unknown OpenSearch engine type: {engine_type}")
 
 
 def fetch_latest_versions() -> dict[str, str]:  # pragma: no cover

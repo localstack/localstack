@@ -1,6 +1,6 @@
 {
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_get_compatible_versions": {
-    "recorded-date": "16-07-2024, 13:05:15",
+    "recorded-date": "12-09-2025, 07:49:30",
     "recorded-content": {
       "source_versions": [
         "Elasticsearch_5.1",
@@ -25,6 +25,10 @@
         "OpenSearch_1.2",
         "OpenSearch_1.3",
         "OpenSearch_2.11",
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19",
         "OpenSearch_2.3",
         "OpenSearch_2.5",
         "OpenSearch_2.7",
@@ -159,37 +163,70 @@
         "OpenSearch_2.7",
         "OpenSearch_2.9",
         "OpenSearch_2.11",
-        "OpenSearch_2.13"
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
       ],
       "source_opensearch_2.11": [
-        "OpenSearch_2.13"
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
+      ],
+      "source_opensearch_2.13": [
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
+      ],
+      "source_opensearch_2.15": [
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
+      ],
+      "source_opensearch_2.17": [
+        "OpenSearch_2.19"
+      ],
+      "source_opensearch_2.19": [
+        "OpenSearch_3.1"
       ],
       "source_opensearch_2.3": [
         "OpenSearch_2.5",
         "OpenSearch_2.7",
         "OpenSearch_2.9",
         "OpenSearch_2.11",
-        "OpenSearch_2.13"
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
       ],
       "source_opensearch_2.5": [
         "OpenSearch_2.7",
         "OpenSearch_2.9",
         "OpenSearch_2.11",
-        "OpenSearch_2.13"
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
       ],
       "source_opensearch_2.7": [
         "OpenSearch_2.9",
         "OpenSearch_2.11",
-        "OpenSearch_2.13"
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
       ],
       "source_opensearch_2.9": [
         "OpenSearch_2.11",
-        "OpenSearch_2.13"
+        "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19"
       ]
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_list_versions": {
-    "recorded-date": "16-07-2024, 13:18:18",
+    "recorded-date": "12-09-2025, 07:47:04",
     "recorded-content": {
       "versions": [
         "Elasticsearch_5.1",
@@ -215,23 +252,29 @@
         "OpenSearch_1.3",
         "OpenSearch_2.11",
         "OpenSearch_2.13",
+        "OpenSearch_2.15",
+        "OpenSearch_2.17",
+        "OpenSearch_2.19",
         "OpenSearch_2.3",
         "OpenSearch_2.5",
         "OpenSearch_2.7",
-        "OpenSearch_2.9"
+        "OpenSearch_2.9",
+        "OpenSearch_3.1"
       ]
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_sql_plugin": {
-    "recorded-date": "03-12-2024, 21:07:16",
+    "recorded-date": "12-09-2025, 07:44:41",
     "recorded-content": {
-      "sql_plugin_installed": true,
       "sql_query_response": {
         "datarows": [
           [
             "I'm just a simple man, trying to make my way in the universe.",
             "Fett",
-            "mandalorian armor",
+            [
+              "mandalorian armor",
+              "tusken culture"
+            ],
             "Boba",
             41
           ]
@@ -265,7 +308,7 @@
     }
   },
   "tests/aws/services/opensearch/test_opensearch.py::TestOpensearchProvider::test_domain_lifecycle": {
-    "recorded-date": "07-07-2025, 23:26:58",
+    "recorded-date": "12-09-2025, 08:04:43",
     "recorded-content": {
       "account-arn": "<account-arn:1>",
       "create-response": {
@@ -273,6 +316,9 @@
           "NaturalLanguageQueryGenerationOptions": {
             "CurrentState": "NOT_ENABLED",
             "DesiredState": "DISABLED"
+          },
+          "S3VectorsEngine": {
+            "Enabled": false
           }
         },
         "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
@@ -344,6 +390,14 @@
           },
           {
             "ActiveValue": "",
+            "Name": "AIMLOptions.S3VectorsEngine",
+            "PendingValue": {
+              "Enabled": false
+            },
+            "ValueType": "STRINGIFIED_JSON"
+          },
+          {
+            "ActiveValue": "",
             "Name": "AdvancedOptions",
             "PendingValue": {
               "override_main_response_version": "false",
@@ -360,6 +414,12 @@
           {
             "ActiveValue": "",
             "Name": "AdvancedSecurityOptions.AnonymousAuthEnabled",
+            "PendingValue": "false",
+            "ValueType": "PLAIN_TEXT"
+          },
+          {
+            "ActiveValue": "",
+            "Name": "AdvancedSecurityOptions.IAMFederationOptions",
             "PendingValue": "false",
             "ValueType": "PLAIN_TEXT"
           },
@@ -582,6 +642,9 @@
           "NaturalLanguageQueryGenerationOptions": {
             "CurrentState": "NOT_ENABLED",
             "DesiredState": "DISABLED"
+          },
+          "S3VectorsEngine": {
+            "Enabled": false
           }
         },
         "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
@@ -680,6 +743,9 @@
             "NaturalLanguageQueryGenerationOptions": {
               "CurrentState": "NOT_ENABLED",
               "DesiredState": "DISABLED"
+            },
+            "S3VectorsEngine": {
+              "Enabled": false
             }
           },
           "Status": {
@@ -883,7 +949,7 @@
                 {
                   "Effect": "Allow",
                   "Principal": {
-                    "AWS": "111111111111"
+                    "AWS": "AIDAWJDXAOVI2A5WATHZF"
                   },
                   "Action": "es:*",
                   "Resource": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>/*"
@@ -963,6 +1029,9 @@
           "NaturalLanguageQueryGenerationOptions": {
             "CurrentState": "NOT_ENABLED",
             "DesiredState": "DISABLED"
+          },
+          "S3VectorsEngine": {
+            "Enabled": false
           }
         },
         "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
@@ -1072,6 +1141,9 @@
           "NaturalLanguageQueryGenerationOptions": {
             "CurrentState": "NOT_ENABLED",
             "DesiredState": "DISABLED"
+          },
+          "S3VectorsEngine": {
+            "Enabled": false
           }
         },
         "ARN": "arn:<partition>:es:<region>:111111111111:domain/<domain-name:1>",
