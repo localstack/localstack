@@ -848,7 +848,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 raise RuntimeError(f"Invalid arguments list value for Fn::Select: '{values}'")
             values_len = len(values)
             index: int = int(args[0])
-            if not isinstance(index, int) or index < 0 or index > values_len:
+            if not isinstance(index, int) or index < 0 or index >= values_len:
                 raise RuntimeError(f"Invalid or out of range index value for Fn::Select: '{index}'")
             selection = values[index]
             return selection

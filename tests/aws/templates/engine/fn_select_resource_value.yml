@@ -1,0 +1,31 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Template that takes a string parameter, creates an SSM parameter by splitting and selecting from it, and outputs the value of the SSM parameter.
+
+Parameters:
+  ListValues:
+    Type: String
+    Description: A string input to be processed.
+    Default: "apple,banana,cherry"
+
+  IndexOfList:
+    Type: String
+    Description: A string input to be processed.
+    Default: "0"
+
+Resources:
+  MySSMParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::Select:
+          - !Ref IndexOfList
+          - Fn::Split:
+              - ","
+              - !Ref ListValues
+
+
+Outputs:
+  SSMParameterValueOutput:
+    Description: The value of the created SSM parameter.
+    Value: !GetAtt MySSMParameter.Value

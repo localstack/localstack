@@ -691,5 +691,11 @@
     "recorded-content": {
       "error-response": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameter InputValue should either have input value or default value"
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_index_list_of_len": {
+    "recorded-date": "14-09-2025, 14:39:02",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template error: Fn::Select  cannot select nonexistent value at index 3"
+    }
   }
 }

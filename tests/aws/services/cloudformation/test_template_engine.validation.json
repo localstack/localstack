@@ -8,6 +8,15 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_cfn_template_with_short_form_fn_sub": {
     "last_validated_date": "2024-06-20T20:41:15+00:00"
   },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_after_deployment": {
+    "last_validated_date": "2025-09-12T17:53:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.26,
+      "call": 0.51,
+      "teardown": 0.0,
+      "total": 0.77
+    }
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_has_intrinsic_function": {
     "last_validated_date": "2025-08-05T18:44:05+00:00",
     "durations_in_seconds": {
@@ -15,6 +24,24 @@
       "call": 10.41,
       "teardown": 4.4,
       "total": 15.04
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_index_list_of_len": {
+    "last_validated_date": "2025-09-14T14:39:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.29,
+      "call": 0.36,
+      "teardown": 0.02,
+      "total": 0.67
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_fn_select_last_element": {
+    "last_validated_date": "2025-09-14T14:28:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.29,
+      "call": 0.5,
+      "teardown": 0.0,
+      "total": 0.79
     }
   },
   "tests/aws/services/cloudformation/test_template_engine.py::TestIntrinsicFunctions::test_get_azs_function": {

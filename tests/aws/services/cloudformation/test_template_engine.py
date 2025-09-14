@@ -285,6 +285,25 @@ class TestIntrinsicFunctions:
 
         snapshot.match("fn-select-fn-map-output", stack.outputs)
 
+    @skip_if_v1_provider
+    @markers.aws.validated
+    def test_fn_select_index_list_of_len(self, snapshot, aws_client, cleanups):
+        template_path = os.path.join(
+            os.path.dirname(__file__), "../../templates/engine/fn_select_resource_value.yml"
+        )
+        template = load_template_file(template_path)
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        with pytest.raises(botocore.exceptions.ClientError) as e:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                TemplateBody=template,
+                ChangeSetName=change_set_name,
+                ChangeSetType="CREATE",
+                Parameters=[{"ParameterKey": "IndexOfList", "ParameterValue": "3"}],
+            )
+        snapshot.match("error", e.value)
+
 
 class TestImports:
     @markers.aws.validated

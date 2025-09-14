@@ -18,6 +18,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocEntityDelta,
     PreprocResource,
 )
+from localstack.services.cloudformation.engine.validations import ValidationError
 
 
 class ChangeSetModelValidator(ChangeSetModelPreproc):
@@ -167,8 +168,14 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
         try:
             # If an argument is a Parameter it should be resolved, any other case, ignore it
             return super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
-        except RuntimeError:
-            return self.visit(node_intrinsic_function.arguments)
+        except RuntimeError as e:
+            delta_args = self.visit(node_intrinsic_function.arguments)
+            if "out of range index" in str(e):
+                raise ValidationError(
+                    f"Template error: Fn::Select  cannot select nonexistent value at index {delta_args.after[0]}"
+                )
+
+            return delta_args
 
     def visit_node_resource(self, node_resource: NodeResource) -> PreprocEntityDelta:
         try:
