@@ -160,7 +160,10 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
             # If an argument is a Parameter it should be resolved, any other case, ignore it
             return super().visit_node_intrinsic_function_fn_split(node_intrinsic_function)
         except RuntimeError:
-            return self.visit(node_intrinsic_function.arguments)
+            delta_args = self.visit(node_intrinsic_function.arguments)
+            if delta_args.after[1] is None:
+                delta_args.after = []
+            return delta_args
 
     def visit_node_intrinsic_function_fn_select(
         self, node_intrinsic_function: NodeIntrinsicFunction
