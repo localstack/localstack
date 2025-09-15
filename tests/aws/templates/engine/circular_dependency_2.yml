@@ -1,0 +1,13 @@
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Ref: MyParameter2
+  MyParameter2:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value:
+        Fn::GetAtt: MyParameter.Value
