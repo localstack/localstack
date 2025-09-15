@@ -1321,7 +1321,7 @@ cases = [
 ]
 
 
-@skip_if_v1_provider("Unsupported in V1 engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 @pytest.mark.parametrize(
     "case",
@@ -1376,7 +1376,7 @@ def test_using_pseudoparameters_in_places(aws_client, snapshot, cleanups, case):
         "$..Changes..ResourceChange.Scope",
     ]
 )
-@skip_if_v1_provider("Not supported in v1")
+@skip_if_legacy_engine()
 def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
     """
     Test the behaviour of deleting a change set after it has been executed
@@ -1444,7 +1444,7 @@ def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
 
 
 @markers.aws.validated
-@skip_if_v1_provider("Unsupported in V1 engine")
+@skip_if_legacy_engine()
 def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
     """
     Fix a bug with trying to access falsy conditions when updating
