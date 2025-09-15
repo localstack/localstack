@@ -14,21 +14,27 @@ The different protocols have many similarities. The class hierarchy is
 designed such that the serializers share as much logic as possible.
 The class hierarchy looks as follows:
 ::
-                                    ┌────────────────────┐
-                                    │ ResponseSerializer │
-                                    └────────────────────┘
-                                         ▲   ▲   ▲   ▲
-                                         │   │   │   └─────────────────────────────────────────────┐
-                 ┌───────────────────────┘   │   └─────────────────────┐                           │
-    ┌────────────┴────────────┐ ┌────────────┴─────────────┐ ┌─────────┴────────────┐ ┌────────────┴─────────────┐
-    │BaseXMLResponseSerializer│ │BaseRestResponseSerializer│ │JSONResponseSerializer│ │BaseCBORResponseSerializer│
-    └─────────────────────────┘ └──────────────────────────┘ └──────────────────────┘ └──────────────────────────┘
-                        ▲    ▲             ▲             ▲              ▲                          ▲
- ┌──────────────────────┴─┐ ┌┴─────────────┴──────────┐ ┌┴──────────────┴──────────┐   ┌───────────┴────────────┐
- │QueryResponseSerializer │ │RestXMLResponseSerializer│ │RestJSONResponseSerializer│   │ CBORResponseSerializer │
- └────────────────────────┘ └─────────────────────────┘ └──────────────────────────┘   └────────────────────────┘
-              ▲
-   ┌──────────┴──────────┐
+                                     ┌────────────────────┐
+                                     │ ResponseSerializer │
+                                     └────────────────────┘
+                                           ▲    ▲    ▲
+                 ┌─────────────────┬───────┘    │    └──────────────┬──────────────────────┐
+    ┌────────────┴────────────┐    │    ┌───────┴──────────────┐    │         ┌────────────┴─────────────┐
+    │BaseXMLResponseSerializer│    │    │JSONResponseSerializer│    │         │BaseCBORResponseSerializer│
+    └─────────────────────────┘    │    └──────────────────────┘    │         └──────────────────────────┘
+       ▲    ▲        ┌─────────────┴────────────┐     ▲       ┌─────┴─────────────────────┐  ▲         ▲
+       │    │        │BaseRestResponseSerializer│     │       │BaseRpcV2ResponseSerializer│  │         │
+       │    │        └──────────────────────────┘     │       └───────────────────────────┘  │         │
+       │    │              ▲              ▲           │                          ▲           │         │
+       │    │              │              │           │                          │           │         │
+       │  ┌─┴──────────────┴────────┐  ┌──┴───────────┴───────────┐   ┌──────────┴───────────┴────┐    │
+       │  │RestXMLResponseSerializer│  │RestJSONResponseSerializer│   │RpcV2CBORResponseSerializer│    │
+       │  └─────────────────────────┘  └──────────────────────────┘   └───────────────────────────┘    │
+ ┌─────┴──────────────────┐                                                                 ┌──────────┴─────────────┐
+ │QueryResponseSerializer │                                                                 │ CBORResponseSerializer │
+ └────────────────────────┘                                                                 └────────────────────────┘
+             ▲
+   ┌─────────┴───────────┐
    │EC2ResponseSerializer│
    └─────────────────────┘
 ::
@@ -49,6 +55,8 @@ The protocols relate to each other in the following ways:
   the HTTP response's header fields.
 * The ``ec2`` protocol is basically similar to the ``query`` protocol with a
   specific error response formatting.
+* The ``smithy-rpc-v2-cbor`` protocol defines a specific way to route request
+  to services via the RPC v2 trait, and encodes its body with the CBOR format.
 
 The serializer classes in this module correspond directly to the different
 protocols. ``#create_serializer`` shows the explicit mapping between the
@@ -62,9 +70,15 @@ The classes are structured as follows:
   and the CBOR serialization respectively.
 * The ``BaseRestResponseSerializer`` contains the logic for the REST
   protocol specifics (i.e. specific HTTP header serializations).
+* The ``BaseRpcV2ResponseSerializer`` contains the logic for the RPC v2
+  protocol specifics (i.e. pretty bare, does not has any specific
+  about body serialization).
 * The ``RestXMLResponseSerializer`` and the ``RestJSONResponseSerializer``
   inherit the ReST specific logic from the ``BaseRestResponseSerializer``
   and the XML / JSON body serialization from their second super class.
+* The ``RpcV2CBORResponseSerializer`` inherits the RPC v2 specific logic
+  from the ``BaseRpcV2ResponseSerializer`` and the CBOR body serialization
+  from its second super class.
 * The ``CBORResponseSerializer`` contains the logic specific to the
   non-official ``cbor`` protocol, mirroring the ``json`` protocol but
   with CBOR encoded body
@@ -1737,9 +1751,9 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
         return response
 
 
-class BaseRpcV2Serializer(ResponseSerializer):
+class BaseRpcV2ResponseSerializer(ResponseSerializer):
     """
-    The BaseRpcV2Serializer performs the basic logic for the RPC V2 response serialization.
+    The BaseRpcV2ResponseSerializer performs the basic logic for the RPC V2 response serialization.
     The only variance between the various RPCv2 protocols is the way the body is serialized for regular responses,
     and the way they will encode exceptions.
     """
@@ -1770,9 +1784,9 @@ class BaseRpcV2Serializer(ResponseSerializer):
         raise NotImplementedError
 
 
-class RpcV2CBORSerializer(BaseRpcV2Serializer, BaseCBORResponseSerializer):
+class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseSerializer):
     """
-    The RpcV2CBORSerializer implements the CBOR body serialization part for the RPC v2 protocol, and implements the
+    The RpcV2CBORResponseSerializer implements the CBOR body serialization part for the RPC v2 protocol, and implements the
     specific exception serialization.
     https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
     """
@@ -2209,7 +2223,7 @@ def create_serializer(
         "rest-json": RestJSONResponseSerializer,
         "rest-xml": RestXMLResponseSerializer,
         "ec2": EC2ResponseSerializer,
-        "smithy-rpc-v2-cbor": RpcV2CBORSerializer,
+        "smithy-rpc-v2-cbor": RpcV2CBORResponseSerializer,
         # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
         #  CBOR handling from JSONResponseParser
         # this is not an "official" protocol defined from the spec, but is derived from ``json``

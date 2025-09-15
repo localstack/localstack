@@ -19,19 +19,18 @@ The class hierarchy looks as follows:
                           │RequestParser│
                           └─────────────┘
                              ▲   ▲   ▲
-           ┌─────────────────┘   │   └────────────────────┬───────────────────────┐
-  ┌────────┴─────────┐ ┌─────────┴───────────┐ ┌──────────┴──────────┐ ┌──────────┴──────────┐
-  │QueryRequestParser│ │BaseRestRequestParser│ │BaseJSONRequestParser│ │BaseCBORRequestParser│
-  └──────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘
-          ▲                    ▲            ▲   ▲           ▲             ▲
-  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │  ┌────────┴────────┐    │
-  │EC2RequestParser│ │RestXMLRequestParser│ │   │  │JSONRequestParser│    │
-  └────────────────┘ └────────────────────┘ │   │  └─────────────────┘    │
+           ┌─────────────────┘   │   └────────────────────┬───────────────────────┬───────────────────────┐
+  ┌────────┴─────────┐ ┌─────────┴───────────┐ ┌──────────┴──────────┐ ┌──────────┴──────────┐ ┌──────────┴───────────┐
+  │QueryRequestParser│ │BaseRestRequestParser│ │BaseJSONRequestParser│ │BaseCBORRequestParser│ │BaseRpcV2RequestParser│
+  └──────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘ └──────────────────────┘
+          ▲                    ▲            ▲   ▲           ▲             ▲             ▲             ▲
+  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │  ┌────────┴────────┐    │         ┌───┴─────────────┴────┐
+  │EC2RequestParser│ │RestXMLRequestParser│ │   │  │JSONRequestParser│    │         │RpcV2CBORRequestParser│
+  └────────────────┘ └────────────────────┘ │   │  └─────────────────┘    │         └──────────────────────┘
                            ┌────────────────┴───┴┐                 ▲      │
                            │RestJSONRequestParser│             ┌───┴──────┴──────┐
                            └─────────────────────┘             │CBORRequestParser│
                                                                └─────────────────┘
-
 ::
 
 The ``RequestParser`` contains the logic that is used among all the
@@ -46,6 +45,8 @@ The classes are structured as follows:
   which is shared among all different protocols.
 * The ``BaseRestRequestParser`` contains the logic for the REST
   protocol specifics (i.e. specific HTTP metadata parsing).
+* The ``BaseRpcV2RequestParser`` contains the logic for the RPC v2
+  protocol specifics (special path routing, no logic about body decoding)
 * The ``BaseJSONRequestParser`` contains the logic for the JSON body
   parsing.
 * The ``BaseCBORRequestParser`` contains the logic for the CBOR body
@@ -56,8 +57,9 @@ The classes are structured as follows:
 * The ``CBORRequestParser`` inherits the ``json``-protocol specific
   logic from the ``JSONRequestParser`` and the CBOR body parsing
   from the ``BaseCBORRequestParser``.
-* The ``QueryRequestParser``, ``RestXMLRequestParser`` and
-``JSONRequestParser`` have a conventional inheritance structure.
+* The ``QueryRequestParser``, ``RestXMLRequestParser``,
+  ``RpcV2CBORRequestParser`` and ``JSONRequestParser`` have a
+  conventional inheritance structure.
 
 The services and their protocols are defined by using AWS's Smithy
 (a language to define services in a - somewhat - protocol-agnostic
