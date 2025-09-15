@@ -1537,3 +1537,21 @@ def test_protocol_selection(protocol):
         arn="string",
         tags={"string": "string"},
     )
+
+
+def test_rpcv2_operation_detection_with_prefix():
+    """
+    Every request for the rpcv2Cbor protocol MUST be sent to a URL with the following form:
+    {prefix?}/service/{serviceName}/operation/{operationName}
+    The Smithy RPCv2 CBOR protocol will only use the last four segments of the URL when routing requests.
+    For example, a service could use a v1 prefix in the URL path, which would not affect the operation a request
+    is routed to: `v1/service/FooService/operation/BarOperation`
+    """
+    request = HttpRequest(
+        method="POST",
+        path="/v1/service/ArcRegionSwitch/operation/TagResource",
+        body=b"\xa2carnfstringdtags\xa1fstringfstring",
+    )
+    parser = create_parser(load_service("arc-region-switch"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "TagResource"

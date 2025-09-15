@@ -1257,6 +1257,9 @@ class BaseRpcV2RequestParser(RequestParser):
     @_handle_exceptions
     def parse(self, request: Request) -> tuple[OperationModel, Any]:
         # see https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+        if request.method != "POST":
+            raise ProtocolParserError("RPC v2 only accepts POST requests.")
+
         headers = request.headers
         if "X-Amz-Target" in headers or "X-Amzn-Target" in headers:
             raise ProtocolParserError(
