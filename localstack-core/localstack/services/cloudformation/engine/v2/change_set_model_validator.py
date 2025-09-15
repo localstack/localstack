@@ -27,6 +27,7 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
     def visit_node_template(self, node_template: NodeTemplate):
         self.visit(node_template.mappings)
         self.visit(node_template.resources)
+        self.visit(node_template.parameters)
 
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
