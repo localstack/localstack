@@ -23,17 +23,15 @@ The class hierarchy looks as follows:
   ┌────────┴─────────┐ ┌─────────┴───────────┐ ┌──────────┴──────────┐ ┌──────────┴──────────┐
   │QueryRequestParser│ │BaseRestRequestParser│ │BaseJSONRequestParser│ │BaseCBORRequestParser│
   └──────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘
-          ▲                    ▲            ▲   ▲           ▲              ▲
-  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │           │              │
-  │EC2RequestParser│ │RestXMLRequestParser│ │   │           │              │
-  └────────────────┘ └────────────────────┘ │   │           │              │
-                           ┌────────────────┴───┴┐ ┌────────┴────────┐     │
-                           │RestJSONRequestParser│ │JSONRequestParser│     │
-                           └─────────────────────┘ └─────────────────┘     │
-                                                                    ▲      │
-                                                                  ┌─┴──────┴────────┐
-                                                                  │CBORRequestParser│
-                                                                  └─────────────────┘
+          ▲                    ▲            ▲   ▲           ▲             ▲
+  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │  ┌────────┴────────┐    │
+  │EC2RequestParser│ │RestXMLRequestParser│ │   │  │JSONRequestParser│    │
+  └────────────────┘ └────────────────────┘ │   │  └─────────────────┘    │
+                           ┌────────────────┴───┴┐                 ▲      │
+                           │RestJSONRequestParser│             ┌───┴──────┴──────┐
+                           └─────────────────────┘             │CBORRequestParser│
+                                                               └─────────────────┘
+
 ::
 
 The ``RequestParser`` contains the logic that is used among all the
