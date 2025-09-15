@@ -1,8 +1,12 @@
+import json
+
+import pytest
+from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 @skip_if_v1_provider("Requires the V2 engine")
@@ -196,3 +200,39 @@ class TestChangeSetFnSelect:
             }
         }
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "select_construct",
+        [
+            {"Fn::Select": ["bad", ["test"]]},
+            {"Fn::Select": [0, 2]},
+            {"Fn::Select": [100, ["test"]]},
+        ],
+        ids=["non-integer-index", "non-list-list", "index-out-of-range"],
+    )
+    def test_invalid_select_index_type(self, snapshot, aws_client, cleanups, select_construct):
+        template = {
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": select_construct,
+                    },
+                },
+            },
+        }
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"stack-{short_uid()}"
+
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                TemplateBody=json.dumps(template),
+            )
+
+        snapshot.match("error", exc_info.value.response)
