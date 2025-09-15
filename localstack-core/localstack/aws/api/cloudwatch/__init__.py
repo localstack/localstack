@@ -16,7 +16,10 @@ AlarmRule = str
 AmazonResourceName = str
 AnomalyDetectorMetricStat = str
 AnomalyDetectorMetricTimezone = str
+AttributeName = str
+AttributeValue = str
 AwsQueryErrorMessage = str
+ContributorId = str
 DashboardArn = str
 DashboardBody = str
 DashboardErrorMessage = str
@@ -136,6 +139,8 @@ class HistoryItemType(StrEnum):
     ConfigurationUpdate = "ConfigurationUpdate"
     StateUpdate = "StateUpdate"
     Action = "Action"
+    AlarmContributorStateUpdate = "AlarmContributorStateUpdate"
+    AlarmContributorAction = "AlarmContributorAction"
 
 
 class MetricStreamOutputFormat(StrEnum):
@@ -300,15 +305,28 @@ class ResourceNotFoundException(ServiceException):
 
 
 Timestamp = datetime
+ContributorAttributes = Dict[AttributeName, AttributeValue]
+
+
+class AlarmContributor(TypedDict, total=False):
+    ContributorId: ContributorId
+    ContributorAttributes: ContributorAttributes
+    StateReason: StateReason
+    StateTransitionedTimestamp: Optional[Timestamp]
+
+
+AlarmContributors = List[AlarmContributor]
 
 
 class AlarmHistoryItem(TypedDict, total=False):
     AlarmName: Optional[AlarmName]
+    AlarmContributorId: Optional[ContributorId]
     AlarmType: Optional[AlarmType]
     Timestamp: Optional[Timestamp]
     HistoryItemType: Optional[HistoryItemType]
     HistorySummary: Optional[HistorySummary]
     HistoryData: Optional[HistoryData]
+    AlarmContributorAttributes: Optional[ContributorAttributes]
 
 
 AlarmHistoryItems = List[AlarmHistoryItem]
@@ -505,8 +523,19 @@ class DeleteMetricStreamOutput(TypedDict, total=False):
     pass
 
 
+class DescribeAlarmContributorsInput(ServiceRequest):
+    AlarmName: AlarmName
+    NextToken: Optional[NextToken]
+
+
+class DescribeAlarmContributorsOutput(TypedDict, total=False):
+    AlarmContributors: AlarmContributors
+    NextToken: Optional[NextToken]
+
+
 class DescribeAlarmHistoryInput(ServiceRequest):
     AlarmName: Optional[AlarmName]
+    AlarmContributorId: Optional[ContributorId]
     AlarmTypes: Optional[AlarmTypes]
     HistoryItemType: Optional[HistoryItemType]
     StartDate: Optional[Timestamp]
@@ -1179,11 +1208,22 @@ class CloudwatchApi:
     ) -> DeleteMetricStreamOutput:
         raise NotImplementedError
 
+    @handler("DescribeAlarmContributors")
+    def describe_alarm_contributors(
+        self,
+        context: RequestContext,
+        alarm_name: AlarmName,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> DescribeAlarmContributorsOutput:
+        raise NotImplementedError
+
     @handler("DescribeAlarmHistory")
     def describe_alarm_history(
         self,
         context: RequestContext,
         alarm_name: AlarmName | None = None,
+        alarm_contributor_id: ContributorId | None = None,
         alarm_types: AlarmTypes | None = None,
         history_item_type: HistoryItemType | None = None,
         start_date: Timestamp | None = None,
