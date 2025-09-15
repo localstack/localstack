@@ -152,3 +152,30 @@ def test_validate_invalid_json_template_should_fail(aws_client, snapshot):
         aws_client.cloudformation.validate_template(TemplateBody=invalid_json)
 
     snapshot.match("validate-invalid-json", ctx.value.response)
+
+
+@markers.aws.validated
+def test_get_template_missing_resources_stack(aws_client, snapshot):
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template(StackName="does-not-exist")
+    snapshot.match("stack-error", exc_info.value.response)
+
+
+@skip_if_v1_provider("Not supported in legacy engine")
+@markers.aws.validated
+def test_get_template_missing_resources_change_set(aws_client, snapshot):
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template(ChangeSetName="does-not-exist")
+    snapshot.match("change-set-error", exc_info.value.response)
+
+
+@skip_if_v1_provider("Not supported in legacy engine")
+@markers.aws.validated
+def test_get_template_missing_resources_change_set_id(aws_client, snapshot):
+    change_set_id = (
+        "arn:aws:cloudformation:us-east-1:000000000000:changeSet/change-set-926829fe/d065e78c"
+    )
+    snapshot.add_transformer(snapshot.transform.regex(change_set_id, "<change-set-id>"))
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template(ChangeSetName=change_set_id)
+    snapshot.match("change-set-error", exc_info.value.response)
