@@ -1,11 +1,11 @@
 import json
 
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
 
-pytestmark = skip_if_v1_provider(reason="Requires the V2 engine")
+pytestmark = skip_if_legacy_engine(reason="Requires the V2 engine")
 
 
 @markers.aws.validated

@@ -3,12 +3,12 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 
 
-@skip_if_v1_provider("Not implemented for v1")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_describe_non_existent_stack(aws_client, deploy_cfn_template, snapshot):
     with pytest.raises(ClientError) as err:
@@ -35,7 +35,7 @@ def test_describe_non_existent_resource(aws_client, deploy_cfn_template, snapsho
     snapshot.match("error", err.value)
 
 
-@skip_if_v1_provider("Not implemented for v1")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
     template = {

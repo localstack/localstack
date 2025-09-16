@@ -12,7 +12,7 @@ from tests.aws.services.cloudformation.api.test_stacks import (
     MINIMAL_TEMPLATE,
 )
 from tests.aws.services.cloudformation.conftest import (
-    skip_if_v1_provider,
+    skip_if_legacy_engine,
     skipped_v2_items,
 )
 
@@ -486,7 +486,7 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
     snapshot.match("exception", ex.value)
 
 
-@skip_if_v1_provider("Not supported in V1 engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_create_change_set_no_changes(
     snapshot,
@@ -681,7 +681,7 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
-@skip_if_v1_provider("Unsupported in v1 engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
@@ -1321,7 +1321,7 @@ cases = [
 ]
 
 
-@skip_if_v1_provider("Unsupported in V1 engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 @pytest.mark.parametrize(
     "case",
@@ -1376,7 +1376,7 @@ def test_using_pseudoparameters_in_places(aws_client, snapshot, cleanups, case):
         "$..Changes..ResourceChange.Scope",
     ]
 )
-@skip_if_v1_provider("Not supported in v1")
+@skip_if_legacy_engine()
 def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
     """
     Test the behaviour of deleting a change set after it has been executed
@@ -1444,7 +1444,7 @@ def test_describe_changeset_after_delete(aws_client, cleanups, snapshot):
 
 
 @markers.aws.validated
-@skip_if_v1_provider("Unsupported in V1 engine")
+@skip_if_legacy_engine()
 def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
     """
     Fix a bug with trying to access falsy conditions when updating

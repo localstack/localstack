@@ -5,7 +5,7 @@ import textwrap
 
 import pytest
 from botocore.exceptions import ClientError
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 from localstack.utils.common import load_file
@@ -34,7 +34,7 @@ def test_get_template_summary(deploy_cfn_template, snapshot, aws_client):
 
 
 @markers.aws.validated
-@skip_if_v1_provider("Not supported in legacy engine")
+@skip_if_legacy_engine()
 def test_get_template_summary_non_executed_change_set(aws_client, snapshot, cleanups):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
@@ -161,7 +161,7 @@ def test_get_template_missing_resources_stack(aws_client, snapshot):
     snapshot.match("stack-error", exc_info.value.response)
 
 
-@skip_if_v1_provider("Not supported in legacy engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_get_template_missing_resources_change_set(aws_client, snapshot):
     with pytest.raises(ClientError) as exc_info:
@@ -169,7 +169,7 @@ def test_get_template_missing_resources_change_set(aws_client, snapshot):
     snapshot.match("change-set-error", exc_info.value.response)
 
 
-@skip_if_v1_provider("Not supported in legacy engine")
+@skip_if_legacy_engine()
 @markers.aws.validated
 def test_get_template_missing_resources_change_set_id(aws_client, snapshot):
     change_set_id = (

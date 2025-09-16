@@ -2,7 +2,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
-from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -70,7 +70,7 @@ class TestCloudFormationMappings:
         snapshot.match("mapping_nonexisting_key_exc", e.value.response)
 
     @markers.aws.validated
-    @skip_if_v1_provider("V1 provider is not in parity with AWS")
+    @skip_if_legacy_engine()
     def test_async_mapping_error_first_level_v2(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
         topic_name = f"test-topic-{short_uid()}"
@@ -97,7 +97,7 @@ class TestCloudFormationMappings:
         snapshot.match("error", exc_info.value)
 
     @markers.aws.validated
-    @skip_if_v1_provider("V1 provider is not in parity with AWS")
+    @skip_if_legacy_engine()
     def test_async_mapping_error_second_level_v2(self, aws_client, snapshot):
         """
         Similar to the `test_async_mapping_error_first_level` test above, but
