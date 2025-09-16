@@ -15,6 +15,7 @@ from localstack.aws.api.cloudformation import (
     ChangeSetNameOrId,
     ChangeSetNotFoundException,
     ChangeSetStatus,
+    ChangeSetSummary,
     ChangeSetType,
     ClientRequestToken,
     CreateChangeSetInput,
@@ -46,6 +47,7 @@ from localstack.aws.api.cloudformation import (
     IncludePropertyValues,
     InsufficientCapabilitiesException,
     InvalidChangeSetStatusException,
+    ListChangeSetsOutput,
     ListExportsOutput,
     ListStackResourcesOutput,
     ListStacksOutput,
@@ -723,6 +725,44 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         if change_set.resolved_parameters:
             result["Parameters"] = self._render_resolved_parameters(change_set.resolved_parameters)
         return result
+
+    @handler("ListChangeSets")
+    def list_change_sets(
+        self,
+        context: RequestContext,
+        stack_name: StackNameOrId,
+        next_token: NextToken = None,
+        **kwargs,
+    ) -> ListChangeSetsOutput:
+        store = get_cloudformation_store(account_id=context.account_id, region_name=context.region)
+        stack = find_stack_v2(store, stack_name)
+        if not stack:
+            raise StackNotFoundError(stack_name)
+        summaries = []
+        for change_set_id in stack.change_set_ids:
+            change_set = store.change_sets[change_set_id]
+            if (
+                change_set.status != ChangeSetStatus.CREATE_COMPLETE
+                or change_set.execution_status != ExecutionStatus.AVAILABLE
+            ):
+                continue
+
+            summaries.append(
+                ChangeSetSummary(
+                    StackId=change_set.stack.stack_id,
+                    StackName=change_set.stack.stack_name,
+                    ChangeSetId=change_set_id,
+                    ChangeSetName=change_set.change_set_name,
+                    ExecutionStatus=change_set.execution_status,
+                    Status=change_set.status,
+                    StatusReason=change_set.status_reason,
+                    CreationTime=change_set.creation_time,
+                    # mocked information
+                    IncludeNestedStacks=False,
+                )
+            )
+
+        return ListChangeSetsOutput(Summaries=summaries)
 
     @handler("DeleteChangeSet")
     def delete_change_set(
