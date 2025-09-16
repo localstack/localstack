@@ -593,6 +593,15 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     ) -> PreprocEntityDelta:
         # TODO: validate the return value according to the spec.
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+
+        if (
+            not is_nothing(arguments_delta.after)
+            and arguments_delta.after[0] in self.dependency_stack
+        ):
+            raise ValidationError(
+                f"Circular dependency between resources: [{arguments_delta.after[0]}]"
+            )
+
         before_arguments: Maybe[str | list[str]] = arguments_delta.before
         after_arguments: Maybe[str | list[str]] = arguments_delta.after
 
@@ -999,6 +1008,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
     def visit_node_depends_on(self, node_depends_on: NodeDependsOn) -> PreprocEntityDelta:
         array_identifiers_delta = self.visit(node_depends_on.depends_on)
+
+        for x in array_identifiers_delta.after:
+            if x in self.dependency_stack:
+                raise ValidationError(f"Circular dependency between resources: [{x}]")
+
+        self.dependency_stack.append(array_identifiers_delta.after)
+
         return array_identifiers_delta
 
     def visit_node_condition(self, node_condition: NodeCondition) -> PreprocEntityDelta:
@@ -1046,6 +1062,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return reference_delta
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+
+        if not is_nothing(arguments_delta.after) and arguments_delta.after in self.dependency_stack:
+            dependency_stack_str = ",".join(self.dependency_stack)
+            raise ValidationError(
+                f"Circular dependency between resources: [{dependency_stack_str}]"
+            )
+
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,
@@ -1131,6 +1154,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             after = after_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
+    dependency_stack = []
+
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
@@ -1138,6 +1163,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             raise ValidationError(
                 f"Template format error: Resource name {node_resource.name} is non alphanumeric."
             )
+
+        self.dependency_stack = [node_resource.name]
+
         change_type = node_resource.change_type
         condition_before = Nothing
         condition_after = Nothing

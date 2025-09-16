@@ -3,4 +3,7 @@ Resources:
     Type: AWS::SSM::Parameter
     Properties:
       Type: String
-      Value: !Ref MyParameter
+      Value: test
+#      Value: !Ref MyParameter
+#      Value: !GetAtt MyParameter.Value
+#    DependsOn: MyParameter
