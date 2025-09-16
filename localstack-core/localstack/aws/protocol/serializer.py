@@ -95,6 +95,7 @@ be sent back to the calling client.
 import abc
 import base64
 import copy
+import datetime
 import functools
 import json
 import logging
@@ -104,7 +105,6 @@ import struct
 from abc import ABC
 from binascii import crc32
 from collections.abc import Iterable, Iterator
-from datetime import datetime
 from email.utils import formatdate
 from struct import pack
 from typing import IO, Any
@@ -538,7 +538,7 @@ class ResponseSerializer(abc.ABC):
     # Some extra utility methods subclasses can use.
 
     @staticmethod
-    def _timestamp_iso8601(value: datetime) -> str:
+    def _timestamp_iso8601(value: datetime.datetime) -> str:
         if value.microsecond > 0:
             timestamp_format = ISO8601_MICRO
         else:
@@ -546,15 +546,17 @@ class ResponseSerializer(abc.ABC):
         return value.strftime(timestamp_format)
 
     @staticmethod
-    def _timestamp_unixtimestamp(value: datetime) -> float:
+    def _timestamp_unixtimestamp(value: datetime.datetime) -> float:
         return value.timestamp()
 
-    def _timestamp_rfc822(self, value: datetime) -> str:
-        if isinstance(value, datetime):
+    def _timestamp_rfc822(self, value: datetime.datetime) -> str:
+        if isinstance(value, datetime.datetime):
             value = self._timestamp_unixtimestamp(value)
         return formatdate(value, usegmt=True)
 
-    def _convert_timestamp_to_str(self, value: int | str | datetime, timestamp_format=None) -> str:
+    def _convert_timestamp_to_str(
+        self, value: int | str | datetime.datetime, timestamp_format=None
+    ) -> str:
         if timestamp_format is None:
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
@@ -1440,6 +1442,18 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
 
 
 class BaseCBORResponseSerializer(ResponseSerializer):
+    """
+    The ``BaseCBORResponseSerializer`` performs the basic logic for the CBOR response serialization.
+
+    There are two types of map/list in CBOR, indefinite length types and "defined" ones:
+    You can use the `\xbf` byte marker to indicate a map with indefinite length, then `\xff` to indicate the end
+     of the map.
+    You can also use, for example, `\xa4` to indicate a map with exactly 4 things in it, so `\xff` is not
+    required at the end.
+    AWS, for both Kinesis and `smithy-rpc-v2-cbor` services, is using indefinite data structures when returning
+    responses.
+    """
+
     SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
 
     UNSIGNED_INT_MAJOR_TYPE = 0
@@ -1450,6 +1464,10 @@ class BaseCBORResponseSerializer(ResponseSerializer):
     MAP_MAJOR_TYPE = 5
     TAG_MAJOR_TYPE = 6
     FLOAT_AND_SIMPLE_MAJOR_TYPE = 7
+
+    INDEFINITE_ITEM_ADDITIONAL_INFO = 31
+    BREAK_CODE = b"\xff"
+    USE_INDEFINITE_DATA_STRUCTURE = True
 
     def _serialize_data_item(
         self, serialized: bytearray, value: Any, shape: Shape | None, name: str | None = None
@@ -1519,31 +1537,33 @@ class BaseCBORResponseSerializer(ResponseSerializer):
             serialized.extend(initial_byte + length.to_bytes(num_bytes, "big") + encoded)
 
     def _serialize_type_list(
-        self, serialized: bytearray, value: str, shape: Shape | None, name: str | None = None
+        self, serialized: bytearray, value: list, shape: Shape | None, name: str | None = None
     ) -> None:
-        length = len(value)
-        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
-        initial_byte = self._get_initial_byte(self.LIST_MAJOR_TYPE, additional_info)
-        if num_bytes == 0:
-            serialized.extend(initial_byte)
-        else:
-            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big"))
+        initial_bytes, closing_bytes = self._get_bytes_for_data_structure(
+            value, self.LIST_MAJOR_TYPE
+        )
+        serialized.extend(initial_bytes)
+
         for item in value:
             self._serialize_data_item(serialized, item, shape.member)
+
+        if closing_bytes is not None:
+            serialized.extend(closing_bytes)
 
     def _serialize_type_map(
         self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
     ) -> None:
-        length = len(value)
-        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
-        initial_byte = self._get_initial_byte(self.MAP_MAJOR_TYPE, additional_info)
-        if num_bytes == 0:
-            serialized.extend(initial_byte)
-        else:
-            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big"))
+        initial_bytes, closing_bytes = self._get_bytes_for_data_structure(
+            value, self.MAP_MAJOR_TYPE
+        )
+        serialized.extend(initial_bytes)
+
         for key_item, item in value.items():
             self._serialize_data_item(serialized, key_item, shape.key)
             self._serialize_data_item(serialized, item, shape.value)
+
+        if closing_bytes is not None:
+            serialized.extend(closing_bytes)
 
     def _serialize_type_structure(
         self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
@@ -1555,13 +1575,10 @@ class BaseCBORResponseSerializer(ResponseSerializer):
         # Remove `None` values from the dictionary
         value = {k: v for k, v in value.items() if v is not None}
 
-        map_length = len(value)
-        additional_info, num_bytes = self._get_additional_info_and_num_bytes(map_length)
-        initial_byte = self._get_initial_byte(self.MAP_MAJOR_TYPE, additional_info)
-        if num_bytes == 0:
-            serialized.extend(initial_byte)
-        else:
-            serialized.extend(initial_byte + map_length.to_bytes(num_bytes, "big"))
+        initial_bytes, closing_bytes = self._get_bytes_for_data_structure(
+            value, self.MAP_MAJOR_TYPE
+        )
+        serialized.extend(initial_bytes)
 
         members = shape.members
         for member_key, member_value in value.items():
@@ -1572,25 +1589,29 @@ class BaseCBORResponseSerializer(ResponseSerializer):
                 self._serialize_type_string(serialized, member_key, None, None)
                 self._serialize_data_item(serialized, member_value, member_shape)
 
+        if closing_bytes is not None:
+            serialized.extend(closing_bytes)
+
     def _serialize_type_timestamp(
         self,
         serialized: bytearray,
-        value: int | str | datetime,
+        value: int | str | datetime.datetime,
         shape: Shape | None,
         name: str | None = None,
     ) -> None:
-        timestamp = int(self._convert_timestamp_to_str(value))
+        # https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html#timestamp-type-serialization
         tag = 1  # Use tag 1 for unix timestamp
         initial_byte = self._get_initial_byte(self.TAG_MAJOR_TYPE, tag)
         serialized.extend(initial_byte)  # Tagging the timestamp
-        additional_info, num_bytes = self._get_additional_info_and_num_bytes(timestamp)
 
-        if num_bytes == 0:
-            initial_byte = self._get_initial_byte(self.UNSIGNED_INT_MAJOR_TYPE, timestamp)
-            serialized.extend(initial_byte)
-        else:
-            initial_byte = self._get_initial_byte(self.UNSIGNED_INT_MAJOR_TYPE, additional_info)
-            serialized.extend(initial_byte + timestamp.to_bytes(num_bytes, "big"))
+        # we encode the timestamp as a double, like the Go SDK
+        # https://github.com/aws/aws-sdk-go-v2/blob/5d7c17325a2581afae4455c150549174ebfd9428/internal/protocoltest/smithyrpcv2cbor/serializers.go#L664-L669
+        # Currently, the Botocore serializer using unsigned integers, but it does not conform to the Smithy specs:
+        # > This protocol uses epoch-seconds, also known as Unix timestamps, with millisecond
+        # > (1/1000th of a second) resolution.
+        timestamp = float(self._convert_timestamp_to_str(value))
+        initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, 27)
+        serialized.extend(initial_byte + struct.pack(">d", timestamp))
 
     def _serialize_type_float(
         self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
@@ -1668,6 +1689,21 @@ class BaseCBORResponseSerializer(ResponseSerializer):
             return initial_byte + struct.pack(">H", 0xFC00)
         elif math.isnan(value):
             return initial_byte + struct.pack(">H", 0x7E00)
+
+    def _get_bytes_for_data_structure(
+        self, value: list | dict, major_type: int
+    ) -> tuple[bytes, bytes | None]:
+        if self.USE_INDEFINITE_DATA_STRUCTURE:
+            additional_info = self.INDEFINITE_ITEM_ADDITIONAL_INFO
+            return self._get_initial_byte(major_type, additional_info), self.BREAK_CODE
+        else:
+            length = len(value)
+            additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+            initial_byte = self._get_initial_byte(major_type, additional_info)
+            if num_bytes != 0:
+                initial_byte = initial_byte + length.to_bytes(num_bytes, "big")
+
+            return initial_byte, None
 
 
 class CBORResponseSerializer(BaseCBORResponseSerializer):
@@ -1793,7 +1829,6 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
 
     # the Smithy spec defines that only `application/cbor` is supported for RPC v2 CBOR
     SUPPORTED_MIME_TYPES = [APPLICATION_CBOR]
-    # TODO: check the timestamp format for RpcV2CBOR, which might be different than Kinesis CBOR
     TIMESTAMP_FORMAT = "unixtimestamp"
 
     def _serialize_body_params(
@@ -2025,7 +2060,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         root.attrib["xmlns"] = self.XML_NAMESPACE
 
     @staticmethod
-    def _timestamp_iso8601(value: datetime) -> str:
+    def _timestamp_iso8601(value: datetime.datetime) -> str:
         """
         This is very specific to S3, S3 returns an ISO8601 timestamp but with milliseconds always set to 000
         Some SDKs are very picky about the length

@@ -1203,7 +1203,7 @@ class CBORRequestParser(BaseCBORRequestParser, JSONRequestParser):
     it for now.
     """
 
-    # timestamp format is different from traditional CBOR
+    # timestamp format is different from traditional CBOR, and is encoded as a milliseconds integer
     TIMESTAMP_FORMAT = "unixtimestampmillis"
 
     def _do_parse(
