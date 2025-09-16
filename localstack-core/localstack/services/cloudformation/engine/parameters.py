@@ -19,7 +19,7 @@ Documentation extracted from AWS docs (https://docs.aws.amazon.com/AWSCloudForma
 """
 
 import logging
-from typing import Literal, Optional, TypedDict
+from typing import Literal, TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -76,7 +76,7 @@ def resolve_parameters(
     :param old_parameters: The old parameters from the previous stack deployment, if available
     :return: a copy of new_parameters with resolved values
     """
-    resolved_parameters = dict()
+    resolved_parameters = {}
 
     # populate values for every parameter declared in the template
     for pm in parameter_declarations.values():
@@ -179,8 +179,8 @@ def convert_stack_parameters_to_dict(in_params: list[Parameter] | None) -> dict[
 class LegacyParameterProperties(TypedDict):
     Value: str
     ParameterType: str
-    ParameterValue: Optional[str]
-    ResolvedValue: Optional[str]
+    ParameterValue: str | None
+    ResolvedValue: str | None
 
 
 class LegacyParameter(TypedDict):

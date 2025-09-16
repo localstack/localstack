@@ -2,14 +2,8 @@ from datetime import datetime
 from enum import StrEnum
 from typing import List, Optional, TypedDict
 
-from localstack.aws.api import (
-    RequestContext,
-    ServiceRequest,
-    handler,
-)
-from localstack.aws.api import (
-    ServiceException as ServiceException,
-)
+from localstack.aws.api import RequestContext, ServiceRequest, handler
+from localstack.aws.api import ServiceException as ServiceException
 
 AccountID = str
 AddressMaxResults = int
@@ -31,6 +25,7 @@ BundleId = str
 BurstablePerformanceFlag = bool
 CancelCapacityReservationFleetErrorCode = str
 CancelCapacityReservationFleetErrorMessage = str
+CapacityBlockId = str
 CapacityReservationFleetId = str
 CapacityReservationId = str
 CarrierGatewayId = str
@@ -67,6 +62,8 @@ DescribeAddressTransfersMaxResults = int
 DescribeByoipCidrsMaxResults = int
 DescribeCapacityBlockExtensionOfferingsMaxResults = int
 DescribeCapacityBlockOfferingsMaxResults = int
+DescribeCapacityBlockStatusMaxResults = int
+DescribeCapacityBlocksMaxResults = int
 DescribeCapacityReservationBillingRequestsRequestMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
 DescribeCapacityReservationsMaxResults = int
@@ -86,6 +83,9 @@ DescribeFpgaImagesMaxResults = int
 DescribeFutureCapacityMaxResults = int
 DescribeHostReservationsMaxResults = int
 DescribeIamInstanceProfileAssociationsMaxResults = int
+DescribeImageReferencesMaxResults = int
+DescribeImageUsageReportEntriesMaxResults = int
+DescribeImageUsageReportsMaxResults = int
 DescribeInstanceCreditSpecificationsMaxResults = int
 DescribeInstanceImageMetadataMaxResults = int
 DescribeInstanceTopologyMaxResults = int
@@ -173,6 +173,11 @@ IamInstanceProfileAssociationId = str
 ImageId = str
 ImageProvider = str
 ImageProviderRequest = str
+ImageUsageReportId = str
+ImageUsageReportState = str
+ImageUsageReportStateReason = str
+ImageUsageResourceTypeName = str
+ImageUsageResourceTypeOptionValue = str
 ImportImageTaskId = str
 ImportManifestUrl = str
 ImportSnapshotTaskId = str
@@ -238,6 +243,7 @@ MaxNetworkInterfaces = int
 MaxResults = int
 MaxResultsParam = int
 MaximumBandwidthInMbps = int
+MaximumEbsAttachments = int
 MaximumEfaInterfaces = int
 MaximumEnaQueueCount = int
 MaximumEnaQueueCountPerInterface = int
@@ -270,6 +276,7 @@ NeuronDeviceMemorySize = int
 NeuronDeviceName = str
 NextToken = str
 NitroTpmSupportedVersionType = str
+OdbNetworkArn = str
 OfferingId = str
 OutpostArn = str
 OutpostLagId = str
@@ -300,6 +307,7 @@ ReservedInstancesModificationId = str
 ReservedInstancesOfferingId = str
 ResourceArn = str
 ResourceConfigurationArn = str
+ResourceTypeOptionValue = str
 RestoreSnapshotTierRequestTemporaryRestoreDays = int
 ResultRange = int
 RetentionPeriodRequestDays = int
@@ -545,6 +553,11 @@ class AssociationStatusCode(StrEnum):
     disassociated = "disassociated"
 
 
+class AttachmentLimitType(StrEnum):
+    shared = "shared"
+    dedicated = "dedicated"
+
+
 class AttachmentStatus(StrEnum):
     attaching = "attaching"
     attached = "attached"
@@ -678,6 +691,23 @@ class CapacityBlockExtensionStatus(StrEnum):
     payment_succeeded = "payment-succeeded"
 
 
+class CapacityBlockInterconnectStatus(StrEnum):
+    ok = "ok"
+    impaired = "impaired"
+    insufficient_data = "insufficient-data"
+
+
+class CapacityBlockResourceState(StrEnum):
+    active = "active"
+    expired = "expired"
+    unavailable = "unavailable"
+    cancelled = "cancelled"
+    failed = "failed"
+    scheduled = "scheduled"
+    payment_pending = "payment-pending"
+    payment_failed = "payment-failed"
+
+
 class CapacityReservationBillingRequestStatus(StrEnum):
     pending = "pending"
     accepted = "accepted"
@@ -743,6 +773,7 @@ class CapacityReservationState(StrEnum):
     assessing = "assessing"
     delayed = "delayed"
     unsupported = "unsupported"
+    unavailable = "unavailable"
 
 
 class CapacityReservationTenancy(StrEnum):
@@ -971,6 +1002,9 @@ class Ec2InstanceConnectEndpointState(StrEnum):
     delete_in_progress = "delete-in-progress"
     delete_complete = "delete-complete"
     delete_failed = "delete-failed"
+    update_in_progress = "update-in-progress"
+    update_complete = "update-complete"
+    update_failed = "update-failed"
 
 
 class EkPubKeyFormat(StrEnum):
@@ -1001,6 +1035,12 @@ class EnaSupport(StrEnum):
 class EndDateType(StrEnum):
     unlimited = "unlimited"
     limited = "limited"
+
+
+class EndpointIpAddressType(StrEnum):
+    ipv4 = "ipv4"
+    ipv6 = "ipv6"
+    dual_stack = "dual-stack"
 
 
 class EphemeralNvmeSupport(StrEnum):
@@ -1230,6 +1270,19 @@ class ImageBlockPublicAccessEnabledState(StrEnum):
     block_new_sharing = "block-new-sharing"
 
 
+class ImageReferenceOptionName(StrEnum):
+    state_name = "state-name"
+    version_depth = "version-depth"
+
+
+class ImageReferenceResourceType(StrEnum):
+    ec2_Instance = "ec2:Instance"
+    ec2_LaunchTemplate = "ec2:LaunchTemplate"
+    ssm_Parameter = "ssm:Parameter"
+    imagebuilder_ImageRecipe = "imagebuilder:ImageRecipe"
+    imagebuilder_ContainerRecipe = "imagebuilder:ContainerRecipe"
+
+
 class ImageState(StrEnum):
     pending = "pending"
     available = "available"
@@ -1249,6 +1302,11 @@ class ImageTypeValues(StrEnum):
 
 class ImdsSupportValues(StrEnum):
     v2_0 = "v2.0"
+
+
+class InitializationType(StrEnum):
+    default = "default"
+    provisioned_rate = "provisioned-rate"
 
 
 class InstanceAttributeName(StrEnum):
@@ -2310,6 +2368,77 @@ class InstanceType(StrEnum):
     r8gd_48xlarge = "r8gd.48xlarge"
     r8gd_metal_24xl = "r8gd.metal-24xl"
     r8gd_metal_48xl = "r8gd.metal-48xl"
+    c8gn_medium = "c8gn.medium"
+    c8gn_large = "c8gn.large"
+    c8gn_xlarge = "c8gn.xlarge"
+    c8gn_2xlarge = "c8gn.2xlarge"
+    c8gn_4xlarge = "c8gn.4xlarge"
+    c8gn_8xlarge = "c8gn.8xlarge"
+    c8gn_12xlarge = "c8gn.12xlarge"
+    c8gn_16xlarge = "c8gn.16xlarge"
+    c8gn_24xlarge = "c8gn.24xlarge"
+    c8gn_48xlarge = "c8gn.48xlarge"
+    c8gn_metal_24xl = "c8gn.metal-24xl"
+    c8gn_metal_48xl = "c8gn.metal-48xl"
+    f2_6xlarge = "f2.6xlarge"
+    p6e_gb200_36xlarge = "p6e-gb200.36xlarge"
+    g6f_large = "g6f.large"
+    g6f_xlarge = "g6f.xlarge"
+    g6f_2xlarge = "g6f.2xlarge"
+    g6f_4xlarge = "g6f.4xlarge"
+    gr6f_4xlarge = "gr6f.4xlarge"
+    p5_4xlarge = "p5.4xlarge"
+    r8i_large = "r8i.large"
+    r8i_xlarge = "r8i.xlarge"
+    r8i_2xlarge = "r8i.2xlarge"
+    r8i_4xlarge = "r8i.4xlarge"
+    r8i_8xlarge = "r8i.8xlarge"
+    r8i_12xlarge = "r8i.12xlarge"
+    r8i_16xlarge = "r8i.16xlarge"
+    r8i_24xlarge = "r8i.24xlarge"
+    r8i_32xlarge = "r8i.32xlarge"
+    r8i_48xlarge = "r8i.48xlarge"
+    r8i_96xlarge = "r8i.96xlarge"
+    r8i_metal_48xl = "r8i.metal-48xl"
+    r8i_metal_96xl = "r8i.metal-96xl"
+    r8i_flex_large = "r8i-flex.large"
+    r8i_flex_xlarge = "r8i-flex.xlarge"
+    r8i_flex_2xlarge = "r8i-flex.2xlarge"
+    r8i_flex_4xlarge = "r8i-flex.4xlarge"
+    r8i_flex_8xlarge = "r8i-flex.8xlarge"
+    r8i_flex_12xlarge = "r8i-flex.12xlarge"
+    r8i_flex_16xlarge = "r8i-flex.16xlarge"
+    m8i_large = "m8i.large"
+    m8i_xlarge = "m8i.xlarge"
+    m8i_2xlarge = "m8i.2xlarge"
+    m8i_4xlarge = "m8i.4xlarge"
+    m8i_8xlarge = "m8i.8xlarge"
+    m8i_12xlarge = "m8i.12xlarge"
+    m8i_16xlarge = "m8i.16xlarge"
+    m8i_24xlarge = "m8i.24xlarge"
+    m8i_32xlarge = "m8i.32xlarge"
+    m8i_48xlarge = "m8i.48xlarge"
+    m8i_96xlarge = "m8i.96xlarge"
+    m8i_metal_48xl = "m8i.metal-48xl"
+    m8i_metal_96xl = "m8i.metal-96xl"
+    m8i_flex_large = "m8i-flex.large"
+    m8i_flex_xlarge = "m8i-flex.xlarge"
+    m8i_flex_2xlarge = "m8i-flex.2xlarge"
+    m8i_flex_4xlarge = "m8i-flex.4xlarge"
+    m8i_flex_8xlarge = "m8i-flex.8xlarge"
+    m8i_flex_12xlarge = "m8i-flex.12xlarge"
+    m8i_flex_16xlarge = "m8i-flex.16xlarge"
+    i8ge_large = "i8ge.large"
+    i8ge_xlarge = "i8ge.xlarge"
+    i8ge_2xlarge = "i8ge.2xlarge"
+    i8ge_3xlarge = "i8ge.3xlarge"
+    i8ge_6xlarge = "i8ge.6xlarge"
+    i8ge_12xlarge = "i8ge.12xlarge"
+    i8ge_18xlarge = "i8ge.18xlarge"
+    i8ge_24xlarge = "i8ge.24xlarge"
+    i8ge_48xlarge = "i8ge.48xlarge"
+    i8ge_metal_24xl = "i8ge.metal-24xl"
+    i8ge_metal_48xl = "i8ge.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -3074,6 +3203,7 @@ class ResourceType(StrEnum):
     fpga_image = "fpga-image"
     host_reservation = "host-reservation"
     image = "image"
+    image_usage_report = "image-usage-report"
     import_image_task = "import-image-task"
     import_snapshot_task = "import-snapshot-task"
     instance = "instance"
@@ -3153,6 +3283,7 @@ class ResourceType(StrEnum):
     instance_connect_endpoint = "instance-connect-endpoint"
     verified_access_endpoint_target = "verified-access-endpoint-target"
     ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
+    capacity_block = "capacity-block"
     mac_modification_task = "mac-modification-task"
 
 
@@ -3165,6 +3296,7 @@ class RouteOrigin(StrEnum):
     CreateRouteTable = "CreateRouteTable"
     CreateRoute = "CreateRoute"
     EnableVgwRoutePropagation = "EnableVgwRoutePropagation"
+    Advertisement = "Advertisement"
 
 
 class RouteServerAssociationState(StrEnum):
@@ -3249,6 +3381,7 @@ class RouteServerState(StrEnum):
 class RouteState(StrEnum):
     active = "active"
     blackhole = "blackhole"
+    filtered = "filtered"
 
 
 class RouteTableAssociationStateCode(StrEnum):
@@ -3515,6 +3648,12 @@ class TrafficDirection(StrEnum):
     egress = "egress"
 
 
+class TrafficIpAddressType(StrEnum):
+    ipv4 = "ipv4"
+    ipv6 = "ipv6"
+    dual_stack = "dual-stack"
+
+
 class TrafficMirrorFilterRuleField(StrEnum):
     destination_port_range = "destination-port-range"
     source_port_range = "source-port-range"
@@ -3568,6 +3707,7 @@ class TransitGatewayAttachmentResourceType(StrEnum):
     connect = "connect"
     peering = "peering"
     tgw_peering = "tgw-peering"
+    network_function = "network-function"
 
 
 class TransitGatewayAttachmentState(StrEnum):
@@ -3786,11 +3926,13 @@ class VolumeStatusInfoStatus(StrEnum):
     ok = "ok"
     impaired = "impaired"
     insufficient_data = "insufficient-data"
+    warning = "warning"
 
 
 class VolumeStatusName(StrEnum):
     io_enabled = "io-enabled"
     io_performance = "io-performance"
+    initialization_state = "initialization-state"
 
 
 class VolumeType(StrEnum):
@@ -5066,6 +5208,7 @@ class AssociateRouteServerResult(TypedDict, total=False):
 
 class AssociateRouteTableRequest(ServiceRequest):
     GatewayId: Optional[RouteGatewayId]
+    PublicIpv4Pool: Optional[Ipv4PoolEc2Id]
     DryRun: Optional[Boolean]
     SubnetId: Optional[SubnetId]
     RouteTableId: RouteTableId
@@ -5692,8 +5835,10 @@ class EbsBlockDevice(TypedDict, total=False):
     KmsKeyId: Optional[String]
     Throughput: Optional[Integer]
     OutpostArn: Optional[String]
+    AvailabilityZone: Optional[String]
     Encrypted: Optional[Boolean]
     VolumeInitializationRate: Optional[Integer]
+    AvailabilityZoneId: Optional[String]
 
 
 class BlockDeviceMapping(TypedDict, total=False):
@@ -5989,6 +6134,20 @@ class CapacityAllocation(TypedDict, total=False):
 
 
 CapacityAllocations = List[CapacityAllocation]
+CapacityReservationIdSet = List[CapacityReservationId]
+
+
+class CapacityBlock(TypedDict, total=False):
+    CapacityBlockId: Optional[CapacityBlockId]
+    UltraserverType: Optional[String]
+    AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
+    CapacityReservationIds: Optional[CapacityReservationIdSet]
+    StartDate: Optional[MillisecondDateTime]
+    EndDate: Optional[MillisecondDateTime]
+    CreateDate: Optional[MillisecondDateTime]
+    State: Optional[CapacityBlockResourceState]
+    Tags: Optional[TagList]
 
 
 class CapacityBlockExtension(TypedDict, total=False):
@@ -6024,6 +6183,7 @@ class CapacityBlockExtensionOffering(TypedDict, total=False):
 
 CapacityBlockExtensionOfferingSet = List[CapacityBlockExtensionOffering]
 CapacityBlockExtensionSet = List[CapacityBlockExtension]
+CapacityBlockIds = List[CapacityBlockId]
 
 
 class CapacityBlockOffering(TypedDict, total=False):
@@ -6037,10 +6197,35 @@ class CapacityBlockOffering(TypedDict, total=False):
     UpfrontFee: Optional[String]
     CurrencyCode: Optional[String]
     Tenancy: Optional[CapacityReservationTenancy]
+    UltraserverType: Optional[String]
+    UltraserverCount: Optional[BoxedInteger]
     CapacityBlockDurationMinutes: Optional[Integer]
 
 
 CapacityBlockOfferingSet = List[CapacityBlockOffering]
+CapacityBlockSet = List[CapacityBlock]
+
+
+class CapacityReservationStatus(TypedDict, total=False):
+    CapacityReservationId: Optional[CapacityReservationId]
+    TotalCapacity: Optional[Integer]
+    TotalAvailableCapacity: Optional[Integer]
+    TotalUnavailableCapacity: Optional[Integer]
+
+
+CapacityReservationStatusSet = List[CapacityReservationStatus]
+
+
+class CapacityBlockStatus(TypedDict, total=False):
+    CapacityBlockId: Optional[CapacityBlockId]
+    InterconnectStatus: Optional[CapacityBlockInterconnectStatus]
+    TotalCapacity: Optional[Integer]
+    TotalAvailableCapacity: Optional[Integer]
+    TotalUnavailableCapacity: Optional[Integer]
+    CapacityReservationStatuses: Optional[CapacityReservationStatusSet]
+
+
+CapacityBlockStatusSet = List[CapacityBlockStatus]
 
 
 class CapacityReservationCommitmentInfo(TypedDict, total=False):
@@ -6076,6 +6261,7 @@ class CapacityReservation(TypedDict, total=False):
     UnusedReservationBillingOwnerId: Optional[AccountID]
     CommitmentInfo: Optional[CapacityReservationCommitmentInfo]
     DeliveryPreference: Optional[CapacityReservationDeliveryPreference]
+    CapacityBlockId: Optional[CapacityBlockId]
 
 
 class CapacityReservationInfo(TypedDict, total=False):
@@ -6140,7 +6326,6 @@ class CapacityReservationGroup(TypedDict, total=False):
 
 
 CapacityReservationGroupSet = List[CapacityReservationGroup]
-CapacityReservationIdSet = List[CapacityReservationId]
 
 
 class CapacityReservationOptions(TypedDict, total=False):
@@ -6336,6 +6521,7 @@ class ClientVpnConnection(TypedDict, total=False):
     IngressPackets: Optional[String]
     EgressPackets: Optional[String]
     ClientIp: Optional[String]
+    ClientIpv6Address: Optional[String]
     CommonName: Optional[String]
     Status: Optional[ClientVpnConnectionStatus]
     ConnectionEndTime: Optional[String]
@@ -6382,6 +6568,8 @@ class ClientVpnEndpoint(TypedDict, total=False):
     ClientLoginBannerOptions: Optional[ClientLoginBannerResponseOptions]
     ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementResponseOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
+    EndpointIpAddressType: Optional[EndpointIpAddressType]
+    TrafficIpAddressType: Optional[TrafficIpAddressType]
 
 
 ClientVpnEndpointIdList = List[ClientVpnEndpointId]
@@ -6518,6 +6706,7 @@ class DiskImageDescription(TypedDict, total=False):
 
 class ImportVolumeTaskDetails(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     BytesConverted: Optional[Long]
     Description: Optional[String]
     Image: Optional[DiskImageDescription]
@@ -6526,6 +6715,7 @@ class ImportVolumeTaskDetails(TypedDict, total=False):
 
 class ImportInstanceVolumeDetailItem(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     BytesConverted: Optional[Long]
     Description: Optional[String]
     Image: Optional[DiskImageDescription]
@@ -6579,6 +6769,8 @@ class CopyImageRequest(ServiceRequest):
     CopyImageTags: Optional[Boolean]
     TagSpecifications: Optional[TagSpecificationList]
     SnapshotCopyCompletionDurationMinutes: Optional[Long]
+    DestinationAvailabilityZone: Optional[String]
+    DestinationAvailabilityZoneId: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -6597,6 +6789,7 @@ class CopySnapshotRequest(ServiceRequest):
     SourceSnapshotId: String
     TagSpecifications: Optional[TagSpecificationList]
     CompletionDurationMinutes: Optional[SnapshotCompletionDurationMinutesRequest]
+    DestinationAvailabilityZone: Optional[String]
     DryRun: Optional[Boolean]
 
 
@@ -6712,7 +6905,7 @@ class CreateCarrierGatewayResult(TypedDict, total=False):
 
 
 class CreateClientVpnEndpointRequest(ServiceRequest):
-    ClientCidrBlock: String
+    ClientCidrBlock: Optional[String]
     ServerCertificateArn: String
     AuthenticationOptions: ClientVpnAuthenticationRequestList
     ConnectionLogOptions: ConnectionLogOptions
@@ -6732,6 +6925,8 @@ class CreateClientVpnEndpointRequest(ServiceRequest):
     ClientLoginBannerOptions: Optional[ClientLoginBannerOptions]
     ClientRouteEnforcementOptions: Optional[ClientRouteEnforcementOptions]
     DisconnectOnSessionTimeout: Optional[Boolean]
+    EndpointIpAddressType: Optional[EndpointIpAddressType]
+    TrafficIpAddressType: Optional[TrafficIpAddressType]
 
 
 class CreateClientVpnEndpointResult(TypedDict, total=False):
@@ -6802,9 +6997,10 @@ class CreateCustomerGatewayResult(TypedDict, total=False):
 
 
 class CreateDefaultSubnetRequest(ServiceRequest):
-    AvailabilityZone: AvailabilityZoneName
+    AvailabilityZone: Optional[AvailabilityZoneName]
     DryRun: Optional[Boolean]
     Ipv6Native: Optional[Boolean]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
 
 
 class PrivateDnsNameOptionsOnLaunch(TypedDict, total=False):
@@ -7064,7 +7260,7 @@ class FleetLaunchTemplateOverrides(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[String]
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[PlacementResponse]
@@ -7194,6 +7390,7 @@ FleetBlockDeviceMappingRequestList = List[FleetBlockDeviceMappingRequest]
 
 
 class Placement(TypedDict, total=False):
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
     PartitionNumber: Optional[Integer]
@@ -7209,7 +7406,7 @@ class FleetLaunchTemplateOverridesRequest(TypedDict, total=False):
     InstanceType: Optional[InstanceType]
     MaxPrice: Optional[String]
     SubnetId: Optional[SubnetId]
-    AvailabilityZone: Optional[String]
+    AvailabilityZone: Optional[AvailabilityZoneName]
     WeightedCapacity: Optional[Double]
     Priority: Optional[Double]
     Placement: Optional[Placement]
@@ -7341,6 +7538,7 @@ class CreateFpgaImageResult(TypedDict, total=False):
 
 class CreateImageRequest(ServiceRequest):
     TagSpecifications: Optional[TagSpecificationList]
+    SnapshotLocation: Optional[SnapshotLocationEnum]
     DryRun: Optional[Boolean]
     InstanceId: InstanceId
     Name: String
@@ -7353,6 +7551,39 @@ class CreateImageResult(TypedDict, total=False):
     ImageId: Optional[String]
 
 
+ImageUsageReportUserIdStringList = List[String]
+ImageUsageResourceTypeOptionValuesList = List[ImageUsageResourceTypeOptionValue]
+
+
+class ImageUsageResourceTypeOptionRequest(TypedDict, total=False):
+    OptionName: Optional[String]
+    OptionValues: Optional[ImageUsageResourceTypeOptionValuesList]
+
+
+ImageUsageResourceTypeOptionRequestList = List[ImageUsageResourceTypeOptionRequest]
+
+
+class ImageUsageResourceTypeRequest(TypedDict, total=False):
+    ResourceType: Optional[ImageUsageResourceTypeName]
+    ResourceTypeOptions: Optional[ImageUsageResourceTypeOptionRequestList]
+
+
+ImageUsageResourceTypeRequestList = List[ImageUsageResourceTypeRequest]
+
+
+class CreateImageUsageReportRequest(ServiceRequest):
+    ImageId: ImageId
+    DryRun: Optional[Boolean]
+    ResourceTypes: ImageUsageResourceTypeRequestList
+    AccountIds: Optional[ImageUsageReportUserIdStringList]
+    ClientToken: Optional[String]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class CreateImageUsageReportResult(TypedDict, total=False):
+    ReportId: Optional[ImageUsageReportId]
+
+
 SecurityGroupIdStringListRequest = List[SecurityGroupId]
 
 
@@ -7363,6 +7594,17 @@ class CreateInstanceConnectEndpointRequest(ServiceRequest):
     PreserveClientIp: Optional[Boolean]
     ClientToken: Optional[String]
     TagSpecifications: Optional[TagSpecificationList]
+    IpAddressType: Optional[IpAddressType]
+
+
+class InstanceConnectEndpointDnsNames(TypedDict, total=False):
+    DnsName: Optional[String]
+    FipsDnsName: Optional[String]
+
+
+class InstanceConnectEndpointPublicDnsNames(TypedDict, total=False):
+    Ipv4: Optional[InstanceConnectEndpointDnsNames]
+    Dualstack: Optional[InstanceConnectEndpointDnsNames]
 
 
 SecurityGroupIdSet = List[SecurityGroupId]
@@ -7385,6 +7627,8 @@ class Ec2InstanceConnectEndpoint(TypedDict, total=False):
     PreserveClientIp: Optional[Boolean]
     SecurityGroupIds: Optional[SecurityGroupIdSet]
     Tags: Optional[TagList]
+    IpAddressType: Optional[IpAddressType]
+    PublicDnsNames: Optional[InstanceConnectEndpointPublicDnsNames]
 
 
 class CreateInstanceConnectEndpointResult(TypedDict, total=False):
@@ -7784,6 +8028,7 @@ LaunchTemplateTagSpecificationRequestList = List[LaunchTemplateTagSpecificationR
 
 class LaunchTemplatePlacementRequest(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Affinity: Optional[String]
     GroupName: Optional[PlacementGroupName]
     HostId: Optional[DedicatedHostId]
@@ -8079,6 +8324,7 @@ LaunchTemplateTagSpecificationList = List[LaunchTemplateTagSpecification]
 
 class LaunchTemplatePlacement(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Affinity: Optional[String]
     GroupName: Optional[String]
     HostId: Optional[String]
@@ -8886,6 +9132,7 @@ class CreateRouteRequest(ServiceRequest):
     LocalGatewayId: Optional[LocalGatewayId]
     CarrierGatewayId: Optional[CarrierGatewayId]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
     DryRun: Optional[Boolean]
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
@@ -9022,6 +9269,8 @@ class Route(TypedDict, total=False):
     State: Optional[RouteState]
     VpcPeeringConnectionId: Optional[String]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
+    IpAddress: Optional[String]
 
 
 RouteList = List[Route]
@@ -9040,6 +9289,7 @@ class RouteTableAssociation(TypedDict, total=False):
     RouteTableId: Optional[String]
     SubnetId: Optional[String]
     GatewayId: Optional[String]
+    PublicIpv4Pool: Optional[String]
     AssociationState: Optional[RouteTableAssociationState]
 
 
@@ -9915,7 +10165,8 @@ class CreateVolumePermissionModifications(TypedDict, total=False):
 
 
 class CreateVolumeRequest(ServiceRequest):
-    AvailabilityZone: AvailabilityZoneName
+    AvailabilityZone: Optional[AvailabilityZoneName]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     Encrypted: Optional[Boolean]
     Iops: Optional[Integer]
     KmsKeyId: Optional[KmsKeyId]
@@ -10118,6 +10369,7 @@ class ServiceConfiguration(TypedDict, total=False):
     ServiceId: Optional[String]
     ServiceName: Optional[String]
     ServiceState: Optional[ServiceState]
+    AvailabilityZoneIds: Optional[ValueStringList]
     AvailabilityZones: Optional[ValueStringList]
     AcceptanceRequired: Optional[Boolean]
     ManagesVpcEndpoints: Optional[Boolean]
@@ -10612,6 +10864,15 @@ class DeleteFpgaImageRequest(ServiceRequest):
 
 
 class DeleteFpgaImageResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
+class DeleteImageUsageReportRequest(ServiceRequest):
+    ReportId: ImageUsageReportId
+    DryRun: Optional[Boolean]
+
+
+class DeleteImageUsageReportResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
@@ -11577,10 +11838,38 @@ class DescribeCapacityBlockOfferingsRequest(ServiceRequest):
     CapacityDurationHours: Integer
     NextToken: Optional[String]
     MaxResults: Optional[DescribeCapacityBlockOfferingsMaxResults]
+    UltraserverType: Optional[String]
+    UltraserverCount: Optional[Integer]
 
 
 class DescribeCapacityBlockOfferingsResult(TypedDict, total=False):
     CapacityBlockOfferings: Optional[CapacityBlockOfferingSet]
+    NextToken: Optional[String]
+
+
+class DescribeCapacityBlockStatusRequest(ServiceRequest):
+    CapacityBlockIds: Optional[CapacityBlockIds]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityBlockStatusMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class DescribeCapacityBlockStatusResult(TypedDict, total=False):
+    CapacityBlockStatuses: Optional[CapacityBlockStatusSet]
+    NextToken: Optional[String]
+
+
+class DescribeCapacityBlocksRequest(ServiceRequest):
+    CapacityBlockIds: Optional[CapacityBlockIds]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityBlocksMaxResults]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+
+
+class DescribeCapacityBlocksResult(TypedDict, total=False):
+    CapacityBlocks: Optional[CapacityBlockSet]
     NextToken: Optional[String]
 
 
@@ -12419,6 +12708,127 @@ class DescribeImageAttributeRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+DescribeImageReferencesImageIdStringList = List[ImageId]
+ResourceTypeOptionValuesList = List[ResourceTypeOptionValue]
+
+
+class ResourceTypeOption(TypedDict, total=False):
+    OptionName: Optional[ImageReferenceOptionName]
+    OptionValues: Optional[ResourceTypeOptionValuesList]
+
+
+ResourceTypeOptionList = List[ResourceTypeOption]
+
+
+class ResourceTypeRequest(TypedDict, total=False):
+    ResourceType: Optional[ImageReferenceResourceType]
+    ResourceTypeOptions: Optional[ResourceTypeOptionList]
+
+
+ResourceTypeRequestList = List[ResourceTypeRequest]
+
+
+class DescribeImageReferencesRequest(ServiceRequest):
+    ImageIds: DescribeImageReferencesImageIdStringList
+    IncludeAllResourceTypes: Optional[Boolean]
+    ResourceTypes: Optional[ResourceTypeRequestList]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeImageReferencesMaxResults]
+
+
+class ImageReference(TypedDict, total=False):
+    ImageId: Optional[ImageId]
+    ResourceType: Optional[ImageReferenceResourceType]
+    Arn: Optional[String]
+
+
+ImageReferenceList = List[ImageReference]
+
+
+class DescribeImageReferencesResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    ImageReferences: Optional[ImageReferenceList]
+
+
+ImageUsageReportIdStringList = List[ImageUsageReportId]
+DescribeImageUsageReportsImageIdStringList = List[ImageId]
+
+
+class DescribeImageUsageReportEntriesRequest(ServiceRequest):
+    ImageIds: Optional[DescribeImageUsageReportsImageIdStringList]
+    ReportIds: Optional[ImageUsageReportIdStringList]
+    NextToken: Optional[String]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeImageUsageReportEntriesMaxResults]
+
+
+class ImageUsageReportEntry(TypedDict, total=False):
+    ResourceType: Optional[ImageUsageResourceTypeName]
+    ReportId: Optional[ImageUsageReportId]
+    UsageCount: Optional[Long]
+    AccountId: Optional[String]
+    ImageId: Optional[ImageId]
+    ReportCreationTime: Optional[MillisecondDateTime]
+
+
+ImageUsageReportEntryList = List[ImageUsageReportEntry]
+
+
+class DescribeImageUsageReportEntriesResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    ImageUsageReportEntries: Optional[ImageUsageReportEntryList]
+
+
+class DescribeImageUsageReportsRequest(ServiceRequest):
+    ImageIds: Optional[DescribeImageUsageReportsImageIdStringList]
+    ReportIds: Optional[ImageUsageReportIdStringList]
+    NextToken: Optional[String]
+    Filters: Optional[FilterList]
+    DryRun: Optional[Boolean]
+    MaxResults: Optional[DescribeImageUsageReportsMaxResults]
+
+
+UserIdList = List[String]
+
+
+class ImageUsageResourceTypeOption(TypedDict, total=False):
+    OptionName: Optional[String]
+    OptionValues: Optional[ImageUsageResourceTypeOptionValuesList]
+
+
+ImageUsageResourceTypeOptionList = List[ImageUsageResourceTypeOption]
+
+
+class ImageUsageResourceType(TypedDict, total=False):
+    ResourceType: Optional[ImageUsageResourceTypeName]
+    ResourceTypeOptions: Optional[ImageUsageResourceTypeOptionList]
+
+
+ImageUsageResourceTypeList = List[ImageUsageResourceType]
+
+
+class ImageUsageReport(TypedDict, total=False):
+    ImageId: Optional[ImageId]
+    ReportId: Optional[ImageUsageReportId]
+    ResourceTypes: Optional[ImageUsageResourceTypeList]
+    AccountIds: Optional[UserIdList]
+    State: Optional[ImageUsageReportState]
+    StateReason: Optional[ImageUsageReportStateReason]
+    CreationTime: Optional[MillisecondDateTime]
+    ExpirationTime: Optional[MillisecondDateTime]
+    Tags: Optional[TagList]
+
+
+ImageUsageReportList = List[ImageUsageReport]
+
+
+class DescribeImageUsageReportsResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    ImageUsageReports: Optional[ImageUsageReportList]
+
+
 ImageIdStringList = List[ImageId]
 ExecutableByStringList = List[String]
 
@@ -12460,6 +12870,7 @@ class Image(TypedDict, total=False):
     ImageAllowed: Optional[Boolean]
     SourceImageId: Optional[String]
     SourceImageRegion: Optional[String]
+    FreeTierEligible: Optional[Boolean]
     ImageId: Optional[String]
     ImageLocation: Optional[String]
     State: Optional[ImageState]
@@ -12756,6 +13167,7 @@ InstanceStatusEventList = List[InstanceStatusEvent]
 
 class InstanceStatus(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     OutpostArn: Optional[String]
     Operator: Optional[OperatorResponse]
     Events: Optional[InstanceStatusEventList]
@@ -12797,6 +13209,7 @@ class InstanceTopology(TypedDict, total=False):
     NetworkNodes: Optional[NetworkNodesList]
     AvailabilityZone: Optional[String]
     ZoneId: Optional[String]
+    CapacityBlockId: Optional[String]
 
 
 InstanceSet = List[InstanceTopology]
@@ -13004,6 +13417,8 @@ class EbsInfo(TypedDict, total=False):
     EncryptionSupport: Optional[EbsEncryptionSupport]
     EbsOptimizedInfo: Optional[EbsOptimizedInfo]
     NvmeSupport: Optional[EbsNvmeSupport]
+    MaximumEbsAttachments: Optional[MaximumEbsAttachments]
+    AttachmentLimitType: Optional[AttachmentLimitType]
 
 
 DiskSize = int
@@ -13290,6 +13705,7 @@ class Instance(TypedDict, total=False):
     Tags: Optional[TagList]
     VirtualizationType: Optional[VirtualizationType]
     CpuOptions: Optional[CpuOptions]
+    CapacityBlockId: Optional[String]
     CapacityReservationId: Optional[String]
     CapacityReservationSpecification: Optional[CapacityReservationSpecificationResponse]
     HibernationOptions: Optional[HibernationOptions]
@@ -14599,6 +15015,7 @@ class SecurityGroupVpcAssociation(TypedDict, total=False):
     VpcOwnerId: Optional[String]
     State: Optional[SecurityGroupVpcAssociationState]
     StateReason: Optional[String]
+    GroupOwnerId: Optional[String]
 
 
 SecurityGroupVpcAssociationList = List[SecurityGroupVpcAssociation]
@@ -15025,6 +15442,7 @@ class SpotInstanceRequest(TypedDict, total=False):
     LaunchGroup: Optional[String]
     LaunchSpecification: Optional[LaunchSpecification]
     LaunchedAvailabilityZone: Optional[String]
+    LaunchedAvailabilityZoneId: Optional[String]
     ProductDescription: Optional[RIProductDescription]
     SpotInstanceRequestId: Optional[String]
     SpotPrice: Optional[String]
@@ -15050,6 +15468,7 @@ InstanceTypeList = List[InstanceType]
 
 
 class DescribeSpotPriceHistoryRequest(ServiceRequest):
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     DryRun: Optional[Boolean]
     StartTime: Optional[DateTime]
     EndTime: Optional[DateTime]
@@ -15063,6 +15482,7 @@ class DescribeSpotPriceHistoryRequest(ServiceRequest):
 
 class SpotPrice(TypedDict, total=False):
     AvailabilityZone: Optional[String]
+    AvailabilityZoneId: Optional[String]
     InstanceType: Optional[InstanceType]
     ProductDescription: Optional[RIProductDescription]
     SpotPrice: Optional[String]
@@ -15638,6 +16058,12 @@ class DescribeVolumeStatusRequest(ServiceRequest):
     Filters: Optional[FilterList]
 
 
+class InitializationStatusDetails(TypedDict, total=False):
+    InitializationType: Optional[InitializationType]
+    Progress: Optional[Long]
+    EstimatedTimeToCompleteInSeconds: Optional[Long]
+
+
 class VolumeStatusAttachmentStatus(TypedDict, total=False):
     IoPerformance: Optional[String]
     InstanceId: Optional[String]
@@ -15689,6 +16115,7 @@ class VolumeStatusItem(TypedDict, total=False):
     VolumeId: Optional[String]
     VolumeStatus: Optional[VolumeStatusInfo]
     AttachmentStatuses: Optional[VolumeStatusAttachmentStatusList]
+    InitializationStatusDetails: Optional[InitializationStatusDetails]
     AvailabilityZoneId: Optional[String]
 
 
@@ -15758,6 +16185,7 @@ VolumeAttachmentList = List[VolumeAttachment]
 
 
 class Volume(TypedDict, total=False):
+    AvailabilityZoneId: Optional[String]
     OutpostArn: Optional[String]
     Iops: Optional[Integer]
     Tags: Optional[TagList]
@@ -15995,6 +16423,7 @@ class ServiceDetail(TypedDict, total=False):
     ServiceId: Optional[String]
     ServiceType: Optional[ServiceTypeDetailSet]
     ServiceRegion: Optional[String]
+    AvailabilityZoneIds: Optional[ValueStringList]
     AvailabilityZones: Optional[ValueStringList]
     Owner: Optional[String]
     BaseEndpointDnsNames: Optional[ValueStringList]
@@ -17238,6 +17667,7 @@ class GetInstanceTypesFromInstanceRequirementsRequest(ServiceRequest):
     InstanceRequirements: InstanceRequirementsRequest
     MaxResults: Optional[Integer]
     NextToken: Optional[String]
+    Context: Optional[String]
 
 
 class InstanceTypeInfoFromInstanceRequirements(TypedDict, total=False):
@@ -18229,8 +18659,9 @@ class ImportSnapshotResult(TypedDict, total=False):
 
 
 class ImportVolumeRequest(ServiceRequest):
+    AvailabilityZoneId: Optional[AvailabilityZoneId]
     DryRun: Optional[Boolean]
-    AvailabilityZone: String
+    AvailabilityZone: Optional[String]
     Image: DiskImageDetail
     Description: Optional[String]
     Volume: VolumeDetail
@@ -18626,6 +19057,18 @@ class ModifyInstanceCapacityReservationAttributesRequest(ServiceRequest):
 
 
 class ModifyInstanceCapacityReservationAttributesResult(TypedDict, total=False):
+    Return: Optional[Boolean]
+
+
+class ModifyInstanceConnectEndpointRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    InstanceConnectEndpointId: InstanceConnectEndpointId
+    IpAddressType: Optional[IpAddressType]
+    SecurityGroupIds: Optional[SecurityGroupIdStringListRequest]
+    PreserveClientIp: Optional[Boolean]
+
+
+class ModifyInstanceConnectEndpointResult(TypedDict, total=False):
     Return: Optional[Boolean]
 
 
@@ -19684,6 +20127,7 @@ class PurchaseCapacityBlockRequest(ServiceRequest):
 
 class PurchaseCapacityBlockResult(TypedDict, total=False):
     CapacityReservation: Optional[CapacityReservation]
+    CapacityBlocks: Optional[CapacityBlockSet]
 
 
 class PurchaseHostReservationRequest(ServiceRequest):
@@ -19955,6 +20399,7 @@ class ReplaceRouteRequest(ServiceRequest):
     LocalGatewayId: Optional[LocalGatewayId]
     CarrierGatewayId: Optional[CarrierGatewayId]
     CoreNetworkArn: Optional[CoreNetworkArn]
+    OdbNetworkArn: Optional[OdbNetworkArn]
     DryRun: Optional[Boolean]
     RouteTableId: RouteTableId
     DestinationCidrBlock: Optional[String]
@@ -20512,6 +20957,7 @@ class StartVpcEndpointServicePrivateDnsVerificationResult(TypedDict, total=False
 class StopInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
     Hibernate: Optional[Boolean]
+    SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
     Force: Optional[Boolean]
 
@@ -20544,6 +20990,8 @@ class TerminateClientVpnConnectionsResult(TypedDict, total=False):
 
 class TerminateInstancesRequest(ServiceRequest):
     InstanceIds: InstanceIdStringList
+    Force: Optional[Boolean]
+    SkipOsShutdown: Optional[Boolean]
     DryRun: Optional[Boolean]
 
 
@@ -20971,6 +21419,7 @@ class Ec2Api:
         context: RequestContext,
         route_table_id: RouteTableId,
         gateway_id: RouteGatewayId | None = None,
+        public_ipv4_pool: Ipv4PoolEc2Id | None = None,
         dry_run: Boolean | None = None,
         subnet_id: SubnetId | None = None,
         **kwargs,
@@ -21342,6 +21791,8 @@ class Ec2Api:
         copy_image_tags: Boolean | None = None,
         tag_specifications: TagSpecificationList | None = None,
         snapshot_copy_completion_duration_minutes: Long | None = None,
+        destination_availability_zone: String | None = None,
+        destination_availability_zone_id: String | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> CopyImageResult:
@@ -21361,6 +21812,7 @@ class Ec2Api:
         presigned_url: CopySnapshotRequestPSU | None = None,
         tag_specifications: TagSpecificationList | None = None,
         completion_duration_minutes: SnapshotCompletionDurationMinutesRequest | None = None,
+        destination_availability_zone: String | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> CopySnapshotResult:
@@ -21439,10 +21891,10 @@ class Ec2Api:
     def create_client_vpn_endpoint(
         self,
         context: RequestContext,
-        client_cidr_block: String,
         server_certificate_arn: String,
         authentication_options: ClientVpnAuthenticationRequestList,
         connection_log_options: ConnectionLogOptions,
+        client_cidr_block: String | None = None,
         dns_servers: ValueStringList | None = None,
         transport_protocol: TransportProtocol | None = None,
         vpn_port: Integer | None = None,
@@ -21459,6 +21911,8 @@ class Ec2Api:
         client_login_banner_options: ClientLoginBannerOptions | None = None,
         client_route_enforcement_options: ClientRouteEnforcementOptions | None = None,
         disconnect_on_session_timeout: Boolean | None = None,
+        endpoint_ip_address_type: EndpointIpAddressType | None = None,
+        traffic_ip_address_type: TrafficIpAddressType | None = None,
         **kwargs,
     ) -> CreateClientVpnEndpointResult:
         raise NotImplementedError
@@ -21509,9 +21963,10 @@ class Ec2Api:
     def create_default_subnet(
         self,
         context: RequestContext,
-        availability_zone: AvailabilityZoneName,
+        availability_zone: AvailabilityZoneName | None = None,
         dry_run: Boolean | None = None,
         ipv6_native: Boolean | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         **kwargs,
     ) -> CreateDefaultSubnetResult:
         raise NotImplementedError
@@ -21608,12 +22063,27 @@ class Ec2Api:
         instance_id: InstanceId,
         name: String,
         tag_specifications: TagSpecificationList | None = None,
+        snapshot_location: SnapshotLocationEnum | None = None,
         dry_run: Boolean | None = None,
         description: String | None = None,
         no_reboot: Boolean | None = None,
         block_device_mappings: BlockDeviceMappingRequestList | None = None,
         **kwargs,
     ) -> CreateImageResult:
+        raise NotImplementedError
+
+    @handler("CreateImageUsageReport")
+    def create_image_usage_report(
+        self,
+        context: RequestContext,
+        image_id: ImageId,
+        resource_types: ImageUsageResourceTypeRequestList,
+        dry_run: Boolean | None = None,
+        account_ids: ImageUsageReportUserIdStringList | None = None,
+        client_token: String | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateImageUsageReportResult:
         raise NotImplementedError
 
     @handler("CreateInstanceConnectEndpoint")
@@ -21626,6 +22096,7 @@ class Ec2Api:
         preserve_client_ip: Boolean | None = None,
         client_token: String | None = None,
         tag_specifications: TagSpecificationList | None = None,
+        ip_address_type: IpAddressType | None = None,
         **kwargs,
     ) -> CreateInstanceConnectEndpointResult:
         raise NotImplementedError
@@ -22097,6 +22568,7 @@ class Ec2Api:
         local_gateway_id: LocalGatewayId | None = None,
         carrier_gateway_id: CarrierGatewayId | None = None,
         core_network_arn: CoreNetworkArn | None = None,
+        odb_network_arn: OdbNetworkArn | None = None,
         dry_run: Boolean | None = None,
         destination_cidr_block: String | None = None,
         gateway_id: RouteGatewayId | None = None,
@@ -22559,7 +23031,8 @@ class Ec2Api:
     def create_volume(
         self,
         context: RequestContext,
-        availability_zone: AvailabilityZoneName,
+        availability_zone: AvailabilityZoneName | None = None,
+        availability_zone_id: AvailabilityZoneId | None = None,
         encrypted: Boolean | None = None,
         iops: Integer | None = None,
         kms_key_id: KmsKeyId | None = None,
@@ -22815,6 +23288,16 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DeleteFpgaImageResult:
+        raise NotImplementedError
+
+    @handler("DeleteImageUsageReport")
+    def delete_image_usage_report(
+        self,
+        context: RequestContext,
+        report_id: ImageUsageReportId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteImageUsageReportResult:
         raise NotImplementedError
 
     @handler("DeleteInstanceConnectEndpoint")
@@ -23747,8 +24230,36 @@ class Ec2Api:
         end_date_range: MillisecondDateTime | None = None,
         next_token: String | None = None,
         max_results: DescribeCapacityBlockOfferingsMaxResults | None = None,
+        ultraserver_type: String | None = None,
+        ultraserver_count: Integer | None = None,
         **kwargs,
     ) -> DescribeCapacityBlockOfferingsResult:
+        raise NotImplementedError
+
+    @handler("DescribeCapacityBlockStatus")
+    def describe_capacity_block_status(
+        self,
+        context: RequestContext,
+        capacity_block_ids: CapacityBlockIds | None = None,
+        next_token: String | None = None,
+        max_results: DescribeCapacityBlockStatusMaxResults | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeCapacityBlockStatusResult:
+        raise NotImplementedError
+
+    @handler("DescribeCapacityBlocks")
+    def describe_capacity_blocks(
+        self,
+        context: RequestContext,
+        capacity_block_ids: CapacityBlockIds | None = None,
+        next_token: String | None = None,
+        max_results: DescribeCapacityBlocksMaxResults | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DescribeCapacityBlocksResult:
         raise NotImplementedError
 
     @handler("DescribeCapacityReservationBillingRequests")
@@ -24169,6 +24680,48 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ImageAttribute:
+        raise NotImplementedError
+
+    @handler("DescribeImageReferences")
+    def describe_image_references(
+        self,
+        context: RequestContext,
+        image_ids: DescribeImageReferencesImageIdStringList,
+        include_all_resource_types: Boolean | None = None,
+        resource_types: ResourceTypeRequestList | None = None,
+        next_token: String | None = None,
+        dry_run: Boolean | None = None,
+        max_results: DescribeImageReferencesMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeImageReferencesResult:
+        raise NotImplementedError
+
+    @handler("DescribeImageUsageReportEntries")
+    def describe_image_usage_report_entries(
+        self,
+        context: RequestContext,
+        image_ids: DescribeImageUsageReportsImageIdStringList | None = None,
+        report_ids: ImageUsageReportIdStringList | None = None,
+        next_token: String | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        max_results: DescribeImageUsageReportEntriesMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeImageUsageReportEntriesResult:
+        raise NotImplementedError
+
+    @handler("DescribeImageUsageReports")
+    def describe_image_usage_reports(
+        self,
+        context: RequestContext,
+        image_ids: DescribeImageUsageReportsImageIdStringList | None = None,
+        report_ids: ImageUsageReportIdStringList | None = None,
+        next_token: String | None = None,
+        filters: FilterList | None = None,
+        dry_run: Boolean | None = None,
+        max_results: DescribeImageUsageReportsMaxResults | None = None,
+        **kwargs,
+    ) -> DescribeImageUsageReportsResult:
         raise NotImplementedError
 
     @handler("DescribeImages")
@@ -25162,6 +25715,7 @@ class Ec2Api:
     def describe_spot_price_history(
         self,
         context: RequestContext,
+        availability_zone_id: AvailabilityZoneId | None = None,
         dry_run: Boolean | None = None,
         start_time: DateTime | None = None,
         end_time: DateTime | None = None,
@@ -26570,16 +27124,11 @@ class Ec2Api:
     ) -> GetInstanceTpmEkPubResult:
         raise NotImplementedError
 
-    @handler("GetInstanceTypesFromInstanceRequirements")
+    @handler("GetInstanceTypesFromInstanceRequirements", expand=False)
     def get_instance_types_from_instance_requirements(
         self,
         context: RequestContext,
-        architecture_types: ArchitectureTypeSet,
-        virtualization_types: VirtualizationTypeSet,
-        instance_requirements: InstanceRequirementsRequest,
-        dry_run: Boolean | None = None,
-        max_results: Integer | None = None,
-        next_token: String | None = None,
+        request: GetInstanceTypesFromInstanceRequirementsRequest,
         **kwargs,
     ) -> GetInstanceTypesFromInstanceRequirementsResult:
         raise NotImplementedError
@@ -27103,10 +27652,11 @@ class Ec2Api:
     def import_volume(
         self,
         context: RequestContext,
-        availability_zone: String,
         image: DiskImageDetail,
         volume: VolumeDetail,
+        availability_zone_id: AvailabilityZoneId | None = None,
         dry_run: Boolean | None = None,
+        availability_zone: String | None = None,
         description: String | None = None,
         **kwargs,
     ) -> ImportVolumeResult:
@@ -27356,6 +27906,19 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> ModifyInstanceCapacityReservationAttributesResult:
+        raise NotImplementedError
+
+    @handler("ModifyInstanceConnectEndpoint")
+    def modify_instance_connect_endpoint(
+        self,
+        context: RequestContext,
+        instance_connect_endpoint_id: InstanceConnectEndpointId,
+        dry_run: Boolean | None = None,
+        ip_address_type: IpAddressType | None = None,
+        security_group_ids: SecurityGroupIdStringListRequest | None = None,
+        preserve_client_ip: Boolean | None = None,
+        **kwargs,
+    ) -> ModifyInstanceConnectEndpointResult:
         raise NotImplementedError
 
     @handler("ModifyInstanceCpuOptions")
@@ -28503,6 +29066,7 @@ class Ec2Api:
         local_gateway_id: LocalGatewayId | None = None,
         carrier_gateway_id: CarrierGatewayId | None = None,
         core_network_arn: CoreNetworkArn | None = None,
+        odb_network_arn: OdbNetworkArn | None = None,
         dry_run: Boolean | None = None,
         destination_cidr_block: String | None = None,
         gateway_id: RouteGatewayId | None = None,
@@ -28930,6 +29494,7 @@ class Ec2Api:
         context: RequestContext,
         instance_ids: InstanceIdStringList,
         hibernate: Boolean | None = None,
+        skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         force: Boolean | None = None,
         **kwargs,
@@ -28953,6 +29518,8 @@ class Ec2Api:
         self,
         context: RequestContext,
         instance_ids: InstanceIdStringList,
+        force: Boolean | None = None,
+        skip_os_shutdown: Boolean | None = None,
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> TerminateInstancesResult:

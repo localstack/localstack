@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 from localstack.aws.api.stepfunctions import (
     EvaluationFailedEventDetails,
@@ -99,30 +98,30 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 
 class StateMap(ExecutionState):
-    items: Optional[Items]
-    items_path: Optional[ItemsPath]
+    items: Items | None
+    items_path: ItemsPath | None
     iteration_component: IterationComponent
-    item_reader: Optional[ItemReader]
-    item_selector: Optional[ItemSelector]
-    parameters: Optional[Parameters]
+    item_reader: ItemReader | None
+    item_selector: ItemSelector | None
+    parameters: Parameters | None
     max_concurrency_decl: MaxConcurrencyDecl
     tolerated_failure_count_decl: ToleratedFailureCountDecl
     tolerated_failure_percentage_decl: ToleratedFailurePercentage
-    result_path: Optional[ResultPath]
+    result_path: ResultPath | None
     result_selector: ResultSelector
-    retry: Optional[RetryDecl]
-    catch: Optional[CatchDecl]
-    label: Optional[Label]
-    result_writer: Optional[ResultWriter]
+    retry: RetryDecl | None
+    catch: CatchDecl | None
+    label: Label | None
+    result_writer: ResultWriter | None
 
     def __init__(self):
-        super(StateMap, self).__init__(
+        super().__init__(
             state_entered_event_type=HistoryEventType.MapStateEntered,
             state_exited_event_type=HistoryEventType.MapStateExited,
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateMap, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         if self._is_language_query_jsonpath():
             self.items = None
             self.items_path = state_props.get(ItemsPath) or ItemsPath(

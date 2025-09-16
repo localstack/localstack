@@ -109,7 +109,7 @@ class VTLJsonList(list):
     """
 
     def __init__(self, *args):
-        super(VTLJsonList, self).__init__(*args)
+        super().__init__(*args)
         for idx, item in enumerate(self):
             self[idx] = cast_to_vtl_json_object(item)
 
@@ -138,7 +138,7 @@ class AttributeDict(dict):
     """
 
     def __init__(self, *args, **kwargs):
-        super(AttributeDict, self).__init__(*args, **kwargs)
+        super().__init__(*args, **kwargs)
         for key, value in self.items():
             if isinstance(value, dict):
                 self[key] = AttributeDict(value)

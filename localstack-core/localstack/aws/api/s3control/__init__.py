@@ -11,6 +11,7 @@ AccessGrantsInstanceId = str
 AccessGrantsLocationArn = str
 AccessGrantsLocationId = str
 AccessKeyId = str
+AccessPointBucketName = str
 AccessPointName = str
 AccountId = str
 Alias = str
@@ -25,6 +26,8 @@ ConfigId = str
 ConfirmRemoveSelfBucketAccess = bool
 ConfirmationRequired = bool
 ContinuationToken = str
+DataSourceId = str
+DataSourceType = str
 Days = int
 DaysAfterInitiation = int
 DurationSeconds = int
@@ -142,6 +145,20 @@ class BucketLocationConstraint(StrEnum):
 class BucketVersioningStatus(StrEnum):
     Enabled = "Enabled"
     Suspended = "Suspended"
+
+
+class ComputeObjectChecksumAlgorithm(StrEnum):
+    CRC32 = "CRC32"
+    CRC32C = "CRC32C"
+    CRC64NVME = "CRC64NVME"
+    MD5 = "MD5"
+    SHA1 = "SHA1"
+    SHA256 = "SHA256"
+
+
+class ComputeObjectChecksumType(StrEnum):
+    FULL_OBJECT = "FULL_OBJECT"
+    COMPOSITE = "COMPOSITE"
 
 
 class DeleteMarkerReplicationStatus(StrEnum):
@@ -269,6 +286,7 @@ class OperationName(StrEnum):
     S3PutObjectLegalHold = "S3PutObjectLegalHold"
     S3PutObjectRetention = "S3PutObjectRetention"
     S3ReplicateObject = "S3ReplicateObject"
+    S3ComputeObjectChecksum = "S3ComputeObjectChecksum"
 
 
 class OutputSchemaVersion(StrEnum):
@@ -567,10 +585,12 @@ class AccessPoint(TypedDict, total=False):
     Name: AccessPointName
     NetworkOrigin: NetworkOrigin
     VpcConfiguration: Optional[VpcConfiguration]
-    Bucket: BucketName
+    Bucket: AccessPointBucketName
     AccessPointArn: Optional[S3AccessPointArn]
     Alias: Optional[Alias]
     BucketAccountId: Optional[AccountId]
+    DataSourceId: Optional[DataSourceId]
+    DataSourceType: Optional[DataSourceType]
 
 
 AccessPointList = List[AccessPoint]
@@ -852,6 +872,7 @@ class CreateAccessPointRequest(ServiceRequest):
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
     BucketAccountId: Optional[AccountId]
     Scope: Optional[Scope]
+    Tags: Optional[TagList]
 
 
 class CreateAccessPointResult(TypedDict, total=False):
@@ -974,6 +995,12 @@ class JobReport(TypedDict, total=False):
     Enabled: Boolean
     Prefix: Optional[ReportPrefixString]
     ReportScope: Optional[JobReportScope]
+    ExpectedBucketOwner: Optional[AccountId]
+
+
+class S3ComputeObjectChecksumOperation(TypedDict, total=False):
+    ChecksumAlgorithm: Optional[ComputeObjectChecksumAlgorithm]
+    ChecksumType: Optional[ComputeObjectChecksumType]
 
 
 class S3ReplicateObjectOperation(TypedDict, total=False):
@@ -1105,6 +1132,7 @@ class JobOperation(TypedDict, total=False):
     S3PutObjectLegalHold: Optional[S3SetObjectLegalHoldOperation]
     S3PutObjectRetention: Optional[S3SetObjectRetentionOperation]
     S3ReplicateObject: Optional[S3ReplicateObjectOperation]
+    S3ComputeObjectChecksum: Optional[S3ComputeObjectChecksumOperation]
 
 
 class CreateJobRequest(ServiceRequest):
@@ -1576,7 +1604,7 @@ class GetAccessPointRequest(ServiceRequest):
 
 class GetAccessPointResult(TypedDict, total=False):
     Name: Optional[AccessPointName]
-    Bucket: Optional[BucketName]
+    Bucket: Optional[AccessPointBucketName]
     NetworkOrigin: Optional[NetworkOrigin]
     VpcConfiguration: Optional[VpcConfiguration]
     PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
@@ -1585,6 +1613,8 @@ class GetAccessPointResult(TypedDict, total=False):
     AccessPointArn: Optional[S3AccessPointArn]
     Endpoints: Optional[Endpoints]
     BucketAccountId: Optional[AccountId]
+    DataSourceId: Optional[DataSourceId]
+    DataSourceType: Optional[DataSourceType]
 
 
 class GetAccessPointScopeRequest(ServiceRequest):
@@ -2037,6 +2067,8 @@ class ListAccessPointsRequest(ServiceRequest):
     Bucket: Optional[BucketName]
     NextToken: Optional[NonEmptyMaxLength1024String]
     MaxResults: Optional[MaxResults]
+    DataSourceId: Optional[DataSourceId]
+    DataSourceType: Optional[DataSourceType]
 
 
 class ListAccessPointsResult(TypedDict, total=False):
@@ -2414,6 +2446,7 @@ class S3ControlApi:
         public_access_block_configuration: PublicAccessBlockConfiguration | None = None,
         bucket_account_id: AccountId | None = None,
         scope: Scope | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateAccessPointResult:
         raise NotImplementedError
@@ -2920,6 +2953,8 @@ class S3ControlApi:
         bucket: BucketName | None = None,
         next_token: NonEmptyMaxLength1024String | None = None,
         max_results: MaxResults | None = None,
+        data_source_id: DataSourceId | None = None,
+        data_source_type: DataSourceType | None = None,
         **kwargs,
     ) -> ListAccessPointsResult:
         raise NotImplementedError

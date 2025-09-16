@@ -4,7 +4,7 @@ import logging
 import pytest
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
-from moto.ec2 import ec2_backends
+from moto.ec2.models import ec2_backends
 from moto.ec2.utils import (
     random_security_group_id,
     random_subnet_id,
@@ -13,10 +13,12 @@ from moto.ec2.utils import (
 
 from localstack.constants import AWS_REGION_US_EAST_1, TAG_KEY_CUSTOM_ID
 from localstack.services.ec2.patches import SecurityGroupIdentifier, VpcIdentifier
+from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.id_generator import localstack_id_manager
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import retry
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -412,6 +414,53 @@ class TestEc2Integrations:
         aws_client.ec2.delete_vpc(VpcId=vpc_id)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Groups", "$..ServiceRegion"])
+    def test_vpc_endpoint_dns_names(
+        self, aws_client, create_vpc, region_name, snapshot, cleanups, ec2_create_vpc_endpoint
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("GroupId"),
+                snapshot.transform.key_value("VpcEndpointId"),
+                snapshot.transform.key_value("VpcId"),
+                snapshot.transform.key_value("HostedZoneId"),
+                snapshot.transform.key_value("subnet-id"),
+                snapshot.transform.jsonpath(
+                    "$.available-endpoint.NetworkInterfaceIds[*]",
+                    value_replacement="network-interface-id",
+                ),
+                snapshot.transform.key_value("dns-suffix"),
+                snapshot.transform.key_value("host"),
+            ]
+        )
+        host = "amazonaws.com" if is_aws_cloud() else localstack_host().host_and_port()
+        snapshot.match("host", host)
+
+        vpc = create_vpc(cidr_block="10.0.0.0/24")
+        vpc_id = vpc["Vpc"]["VpcId"]
+        aws_client.ec2.modify_vpc_attribute(VpcId=vpc_id, EnableDnsSupport={"Value": True})
+        aws_client.ec2.modify_vpc_attribute(VpcId=vpc_id, EnableDnsHostnames={"Value": True})
+        subnet = aws_client.ec2.create_subnet(VpcId=vpc_id, CidrBlock="10.0.0.0/24")
+        subnet_id = subnet["Subnet"]["SubnetId"]
+        snapshot.match("subnet-id", subnet_id)
+
+        service_name = f"com.amazonaws.{region_name}.execute-api"
+        vpc_endpoint = ec2_create_vpc_endpoint(
+            VpcId=vpc["Vpc"]["VpcId"],
+            ServiceName=service_name,
+            VpcEndpointType="Interface",
+            PrivateDnsEnabled=True,
+            SubnetIds=[subnet_id],
+        )
+
+        # LS only returns one dns entry
+        vpc_endpoint["DnsEntries"] = vpc_endpoint["DnsEntries"][:1]
+        snapshot.match(
+            "dns-suffix", vpc_endpoint["DnsEntries"][0]["DnsName"].split(".")[0].split("-")[-1]
+        )
+        snapshot.match("available-endpoint", vpc_endpoint)
+
+    @markers.aws.validated
     @pytest.mark.parametrize("id_type", ["id", "name"])
     def test_modify_launch_template(self, create_launch_template, id_type, aws_client):
         launch_template_result = create_launch_template(f"template-with-versions-{short_uid()}")
@@ -700,6 +749,7 @@ class TestEc2Integrations:
             "$..Tags",  # Tags can differ between environments
             "$..Vpc.IsDefault",  # TODO: CreateVPC should return an IsDefault param
             "$..Vpc.DhcpOptionsId",  # FIXME: DhcpOptionsId uses different reference formats in AWS vs LocalStack
+            "$..Vpc.State",  # Moto VPC immediately reaches the 'available' state, vs. AWS VPC which has a 'pending' state
         ]
     )
     @markers.aws.validated

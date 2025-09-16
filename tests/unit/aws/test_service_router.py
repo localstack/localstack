@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, Tuple
+from typing import Any
 from urllib.parse import urlsplit
 
 import pytest
@@ -13,7 +13,7 @@ from localstack.http import Request
 from localstack.utils.run import to_str
 
 
-def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
+def _collect_operations() -> tuple[ServiceModel, OperationModel]:
     """
     Collects all service<>operation combinations to test.
     """
@@ -25,6 +25,8 @@ def _collect_operations() -> Tuple[ServiceModel, OperationModel]:
             # Exclude all operations for the following, currently _not_ supported services
             if service.service_name in [
                 "bedrock-agent",
+                "bedrock-agentcore",
+                "bedrock-agentcore-control",
                 "bedrock-agent-runtime",
                 "bedrock-data-automation",
                 "bedrock-data-automation-runtime",
@@ -130,7 +132,7 @@ _dummy_values = {
 }
 
 
-def _create_dummy_request_args(operation_model: OperationModel) -> Dict:
+def _create_dummy_request_args(operation_model: OperationModel) -> dict:
     """Creates a dummy request param dict for the given operation."""
     input_shape: StructureShape = operation_model.input_shape
     if not input_shape:

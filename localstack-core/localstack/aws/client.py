@@ -2,8 +2,8 @@
 
 import io
 import logging
-from datetime import datetime, timezone
-from typing import Dict, Iterable, Optional
+from collections.abc import Iterable
+from datetime import UTC, datetime
 from urllib.parse import urlsplit
 
 from botocore import awsrequest
@@ -130,8 +130,8 @@ class _RawStream:
 
 
 def _add_modeled_error_fields(
-    response_dict: Dict,
-    parsed_response: Dict,
+    response_dict: dict,
+    parsed_response: dict,
     operation_model: OperationModel,
     parser: ResponseParser,
 ):
@@ -217,7 +217,7 @@ def _patch_cbor2():
             # AWS breaks the CBOR spec by using the millis (instead of seconds with floating point support for millis)
             # https://github.com/aws/aws-sdk-java-v2/issues/4661
             value = value / 1000
-            tmp = datetime.fromtimestamp(value, timezone.utc)
+            tmp = datetime.fromtimestamp(value, UTC)
         except (OverflowError, OSError, ValueError) as exc:
             raise CBORDecodeValueError("error decoding datetime from epoch") from exc
 
@@ -335,9 +335,7 @@ def parse_response(
     return parsed_response
 
 
-def parse_service_exception(
-    response: Response, parsed_response: Dict
-) -> Optional[ServiceException]:
+def parse_service_exception(response: Response, parsed_response: dict) -> ServiceException | None:
     """
     Creates a ServiceException (one ASF can handle) from a parsed response (one that botocore would return).
     It does not automatically raise the exception (see #raise_service_exception).
@@ -363,7 +361,7 @@ def parse_service_exception(
     return service_exception
 
 
-def raise_service_exception(response: Response, parsed_response: Dict) -> None:
+def raise_service_exception(response: Response, parsed_response: dict) -> None:
     """
     Creates and raises a ServiceException from a parsed response (one that botocore would return).
     :param response: Un-parsed response

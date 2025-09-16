@@ -1,6 +1,12 @@
 {
   "tests/aws/services/cloudformation/resources/test_sqs.py::test_cfn_handle_sqs_resource": {
-    "last_validated_date": "2024-07-03T20:03:51+00:00"
+    "last_validated_date": "2025-08-27T09:37:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.82,
+      "call": 74.96,
+      "teardown": 0.11,
+      "total": 75.89
+    }
   },
   "tests/aws/services/cloudformation/resources/test_sqs.py::test_sqs_fifo_queue_generates_valid_name": {
     "last_validated_date": "2024-05-15T02:01:00+00:00"

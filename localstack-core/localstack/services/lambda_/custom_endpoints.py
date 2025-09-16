@@ -1,5 +1,5 @@
 import urllib.parse
-from typing import List, TypedDict
+from typing import TypedDict
 
 from rolo import Request, route
 
@@ -14,7 +14,7 @@ from localstack.services.lambda_.runtimes import (
 
 
 class LambdaRuntimesResponse(TypedDict, total=False):
-    Runtimes: List[Runtime]
+    Runtimes: list[Runtime]
 
 
 class LambdaCustomEndpoints:

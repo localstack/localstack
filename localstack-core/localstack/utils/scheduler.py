@@ -1,8 +1,9 @@
 import queue
 import threading
 import time
+from collections.abc import Mapping
 from concurrent.futures import Executor
-from typing import Any, Callable, List, Mapping, Optional, Tuple, Union
+from typing import Any, Callable, Optional, Union
 
 
 class ScheduledTask:
@@ -26,8 +27,8 @@ class ScheduledTask:
         self.period = period
         self.start = start
         self.on_error = on_error
-        self.args = args or tuple()
-        self.kwargs = kwargs or dict()
+        self.args = args or ()
+        self.kwargs = kwargs or {}
 
         self.deadline = None
         self.error = None
@@ -97,7 +98,7 @@ class Scheduler:
         fixed_rate: bool = True,
         start: Optional[float] = None,
         on_error: Callable[[Exception], None] = None,
-        args: Optional[Union[Tuple, List[Any]]] = None,
+        args: Optional[Union[tuple, list[Any]]] = None,
         kwargs: Optional[Mapping[str, Any]] = None,
     ) -> ScheduledTask:
         """

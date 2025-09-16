@@ -2,7 +2,7 @@ import itertools
 import time
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Dict, List, Literal, Optional, TypedDict, Union
+from typing import Literal, TypedDict
 
 from localstack.aws.api.sns import (
     MessageAttributeMap,
@@ -11,6 +11,7 @@ from localstack.aws.api.sns import (
     topicARN,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 
@@ -23,6 +24,38 @@ SnsApplicationPlatforms = Literal[
 ]
 
 SnsMessageProtocols = Literal[SnsProtocols, SnsApplicationPlatforms]
+
+
+def create_default_sns_topic_policy(topic_arn: str) -> dict:
+    """
+    Creates the default SNS topic policy for the given topic ARN.
+
+    :param topic_arn: The topic arn
+    :return: A policy document
+    """
+    return {
+        "Version": "2008-10-17",
+        "Id": "__default_policy_ID",
+        "Statement": [
+            {
+                "Sid": "__default_statement_ID",
+                "Effect": "Allow",
+                "Principal": {"AWS": "*"},
+                "Action": [
+                    "SNS:GetTopicAttributes",
+                    "SNS:SetTopicAttributes",
+                    "SNS:AddPermission",
+                    "SNS:RemovePermission",
+                    "SNS:DeleteTopic",
+                    "SNS:Subscribe",
+                    "SNS:ListSubscriptionsByTopic",
+                    "SNS:Publish",
+                ],
+                "Resource": topic_arn,
+                "Condition": {"StringEquals": {"AWS:SourceOwner": parse_arn(topic_arn)["account"]}},
+            }
+        ],
+    }
 
 
 @singleton_factory
@@ -47,18 +80,18 @@ class SnsMessageType(StrEnum):
 @dataclass
 class SnsMessage:
     type: SnsMessageType
-    message: Union[
-        str, Dict
-    ]  # can be Dict if after being JSON decoded for validation if structure is `json`
-    message_attributes: Optional[MessageAttributeMap] = None
-    message_structure: Optional[str] = None
-    subject: Optional[str] = None
-    message_deduplication_id: Optional[str] = None
-    message_group_id: Optional[str] = None
-    token: Optional[str] = None
+    message: (
+        str | dict
+    )  # can be Dict if after being JSON decoded for validation if structure is `json`
+    message_attributes: MessageAttributeMap | None = None
+    message_structure: str | None = None
+    subject: str | None = None
+    message_deduplication_id: str | None = None
+    message_group_id: str | None = None
+    token: str | None = None
     message_id: str = field(default_factory=long_uid)
-    is_fifo: Optional[bool] = False
-    sequencer_number: Optional[str] = None
+    is_fifo: bool | None = False
+    sequencer_number: str | None = None
 
     def __post_init__(self):
         if self.message_attributes is None:
@@ -107,39 +140,39 @@ class SnsSubscription(TypedDict, total=False):
     Protocol: SnsProtocols
     SubscriptionArn: subscriptionARN
     PendingConfirmation: Literal["true", "false"]
-    Owner: Optional[str]
-    SubscriptionPrincipal: Optional[str]
-    FilterPolicy: Optional[str]
+    Owner: str | None
+    SubscriptionPrincipal: str | None
+    FilterPolicy: str | None
     FilterPolicyScope: Literal["MessageAttributes", "MessageBody"]
     RawMessageDelivery: Literal["true", "false"]
     ConfirmationWasAuthenticated: Literal["true", "false"]
-    SubscriptionRoleArn: Optional[str]
-    DeliveryPolicy: Optional[str]
+    SubscriptionRoleArn: str | None
+    DeliveryPolicy: str | None
 
 
 class SnsStore(BaseStore):
     # maps topic ARN to subscriptions ARN
-    topic_subscriptions: Dict[str, List[str]] = LocalAttribute(default=dict)
+    topic_subscriptions: dict[str, list[str]] = LocalAttribute(default=dict)
 
     # maps subscription ARN to SnsSubscription
-    subscriptions: Dict[str, SnsSubscription] = LocalAttribute(default=dict)
+    subscriptions: dict[str, SnsSubscription] = LocalAttribute(default=dict)
 
     # maps confirmation token to subscription ARN
-    subscription_tokens: Dict[str, str] = LocalAttribute(default=dict)
+    subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
 
     # maps topic ARN to list of tags
-    sns_tags: Dict[str, List[Dict]] = LocalAttribute(default=dict)
+    sns_tags: dict[str, list[dict]] = LocalAttribute(default=dict)
 
     # cache of topic ARN to platform endpoint messages (used primarily for testing)
-    platform_endpoint_messages: Dict[str, List[Dict]] = LocalAttribute(default=dict)
+    platform_endpoint_messages: dict[str, list[dict]] = LocalAttribute(default=dict)
 
     # list of sent SMS messages
-    sms_messages: List[Dict] = LocalAttribute(default=list)
+    sms_messages: list[dict] = LocalAttribute(default=list)
 
     # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
-    subscription_filter_policy: Dict[subscriptionARN, Dict] = LocalAttribute(default=dict)
+    subscription_filter_policy: dict[subscriptionARN, dict] = LocalAttribute(default=dict)
 
-    def get_topic_subscriptions(self, topic_arn: str) -> List[SnsSubscription]:
+    def get_topic_subscriptions(self, topic_arn: str) -> list[SnsSubscription]:
         topic_subscriptions = self.topic_subscriptions.get(topic_arn, [])
         subscriptions = [
             subscription

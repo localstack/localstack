@@ -7,7 +7,7 @@ from operator import itemgetter
 import pytest
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from localstack_snapshot.snapshots.transformer import KeyValueBasedTransformer, SortingTransformer
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 
 from localstack.aws.api.apigateway import PutMode
 from localstack.testing.aws.util import is_aws_cloud
@@ -368,6 +368,301 @@ class TestApiGatewayApiRestApi:
         snapshot.match("not-found-update-rest-api", ex.value.response)
         assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Validation behavior not yet implemented"
+    )
+    def test_update_rest_api_concatenation_of_errors(
+        self, apigw_create_rest_api, snapshot, aws_client
+    ):
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+
+        patch_operations = [
+            {"op": "wrong", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+            {"op": "wrong", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-operations-on-ipAddressType", e.value.response)
+
+        patch_operations = [
+            {"op": "wrong", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+            {"op": "wrong", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-operations-on-type", e.value.response)
+
+        patch_operations = [
+            {"op": "wrong", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+            {"op": "wrong", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+            {"op": "wrong", "path": "/binaryMediaTypes", "value": "image/gif"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match(
+            "update-rest-api-wrong-operations-on-type-and-on-ip-address-type", e.value.response
+        )
+
+    @markers.aws.validated
+    def test_update_rest_api_ip_address_type(self, apigw_create_rest_api, snapshot, aws_client):
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "REGIONAL"},
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "PRIVATE"},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-rest-api-replace-type", response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/ipAddressType", "value": "ipv4"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-replace-to-ipv4-within-private-type", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/ipAddressType", "value": "wrong"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-ipAddressType", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/types/0", "value": "wrong"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-wrong-type", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-invalid-operation-on-ipAddressType", e.value.response)
+
+        patch_operations = [
+            {"op": "remove", "path": "/endpointConfiguration/types/0", "value": "EDGE"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_rest_api(
+                restApiId=api_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-rest-api-invalid-operation-on-type", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/endpointConfiguration/ipAddressType", "value": "dualstack"},
+        ]
+        response = aws_client.apigateway.update_rest_api(
+            restApiId=api_id, patchOperations=patch_operations
+        )
+        snapshot.match("update-rest-api-replace-ip-address-type", response)
+
+    @markers.aws.validated
+    def test_create_rest_api_with_endpoint_configuration(self, apigw_create_rest_api, snapshot):
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "types": [],
+                },
+            )
+        snapshot.match("create-with-empty-types", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["EDGE"],
+                },
+            )
+        snapshot.match("create-with-invalid-ip-address-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "ipv4",
+                    "types": ["wrong"],
+                },
+            )
+        snapshot.match("create-with-invalid-types", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["wrong"],
+                },
+            )
+        snapshot.match("create-with-invalid-ip-address-type-and-types", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "types": ["wrong"],
+                    "ipAddressType": "wrong",
+                },
+            )
+        snapshot.match("create-with-invalid-types-and-ip-address-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+                minimumCompressionSize=-1,
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["wrong"],
+                },
+            )
+        snapshot.match("create-with-multiple-errors-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+                minimumCompressionSize=-1,
+                endpointConfiguration={
+                    "ipAddressType": "ipv4",
+                    "types": ["EDGE"],
+                },
+            )
+        snapshot.match("create-with-multiple-errors-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "types": ["EDGE", "REGIONAL"],
+                },
+            )
+        snapshot.match("create-with-two-types", e.value.response)
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "ipAddressType": "dualstack",
+                "types": ["EDGE"],
+            },
+        )
+        snapshot.match("create-with-endpoint-config-dualstack", response)
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "ipAddressType": "ipv4",
+                "types": ["REGIONAL"],
+            },
+        )
+        snapshot.match("create-with-endpoint-config-regional", response)
+
+    @markers.aws.validated
+    def test_create_rest_api_private_type(self, apigw_create_rest_api, snapshot):
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "ipv4",
+                    "types": ["PRIVATE"],
+                },
+            )
+        snapshot.match("create-with-private-type-and-ipv4-ip-address-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                endpointConfiguration={
+                    "ipAddressType": "wrong",
+                    "types": ["PRIVATE"],
+                },
+            )
+        snapshot.match("create-with-private-type-and-wrong-ip-address-type", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+                endpointConfiguration={
+                    "ipAddressType": "ipv4",
+                    "types": ["PRIVATE"],
+                },
+            )
+        snapshot.match(
+            "create-with-private-type-and-ipv4-ip-address-type-and-empty-description",
+            e.value.response,
+        )
+
+    @markers.aws.validated
+    def test_create_rest_api_verify_defaults(self, apigw_create_rest_api, snapshot):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "types": ["EDGE"],
+            },
+        )
+        snapshot.match("create-with-edge-default", response)
+        assert response["endpointConfiguration"]["ipAddressType"] == "ipv4"
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "types": ["REGIONAL"],
+            },
+        )
+        snapshot.match("create-with-regional-default", response)
+        assert response["endpointConfiguration"]["ipAddressType"] == "ipv4"
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            endpointConfiguration={
+                "types": ["PRIVATE"],
+            },
+        )
+        snapshot.match("create-with-private-default", response)
+        assert response["endpointConfiguration"]["ipAddressType"] == "dualstack"
+
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+        )
+        snapshot.match("create-with-empty-default", response)
+        assert response["endpointConfiguration"]["types"] == ["EDGE"]
+        assert response["endpointConfiguration"]["ipAddressType"] == "ipv4"
+
+        with pytest.raises(ClientError) as e:
+            apigw_create_rest_api(
+                name=f"test-api-{short_uid()}",
+                description="",
+                endpointConfiguration={
+                    "types": ["wrong"],
+                },
+            )
+        snapshot.match("create-with-empty-ip-address-type-and-wrong-type", e.value.response)
+
 
 class TestApiGatewayApiResource:
     @markers.aws.validated
@@ -554,6 +849,33 @@ class TestApiGatewayApiResource:
                 restApiId=api_id, resourceId=subresource_id, patchOperations=patch_operations
             )
         snapshot.match("add-unsupported", e.value.response)
+
+    @markers.aws.validated
+    def test_update_resource_on_root(self, apigw_create_rest_api, snapshot, aws_client):
+        snapshot.add_transformer(SortingTransformer("items", lambda x: x["path"]))
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}", description="testing resource behaviour"
+        )
+        api_id = response["id"]
+        root_id = response["rootResourceId"]
+
+        patch_operations = [
+            {"op": "replace", "path": "/pathPart", "value": "dogs"},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_resource(
+                restApiId=api_id, resourceId=root_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-root-path-part", e.value.response)
+
+        patch_operations = [
+            {"op": "replace", "path": "/parentId", "value": root_id},
+        ]
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_resource(
+                restApiId=api_id, resourceId=root_id, patchOperations=patch_operations
+            )
+        snapshot.match("update-root-parent", e.value.response)
 
     @markers.aws.validated
     def test_delete_resource(self, apigw_create_rest_api, snapshot, aws_client):
@@ -2304,31 +2626,35 @@ class TestApiGatewayGatewayResponse:
 
 class TestApigatewayTestInvoke:
     @markers.aws.validated
-    def test_invoke_test_method(self, create_rest_apigw, snapshot, aws_client):
-        snapshot.add_transformer(
-            KeyValueBasedTransformer(
-                lambda k, v: str(v) if k == "latency" else None, "latency", replace_reference=False
-            )
-        )
-        # TODO: maybe transformer `log` better
-        snapshot.add_transformer(
-            snapshot.transform.key_value("log", "log", reference_replacement=False)
-        )
-
-        api_id, _, root = create_rest_apigw(name="aws lambda api")
+    def test_invoke_test_method(
+        self, create_rest_apigw, snapshot, aws_client, apigw_test_invoke_response_formatter
+    ):
+        rest_api_id, _, root = create_rest_apigw(name="aws lambda api")
 
         # Create the /pets resource
         root_resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root, pathPart="pets"
+            aws_client.apigateway, restApiId=rest_api_id, parentId=root, pathPart="pets"
         )
         # Create the /pets/{petId} resource
         resource_id, _ = create_rest_resource(
-            aws_client.apigateway, restApiId=api_id, parentId=root_resource_id, pathPart="{petId}"
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            parentId=root_resource_id,
+            pathPart="{petId}",
         )
+        # Create the GET method for /pets
+        create_rest_resource_method(
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
         # Create the GET method for /pets/{petId}
         create_rest_resource_method(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="GET",
             authorizationType="NONE",
@@ -2339,7 +2665,7 @@ class TestApigatewayTestInvoke:
         # Create the POST method for /pets/{petId}
         create_rest_resource_method(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="POST",
             authorizationType="NONE",
@@ -2347,10 +2673,19 @@ class TestApigatewayTestInvoke:
                 "method.request.path.petId": True,
             },
         )
+
+        # Create the response for method GET /pets
+        create_rest_api_method_response(
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
         # Create the response for method GET /pets/{petId}
         create_rest_api_method_response(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="GET",
             statusCode="200",
@@ -2358,15 +2693,25 @@ class TestApigatewayTestInvoke:
         # Create the response for method POST /pets/{petId}
         create_rest_api_method_response(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="POST",
             statusCode="200",
         )
+        # Create the integration to connect GET /pets to a backend
+        create_rest_api_integration(
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            integrationHttpMethod="GET",
+            requestTemplates={"application/json": json.dumps({"statusCode": 200})},
+        )
         # Create the integration to connect GET /pets/{petId} to a backend
         create_rest_api_integration(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="GET",
             type="MOCK",
@@ -2379,7 +2724,7 @@ class TestApigatewayTestInvoke:
         # Create the integration to connect POST /pets/{petId} to a backend
         create_rest_api_integration(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="POST",
             type="MOCK",
@@ -2389,10 +2734,19 @@ class TestApigatewayTestInvoke:
             },
             requestTemplates={"application/json": json.dumps({"statusCode": 200})},
         )
+        # Create the 200 integration response for GET /pets
+        create_rest_api_integration_response(
+            aws_client.apigateway,
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseTemplates={"application/json": json.dumps({"pets": "all the pets"})},
+        )
         # Create the 200 integration response for GET /pets/{petId}
         create_rest_api_integration_response(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="GET",
             statusCode="200",
@@ -2401,20 +2755,29 @@ class TestApigatewayTestInvoke:
         # Create the 200 integration response for POST /pets/{petId}
         create_rest_api_integration_response(
             aws_client.apigateway,
-            restApiId=api_id,
+            restApiId=rest_api_id,
             resourceId=resource_id,
             httpMethod="POST",
             statusCode="200",
             responseTemplates={"application/json": json.dumps({"petId": "$input.params('petId')"})},
         )
 
-        def invoke_method(api_id, resource_id, path_with_query_string, method, body=""):
+        def invoke_method(
+            api_id: str,
+            target_resource_id: str,
+            method: str,
+            path_with_query_string: str | None = None,
+            body: str = "",
+        ):
+            kwargs = {}
+            if path_with_query_string is not None:
+                kwargs["pathWithQueryString"] = path_with_query_string
             res = aws_client.apigateway.test_invoke_method(
                 restApiId=api_id,
-                resourceId=resource_id,
+                resourceId=target_resource_id,
                 httpMethod=method,
-                pathWithQueryString=path_with_query_string,
                 body=body,
+                **kwargs,
             )
             assert 200 == res.get("status")
             return res
@@ -2423,60 +2786,124 @@ class TestApigatewayTestInvoke:
             invoke_method,
             retries=10,
             sleep=5,
-            api_id=api_id,
-            resource_id=resource_id,
+            api_id=rest_api_id,
+            target_resource_id=root_resource_id,
+            method="GET",
+        )
+        assert "HTTP Method: GET, Resource Path: /pets" in response["log"]
+        snapshot.match(
+            "test-invoke-method-get-pets",
+            apigw_test_invoke_response_formatter(response),
+        )
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=rest_api_id,
+            target_resource_id=root_resource_id,
+            path_with_query_string="/random/test",
+            method="GET",
+        )
+        snapshot.match(
+            "test-invoke-method-get-pets-bad-path",
+            apigw_test_invoke_response_formatter(response),
+        )
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=rest_api_id,
+            target_resource_id=resource_id,
             path_with_query_string="/pets/123",
             method="GET",
         )
         assert "HTTP Method: GET, Resource Path: /pets/123" in response["log"]
-        snapshot.match("test-invoke-method-get", response)
+        snapshot.match(
+            "test-invoke-method-get-pets-id",
+            apigw_test_invoke_response_formatter(response),
+        )
 
         response = retry(
             invoke_method,
             retries=10,
             sleep=5,
-            api_id=api_id,
-            resource_id=resource_id,
+            api_id=rest_api_id,
+            target_resource_id=resource_id,
+            method="GET",
+        )
+        assert "HTTP Method: GET, Resource Path: /pets/{petId}" in response["log"]
+        snapshot.match(
+            "test-invoke-method-get-pets-id-no-path",
+            apigw_test_invoke_response_formatter(response),
+        )
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=rest_api_id,
+            target_resource_id=resource_id,
+            path_with_query_string="/random/test",
+            method="GET",
+        )
+        assert "HTTP Method: GET, Resource Path: /random/test" in response["log"]
+        snapshot.match(
+            "test-invoke-method-get-pets-id-bad-path",
+            apigw_test_invoke_response_formatter(response),
+        )
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=rest_api_id,
+            target_resource_id=resource_id,
             path_with_query_string="/pets/123?foo=bar",
             method="GET",
         )
-        snapshot.match("test-invoke-method-get-with-qs", response)
+        snapshot.match(
+            "test-invoke-method-get-with-qs",
+            apigw_test_invoke_response_formatter(response),
+        )
 
         response = retry(
             invoke_method,
             retries=10,
             sleep=5,
-            api_id=api_id,
-            resource_id=resource_id,
+            api_id=rest_api_id,
+            target_resource_id=resource_id,
             path_with_query_string="/pets/123",
             method="POST",
             body=json.dumps({"foo": "bar"}),
         )
         assert "HTTP Method: POST, Resource Path: /pets/123" in response["log"]
-        snapshot.match("test-invoke-method-post-with-body", response)
+        snapshot.match(
+            "test-invoke-method-post-with-body",
+            apigw_test_invoke_response_formatter(response),
+        )
 
         # assert resource and rest api doesn't exist
         with pytest.raises(ClientError) as ex:
             aws_client.apigateway.test_invoke_method(
-                restApiId=api_id,
+                restApiId=rest_api_id,
                 resourceId="invalid_res",
                 httpMethod="POST",
                 pathWithQueryString="/pets/123",
                 body=json.dumps({"foo": "bar"}),
             )
         snapshot.match("resource-id-not-found", ex.value.response)
-        assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
         with pytest.raises(ClientError) as ex:
             aws_client.apigateway.test_invoke_method(
-                restApiId=api_id,
+                restApiId=rest_api_id,
                 resourceId="invalid_res",
                 httpMethod="POST",
                 pathWithQueryString="/pets/123",
                 body=json.dumps({"foo": "bar"}),
             )
         snapshot.match("rest-api-not-found", ex.value.response)
-        assert ex.value.response["Error"]["Code"] == "NotFoundException"
 
 
 class TestApigatewayIntegration:
@@ -2636,6 +3063,213 @@ class TestApigatewayIntegration:
         snapshot.match("put-integration-request-param-bool-value", e.value.response)
 
     @markers.aws.validated
+    def test_integration_response_wrong_api(self, aws_client, apigw_create_rest_api, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId="wrong-api", resourceId="dummy-value", httpMethod="GET", statusCode="200"
+            )
+        snapshot.match("put-integration-response-wrong-api", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_integration_response(
+                restApiId="wrong-api", resourceId="dummy-value", httpMethod="GET", statusCode="200"
+            )
+        snapshot.match("get-integration-response-wrong-api", e.value.response)
+
+    @markers.aws.validated
+    def test_integration_response_wrong_resource(self, aws_client, apigw_create_rest_api, snapshot):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test Integration Resource",
+        )
+        api_id = response["id"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id, resourceId="wrong-resource", httpMethod="GET", statusCode="200"
+            )
+        snapshot.match("put-integration-response-wrong-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_integration_response(
+                restApiId=api_id, resourceId="wrong-resource", httpMethod="GET", statusCode="200"
+            )
+        snapshot.match("get-integration-response-wrong-resource", e.value.response)
+
+    @markers.aws.validated
+    def test_integration_response_wrong_method(self, aws_client, apigw_create_rest_api, snapshot):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test Integration Method",
+        )
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="wrong-method",
+                statusCode="200",
+            )
+        snapshot.match("put-integration-response-wrong-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="wrong-method",
+                statusCode="200",
+            )
+        snapshot.match("get-integration-response-wrong-method", e.value.response)
+
+    @markers.aws.validated
+    def test_integration_response_invalid_statuscode(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test Integration Invalid StatusCode",
+        )
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="wrong",
+                responseTemplates={"application/json": '"created"'},
+                selectionPattern="",
+            )
+        snapshot.match("put-integration-response-invalid-statusCode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.get_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="wrong",
+            )
+        snapshot.match("get-integration-response-invalid-statusCode", e.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.skipif(
+        condition=not is_aws_cloud(), reason="Validation not yet implemented in LocalStack"
+    )
+    def test_integration_response_invalid_responsetemplates(
+        self, aws_client, aws_client_factory, apigw_create_rest_api, snapshot
+    ):
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(
+            name=f"test-api-{short_uid()}",
+            description="APIGW test wrong api",
+        )
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            integrationHttpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={"application/json": 123},
+            )
+        # TODO: AWS returns a SerializationException
+        #   But LocalStack currently doesn't raise any Error
+        snapshot.match("put-integration-response-invalid-responseTemplates-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.put_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                selectionPattern="",
+                responseTemplates={123: '{"statusCode": 200}'},
+            )
+        # TODO: AWS returns a BadRequestException
+        #   But LocalStack currently doesn't raise any Error
+        snapshot.match("put-integration-response-invalid-responseTemplates-2", e.value.response)
+
+    @markers.aws.validated
+    def test_integration_response_invalid_integration(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+            )
+        snapshot.match("get-integration-response-without-integration", e.value.response)
+
+    @markers.aws.validated
+    def test_integration_response_wrong_status_code(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.get_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="201",
+            )
+        snapshot.match("get-integration-response-wrong-status-code", e.value.response)
+
+    @markers.aws.validated
     def test_lifecycle_integration_response(self, aws_client, apigw_create_rest_api, snapshot):
         snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
         apigw_client = aws_client.apigateway
@@ -2714,3 +3348,678 @@ class TestApigatewayIntegration:
             statusCode="200",
         )
         snapshot.match("delete-integration-response", delete_response)
+
+    @markers.aws.validated
+    def test_delete_integration_response_errors(
+        self, aws_client_factory, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client_factory(config=Config(parameter_validation=False)).apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        put_response = apigw_client.put_integration_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseTemplates={"application/json": '"created"'},
+            selectionPattern="",
+        )
+        snapshot.match("put-integration-response", put_response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId="bad-resource",
+                httpMethod="GET",
+                statusCode="200",
+            )
+        snapshot.match("non-existent-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId="bad-api-id",
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+            )
+        snapshot.match("non-existent-api-id", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="POST",
+                statusCode="200",
+            )
+        snapshot.match("non-existent-method", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="201",
+            )
+        snapshot.match("non-existent-status-code", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.delete_integration_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="WRONG",
+                statusCode="201",
+            )
+        snapshot.match("bad-method", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_wrong_param_names(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/wrong",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-operation-with-wrong-param-name-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/responseParameters/wrong",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-operation-with-wrong-param-name-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseModels/wrong",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-operation-with-wrong-param-name-3", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/responseModels/wrong",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-operation-with-wrong-param-name-4", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_lack_response_parameters_and_models(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match(
+            "update-method-response-operation-without-response-parameters", e.value.response
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-operation-without-response-models", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "remove",
+                        "path": "/wrong/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-operation-with-wrong-path", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_response_negative_tests(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="201",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-statuscode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="wrong",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-invalid-statuscode", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="wrong",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-invalid-statuscode-and-wrong-op", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId="wrong",
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="POST",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "replace",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-method", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_response_wrong_operations(
+        self, aws_client, apigw_create_rest_api, snapshot
+    ):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-1", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-2", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-3", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-4", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            apigw_client.update_method_response(
+                restApiId=api_id,
+                resourceId=root_resource_id,
+                httpMethod="GET",
+                statusCode="200",
+                patchOperations=[
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseParameters/method.response.header.my-header",
+                        "value": "true",
+                    },
+                    {
+                        "op": "remove",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                    {
+                        "op": "wrong_op",
+                        "path": "/responseModels/application~1json",
+                        "value": "Empty",
+                    },
+                ],
+            )
+        snapshot.match("update-method-response-wrong-operation-5", e.value.response)
+
+    @markers.aws.validated
+    def test_update_method_response(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+        apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={"method.response.header.my-header": False},
+            responseModels={"application/json": "Empty"},
+        )
+
+        remove_update_response = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "remove",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "remove",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("remove-update-method-response", remove_update_response)
+
+        add_update_response = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "add",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("add-update-method-response", add_update_response)
+
+    @markers.aws.validated
+    def test_lifecycle_method_response(self, aws_client, apigw_create_rest_api, snapshot):
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        apigw_client = aws_client.apigateway
+        response = apigw_create_rest_api(name=f"test-api-{short_uid()}")
+        api_id = response["id"]
+        root_resource_id = response["rootResourceId"]
+
+        apigw_client.put_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+        apigw_client.put_integration(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="MOCK",
+            requestTemplates={"application/json": '{"statusCode": 200}'},
+        )
+
+        put_method_response = apigw_client.put_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            responseParameters={},
+            responseModels={},
+        )
+        snapshot.match("put-method-response", put_method_response)
+
+        get_response = apigw_client.get_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        snapshot.match("get-integration-response", get_response)
+
+        add_responses = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "add",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "add",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("add-method-responses", add_responses)
+
+        update_responses = apigw_client.update_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/responseParameters/method.response.header.my-header",
+                    "value": "true",
+                },
+                {
+                    "op": "replace",
+                    "path": "/responseModels/application~1json",
+                    "value": "Empty",
+                },
+            ],
+        )
+        snapshot.match("update-method-responses", update_responses)
+
+        get_method = apigw_client.get_method(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-method", get_method)
+
+        delete_response = apigw_client.delete_method_response(
+            restApiId=api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            statusCode="200",
+        )
+        snapshot.match("delete-method-response", delete_response)

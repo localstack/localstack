@@ -6,8 +6,9 @@ import logging
 import re
 import time
 from collections import namedtuple
+from collections.abc import Mapping
 from functools import cache, cached_property
-from typing import Mapping, Optional, TypedDict
+from typing import TypedDict
 from urllib import parse as urlparse
 
 from botocore.auth import HmacV1QueryAuth, S3SigV4QueryAuth
@@ -44,7 +45,6 @@ from localstack.services.s3.constants import (
 )
 from localstack.services.s3.utils import (
     S3_VIRTUAL_HOST_FORWARDED_HEADER,
-    _create_invalid_argument_exc,
     capitalize_header_name_from_snake_case,
     extract_bucket_name_and_key_from_headers_and_path,
     forwarded_from_virtual_host_addressed_request,
@@ -105,7 +105,7 @@ class NotValidSigV4SignatureContext(TypedDict):
     canonical_request: str
 
 
-FindSigV4Result = tuple["S3SigV4SignatureContext", Optional[NotValidSigV4SignatureContext]]
+FindSigV4Result = tuple["S3SigV4SignatureContext", NotValidSigV4SignatureContext | None]
 
 
 class HmacV1QueryAuthValidation(HmacV1QueryAuth):
@@ -258,7 +258,7 @@ def get_credentials_from_parameters(parameters: dict, region: str) -> PreSignedC
 
 
 @cache
-def get_secret_access_key_from_access_key_id(access_key_id: str, region: str) -> Optional[str]:
+def get_secret_access_key_from_access_key_id(access_key_id: str, region: str) -> str | None:
     """
     We need to retrieve the internal secret access key in order to also sign the request on our side to validate it
     For now, we need to access Moto internals, as they are no public APIs to retrieve it for obvious reasons.
@@ -472,7 +472,7 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
     x_amz_expires = int(query_parameters["X-Amz-Expires"])
     x_amz_expires_dt = datetime.timedelta(seconds=x_amz_expires)
     expiration_time = x_amz_date + x_amz_expires_dt
-    expiration_time = expiration_time.replace(tzinfo=datetime.timezone.utc)
+    expiration_time = expiration_time.replace(tzinfo=datetime.UTC)
 
     if is_expired(expiration_time):
         if config.S3_SKIP_SIGNATURE_VALIDATION:
@@ -771,13 +771,12 @@ def validate_post_policy(
     :return: None
     """
     if not request_form.get("key"):
-        ex: InvalidArgument = _create_invalid_argument_exc(
-            message="Bucket POST must contain a field named 'key'.  If it is specified, please check the order of the fields.",
-            name="key",
-            value="",
-            host_id=FAKE_HOST_ID,
+        raise InvalidArgument(
+            "Bucket POST must contain a field named 'key'.  If it is specified, please check the order of the fields.",
+            ArgumentName="key",
+            ArgumentValue="",
+            HostId=FAKE_HOST_ID,
         )
-        raise ex
 
     form_dict = {k.lower(): v for k, v in request_form.items()}
 
@@ -905,7 +904,7 @@ def _parse_policy_expiration_date(expiration_string: str) -> datetime.datetime:
         dt = datetime.datetime.strptime(expiration_string, POLICY_EXPIRATION_FORMAT2)
 
     # both date formats assume a UTC timezone ('Z' suffix), but it's not parsed as tzinfo into the datetime object
-    dt = dt.replace(tzinfo=datetime.timezone.utc)
+    dt = dt.replace(tzinfo=datetime.UTC)
     return dt
 
 
@@ -931,13 +930,12 @@ def _is_match_with_signature_fields(
                 if argument_name == "Awsaccesskeyid":
                     argument_name = "AWSAccessKeyId"
 
-                ex: InvalidArgument = _create_invalid_argument_exc(
-                    message=f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
-                    name=argument_name,
-                    value="",
-                    host_id=FAKE_HOST_ID,
+                raise InvalidArgument(
+                    f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
+                    ArgumentName=argument_name,
+                    ArgumentValue="",
+                    HostId=FAKE_HOST_ID,
                 )
-                raise ex
 
         return True
     return False

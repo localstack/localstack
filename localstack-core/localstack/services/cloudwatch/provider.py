@@ -1,11 +1,11 @@
 import json
 import logging
 import uuid
-from typing import Any, Optional
-from xml.sax.saxutils import escape
+from datetime import datetime
+from typing import Any
 
 from moto.cloudwatch import cloudwatch_backends
-from moto.cloudwatch.models import CloudWatchBackend, FakeAlarm, MetricDatum
+from moto.cloudwatch.models import Alarm, CloudWatchBackend, MetricDatum
 
 from localstack.aws.accounts import get_account_id_from_access_key_id
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -54,7 +54,7 @@ MOTO_INITIAL_UNCHECKED_REASON = "Unchecked: Initial alarm creation"
 LOG = logging.getLogger(__name__)
 
 
-@patch(target=FakeAlarm.update_state)
+@patch(target=Alarm.update_state)
 def update_state(target, self, reason, reason_data, state_value):
     if reason_data is None:
         reason_data = ""
@@ -115,21 +115,19 @@ def put_metric_alarm(
     description: str,
     dimensions: list[dict[str, str]],
     alarm_actions: list[str],
-    metric_data_queries: Optional[list[Any]] = None,
-    datapoints_to_alarm: Optional[int] = None,
-    extended_statistic: Optional[str] = None,
-    ok_actions: Optional[list[str]] = None,
-    insufficient_data_actions: Optional[list[str]] = None,
-    unit: Optional[str] = None,
+    metric_data_queries: list[Any] | None = None,
+    datapoints_to_alarm: int | None = None,
+    extended_statistic: str | None = None,
+    ok_actions: list[str] | None = None,
+    insufficient_data_actions: list[str] | None = None,
+    unit: str | None = None,
     actions_enabled: bool = True,
-    treat_missing_data: Optional[str] = None,
-    evaluate_low_sample_count_percentile: Optional[str] = None,
-    threshold_metric_id: Optional[str] = None,
-    rule: Optional[str] = None,
-    tags: Optional[list[dict[str, str]]] = None,
-) -> FakeAlarm:
-    if description:
-        description = escape(description)
+    treat_missing_data: str | None = None,
+    evaluate_low_sample_count_percentile: str | None = None,
+    threshold_metric_id: str | None = None,
+    rule: str | None = None,
+    tags: list[dict[str, str]] | None = None,
+) -> Alarm:
     return target(
         self,
         name,
@@ -158,7 +156,7 @@ def put_metric_alarm(
     )
 
 
-def create_metric_data_query_from_alarm(alarm: FakeAlarm):
+def create_metric_data_query_from_alarm(alarm: Alarm):
     # TODO may need to be adapted for other use cases
     #  verified return value with a snapshot test
     return [
@@ -179,7 +177,7 @@ def create_metric_data_query_from_alarm(alarm: FakeAlarm):
 
 
 def create_message_response_update_state_lambda(
-    alarm: FakeAlarm, old_state, old_state_reason, old_state_timestamp
+    alarm: Alarm, old_state, old_state_reason, old_state_timestamp
 ):
     response = {
         "accountId": extract_account_id_from_arn(alarm.alarm_arn),
@@ -189,12 +187,12 @@ def create_message_response_update_state_lambda(
             "state": {
                 "value": alarm.state_value,
                 "reason": alarm.state_reason,
-                "timestamp": alarm.state_updated_timestamp,
+                "timestamp": _to_iso_8601_datetime_with_nanoseconds(alarm.state_updated_timestamp),
             },
             "previousState": {
                 "value": old_state,
                 "reason": old_state_reason,
-                "timestamp": old_state_timestamp,
+                "timestamp": _to_iso_8601_datetime_with_nanoseconds(old_state_timestamp),
             },
             "configuration": {
                 "description": alarm.description or "",
@@ -204,7 +202,7 @@ def create_message_response_update_state_lambda(
                 ),  # TODO: add test with metric_data_queries
             },
         },
-        "time": alarm.state_updated_timestamp,
+        "time": _to_iso_8601_datetime_with_nanoseconds(alarm.state_updated_timestamp),
         "region": alarm.region_name,
         "source": "aws.cloudwatch",
     }
@@ -217,10 +215,12 @@ def create_message_response_update_state_sns(alarm, old_state):
         "OldStateValue": old_state,
         "AlarmName": alarm.name,
         "AlarmDescription": alarm.description or "",
-        "AlarmConfigurationUpdatedTimestamp": alarm.configuration_updated_timestamp,
+        "AlarmConfigurationUpdatedTimestamp": _to_iso_8601_datetime_with_nanoseconds(
+            alarm.configuration_updated_timestamp
+        ),
         "NewStateValue": alarm.state_value,
         "NewStateReason": alarm.state_reason,
-        "StateChangeTime": alarm.state_updated_timestamp,
+        "StateChangeTime": _to_iso_8601_datetime_with_nanoseconds(alarm.state_updated_timestamp),
         # the long-name for 'region' should be used - as we don't have it, we use the short name
         # which needs to be slightly changed to make snapshot tests work
         "Region": alarm.region_name.replace("-", " ").capitalize(),
@@ -266,6 +266,11 @@ def create_message_response_update_state_sns(alarm, old_state):
 class ValidationError(CommonServiceException):
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
+
+
+def _to_iso_8601_datetime_with_nanoseconds(date: datetime | None) -> str | None:
+    if date is not None:
+        return date.strftime("%Y-%m-%dT%H:%M:%S.%f000Z")
 
 
 def _set_alarm_actions(context, alarm_names, enabled):

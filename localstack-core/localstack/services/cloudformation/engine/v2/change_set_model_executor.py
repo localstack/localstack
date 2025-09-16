@@ -1,24 +1,32 @@
 import copy
 import logging
+import os
+import re
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Final, Optional
+from datetime import UTC, datetime
+from typing import Final, Protocol, TypeVar
 
+from localstack import config
 from localstack.aws.api.cloudformation import (
     ChangeAction,
+    Output,
     ResourceStatus,
     StackStatus,
 )
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
-from localstack.services.cloudformation.engine.parameters import resolve_ssm_parameter
+from localstack.services.cloudformation.analytics import track_resource_operation
+from localstack.services.cloudformation.deployment_utils import log_not_available_message
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeDependsOn,
     NodeOutput,
-    NodeParameter,
     NodeResource,
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
+    _AWS_URL_SUFFIX,
+    MOCKED_REFERENCE,
     ChangeSetModelPreproc,
     PreprocEntityDelta,
     PreprocOutput,
@@ -32,61 +40,99 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderExecutor,
     ResourceProviderPayload,
 )
-from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
 
 LOG = logging.getLogger(__name__)
 
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
 
+REGEX_OUTPUT_APIGATEWAY = re.compile(
+    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
+)
+
+_T = TypeVar("_T")
+
 
 @dataclass
 class ChangeSetModelExecutorResult:
-    resources: dict
-    parameters: dict
-    outputs: dict
+    resources: dict[str, ResolvedResource]
+    outputs: list[Output]
+    failure_message: str | None = None
+
+
+class DeferredAction(Protocol):
+    def __call__(self) -> None: ...
+
+
+@dataclass
+class Deferred:
+    name: str
+    action: DeferredAction
+
+
+class TriggerRollback(Exception):
+    """
+    Sentinel exception to signal that the deployment should be stopped for a reason
+    """
+
+    def __init__(self, logical_resource_id: str, reason: str | None):
+        self.logical_resource_id = logical_resource_id
+        self.reason = reason
 
 
 class ChangeSetModelExecutor(ChangeSetModelPreproc):
     # TODO: add typing for resolved resources and parameters.
-    resources: Final[dict]
-    outputs: Final[dict]
-    resolved_parameters: Final[dict]
+    resources: Final[dict[str, ResolvedResource]]
+    outputs: Final[list[Output]]
+    _deferred_actions: list[Deferred]
 
     def __init__(self, change_set: ChangeSet):
         super().__init__(change_set=change_set)
-        self.resources = dict()
-        self.outputs = dict()
-        self.resolved_parameters = dict()
-
-    # TODO: use a structured type for the return value
-    def execute(self) -> ChangeSetModelExecutorResult:
-        self.process()
-        return ChangeSetModelExecutorResult(
-            resources=self.resources, parameters=self.resolved_parameters, outputs=self.outputs
+        self.resources = {}
+        self.outputs = []
+        self._deferred_actions = []
+        self.resource_provider_executor = ResourceProviderExecutor(
+            stack_name=change_set.stack.stack_name,
+            stack_id=change_set.stack.stack_id,
         )
 
-    def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        delta = super().visit_node_parameter(node_parameter)
+    def execute(self) -> ChangeSetModelExecutorResult:
+        # constructive process
+        failure_message = None
+        try:
+            self.process()
+        except TriggerRollback as e:
+            failure_message = e.reason
+        except Exception as e:
+            failure_message = str(e)
 
-        # handle dynamic references, e.g. references to SSM parameters
-        # TODO: support more parameter types
-        parameter_type: str = node_parameter.type_.value
-        if parameter_type.startswith("AWS::SSM"):
-            if parameter_type in [
-                "AWS::SSM::Parameter::Value<String>",
-                "AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>",
-                "AWS::SSM::Parameter::Value<CommaDelimitedList>",
-            ]:
-                delta.after = resolve_ssm_parameter(
-                    account_id=self._change_set.account_id,
-                    region_name=self._change_set.region_name,
-                    stack_parameter_value=delta.after,
-                )
+        if self._deferred_actions:
+            if failure_message:
+                # TODO: differentiate between update and create
+                self._change_set.stack.set_stack_status(StackStatus.ROLLBACK_IN_PROGRESS)
             else:
-                raise Exception(f"Unsupported stack parameter type: {parameter_type}")
+                # TODO: correct status
+                self._change_set.stack.set_stack_status(
+                    StackStatus.UPDATE_COMPLETE_CLEANUP_IN_PROGRESS
+                )
 
-        self.resolved_parameters[node_parameter.name] = delta.after
-        return delta
+            # perform all deferred actions such as deletions. These must happen in reverse from their
+            # defined order so that resource dependencies are honoured
+            # TODO: errors will stop all rollbacks; get parity on this behaviour
+            for deferred in self._deferred_actions[::-1]:
+                LOG.debug("executing deferred action: '%s'", deferred.name)
+                deferred.action()
+
+        if failure_message:
+            # TODO: differentiate between update and create
+            self._change_set.stack.set_stack_status(StackStatus.ROLLBACK_COMPLETE)
+
+        return ChangeSetModelExecutorResult(
+            resources=self.resources, outputs=self.outputs, failure_message=failure_message
+        )
+
+    def _defer_action(self, name: str, action: DeferredAction):
+        self._deferred_actions.append(Deferred(name=name, action=action))
 
     def _get_physical_id(self, logical_resource_id, strict: bool = True) -> str | None:
         physical_resource_id = None
@@ -108,12 +154,13 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
 
     def _process_event(
         self,
+        *,
         action: ChangeAction,
         logical_resource_id,
         event_status: OperationStatus,
+        resource_type: str,
         special_action: str = None,
         reason: str = None,
-        resource_type=None,
     ):
         status_from_action = special_action or EventOperationFromAction[action.value]
         if event_status == OperationStatus.SUCCESS:
@@ -121,9 +168,10 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         else:
             status = f"{status_from_action}_{event_status.name}"
 
+        physical_resource_id = self._get_physical_id(logical_resource_id, False)
         self._change_set.stack.set_resource_status(
             logical_resource_id=logical_resource_id,
-            physical_resource_id=self._get_physical_id(logical_resource_id, False),
+            physical_resource_id=physical_resource_id,
             resource_type=resource_type,
             status=ResourceStatus(status),
             resource_status_reason=reason,
@@ -159,7 +207,8 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             depends_on_resource_logical_ids.update(array_identifiers_delta.after)
         for depends_on_resource_logical_id in depends_on_resource_logical_ids:
             node_resource = self._get_node_resource_for(
-                resource_name=depends_on_resource_logical_id, node_template=self._node_template
+                resource_name=depends_on_resource_logical_id,
+                node_template=self._change_set.update_model.node_template,
             )
             self.visit(node_resource)
 
@@ -172,7 +221,24 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         Overrides the default preprocessing for NodeResource objects by annotating the
         `after` delta with the physical resource ID, if side effects resulted in an update.
         """
-        delta = super().visit_node_resource(node_resource=node_resource)
+        try:
+            delta = super().visit_node_resource(node_resource=node_resource)
+        except Exception as e:
+            LOG.debug(
+                "preprocessing resource '%s' failed: %s",
+                node_resource.name,
+                e,
+                exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
+            )
+            self._process_event(
+                action=node_resource.change_type.to_change_action(),
+                logical_resource_id=node_resource.name,
+                event_status=OperationStatus.FAILED,
+                resource_type=node_resource.type_.value,
+                reason=str(e),
+            )
+            raise e
+
         before = delta.before
         after = delta.after
 
@@ -185,16 +251,30 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             # references or other downstream operations.
             if not is_nothing(before):
                 before_logical_id = delta.before.logical_id
-                before_resource = self._before_resolved_resources.get(before_logical_id, dict())
+                before_resource = self._before_resolved_resources.get(before_logical_id, {})
                 self.resources[before_logical_id] = before_resource
 
         # Update the latest version of this resource for downstream references.
         if not is_nothing(after):
             after_logical_id = after.logical_id
-            after_physical_id: str = self._after_resource_physical_id(
-                resource_logical_id=after_logical_id
-            )
-            after.physical_resource_id = after_physical_id
+            resource = self.resources[after_logical_id]
+            resource_failed_to_deploy = resource["ResourceStatus"] in {
+                ResourceStatus.CREATE_FAILED,
+                ResourceStatus.UPDATE_FAILED,
+            }
+            if not resource_failed_to_deploy:
+                after_physical_id: str = self._after_resource_physical_id(
+                    resource_logical_id=after_logical_id
+                )
+                after.physical_resource_id = after_physical_id
+            after.status = resource["ResourceStatus"]
+
+            # terminate the deployment process
+            if resource_failed_to_deploy:
+                raise TriggerRollback(
+                    logical_resource_id=after_logical_id,
+                    reason=resource.get("ResourceStatusReason"),
+                )
         return delta
 
     def visit_node_output(
@@ -204,11 +284,20 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         after = delta.after
         if is_nothing(after) or (isinstance(after, PreprocOutput) and after.condition is False):
             return delta
-        self.outputs[delta.after.name] = delta.after.value
+
+        output = Output(
+            OutputKey=delta.after.name,
+            OutputValue=delta.after.value,
+            # TODO
+            # Description=delta.after.description
+        )
+        if after.export:
+            output["ExportName"] = after.export["Name"]
+        self.outputs.append(output)
         return delta
 
     def _execute_resource_change(
-        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
+        self, name: str, before: PreprocResource | None, after: PreprocResource | None
     ) -> None:
         # Changes are to be made about this resource.
         # TODO: this logic is a POC and should be revised.
@@ -219,21 +308,67 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # XXX hacky, stick the previous resources' properties into the payload
                 before_properties = self._merge_before_properties(name, before)
 
-                self._process_event(ChangeAction.Modify, name, OperationStatus.IN_PROGRESS)
-                event = self._execute_resource_action(
+                self._process_event(
                     action=ChangeAction.Modify,
                     logical_resource_id=name,
-                    resource_type=before.resource_type,
-                    before_properties=before_properties,
-                    after_properties=after.properties,
-                )
-                self._process_event(
-                    ChangeAction.Modify,
-                    name,
-                    event.status,
-                    reason=event.message,
+                    event_status=OperationStatus.IN_PROGRESS,
                     resource_type=before.resource_type,
                 )
+                if after.requires_replacement:
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Add,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=None,
+                        after_properties=after.properties,
+                    )
+                    self._process_event(
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        event_status=event.status,
+                        resource_type=before.resource_type,
+                        reason=event.message,
+                    )
+
+                    def cleanup():
+                        self._process_event(
+                            action=ChangeAction.Remove,
+                            logical_resource_id=name,
+                            event_status=OperationStatus.IN_PROGRESS,
+                            resource_type=before.resource_type,
+                        )
+                        event = self._execute_resource_action(
+                            action=ChangeAction.Remove,
+                            logical_resource_id=name,
+                            resource_type=before.resource_type,
+                            before_properties=before_properties,
+                            after_properties=None,
+                            part_of_replacement=True,
+                        )
+                        self._process_event(
+                            action=ChangeAction.Remove,
+                            logical_resource_id=name,
+                            event_status=event.status,
+                            resource_type=before.resource_type,
+                            reason=event.message,
+                        )
+
+                    self._defer_action(f"cleanup-from-replacement-{name}", cleanup)
+                else:
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=before_properties,
+                        after_properties=after.properties,
+                    )
+                    self._process_event(
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        event_status=event.status,
+                        resource_type=before.resource_type,
+                        reason=event.message,
+                    )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
             else:
@@ -241,21 +376,24 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 before_properties = self._merge_before_properties(name, before)
                 # Register a Removed for the previous type.
 
-                event = self._execute_resource_action(
-                    action=ChangeAction.Remove,
-                    logical_resource_id=name,
-                    resource_type=before.resource_type,
-                    before_properties=before_properties,
-                    after_properties=None,
-                )
-                # Register a Create for the next type.
-                self._process_event(
-                    ChangeAction.Modify,
-                    name,
-                    event.status,
-                    reason=event.message,
-                    resource_type=before.resource_type,
-                )
+                def perform_deletion():
+                    event = self._execute_resource_action(
+                        action=ChangeAction.Remove,
+                        logical_resource_id=name,
+                        resource_type=before.resource_type,
+                        before_properties=before_properties,
+                        after_properties=None,
+                    )
+                    self._process_event(
+                        action=ChangeAction.Modify,
+                        logical_resource_id=name,
+                        event_status=event.status,
+                        resource_type=before.resource_type,
+                        reason=event.message,
+                    )
+
+                self._defer_action(f"type-migration-{name}", perform_deletion)
+
                 event = self._execute_resource_action(
                     action=ChangeAction.Add,
                     logical_resource_id=name,
@@ -264,43 +402,47 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     after_properties=after.properties,
                 )
                 self._process_event(
-                    ChangeAction.Modify,
-                    name,
-                    event.status,
-                    reason=event.message,
+                    action=ChangeAction.Modify,
+                    logical_resource_id=name,
+                    event_status=event.status,
                     resource_type=before.resource_type,
+                    reason=event.message,
                 )
         elif not is_nothing(before):
             # Case: removal
             # XXX hacky, stick the previous resources' properties into the payload
             # XXX hacky, stick the previous resources' properties into the payload
             before_properties = self._merge_before_properties(name, before)
-            self._process_event(
-                ChangeAction.Remove,
-                name,
-                OperationStatus.IN_PROGRESS,
-                resource_type=before.resource_type,
-            )
-            event = self._execute_resource_action(
-                action=ChangeAction.Remove,
-                logical_resource_id=name,
-                resource_type=before.resource_type,
-                before_properties=before_properties,
-                after_properties=None,
-            )
-            self._process_event(
-                ChangeAction.Remove,
-                name,
-                event.status,
-                reason=event.message,
-                resource_type=before.resource_type,
-            )
+
+            def perform_deletion():
+                self._process_event(
+                    action=ChangeAction.Remove,
+                    logical_resource_id=name,
+                    resource_type=before.resource_type,
+                    event_status=OperationStatus.IN_PROGRESS,
+                )
+                event = self._execute_resource_action(
+                    action=ChangeAction.Remove,
+                    logical_resource_id=name,
+                    resource_type=before.resource_type,
+                    before_properties=before_properties,
+                    after_properties=None,
+                )
+                self._process_event(
+                    action=ChangeAction.Remove,
+                    logical_resource_id=name,
+                    event_status=event.status,
+                    resource_type=before.resource_type,
+                    reason=event.message,
+                )
+
+            self._defer_action(f"remove-{name}", perform_deletion)
         elif not is_nothing(after):
             # Case: addition
             self._process_event(
-                ChangeAction.Add,
-                name,
-                OperationStatus.IN_PROGRESS,
+                action=ChangeAction.Add,
+                logical_resource_id=name,
+                event_status=OperationStatus.IN_PROGRESS,
                 resource_type=after.resource_type,
             )
             event = self._execute_resource_action(
@@ -311,11 +453,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 after_properties=after.properties,
             )
             self._process_event(
-                ChangeAction.Add,
-                name,
-                event.status,
-                reason=event.message,
+                action=ChangeAction.Add,
+                logical_resource_id=name,
+                event_status=event.status,
                 resource_type=after.resource_type,
+                reason=event.message,
             )
 
     def _merge_before_properties(
@@ -334,13 +476,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         action: ChangeAction,
         logical_resource_id: str,
         resource_type: str,
-        before_properties: Optional[PreprocProperties],
-        after_properties: Optional[PreprocProperties],
+        before_properties: PreprocProperties | None,
+        after_properties: PreprocProperties | None,
+        part_of_replacement: bool = False,
     ) -> ProgressEvent:
         LOG.debug("Executing resource action: %s for resource '%s'", action, logical_resource_id)
-        resource_provider_executor = ResourceProviderExecutor(
-            stack_name=self._change_set.stack.stack_name, stack_id=self._change_set.stack.stack_id
-        )
         payload = self.create_resource_provider_payload(
             action=action,
             logical_resource_id=logical_resource_id,
@@ -348,14 +488,15 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             before_properties=before_properties,
             after_properties=after_properties,
         )
-        resource_provider = resource_provider_executor.try_load_resource_provider(resource_type)
+        resource_provider = self.resource_provider_executor.try_load_resource_provider(
+            resource_type
+        )
+        track_resource_operation(action, resource_type, missing=resource_provider is not None)
 
         extra_resource_properties = {}
-        event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
         if resource_provider is not None:
-            # TODO: stack events
             try:
-                event = resource_provider_executor.deploy_loop(
+                event = self.resource_provider_executor.deploy_loop(
                     resource_provider, extra_resource_properties, payload
                 )
             except Exception as e:
@@ -363,26 +504,52 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 LOG.warning(
                     "Resource provider operation failed: '%s'",
                     reason,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
-                )
-                stack = self._change_set.stack
-                stack.set_resource_status(
-                    logical_resource_id=logical_resource_id,
-                    # TODO,
-                    physical_resource_id="",
-                    resource_type=resource_type,
-                    status=ResourceStatus.CREATE_FAILED
-                    if action == ChangeAction.Add
-                    else ResourceStatus.UPDATE_FAILED,
-                    resource_status_reason=reason,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 event = ProgressEvent(
                     OperationStatus.FAILED,
                     resource_model={},
                     message=f"Resource provider operation failed: {reason}",
                 )
+        elif config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+            if "CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES" not in os.environ:
+                LOG.warning(
+                    "Deployment of resource type %s succeeded, but will fail in upcoming LocalStack releases unless CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES is explicitly enabled.",
+                    resource_type,
+                )
+            event = ProgressEvent(
+                OperationStatus.SUCCESS,
+                resource_model={},
+                message=f"Resource type {resource_type} is not supported but was deployed as a fallback",
+            )
+        else:
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+            event = ProgressEvent(
+                OperationStatus.FAILED,
+                resource_model={},
+                message=f"Resource type {resource_type} not supported",
+            )
 
-        self.resources.setdefault(logical_resource_id, {"Properties": {}})
+        if part_of_replacement and action == ChangeAction.Remove:
+            # Early return as we don't want to update internal state of the executor if this is a
+            # cleanup of an old resource. The new resource has already been created and the state
+            # updated
+            return event
+
+        status_from_action = EventOperationFromAction[action.value]
+        resolved_resource = ResolvedResource(
+            Properties=event.resource_model,
+            LogicalResourceId=logical_resource_id,
+            Type=resource_type,
+            LastUpdatedTimestamp=datetime.now(UTC),
+        )
         match event.status:
             case OperationStatus.SUCCESS:
                 # merge the resources state with the external state
@@ -395,14 +562,19 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 # TODO: avoid the use of setdefault (debuggability/readability)
                 # TODO: review the use of merge
 
-                self.resources[logical_resource_id]["Properties"].update(event.resource_model)
-                self.resources[logical_resource_id].update(extra_resource_properties)
-                # XXX for legacy delete_stack compatibility
-                self.resources[logical_resource_id]["LogicalResourceId"] = logical_resource_id
-                self.resources[logical_resource_id]["Type"] = resource_type
-
-                physical_resource_id = self._get_physical_id(logical_resource_id)
-                self.resources[logical_resource_id]["PhysicalResourceId"] = physical_resource_id
+                # Don't update the resolved resources if we have deleted that resource
+                if action != ChangeAction.Remove:
+                    physical_resource_id = (
+                        extra_resource_properties["PhysicalResourceId"]
+                        if resource_provider
+                        else MOCKED_REFERENCE
+                    )
+                    resolved_resource["PhysicalResourceId"] = physical_resource_id
+                    resolved_resource["ResourceStatus"] = ResourceStatus(
+                        f"{status_from_action}_COMPLETE"
+                    )
+                    # TODO: do we actually need this line?
+                    resolved_resource.update(extra_resource_properties)
 
             case OperationStatus.FAILED:
                 reason = event.message
@@ -410,8 +582,12 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     "Resource provider operation failed: '%s'",
                     reason,
                 )
+                resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
+                resolved_resource["ResourceStatusReason"] = reason
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
+
+        self.resources[logical_resource_id] = resolved_resource
         return event
 
     def create_resource_provider_payload(
@@ -419,9 +595,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         action: ChangeAction,
         logical_resource_id: str,
         resource_type: str,
-        before_properties: Optional[PreprocProperties],
-        after_properties: Optional[PreprocProperties],
-    ) -> Optional[ResourceProviderPayload]:
+        before_properties: PreprocProperties | None,
+        after_properties: PreprocProperties | None,
+    ) -> ResourceProviderPayload | None:
         # FIXME: use proper credentials
         creds: Credentials = {
             "accessKeyId": self._change_set.stack.account_id,
@@ -469,3 +645,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             },
         }
         return resource_provider_payload
+
+    def _maybe_perform_on_delta(
+        self, delta: PreprocEntityDelta, f: Callable[[_T], _T]
+    ) -> PreprocEntityDelta:
+        # we only care about the after state
+        if isinstance(delta.after, str):
+            delta.after = f(delta.after)
+        return delta

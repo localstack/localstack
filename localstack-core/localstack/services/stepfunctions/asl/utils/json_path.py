@@ -1,5 +1,5 @@
 import re
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from jsonpath_ng.ext import parse
 from jsonpath_ng.jsonpath import Index
@@ -24,7 +24,7 @@ def _contains_slice_or_wildcard_array(path: str) -> bool:
 class NoSuchJsonPathError(Exception):
     json_path: Final[str]
     data: Final[Any]
-    _message: Optional[str]
+    _message: str | None
 
     def __init__(self, json_path: str, data: Any):
         self.json_path = json_path

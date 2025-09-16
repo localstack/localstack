@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.mocking.mock_config_file import (
     RawMockConfig,
@@ -56,7 +56,7 @@ class StateMockedResponses:
     ):
         self.state_name = state_name
         self.mocked_response_name = mocked_response_name
-        self.mocked_responses = list()
+        self.mocked_responses = []
         last_range_end: int = -1
         mocked_responses_sorted = sorted(mocked_responses, key=lambda mr: mr.range_start)
         for mocked_response in mocked_responses_sorted:
@@ -87,7 +87,7 @@ class MockTestCase:
     ):
         self.state_machine_name = state_machine_name
         self.test_case_name = test_case_name
-        self.state_mocked_responses = dict()
+        self.state_mocked_responses = {}
         for state_mocked_response in state_mocked_responses_list:
             state_name = state_mocked_response.state_name
             if state_name in self.state_mocked_responses:
@@ -144,14 +144,14 @@ def _mocked_response_from_raw(
 def _mocked_responses_from_raw(
     mocked_response_name: str, raw_mock_config: RawMockConfig
 ) -> list[MockedResponse]:
-    raw_response_models: Optional[dict[str, RawResponseModel]] = (
-        raw_mock_config.MockedResponses.get(mocked_response_name)
+    raw_response_models: dict[str, RawResponseModel] | None = raw_mock_config.MockedResponses.get(
+        mocked_response_name
     )
     if not raw_response_models:
         raise RuntimeError(
             f"No definitions for mocked response '{mocked_response_name}' in the mock configuration file."
         )
-    mocked_responses: list[MockedResponse] = list()
+    mocked_responses: list[MockedResponse] = []
     for raw_response_model_range, raw_response_model in raw_response_models.items():
         mocked_response: MockedResponse = _mocked_response_from_raw(
             raw_response_model_range=raw_response_model_range, raw_response_model=raw_response_model
@@ -187,7 +187,7 @@ def _mock_test_case_from_raw(
             f"No definitions for test case '{test_case_name}' and "
             f"state machine '{state_machine_name}' in the mock configuration file."
         )
-    state_mocked_responses_list: list[StateMockedResponses] = list()
+    state_mocked_responses_list: list[StateMockedResponses] = []
     for state_name, mocked_response_name in test_case.root.items():
         state_mocked_responses = _state_mocked_responses_from_raw(
             state_name=state_name,
@@ -202,8 +202,8 @@ def _mock_test_case_from_raw(
     )
 
 
-def load_mock_test_case_for(state_machine_name: str, test_case_name: str) -> Optional[MockTestCase]:
-    raw_mock_config: Optional[RawMockConfig] = _load_sfn_raw_mock_config()
+def load_mock_test_case_for(state_machine_name: str, test_case_name: str) -> MockTestCase | None:
+    raw_mock_config: RawMockConfig | None = _load_sfn_raw_mock_config()
     if raw_mock_config is None:
         return None
     mock_test_case: MockTestCase = _mock_test_case_from_raw(

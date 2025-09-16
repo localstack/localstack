@@ -50,6 +50,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_and_list_sign_key": {
     "last_validated_date": "2024-04-11T15:53:27+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_describe_with_alias_arn": {
+    "last_validated_date": "2025-08-05T17:00:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 0.99,
+      "teardown": 0.16,
+      "total": 1.98
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_disable_and_enable_key": {
     "last_validated_date": "2024-04-11T15:52:38+00:00"
   },
@@ -60,7 +69,13 @@
     "last_validated_date": "2024-04-11T15:53:18+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "last_validated_date": "2024-04-11T15:54:22+00:00"
+    "last_validated_date": "2025-07-08T05:53:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.74,
+      "call": 1.08,
+      "teardown": 0.15,
+      "total": 1.97
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {
     "last_validated_date": "2024-04-11T15:53:20+00:00"
@@ -120,7 +135,13 @@
     "last_validated_date": "2024-04-11T15:52:50+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_does_not_exist": {
-    "last_validated_date": "2024-04-11T15:52:32+00:00"
+    "last_validated_date": "2025-09-08T19:02:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 1.5,
+      "teardown": 0.22,
+      "total": 2.55
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
     "last_validated_date": "2024-06-14T13:35:20+00:00"
@@ -145,6 +166,87 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
     "last_validated_date": "2024-04-11T15:53:35+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P256]": {
+    "last_validated_date": "2025-08-04T08:10:22+00:00",
+    "durations_in_seconds": {
+      "setup": 1.37,
+      "call": 4.01,
+      "teardown": 0.32,
+      "total": 5.7
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P384]": {
+    "last_validated_date": "2025-08-04T08:10:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.15,
+      "teardown": 0.31,
+      "total": 3.46
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P521]": {
+    "last_validated_date": "2025-08-04T08:10:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.18,
+      "teardown": 0.31,
+      "total": 3.49
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_SECG_P256K1]": {
+    "last_validated_date": "2025-08-04T08:10:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.28,
+      "teardown": 0.32,
+      "total": 3.6
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_224]": {
+    "last_validated_date": "2025-08-04T08:11:28+00:00",
+    "durations_in_seconds": {
+      "setup": 1.33,
+      "call": 3.61,
+      "teardown": 0.32,
+      "total": 5.26
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_256]": {
+    "last_validated_date": "2025-08-04T08:11:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.85,
+      "teardown": 0.32,
+      "total": 3.17
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_384]": {
+    "last_validated_date": "2025-08-04T08:11:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.89,
+      "teardown": 0.32,
+      "total": 3.21
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_hmac_keys[HMAC_512]": {
+    "last_validated_date": "2025-08-04T08:11:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.92,
+      "teardown": 0.32,
+      "total": 3.24
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_rsa_aes_wrap_sha256": {
+    "last_validated_date": "2025-07-22T06:11:13+00:00",
+    "durations_in_seconds": {
+      "setup": 1.91,
+      "call": 4.8,
+      "teardown": 0.37,
+      "total": 7.08
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
     "last_validated_date": "2024-04-11T15:53:31+00:00"
@@ -211,6 +313,15 @@
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
     "last_validated_date": "2024-04-11T15:53:44+00:00"
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_replica_key_should_fail": {
+    "last_validated_date": "2025-09-08T16:34:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.85,
+      "call": 2.29,
+      "teardown": 0.34,
+      "total": 3.48
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_retire_grant_with_grant_token": {
     "last_validated_date": "2024-04-11T15:52:46+00:00"

@@ -22,7 +22,7 @@ def read_s3_data(aws_client):
 
             keys = [obj.get("Key") for obj in response.get("Contents")]
 
-            bucket_data = dict()
+            bucket_data = {}
             for key in keys:
                 response = s3.get_object(Bucket=bucket_name, Key=key)
                 data = response["Body"].read().decode("utf-8")

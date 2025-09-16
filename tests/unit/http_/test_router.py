@@ -1,5 +1,4 @@
 import threading
-from typing import List, Tuple
 
 import pytest
 import requests
@@ -34,7 +33,7 @@ def echo_params_json(request: Request, params: dict[str, str]):
 class RequestCollector:
     """Test dispatcher that collects requests into a list"""
 
-    requests: List[Tuple[Request, E, RequestArguments]]
+    requests: list[tuple[Request, E, RequestArguments]]
 
     def __init__(self) -> None:
         super().__init__()

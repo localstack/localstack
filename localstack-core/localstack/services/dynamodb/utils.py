@@ -1,7 +1,6 @@
 import logging
 import re
 from binascii import crc32
-from typing import Dict, List, Optional
 
 from boto3.dynamodb.types import TypeDeserializer, TypeSerializer
 from cachetools import TTLCache
@@ -61,7 +60,7 @@ def get_ddb_access_key(account_id: str, region_name: str) -> str:
 class ItemSet:
     """Represents a set of items and provides utils to find individual items in the set"""
 
-    def __init__(self, items: List[Dict], key_schema: List[Dict]):
+    def __init__(self, items: list[dict], key_schema: list[dict]):
         self.items_list = items
         self.key_schema = key_schema
         self._build_dict()
@@ -71,11 +70,11 @@ class ItemSet:
         for item in self.items_list:
             self.items_dict[self._hashable_key(item)] = item
 
-    def _hashable_key(self, item: Dict):
+    def _hashable_key(self, item: dict):
         keys = SchemaExtractor.extract_keys_for_schema(item=item, key_schema=self.key_schema)
         return canonical_json(keys)
 
-    def find_item(self, item: Dict) -> Optional[Dict]:
+    def find_item(self, item: dict) -> dict | None:
         key = self._hashable_key(item)
         return self.items_dict.get(key)
 
@@ -83,13 +82,13 @@ class ItemSet:
 class SchemaExtractor:
     @classmethod
     def extract_keys(
-        cls, item: Dict, table_name: str, account_id: str, region_name: str
-    ) -> Optional[Dict]:
+        cls, item: dict, table_name: str, account_id: str, region_name: str
+    ) -> dict | None:
         key_schema = cls.get_key_schema(table_name, account_id, region_name)
         return cls.extract_keys_for_schema(item, key_schema)
 
     @classmethod
-    def extract_keys_for_schema(cls, item: Dict, key_schema: List[Dict]):
+    def extract_keys_for_schema(cls, item: dict, key_schema: list[dict]):
         result = {}
         for key in key_schema:
             attr_name = key["AttributeName"]
@@ -104,10 +103,10 @@ class SchemaExtractor:
     @classmethod
     def get_key_schema(
         cls, table_name: str, account_id: str, region_name: str
-    ) -> Optional[List[Dict]]:
+    ) -> list[dict] | None:
         from localstack.services.dynamodb.provider import get_store
 
-        table_definitions: Dict = get_store(
+        table_definitions: dict = get_store(
             account_id=account_id,
             region_name=region_name,
         ).table_definitions
@@ -169,12 +168,12 @@ class ItemFinder:
 
     @staticmethod
     def find_existing_item(
-        put_item: Dict,
+        put_item: dict,
         table_name: str,
         account_id: str,
         region_name: str,
         endpoint_url: str,
-    ) -> Optional[AttributeMap]:
+    ) -> AttributeMap | None:
         from localstack.services.dynamodb.provider import ValidationException
 
         ddb_client = ItemFinder.get_ddb_local_client(account_id, region_name, endpoint_url)
@@ -273,7 +272,7 @@ class ItemFinder:
     @classmethod
     def list_existing_items_for_statement(
         cls, partiql_statement: str, account_id: str, region_name: str, endpoint_url: str
-    ) -> List:
+    ) -> list:
         table_name = extract_table_name_from_partiql_update(partiql_statement)
         if not table_name:
             return []
@@ -288,7 +287,7 @@ class ItemFinder:
     @staticmethod
     def get_all_table_items(
         account_id: str, region_name: str, table_name: str, endpoint_url: str
-    ) -> List:
+    ) -> list:
         ddb_client = ItemFinder.get_ddb_local_client(account_id, region_name, endpoint_url)
         dynamodb_kwargs = {"TableName": table_name}
         all_items = list_all_resources(
@@ -300,7 +299,7 @@ class ItemFinder:
         return all_items
 
 
-def extract_table_name_from_partiql_update(statement: str) -> Optional[str]:
+def extract_table_name_from_partiql_update(statement: str) -> str | None:
     regex = r"^\s*(UPDATE|INSERT\s+INTO|DELETE\s+FROM)\s+([^\s]+).*"
     match = re.match(regex, statement, flags=re.IGNORECASE | re.MULTILINE)
     return match and match.group(2)

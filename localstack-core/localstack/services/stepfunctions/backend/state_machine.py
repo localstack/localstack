@@ -4,7 +4,7 @@ import abc
 import datetime
 import json
 from collections import OrderedDict
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import (
     Arn,
@@ -37,15 +37,15 @@ from localstack.utils.strings import long_uid
 class StateMachineInstance:
     name: Name
     arn: Arn
-    revision_id: Optional[RevisionId]
+    revision_id: RevisionId | None
     definition: Definition
     role_arn: Arn
     create_date: datetime.datetime
     sm_type: StateMachineType
     logging_config: LoggingConfiguration
-    cloud_watch_logging_configuration: Optional[CloudWatchLoggingConfiguration]
-    tags: Optional[TagList]
-    tracing_config: Optional[TracingConfiguration]
+    cloud_watch_logging_configuration: CloudWatchLoggingConfiguration | None
+    tags: TagList | None
+    tracing_config: TracingConfiguration | None
 
     def __init__(
         self,
@@ -54,18 +54,18 @@ class StateMachineInstance:
         definition: Definition,
         role_arn: Arn,
         logging_config: LoggingConfiguration,
-        cloud_watch_logging_configuration: Optional[CloudWatchLoggingConfiguration] = None,
-        create_date: Optional[datetime.datetime] = None,
-        sm_type: Optional[StateMachineType] = None,
-        tags: Optional[TagList] = None,
-        tracing_config: Optional[TracingConfiguration] = None,
+        cloud_watch_logging_configuration: CloudWatchLoggingConfiguration | None = None,
+        create_date: datetime.datetime | None = None,
+        sm_type: StateMachineType | None = None,
+        tags: TagList | None = None,
+        tracing_config: TracingConfiguration | None = None,
     ):
         self.name = name
         self.arn = arn
         self.revision_id = None
         self.definition = definition
         self.role_arn = role_arn
-        self.create_date = create_date or datetime.datetime.now(tz=datetime.timezone.utc)
+        self.create_date = create_date or datetime.datetime.now(tz=datetime.UTC)
         self.sm_type = sm_type or StateMachineType.STANDARD
         self.logging_config = logging_config
         self.cloud_watch_logging_configuration = cloud_watch_logging_configuration
@@ -106,7 +106,7 @@ class TestStateMachine(StateMachineInstance):
         arn: Arn,
         definition: Definition,
         role_arn: Arn,
-        create_date: Optional[datetime.datetime] = None,
+        create_date: datetime.datetime | None = None,
     ):
         super().__init__(
             name,
@@ -125,7 +125,7 @@ class TestStateMachine(StateMachineInstance):
 
 
 class TagManager:
-    _tags: Final[dict[str, Optional[str]]]
+    _tags: Final[dict[str, str | None]]
 
     def __init__(self):
         self._tags = OrderedDict()
@@ -154,7 +154,7 @@ class TagManager:
             self._tags.pop(key, None)
 
     def to_tag_list(self) -> TagList:
-        tag_list = list()
+        tag_list = []
         for key, value in self._tags.items():
             tag_list.append(Tag(key=key, value=value))
         return tag_list
@@ -173,11 +173,11 @@ class StateMachineRevision(StateMachineInstance):
         definition: Definition,
         role_arn: Arn,
         logging_config: LoggingConfiguration,
-        cloud_watch_logging_configuration: Optional[CloudWatchLoggingConfiguration],
-        create_date: Optional[datetime.datetime] = None,
-        sm_type: Optional[StateMachineType] = None,
-        tags: Optional[TagList] = None,
-        tracing_config: Optional[TracingConfiguration] = None,
+        cloud_watch_logging_configuration: CloudWatchLoggingConfiguration | None,
+        create_date: datetime.datetime | None = None,
+        sm_type: StateMachineType | None = None,
+        tags: TagList | None = None,
+        tracing_config: TracingConfiguration | None = None,
     ):
         super().__init__(
             name,
@@ -191,7 +191,7 @@ class StateMachineRevision(StateMachineInstance):
             tags,
             tracing_config,
         )
-        self.versions = dict()
+        self.versions = {}
         self._version_number = 0
         self.tag_manager = TagManager()
         if tags:
@@ -200,10 +200,10 @@ class StateMachineRevision(StateMachineInstance):
 
     def create_revision(
         self,
-        definition: Optional[str],
-        role_arn: Optional[Arn],
-        logging_configuration: Optional[LoggingConfiguration],
-    ) -> Optional[RevisionId]:
+        definition: str | None,
+        role_arn: Arn | None,
+        logging_configuration: LoggingConfiguration | None,
+    ) -> RevisionId | None:
         update_definition = definition and json.loads(definition) != json.loads(self.definition)
         if update_definition:
             self.definition = definition
@@ -228,7 +228,7 @@ class StateMachineRevision(StateMachineInstance):
 
         return self.revision_id
 
-    def create_version(self, description: Optional[str]) -> Optional[StateMachineVersion]:
+    def create_version(self, description: str | None) -> StateMachineVersion | None:
         if self.revision_id not in self.versions:
             self._version_number += 1
             version = StateMachineVersion(
@@ -259,10 +259,10 @@ class StateMachineRevision(StateMachineInstance):
 class StateMachineVersion(StateMachineInstance):
     source_arn: Arn
     version: int
-    description: Optional[str]
+    description: str | None
 
     def __init__(
-        self, state_machine_revision: StateMachineRevision, version: int, description: Optional[str]
+        self, state_machine_revision: StateMachineRevision, version: int, description: str | None
     ):
         version_arn = f"{state_machine_revision.arn}:{version}"
         super().__init__(
@@ -270,7 +270,7 @@ class StateMachineVersion(StateMachineInstance):
             arn=version_arn,
             definition=state_machine_revision.definition,
             role_arn=state_machine_revision.role_arn,
-            create_date=datetime.datetime.now(tz=datetime.timezone.utc),
+            create_date=datetime.datetime.now(tz=datetime.UTC),
             sm_type=state_machine_revision.sm_type,
             logging_config=state_machine_revision.logging_config,
             cloud_watch_logging_configuration=state_machine_revision.cloud_watch_logging_configuration,

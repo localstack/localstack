@@ -1,4 +1,4 @@
-from typing import Callable, Type
+from collections.abc import Callable
 
 from rolo import Response
 from rolo.gateway.chain import HandlerChain as RoloHandlerChain
@@ -14,4 +14,4 @@ RestApiGatewayExceptionHandler = Callable[
     None,
 ]
 
-RestApiGatewayHandlerChain: Type[RoloHandlerChain[RestApiInvocationContext]] = RoloHandlerChain
+RestApiGatewayHandlerChain: type[RoloHandlerChain[RestApiInvocationContext]] = RoloHandlerChain

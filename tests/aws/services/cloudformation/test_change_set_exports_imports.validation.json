@@ -1,0 +1,29 @@
+{
+  "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import": {
+    "last_validated_date": "2025-08-05T09:48:09+00:00",
+    "durations_in_seconds": {
+      "setup": 1.32,
+      "call": 33.43,
+      "teardown": 8.03,
+      "total": 42.78
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import_non_existent_export": {
+    "last_validated_date": "2025-08-05T09:55:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.93,
+      "call": 10.52,
+      "teardown": 2.54,
+      "total": 13.99
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_exports_imports.py::TestChangeSetImportExport::test_describe_change_set_import_non_existent_export_then_create": {
+    "last_validated_date": "2025-08-05T09:58:06+00:00",
+    "durations_in_seconds": {
+      "setup": 1.15,
+      "call": 33.86,
+      "teardown": 8.08,
+      "total": 43.09
+    }
+  }
+}

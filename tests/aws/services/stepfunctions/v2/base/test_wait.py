@@ -36,9 +36,7 @@ class TestSfnWait:
         template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMP_PATH)
         definition = json.dumps(template)
 
-        wait_timestamp = datetime.datetime.now(tz=datetime.timezone.utc) + datetime.timedelta(
-            days=days
-        )
+        wait_timestamp = datetime.datetime.now(tz=datetime.UTC) + datetime.timedelta(days=days)
         timestamp = wait_timestamp.strftime("%Y-%m-%dT%H:%M:%S")
 
         full_timestamp = f"{timestamp}.000Z"
@@ -82,7 +80,7 @@ class TestSfnWait:
         template = BaseTemplate.load_sfn_template(BaseTemplate.WAIT_TIMESTAMP_PATH)
         definition = json.dumps(template)
 
-        wait_timestamp = datetime.datetime.now(tz=datetime.timezone.utc)
+        wait_timestamp = datetime.datetime.now(tz=datetime.UTC)
         timestamp = wait_timestamp.strftime("%Y-%m-%dT%H:%M:%S")
 
         full_timestamp = f"{timestamp}{timestamp_suffix}"

@@ -1,7 +1,7 @@
 import logging
 import re
+from collections.abc import Callable
 from functools import wraps
-from typing import Callable, Dict, Optional, Union
 from urllib.parse import urlparse
 
 from werkzeug.datastructures import Headers
@@ -32,8 +32,8 @@ class NoSuchKeyFromErrorDocument(NoSuchKey):
     code: str = "NoSuchKey"
     sender_fault: bool = False
     status_code: int = 404
-    Key: Optional[ObjectKey]
-    ErrorDocumentKey: Optional[ObjectKey]
+    Key: ObjectKey | None
+    ErrorDocumentKey: ObjectKey | None
 
 
 class S3WebsiteHostingHandler:
@@ -93,8 +93,10 @@ class S3WebsiteHostingHandler:
             return Response(response_body, status=e.response["ResponseMetadata"]["HTTPStatusCode"])
 
         except Exception:
-            LOG.exception(
-                "Exception encountered while trying to serve s3-website at %s", request.url
+            LOG.error(
+                "Exception encountered while trying to serve s3-website at %s",
+                request.url,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return Response(_create_500_error_string(), status=500)
 
@@ -223,7 +225,7 @@ class S3WebsiteHostingHandler:
             )
 
     @staticmethod
-    def _get_response_headers_from_object(get_object_response: GetObjectOutput) -> Dict[str, str]:
+    def _get_response_headers_from_object(get_object_response: GetObjectOutput) -> dict[str, str]:
         """
         Only return some headers from the S3 Object
         :param get_object_response: the response from S3.GetObject
@@ -248,7 +250,7 @@ class S3WebsiteHostingHandler:
     @staticmethod
     def _find_matching_rule(
         routing_rules: RoutingRules, object_key: ObjectKey, error_code: int = None
-    ) -> Union[RoutingRule, None]:
+    ) -> RoutingRule | None:
         """
         Iterate over the routing rules set in the configuration, and return the first that match the key name and/or the
         error code (in the 4XX range).

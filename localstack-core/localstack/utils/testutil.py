@@ -7,7 +7,7 @@ import re
 import shutil
 import tempfile
 import time
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Callable, Optional
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
@@ -71,7 +71,7 @@ def is_local_test_mode():
 def create_lambda_archive(
     script: str,
     get_content: bool = False,
-    libs: List[str] = None,
+    libs: list[str] = None,
     runtime: str = None,
     file_name: str = None,
     exclude_func: Callable[[str], bool] = None,
@@ -94,7 +94,7 @@ def create_lambda_archive(
         chmod_r(script_file, 0o777)
         # copy libs
         for lib in libs:
-            paths = [lib, "%s.py" % lib]
+            paths = [lib, f"{lib}.py"]
             try:
                 module = importlib.import_module(lib)
                 paths.append(module.__file__)
@@ -255,7 +255,7 @@ def create_lambda_function(
         "Role": role or LAMBDA_TEST_ROLE.format(account_id=TEST_AWS_ACCOUNT_ID),
         "Code": lambda_code,
         "Timeout": timeout or LAMBDA_TIMEOUT_SEC,
-        "Environment": dict(Variables=envvars),
+        "Environment": {"Variables": envvars},
         "Tags": tags,
     }
     kwargs.update(additional_kwargs)
@@ -382,7 +382,7 @@ def assert_object(expected_object, all_objects):
         all_objects = [all_objects]
     found = find_object(expected_object, all_objects)
     if not found:
-        raise Exception("Expected object not found: %s in list %s" % (expected_object, all_objects))
+        raise Exception(f"Expected object not found: {expected_object} in list {all_objects}")
 
 
 def find_object(expected_object, object_list):
@@ -425,7 +425,7 @@ def list_all_s3_objects(s3_client):
     return map_all_s3_objects(s3_client=s3_client).values()
 
 
-def delete_all_s3_objects(s3_client, buckets: str | List[str]):
+def delete_all_s3_objects(s3_client, buckets: str | list[str]):
     buckets = ensure_list(buckets)
     for bucket in buckets:
         keys = all_s3_object_keys(s3_client, bucket)
@@ -444,15 +444,15 @@ def download_s3_object(s3_client, bucket, path):
     return result
 
 
-def all_s3_object_keys(s3_client, bucket: str) -> List[str]:
+def all_s3_object_keys(s3_client, bucket: str) -> list[str]:
     response = s3_client.list_objects_v2(Bucket=bucket)
     keys = [obj["Key"] for obj in response.get("Contents", [])]
     return keys
 
 
 def map_all_s3_objects(
-    s3_client, to_json: bool = True, buckets: str | List[str] = None
-) -> Dict[str, Any]:
+    s3_client, to_json: bool = True, buckets: str | list[str] = None
+) -> dict[str, Any]:
     result = {}
     buckets = ensure_list(buckets)
     if not buckets:
@@ -499,7 +499,7 @@ def send_update_dynamodb_ttl_request(table_name, ttl_status):
 def send_dynamodb_request(path, action, request_body):
     headers = {
         "Host": "dynamodb.amazonaws.com",
-        "x-amz-target": "DynamoDB_20120810.{}".format(action),
+        "x-amz-target": f"DynamoDB_20120810.{action}",
         "Authorization": mock_aws_request_headers(
             "dynamodb", aws_access_key_id=TEST_AWS_ACCESS_KEY_ID, region_name=TEST_AWS_REGION_NAME
         )["Authorization"],
@@ -509,7 +509,7 @@ def send_dynamodb_request(path, action, request_body):
 
 
 def get_lambda_log_group_name(function_name):
-    return "/aws/lambda/{}".format(function_name)
+    return f"/aws/lambda/{function_name}"
 
 
 # TODO: make logs_client mandatory
@@ -522,8 +522,7 @@ def check_expected_lambda_log_events_length(
     events = [line for line in events if line not in ["\x1b[0m", "\\x1b[0m"]]
     if len(events) != expected_length:
         print(
-            "Invalid # of Lambda %s log events: %s / %s: %s"
-            % (
+            "Invalid # of Lambda {} log events: {} / {}: {}".format(
                 function_name,
                 len(events),
                 expected_length,
@@ -537,7 +536,7 @@ def check_expected_lambda_log_events_length(
     return events
 
 
-def list_all_log_events(log_group_name: str, logs_client=None) -> List[Dict]:
+def list_all_log_events(log_group_name: str, logs_client=None) -> list[dict]:
     logs = logs_client or connect_to().logs
     return list_all_resources(
         lambda kwargs: logs.filter_log_events(logGroupName=log_group_name, **kwargs),

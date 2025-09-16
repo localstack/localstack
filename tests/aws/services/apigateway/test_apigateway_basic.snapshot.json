@@ -1,6 +1,6 @@
 {
   "tests/aws/services/apigateway/test_apigateway_basic.py::TestAPIGateway::test_apigw_test_invoke_method_api": {
-    "recorded-date": "11-04-2025, 18:02:16",
+    "recorded-date": "19-08-2025, 17:04:50",
     "recorded-content": {
       "test_invoke_method_response": {
         "body": {

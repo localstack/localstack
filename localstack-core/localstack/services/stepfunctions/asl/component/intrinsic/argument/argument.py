@@ -1,5 +1,5 @@
 import abc
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.common.string.string_expression import (
     StringVariableSample,
@@ -32,9 +32,9 @@ class Argument(EvalComponent, abc.ABC):
 
 
 class ArgumentLiteral(Argument):
-    definition_value: Final[Optional[Any]]
+    definition_value: Final[Any | None]
 
-    def __init__(self, definition_value: Optional[Any]):
+    def __init__(self, definition_value: Any | None):
         self.definition_value = definition_value
 
     def _eval_argument(self, env: Environment) -> Any:
@@ -97,7 +97,7 @@ class ArgumentList(Argument):
         self.size = len(arguments)
 
     def _eval_argument(self, env: Environment) -> Any:
-        values = list()
+        values = []
         for argument in self.arguments:
             argument.eval(env=env)
             argument_value = env.stack.pop()

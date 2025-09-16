@@ -2,8 +2,9 @@ from __future__ import annotations
 
 import json
 import re
+from collections.abc import Callable
 from pathlib import Path
-from typing import Any, Callable, Final, Optional
+from typing import Any, Final
 
 import jpype
 import jpype.imports
@@ -16,9 +17,26 @@ JSONataExpression = str
 VariableReference = str
 VariableDeclarations = str
 
-_PATTERN_VARIABLE_REFERENCE: Final[re.Pattern] = re.compile(
-    r"\$\$|\$[a-zA-Z0-9_$]+(?:\.[a-zA-Z0-9_][a-zA-Z0-9_$]*)*|\$"
+
+# TODO: move the extraction logic to a formal ANTLR-base parser, as done with legacy
+#       Intrinsic Functions in package localstack.services.stepfunctions.asl.antlr
+#       with grammars ASLIntrinsicLexer and ASLIntrinsicParser, later used by upstream
+#       logics such as in:
+#       localstack.services.stepfunctions.asl.parse.intrinsic.preprocessor.Preprocessor
+_PATTERN_VARIABLE_REFERENCE = re.compile(
+    # 1) Non-capturing branch for JSONata regex literal
+    #    /.../ (slash delimited), allowing escaped slashes \/
+    r"(?:\/(?:\\.|[^\\/])*\/[a-zA-Z]*)"
+    r"|"
+    # 2) Non-capturing branch for JSONata string literal:
+    #    "..." (double quotes) or '...' (single quotes),
+    #    allowing escapes
+    r"(?:\"(?:\\.|[^\"\\])*\"|\'(?:\\.|[^\'\\])*\')"
+    r"|"
+    # 3) Capturing branch for $$, $identifier[.prop…], or lone $
+    r"(\$\$|\$[A-Za-z0-9_$]+(?:\.[A-Za-z0-9_][A-Za-z0-9_$]*)*|\$)"
 )
+
 _ILLEGAL_VARIABLE_REFERENCES: Final[set[str]] = {"$", "$$"}
 _VARIABLE_REFERENCE_ASSIGNMENT_OPERATOR: Final[str] = ":="
 _VARIABLE_REFERENCE_ASSIGNMENT_STOP_SYMBOL: Final[str] = ";"
@@ -28,9 +46,9 @@ _EXPRESSION_CLOSE_SYMBOL: Final[str] = ")"
 
 class JSONataException(Exception):
     error: Final[str]
-    details: Optional[str]
+    details: str | None
 
-    def __init__(self, error: str, details: Optional[str]):
+    def __init__(self, error: str, details: str | None):
         self.error = error
         self.details = details
 
@@ -88,7 +106,7 @@ class _JSONataJVMBridge:
 
 # Lazy initialization of the `eval_jsonata` function pointer.
 # This ensures the JVM is only started when JSONata functionality is needed.
-_eval_jsonata: Optional[Callable[[JSONataExpression], Any]] = None
+_eval_jsonata: Callable[[JSONataExpression], Any] | None = None
 
 
 def eval_jsonata_expression(jsonata_expression: JSONataExpression) -> Any:
@@ -111,19 +129,23 @@ def extract_jsonata_variable_references(
 ) -> set[VariableReference]:
     if not jsonata_expression:
         return set()
-    variable_references: list[VariableReference] = _PATTERN_VARIABLE_REFERENCE.findall(
-        jsonata_expression
-    )
+    # Extract all recognised patterns.
+    all_references: list[Any] = _PATTERN_VARIABLE_REFERENCE.findall(jsonata_expression)
+    # Filter non-empty patterns (this includes consumed blocks such as jsonata
+    # regular expressions, delimited between non-escaped slashes).
+    variable_references: set[VariableReference] = {
+        reference for reference in all_references if reference and isinstance(reference, str)
+    }
     for variable_reference in variable_references:
         if variable_reference in _ILLEGAL_VARIABLE_REFERENCES:
             raise IllegalJSONataVariableReference(variable_reference=variable_reference)
-    return set(variable_references)
+    return variable_references
 
 
 def encode_jsonata_variable_declarations(
     bindings: dict[VariableReference, Any],
 ) -> VariableDeclarations:
-    declarations_parts: list[str] = list()
+    declarations_parts: list[str] = []
     for variable_reference, value in bindings.items():
         if isinstance(value, str):
             value_str_lit = f'"{value}"'

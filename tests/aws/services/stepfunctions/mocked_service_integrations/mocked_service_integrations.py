@@ -6,7 +6,7 @@ from typing import Final
 import json5
 
 _THIS_FOLDER: Final[str] = os.path.dirname(os.path.realpath(__file__))
-_LOAD_CACHE: Final[dict[str, dict]] = dict()
+_LOAD_CACHE: Final[dict[str, dict]] = {}
 
 
 class MockedServiceIntegrationsLoader(abc.ABC):
@@ -52,7 +52,7 @@ class MockedServiceIntegrationsLoader(abc.ABC):
     def load(file_path: str) -> dict:
         template = _LOAD_CACHE.get(file_path)
         if template is None:
-            with open(file_path, "r") as df:
+            with open(file_path) as df:
                 template = json5.load(df)
             _LOAD_CACHE[file_path] = template
         return copy.deepcopy(template)

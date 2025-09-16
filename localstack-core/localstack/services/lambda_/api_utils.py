@@ -6,8 +6,9 @@ import datetime
 import random
 import re
 import string
-from typing import TYPE_CHECKING, Any, Optional, Tuple
+from typing import TYPE_CHECKING, Any
 
+from localstack import config
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api import lambda_ as api_spec
 from localstack.aws.api.lambda_ import (
@@ -192,7 +193,7 @@ def map_csc(model: "CodeSigningConfig") -> api_spec.CodeSigningConfig:
     )
 
 
-def get_config_for_url(store: "LambdaStore", url_id: str) -> "Optional[FunctionUrlConfig]":
+def get_config_for_url(store: "LambdaStore", url_id: str) -> "FunctionUrlConfig | None":
     """
     Get a config object when resolving a URL
 
@@ -269,7 +270,7 @@ def function_locators_from_arn(arn: str) -> tuple[str | None, str | None, str | 
     return None, None, None, None
 
 
-def get_account_and_region(function_arn_or_name: str, context: RequestContext) -> Tuple[str, str]:
+def get_account_and_region(function_arn_or_name: str, context: RequestContext) -> tuple[str, str]:
     """
     Takes a full ARN, partial ARN or a name. Returns account ID and region from ARN if available, else
     falls back to context account ID and region.
@@ -345,11 +346,11 @@ def build_statement(
     statement_id: str,
     action: str,
     principal: str,
-    source_arn: Optional[str] = None,
-    source_account: Optional[str] = None,
-    principal_org_id: Optional[str] = None,
-    event_source_token: Optional[str] = None,
-    auth_type: Optional[FunctionUrlAuthType] = None,
+    source_arn: str | None = None,
+    source_account: str | None = None,
+    principal_org_id: str | None = None,
+    event_source_token: str | None = None,
+    auth_type: FunctionUrlAuthType | None = None,
 ) -> dict[str, Any]:
     statement = {
         "Sid": statement_id,
@@ -377,7 +378,7 @@ def build_statement(
             Type="User",
         )
 
-    condition = dict()
+    condition = {}
     if auth_type:
         update = {"StringEquals": {"lambda:FunctionUrlAuthType": auth_type}}
         condition = merge_recursive(condition, update)
@@ -425,7 +426,7 @@ def unqualified_lambda_arn(function_name: str, account: str, region: str):
 
 
 def qualified_lambda_arn(
-    function_name: str, qualifier: Optional[str], account: str, region: str
+    function_name: str, qualifier: str | None, account: str, region: str
 ) -> str:
     """
     Generate a qualified lambda arn
@@ -440,7 +441,7 @@ def qualified_lambda_arn(
     return f"{unqualified_lambda_arn(function_name=function_name, account=account, region=region)}:{qualifier}"
 
 
-def lambda_arn(function_name: str, qualifier: Optional[str], account: str, region: str) -> str:
+def lambda_arn(function_name: str, qualifier: str | None, account: str, region: str) -> str:
     """
     Return the lambda arn for the given parameters, with a qualifier if supplied, without otherwise
 
@@ -637,7 +638,7 @@ def map_alias_out(alias: "VersionAlias", function: "Function") -> AliasConfigura
     )
 
 
-def validate_and_set_batch_size(service: str, batch_size: Optional[int] = None) -> int:
+def validate_and_set_batch_size(service: str, batch_size: int | None = None) -> int:
     min_batch_size = 1
 
     BATCH_SIZE_RANGES = {
@@ -665,7 +666,9 @@ def validate_and_set_batch_size(service: str, batch_size: Optional[int] = None) 
 def map_layer_out(layer_version: "LayerVersion") -> PublishLayerVersionResponse:
     return PublishLayerVersionResponse(
         Content=LayerVersionContentOutput(
-            Location=layer_version.code.generate_presigned_url(),
+            Location=layer_version.code.generate_presigned_url(
+                endpoint_url=config.external_service_url()
+            ),
             CodeSha256=layer_version.code.code_sha256,
             CodeSize=layer_version.code.code_size,
             # SigningProfileVersionArn="", # same as in function configuration
@@ -690,7 +693,7 @@ def layer_version_arn(layer_name: str, account: str, region: str, version: str):
     return f"arn:{get_partition(region)}:lambda:{region}:{account}:layer:{layer_name}:{version}"
 
 
-def parse_layer_arn(layer_version_arn: str) -> Tuple[str, str, str, str]:
+def parse_layer_arn(layer_version_arn: str) -> tuple[str, str, str, str]:
     return LAYER_VERSION_ARN_PATTERN.match(layer_version_arn).group(
         "region_name", "account_id", "layer_name", "layer_version"
     )
@@ -715,12 +718,12 @@ def validate_layer_runtimes_and_architectures(
 
     if compatible_runtimes and set(compatible_runtimes).difference(ALL_RUNTIMES):
         constraint = f"Member must satisfy enum value set: {VALID_RUNTIMES}"
-        validation_msg = f"Value '[{', '.join([s for s in compatible_runtimes])}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
+        validation_msg = f"Value '[{', '.join(list(compatible_runtimes))}]' at 'compatibleRuntimes' failed to satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
     if compatible_architectures and set(compatible_architectures).difference(ARCHITECTURES):
         constraint = "[Member must satisfy enum value set: [x86_64, arm64]]"
-        validation_msg = f"Value '[{', '.join([s for s in compatible_architectures])}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
+        validation_msg = f"Value '[{', '.join(list(compatible_architectures))}]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: {constraint}"
         validations.append(validation_msg)
 
     return validations

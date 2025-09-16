@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import traceback
-from typing import Dict, List, Optional, Tuple, TypedDict
+from typing import Optional, TypedDict
 
 import click
 import requests
@@ -47,7 +47,7 @@ class LocalStackCliGroup(click.Group):
 
     def invoke(self, ctx: click.Context):
         try:
-            return super(LocalStackCliGroup, self).invoke(ctx)
+            return super().invoke(ctx)
         except click.exceptions.Exit:
             # raise Exit exceptions unmodified (e.g., raised on --help)
             raise
@@ -209,12 +209,12 @@ def cmd_config_show(format_: str) -> None:
     assert config
 
     try:
-        # only load the ext config if it's available
-        from localstack.pro.core import config as ext_config
+        # only load the pro config if it's available
+        from localstack.pro.core import config as pro_config
 
-        assert ext_config
+        assert pro_config
     except ImportError:
-        # the ext package is not available
+        # the pro package is not available
         return None
 
     if format_ == "table":
@@ -405,7 +405,7 @@ def cmd_status_services(format_: str) -> None:
         raise CLIError(f"could not connect to LocalStack health endpoint at {url}")
 
 
-def _print_service_table(services: Dict[str, str]) -> None:
+def _print_service_table(services: dict[str, str]) -> None:
     from rich.table import Table
 
     status_display = {
@@ -486,9 +486,9 @@ def cmd_start(
     no_banner: bool,
     detached: bool,
     network: str = None,
-    env: Tuple = (),
-    publish: Tuple = (),
-    volume: Tuple = (),
+    env: tuple = (),
+    publish: tuple = (),
+    volume: tuple = (),
     host_dns: bool = False,
     stack: str = None,
 ) -> None:
@@ -602,7 +602,7 @@ def cmd_stop() -> None:
 
     try:
         DOCKER_CLIENT.stop_container(container_name)
-        console.print("container stopped: %s" % container_name)
+        console.print(f"container stopped: {container_name}")
     except NoSuchContainer:
         raise CLIError(
             f'Expected a running LocalStack container named "{container_name}", but found none'
@@ -825,7 +825,7 @@ def cmd_update_docker_images() -> None:
     update_images(localstack_images)
 
 
-def update_images(image_list: List[str]) -> None:
+def update_images(image_list: list[str]) -> None:
     from rich.markup import escape
     from rich.progress import MofNCompleteColumn, Progress
 

@@ -1,5 +1,4 @@
 import os
-from typing import List
 
 from localstack import config
 from localstack.constants import ARTIFACTS_REPO, MAVEN_REPO_URL
@@ -15,10 +14,10 @@ from localstack.utils.functions import run_safe
 from localstack.utils.http import download
 from localstack.utils.run import run
 
-DDB_AGENT_JAR_URL = f"{ARTIFACTS_REPO}/raw/388cd73f45bfd3bcf7ad40aa35499093061c7962/dynamodb-local-patch/target/ddb-local-loader-0.1.jar"
+DDB_AGENT_JAR_URL = f"{ARTIFACTS_REPO}/raw/e4e8c8e294b1fcda90c678ff6af5d5ebe1f091eb/dynamodb-local-patch/target/ddb-local-loader-0.2.jar"
 JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.30.2-GA/javassist-3.30.2-GA.jar"
 
-DDBLOCAL_URL = "https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip"
+DDBLOCAL_URL = "https://d1ni2b6xgvw0s0.cloudfront.net/v3.x/dynamodb_local_latest.zip"
 
 
 class DynamoDBLocalPackage(Package):
@@ -28,7 +27,7 @@ class DynamoDBLocalPackage(Package):
     def _get_installer(self, _) -> PackageInstaller:
         return DynamoDBLocalPackageInstaller()
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["2"]
 
 

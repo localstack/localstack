@@ -6,7 +6,7 @@ import logging
 import re
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, TypedDict, Union
+from typing import TypedDict
 from urllib.parse import quote
 
 from botocore.exceptions import ClientError
@@ -21,6 +21,7 @@ from localstack.aws.api.s3 import (
     Event,
     EventBridgeConfiguration,
     EventList,
+    InvalidArgument,
     LambdaFunctionArn,
     LambdaFunctionConfiguration,
     NotificationConfiguration,
@@ -34,8 +35,8 @@ from localstack.aws.api.s3 import (
     TopicConfiguration,
 )
 from localstack.aws.connect import connect_to
+from localstack.services.s3.exceptions import MalformedXML
 from localstack.services.s3.models import S3Bucket, S3DeleteMarker, S3Object
-from localstack.services.s3.utils import _create_invalid_argument_exc
 from localstack.utils.aws import arns
 from localstack.utils.aws.arns import ARN_PARTITION_REGEX, get_partition, parse_arn, s3_bucket_arn
 from localstack.utils.aws.client_types import ServicePrincipal
@@ -64,8 +65,8 @@ HEADER_AMZN_XRAY = "X-Amzn-Trace-Id"
 class S3NotificationContent(TypedDict):
     s3SchemaVersion: str
     configurationId: NotificationId
-    bucket: Dict[str, str]  # todo
-    object: Dict[str, Union[str, int]]  # todo
+    bucket: dict[str, str]  # todo
+    object: dict[str, str | int]  # todo
 
 
 class EventRecord(TypedDict):
@@ -74,14 +75,14 @@ class EventRecord(TypedDict):
     awsRegion: str
     eventTime: str
     eventName: str
-    userIdentity: Dict[str, str]
-    requestParameters: Dict[str, str]
-    responseElements: Dict[str, str]
+    userIdentity: dict[str, str]
+    requestParameters: dict[str, str]
+    responseElements: dict[str, str]
     s3: S3NotificationContent
 
 
 class Notification(TypedDict):
-    Records: List[EventRecord]
+    Records: list[EventRecord]
 
 
 @dataclass
@@ -101,7 +102,7 @@ class S3EventNotificationContext:
     key_etag: str
     key_version_id: str
     key_expiry: datetime.datetime
-    key_storage_class: Optional[StorageClass]
+    key_storage_class: StorageClass | None
 
     @classmethod
     def from_request_context_native(
@@ -109,7 +110,7 @@ class S3EventNotificationContext:
         request_context: RequestContext,
         s3_bucket: S3Bucket,
         s3_object: S3Object | S3DeleteMarker,
-    ) -> "S3EventNotificationContext":
+    ) -> S3EventNotificationContext:
         """
         Create an S3EventNotificationContext from a RequestContext.
         The key is not always present in the request context depending on the event type. In that case, we can use
@@ -165,7 +166,7 @@ class BucketVerificationContext:
     request_id: str
     bucket_name: str
     region: str
-    configuration: Dict
+    configuration: dict
     skip_destination_validation: bool
 
 
@@ -185,7 +186,7 @@ def _matching_event(events: EventList, event_name: str) -> bool:
 
 
 def _matching_filter(
-    notification_filter: Optional[NotificationConfigurationFilter], key_name: str
+    notification_filter: NotificationConfigurationFilter | None, key_name: str
 ) -> bool:
     """
     See: https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-filtering.html
@@ -213,11 +214,11 @@ def _matching_filter(
 class BaseNotifier:
     service_name: str
 
-    def notify(self, ctx: S3EventNotificationContext, config: Dict):
+    def notify(self, ctx: S3EventNotificationContext, config: dict):
         raise NotImplementedError
 
     @staticmethod
-    def should_notify(ctx: S3EventNotificationContext, config: Dict) -> bool:
+    def should_notify(ctx: S3EventNotificationContext, config: dict) -> bool:
         """
         Helper method checking if the event should be notified to the configured notifiers from the configuration
         :param ctx: S3EventNotificationContext
@@ -229,12 +230,12 @@ class BaseNotifier:
         )
 
     @staticmethod
-    def _get_arn_value_and_name(notifier_configuration: Dict) -> Tuple[str, str]:
+    def _get_arn_value_and_name(notifier_configuration: dict) -> tuple[str, str]:
         raise NotImplementedError
 
     def validate_configuration_for_notifier(
         self,
-        configurations: List[Dict],
+        configurations: list[dict],
         skip_destination_validation: bool,
         context: RequestContext,
         bucket_name: str,
@@ -272,25 +273,28 @@ class BaseNotifier:
         arn, argument_name = self._get_arn_value_and_name(configuration)
 
         if not re.match(f"{ARN_PARTITION_REGEX}:{self.service_name}:", arn):
-            raise _create_invalid_argument_exc(
-                "The ARN could not be parsed", name=argument_name, value=arn
+            raise InvalidArgument(
+                "The ARN could not be parsed",
+                ArgumentName=argument_name,
+                ArgumentValue=arn,
             )
+
         if not verification_ctx.skip_destination_validation:
             self._verify_target(arn, verification_ctx)
 
         if filter_rules := configuration.get("Filter", {}).get("Key", {}).get("FilterRules"):
             for rule in filter_rules:
-                rule["Name"] = rule["Name"].capitalize()
-                if rule["Name"] not in ["Suffix", "Prefix"]:
-                    raise _create_invalid_argument_exc(
+                if "Name" not in rule or "Value" not in rule:
+                    raise MalformedXML()
+
+                if rule["Name"].lower() not in ["suffix", "prefix"]:
+                    raise InvalidArgument(
                         "filter rule name must be either prefix or suffix",
-                        rule["Name"],
-                        rule["Value"],
+                        ArgumentName="FilterRule.Name",
+                        ArgumentValue=rule["Name"],
                     )
-                if not rule["Value"]:
-                    raise _create_invalid_argument_exc(
-                        "filter value cannot be empty", rule["Name"], rule["Value"]
-                    )
+
+                rule["Name"] = rule["Name"].capitalize()
 
     @staticmethod
     def _get_test_payload(verification_ctx: BucketVerificationContext):
@@ -381,8 +385,8 @@ class SqsNotifier(BaseNotifier):
     service_name = "sqs"
 
     @staticmethod
-    def _get_arn_value_and_name(queue_configuration: QueueConfiguration) -> Tuple[QueueArn, str]:
-        return queue_configuration.get("QueueArn", ""), "QueueArn"
+    def _get_arn_value_and_name(queue_configuration: QueueConfiguration) -> tuple[QueueArn, str]:
+        return queue_configuration.get("QueueArn", ""), "Queue"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
         if not is_api_enabled("sqs"):
@@ -402,13 +406,20 @@ class SqsNotifier(BaseNotifier):
             queue_url = sqs_client.get_queue_url(
                 QueueName=arn_data["resource"], QueueOwnerAWSAccountId=arn_data["account"]
             )["QueueUrl"]
-        except ClientError:
-            LOG.exception("Could not validate the notification destination %s", target_arn)
-            raise _create_invalid_argument_exc(
-                "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="The destination queue does not exist",
+        except ClientError as e:
+            code = e.response["Error"]["Code"]
+            LOG.error(
+                "Could not validate the notification destination %s: %s",
+                target_arn,
+                code,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
+            raise InvalidArgument(
+                "Unable to validate the following destination configurations",
+                ArgumentName=target_arn,
+                ArgumentValue="The destination queue does not exist",
+            )
+
         # send test event with the request metadata for permissions
         # https://docs.aws.amazon.com/AmazonS3/latest/userguide/notification-how-to-event-types-and-destinations.html#supported-notification-event-types
         sqs_client = connect_to(region_name=arn_data["region"]).sqs.request_metadata(
@@ -424,10 +435,10 @@ class SqsNotifier(BaseNotifier):
                 verification_ctx.bucket_name,
                 target_arn,
             )
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="Permissions on the destination queue do not allow S3 to publish notifications from this bucket",
+                ArgumentName=target_arn,
+                ArgumentValue="Permissions on the destination queue do not allow S3 to publish notifications from this bucket",
             ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: QueueConfiguration):
@@ -454,10 +465,11 @@ class SqsNotifier(BaseNotifier):
                 MessageSystemAttributes=system_attributes,
             )
         except Exception:
-            LOG.exception(
+            LOG.error(
                 'Unable to send notification for S3 bucket "%s" to SQS queue "%s"',
                 ctx.bucket_name,
                 parsed_arn["resource"],
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -483,10 +495,10 @@ class SnsNotifier(BaseNotifier):
         try:
             sns_client.get_topic_attributes(TopicArn=target_arn)
         except ClientError:
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="The destination topic does not exist",
+                ArgumentName=target_arn,
+                ArgumentValue="The destination topic does not exist",
             )
 
         sns_client = connect_to(region_name=arn_data["region"]).sns.request_metadata(
@@ -506,10 +518,10 @@ class SnsNotifier(BaseNotifier):
                 verification_ctx.bucket_name,
                 target_arn,
             )
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="Permissions on the destination topic do not allow S3 to publish notifications from this bucket",
+                ArgumentName=target_arn,
+                ArgumentValue="Permissions on the destination topic do not allow S3 to publish notifications from this bucket",
             ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: TopicConfiguration):
@@ -536,10 +548,11 @@ class SnsNotifier(BaseNotifier):
                 Subject="Amazon S3 Notification",
             )
         except Exception:
-            LOG.exception(
+            LOG.error(
                 'Unable to send notification for S3 bucket "%s" to SNS topic "%s"',
                 ctx.bucket_name,
                 topic_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -549,7 +562,7 @@ class LambdaNotifier(BaseNotifier):
     @staticmethod
     def _get_arn_value_and_name(
         lambda_configuration: LambdaFunctionConfiguration,
-    ) -> Tuple[LambdaFunctionArn, str]:
+    ) -> tuple[LambdaFunctionArn, str]:
         return lambda_configuration.get("LambdaFunctionArn", ""), "LambdaFunctionArn"
 
     def _verify_target(self, target_arn: str, verification_ctx: BucketVerificationContext) -> None:
@@ -567,10 +580,10 @@ class LambdaNotifier(BaseNotifier):
         try:
             lambda_client.get_function(FunctionName=target_arn)
         except ClientError:
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=target_arn,
-                value="The destination Lambda does not exist",
+                ArgumentName=target_arn,
+                ArgumentValue="The destination Lambda does not exist",
             )
         lambda_client = connect_to(region_name=arn_data["region"]).lambda_.request_metadata(
             source_arn=s3_bucket_arn(verification_ctx.bucket_name, region=verification_ctx.region),
@@ -579,10 +592,10 @@ class LambdaNotifier(BaseNotifier):
         try:
             lambda_client.invoke(FunctionName=target_arn, InvocationType=InvocationType.DryRun)
         except ClientError as e:
-            raise _create_invalid_argument_exc(
+            raise InvalidArgument(
                 "Unable to validate the following destination configurations",
-                name=f"{target_arn}, null",
-                value=f"Not authorized to invoke function [{target_arn}]",
+                ArgumentName=f"{target_arn}, null",
+                ArgumentValue=f"Not authorized to invoke function [{target_arn}]",
             ) from e
 
     def notify(self, ctx: S3EventNotificationContext, config: LambdaFunctionConfiguration):
@@ -604,10 +617,11 @@ class LambdaNotifier(BaseNotifier):
                 Payload=payload,
             )
         except Exception:
-            LOG.exception(
+            LOG.error(
                 'Unable to send notification for S3 bucket "%s" to Lambda function "%s".',
                 ctx.bucket_name,
                 lambda_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -698,14 +712,14 @@ class EventBridgeNotifier(BaseNotifier):
         return entry
 
     @staticmethod
-    def should_notify(ctx: S3EventNotificationContext, config: Dict) -> bool:
+    def should_notify(ctx: S3EventNotificationContext, config: dict) -> bool:
         # Events are always passed to EventBridge, you can route the event in EventBridge
         # See https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html
         return True
 
     def validate_configuration_for_notifier(
         self,
-        configurations: List[Dict],
+        configurations: list[dict],
         skip_destination_validation: bool,
         context: RequestContext,
         bucket_name: str,
@@ -729,8 +743,10 @@ class EventBridgeNotifier(BaseNotifier):
         try:
             events_client.put_events(Entries=[entry])
         except Exception:
-            LOG.exception(
-                'Unable to send notification for S3 bucket "%s" to EventBridge', ctx.bucket_name
+            LOG.error(
+                'Unable to send notification for S3 bucket "%s" to EventBridge',
+                ctx.bucket_name,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 

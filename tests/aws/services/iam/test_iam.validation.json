@@ -556,5 +556,14 @@
   },
   "tests/aws/services/iam/test_iam.py::TestIAMServiceSpecificCredentials::test_user_match_id_mismatch[totally-wrong-credential-id-with-hyphens]": {
     "last_validated_date": "2025-03-06T16:58:44+00:00"
+  },
+  "tests/aws/services/iam/test_iam.py::TestRoles::test_role_with_tags": {
+    "last_validated_date": "2025-07-02T09:40:33+00:00",
+    "durations_in_seconds": {
+      "setup": 1.44,
+      "call": 1.03,
+      "teardown": 0.59,
+      "total": 3.06
+    }
   }
 }

@@ -4,7 +4,7 @@ import random
 import re
 from datetime import date, datetime
 from functools import lru_cache, singledispatch
-from typing import Dict, List, Optional, Set, Tuple, Union, cast
+from typing import cast
 
 import botocore
 import networkx
@@ -32,18 +32,9 @@ types = {
     "boolean",
 }
 
-Instance = Union[
-    Dict[str, "Instance"],
-    List["Instance"],
-    str,
-    bytes,
-    map,
-    list,
-    float,
-    int,
-    bool,
-    date,
-]
+Instance = (
+    dict[str, "Instance"] | list["Instance"] | str | bytes | map | list | float | int | bool | date
+)
 
 # https://github.com/boto/botocore/issues/2623
 StringShape.METADATA_ATTRS.append("pattern")
@@ -66,14 +57,14 @@ DEFAULT_ARN = "arn:aws:ec2:us-east-1:1234567890123:instance/i-abcde0123456789f"
 
 
 class ShapeGraph(networkx.DiGraph):
-    root: Union[ListShape, StructureShape, MapShape]
-    cycle: List[Tuple[str, str]]
-    cycle_shapes: List[str]
+    root: ListShape | StructureShape | MapShape
+    cycle: list[tuple[str, str]]
+    cycle_shapes: list[str]
 
 
 def populate_graph(graph: networkx.DiGraph, root: Shape):
-    stack: List[Shape] = [root]
-    visited: Set[str] = set()
+    stack: list[Shape] = [root]
+    visited: set[str] = set()
 
     while stack:
         cur = stack.pop()
@@ -108,7 +99,7 @@ def shape_graph(root: Shape) -> ShapeGraph:
     graph.root = root
     populate_graph(graph, root)
 
-    cycles = list()
+    cycles = []
     shapes = set()
     for node in graph.nodes:
         try:
@@ -230,14 +221,14 @@ custom_arns = {
 
 
 @singledispatch
-def generate_instance(shape: Shape, graph: ShapeGraph) -> Optional[Instance]:
+def generate_instance(shape: Shape, graph: ShapeGraph) -> Instance | None:
     if shape is None:
         return None
-    raise ValueError("could not generate shape for type %s" % shape.type_name)
+    raise ValueError(f"could not generate shape for type {shape.type_name}")
 
 
 @generate_instance.register
-def _(shape: StructureShape, graph: ShapeGraph) -> Dict[str, Instance]:
+def _(shape: StructureShape, graph: ShapeGraph) -> dict[str, Instance]:
     if shape.is_tagged_union:
         k, v = random.choice(list(shape.members.items()))
         members = {k: v}
@@ -255,14 +246,14 @@ def _(shape: StructureShape, graph: ShapeGraph) -> Dict[str, Instance]:
 
 
 @generate_instance.register
-def _(shape: ListShape, graph: ShapeGraph) -> List[Instance]:
+def _(shape: ListShape, graph: ShapeGraph) -> list[Instance]:
     if shape.name in graph.cycle_shapes:
         return []
     return [generate_instance(shape.member, graph) for _ in range(shape.metadata.get("min", 1))]
 
 
 @generate_instance.register
-def _(shape: MapShape, graph: ShapeGraph) -> Dict[str, Instance]:
+def _(shape: MapShape, graph: ShapeGraph) -> dict[str, Instance]:
     if shape.name in graph.cycle_shapes:
         return {}
     return {generate_instance(shape.key, graph): generate_instance(shape.value, graph)}
@@ -379,7 +370,7 @@ def _(shape: StringShape, graph: ShapeGraph) -> str:
 
 
 @generate_instance.register
-def _(shape: Shape, graph: ShapeGraph) -> Union[int, float, bool, bytes, date]:
+def _(shape: Shape, graph: ShapeGraph) -> int | float | bool | bytes | date:
     if shape.type_name in ["integer", "long"]:
         return shape.metadata.get("min", 1)
     if shape.type_name in ["float", "double"]:
@@ -392,7 +383,7 @@ def _(shape: Shape, graph: ShapeGraph) -> Union[int, float, bool, bytes, date]:
     if shape.type_name == "timestamp":
         return datetime.now()
 
-    raise ValueError("unknown type %s" % shape.type_name)
+    raise ValueError(f"unknown type {shape.type_name}")
 
 
 def generate_response(operation: OperationModel):
@@ -427,7 +418,7 @@ def create_mocking_dispatch_table(service) -> DispatchTable:
     return dispatch_table
 
 
-@lru_cache()
+@lru_cache
 def get_mocking_skeleton(service: str) -> Skeleton:
     service = load_service(service)
     return Skeleton(service, create_mocking_dispatch_table(service))

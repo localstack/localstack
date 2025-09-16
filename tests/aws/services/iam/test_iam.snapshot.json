@@ -6475,5 +6475,103 @@
         }
       }
     }
+  },
+  "tests/aws/services/iam/test_iam.py::TestRoles::test_role_with_tags": {
+    "recorded-date": "02-07-2025, 09:40:33",
+    "recorded-content": {
+      "create-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/role-with-tags/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "Path": "/role-with-tags/",
+          "RoleId": "<role-id:1>",
+          "RoleName": "<role-name:1>",
+          "Tags": [
+            {
+              "Key": "test",
+              "Value": "value"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-role-response": {
+        "Role": {
+          "Arn": "arn:<partition>:iam::111111111111:role/role-with-tags/<role-name:1>",
+          "AssumeRolePolicyDocument": {
+            "Statement": [
+              {
+                "Action": "sts:AssumeRole",
+                "Effect": "Allow",
+                "Principal": {
+                  "Service": "ec2.amazonaws.com"
+                }
+              }
+            ],
+            "Version": "2012-10-17"
+          },
+          "CreateDate": "<datetime>",
+          "MaxSessionDuration": 3600,
+          "Path": "/role-with-tags/",
+          "RoleId": "<role-id:1>",
+          "RoleLastUsed": {},
+          "RoleName": "<role-name:1>",
+          "Tags": [
+            {
+              "Key": "test",
+              "Value": "value"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-role-response": {
+        "IsTruncated": false,
+        "Roles": [
+          {
+            "Arn": "arn:<partition>:iam::111111111111:role/role-with-tags/<role-name:1>",
+            "AssumeRolePolicyDocument": {
+              "Statement": [
+                {
+                  "Action": "sts:AssumeRole",
+                  "Effect": "Allow",
+                  "Principal": {
+                    "Service": "ec2.amazonaws.com"
+                  }
+                }
+              ],
+              "Version": "2012-10-17"
+            },
+            "CreateDate": "<datetime>",
+            "MaxSessionDuration": 3600,
+            "Path": "/role-with-tags/",
+            "RoleId": "<role-id:1>",
+            "RoleName": "<role-name:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

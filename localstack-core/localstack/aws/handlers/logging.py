@@ -2,7 +2,6 @@
 
 import logging
 from functools import cached_property
-from typing import Type
 
 from localstack.aws.api import RequestContext, ServiceException
 from localstack.aws.chain import ExceptionHandler, HandlerChain
@@ -71,7 +70,7 @@ class ResponseLogger:
         )
 
     # make sure loggers are loaded after logging config is loaded
-    def _prepare_logger(self, logger: logging.Logger, formatter: Type):
+    def _prepare_logger(self, logger: logging.Logger, formatter: type):
         if logger.isEnabledFor(logging.DEBUG):
             logger.propagate = False
             handler = create_default_handler(logger.level)

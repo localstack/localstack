@@ -42,7 +42,7 @@ class CustomEncoder(json.JSONEncoder):
         try:
             if isinstance(o, bytes):
                 return to_str(o)
-            return super(CustomEncoder, self).default(o)
+            return super().default(o)
         except Exception:
             return None
 
@@ -78,7 +78,7 @@ class FileMappedDocument(dict):
         if os.path.isdir(self.path):
             raise IsADirectoryError
 
-        with open(self.path, "r") as fd:
+        with open(self.path) as fd:
             self.update(json.load(fd))
 
     def save(self):

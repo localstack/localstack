@@ -3,7 +3,7 @@ from __future__ import annotations
 import abc
 import json
 import threading
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.component.common.comment import Comment
 from localstack.services.stepfunctions.asl.component.common.flow.start_at import StartAt
@@ -38,16 +38,16 @@ class InlineIterationComponentEvalInput:
     state_name: Final[str]
     max_concurrency: Final[int]
     input_items: Final[list[json]]
-    parameters: Final[Optional[Parameters]]
-    item_selector: Final[Optional[ItemSelector]]
+    parameters: Final[Parameters | None]
+    item_selector: Final[ItemSelector | None]
 
     def __init__(
         self,
         state_name: str,
         max_concurrency: int,
         input_items: list[json],
-        parameters: Optional[Parameters],
-        item_selector: Optional[ItemSelector],
+        parameters: Parameters | None,
+        item_selector: ItemSelector | None,
     ):
         self.state_name = state_name
         self.max_concurrency = max_concurrency
@@ -65,7 +65,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
         start_at: StartAt,
         states: States,
         processor_config: ProcessorConfig,
-        comment: Optional[Comment],
+        comment: Comment | None,
     ):
         super().__init__(
             query_language=query_language, start_at=start_at, states=states, comment=comment
@@ -105,7 +105,7 @@ class InlineIterationComponent(IterationComponent, abc.ABC):
 
         job_pool.await_jobs()
 
-        worker_exception: Optional[Exception] = job_pool.get_worker_exception()
+        worker_exception: Exception | None = job_pool.get_worker_exception()
         if worker_exception is not None:
             raise worker_exception
 

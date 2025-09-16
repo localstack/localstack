@@ -293,8 +293,8 @@ class TestEvents:
     ):
         """Test that put_events response contains each EventId only once, even with multiple targets."""
 
-        queue_url_1, queue_arn_1 = sqs_as_events_target()
-        queue_url_2, queue_arn_2 = sqs_as_events_target()
+        queue_url_1, queue_arn_1, _ = sqs_as_events_target()
+        queue_url_2, queue_arn_2, _ = sqs_as_events_target()
 
         rule_name = f"test-rule-{short_uid()}"
 
@@ -454,7 +454,7 @@ class TestEvents:
     ):
         """Test that EventBridge correctly handles datetime serialization in events."""
         rule_name = f"test-rule-{short_uid()}"
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         snapshot.add_transformers_list(
             [
@@ -886,8 +886,8 @@ class TestEventBus:
     ):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", strategy)
 
-        bus_name_one = "bus1-{}".format(short_uid())
-        bus_name_two = "bus2-{}".format(short_uid())
+        bus_name_one = f"bus1-{short_uid()}"
+        bus_name_two = f"bus2-{short_uid()}"
 
         events_create_event_bus(Name=bus_name_one)
         event_bus_2_arn = events_create_event_bus(Name=bus_name_two)["EventBusArn"]
@@ -954,7 +954,7 @@ class TestEventBus:
         )
 
         # Create sqs target
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         # Rule and target bus 2 to sqs
         rule_name_bus_two = f"rule-{short_uid()}"

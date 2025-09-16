@@ -4,8 +4,9 @@ import logging
 import os
 import subprocess
 import zipfile
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Literal, Mapping, Optional, Sequence, overload
+from typing import TYPE_CHECKING, Literal, Optional, overload
 
 from localstack import config
 from localstack.services.lambda_.runtimes import RUNTIMES_AGGREGATED
@@ -176,27 +177,27 @@ class ParametrizedLambda:
     def create_function(
         self,
         *,
-        FunctionName: Optional[str] = None,
-        Role: Optional[str] = None,
+        FunctionName: str | None = None,
+        Role: str | None = None,
         Code: Optional["FunctionCodeTypeDef"] = None,
         Runtime: Optional["RuntimeType"] = None,
-        Handler: Optional[str] = None,
-        Description: Optional[str] = None,
-        Timeout: Optional[int] = None,
-        MemorySize: Optional[int] = None,
-        Publish: Optional[bool] = None,
+        Handler: str | None = None,
+        Description: str | None = None,
+        Timeout: int | None = None,
+        MemorySize: int | None = None,
+        Publish: bool | None = None,
         VpcConfig: Optional["VpcConfigTypeDef"] = None,
         PackageType: Optional["PackageTypeType"] = None,
         DeadLetterConfig: Optional["DeadLetterConfigTypeDef"] = None,
         Environment: Optional["EnvironmentTypeDef"] = None,
-        KMSKeyArn: Optional[str] = None,
+        KMSKeyArn: str | None = None,
         TracingConfig: Optional["TracingConfigTypeDef"] = None,
-        Tags: Optional[Mapping[str, str]] = None,
-        Layers: Optional[Sequence[str]] = None,
-        FileSystemConfigs: Optional[Sequence["FileSystemConfigTypeDef"]] = None,
+        Tags: Mapping[str, str] | None = None,
+        Layers: Sequence[str] | None = None,
+        FileSystemConfigs: Sequence["FileSystemConfigTypeDef"] | None = None,
         ImageConfig: Optional["ImageConfigTypeDef"] = None,
-        CodeSigningConfigArn: Optional[str] = None,
-        Architectures: Optional[Sequence["ArchitectureType"]] = None,
+        CodeSigningConfigArn: str | None = None,
+        Architectures: Sequence["ArchitectureType"] | None = None,
         EphemeralStorage: Optional["EphemeralStorageTypeDef"] = None,
     ) -> "FunctionConfigurationResponseMetadataTypeDef": ...
 

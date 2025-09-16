@@ -1,7 +1,7 @@
 import logging
+from collections.abc import Iterable
 from functools import cache
 from http import HTTPMethod
-from typing import Iterable
 
 from werkzeug.exceptions import MethodNotAllowed, NotFound
 from werkzeug.routing import Map, MapAdapter, Rule
@@ -85,12 +85,11 @@ class RestAPIResourceRouter:
             rule, args = matcher.match(path, method=request.method, return_rule=True)
         except (MethodNotAllowed, NotFound) as e:
             # MethodNotAllowed (405) exception is raised if a path is matching, but the method does not.
-            # Our router might handle this as a 404, validate with AWS.
+            # AWS handles this and the regular 404 as a '403 MissingAuthTokenError'
             LOG.warning(
                 "API Gateway: No resource or method was found for: %s %s",
                 request.method,
                 path,
-                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             raise MissingAuthTokenError("Missing Authentication Token") from e
 

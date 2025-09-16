@@ -3,7 +3,7 @@ Client for the analytics backend.
 """
 
 import logging
-from typing import Any, Dict, List
+from typing import Any
 
 import requests
 
@@ -18,10 +18,10 @@ LOG = logging.getLogger(__name__)
 
 
 class SessionResponse:
-    response: Dict[str, Any]
+    response: dict[str, Any]
     status: int
 
-    def __init__(self, response: Dict[str, Any], status: int = 200):
+    def __init__(self, response: dict[str, Any], status: int = 200):
         self.response = response
         self.status = status
 
@@ -70,7 +70,7 @@ class AnalyticsClient:
         )
 
     # TODO: naming seems confusing since this doesn't actually append, but directly sends all passed events via HTTP
-    def append_events(self, events: List[Event]):
+    def append_events(self, events: list[Event]):
         # TODO: add compression to append_events
         #  it would maybe be useful to compress analytics data, but it's unclear how that will
         #  affect performance and what the benefit is. need to measure first.
@@ -104,7 +104,7 @@ class AnalyticsClient:
         # TODO: Add response type to analytics client
         return response
 
-    def _create_headers(self) -> Dict[str, str]:
+    def _create_headers(self) -> dict[str, str]:
         return {
             "User-Agent": "localstack/" + constants.VERSION,
             "Localstack-Session-ID": self.localstack_session_id,

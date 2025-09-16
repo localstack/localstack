@@ -30,9 +30,9 @@ While not recommended, store classes may define member helper functions and prop
 """
 
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Iterator
 from threading import RLock
-from typing import Any, Generic, Iterator, Type, TypeVar, Union
+from typing import Any, Generic, TypeVar
 
 from localstack import config
 from localstack.utils.aws.aws_stack import get_valid_regions_for_service
@@ -52,7 +52,7 @@ class LocalAttribute:
     Descriptor protocol for marking store attributes as local to a region.
     """
 
-    def __init__(self, default: Union[Callable, int, float, str, bool, None]):
+    def __init__(self, default: Callable | int | float | str | bool | None):
         """
         :param default: Default value assigned to the local attribute. Must be a scalar
             or a callable.
@@ -81,7 +81,7 @@ class CrossRegionAttribute:
     Descriptor protocol for marking store attributes as shared across all regions.
     """
 
-    def __init__(self, default: Union[Callable, int, float, str, bool, None]):
+    def __init__(self, default: Callable | int | float | str | bool | None):
         """
         :param default: The default value assigned to the cross-region attribute.
             This must be a scalar or a callable.
@@ -122,7 +122,7 @@ class CrossAccountAttribute:
     This should be used for resources that are identified by ARNs.
     """
 
-    def __init__(self, default: Union[Callable, int, float, str, bool, None]):
+    def __init__(self, default: Callable | int | float | str | bool | None):
         """
         :param default: The default value assigned to the cross-account attribute.
             This must be a scalar or a callable.
@@ -198,7 +198,7 @@ class RegionBundle(dict, Generic[BaseStoreType]):
     def __init__(
         self,
         service_name: str,
-        store: Type[BaseStoreType],
+        store: type[BaseStoreType],
         account_id: str,
         validate: bool = True,
         lock: RLock = None,
@@ -238,7 +238,7 @@ class RegionBundle(dict, Generic[BaseStoreType]):
 
                 store_obj._global = self._global
                 store_obj._universal = self._universal
-                store_obj.service_name = self.service_name
+                store_obj._service_name = self.service_name
                 store_obj._account_id = self.account_id
                 store_obj._region_name = region_name
 
@@ -286,7 +286,7 @@ class AccountRegionBundle(dict, Generic[BaseStoreType]):
     Encapsulation for all stores for all AWS account IDs.
     """
 
-    def __init__(self, service_name: str, store: Type[BaseStoreType], validate: bool = True):
+    def __init__(self, service_name: str, store: type[BaseStoreType], validate: bool = True):
         """
         :param service_name: Name of the service. Must be a valid service defined in botocore.
         :param store: Class definition of the Store

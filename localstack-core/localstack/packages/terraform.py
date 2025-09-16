@@ -1,6 +1,5 @@
 import os
 import platform
-from typing import List
 
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import ArchiveDownloadAndExtractInstaller
@@ -11,13 +10,16 @@ TERRAFORM_VERSION = os.getenv("TERRAFORM_VERSION", "1.5.7")
 TERRAFORM_URL_TEMPLATE = (
     "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_{os}_{arch}.zip"
 )
+TERRAFORM_CHECKSUM_URL_TEMPLATE = (
+    "https://releases.hashicorp.com/terraform/{version}/terraform_{version}_SHA256SUMS"
+)
 
 
 class TerraformPackage(Package["TerraformPackageInstaller"]):
     def __init__(self) -> None:
         super().__init__("Terraform", TERRAFORM_VERSION)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [TERRAFORM_VERSION]
 
     def _get_installer(self, version: str) -> "TerraformPackageInstaller":
@@ -36,6 +38,9 @@ class TerraformPackageInstaller(ArchiveDownloadAndExtractInstaller):
     def _install(self, target: InstallTarget) -> None:
         super()._install(target)
         chmod_r(self.get_executable_path(), 0o777)  # type: ignore[arg-type]
+
+    def _get_checksum_url(self) -> str | None:
+        return TERRAFORM_CHECKSUM_URL_TEMPLATE.format(version=TERRAFORM_VERSION)
 
 
 terraform_package = TerraformPackage()

@@ -3,6 +3,7 @@ import os
 import time
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.api.lambda_ import Runtime
@@ -55,7 +56,7 @@ class TestHotReloading:
         mkdir(hot_reloading_dir_path)
         cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
         function_content = load_file(handler_file)
-        with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="wt") as f:
+        with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="w") as f:
             f.write(function_content)
 
         mount_path = get_host_path_for_path_in_docker(hot_reloading_dir_path)
@@ -74,7 +75,7 @@ class TestHotReloading:
         response_dict = json.load(response["Payload"])
         assert response_dict["counter"] == 2
         assert response_dict["constant"] == "value1"
-        with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="wt") as f:
+        with open(os.path.join(hot_reloading_dir_path, handler_filename), mode="w") as f:
             f.write(function_content.replace("value1", "value2"))
         # we have to sleep here, since the hot reloading is debounced with 500ms
         time.sleep(sleep_time)
@@ -97,7 +98,7 @@ class TestHotReloading:
         assert response_dict["counter"] == 1
         assert response_dict["constant"] == "value2"
         # now writing something in the new folder to check if it will reload
-        with open(os.path.join(test_folder, "test-file"), mode="wt") as f:
+        with open(os.path.join(test_folder, "test-file"), mode="w") as f:
             f.write("test-content")
         time.sleep(sleep_time)
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
@@ -122,7 +123,7 @@ class TestHotReloading:
         mkdir(hot_reloading_dir_path)
         cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
         function_content = load_file(HOT_RELOADING_NODEJS_HANDLER)
-        with open(os.path.join(hot_reloading_dir_path, "handler.mjs"), mode="wt") as f:
+        with open(os.path.join(hot_reloading_dir_path, "handler.mjs"), mode="w") as f:
             f.write(function_content)
 
         mount_path = get_host_path_for_path_in_docker(hot_reloading_dir_path)
@@ -146,7 +147,7 @@ class TestHotReloading:
         """Tests validation of hot reloading paths"""
         function_name = f"test-hot-reloading-{short_uid()}"
         hot_reloading_bucket = config.BUCKET_MARKER_LOCAL
-        with pytest.raises(Exception):
+        with pytest.raises(ClientError):
             aws_client.lambda_.create_function(
                 FunctionName=function_name,
                 Handler="handler.handler",
@@ -167,7 +168,7 @@ class TestHotReloading:
         mkdir(hot_reloading_dir_path)
         cleanups.append(lambda: rm_rf(hot_reloading_dir_path))
         function_content = load_file(HOT_RELOADING_PYTHON_HANDLER)
-        with open(os.path.join(hot_reloading_dir_path, "handler.py"), mode="wt") as f:
+        with open(os.path.join(hot_reloading_dir_path, "handler.py"), mode="w") as f:
             f.write(function_content)
 
         mount_path = get_host_path_for_path_in_docker(hot_reloading_dir_path)

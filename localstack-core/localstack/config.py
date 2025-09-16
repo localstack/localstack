@@ -9,7 +9,8 @@ import tempfile
 import time
 import warnings
 from collections import defaultdict
-from typing import Any, Dict, List, Mapping, Optional, Tuple, TypeVar, Union
+from collections.abc import Mapping
+from typing import Any, Optional, TypeVar, Union
 
 from localstack import constants
 from localstack.constants import (
@@ -233,7 +234,7 @@ def is_env_not_false(env_var_name: str) -> bool:
     return os.environ.get(env_var_name, "").lower().strip() not in FALSE_STRINGS
 
 
-def load_environment(profiles: str = None, env=os.environ) -> List[str]:
+def load_environment(profiles: str = None, env=os.environ) -> list[str]:
     """Loads the environment variables from ~/.localstack/{profile}.env, for each profile listed in the profiles.
     :param env: environment to load profile to. Defaults to `os.environ`
     :param profiles: a comma separated list of profiles to load (defaults to "default")
@@ -277,11 +278,15 @@ def is_windows() -> bool:
     return platform.system().lower() == "windows"
 
 
+def is_wsl() -> bool:
+    return platform.system().lower() == "linux" and os.environ.get("WSL_DISTRO_NAME") is not None
+
+
 def ping(host):
     """Returns True if the host responds to a ping request"""
     is_in_windows = is_windows()
     ping_opts = "-n 1 -w 2000" if is_in_windows else "-c 1 -W 2"
-    args = "ping %s %s" % (ping_opts, host)
+    args = f"ping {ping_opts} {host}"
     return (
         subprocess.call(
             args, shell=not is_in_windows, stdout=subprocess.PIPE, stderr=subprocess.PIPE
@@ -333,7 +338,7 @@ def in_docker():
             return False
     except Exception:
         pass
-    with open("/proc/1/cgroup", "rt") as ifh:
+    with open("/proc/1/cgroup") as ifh:
         content = ifh.read()
         if "docker" in content or "buildkit" in content:
             return True
@@ -344,7 +349,7 @@ def in_docker():
     # containerd does not set any specific file or config, but it does use
     # io.containerd.snapshotter.v1.overlayfs as the overlay filesystem for `/`.
     try:
-        with open("/proc/mounts", "rt") as infile:
+        with open("/proc/mounts") as infile:
             for line in infile:
                 line = line.strip()
 
@@ -384,6 +389,8 @@ OVERRIDE_IN_DOCKER = parse_boolean_env("OVERRIDE_IN_DOCKER")
 is_in_docker = in_docker()
 is_in_linux = is_linux()
 is_in_macos = is_macos()
+is_in_windows = is_windows()
+is_in_wsl = is_wsl()
 default_ip = "0.0.0.0" if is_in_docker else "127.0.0.1"
 
 # CLI specific: the configuration profile to load
@@ -428,8 +435,8 @@ TMP_FOLDER = os.path.join(tempfile.gettempdir(), "localstack")
 VOLUME_DIR = os.environ.get("LOCALSTACK_VOLUME_DIR", "").strip() or TMP_FOLDER
 
 # fix for Mac OS, to be able to mount /var/folders in Docker
-if TMP_FOLDER.startswith("/var/folders/") and os.path.exists("/private%s" % TMP_FOLDER):
-    TMP_FOLDER = "/private%s" % TMP_FOLDER
+if TMP_FOLDER.startswith("/var/folders/") and os.path.exists(f"/private{TMP_FOLDER}"):
+    TMP_FOLDER = f"/private{TMP_FOLDER}"
 
 # whether to enable verbose debug logging ("LOG" is used when using the CLI with LOCALSTACK_LOG instead of LS_LOG)
 LS_LOG = eval_log_type("LS_LOG") or eval_log_type("LOG")
@@ -597,9 +604,7 @@ class HostAndPort:
 
     def _get_unprivileged_port_range_start(self) -> int:
         try:
-            with open(
-                "/proc/sys/net/ipv4/ip_unprivileged_port_start", "rt"
-            ) as unprivileged_port_start:
+            with open("/proc/sys/net/ipv4/ip_unprivileged_port_start") as unprivileged_port_start:
                 port = unprivileged_port_start.read()
                 return int(port.strip())
         except Exception:
@@ -631,7 +636,7 @@ class HostAndPort:
         return f"HostAndPort(host={self.host}, port={self.port})"
 
 
-class UniqueHostAndPortList(List[HostAndPort]):
+class UniqueHostAndPortList(list[HostAndPort]):
     """
     Container type that ensures that ports added to the list are unique based
     on these rules:
@@ -644,7 +649,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
         - Identical identical hosts and ports are de-duped
     """
 
-    def __init__(self, iterable: Union[List[HostAndPort], None] = None):
+    def __init__(self, iterable: Union[list[HostAndPort], None] = None):
         super().__init__(iterable or [])
         self._ensure_unique()
 
@@ -655,10 +660,10 @@ class UniqueHostAndPortList(List[HostAndPort]):
         if len(self) <= 1:
             return
 
-        unique: List[HostAndPort] = list()
+        unique: list[HostAndPort] = []
 
         # Build a dictionary of hosts by port
-        hosts_by_port: Dict[int, List[str]] = defaultdict(list)
+        hosts_by_port: dict[int, list[str]] = defaultdict(list)
         for item in self:
             hosts_by_port[item.port].append(item.host)
 
@@ -690,7 +695,7 @@ class UniqueHostAndPortList(List[HostAndPort]):
 
 def populate_edge_configuration(
     environment: Mapping[str, str],
-) -> Tuple[HostAndPort, UniqueHostAndPortList]:
+) -> tuple[HostAndPort, UniqueHostAndPortList]:
     """Populate the LocalStack edge configuration from environment variables."""
     localstack_host_raw = environment.get("LOCALSTACK_HOST")
     gateway_listen_raw = environment.get("GATEWAY_LISTEN")
@@ -817,6 +822,9 @@ OUTBOUND_HTTPS_PROXY = os.environ.get("OUTBOUND_HTTPS_PROXY", "")
 OPENAPI_VALIDATE_RESPONSE = is_env_true("OPENAPI_VALIDATE_RESPONSE")
 # Flag to enable the validation of the requests made to the LocalStack internal endpoints. Active by default.
 OPENAPI_VALIDATE_REQUEST = is_env_true("OPENAPI_VALIDATE_REQUEST")
+
+# environment variable to determine whether to include stack traces in http responses
+INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE = is_env_true("INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE")
 
 # whether to skip waiting for the infrastructure to shut down, or exit immediately
 FORCE_SHUTDOWN = is_env_not_false("FORCE_SHUTDOWN")
@@ -1176,6 +1184,8 @@ elif _override_dynamodb_v2 == "v2":
     os.environ["PROVIDER_OVERRIDE_DYNAMODBSTREAMS"] = "v2"
     DDB_STREAMS_PROVIDER_V2 = True
 
+SNS_PROVIDER_V2 = os.environ.get("PROVIDER_OVERRIDE_SNS", "") == "v2"
+
 # TODO remove fallback to LAMBDA_DOCKER_NETWORK with next minor version
 MAIN_DOCKER_NETWORK = os.environ.get("MAIN_DOCKER_NETWORK", "") or LAMBDA_DOCKER_NETWORK
 
@@ -1229,8 +1239,8 @@ def use_custom_dns():
 
 
 # s3 virtual host name
-S3_VIRTUAL_HOSTNAME = "s3.%s" % LOCALSTACK_HOST.host
-S3_STATIC_WEBSITE_HOSTNAME = "s3-website.%s" % LOCALSTACK_HOST.host
+S3_VIRTUAL_HOSTNAME = f"s3.{LOCALSTACK_HOST.host}"
+S3_STATIC_WEBSITE_HOSTNAME = f"s3-website.{LOCALSTACK_HOST.host}"
 
 BOTO_WAITER_DELAY = int(os.environ.get("BOTO_WAITER_DELAY") or "1")
 BOTO_WAITER_MAX_ATTEMPTS = int(os.environ.get("BOTO_WAITER_MAX_ATTEMPTS") or "120")
@@ -1247,6 +1257,9 @@ IN_MEMORY_CLIENT = is_env_true("IN_MEMORY_CLIENT")
 
 # This flag enables all responses from LocalStack to contain a `x-localstack` HTTP header.
 LOCALSTACK_RESPONSE_HEADER_ENABLED = is_env_not_false("LOCALSTACK_RESPONSE_HEADER_ENABLED")
+
+# Serialization backend for the LocalStack internal state (`dill` is used by default`).
+STATE_SERIALIZATION_BACKEND = os.environ.get("STATE_SERIALIZATION_BACKEND", "").strip() or "dill"
 
 # List of environment variable names used for configuration that are passed from the host into the LocalStack container.
 # => Synchronize this list with the above and the configuration docs:
@@ -1384,6 +1397,7 @@ CONFIG_ENV_VARS = [
     "SQS_ENDPOINT_STRATEGY",
     "SQS_DISABLE_CLOUDWATCH_METRICS",
     "SQS_CLOUDWATCH_METRICS_REPORT_INTERVAL",
+    "STATE_SERIALIZATION_BACKEND",
     "STRICT_SERVICE_LOADING",
     "TF_COMPAT_MODE",
     "USE_SSL",
@@ -1437,7 +1451,7 @@ def is_collect_metrics_mode() -> bool:
     return is_env_true(ENV_INTERNAL_TEST_COLLECT_METRIC)
 
 
-def collect_config_items() -> List[Tuple[str, Any]]:
+def collect_config_items() -> list[tuple[str, Any]]:
     """Returns a list of key-value tuples of LocalStack configuration values."""
     none = object()  # sentinel object
 
@@ -1587,7 +1601,7 @@ def get_edge_url(localstack_hostname=None, protocol=None):
 
 
 class ServiceProviderConfig(Mapping[str, str]):
-    _provider_config: Dict[str, str]
+    _provider_config: dict[str, str]
     default_value: str
     override_prefix: str = "PROVIDER_OVERRIDE_"
 
@@ -1612,7 +1626,7 @@ class ServiceProviderConfig(Mapping[str, str]):
     def set_provider(self, service: str, provider: str):
         self._provider_config[service] = provider
 
-    def bulk_set_provider_if_not_exists(self, services: List[str], provider: str):
+    def bulk_set_provider_if_not_exists(self, services: list[str], provider: str):
         for service in services:
             self.set_provider_if_not_exists(service, provider)
 

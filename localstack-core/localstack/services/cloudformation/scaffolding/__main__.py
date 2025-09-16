@@ -3,11 +3,12 @@ from __future__ import annotations
 import json
 import os
 import zipfile
+from collections.abc import Generator
 from dataclasses import dataclass
 from enum import Enum, auto
 from functools import reduce
 from pathlib import Path
-from typing import Any, Generator, Literal, Optional, TypedDict, TypeVar
+from typing import Any, Literal, TypedDict, TypeVar
 
 import click
 from jinja2 import Environment, FileSystemLoader
@@ -40,12 +41,12 @@ SERVICE_NAME_MAP = {
 
 
 class Property(TypedDict):
-    type: Optional[Literal["str"]]
-    items: Optional[dict]
+    type: Literal["str"] | None
+    items: dict | None
 
 
 class HandlerDefinition(TypedDict):
-    permissions: Optional[list[str]]
+    permissions: list[str] | None
 
 
 class HandlersDefinition(TypedDict):
@@ -58,8 +59,8 @@ class HandlersDefinition(TypedDict):
 
 class ResourceSchema(TypedDict):
     typeName: str
-    description: Optional[str]
-    required: Optional[list[str]]
+    description: str | None
+    required: list[str] | None
     properties: dict[str, Property]
     handlers: HandlersDefinition
 
@@ -140,7 +141,7 @@ class SchemaProvider:
 
 
 LOCALSTACK_ROOT_DIR = Path(__file__).parent.joinpath("../../../../..").resolve()
-LOCALSTACK_PRO_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath("../localstack-ext").resolve()
+LOCALSTACK_PRO_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath("../localstack-pro").resolve()
 TESTS_ROOT_DIR = LOCALSTACK_ROOT_DIR.joinpath(
     "tests/aws/services/cloudformation/resource_providers"
 )
@@ -171,7 +172,7 @@ def tests_root_dir(pro: bool = False) -> Path:
 def template_path(
     resource_name: ResourceName,
     file_type: FileType,
-    root: Optional[Path] = None,
+    root: Path | None = None,
     pro: bool = False,
 ) -> Path:
     """
@@ -266,11 +267,11 @@ class TemplateRenderer:
             # FileType.cloudcontrol_test: "test_cloudcontrol_template.py.j2",
             FileType.parity_test: "test_parity_template.py.j2",
         }
-        kwargs = dict(
-            name=resource_name.full_name,  # AWS::SNS::Topic
-            resource=resource_name.provider_name(),  # SNSTopic
-            scaffolding_version=f"v{SCAFFOLDING_VERSION}",
-        )
+        kwargs = {
+            "name": resource_name.full_name,  # AWS::SNS::Topic
+            "resource": resource_name.provider_name(),  # SNSTopic
+            "scaffolding_version": f"v{SCAFFOLDING_VERSION}",
+        }
         # TODO: we might want to segregate each provider in its own directory
         # e.g. .../resource_providers/aws_iam_role/test_X.py vs. .../resource_providers/iam/test_X.py
         # add extra parameters

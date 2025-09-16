@@ -207,5 +207,76 @@
         }
       }
     }
+  },
+  "tests/aws/services/sts/test_sts.py::TestSTSIntegrations::test_sts_invalid_parameters": {
+    "recorded-date": "21-07-2025, 19:25:22",
+    "recorded-content": {
+      "malformed-arn": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "nothing-valid-in-here is invalid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-partition": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "arn::b:::something/test-role is invalid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-service": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "arn:a::::something/test-role is invalid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "not-enough-colons": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "arn:a:::something/test-role is invalid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "no-resource": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "arn:a:a::aaaaaaaaaa: is invalid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-session-name": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'Session1:2' at 'roleSessionName' failed to satisfy constraint: Member must satisfy regular expression pattern: [\\w+=,.@-]*",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

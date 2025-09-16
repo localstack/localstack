@@ -378,21 +378,21 @@ class UpdateRuntimeOn(StrEnum):
 
 class CodeSigningConfigNotFoundException(ServiceException):
     code: str = "CodeSigningConfigNotFoundException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 404
     Type: Optional[String]
 
 
 class CodeStorageExceededException(ServiceException):
     code: str = "CodeStorageExceededException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class CodeVerificationFailedException(ServiceException):
     code: str = "CodeVerificationFailedException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
@@ -421,28 +421,28 @@ class EC2UnexpectedException(ServiceException):
 
 class EFSIOException(ServiceException):
     code: str = "EFSIOException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 410
     Type: Optional[String]
 
 
 class EFSMountConnectivityException(ServiceException):
     code: str = "EFSMountConnectivityException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 408
     Type: Optional[String]
 
 
 class EFSMountFailureException(ServiceException):
     code: str = "EFSMountFailureException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 403
     Type: Optional[String]
 
 
 class EFSMountTimeoutException(ServiceException):
     code: str = "EFSMountTimeoutException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 408
     Type: Optional[String]
 
@@ -456,21 +456,21 @@ class ENILimitReachedException(ServiceException):
 
 class InvalidCodeSignatureException(ServiceException):
     code: str = "InvalidCodeSignatureException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class InvalidParameterValueException(ServiceException):
     code: str = "InvalidParameterValueException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class InvalidRequestContentException(ServiceException):
     code: str = "InvalidRequestContentException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
@@ -533,56 +533,56 @@ class KMSNotFoundException(ServiceException):
 
 class PolicyLengthExceededException(ServiceException):
     code: str = "PolicyLengthExceededException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class PreconditionFailedException(ServiceException):
     code: str = "PreconditionFailedException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 412
     Type: Optional[String]
 
 
 class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     code: str = "ProvisionedConcurrencyConfigNotFoundException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 404
     Type: Optional[String]
 
 
 class RecursiveInvocationException(ServiceException):
     code: str = "RecursiveInvocationException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class RequestTooLargeException(ServiceException):
     code: str = "RequestTooLargeException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 413
     Type: Optional[String]
 
 
 class ResourceConflictException(ServiceException):
     code: str = "ResourceConflictException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 409
     Type: Optional[String]
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 404
     Type: Optional[String]
 
@@ -603,21 +603,21 @@ class ServiceException(ServiceException):
 
 class SnapStartException(ServiceException):
     code: str = "SnapStartException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 400
     Type: Optional[String]
 
 
 class SnapStartNotReadyException(ServiceException):
     code: str = "SnapStartNotReadyException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 409
     Type: Optional[String]
 
 
 class SnapStartTimeoutException(ServiceException):
     code: str = "SnapStartTimeoutException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 408
     Type: Optional[String]
 
@@ -631,7 +631,7 @@ class SubnetIPAddressLimitReachedException(ServiceException):
 
 class TooManyRequestsException(ServiceException):
     code: str = "TooManyRequestsException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 429
     retryAfterSeconds: Optional[String]
     Type: Optional[String]
@@ -640,7 +640,7 @@ class TooManyRequestsException(ServiceException):
 
 class UnsupportedMediaTypeException(ServiceException):
     code: str = "UnsupportedMediaTypeException"
-    sender_fault: bool = False
+    sender_fault: bool = True
     status_code: int = 415
     Type: Optional[String]
 

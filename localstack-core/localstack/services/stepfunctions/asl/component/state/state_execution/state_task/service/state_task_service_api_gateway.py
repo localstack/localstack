@@ -4,7 +4,7 @@ import http
 import json
 import logging
 from json import JSONDecodeError
-from typing import Any, Final, Optional, TypedDict
+from typing import Any, Final, TypedDict
 from urllib.parse import urlencode, urljoin, urlparse
 
 import requests
@@ -76,13 +76,13 @@ class AuthType(str):
 class TaskParameters(TypedDict):
     ApiEndpoint: ApiEndpoint
     Method: Method
-    Headers: Optional[Headers]
-    Stage: Optional[Stage]
-    Path: Optional[Path]
-    QueryParameters: Optional[QueryParameters]
-    RequestBody: Optional[RequestBody]
-    AllowNullValues: Optional[AllowNullValues]
-    AuthType: Optional[AuthType]
+    Headers: Headers | None
+    Stage: Stage | None
+    Path: Path | None
+    QueryParameters: QueryParameters | None
+    RequestBody: RequestBody | None
+    AllowNullValues: AllowNullValues | None
+    AuthType: AuthType | None
 
 
 class InvokeOutput(TypedDict):
@@ -131,14 +131,14 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return self._SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     def _normalise_parameters(
         self,
         parameters: dict,
-        boto_service_name: Optional[str] = None,
-        service_action_name: Optional[str] = None,
+        boto_service_name: str | None = None,
+        service_action_name: str | None = None,
     ) -> None:
         # ApiGateway does not support botocore request relay.
         pass
@@ -146,14 +146,14 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
     def _normalise_response(
         self,
         response: Any,
-        boto_service_name: Optional[str] = None,
-        service_action_name: Optional[str] = None,
+        boto_service_name: str | None = None,
+        service_action_name: str | None = None,
     ) -> None:
         # ApiGateway does not support botocore request relay.
         pass
 
     @staticmethod
-    def _query_parameters_of(parameters: TaskParameters) -> Optional[str]:
+    def _query_parameters_of(parameters: TaskParameters) -> str | None:
         query_str = None
         query_parameters = parameters.get("QueryParameters")
         # TODO: add support for AllowNullValues.
@@ -167,8 +167,8 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
         return query_str
 
     @staticmethod
-    def _headers_of(parameters: TaskParameters) -> Optional[dict]:
-        headers = parameters.get("Headers", dict())
+    def _headers_of(parameters: TaskParameters) -> dict | None:
+        headers = parameters.get("Headers", {})
         if headers:
             for key in headers.keys():
                 # TODO: the following check takes place at parse time.
@@ -239,8 +239,8 @@ class StateTaskServiceApiGateway(StateTaskServiceCallback):
             response_body = response.json()
         except JSONDecodeError:
             response_body = response.text
-            if response_body == json.dumps(dict()):
-                response_body = dict()
+            if response_body == json.dumps({}):
+                response_body = {}
 
         # since we are not using a case-insensitive dict, and we want to remove a header, for server
         # compatibility we should consider both casing variants

@@ -218,6 +218,15 @@
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaPermissions::test_lambda_permission_url_invocation": {
     "last_validated_date": "2024-04-08T16:57:37+00:00"
   },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_function_url_with_response_streaming": {
+    "last_validated_date": "2025-07-30T21:16:00+00:00",
+    "durations_in_seconds": {
+      "setup": 10.91,
+      "call": 3.45,
+      "teardown": 0.83,
+      "total": 15.19
+    }
+  },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_lambda_update_function_url_config": {
     "last_validated_date": "2024-04-08T16:57:17+00:00"
   },

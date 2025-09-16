@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack import config
@@ -18,18 +18,18 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class SNSSubscriptionProperties(TypedDict):
-    Protocol: Optional[str]
-    TopicArn: Optional[str]
-    DeliveryPolicy: Optional[dict]
-    Endpoint: Optional[str]
-    FilterPolicy: Optional[dict]
-    FilterPolicyScope: Optional[str]
-    Id: Optional[str]
-    RawMessageDelivery: Optional[bool]
-    RedrivePolicy: Optional[dict]
-    Region: Optional[str]
-    ReplayPolicy: Optional[dict]
-    SubscriptionRoleArn: Optional[str]
+    Protocol: str | None
+    TopicArn: str | None
+    DeliveryPolicy: dict | None
+    Endpoint: str | None
+    FilterPolicy: dict | None
+    FilterPolicyScope: str | None
+    Id: str | None
+    RawMessageDelivery: bool | None
+    RedrivePolicy: dict | None
+    Region: str | None
+    ReplayPolicy: dict | None
+    SubscriptionRoleArn: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

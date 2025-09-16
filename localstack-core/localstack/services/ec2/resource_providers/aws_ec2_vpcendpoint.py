@@ -1,8 +1,9 @@
 # LocalStack Resource Provider Scaffolding v2
 from __future__ import annotations
 
+import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,18 +15,18 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2VPCEndpointProperties(TypedDict):
-    ServiceName: Optional[str]
-    VpcId: Optional[str]
-    CreationTimestamp: Optional[str]
-    DnsEntries: Optional[list[str]]
-    Id: Optional[str]
-    NetworkInterfaceIds: Optional[list[str]]
-    PolicyDocument: Optional[str | dict]
-    PrivateDnsEnabled: Optional[bool]
-    RouteTableIds: Optional[list[str]]
-    SecurityGroupIds: Optional[list[str]]
-    SubnetIds: Optional[list[str]]
-    VpcEndpointType: Optional[str]
+    ServiceName: str | None
+    VpcId: str | None
+    CreationTimestamp: str | None
+    DnsEntries: list[str] | None
+    Id: str | None
+    NetworkInterfaceIds: list[str] | None
+    PolicyDocument: str | dict | None
+    PrivateDnsEnabled: bool | None
+    RouteTableIds: list[str] | None
+    SecurityGroupIds: list[str] | None
+    SubnetIds: list[str] | None
+    VpcEndpointType: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"
@@ -66,12 +67,14 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
 
         """
         model = request.desired_state
+        ec2 = request.aws_client_factory.ec2
+
         create_params = util.select_attributes(
-            model,
-            [
-                "PolidyDocument",
+            model=model,
+            params=[
+                "PolicyDocument",
                 "PrivateDnsEnabled",
-                "RouteTablesIds",
+                "RouteTableIds",
                 "SecurityGroupIds",
                 "ServiceName",
                 "SubnetIds",
@@ -80,12 +83,18 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
             ],
         )
 
+        if policy := model.get("PolicyDocument"):
+            create_params["PolicyDocument"] = json.dumps(policy)
+
         if not request.custom_context.get(REPEATED_INVOCATION):
-            response = request.aws_client_factory.ec2.create_vpc_endpoint(**create_params)
+            response = ec2.create_vpc_endpoint(**create_params)
             model["Id"] = response["VpcEndpoint"]["VpcEndpointId"]
             model["DnsEntries"] = response["VpcEndpoint"]["DnsEntries"]
-            model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"]
+            model["CreationTimestamp"] = response["VpcEndpoint"]["CreationTimestamp"].isoformat()
             model["NetworkInterfaceIds"] = response["VpcEndpoint"]["NetworkInterfaceIds"]
+            model["VpcEndpointType"] = model.get("VpcEndpointType") or "Gateway"
+            model["PrivateDnsEnabled"] = bool(model.get("VpcEndpointType", False))
+
             request.custom_context[REPEATED_INVOCATION] = True
             return ProgressEvent(
                 status=OperationStatus.IN_PROGRESS,
@@ -93,9 +102,7 @@ class EC2VPCEndpointProvider(ResourceProvider[EC2VPCEndpointProperties]):
                 custom_context=request.custom_context,
             )
 
-        response = request.aws_client_factory.ec2.describe_vpc_endpoints(
-            VpcEndpointIds=[model["Id"]]
-        )
+        response = ec2.describe_vpc_endpoints(VpcEndpointIds=[model["Id"]])
         if not response["VpcEndpoints"]:
             return ProgressEvent(
                 status=OperationStatus.FAILED,

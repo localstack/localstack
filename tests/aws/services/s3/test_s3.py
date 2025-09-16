@@ -7,6 +7,8 @@ import io
 import json
 import logging
 import os
+import random
+import re
 import shutil
 import tempfile
 import time
@@ -21,6 +23,7 @@ import boto3 as boto3
 import botocore
 import pytest
 import requests
+import urllib3
 import xmltodict
 from boto3.s3.transfer import KB, TransferConfig
 from botocore import UNSIGNED
@@ -28,6 +31,7 @@ from botocore.auth import SigV4Auth
 from botocore.client import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
+from urllib3 import HTTPHeaderDict
 
 import localstack.config
 from localstack import config
@@ -2641,57 +2645,59 @@ class TestS3:
         snapshot.match("put-object-two-type-acl-acp", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Restore"])
-    def test_s3_object_expiry(self, s3_bucket, snapshot, aws_client):
-        # AWS only cleans up S3 expired object once a day usually
-        # the object stays accessible for quite a while after being expired
-        # https://stackoverflow.com/questions/38851456/aws-s3-object-expiration-less-than-24-hours
-        # handle s3 object expiry
-        # https://github.com/localstack/localstack/issues/1685
-        # TODO: should we have a config var to not deleted immediately in the new provider? and schedule it?
+    def test_s3_object_expires(self, s3_bucket, snapshot, aws_client):
+        """
+        `Expires` header indicates the date and time at which the object is no longer cacheable, and is not linked to
+        Object Expiration.
+        https://www.rfc-editor.org/rfc/rfc7234#section-5.3
+        """
         snapshot.add_transformer(snapshot.transform.s3_api())
         snapshot.add_transformer(
             snapshot.transform.key_value(
                 "ExpiresString", reference_replacement=False, value_replacement="<expires>"
             )
         )
-        # put object
-        short_expire = datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(seconds=1)
-        object_key_expired = "key-object-expired"
-        object_key_not_expired = "key-object-not-expired"
 
-        aws_client.s3.put_object(
+        now = datetime.datetime.now(tz=datetime.UTC)
+        expires_in_future = now + datetime.timedelta(days=1)
+        object_key_expires_future = "key-object-future"
+        object_key_expires_past = "key-object-past"
+
+        put_obj_future = aws_client.s3.put_object(
             Bucket=s3_bucket,
-            Key=object_key_expired,
+            Key=object_key_expires_future,
             Body="foo",
-            Expires=short_expire,
+            Expires=expires_in_future,
         )
-        # sleep so it expires
-        time.sleep(3)
-        # head_object does not raise an error for now in LS
-        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_expired)
-        assert response["Expires"] < datetime.datetime.now(ZoneInfo("GMT"))
-        snapshot.match("head-object-expired", response)
+        snapshot.match("put-object-expires-future", put_obj_future)
 
-        # try to fetch an object which is already expired
-        if not is_aws_cloud():  # fixme for now behaviour differs, have a look at it and discuss
-            with pytest.raises(Exception) as e:  # this does not raise in AWS
-                aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_expired)
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_expires_future)
+        assert response["Expires"] > now
+        assert re.match(
+            r"^[A-Z][a-z]{2}, \d{2} [A-Z][a-z]{2} \d{4} \d{2}:\d{2}:\d{2} GMT$",
+            response["ExpiresString"],
+        )
+        snapshot.match("head-object-expires-future", response)
 
-            e.match("NoSuchKey")
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_expires_future)
+        assert response["Expires"] > now
+        snapshot.match("get-object-expires-future", get_object)
 
-        aws_client.s3.put_object(
+        put_obj_past = aws_client.s3.put_object(
             Bucket=s3_bucket,
-            Key=object_key_not_expired,
+            Key=object_key_expires_past,
             Body="foo",
-            Expires=datetime.datetime.now(ZoneInfo("GMT")) + datetime.timedelta(hours=1),
+            Expires=now - datetime.timedelta(days=1),
         )
+        snapshot.match("put-object-expires-past", put_obj_past)
 
-        # try to fetch has not been expired yet.
-        resp = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_not_expired)
-        assert "Expires" in resp
-        assert resp["Expires"] > datetime.datetime.now(ZoneInfo("GMT"))
-        snapshot.match("get-object-not-yet-expired", resp)
+        response = aws_client.s3.head_object(Bucket=s3_bucket, Key=object_key_expires_past)
+        assert response["Expires"] < now
+        snapshot.match("head-object-expires-past", response)
+
+        get_object = aws_client.s3.get_object(Bucket=s3_bucket, Key=object_key_expires_past)
+        assert response["Expires"] < now
+        snapshot.match("get-object-expires-past", get_object)
 
     @markers.aws.validated
     def test_upload_file_with_xml_preamble(self, s3_bucket, snapshot, aws_client):
@@ -3710,9 +3716,9 @@ class TestS3:
         base_64_content_md5 = etag_to_base_64_content_md5(response["ETag"])
         assert content_md5 == base_64_content_md5
 
-        bad_digest_md5 = base64.b64encode(
-            hashlib.md5(f"{content}1".encode("utf-8")).digest()
-        ).decode("utf-8")
+        bad_digest_md5 = base64.b64encode(hashlib.md5(f"{content}1".encode()).digest()).decode(
+            "utf-8"
+        )
 
         hashes = [
             "__invalid__",
@@ -3894,6 +3900,11 @@ class TestS3:
         get_object_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=2)
         snapshot.match("get-object-part", get_object_part)
 
+        get_object_part = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key, PartNumber=2, ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-object-part-with-checksum", get_object_part)
+
         with pytest.raises(ClientError) as e:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key, PartNumber=10)
         snapshot.match("part-doesnt-exist", e.value.response)
@@ -3913,10 +3924,67 @@ class TestS3:
             aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=2)
         snapshot.match("part-no-multipart", e.value.response)
 
-        get_obj_no_part = aws_client.s3.get_object(Bucket=s3_bucket, Key=key_no_part, PartNumber=1)
+        get_obj_no_part = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_no_part, PartNumber=1, ChecksumMode="ENABLED"
+        )
         snapshot.match("get-obj-no-multipart", get_obj_no_part)
 
     @markers.aws.validated
+    @pytest.mark.parametrize("checksum_type", ("COMPOSITE", "FULL_OBJECT"))
+    def test_get_object_part_checksum(self, s3_bucket, snapshot, aws_client, checksum_type):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Location"),
+                snapshot.transform.key_value("Bucket"),
+                snapshot.transform.key_value("UploadId"),
+            ]
+        )
+        content = "test content 123"
+        key_name = "test-multipart-checksum"
+        response = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=key_name, ChecksumAlgorithm="CRC32C", ChecksumType=checksum_type
+        )
+        snapshot.match("create-mpu-checksum", response)
+        upload_id = response["UploadId"]
+
+        part_number = 1
+        response = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=key_name,
+            Body=content,
+            PartNumber=part_number,
+            UploadId=upload_id,
+            ChecksumAlgorithm="CRC32C",
+        )
+        snapshot.match("upload-part", response)
+        multipart_upload_parts = [
+            {
+                "ETag": response["ETag"],
+                "PartNumber": part_number,
+                "ChecksumCRC32C": response["ChecksumCRC32C"],
+            }
+        ]
+
+        response = aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=key_name,
+            MultipartUpload={"Parts": multipart_upload_parts},
+            UploadId=upload_id,
+        )
+        snapshot.match("complete-multipart-checksum", response)
+
+        head_object_part = aws_client.s3.head_object(
+            Bucket=s3_bucket, Key=key_name, PartNumber=1, ChecksumMode="ENABLED"
+        )
+        snapshot.match("head-object-part", head_object_part)
+
+        get_object_part = aws_client.s3.get_object(
+            Bucket=s3_bucket, Key=key_name, PartNumber=1, ChecksumMode="ENABLED"
+        )
+        snapshot.match("get-object-part", get_object_part)
+
+    @markers.aws.validated
+    @markers.requires_in_process  # Patches LOCALSTACK_HOST
     def test_set_external_hostname(
         self, s3_bucket, allow_bucket_acl, s3_multipart_upload, monkeypatch, snapshot, aws_client
     ):
@@ -4590,6 +4658,7 @@ class TestS3:
     )
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="KMS not enabled in S3 image")
     @markers.aws.validated
+    @markers.requires_in_process  # Patches the kms validation
     def test_s3_sse_validate_kms_key(
         self,
         aws_client_factory,
@@ -4741,6 +4810,7 @@ class TestS3:
             "$..ETag",  # the ETag is different as we don't encrypt the object with the KMS key
         ]
     )
+    @markers.requires_in_process  # Patches the kms validation
     def test_s3_sse_validate_kms_key_state(
         self, s3_bucket, kms_create_key, monkeypatch, snapshot, aws_client
     ):
@@ -5122,6 +5192,128 @@ class TestS3:
         assert resp.status_code == 204
         assert resp.headers.get("Content-Type") is None
         assert resp.headers.get("Content-Length") is None
+
+    @markers.aws.validated
+    def test_response_structure_get_obj_attrs(self, aws_http_client_factory, s3_bucket, aws_client):
+        """
+        Test that the response structure is correct for the S3 API for GetObjectAttributes
+        The order is important for the Java SDK
+        """
+        key_name = "get-obj-attrs"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test")
+        headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
+
+        s3_http_client = aws_http_client_factory("s3", signer_factory=SigV4Auth)
+        bucket_url = _bucket_url(s3_bucket)
+
+        possible_attrs = ["StorageClass", "ETag", "ObjectSize", "ObjectParts", "Checksum"]
+
+        # GetObjectAttributes
+        get_object_attributes_url = f"{bucket_url}/{key_name}?attributes"
+        headers["x-amz-object-attributes"] = ",".join(possible_attrs)
+        resp = s3_http_client.get(get_object_attributes_url, headers=headers)
+
+        # shuffle the original list
+        shuffled_attrs = possible_attrs.copy()
+        while shuffled_attrs == possible_attrs:
+            random.shuffle(shuffled_attrs)
+
+        assert shuffled_attrs != possible_attrs
+
+        # check that the order of Attributes in the request should not affect the order in the response
+        headers["x-amz-object-attributes"] = ",".join(shuffled_attrs)
+        resp_randomized = s3_http_client.get(get_object_attributes_url, headers=headers)
+        assert resp_randomized.content == resp.content
+
+        def get_ordered_keys(content: bytes) -> list[str]:
+            resp_dict = xmltodict.parse(content)
+            get_attrs_response = resp_dict["GetObjectAttributesResponse"]
+            get_attrs_response.pop("@xmlns", None)
+            return list(get_attrs_response.keys())
+
+        ordered_keys = get_ordered_keys(resp.content)
+        assert ordered_keys[0] == "ETag"
+        assert ordered_keys[1] == "Checksum"
+        assert ordered_keys[2] == "StorageClass"
+        assert ordered_keys[3] == "ObjectSize"
+
+        # create a Multipart Upload to validate the `ObjectParts` field order
+        multipart_key = "multipart-key"
+        create_multipart = aws_client.s3.create_multipart_upload(
+            Bucket=s3_bucket, Key=multipart_key
+        )
+        upload_id = create_multipart["UploadId"]
+        upload_part = aws_client.s3.upload_part(
+            Bucket=s3_bucket,
+            Key=multipart_key,
+            Body="test",
+            PartNumber=1,
+            UploadId=upload_id,
+        )
+        aws_client.s3.complete_multipart_upload(
+            Bucket=s3_bucket,
+            Key=multipart_key,
+            MultipartUpload={"Parts": [{"ETag": upload_part["ETag"], "PartNumber": 1}]},
+            UploadId=upload_id,
+        )
+
+        get_object_attributes_url = f"{bucket_url}/{multipart_key}?attributes"
+        headers["x-amz-object-attributes"] = ",".join(possible_attrs)
+        resp = s3_http_client.get(get_object_attributes_url, headers=headers)
+        mpu_ordered_keys = get_ordered_keys(resp.content)
+        assert mpu_ordered_keys[0] == "ETag"
+        assert mpu_ordered_keys[1] == "Checksum"
+        assert mpu_ordered_keys[2] == "ObjectParts"
+        assert mpu_ordered_keys[3] == "StorageClass"
+        assert mpu_ordered_keys[4] == "ObjectSize"
+
+    @markers.aws.only_localstack
+    def test_get_obj_attrs_multi_headers_behavior(self, s3_bucket, aws_client, region_name):
+        """
+        The Botocore serializer will by default encode the header list by concatenating it in a comma-separated string
+        Some different serializers, like the Java SDK or Go, will add a header entry for each value.
+        See https://github.com/aws/aws-sdk-go-v2/issues/1620 for example
+        We validate that we can properly parse the request when receiving the following:
+        X-Amz-Object-Attributes: Checksum
+        X-Amz-Object-Attributes: ObjectParts
+
+        Botocore default behavior would be:
+        X-Amz-Object-Attributes: Checksum,ObjectParts
+        """
+        key_name = "get-obj-attrs"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key_name, Body="test")
+
+        bucket_url = _bucket_url(s3_bucket)
+
+        def get_urllib_headers_for_attributes(attributes: list[str]) -> HTTPHeaderDict:
+            _headers = mock_aws_request_headers(
+                "s3",
+                aws_access_key_id=TEST_AWS_ACCESS_KEY_ID,
+                region_name=region_name,
+            )
+
+            urllib_headers = HTTPHeaderDict(headers=_headers)
+            for attr in attributes:
+                urllib_headers.add("x-amz-object-attributes", attr)
+            return urllib_headers
+
+        get_object_attributes_url = f"{bucket_url}/{key_name}?attributes"
+
+        possible_attrs = ["StorageClass", "ETag", "ObjectSize", "ObjectParts", "Checksum"]
+        # we use the low level `urllib3` and `HTTPHeaderDict` to make sure the headers are properly serialized
+        # as distinct headers and not a concatenated value
+        headers = get_urllib_headers_for_attributes(possible_attrs)
+        resp = urllib3.request(method="GET", url=get_object_attributes_url, headers=headers)
+
+        resp_dict = xmltodict.parse(resp.data)
+        get_attrs_response = resp_dict["GetObjectAttributesResponse"]
+        get_attrs_response.pop("@xmlns", None)
+        attributes_keys = list(get_attrs_response.keys())
+
+        assert attributes_keys[0] == "ETag"
+        assert attributes_keys[1] == "Checksum"
+        assert attributes_keys[2] == "StorageClass"
+        assert attributes_keys[3] == "ObjectSize"
 
     @markers.aws.validated
     def test_s3_timestamp_precision(self, s3_bucket, aws_client, aws_http_client_factory):
@@ -6009,6 +6201,7 @@ class TestS3PresignedUrl:
     # # Note: This test may have side effects (via `s3_client.meta.events.register(..)`) and
     # # may not be suitable for parallel execution
     @markers.aws.validated
+    @markers.requires_in_process  # monkeypatches signature validation
     def test_presign_with_additional_query_params(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -6150,7 +6343,9 @@ class TestS3PresignedUrl:
         assert response.headers.get("content-length") == str(len(body))
 
     @markers.aws.validated
-    @pytest.mark.parametrize("verify_signature", (True, False))
+    @pytest.mark.parametrize(
+        "verify_signature", (pytest.param(True, marks=markers.requires_in_process), False)
+    )
     def test_put_url_metadata_with_sig_s3v4(
         self,
         s3_bucket,
@@ -6225,7 +6420,9 @@ class TestS3PresignedUrl:
             assert "wrong" not in head_object["Metadata"]
 
     @markers.aws.validated
-    @pytest.mark.parametrize("verify_signature", (True, False))
+    @pytest.mark.parametrize(
+        "verify_signature", (pytest.param(True, marks=markers.requires_in_process), False)
+    )
     def test_put_url_metadata_with_sig_s3(
         self,
         s3_bucket,
@@ -6326,9 +6523,9 @@ class TestS3PresignedUrl:
     @pytest.mark.parametrize(
         "signature_version, verify_signature",
         [
-            ("s3", True),
+            pytest.param("s3", True, marks=markers.requires_in_process),
             ("s3", False),
-            ("s3v4", True),
+            pytest.param("s3v4", True, marks=markers.requires_in_process),
             ("s3v4", False),
         ],
     )
@@ -6418,6 +6615,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_presigned_url_expired(
         self,
         s3_bucket,
@@ -6465,6 +6663,7 @@ class TestS3PresignedUrl:
 
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_put_presigned_url_with_different_headers(
         self,
         s3_bucket,
@@ -6572,6 +6771,7 @@ class TestS3PresignedUrl:
         snapshot.match("wrong-content-encoding-response", exception)
 
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_put_presigned_url_same_header_and_qs_parameter(
         self,
         s3_bucket,
@@ -6921,6 +7121,7 @@ class TestS3PresignedUrl:
         ],
     )
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_signature_authentication_expired(
         self,
         s3_create_bucket,
@@ -6962,6 +7163,7 @@ class TestS3PresignedUrl:
         ],
     )
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_signature_authentication(
         self,
         s3_create_bucket,
@@ -7133,6 +7335,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_v4_x_amz_in_qs(
         self,
         s3_bucket,
@@ -7224,6 +7427,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="Lambda not enabled in S3 image")
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_v4_signed_headers_in_qs(
         self,
         s3_bucket,
@@ -7300,6 +7504,7 @@ class TestS3PresignedUrl:
         assert response.status_code == 200
 
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_pre_signed_url_forward_slash_bucket(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
     ):
@@ -7355,6 +7560,7 @@ class TestS3PresignedUrl:
         assert req.content == b"123"
 
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_ignored_special_headers(
         self,
         s3_bucket,
@@ -12460,6 +12666,14 @@ class TestS3MultipartUploadChecksum:
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
 
+        get_object_part_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            PartNumber=3,
+            ChecksumMode="ENABLED",
+        )
+        snapshot.match("get-object-part-checksum", get_object_part_checksum)
+
     @markers.aws.validated
     @pytest.mark.parametrize("algorithm", ["CRC32", "CRC32C", "SHA1", "SHA256", "CRC64NVME"])
     @pytest.mark.parametrize("checksum_type", ["COMPOSITE", "FULL_OBJECT"])
@@ -12756,6 +12970,14 @@ class TestS3MultipartUploadChecksum:
             ObjectAttributes=["Checksum", "ETag", "ObjectParts"],
         )
         snapshot.match("get-copy-object-attrs", object_attrs)
+
+        get_object_part_checksum = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key=key_name,
+            PartNumber=3,
+            ChecksumMode="ENABLED",
+        )
+        snapshot.match("get-object-part-checksum", get_object_part_checksum)
 
     @markers.aws.validated
     def test_multipart_parts_checksum_exceptions_full_object(self, s3_bucket, snapshot, aws_client):

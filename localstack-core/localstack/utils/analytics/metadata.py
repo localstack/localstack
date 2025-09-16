@@ -41,7 +41,7 @@ class ClientMetadata:
             k = "*" * len(k)
         d["api_key"] = k
 
-        return "ClientMetadata(%s)" % d
+        return f"ClientMetadata({d})"
 
 
 def get_version_string() -> str:
@@ -148,7 +148,10 @@ def is_license_activated() -> bool:
 
         return licensingv2.get_licensed_environment().activated
     except Exception:
-        LOG.exception("Could not determine license activation status")
+        LOG.error(
+            "Could not determine license activation status",
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
         return False
 
 

@@ -6,7 +6,7 @@ import os
 import re
 import shlex
 import subprocess
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Callable, Optional, Union
 
 from localstack import config
 from localstack.utils.collections import ensure_list
@@ -98,7 +98,7 @@ class CmdDockerClient(ContainerClient):
 
     default_run_outfile: Optional[str] = None
 
-    def _docker_cmd(self) -> List[str]:
+    def _docker_cmd(self) -> list[str]:
         """
         Get the configured, tested Docker CMD.
         :return: string to be used for running Docker commands
@@ -202,7 +202,7 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def pause_container(self, container_name: str) -> None:
@@ -214,7 +214,7 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def unpause_container(self, container_name: str) -> None:
@@ -226,7 +226,7 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def remove_image(self, image: str, force: bool = True) -> None:
@@ -243,7 +243,7 @@ class CmdDockerClient(ContainerClient):
             if any(msg in to_str(e.stdout) for msg in error_messages):
                 raise NoSuchImage(image, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def commit(
@@ -262,26 +262,34 @@ class CmdDockerClient(ContainerClient):
         except subprocess.CalledProcessError as e:
             self._check_and_raise_no_such_container_error(container_name_or_id, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
-    def remove_container(self, container_name: str, force=True, check_existence=False) -> None:
-        if check_existence and container_name not in self.get_running_container_names():
+    def remove_container(
+        self, container_name: str, force=True, check_existence=False, volumes=False
+    ) -> None:
+        if check_existence and container_name not in self.get_all_container_names():
             return
         cmd = self._docker_cmd() + ["rm"]
         if force:
             cmd.append("-f")
+        if volumes:
+            cmd.append("--volumes")
         cmd.append(container_name)
         LOG.debug("Removing container with cmd %s", cmd)
         try:
-            run(cmd)
+            output = run(cmd)
+            # When the container does not exist, the output could have the error message without any exception
+            if isinstance(output, str) and not force:
+                self._check_output_and_raise_no_such_container_error(container_name, output=output)
         except subprocess.CalledProcessError as e:
-            self._check_and_raise_no_such_container_error(container_name, error=e)
+            if not force:
+                self._check_and_raise_no_such_container_error(container_name, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
-    def list_containers(self, filter: Union[List[str], str, None] = None, all=True) -> List[dict]:
+    def list_containers(self, filter: Union[list[str], str, None] = None, all=True) -> list[dict]:
         filter = [filter] if isinstance(filter, str) else filter
         cmd = self._docker_cmd()
         cmd.append("ps")
@@ -297,7 +305,7 @@ class CmdDockerClient(ContainerClient):
             cmd_result = run(cmd).strip()
         except subprocess.CalledProcessError as e:
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
         container_list = []
         if cmd_result:
@@ -351,10 +359,15 @@ class CmdDockerClient(ContainerClient):
             if re.match(".*container .+ does not exist", to_str(e.stdout)):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
-    def pull_image(self, docker_image: str, platform: Optional[DockerPlatform] = None) -> None:
+    def pull_image(
+        self,
+        docker_image: str,
+        platform: Optional[DockerPlatform] = None,
+        log_handler: Optional[Callable[[str], None]] = None,
+    ) -> None:
         cmd = self._docker_cmd()
         docker_image = self.registry_resolver_strategy.resolve(docker_image)
         cmd += ["pull", docker_image]
@@ -362,7 +375,11 @@ class CmdDockerClient(ContainerClient):
             cmd += ["--platform", platform]
         LOG.debug("Pulling image with cmd: %s", cmd)
         try:
-            run(cmd)
+            result = run(cmd)
+            # note: we could stream the results, but we'll just process everything at the end for now
+            if log_handler:
+                for line in result.split("\n"):
+                    log_handler(to_str(line))
         except subprocess.CalledProcessError as e:
             stdout_str = to_str(e.stdout)
             if "pull access denied" in stdout_str:
@@ -371,7 +388,7 @@ class CmdDockerClient(ContainerClient):
             if "Trying to pull" in stdout_str and "access to the resource is denied" in stdout_str:
                 raise NoSuchImage(docker_image, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def push_image(self, docker_image: str) -> None:
@@ -465,7 +482,7 @@ class CmdDockerClient(ContainerClient):
                 return ""
             self._check_and_raise_no_such_container_error(container_name_or_id, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def stream_container_logs(self, container_name_or_id: str) -> CancellableStream:
@@ -480,7 +497,7 @@ class CmdDockerClient(ContainerClient):
 
         return CancellableProcessStream(process)
 
-    def _inspect_object(self, object_name_or_id: str) -> Dict[str, Union[dict, list, str]]:
+    def _inspect_object(self, object_name_or_id: str) -> dict[str, Union[dict, list, str]]:
         cmd = self._docker_cmd()
         cmd += ["inspect", "--format", "{{json .}}", object_name_or_id]
         try:
@@ -490,7 +507,7 @@ class CmdDockerClient(ContainerClient):
             if "no such object" in to_str(e.stdout).lower():
                 raise NoSuchObject(object_name_or_id, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
         object_data = json.loads(cmd_result.strip())
         if isinstance(object_data, list):
@@ -507,7 +524,7 @@ class CmdDockerClient(ContainerClient):
             )
         return object_data
 
-    def inspect_container(self, container_name_or_id: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_container(self, container_name_or_id: str) -> dict[str, Union[dict, str]]:
         try:
             return self._inspect_object(container_name_or_id)
         except NoSuchObject as e:
@@ -518,7 +535,7 @@ class CmdDockerClient(ContainerClient):
         image_name: str,
         pull: bool = True,
         strip_wellknown_repo_prefixes: bool = True,
-    ) -> Dict[str, Union[dict, list, str]]:
+    ) -> dict[str, Union[dict, list, str]]:
         image_name = self.registry_resolver_strategy.resolve(image_name)
         try:
             result = self._inspect_object(image_name)
@@ -543,7 +560,7 @@ class CmdDockerClient(ContainerClient):
             return run(cmd).strip()
         except subprocess.CalledProcessError as e:
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def delete_network(self, network_name: str) -> None:
@@ -557,10 +574,10 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchNetwork(network_name=network_name)
             else:
                 raise ContainerException(
-                    "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                    f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
                 ) from e
 
-    def inspect_network(self, network_name: str) -> Dict[str, Union[Dict, str]]:
+    def inspect_network(self, network_name: str) -> dict[str, Union[dict, str]]:
         try:
             return self._inspect_object(network_name)
         except NoSuchObject as e:
@@ -570,8 +587,8 @@ class CmdDockerClient(ContainerClient):
         self,
         network_name: str,
         container_name_or_id: str,
-        aliases: Optional[List] = None,
-        link_local_ips: List[str] = None,
+        aliases: Optional[list] = None,
+        link_local_ips: list[str] = None,
     ) -> None:
         LOG.debug(
             "Connecting container '%s' to network '%s' with aliases '%s'",
@@ -594,7 +611,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchNetwork(network_name=network_name)
             self._check_and_raise_no_such_container_error(container_name_or_id, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def disconnect_container_from_network(
@@ -612,7 +629,7 @@ class CmdDockerClient(ContainerClient):
                 raise NoSuchNetwork(network_name=network_name)
             self._check_and_raise_no_such_container_error(container_name_or_id, error=e)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def get_container_ip(self, container_name_or_id: str) -> str:
@@ -632,7 +649,7 @@ class CmdDockerClient(ContainerClient):
             if "no such object" in to_str(e.stdout).lower():
                 raise NoSuchContainer(container_name_or_id, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
@@ -645,10 +662,10 @@ class CmdDockerClient(ContainerClient):
             run(cmd)
         except subprocess.CalledProcessError as e:
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
-    @functools.lru_cache(maxsize=None)
+    @functools.cache
     def has_docker(self) -> bool:
         try:
             # do not use self._docker_cmd here (would result in a loop)
@@ -671,12 +688,12 @@ class CmdDockerClient(ContainerClient):
             if any(msg in to_str(e.stdout) for msg in error_messages):
                 raise NoSuchImage(image_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
         finally:
             Util.rm_env_vars_file(env_file)
 
-    def run_container(self, image_name: str, stdin=None, **kwargs) -> Tuple[bytes, bytes]:
+    def run_container(self, image_name: str, stdin=None, **kwargs) -> tuple[bytes, bytes]:
         image_name = self.registry_resolver_strategy.resolve(image_name)
         cmd, env_file = self._build_run_create_cmd("run", image_name, **kwargs)
         LOG.debug("Run container with cmd: %s", cmd)
@@ -692,14 +709,14 @@ class CmdDockerClient(ContainerClient):
     def exec_in_container(
         self,
         container_name_or_id: str,
-        command: Union[List[str], str],
+        command: Union[list[str], str],
         interactive=False,
         detach=False,
-        env_vars: Optional[Dict[str, Optional[str]]] = None,
+        env_vars: Optional[dict[str, Optional[str]]] = None,
         stdin: Optional[bytes] = None,
         user: Optional[str] = None,
         workdir: Optional[str] = None,
-    ) -> Tuple[bytes, bytes]:
+    ) -> tuple[bytes, bytes]:
         env_file = None
         cmd = self._docker_cmd()
         cmd.append("exec")
@@ -715,7 +732,7 @@ class CmdDockerClient(ContainerClient):
             env_flag, env_file = Util.create_env_vars_file_flag(env_vars)
             cmd += env_flag
         cmd.append(container_name_or_id)
-        cmd += command if isinstance(command, List) else [command]
+        cmd += command if isinstance(command, list) else [command]
         LOG.debug("Execute command in container: %s", cmd)
         try:
             return self._run_async_cmd(cmd, stdin, container_name_or_id)
@@ -729,7 +746,7 @@ class CmdDockerClient(ContainerClient):
         interactive: bool = False,
         attach: bool = False,
         flags: Optional[str] = None,
-    ) -> Tuple[bytes, bytes]:
+    ) -> tuple[bytes, bytes]:
         cmd = self._docker_cmd() + ["start"]
         if flags:
             cmd.append(flags)
@@ -747,8 +764,8 @@ class CmdDockerClient(ContainerClient):
         return self._run_async_cmd(cmd, stdin=None, container_name=container_name_or_id)
 
     def _run_async_cmd(
-        self, cmd: List[str], stdin: bytes, container_name: str, image_name=None
-    ) -> Tuple[bytes, bytes]:
+        self, cmd: list[str], stdin: bytes, container_name: str, image_name=None
+    ) -> tuple[bytes, bytes]:
         kwargs = {
             "inherit_env": True,
             "asynchronous": True,
@@ -778,7 +795,7 @@ class CmdDockerClient(ContainerClient):
             if any(msg.lower() in to_str(e.stderr).lower() for msg in error_messages):
                 raise NoSuchContainer(container_name, stdout=e.stdout, stderr=e.stderr)
             raise ContainerException(
-                "Docker process returned with errorcode %s" % e.returncode, e.stdout, e.stderr
+                f"Docker process returned with errorcode {e.returncode}", e.stdout, e.stderr
             ) from e
 
     def _build_run_create_cmd(
@@ -787,31 +804,31 @@ class CmdDockerClient(ContainerClient):
         image_name: str,
         *,
         name: Optional[str] = None,
-        entrypoint: Optional[Union[List[str], str]] = None,
+        entrypoint: Optional[Union[list[str], str]] = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,
         detach: bool = False,
-        command: Optional[Union[List[str], str]] = None,
-        volumes: Optional[List[SimpleVolumeBind]] = None,
+        command: Optional[Union[list[str], str]] = None,
+        volumes: Optional[list[SimpleVolumeBind]] = None,
         ports: Optional[PortMappings] = None,
-        exposed_ports: Optional[List[str]] = None,
-        env_vars: Optional[Dict[str, str]] = None,
+        exposed_ports: Optional[list[str]] = None,
+        env_vars: Optional[dict[str, str]] = None,
         user: Optional[str] = None,
-        cap_add: Optional[List[str]] = None,
-        cap_drop: Optional[List[str]] = None,
-        security_opt: Optional[List[str]] = None,
+        cap_add: Optional[list[str]] = None,
+        cap_drop: Optional[list[str]] = None,
+        security_opt: Optional[list[str]] = None,
         network: Optional[str] = None,
-        dns: Optional[Union[str, List[str]]] = None,
+        dns: Optional[Union[str, list[str]]] = None,
         additional_flags: Optional[str] = None,
         workdir: Optional[str] = None,
         privileged: Optional[bool] = None,
-        labels: Optional[Dict[str, str]] = None,
+        labels: Optional[dict[str, str]] = None,
         platform: Optional[DockerPlatform] = None,
-        ulimits: Optional[List[Ulimit]] = None,
+        ulimits: Optional[list[Ulimit]] = None,
         init: Optional[bool] = None,
         log_config: Optional[LogConfig] = None,
-    ) -> Tuple[List[str], str]:
+    ) -> tuple[list[str], str]:
         env_file = None
         cmd = self._docker_cmd() + [action]
         if remove:
@@ -879,7 +896,7 @@ class CmdDockerClient(ContainerClient):
             cmd += shlex.split(additional_flags)
         cmd.append(image_name)
         if command:
-            cmd += command if isinstance(command, List) else [command]
+            cmd += command if isinstance(command, list) else [command]
         return cmd, env_file
 
     @staticmethod
@@ -906,20 +923,28 @@ class CmdDockerClient(ContainerClient):
         Check the given client invocation error and raise a `NoSuchContainer` exception if it
         represents a `no such container` exception from Docker or Podman.
         """
+        self._check_output_and_raise_no_such_container_error(
+            container_name_or_id, str(error.stdout), error=str(error.stderr)
+        )
 
-        # consider different error messages for Docker/Podman
-        error_messages = ("No such container", "no container with name or ID")
-        process_stdout_lower = to_str(error.stdout).lower()
-        if any(msg.lower() in process_stdout_lower for msg in error_messages):
-            raise NoSuchContainer(container_name_or_id, stdout=error.stdout, stderr=error.stderr)
+    def _check_output_and_raise_no_such_container_error(
+        self, container_name_or_id: str, output: str, error: Optional[str] = None
+    ):
+        """
+        Check the given client invocation output and raise a `NoSuchContainer` exception if it
+        represents a `no such container` exception from Docker or Podman.
+        """
+        possible_not_found_messages = ("No such container", "no container with name or ID")
+        if any(msg.lower() in output.lower() for msg in possible_not_found_messages):
+            raise NoSuchContainer(container_name_or_id, stdout=output, stderr=error)
 
-    def _transform_container_labels(self, labels: Union[str, Dict[str, str]]) -> Dict[str, str]:
+    def _transform_container_labels(self, labels: Union[str, dict[str, str]]) -> dict[str, str]:
         """
         Transforms the container labels returned by the docker command from the key-value pair format to a dict
         :param labels: Input string, comma separated key value pairs. Example: key1=value1,key2=value2
         :return: Dict representation of the passed values, example: {"key1": "value1", "key2": "value2"}
         """
-        if isinstance(labels, Dict):
+        if isinstance(labels, dict):
             return labels
 
         labels = labels.split(",")

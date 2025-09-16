@@ -9,7 +9,7 @@ import time
 import zlib
 from enum import StrEnum
 from secrets import token_bytes
-from typing import Any, Dict, Literal, NamedTuple, Optional, Protocol, Tuple, Union
+from typing import Any, Literal, NamedTuple, Protocol
 from urllib import parse as urlparser
 from zoneinfo import ZoneInfo
 
@@ -50,6 +50,7 @@ from localstack.aws.api.s3 import (
     SSEKMSKeyId,
     TaggingHeader,
     TagSet,
+    UploadPartCopyRequest,
     UploadPartRequest,
 )
 from localstack.aws.api.s3 import Type as GranteeType
@@ -143,7 +144,7 @@ def get_owner_for_account_id(account_id: str):
 
 def extract_bucket_key_version_id_from_copy_source(
     copy_source: CopySource,
-) -> tuple[BucketName, ObjectKey, Optional[ObjectVersionId]]:
+) -> tuple[BucketName, ObjectKey, ObjectVersionId | None]:
     """
     Utility to parse bucket name, object key and optionally its versionId. It accepts the CopySource format:
     - <bucket-name/<object-key>?versionId=<version-id>, used for example in CopySource for CopyObject
@@ -403,6 +404,45 @@ def parse_copy_source_range_header(copy_source_range: str, object_size: int) -> 
     )
 
 
+def get_failed_upload_part_copy_source_preconditions(
+    request: UploadPartCopyRequest, last_modified: datetime.datetime, etag: ETag
+) -> str | None:
+    """
+    Utility which parses the conditions from a S3 UploadPartCopy request.
+    Note: The order in which these conditions are checked if used in conjunction matters
+
+    :param UploadPartCopyRequest request: The S3 UploadPartCopy request.
+    :param datetime last_modified: The time the source object was last modified.
+    :param ETag etag: The ETag of the source object.
+
+    :returns: The name of the failed precondition.
+    """
+    if_match = request.get("CopySourceIfMatch")
+    if_none_match = request.get("CopySourceIfNoneMatch")
+    if_unmodified_since = request.get("CopySourceIfUnmodifiedSince")
+    if_modified_since = request.get("CopySourceIfModifiedSince")
+
+    if if_match:
+        if if_match.strip('"') != etag.strip('"'):
+            return "x-amz-copy-source-If-Match"
+        if if_modified_since and if_modified_since > last_modified:
+            return "x-amz-copy-source-If-Modified-Since"
+        # CopySourceIfMatch is unaffected by CopySourceIfUnmodifiedSince so return early
+        if if_unmodified_since:
+            return None
+
+    if if_unmodified_since and if_unmodified_since < last_modified:
+        return "x-amz-copy-source-If-Unmodified-Since"
+
+    if if_none_match and if_none_match.strip('"') == etag.strip('"'):
+        return "x-amz-copy-source-If-None-Match"
+
+    if if_modified_since and last_modified < if_modified_since < datetime.datetime.now(
+        tz=_gmt_zone_info
+    ):
+        return "x-amz-copy-source-If-Modified-Since"
+
+
 def get_full_default_bucket_location(bucket_name: BucketName) -> str:
     host_definition = localstack_host()
     if host_definition.host != constants.LOCALHOST_HOSTNAME:
@@ -482,7 +522,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: Dict[str, str]) -> str | None:
+def uses_host_addressing(headers: dict[str, str]) -> str | None:
     """
     Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
@@ -522,7 +562,7 @@ def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bo
 
 def extract_bucket_name_and_key_from_headers_and_path(
     headers: dict[str, str], path: str
-) -> tuple[Optional[str], Optional[str]]:
+) -> tuple[str | None, str | None]:
     """
     Extract the bucket name and the object key from a request headers and path. This works with both virtual host
     and path style requests.
@@ -556,7 +596,7 @@ def normalize_bucket_name(bucket_name):
     return bucket_name
 
 
-def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
+def get_bucket_and_key_from_s3_uri(s3_uri: str) -> tuple[str, str]:
     """
     Extracts the bucket name and key from s3 uri
     """
@@ -564,7 +604,7 @@ def get_bucket_and_key_from_s3_uri(s3_uri: str) -> Tuple[str, str]:
     return output_bucket, output_key
 
 
-def get_bucket_and_key_from_presign_url(presign_url: str) -> Tuple[str, str]:
+def get_bucket_and_key_from_presign_url(presign_url: str) -> tuple[str, str]:
     """
     Extracts the bucket name and key from s3 presign url
     """
@@ -574,22 +614,11 @@ def get_bucket_and_key_from_presign_url(presign_url: str) -> Tuple[str, str]:
     return bucket, key
 
 
-def _create_invalid_argument_exc(
-    message: Union[str, None], name: str, value: str, host_id: str = None
-) -> InvalidArgument:
-    ex = InvalidArgument(message)
-    ex.ArgumentName = name
-    ex.ArgumentValue = value
-    if host_id:
-        ex.HostId = host_id
-    return ex
-
-
 def capitalize_header_name_from_snake_case(header_name: str) -> str:
     return "-".join([part.capitalize() for part in header_name.split("-")])
 
 
-def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> Optional[str]:
+def get_kms_key_arn(kms_key: str, account_id: str, bucket_region: str) -> str | None:
     """
     In S3, the KMS key can be passed as a KeyId or a KeyArn. This method allows to always get the KeyArn from either.
     It can also validate if the key is in the same region, and raise an exception.
@@ -762,7 +791,7 @@ def _match_lifecycle_filter(
 
 def parse_expiration_header(
     expiration_header: str,
-) -> tuple[Optional[datetime.datetime], Optional[str]]:
+) -> tuple[datetime.datetime | None, str | None]:
     try:
         header_values = dict(
             (p.strip('"') for p in v.split("=")) for v in expiration_header.split('", ')
@@ -878,7 +907,7 @@ def get_retention_from_now(days: int = None, years: int = None) -> datetime.date
 
 def get_failed_precondition_copy_source(
     request: CopyObjectRequest, last_modified: datetime.datetime, etag: ETag
-) -> Optional[str]:
+) -> str | None:
     """
     Validate if the source object LastModified and ETag matches a precondition, and if it does, return the failed
     precondition
@@ -1019,7 +1048,7 @@ def create_redirect_for_post_request(
     return urlparser.urlunparse(newparts)
 
 
-def parse_post_object_tagging_xml(tagging: str) -> Optional[dict]:
+def parse_post_object_tagging_xml(tagging: str) -> dict | None:
     try:
         tag_set = {}
         tags = xmltodict.parse(tagging)

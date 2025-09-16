@@ -2,7 +2,7 @@ import abc
 import datetime
 import threading
 from collections import OrderedDict
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import (
     Arn,
@@ -98,7 +98,7 @@ class MapRunRecord:
     item_counter: Final[ItemCounter]
     start_date: Timestamp
     status: MapRunStatus
-    stop_date: Optional[Timestamp]
+    stop_date: Timestamp | None
     # TODO: add support for failure toleration fields.
     tolerated_failure_count: int
     tolerated_failure_percentage: float
@@ -110,7 +110,7 @@ class MapRunRecord:
         max_concurrency: int,
         tolerated_failure_count: int,
         tolerated_failure_percentage: float,
-        label: Optional[str],
+        label: str | None,
     ):
         self.update_event = threading.Event()
         (
@@ -123,7 +123,7 @@ class MapRunRecord:
         self.max_concurrency = max_concurrency
         self.execution_counter = ExecutionCounter()
         self.item_counter = ItemCounter()
-        self.start_date = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.start_date = datetime.datetime.now(tz=datetime.UTC)
         self.status = MapRunStatus.RUNNING
         self.stop_date = None
         self.tolerated_failure_count = tolerated_failure_count
@@ -131,7 +131,7 @@ class MapRunRecord:
 
     @staticmethod
     def _generate_map_run_arns(
-        state_machine_arn: Arn, label: Optional[str]
+        state_machine_arn: Arn, label: str | None
     ) -> tuple[LongArn, LongArn]:
         # Generate a new MapRunArn given the StateMachineArn, such that:
         # inp: arn:aws:states:<region>:111111111111:stateMachine:<ArnPart_0idx>
@@ -144,7 +144,7 @@ class MapRunRecord:
 
     def set_stop(self, status: MapRunStatus):
         self.status = status
-        self.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.stop_date = datetime.datetime.now(tz=datetime.UTC)
 
     def describe(self) -> DescribeMapRunOutput:
         describe_output = DescribeMapRunOutput(
@@ -176,9 +176,9 @@ class MapRunRecord:
 
     def update(
         self,
-        max_concurrency: Optional[int],
-        tolerated_failure_count: Optional[int],
-        tolerated_failure_percentage: Optional[float],
+        max_concurrency: int | None,
+        tolerated_failure_count: int | None,
+        tolerated_failure_percentage: float | None,
     ) -> None:
         if max_concurrency is not None:
             self.max_concurrency = max_concurrency
@@ -198,7 +198,7 @@ class MapRunRecordPoolManager:
     def add(self, map_run_record: MapRunRecord) -> None:
         self._pool[map_run_record.map_run_arn] = map_run_record
 
-    def get(self, map_run_arn: LongArn) -> Optional[MapRunRecord]:
+    def get(self, map_run_arn: LongArn) -> MapRunRecord | None:
         return self._pool.get(map_run_arn)
 
     def get_all(self) -> list[MapRunRecord]:

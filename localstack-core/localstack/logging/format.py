@@ -3,7 +3,7 @@
 import logging
 import re
 from functools import lru_cache
-from typing import Any, Dict
+from typing import Any
 
 from localstack.utils.numbers import format_bytes
 from localstack.utils.strings import to_bytes
@@ -32,7 +32,7 @@ class DefaultFormatter(logging.Formatter):
     """
 
     def __init__(self, fmt=LOG_FORMAT, datefmt=LOG_DATE_FORMAT):
-        super(DefaultFormatter, self).__init__(fmt=fmt, datefmt=datefmt)
+        super().__init__(fmt=fmt, datefmt=datefmt)
 
 
 class AddFormattedAttributes(logging.Filter):
@@ -48,7 +48,7 @@ class AddFormattedAttributes(logging.Filter):
     max_thread_len: int
 
     def __init__(self, max_name_len: int = None, max_thread_len: int = None):
-        super(AddFormattedAttributes, self).__init__()
+        super().__init__()
         self.max_name_len = max_name_len if max_name_len else MAX_NAME_LEN
         self.max_thread_len = max_thread_len if max_thread_len else MAX_THREAD_NAME_LEN
 
@@ -75,7 +75,7 @@ class MaskSensitiveInputFilter(logging.Filter):
     patterns: list[tuple[re.Pattern[bytes], bytes]]
 
     def __init__(self, sensitive_keys: list[str]):
-        super(MaskSensitiveInputFilter, self).__init__()
+        super().__init__()
 
         self.patterns = [
             (re.compile(to_bytes(rf'"{key}":\s*"[^"]+"')), to_bytes(f'"{key}": "******"'))
@@ -173,8 +173,8 @@ class AwsTraceLoggingFormatter(TraceLoggingFormatter):
     def __init__(self):
         super().__init__()
 
-    def _copy_service_dict(self, service_dict: Dict) -> Dict:
-        if not isinstance(service_dict, Dict):
+    def _copy_service_dict(self, service_dict: dict) -> dict:
+        if not isinstance(service_dict, dict):
             return service_dict
         result = {}
         for key, value in service_dict.items():

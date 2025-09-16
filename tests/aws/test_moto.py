@@ -1,5 +1,4 @@
 from io import BytesIO
-from typing import Optional
 
 import pytest
 from moto.core import DEFAULT_ACCOUNT_ID as DEFAULT_MOTO_ACCOUNT_ID
@@ -306,7 +305,7 @@ class FakeS3Provider:
         code: str = "NoSuchBucket"
         sender_fault: bool = False
         status_code: int = 404
-        BucketName: Optional[str]
+        BucketName: str | None
 
     def __init__(self) -> None:
         super().__init__()

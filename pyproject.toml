@@ -53,9 +53,9 @@ Issues = "https://github.com/localstack/localstack/issues"
 # minimal required to actually run localstack on the host for services natively implemented in python
 base-runtime = [
     # pinned / updated by ASF update action
-    "boto3==1.38.41",
+    "boto3==1.40.25",
     # pinned / updated by ASF update action
-    "botocore==1.38.41",
+    "botocore==1.40.25",
     "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
@@ -78,7 +78,7 @@ base-runtime = [
 runtime = [
     "localstack-core[base-runtime]",
     # pinned / updated by ASF update action
-    "awscli>=1.37.0",
+    "awscli==1.42.25",
     "airspeed-ext>=0.6.3",
     # version that has a built wheel
     "kclpy-ext>=3.0.0",
@@ -88,12 +88,12 @@ runtime = [
     "aws-sam-translator>=1.15.1",
     "crontab>=0.22.6",
     "cryptography>=41.0.5",
-    # allow Python programs full access to Java class libraries. Used for opt-in event ruler.
-    "jpype1-ext>=0.0.1",
+    # allow Python programs full access to Java class libraries. Used for stepfunctions jsonata support
+    "jpype1>=1.6.0",
     "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
-    "moto-ext[all]==5.1.6.post2",
+    "moto-ext[all]==5.1.11.post1",
     "opensearch-py>=2.4.1",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
@@ -199,31 +199,42 @@ exclude = [
 "localstack-core/localstack/packages/**" = "py39"
 "localstack-core/localstack/config.py" = "py39"
 "localstack-core/localstack/constants.py" = "py39"
-"localstack-core/localstack/utils/analytics/**" = "py39"
-"localstack-core/localstack/utils/bootstrap.py" = "py39"
-"localstack-core/localstack/utils/json.py" = "py39"
-
+"localstack-core/localstack/utils/**" = "py39"  # imported by CLI tests
+"localstack-core/localstack/testing/pytest/**" = "py39" # imported by CLI tests
 
 [tool.ruff.lint]
 ignore = [
     "B007", # TODO Loop control variable x not used within loop body
-    "B017", # TODO `pytest.raises(Exception)` should be considered evil
     "B019", # TODO Use of `functools.lru_cache` or `functools.cache` on methods can lead to memory leaks
     "B022", # TODO No arguments passed to `contextlib.suppress`. No exceptions will be suppressed and therefore this context manager is redundant
     "B023", # TODO Function definition does not bind loop variable `server`
     "B024", # TODO x is an abstract base class, but it has no abstract methods
     "B027", # TODO `Server.do_shutdown` is an empty method in an abstract base class, but has no abstract decorator
     "B904", # TODO Within an `except` clause, raise exceptions with `raise ... from err` or `raise ... from None` to distinguish them from errors in exception handling
-    "C408", # TODO Unnecessary `list` call (rewrite as a literal)
-    "C416", # TODO Unnecessary `set` comprehension
     "C901", # TODO function is too complex
     "E402", # TODO Module level import not at top of file
     "E501", # E501 Line too long - handled by black, see https://docs.astral.sh/ruff/faq/#is-ruff-compatible-with-black
-    "E721", # TODO Do not compare types, use `isinstance()`
     "T201", # TODO `print` found
     "T203", # TODO `pprint` found
+    "UP038",# TODO Use `X | Y` in `isinstance` call instead of `(X, Y)`
 ]
-select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G"]
+select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G", "UP"]
+extend-safe-fixes = [
+    "UP006",    # unsafe-fix for py39
+    "UP035",    # unsafe-fix for py39
+]
+
+# The rules below fill fix the code in a way that leaves multiple unused imports.
+# Since F401 (removing unused imports) is currently an unsafe fix, these imports cannot be automatically removed.
+# Therefore, we temporarily disable the rules below for __init__ files.
+[tool.ruff.lint.per-file-ignores]
+"localstack-core/localstack/**/__init__.py" = ["UP006", "UP007", "UP035", "UP045"]
+"tests/aws/services/lambda_/functions/**" = ["UP"]  # lambda tests parametrize the runtime
+
+[tool.ruff.lint.pyupgrade]
+# Avoid PEP 604 rewrites (e.g. Union[str, int] -> str | int), even with the `from __future__ import annotations`
+# import. It only affects py39 and can be removed after we drop it.
+keep-runtime-typing = true
 
 [tool.coverage.run]
 relative_files = true

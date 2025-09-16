@@ -20,7 +20,12 @@ class InternalRequestParamsEnricher(Handler):
             try:
                 dto = MappingProxyType(load_dto(header))
             except Exception as e:
-                LOG.exception("Error loading request parameters '%s', Error: %s", header, e)
+                LOG.error(
+                    "Error loading request parameters '%s', Error: %s",
+                    header,
+                    e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
                 return
 
             context.internal_request_params = dto

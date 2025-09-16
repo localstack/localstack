@@ -1,16 +1,16 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.testing.pytest import markers
-from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
 THIS_DIR = os.path.dirname(__file__)
 
 
-@markers.snapshot.skip_snapshot_verify
 class TestCloudFormationMappings:
     @markers.aws.validated
     def test_simple_mapping_working(self, aws_client, deploy_cfn_template):
@@ -69,51 +69,64 @@ class TestCloudFormationMappings:
             )
         snapshot.match("mapping_nonexisting_key_exc", e.value.response)
 
-    @markers.aws.only_localstack
-    def test_async_mapping_error_first_level(self, deploy_cfn_template):
-        """
-        We don't (yet) support validating mappings synchronously in `create_changeset` like AWS does, however
-        we don't fail with a good error message at all. This test ensures that the deployment fails with a
-        nicer error message than a Python traceback about "`None` has no attribute `get`".
-        """
+    @markers.aws.validated
+    @skip_if_v1_provider("V1 provider is not in parity with AWS")
+    def test_async_mapping_error_first_level_v2(self, aws_client, snapshot):
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
         topic_name = f"test-topic-{short_uid()}"
-        with pytest.raises(StackDeployError) as exc_info:
-            deploy_cfn_template(
-                template_path=os.path.join(
-                    THIS_DIR,
-                    "../../../templates/mappings/simple-mapping.yaml",
-                ),
-                parameters={
-                    "TopicName": topic_name,
-                    "TopicNameSuffixSelector": "C",
-                },
+        template_path = os.path.join(
+            THIS_DIR,
+            "../../../templates/mappings/simple-mapping.yaml",
+        )
+        parameters = [
+            {"ParameterKey": "TopicName", "ParameterValue": topic_name},
+            {"ParameterKey": "TopicNameSuffixSelector", "ParameterValue": "C"},
+        ]
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                Parameters=parameters,
+                TemplateBody=open(template_path).read(),
             )
 
-        assert "Cannot find map key 'C' in mapping 'TopicSuffixMap'" in str(exc_info.value)
+        snapshot.match("error", exc_info.value)
 
-    @markers.aws.only_localstack
-    def test_async_mapping_error_second_level(self, deploy_cfn_template):
+    @markers.aws.validated
+    @skip_if_v1_provider("V1 provider is not in parity with AWS")
+    def test_async_mapping_error_second_level_v2(self, aws_client, snapshot):
         """
         Similar to the `test_async_mapping_error_first_level` test above, but
         checking the second level of mapping lookup
         """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
         topic_name = f"test-topic-{short_uid()}"
-        with pytest.raises(StackDeployError) as exc_info:
-            deploy_cfn_template(
-                template_path=os.path.join(
-                    THIS_DIR,
-                    "../../../templates/mappings/simple-mapping.yaml",
-                ),
-                parameters={
-                    "TopicName": topic_name,
-                    "TopicNameSuffixSelector": "A",
-                    "TopicAttributeSelector": "NotValid",
-                },
+        template_path = os.path.join(
+            THIS_DIR,
+            "../../../templates/mappings/simple-mapping.yaml",
+        )
+        parameters = [
+            {"ParameterKey": "TopicName", "ParameterValue": topic_name},
+            {"ParameterKey": "TopicNameSuffixSelector", "ParameterValue": "A"},
+            {"ParameterKey": "TopicAttributeSelector", "ParameterValue": "NotValid"},
+        ]
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                Parameters=parameters,
+                TemplateBody=open(template_path).read(),
             )
 
-        assert "Cannot find map key 'NotValid' in mapping 'TopicSuffixMap' under key 'A'" in str(
-            exc_info.value
-        )
+        snapshot.match("error", exc_info.value)
 
     @markers.aws.validated
     @pytest.mark.skip(reason="not implemented")

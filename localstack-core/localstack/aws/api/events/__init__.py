@@ -180,10 +180,22 @@ class EventSourceState(StrEnum):
     DELETED = "DELETED"
 
 
+class IncludeDetail(StrEnum):
+    NONE = "NONE"
+    FULL = "FULL"
+
+
 class LaunchType(StrEnum):
     EC2 = "EC2"
     FARGATE = "FARGATE"
     EXTERNAL = "EXTERNAL"
+
+
+class Level(StrEnum):
+    OFF = "OFF"
+    ERROR = "ERROR"
+    INFO = "INFO"
+    TRACE = "TRACE"
 
 
 class PlacementConstraintType(StrEnum):
@@ -613,6 +625,11 @@ class Tag(TypedDict, total=False):
 TagList = List[Tag]
 
 
+class LogConfig(TypedDict, total=False):
+    IncludeDetail: Optional[IncludeDetail]
+    Level: Optional[Level]
+
+
 class DeadLetterConfig(TypedDict, total=False):
     Arn: Optional[ResourceArn]
 
@@ -623,6 +640,7 @@ class CreateEventBusRequest(ServiceRequest):
     Description: Optional[EventBusDescription]
     KmsKeyIdentifier: Optional[KmsKeyIdentifier]
     DeadLetterConfig: Optional[DeadLetterConfig]
+    LogConfig: Optional[LogConfig]
     Tags: Optional[TagList]
 
 
@@ -631,6 +649,7 @@ class CreateEventBusResponse(TypedDict, total=False):
     Description: Optional[EventBusDescription]
     KmsKeyIdentifier: Optional[KmsKeyIdentifier]
     DeadLetterConfig: Optional[DeadLetterConfig]
+    LogConfig: Optional[LogConfig]
 
 
 class CreatePartnerEventSourceRequest(ServiceRequest):
@@ -797,6 +816,7 @@ class DescribeEventBusResponse(TypedDict, total=False):
     KmsKeyIdentifier: Optional[KmsKeyIdentifier]
     DeadLetterConfig: Optional[DeadLetterConfig]
     Policy: Optional[String]
+    LogConfig: Optional[LogConfig]
     CreationTime: Optional[Timestamp]
     LastModifiedTime: Optional[Timestamp]
 
@@ -873,23 +893,19 @@ class DisableRuleRequest(ServiceRequest):
     EventBusName: Optional[EventBusNameOrArn]
 
 
-PlacementStrategy = TypedDict(
-    "PlacementStrategy",
-    {
-        "type": Optional[PlacementStrategyType],
-        "field": Optional[PlacementStrategyField],
-    },
-    total=False,
-)
+class PlacementStrategy(TypedDict, total=False):
+    type: Optional[PlacementStrategyType]
+    field: Optional[PlacementStrategyField]
+
+
 PlacementStrategies = List[PlacementStrategy]
-PlacementConstraint = TypedDict(
-    "PlacementConstraint",
-    {
-        "type": Optional[PlacementConstraintType],
-        "expression": Optional[PlacementConstraintExpression],
-    },
-    total=False,
-)
+
+
+class PlacementConstraint(TypedDict, total=False):
+    type: Optional[PlacementConstraintType]
+    expression: Optional[PlacementConstraintExpression]
+
+
 PlacementConstraints = List[PlacementConstraint]
 
 
@@ -1543,6 +1559,7 @@ class UpdateEventBusRequest(ServiceRequest):
     KmsKeyIdentifier: Optional[KmsKeyIdentifier]
     Description: Optional[EventBusDescription]
     DeadLetterConfig: Optional[DeadLetterConfig]
+    LogConfig: Optional[LogConfig]
 
 
 class UpdateEventBusResponse(TypedDict, total=False):
@@ -1551,6 +1568,7 @@ class UpdateEventBusResponse(TypedDict, total=False):
     KmsKeyIdentifier: Optional[KmsKeyIdentifier]
     Description: Optional[EventBusDescription]
     DeadLetterConfig: Optional[DeadLetterConfig]
+    LogConfig: Optional[LogConfig]
 
 
 class EventsApi:
@@ -1634,6 +1652,7 @@ class EventsApi:
         description: EventBusDescription | None = None,
         kms_key_identifier: KmsKeyIdentifier | None = None,
         dead_letter_config: DeadLetterConfig | None = None,
+        log_config: LogConfig | None = None,
         tags: TagList | None = None,
         **kwargs,
     ) -> CreateEventBusResponse:
@@ -2107,6 +2126,7 @@ class EventsApi:
         kms_key_identifier: KmsKeyIdentifier | None = None,
         description: EventBusDescription | None = None,
         dead_letter_config: DeadLetterConfig | None = None,
+        log_config: LogConfig | None = None,
         **kwargs,
     ) -> UpdateEventBusResponse:
         raise NotImplementedError

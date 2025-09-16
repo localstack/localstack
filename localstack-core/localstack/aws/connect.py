@@ -10,10 +10,11 @@ import logging
 import re
 import threading
 from abc import ABC, abstractmethod
+from collections.abc import Callable
 from functools import lru_cache, partial
 from random import choice
 from socket import socket
-from typing import Any, Callable, Generic, Optional, TypedDict, TypeVar
+from typing import Any, Generic, TypedDict, TypeVar
 
 import dns.message
 import dns.query
@@ -88,8 +89,8 @@ def make_hash(o):
     return hash(frozenset(sorted(new_o.items())))
 
 
-def config_equality_patch(self, other: object):
-    return type(self) == type(other) and self._user_provided_options == other._user_provided_options
+def config_equality_patch(self, other: object) -> bool:
+    return type(self) is type(other) and self._user_provided_options == other._user_provided_options
 
 
 def config_hash_patch(self):
@@ -277,10 +278,10 @@ class ClientFactory(ABC):
     def __call__(
         self,
         *,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
+        region_name: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
         endpoint_url: str = None,
         config: Config = None,
     ) -> ServiceLevelClientFactory:
@@ -318,11 +319,11 @@ class ClientFactory(ABC):
         self,
         *,
         role_arn: str,
-        service_principal: Optional[ServicePrincipal] = None,
-        session_name: Optional[str] = None,
-        region_name: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
-        config: Optional[Config] = None,
+        service_principal: ServicePrincipal | None = None,
+        session_name: str | None = None,
+        region_name: str | None = None,
+        endpoint_url: str | None = None,
+        config: Config | None = None,
     ) -> ServiceLevelClientFactory:
         """
         Create a service level client factory with credentials from assuming the given role ARN.
@@ -362,12 +363,12 @@ class ClientFactory(ABC):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
-        config: Optional[Config] = None,
+        region_name: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        endpoint_url: str | None = None,
+        config: Config | None = None,
     ):
         raise NotImplementedError()
 
@@ -389,11 +390,11 @@ class ClientFactory(ABC):
         service_name: str,
         region_name: str,
         use_ssl: bool,
-        verify: Optional[bool],
-        endpoint_url: Optional[str],
-        aws_access_key_id: Optional[str],
-        aws_secret_access_key: Optional[str],
-        aws_session_token: Optional[str],
+        verify: bool | None,
+        endpoint_url: str | None,
+        aws_access_key_id: str | None,
+        aws_secret_access_key: str | None,
+        aws_session_token: str | None,
         config: Config,
     ) -> BaseClient:
         """
@@ -480,12 +481,12 @@ class InternalClientFactory(ClientFactory):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
-        config: Optional[Config] = None,
+        region_name: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        endpoint_url: str | None = None,
+        config: Config | None = None,
     ) -> BaseClient:
         """
         Build and return client for connections originating within LocalStack.
@@ -535,12 +536,12 @@ class ExternalClientFactory(ClientFactory):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
-        config: Optional[Config] = None,
+        region_name: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        endpoint_url: str | None = None,
+        config: Config | None = None,
     ) -> BaseClient:
         """
         Build and return client for connections originating outside LocalStack and targeting Localstack.
@@ -604,12 +605,12 @@ class ExternalAwsClientFactory(ClientFactory):
     def get_client(
         self,
         service_name: str,
-        region_name: Optional[str] = None,
-        aws_access_key_id: Optional[str] = None,
-        aws_secret_access_key: Optional[str] = None,
-        aws_session_token: Optional[str] = None,
-        endpoint_url: Optional[str] = None,
-        config: Optional[Config] = None,
+        region_name: str | None = None,
+        aws_access_key_id: str | None = None,
+        aws_secret_access_key: str | None = None,
+        aws_session_token: str | None = None,
+        endpoint_url: str | None = None,
+        config: Config | None = None,
     ) -> BaseClient:
         """
         Build and return client for connections originating outside LocalStack and targeting AWS.

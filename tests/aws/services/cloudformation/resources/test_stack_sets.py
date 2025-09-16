@@ -1,10 +1,13 @@
 import os
 
 import pytest
+from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
+from localstack.testing.config import SECONDARY_TEST_AWS_ACCOUNT_ID, SECONDARY_TEST_AWS_REGION_NAME
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import long_uid, short_uid
 from localstack.utils.sync import wait_until
 
 
@@ -23,7 +26,7 @@ def wait_stack_set_operation(aws_client):
     return waiter
 
 
-@markers.aws.validated
+@markers.aws.manual_setup_required
 def test_create_stack_set_with_stack_instances(
     account_id,
     region_name,
@@ -31,6 +34,7 @@ def test_create_stack_set_with_stack_instances(
     snapshot,
     wait_stack_set_operation,
 ):
+    """ "Account <...> should have 'AWSCloudFormationStackSetAdministrationRole' role with trust relationship to CloudFormation service."""
     snapshot.add_transformer(snapshot.transform.key_value("StackSetId", "stack-set-id"))
 
     stack_set_name = f"StackSet-{short_uid()}"
@@ -77,3 +81,44 @@ def test_create_stack_set_with_stack_instances(
     wait_stack_set_operation(stack_set_name, delete_instances_result["OperationId"])
 
     aws_client.cloudformation.delete_stack_set(StackSetName=stack_set_name)
+
+
+@skip_if_v1_provider("Not implemented in V1 provider")
+@markers.aws.validated
+def test_delete_nonexistent_stack_set(aws_client, snapshot):
+    # idempotent
+    aws_client.cloudformation.delete_stack_set(
+        StackSetName="non-existent-stack-set-id",
+    )
+
+    bad_stack_set_id = f"foo:{long_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(bad_stack_set_id, "<stack-id>"))
+
+    aws_client.cloudformation.delete_stack_set(
+        StackSetName=bad_stack_set_id,
+    )
+
+
+@skip_if_v1_provider("Not implemented in V1 provider")
+@markers.aws.validated
+def test_fetch_non_existent_stack_set_instances(aws_client, snapshot):
+    with pytest.raises(ClientError) as e:
+        aws_client.cloudformation.create_stack_instances(
+            StackSetName="non-existent-stack-set-id",
+            Accounts=[SECONDARY_TEST_AWS_ACCOUNT_ID],
+            Regions=[SECONDARY_TEST_AWS_REGION_NAME],
+        )
+
+    snapshot.match("non-existent-stack-set-name", e.value)
+
+    bad_stack_set_id = f"foo:{long_uid()}"
+    snapshot.add_transformer(snapshot.transform.regex(bad_stack_set_id, "<stack-id>"))
+
+    with pytest.raises(ClientError) as e:
+        aws_client.cloudformation.create_stack_instances(
+            StackSetName=bad_stack_set_id,
+            Accounts=[SECONDARY_TEST_AWS_ACCOUNT_ID],
+            Regions=[SECONDARY_TEST_AWS_REGION_NAME],
+        )
+
+    snapshot.match("non-existent-stack-set-id", e.value)

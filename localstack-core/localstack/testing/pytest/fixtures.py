@@ -6,7 +6,7 @@ import os
 import re
 import textwrap
 import time
-from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional, Tuple
+from typing import TYPE_CHECKING, Any, Callable, Optional, Unpack
 
 import botocore.auth
 import botocore.config
@@ -21,7 +21,8 @@ from pytest_httpserver import HTTPServer
 from werkzeug import Request, Response
 
 from localstack import config
-from localstack.aws.api.ec2 import CreateSecurityGroupRequest
+from localstack.aws.api.cloudformation import CreateChangeSetInput, Parameter
+from localstack.aws.api.ec2 import CreateSecurityGroupRequest, CreateVpcEndpointRequest, VpcEndpoint
 from localstack.aws.connect import ServiceLevelClientFactory
 from localstack.services.stores import (
     AccountRegionBundle,
@@ -231,7 +232,7 @@ def s3_create_bucket(s3_empty_bucket, aws_client):
 
     def factory(**kwargs) -> str:
         if "Bucket" not in kwargs:
-            kwargs["Bucket"] = "test-bucket-%s" % short_uid()
+            kwargs["Bucket"] = f"test-bucket-{short_uid()}"
 
         if (
             "CreateBucketConfiguration" not in kwargs
@@ -334,7 +335,7 @@ def sqs_create_queue(aws_client):
 
     def factory(**kwargs):
         if "QueueName" not in kwargs:
-            kwargs["QueueName"] = "test-queue-%s" % short_uid()
+            kwargs["QueueName"] = f"test-queue-{short_uid()}"
 
         response = aws_client.sqs.create_queue(**kwargs)
         url = response["QueueUrl"]
@@ -502,7 +503,7 @@ def sns_create_topic(aws_client):
 
     def _create_topic(**kwargs):
         if "Name" not in kwargs:
-            kwargs["Name"] = "test-topic-%s" % short_uid()
+            kwargs["Name"] = f"test-topic-{short_uid()}"
         response = aws_client.sns.create_topic(**kwargs)
         topic_arns.append(response["TopicArn"])
         return response
@@ -593,7 +594,7 @@ def sns_allow_topic_sqs_queue(aws_client):
 def sns_create_sqs_subscription(sns_allow_topic_sqs_queue, sqs_get_queue_arn, aws_client):
     subscriptions = []
 
-    def _factory(topic_arn: str, queue_url: str, **kwargs) -> Dict[str, str]:
+    def _factory(topic_arn: str, queue_url: str, **kwargs) -> dict[str, str]:
         queue_arn = sqs_get_queue_arn(queue_url)
 
         # connect sns topic to sqs
@@ -630,7 +631,7 @@ def sns_create_http_endpoint(sns_create_topic, sns_subscription, aws_client):
 
     def _create_http_endpoint(
         raw_message_delivery: bool = False,
-    ) -> Tuple[str, str, str, HTTPServer]:
+    ) -> tuple[str, str, str, HTTPServer]:
         server = HTTPServer()
         server.start()
         http_servers.append(server)
@@ -936,7 +937,7 @@ def opensearch_wait_for_cluster(aws_client):
     def _wait_for_cluster(domain_name: str):
         def finished_processing():
             status = aws_client.opensearch.describe_domain(DomainName=domain_name)["DomainStatus"]
-            return status["Processing"] is False and "Endpoint" in status
+            return status["DomainProcessingStatus"] == "Active" and "Endpoint" in status
 
         assert poll_condition(
             finished_processing, timeout=25 * 60, **({"interval": 10} if is_aws_cloud() else {})
@@ -1004,7 +1005,7 @@ def opensearch_document_path(opensearch_endpoint, aws_client):
 # Cleanup fixtures
 @pytest.fixture
 def cleanup_stacks(aws_client):
-    def _cleanup_stacks(stacks: List[str]) -> None:
+    def _cleanup_stacks(stacks: list[str]) -> None:
         stacks = ensure_list(stacks)
         for stack in stacks:
             try:
@@ -1018,7 +1019,7 @@ def cleanup_stacks(aws_client):
 
 @pytest.fixture
 def cleanup_changesets(aws_client):
-    def _cleanup_changesets(changesets: List[str]) -> None:
+    def _cleanup_changesets(changesets: list[str]) -> None:
         changesets = ensure_list(changesets)
         for cs in changesets:
             try:
@@ -1039,7 +1040,7 @@ class DeployResult:
     stack_id: str
     stack_name: str
     change_set_name: str
-    outputs: Dict[str, str]
+    outputs: dict[str, str]
 
     destroy: Callable[[], None]
 
@@ -1089,12 +1090,13 @@ def deploy_cfn_template(
         change_set_name: Optional[str] = None,
         template: Optional[str] = None,
         template_path: Optional[str | os.PathLike] = None,
-        template_mapping: Optional[Dict[str, Any]] = None,
-        parameters: Optional[Dict[str, str]] = None,
+        template_mapping: Optional[dict[str, Any]] = None,
+        parameters: Optional[dict[str, str]] = None,
         role_arn: Optional[str] = None,
         max_wait: Optional[int] = None,
         delay_between_polls: Optional[int] = 2,
         custom_aws_client: Optional[ServiceLevelClientFactory] = None,
+        raw_parameters: Optional[list[Parameter]] = None,
     ) -> DeployResult:
         if is_update:
             assert stack_name
@@ -1106,22 +1108,25 @@ def deploy_cfn_template(
 
         if template_path is not None:
             template = load_template_file(template_path)
+            if template is None:
+                raise RuntimeError(f"Could not find file {os.path.realpath(template_path)}")
         template_rendered = render_template(template, **(template_mapping or {}))
 
-        kwargs = dict(
+        kwargs = CreateChangeSetInput(
             StackName=stack_name,
             ChangeSetName=change_set_name,
             TemplateBody=template_rendered,
             Capabilities=["CAPABILITY_AUTO_EXPAND", "CAPABILITY_IAM", "CAPABILITY_NAMED_IAM"],
             ChangeSetType=("UPDATE" if is_update else "CREATE"),
-            Parameters=[
-                {
-                    "ParameterKey": k,
-                    "ParameterValue": v,
-                }
-                for (k, v) in (parameters or {}).items()
-            ],
         )
+        kwargs["Parameters"] = []
+        if parameters:
+            kwargs["Parameters"] = [
+                Parameter(ParameterKey=k, ParameterValue=v) for (k, v) in parameters.items()
+            ]
+        elif raw_parameters:
+            kwargs["Parameters"] = raw_parameters
+
         if role_arn is not None:
             kwargs["RoleARN"] = role_arn
 
@@ -1132,9 +1137,16 @@ def deploy_cfn_template(
         change_set_id = response["Id"]
         stack_id = response["StackId"]
 
-        cfn_aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
-            ChangeSetName=change_set_id
-        )
+        try:
+            cfn_aws_client.cloudformation.get_waiter(WAITER_CHANGE_SET_CREATE_COMPLETE).wait(
+                ChangeSetName=change_set_id
+            )
+        except botocore.exceptions.WaiterError as e:
+            change_set = cfn_aws_client.cloudformation.describe_change_set(
+                ChangeSetName=change_set_id
+            )
+            raise Exception(f"{change_set['Status']}: {change_set.get('StatusReason')}") from e
+
         cfn_aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
         stack_waiter = cfn_aws_client.cloudformation.get_waiter(
             WAITER_STACK_UPDATE_COMPLETE if is_update else WAITER_STACK_CREATE_COMPLETE
@@ -1236,7 +1248,7 @@ def is_stack_deleted(aws_client):
     return _has_stack_status(aws_client.cloudformation, ["DELETE_COMPLETE"])
 
 
-def _has_stack_status(cfn_client, statuses: List[str]):
+def _has_stack_status(cfn_client, statuses: list[str]):
     def _has_status(stack_id: str):
         def _inner():
             resp = cfn_client.describe_stacks(StackName=stack_id)
@@ -1512,7 +1524,7 @@ def create_event_source_mapping(aws_client):
 
 @pytest.fixture
 def check_lambda_logs(aws_client):
-    def _check_logs(func_name: str, expected_lines: List[str] = None) -> List[str]:
+    def _check_logs(func_name: str, expected_lines: list[str] = None) -> list[str]:
         if not expected_lines:
             expected_lines = []
         log_events = get_lambda_logs(func_name, logs_client=aws_client.logs)
@@ -2045,6 +2057,45 @@ def ec2_create_security_group(aws_client):
 
 
 @pytest.fixture
+def ec2_create_vpc_endpoint(aws_client):
+    vpc_endpoints = []
+
+    def _create(**kwargs: Unpack[CreateVpcEndpointRequest]) -> VpcEndpoint:
+        endpoint = aws_client.ec2.create_vpc_endpoint(**kwargs)
+        endpoint_id = endpoint["VpcEndpoint"]["VpcEndpointId"]
+        vpc_endpoints.append(endpoint_id)
+
+        def _check_available() -> VpcEndpoint:
+            result = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=[endpoint_id])
+            _endpoint_details = result["VpcEndpoints"][0]
+            assert _endpoint_details["State"] == "available"
+
+            return _endpoint_details
+
+        return retry(_check_available, retries=30, sleep=5 if is_aws_cloud() else 1)
+
+    yield _create
+
+    try:
+        aws_client.ec2.delete_vpc_endpoints(VpcEndpointIds=vpc_endpoints)
+    except Exception as e:
+        LOG.error("Error cleaning up VPC endpoint: %s, %s", vpc_endpoints, e)
+
+    def wait_for_endpoint_deleted():
+        try:
+            endpoints = aws_client.ec2.describe_vpc_endpoints(VpcEndpointIds=vpc_endpoints)
+            assert len(endpoints["VpcEndpoints"]) == 0 or all(
+                endpoint["State"] == "Deleted" for endpoint in endpoints["VpcEndpoints"]
+            )
+        except botocore.exceptions.ClientError:
+            pass
+
+    # the vpc can't be deleted if an endpoint exists
+    if is_aws_cloud():
+        retry(wait_for_endpoint_deleted, retries=30, sleep=10 if is_aws_cloud() else 1)
+
+
+@pytest.fixture
 def cleanups():
     cleanup_fns = []
 
@@ -2192,29 +2243,6 @@ def create_rest_apigw_openapi(aws_client_factory):
 
 
 @pytest.fixture
-def appsync_create_api(aws_client):
-    graphql_apis = []
-
-    def factory(**kwargs):
-        if "name" not in kwargs:
-            kwargs["name"] = f"graphql-api-testing-name-{short_uid()}"
-        if not kwargs.get("authenticationType"):
-            kwargs["authenticationType"] = "API_KEY"
-
-        result = aws_client.appsync.create_graphql_api(**kwargs)["graphqlApi"]
-        graphql_apis.append(result["apiId"])
-        return result
-
-    yield factory
-
-    for api in graphql_apis:
-        try:
-            aws_client.appsync.delete_graphql_api(apiId=api)
-        except Exception as e:
-            LOG.debug("Error cleaning up AppSync API: %s, %s", api, e)
-
-
-@pytest.fixture
 def assert_host_customisation(monkeypatch):
     localstack_host = "foo.bar"
     monkeypatch.setattr(
@@ -2272,7 +2300,7 @@ def echo_http_server_post(echo_http_server):
     return f"{echo_http_server}post"
 
 
-def create_policy_doc(effect: str, actions: List, resource=None) -> Dict:
+def create_policy_doc(effect: str, actions: list, resource=None) -> dict:
     actions = ensure_list(actions)
     resource = resource or "*"
     return {
@@ -2561,14 +2589,22 @@ def events_create_rule(aws_client):
 
 @pytest.fixture
 def sqs_as_events_target(aws_client, sqs_get_queue_arn):
+    """
+    Fixture that creates an SQS queue and sets it up as a target for EventBridge events.
+    """
     queue_urls = []
 
-    def _sqs_as_events_target(queue_name: str | None = None) -> tuple[str, str]:
+    def _sqs_as_events_target(
+        queue_name: str | None = None, custom_aws_client=None
+    ) -> tuple[str, str]:
         if not queue_name:
             queue_name = f"tests-queue-{short_uid()}"
-        sqs_client = aws_client.sqs
+        if custom_aws_client:
+            sqs_client = custom_aws_client.sqs
+        else:
+            sqs_client = aws_client.sqs
         queue_url = sqs_client.create_queue(QueueName=queue_name)["QueueUrl"]
-        queue_urls.append(queue_url)
+        queue_urls.append((queue_url, sqs_client))
         queue_arn = sqs_get_queue_arn(queue_url)
         policy = {
             "Version": "2012-10-17",
@@ -2586,15 +2622,96 @@ def sqs_as_events_target(aws_client, sqs_get_queue_arn):
         sqs_client.set_queue_attributes(
             QueueUrl=queue_url, Attributes={"Policy": json.dumps(policy)}
         )
-        return queue_url, queue_arn
+        return queue_url, queue_arn, queue_name
 
     yield _sqs_as_events_target
 
-    for queue_url in queue_urls:
+    for queue_url, sqs_client in queue_urls:
         try:
-            aws_client.sqs.delete_queue(QueueUrl=queue_url)
+            sqs_client.delete_queue(QueueUrl=queue_url)
         except Exception as e:
             LOG.debug("error cleaning up queue %s: %s", queue_url, e)
+
+
+@pytest.fixture
+def create_role_event_bus_source_to_bus_target(create_iam_role_with_policy):
+    def _create_role_event_bus_to_bus():
+        assume_role_policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Principal": {"Service": "events.amazonaws.com"},
+                    "Action": "sts:AssumeRole",
+                }
+            ],
+        }
+
+        policy_document_bus_source_to_bus_target = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "",
+                    "Effect": "Allow",
+                    "Action": "events:PutEvents",
+                    "Resource": "arn:aws:events:*:*:event-bus/*",
+                }
+            ],
+        }
+
+        role_arn_bus_source_to_bus_target = create_iam_role_with_policy(
+            RoleDefinition=assume_role_policy_document_bus_source_to_bus_target,
+            PolicyDefinition=policy_document_bus_source_to_bus_target,
+        )
+
+        return role_arn_bus_source_to_bus_target
+
+    yield _create_role_event_bus_to_bus
+
+
+@pytest.fixture
+def get_primary_secondary_client(
+    aws_client_factory,
+    secondary_aws_client_factory,
+    region_name,
+    secondary_region_name,
+    account_id,
+    secondary_account_id,
+):
+    def _get_primary_secondary_clients(cross_scenario: str):
+        """
+        Returns primary and secondary AWS clients based on the cross-scenario.
+        :param cross_scenario: The scenario for cross-region or cross-account testing.
+                               Options: "region", "account", "region_account"
+                               account_region cross scenario is not supported by AWS
+        :return: A dictionary containing primary and secondary AWS clients, and their respective region and account IDs.
+        """
+        secondary_region = secondary_region_name
+        secondary_account = secondary_account_id
+        if cross_scenario not in ["region", "account", "region_account"]:
+            raise ValueError(f"cross_scenario {cross_scenario} not supported")
+
+        primary_client = aws_client_factory(region_name=region_name)
+
+        if cross_scenario == "region":
+            secondary_account = account_id
+            secondary_client = aws_client_factory(region_name=secondary_region_name)
+
+        elif cross_scenario == "account":
+            secondary_region = region_name
+            secondary_client = secondary_aws_client_factory(region_name=region_name)
+
+        elif cross_scenario == "region_account":
+            secondary_client = secondary_aws_client_factory(region_name=secondary_region)
+
+        return {
+            "primary_aws_client": primary_client,
+            "secondary_aws_client": secondary_client,
+            "secondary_region_name": secondary_region,
+            "secondary_account_id": secondary_account,
+        }
+
+    return _get_primary_secondary_clients
 
 
 @pytest.fixture
@@ -2619,10 +2736,10 @@ def clean_up(
         if rule_name:
             call_safe(events_client.delete_rule, kwargs=dict(Name=rule_name, Force=True, **kwargs))
         if bus_name:
-            call_safe(events_client.delete_event_bus, kwargs=dict(Name=bus_name))
+            call_safe(events_client.delete_event_bus, kwargs={"Name": bus_name})
         if queue_url:
             sqs_client = aws_client.sqs
-            call_safe(sqs_client.delete_queue, kwargs=dict(QueueUrl=queue_url))
+            call_safe(sqs_client.delete_queue, kwargs={"QueueUrl": queue_url})
         if log_group_name:
             logs_client = aws_client.logs
 

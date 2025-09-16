@@ -1,7 +1,7 @@
 import logging
-from typing import Optional
 
 from moto.ec2 import models as ec2_models
+from moto.ec2.models.vpcs import VPCEndPoint
 from moto.utilities.id_generator import Tags
 
 from localstack.services.ec2.exceptions import (
@@ -15,6 +15,8 @@ from localstack.utils.id_generator import (
     localstack_id,
 )
 from localstack.utils.patch import patch
+from localstack.utils.strings import short_uid
+from localstack.utils.urls import localstack_host
 
 LOG = logging.getLogger(__name__)
 
@@ -93,12 +95,31 @@ class SubnetIdentifier(ResourceIdentifier):
 
 
 def apply_patches():
+    @patch(ec2_models.vpcs.VPCBackend.create_vpc_endpoint)
+    def ec2_create_vpc_endpoint(
+        fn: ec2_models.VPCBackend.create_vpc_endpoint, self: ec2_models.VPCBackend, **kwargs
+    ) -> VPCEndPoint:
+        vpc_endpoint: VPCEndPoint = fn(self=self, **kwargs)
+
+        # moto returns the dns entries as `<vpc-id>.com.amazonaws.<region>.<service>`
+        # to keep the aws style `<vpc-id>.<service>.<region>.vpce.amazonaws.com` and ensure it can be routed
+        # by the individual services in LocalStack we will be creating the following entries:
+        # `<vpc-id>.<service>.<region>.vpce.<localstack host and port>`
+        if service_name := kwargs.get("service_name"):
+            ls_service_name = ".".join(service_name.split(".")[::-1]).replace(
+                "amazonaws.com", f"vpce.{localstack_host()}"
+            )
+            for dns_entry in vpc_endpoint.dns_entries or []:
+                dns_entry["dns_name"] = f"{vpc_endpoint.id}-{short_uid()}.{ls_service_name}"
+
+        return vpc_endpoint
+
     @patch(ec2_models.subnets.SubnetBackend.create_subnet)
     def ec2_create_subnet(
         fn: ec2_models.subnets.SubnetBackend.create_subnet,
         self: ec2_models.subnets.SubnetBackend,
         *args,
-        tags: Optional[dict[str, str]] = None,
+        tags: dict[str, str] | None = None,
         **kwargs,
     ):
         # Patch this method so that we can create a subnet with a specific "custom"
@@ -151,8 +172,8 @@ def apply_patches():
         self: ec2_models.security_groups.SecurityGroupBackend,
         name: str,
         *args,
-        vpc_id: Optional[str] = None,
-        tags: Optional[dict[str, str]] = None,
+        vpc_id: str | None = None,
+        tags: dict[str, str] | None = None,
         force: bool = False,
         **kwargs,
     ):
@@ -191,7 +212,7 @@ def apply_patches():
         self: ec2_models.vpcs.VPCBackend,
         cidr_block: str,
         *args,
-        tags: Optional[list[dict[str, str]]] = None,
+        tags: list[dict[str, str]] | None = None,
         is_default: bool = False,
         **kwargs,
     ):

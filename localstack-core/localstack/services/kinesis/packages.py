@@ -1,13 +1,13 @@
 import os
 from enum import StrEnum
 from functools import lru_cache
-from typing import Any, List
+from typing import Any
 
 from localstack.packages import InstallTarget, Package
 from localstack.packages.core import GitHubReleaseInstaller, NodePackageInstaller
 from localstack.packages.java import JavaInstallerMixin, java_package
 
-_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.12"
+_KINESIS_MOCK_VERSION = os.environ.get("KINESIS_MOCK_VERSION") or "0.4.13"
 
 
 class KinesisMockEngine(StrEnum):
@@ -58,7 +58,7 @@ class KinesisMockScalaPackage(Package[KinesisMockScalaPackageInstaller]):
     def _get_installer(self, version: str) -> KinesisMockScalaPackageInstaller:
         return KinesisMockScalaPackageInstaller(version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [_KINESIS_MOCK_VERSION]  # Only supported on v0.4.12+
 
 
@@ -73,7 +73,7 @@ class KinesisMockNodePackage(Package[KinesisMockNodePackageInstaller]):
     def _get_installer(self, version: str) -> KinesisMockNodePackageInstaller:
         return KinesisMockNodePackageInstaller(version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [_KINESIS_MOCK_VERSION]
 
 

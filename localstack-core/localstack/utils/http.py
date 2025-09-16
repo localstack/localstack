@@ -2,7 +2,7 @@ import logging
 import math
 import os
 import re
-from typing import Dict, Optional, Union
+from typing import Optional, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
@@ -43,18 +43,18 @@ def create_chunked_data(data, chunk_size: int = 80):
     dl = len(data)
     ret = ""
     for i in range(dl // chunk_size):
-        ret += "%s\r\n" % (hex(chunk_size)[2:])
-        ret += "%s\r\n\r\n" % (data[i * chunk_size : (i + 1) * chunk_size])
+        ret += f"{hex(chunk_size)[2:]}\r\n"
+        ret += f"{data[i * chunk_size : (i + 1) * chunk_size]}\r\n\r\n"
 
     if len(data) % chunk_size != 0:
-        ret += "%s\r\n" % (hex(len(data) % chunk_size)[2:])
-        ret += "%s\r\n" % (data[-(len(data) % chunk_size) :])
+        ret += f"{hex(len(data) % chunk_size)[2:]}\r\n"
+        ret += f"{data[-(len(data) % chunk_size) :]}\r\n"
 
     ret += "0\r\n\r\n"
     return ret
 
 
-def canonicalize_headers(headers: Union[Dict, CaseInsensitiveDict]) -> Dict:
+def canonicalize_headers(headers: Union[dict, CaseInsensitiveDict]) -> dict:
     if not headers:
         return headers
 
@@ -76,7 +76,7 @@ def add_path_parameters_to_url(uri: str, path_params: list):
     return urlunparse(url._replace(path=new_path))
 
 
-def add_query_params_to_url(uri: str, query_params: Dict) -> str:
+def add_query_params_to_url(uri: str, query_params: dict) -> str:
     """
     Add query parameters to the uri.
     :param uri: the base uri it can contains path arguments and query parameters
@@ -103,7 +103,7 @@ def add_query_params_to_url(uri: str, query_params: Dict) -> str:
 
 
 def make_http_request(
-    url: str, data: Union[bytes, str] = None, headers: Dict[str, str] = None, method: str = "GET"
+    url: str, data: Union[bytes, str] = None, headers: dict[str, str] = None, method: str = "GET"
 ) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
@@ -141,7 +141,7 @@ class _RequestsSafe:
 safe_requests = _RequestsSafe()
 
 
-def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
+def parse_request_data(method: str, path: str, data=None, headers=None) -> dict:
     """Extract request data either from query string as well as request body (e.g., for POST)."""
     result = {}
     headers = headers or {}
@@ -165,7 +165,7 @@ def parse_request_data(method: str, path: str, data=None, headers=None) -> Dict:
     return result
 
 
-def get_proxies() -> Dict[str, str]:
+def get_proxies() -> dict[str, str]:
     proxy_map = {}
     if config.OUTBOUND_HTTP_PROXY:
         proxy_map["http"] = config.OUTBOUND_HTTP_PROXY
@@ -202,7 +202,7 @@ def download(
         r = s.get(url, stream=True, verify=_verify, timeout=timeout, headers=request_headers)
         # check status code before attempting to read body
         if not r.ok:
-            raise Exception("Failed to download %s, response code %s" % (url, r.status_code))
+            raise Exception(f"Failed to download {url}, response code {r.status_code}")
 
         total_size = 0
         if r.headers.get("Content-Length"):
@@ -298,11 +298,12 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
             return True
         except Exception as e:
             if print_error:
-                LOG.exception(
+                LOG.error(
                     "Unable to download Github artifact from %s to %s: %s %s",
                     url,
                     target_file,
                     e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
     # if a GitHub API token is set, use it to avoid rate limiting issues

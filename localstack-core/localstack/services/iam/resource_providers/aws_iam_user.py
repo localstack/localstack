@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,31 +14,31 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class IAMUserProperties(TypedDict):
-    Arn: Optional[str]
-    Groups: Optional[list[str]]
-    Id: Optional[str]
-    LoginProfile: Optional[LoginProfile]
-    ManagedPolicyArns: Optional[list[str]]
-    Path: Optional[str]
-    PermissionsBoundary: Optional[str]
-    Policies: Optional[list[Policy]]
-    Tags: Optional[list[Tag]]
-    UserName: Optional[str]
+    Arn: str | None
+    Groups: list[str] | None
+    Id: str | None
+    LoginProfile: LoginProfile | None
+    ManagedPolicyArns: list[str] | None
+    Path: str | None
+    PermissionsBoundary: str | None
+    Policies: list[Policy] | None
+    Tags: list[Tag] | None
+    UserName: str | None
 
 
 class Policy(TypedDict):
-    PolicyDocument: Optional[dict]
-    PolicyName: Optional[str]
+    PolicyDocument: dict | None
+    PolicyName: str | None
 
 
 class LoginProfile(TypedDict):
-    Password: Optional[str]
-    PasswordResetRequired: Optional[bool]
+    Password: str | None
+    PasswordResetRequired: bool | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

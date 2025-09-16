@@ -1,12 +1,13 @@
 {
   "tests/aws/services/cloudformation/api/test_transformers.py::test_duplicate_resources": {
-    "recorded-date": "15-04-2024, 22:51:13",
+    "recorded-date": "15-07-2025, 19:27:40",
     "recorded-content": {
       "api-details": {
         "apiKeySource": "HEADER",
         "createdDate": "datetime",
         "disableExecuteApiEndpoint": false,
         "endpointConfiguration": {
+          "ipAddressType": "ipv4",
           "types": [
             "EDGE"
           ]
@@ -82,6 +83,671 @@
             }
           }
         },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_language_extensions": {
+    "recorded-date": "27-06-2025, 16:00:24",
+    "recorded-content": {
+      "parameter-value": {
+        "ARN": "arn:<partition>:ssm:<region>:111111111111:parameter/<parameter-name>",
+        "DataType": "text",
+        "LastModifiedDate": "datetime",
+        "Name": "<parameter-name>",
+        "Type": "String",
+        "Value": "3",
+        "Version": 1
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_length": {
+    "recorded-date": "04-07-2025, 13:29:38",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyParameter",
+            "PhysicalResourceId": "CFN-MyParameter-XDIklGDTsx0d",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/ea360910-58da-11f0-9610-0a867e99d789",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "Outputs": {
+          "ParameterName": {
+            "Value": {
+              "Ref": "MyParameter"
+            }
+          }
+        },
+        "Parameters": {
+          "QueueList": {
+            "Type": "CommaDelimitedList"
+          }
+        },
+        "Resources": {
+          "MyParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": 3
+            },
+            "Type": "AWS::SSM::Parameter"
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach": {
+    "recorded-date": "02-07-2025, 20:00:41",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "SnsTopic<topic-name-0>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<topic-name-0>.fifo",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/3727e570-577f-11f0-84c2-027a12c5d007",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "SnsTopic<topic-name-1>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<topic-name-1>.fifo",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/3727e570-577f-11f0-84c2-027a12c5d007",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "SnsTopic<topic-name-2>",
+            "PhysicalResourceId": "arn:<partition>:sns:<region>:111111111111:<topic-name-2>.fifo",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SNS::Topic",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/3727e570-577f-11f0-84c2-027a12c5d007",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Parameters": {
+          "pRepoARNs": {
+            "Description": "ARN of SSO instance",
+            "Type": "CommaDelimitedList"
+          }
+        },
+        "Resources": {
+          "SnsTopic<topic-name-0>": {
+            "Properties": {
+              "FifoTopic": true,
+              "TopicName": "<topic-name-0>.fifo"
+            },
+            "Type": "AWS::SNS::Topic"
+          },
+          "SnsTopic<topic-name-1>": {
+            "Properties": {
+              "FifoTopic": true,
+              "TopicName": "<topic-name-1>.fifo"
+            },
+            "Type": "AWS::SNS::Topic"
+          },
+          "SnsTopic<topic-name-2>": {
+            "Properties": {
+              "FifoTopic": true,
+              "TopicName": "<topic-name-2>.fifo"
+            },
+            "Type": "AWS::SNS::Topic"
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach_use_case": {
+    "recorded-date": "03-07-2025, 15:19:42",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLApi",
+            "PhysicalResourceId": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::GraphQLApi",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLApiSchema",
+            "PhysicalResourceId": "kzqecnrvvjhqvlhc7ab7g5fgvqGraphQLSchema",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::GraphQLSchema",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLNoneDataSource",
+            "PhysicalResourceId": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq/datasources/noneds",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::DataSource",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLResolverPublish<event-name-0>Subscription",
+            "PhysicalResourceId": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq/types/Subscription/resolvers/on<event-name-0>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::Resolver",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLResolverPublish<event-name-1>Subscription",
+            "PhysicalResourceId": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq/types/Subscription/resolvers/on<event-name-1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::Resolver",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLResolverPublishServer<event-name-0>Mutation",
+            "PhysicalResourceId": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq/types/Mutation/resolvers/publishServer<event-name-0>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::Resolver",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "GraphQLResolverPublishServer<event-name-1>Mutation",
+            "PhysicalResourceId": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq/types/Mutation/resolvers/publishServer<event-name-1>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::AppSync::Resolver",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1c00b9a0-5821-11f0-8e5a-024091034385",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "Outputs": {
+          "GraphQLApiArn": {
+            "Value": {
+              "Ref": "GraphQLApi"
+            }
+          }
+        },
+        "Parameters": {
+          "AppSyncServerEventNames": {
+            "Type": "CommaDelimitedList"
+          },
+          "AppSyncSubscriptionFilterNames": {
+            "Type": "CommaDelimitedList"
+          }
+        },
+        "Resources": {
+          "GraphQLApi": {
+            "Properties": {
+              "AuthenticationType": "API_KEY",
+              "Name": "<stack-name>_api"
+            },
+            "Type": "AWS::AppSync::GraphQLApi"
+          },
+          "GraphQLApiSchema": {
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Definition": "\ninput PublishServer<event-name-0>Input {\n  value: String!\n}\n\ninput PublishServer<event-name-1>Input {\n  value: String!\n}\n\ntype Query {\n  _empty: String\n}\n\ntype Subscription {\n  on<event-name-0>: String\n  @aws_subscribe(mutations: [\"publishServer<event-name-0>\"])\n  on<event-name-1>: String\n  @aws_subscribe(mutations: [\"publishServer<event-name-1>\"])\n}\n\ntype Mutation {\n  publishServer<event-name-0>(input: PublishServer<event-name-0>Input!): String\n  publishServer<event-name-1>(input: PublishServer<event-name-1>Input!): String\n}\n\nschema {\n  query: Query\n  mutation: Mutation\n  subscription: Subscription\n}\n"
+            },
+            "Type": "AWS::AppSync::GraphQLSchema"
+          },
+          "GraphQLNoneDataSource": {
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Name": "noneds",
+              "Type": "NONE"
+            },
+            "Type": "AWS::AppSync::DataSource"
+          },
+          "GraphQLResolverPublish<event-name-0>Subscription": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Code": "export function request(ctx) {}\n\nexport function response(ctx) {}\n",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "on<event-name-0>",
+              "Runtime": {
+                "Name": "APPSYNC_JS",
+                "RuntimeVersion": "1.0.0"
+              },
+              "TypeName": "Subscription"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          },
+          "GraphQLResolverPublish<event-name-1>Subscription": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "Code": "export function request(ctx) {}\n\nexport function response(ctx) {}\n",
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "on<event-name-1>",
+              "Runtime": {
+                "Name": "APPSYNC_JS",
+                "RuntimeVersion": "1.0.0"
+              },
+              "TypeName": "Subscription"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          },
+          "GraphQLResolverPublishServer<event-name-0>Mutation": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "publishServer<event-name-0>",
+              "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"payload\": $util.toJson($context.arguments)\n}\n",
+              "ResponseMappingTemplate": "$util.toJson($context.result)\n",
+              "TypeName": "Mutation"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          },
+          "GraphQLResolverPublishServer<event-name-1>Mutation": {
+            "DependsOn": "GraphQLApiSchema",
+            "Properties": {
+              "ApiId": {
+                "Fn::GetAtt": [
+                  "GraphQLApi",
+                  "ApiId"
+                ]
+              },
+              "DataSourceName": {
+                "Fn::GetAtt": [
+                  "GraphQLNoneDataSource",
+                  "Name"
+                ]
+              },
+              "FieldName": "publishServer<event-name-1>",
+              "RequestMappingTemplate": "{\n  \"version\": \"2017-02-28\",\n  \"payload\": $util.toJson($context.arguments)\n}\n",
+              "ResponseMappingTemplate": "$util.toJson($context.result)\n",
+              "TypeName": "Mutation"
+            },
+            "Type": "AWS::AppSync::Resolver"
+          }
+        }
+      },
+      "stack-outputs": [
+        {
+          "OutputKey": "GraphQLApiArn",
+          "OutputValue": "arn:<partition>:appsync:<region>:111111111111:apis/kzqecnrvvjhqvlhc7ab7g5fgvq"
+        }
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_foreach_multiple_resources": {
+    "recorded-date": "03-07-2025, 14:50:59",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyBarParameter",
+            "PhysicalResourceId": "CFN-MyBarParameter-UGxZerFWAtvy",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyBarParameterA",
+            "PhysicalResourceId": "CFN-MyBarParameterA-H8ii3J290vpI",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyBarParameterB",
+            "PhysicalResourceId": "CFN-MyBarParameterB-tec4UnkRx5EU",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyBarParameterC",
+            "PhysicalResourceId": "CFN-MyBarParameterC-Qct61rWqCu9n",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFooParameter",
+            "PhysicalResourceId": "CFN-MyFooParameter-Ncmc7NblH1Zp",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFooParameterA",
+            "PhysicalResourceId": "CFN-MyFooParameterA-7tfOJrOnxkoj",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFooParameterB",
+            "PhysicalResourceId": "CFN-MyFooParameterB-OMiqdOrIQNlX",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyFooParameterC",
+            "PhysicalResourceId": "CFN-MyFooParameterC-vAy5ofwsYt03",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/1b971f30-581d-11f0-9b2f-024852676f1d",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "AWSTemplateFormatVersion": "2010-09-09",
+        "Resources": {
+          "MyBarParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value Bar"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyBarParameterA": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value A"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyBarParameterB": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value B"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyBarParameterC": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value C"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyFooParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value Foo"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyFooParameterA": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value A"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyFooParameterB": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value B"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyFooParameterC": {
+            "Properties": {
+              "Type": "String",
+              "Value": "my value C"
+            },
+            "Type": "AWS::SSM::Parameter"
+          }
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::TestLanguageExtensionsTransform::test_transform_to_json_string": {
+    "recorded-date": "04-07-2025, 21:24:07",
+    "recorded-content": {
+      "resources": {
+        "StackResources": [
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyArrayParameter",
+            "PhysicalResourceId": "CFN-MyArrayParameter-eqEzcW394ZEQ",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/33b24490-591d-11f0-ab22-02a204c1bf21",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          },
+          {
+            "DriftInformation": {
+              "StackResourceDriftStatus": "NOT_CHECKED"
+            },
+            "LogicalResourceId": "MyObjectParameter",
+            "PhysicalResourceId": "CFN-MyObjectParameter-L5EAPcOD2MfJ",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/33b24490-591d-11f0-ab22-02a204c1bf21",
+            "StackName": "<stack-name>",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "transformed": {
+        "Outputs": {
+          "ArrayName": {
+            "Value": {
+              "Ref": "MyArrayParameter"
+            }
+          },
+          "ObjectName": {
+            "Value": {
+              "Ref": "MyObjectParameter"
+            }
+          }
+        },
+        "Resources": {
+          "MyArrayParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": "[\"a\",\"b\",\"c\"]"
+            },
+            "Type": "AWS::SSM::Parameter"
+          },
+          "MyObjectParameter": {
+            "Properties": {
+              "Type": "String",
+              "Value": {
+                "a": "foo",
+                "b": "bar"
+              }
+            },
+            "Type": "AWS::SSM::Parameter"
+          }
+        }
+      },
+      "object-value": {
+        "a": "foo",
+        "b": "bar"
+      },
+      "array-value": "[\"a\",\"b\",\"c\"]"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_transformers.py::test_redeployment_with_fn_include": {
+    "recorded-date": "09-09-2025, 16:00:50",
+    "recorded-content": {
+      "api-details": {
+        "apiKeySource": "HEADER",
+        "createdDate": "datetime",
+        "disableExecuteApiEndpoint": false,
+        "endpointConfiguration": {
+          "ipAddressType": "ipv4",
+          "types": [
+            "EDGE"
+          ]
+        },
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "rootResourceId": "<root-resource-id:1>",
+        "tags": {
+          "aws:cloudformation:logical-id": "RestApi",
+          "aws:cloudformation:stack-id": "<aws:cloudformation:stack-id:1>",
+          "aws:cloudformation:stack-name": "<aws:cloudformation:stack-name:1>"
+        },
+        "version": "1.2.3",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

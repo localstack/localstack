@@ -1,7 +1,6 @@
 import threading
 import time
 from concurrent.futures.thread import ThreadPoolExecutor
-from typing import Tuple
 
 import pytest
 
@@ -13,8 +12,8 @@ class DummyTask:
     def __init__(self, fn=None) -> None:
         super().__init__()
         self.i = 0
-        self.invocations = list()
-        self.completions = list()
+        self.invocations = []
+        self.completions = []
         self.fn = fn
 
     def __call__(self, *args, **kwargs):
@@ -40,7 +39,7 @@ def dispatcher():
 
 class TestScheduler:
     @staticmethod
-    def create_and_start(dispatcher) -> Tuple[Scheduler, threading.Thread]:
+    def create_and_start(dispatcher) -> tuple[Scheduler, threading.Thread]:
         scheduler = Scheduler(executor=dispatcher)
         thread = threading.Thread(target=scheduler.run)
         thread.start()

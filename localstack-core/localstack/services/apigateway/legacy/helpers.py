@@ -3,8 +3,8 @@ import logging
 import re
 import time
 from collections import defaultdict
-from datetime import datetime, timezone
-from typing import Any, Dict, List, Optional, Tuple, TypedDict, Union
+from datetime import UTC, datetime
+from typing import Any, TypedDict
 from urllib import parse as urlparse
 
 from botocore.utils import InvalidArnException
@@ -37,7 +37,7 @@ PATH_REGEX_TEST_INVOKE_API = r"^\/restapis\/([A-Za-z0-9_\-]+)\/resources\/([A-Za
 
 # regex path pattern for user requests, handles stages like $default
 PATH_REGEX_USER_REQUEST = (
-    r"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%%24)\\-]+))?/%s/(.*)$" % PATH_USER_REQUEST
+    rf"^/restapis/([A-Za-z0-9_\\-]+)(?:/([A-Za-z0-9\_($|%24)\\-]+))?/{PATH_USER_REQUEST}/(.*)$"
 )
 # URL pattern for invocations
 HOST_REGEX_EXECUTE_API = r"(?:.*://)?([a-zA-Z0-9]+)(?:(-vpce-[^.]+))?\.execute-api\.(.*)"
@@ -90,7 +90,7 @@ class RequestParametersResolver:
 
         :return: IntegrationParameters
         """
-        method_request_params: Dict[str, Any] = self.method_request_dict(context)
+        method_request_params: dict[str, Any] = self.method_request_dict(context)
 
         # requestParameters: {
         #     "integration.request.path.pathParam": "method.request.header.Content-Type"
@@ -128,13 +128,13 @@ class RequestParametersResolver:
 
         return result
 
-    def method_request_dict(self, context: ApiInvocationContext) -> Dict[str, Any]:
+    def method_request_dict(self, context: ApiInvocationContext) -> dict[str, Any]:
         """
         Build a dict with all method request parameters and their values.
         :return: dict with all method request parameters and their values,
         and all keys in lowercase
         """
-        params: Dict[str, str] = {}
+        params: dict[str, str] = {}
 
         # TODO: add support for multi-values headers and multi-values querystring
 
@@ -183,7 +183,7 @@ class RequestParametersResolver:
 
 
 class ResponseParametersResolver:
-    def resolve(self, context: ApiInvocationContext) -> Dict[str, str]:
+    def resolve(self, context: ApiInvocationContext) -> dict[str, str]:
         """
         Resolve integration response parameters into method response parameters.
         Integration response parameters can map header, body,
@@ -191,7 +191,7 @@ class ResponseParametersResolver:
 
         :return: dict with all method response parameters and their values
         """
-        integration_request_params: Dict[str, Any] = self.integration_request_dict(context)
+        integration_request_params: dict[str, Any] = self.integration_request_dict(context)
 
         # "responseParameters" : {
         #     "method.response.header.Location" : "integration.response.body.redirect.url",
@@ -213,7 +213,7 @@ class ResponseParametersResolver:
                 method_parameters[k] = v.replace("'", "")
 
         # build the integration parameters
-        result: Dict[str, str] = {}
+        result: dict[str, str] = {}
         for k, v in method_parameters.items():
             # headers
             if k.startswith("method.response.header."):
@@ -222,8 +222,8 @@ class ResponseParametersResolver:
 
         return result
 
-    def integration_request_dict(self, context: ApiInvocationContext) -> Dict[str, Any]:
-        params: Dict[str, str] = {}
+    def integration_request_dict(self, context: ApiInvocationContext) -> dict[str, Any]:
+        params: dict[str, str] = {}
 
         for k, v in context.headers.items():
             params[f"integration.request.header.{k}"] = v
@@ -293,7 +293,7 @@ def is_test_invoke_method(method, path):
     return method == "POST" and bool(re.match(PATH_REGEX_TEST_INVOKE_API, path))
 
 
-def get_stage_variables(context: ApiInvocationContext) -> Optional[Dict[str, str]]:
+def get_stage_variables(context: ApiInvocationContext) -> dict[str, str] | None:
     if is_test_invoke_method(context.method, context.path):
         return None
 
@@ -316,7 +316,7 @@ def tokenize_path(path):
     return path.lstrip("/").split("/")
 
 
-def extract_path_params(path: str, extracted_path: str) -> Dict[str, str]:
+def extract_path_params(path: str, extracted_path: str) -> dict[str, str]:
     tokenized_extracted_path = tokenize_path(extracted_path)
     # Looks for '{' in the tokenized extracted path
     path_params_list = [(i, v) for i, v in enumerate(tokenized_extracted_path) if "{" in v]
@@ -335,7 +335,7 @@ def extract_path_params(path: str, extracted_path: str) -> Dict[str, str]:
     return path_params
 
 
-def extract_query_string_params(path: str) -> Tuple[str, Dict[str, str]]:
+def extract_query_string_params(path: str) -> tuple[str, dict[str, str]]:
     parsed_path = urlparse.urlparse(path)
     if not path.startswith("//"):
         path = parsed_path.path
@@ -375,12 +375,12 @@ def get_apigateway_path_for_resource(
     path_part = target_resource.get("pathPart", "")
     if path_suffix:
         if path_part:
-            path_suffix = "%s/%s" % (path_part, path_suffix)
+            path_suffix = f"{path_part}/{path_suffix}"
     else:
         path_suffix = path_part
     parent_id = target_resource.get("parentId")
     if not parent_id:
-        return "/%s" % path_suffix
+        return f"/{path_suffix}"
     return get_apigateway_path_for_resource(
         api_id,
         parent_id,
@@ -411,15 +411,15 @@ def get_rest_api_paths(account_id: str, region_name: str, rest_api_id: str):
 #  -method-request.html
 #  https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-routes.html
 def get_resource_for_path(
-    path: str, method: str, path_map: Dict[str, Dict]
-) -> tuple[Optional[str], Optional[dict]]:
+    path: str, method: str, path_map: dict[str, dict]
+) -> tuple[str | None, dict | None]:
     matches = []
     # creates a regex from the input path if there are parameters, e.g /foo/{bar}/baz -> /foo/[
     # ^\]+/baz, otherwise is a direct match.
     for api_path, details in path_map.items():
         api_path_regex = re.sub(r"{[^+]+\+}", r"[^\?#]+", api_path)
         api_path_regex = re.sub(r"{[^}]+}", r"[^/]+", api_path_regex)
-        if re.match(r"^%s$" % api_path_regex, path):
+        if re.match(rf"^{api_path_regex}$", path):
             matches.append((api_path, details))
 
     # if there are no matches, it's not worth to proceed, bail here!
@@ -508,8 +508,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
             "integrations": [
                 {
                     "type": "AWS",
-                    "uri": "arn:%s:apigateway:%s:sqs:path/%s/%s"
-                    % (partition, sqs_region, sqs_account, queue_name),
+                    "uri": f"arn:{partition}:apigateway:{sqs_region}:sqs:path/{sqs_account}/{queue_name}",
                     "requestTemplates": {"application/json": template},
                     "requestParameters": {
                         "integration.request.header.Content-Type": "'application/x-www-form-urlencoded'"
@@ -528,7 +527,7 @@ def connect_api_gateway_to_sqs(gateway_name, stage_name, queue_arn, path, accoun
 
 def get_target_resource_details(
     invocation_context: ApiInvocationContext,
-) -> Tuple[Optional[str], Optional[dict]]:
+) -> tuple[str | None, dict | None]:
     """Look up and return the API GW resource (path pattern + resource dict) for the given invocation context."""
     path_map = get_rest_api_paths(
         account_id=invocation_context.account_id,
@@ -557,7 +556,7 @@ def get_target_resource_details(
         return None, None
 
 
-def get_target_resource_method(invocation_context: ApiInvocationContext) -> Optional[Dict]:
+def get_target_resource_method(invocation_context: ApiInvocationContext) -> dict | None:
     """Look up and return the API GW resource method for the given invocation context."""
     _, resource = get_target_resource_details(invocation_context)
     if not resource:
@@ -614,7 +613,7 @@ def get_event_request_context(invocation_context: ApiInvocationContext):
         },
         "httpMethod": method,
         "protocol": "HTTP/1.1",
-        "requestTime": datetime.now(timezone.utc).strftime(REQUEST_TIME_DATE_FORMAT),
+        "requestTime": datetime.now(UTC).strftime(REQUEST_TIME_DATE_FORMAT),
         "requestTimeEpoch": int(time.time() * 1000),
         "authorizer": {},
     }
@@ -660,11 +659,11 @@ def set_api_id_stage_invocation_path(
     if path_match:
         api_id = path_match.group(1)
         stage = path_match.group(2)
-        relative_path_w_query_params = "/%s" % path_match.group(3)
+        relative_path_w_query_params = f"/{path_match.group(3)}"
     elif host_match:
         api_id = extract_api_id_from_hostname_in_url(host_header)
         stage = path.strip("/").split("/")[0]
-        relative_path_w_query_params = "/%s" % path.lstrip("/").partition("/")[2]
+        relative_path_w_query_params = "/{}".format(path.lstrip("/").partition("/")[2])
     elif test_invoke_match:
         stage = invocation_context.stage
         api_id = invocation_context.api_id
@@ -681,7 +680,7 @@ def set_api_id_stage_invocation_path(
     return invocation_context
 
 
-def get_api_account_id_and_region(api_id: str) -> Tuple[Optional[str], Optional[str]]:
+def get_api_account_id_and_region(api_id: str) -> tuple[str | None, str | None]:
     """Return the region name for the given REST API ID"""
     for account_id, account in apigateway_backends.items():
         for region_name, region in account.items():
@@ -698,7 +697,7 @@ def extract_api_id_from_hostname_in_url(hostname: str) -> str:
     return match.group(1)
 
 
-def multi_value_dict_for_list(elements: Union[List, Dict]) -> Dict:
+def multi_value_dict_for_list(elements: list | dict) -> dict:
     temp_mv_dict = defaultdict(list)
     for key in elements:
         if isinstance(key, (list, tuple)):

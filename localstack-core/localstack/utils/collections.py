@@ -5,18 +5,11 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-from collections.abc import Mapping
+from collections.abc import Iterable, Iterator, Mapping, Sized
 from typing import (
     Any,
     Callable,
-    Dict,
-    Iterable,
-    Iterator,
-    List,
     Optional,
-    Sized,
-    Tuple,
-    Type,
     TypedDict,
     TypeVar,
     Union,
@@ -40,7 +33,7 @@ class AccessTrackingDict(dict):
           simply duplicates the entries of "wrapped" in the constructor, for simplicity.
     """
 
-    def __init__(self, wrapped, callback: Callable[[Dict, str, List, Dict], Any] = None):
+    def __init__(self, wrapped, callback: Callable[[dict, str, list, dict], Any] = None):
         super().__init__(wrapped)
         self.callback = callback
 
@@ -112,7 +105,7 @@ class HashableJsonDict(ImmutableDict):
 _ListType = TypeVar("_ListType")
 
 
-class PaginatedList(List[_ListType]):
+class PaginatedList(list[_ListType]):
     """List which can be paginated and filtered. For usage in AWS APIs with paginated responses"""
 
     DEFAULT_PAGE_SIZE = 50
@@ -123,7 +116,7 @@ class PaginatedList(List[_ListType]):
         next_token: str = None,
         page_size: int = None,
         filter_function: Callable[[_ListType], bool] = None,
-    ) -> Tuple[List[_ListType], Optional[str]]:
+    ) -> tuple[list[_ListType], Optional[str]]:
         if filter_function is not None:
             result_list = list(filter(filter_function, self))
         else:
@@ -280,13 +273,13 @@ def pick_attributes(dictionary, paths):
     return new_dictionary
 
 
-def select_attributes(obj: Dict, attributes: List[str]) -> Dict:
+def select_attributes(obj: dict, attributes: list[str]) -> dict:
     """Select a subset of attributes from the given dict (returns a copy)"""
     attributes = attributes if is_list_or_tuple(attributes) else [attributes]
     return {k: v for k, v in obj.items() if k in attributes}
 
 
-def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False) -> Dict:
+def remove_attributes(obj: dict, attributes: list[str], recursive: bool = False) -> dict:
     """Remove a set of attributes from the given dict (in-place)"""
     from localstack.utils.objects import recurse_object
 
@@ -306,8 +299,8 @@ def remove_attributes(obj: Dict, attributes: List[str], recursive: bool = False)
 
 
 def rename_attributes(
-    obj: Dict, old_to_new_attributes: Dict[str, str], in_place: bool = False
-) -> Dict:
+    obj: dict, old_to_new_attributes: dict[str, str], in_place: bool = False
+) -> dict:
     """Rename a set of attributes in the given dict object. Second parameter is a dict that maps old to
     new attribute names. Default is to return a copy, but can also pass in_place=True."""
     if not in_place:
@@ -322,7 +315,7 @@ def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def ensure_list(obj: Any, wrap_none=False) -> Optional[List]:
+def ensure_list(obj: Any, wrap_none=False) -> Optional[list]:
     """Wrap the given object in a list, or return the object itself if it already is a list."""
     if obj is None and not wrap_none:
         return obj
@@ -385,7 +378,7 @@ def merge_dicts(*dicts, **kwargs):
     return result
 
 
-def remove_none_values_from_dict(dict: Dict) -> Dict:
+def remove_none_values_from_dict(dict: dict) -> dict:
     return {k: v for (k, v) in dict.items() if v is not None}
 
 
@@ -399,7 +392,7 @@ def last_index_of(array, value):
     return result
 
 
-def is_sub_dict(child_dict: Dict, parent_dict: Dict) -> bool:
+def is_sub_dict(child_dict: dict, parent_dict: dict) -> bool:
     """Returns whether the first dict is a sub-dict (subset) of the second dict."""
     return all(parent_dict.get(key) == val for key, val in child_dict.items())
 
@@ -429,7 +422,7 @@ def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
     )
 
 
-def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict, filter: bool = False) -> Dict:
+def select_from_typed_dict(typed_dict: type[TypedDict], obj: dict, filter: bool = False) -> dict:
     """
     Select a subset of attributes from a dictionary based on the keys of a given `TypedDict`.
     :param typed_dict: the `TypedDict` blueprint
@@ -445,10 +438,10 @@ def select_from_typed_dict(typed_dict: Type[TypedDict], obj: Dict, filter: bool 
     return selection
 
 
-T = TypeVar("T", bound=Dict)
+T = TypeVar("T", bound=dict)
 
 
-def convert_to_typed_dict(typed_dict: Type[T], obj: Dict, strict: bool = False) -> T:
+def convert_to_typed_dict(typed_dict: type[T], obj: dict, strict: bool = False) -> T:
     """
     Converts the given object to the given typed dict (by calling the type constructors).
     Limitations:
@@ -482,7 +475,7 @@ def convert_to_typed_dict(typed_dict: Type[T], obj: Dict, strict: bool = False) 
     return result
 
 
-def dict_multi_values(elements: Union[List, Dict]) -> Dict[str, List[Any]]:
+def dict_multi_values(elements: Union[list, dict]) -> dict[str, list[Any]]:
     """
     Return a dictionary with the original keys from the list of dictionary and the
     values are the list of values of the original dictionary.
@@ -511,7 +504,7 @@ ItemType = TypeVar("ItemType")
 
 def split_list_by(
     lst: Iterable[ItemType], predicate: Callable[[ItemType], bool]
-) -> Tuple[List[ItemType], List[ItemType]]:
+) -> tuple[list[ItemType], list[ItemType]]:
     truthy, falsy = [], []
 
     for item in lst:
@@ -534,3 +527,17 @@ def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bo
     if pattern.match(string) is None:
         return False
     return True
+
+
+_E = TypeVar("_E")
+
+
+def optional_list(condition: bool, items: Iterable[_E]) -> list[_E]:
+    """
+    Given an iterable, either create a list out of the entire iterable (if `condition` is `True`), or return the empty list.
+    >>> print(optional_list(True, [1, 2, 3]))
+    [1, 2, 3]
+    >>> print(optional_list(False, [1, 2, 3]))
+    []
+    """
+    return list(filter(lambda _: condition, items))

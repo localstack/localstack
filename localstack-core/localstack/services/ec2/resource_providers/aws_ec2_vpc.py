@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -17,23 +17,23 @@ LOG = logging.getLogger(__name__)
 
 
 class EC2VPCProperties(TypedDict):
-    CidrBlock: Optional[str]
-    CidrBlockAssociations: Optional[list[str]]
-    DefaultNetworkAcl: Optional[str]
-    DefaultSecurityGroup: Optional[str]
-    EnableDnsHostnames: Optional[bool]
-    EnableDnsSupport: Optional[bool]
-    InstanceTenancy: Optional[str]
-    Ipv4IpamPoolId: Optional[str]
-    Ipv4NetmaskLength: Optional[int]
-    Ipv6CidrBlocks: Optional[list[str]]
-    Tags: Optional[list[Tag]]
-    VpcId: Optional[str]
+    CidrBlock: str | None
+    CidrBlockAssociations: list[str] | None
+    DefaultNetworkAcl: str | None
+    DefaultSecurityGroup: str | None
+    EnableDnsHostnames: bool | None
+    EnableDnsSupport: bool | None
+    InstanceTenancy: str | None
+    Ipv4IpamPoolId: str | None
+    Ipv4NetmaskLength: int | None
+    Ipv6CidrBlocks: list[str] | None
+    Tags: list[Tag] | None
+    VpcId: str | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -3,7 +3,6 @@ import json
 import logging
 import time
 from abc import ABC
-from typing import Dict, Optional
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.ssm import (
@@ -339,7 +338,7 @@ class SsmProvider(SsmApi, ABC):
     # utility methods below
 
     @staticmethod
-    def _denormalize_param_name_in_response(param_result: Dict, param_name: str):
+    def _denormalize_param_name_in_response(param_result: dict, param_name: str):
         result_name = param_result["Name"]
         if result_name != param_name and result_name.lstrip("/") == param_name.lstrip("/"):
             param_result["Name"] = param_name
@@ -367,13 +366,13 @@ class SsmProvider(SsmApi, ABC):
         param_name = param_name.strip("/")
         param_name = param_name.replace("//", "/")
         if "/" in param_name:
-            param_name = "/%s" % param_name
+            param_name = f"/{param_name}"
         return param_name
 
     @staticmethod
     def _get_secrets_information(
         account_id: str, region_name: str, name: ParameterName, resource_name: str
-    ) -> Optional[GetParameterResult]:
+    ) -> GetParameterResult | None:
         client = connect_to(aws_access_key_id=account_id, region_name=region_name).secretsmanager
         try:
             secret_info = client.get_secret_value(SecretId=resource_name)

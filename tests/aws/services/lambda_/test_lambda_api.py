@@ -15,10 +15,10 @@ import json
 import logging
 import re
 import threading
+from collections.abc import Callable
 from hashlib import sha256
 from io import BytesIO
 from random import randint
-from typing import Callable
 
 import pytest
 import requests
@@ -32,6 +32,7 @@ from localstack.aws.api.lambda_ import (
     LogFormat,
     Runtime,
 )
+from localstack.config import HostAndPort
 from localstack.services.lambda_.api_utils import ARCHITECTURES
 from localstack.services.lambda_.provider import TAG_KEY_CUSTOM_URL
 from localstack.services.lambda_.provider_utils import LambdaLayerVersionIdentifier
@@ -111,6 +112,7 @@ class TestRuntimeValidation:
     @markers.aws.validated
     @markers.lambda_runtime_update
     @pytest.mark.parametrize("runtime", DEPRECATED_RUNTIMES)
+    @markers.requires_in_process
     def test_create_deprecated_function_runtime_with_validation_enabled(
         self, runtime, lambda_su_role, aws_client, monkeypatch, snapshot
     ):
@@ -556,6 +558,7 @@ class TestLambdaFunction:
         snapshot.match("wrong_region_exception", e.value.response)
 
     @markers.aws.validated
+    @markers.requires_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
     def test_lambda_code_location_zipfile(
         self, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
@@ -601,6 +604,7 @@ class TestLambdaFunction:
         )
 
     @markers.aws.validated
+    @markers.requires_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
     def test_lambda_code_location_s3(
         self, s3_bucket, snapshot, create_lambda_function_aws, lambda_su_role, aws_client
     ):
@@ -652,6 +656,66 @@ class TestLambdaFunction:
             len(zip_file_bytes_updated)
             == get_function_response_updated["Configuration"]["CodeSize"]
         )
+
+    @markers.aws.validated
+    def test_lambda_code_location_s3_errors(
+        self, s3_bucket, snapshot, lambda_su_role, aws_client, create_lambda_function_aws
+    ):
+        function_name = f"code-function-{short_uid()}"
+        bucket_key = "code/code-function.zip"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        aws_client.s3.upload_fileobj(
+            Fileobj=io.BytesIO(zip_file_bytes), Bucket=s3_bucket, Key=bucket_key
+        )
+
+        # try to create the function with invalid bucket path
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={
+                    "S3Bucket": f"some-random-non-existent-bucket-{short_uid()}",
+                    "S3Key": bucket_key,
+                },
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("create-error-wrong-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Handler="index.handler",
+                Code={"S3Bucket": s3_bucket, "S3Key": "non/existent.zip"},
+                PackageType="Zip",
+                Role=lambda_su_role,
+                Runtime=Runtime.python3_12,
+            )
+        snapshot.match("create-error-wrong-key", e.value.response)
+
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={"S3Bucket": s3_bucket, "S3Key": bucket_key},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+        )
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.update_function_code(
+                FunctionName=function_name,
+                S3Bucket=f"some-random-non-existent-bucket-{short_uid()}",
+                S3Key=bucket_key,
+            )
+        snapshot.match("update-error-wrong-bucket", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.lambda_.update_function_code(
+                FunctionName=function_name, S3Bucket=s3_bucket, S3Key="non/existent.zip"
+            )
+        snapshot.match("update-error-wrong-key", e.value.response)
 
     # TODO: fix type of AccessDeniedException yielding null
     @markers.snapshot.skip_snapshot_verify(
@@ -1386,6 +1450,7 @@ class TestLambdaFunction:
         reason="Test will fail against other executors as they are not patched to take longer for the update",
     )
     @markers.aws.validated
+    @markers.requires_in_process
     def test_lambda_concurrent_code_updates(
         self, aws_client, create_lambda_function_aws, lambda_su_role, snapshot, monkeypatch
     ):
@@ -1438,6 +1503,7 @@ class TestLambdaFunction:
         reason="Test will fail against other executors as they are not patched to take longer for the update",
     )
     @markers.aws.validated
+    @markers.requires_docker
     def test_lambda_concurrent_config_updates(
         self, aws_client, create_lambda_function, lambda_su_role, snapshot, monkeypatch
     ):
@@ -1631,6 +1697,7 @@ class TestLambdaImages:
                 LOG.debug("Error cleaning up repository %s: %s", repository_name, e)
 
     @markers.aws.validated
+    @markers.requires_docker  # Requires docker for image hash
     def test_lambda_image_crud(
         self, create_lambda_function_aws, lambda_su_role, ecr_image, snapshot, aws_client
     ):
@@ -2033,6 +2100,7 @@ class TestLambdaVersions:
         snapshot.match("publish_result", publish_result)
 
     @markers.aws.validated
+    @markers.requires_docker  # Kubernetes executor is ready too fast, no in progress snapshot possible
     def test_publish_with_update(
         self, create_lambda_function_aws, lambda_su_role, snapshot, aws_client
     ):
@@ -4848,7 +4916,7 @@ class TestLambdaUrl:
 class TestLambdaSizeLimits:
     def _generate_sized_python_str(self, filepath: str, size: int) -> str:
         """Generate a text of the specified size by appending #s at the end of the file"""
-        with open(filepath, "r") as f:
+        with open(filepath) as f:
             py_str = f.read()
         py_str += "#" * (size - len(py_str))
         return py_str
@@ -6887,3 +6955,36 @@ class TestLambdaSnapStart:
                 SnapStart={"ApplyOn": "invalidOption"},
             )
         snapshot.match("create_function_invalid_snapstart_apply", e.value.response)
+
+
+class TestLambdaEndpoints:
+    @markers.aws.only_localstack
+    @markers.requires_in_process
+    @pytest.mark.parametrize(
+        "localstack_host",
+        [
+            HostAndPort("localhost.localstack.cloud", 4566),
+            HostAndPort("127.0.0.1", 4566),
+            HostAndPort("localhost", 4566),
+        ],
+    )
+    def test_s3_code_url(
+        self, aws_client, create_lambda_function_aws, lambda_su_role, monkeypatch, localstack_host
+    ):
+        monkeypatch.setattr(config, "LOCALSTACK_HOST", localstack_host)
+        function_name = f"function-{short_uid()}"
+        zip_file_bytes = create_lambda_archive(load_file(TEST_LAMBDA_PYTHON_ECHO), get_content=True)
+        create_lambda_function_aws(
+            FunctionName=function_name,
+            Handler="index.handler",
+            Code={"ZipFile": zip_file_bytes},
+            PackageType="Zip",
+            Role=lambda_su_role,
+            Runtime=Runtime.python3_12,
+        )
+        get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
+        s3_code_url = get_function_response["Code"]["Location"]
+        assert s3_code_url.startswith(f"http://{localstack_host}/")
+
+        content = requests.get(s3_code_url).content
+        assert content == zip_file_bytes

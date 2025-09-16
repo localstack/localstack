@@ -9,9 +9,9 @@ PYTEST_LOGLEVEL ?= warning
 
 uname_m := $(shell uname -m)
 ifeq ($(uname_m),x86_64)
-platform = amd64
+PLATFORM ?= amd64
 else
-platform = arm64
+PLATFORM ?= arm64
 endif
 
 ifeq ($(OS), Windows_NT)
@@ -36,7 +36,8 @@ freeze:                   ## Run pip freeze -l in the virtual environment
 	@$(VENV_RUN); pip freeze -l
 
 upgrade-pinned-dependencies: venv
-	$(VENV_RUN); $(PIP_CMD) install --upgrade pip-tools pre-commit
+	# FIXME remove pin on pip-tools when https://github.com/jazzband/pip-tools/issues/2215 us resolved
+	$(VENV_RUN); $(PIP_CMD) install --upgrade "pip-tools<7.5.0" pre-commit
 	$(VENV_RUN); pip-compile --strip-extras --upgrade -o requirements-basic.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra runtime -o requirements-runtime.txt pyproject.toml
 	$(VENV_RUN); pip-compile --strip-extras --upgrade --extra test -o requirements-test.txt pyproject.toml
@@ -125,22 +126,24 @@ lint:              		  ## Run code linter to check code style, check if formatte
 
 lint-modified:     		  ## Run code linter to check code style, check if formatter would make changes on modified files, and check if dependency pins need to be updated because of modified files
 	($(VENV_RUN); python -m ruff check --output-format=full `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs` && python -m ruff format --check `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
-	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files $(git diff master --name-only) # run pre-commit hook manually here to ensure that this check runs in CI as well
+	$(VENV_RUN); pre-commit run check-pinned-deps-for-needed-upgrade --files $(git diff main --name-only) # run pre-commit hook manually here to ensure that this check runs in CI as well
 
 check-aws-markers:     		  ## Lightweight check to ensure all AWS tests have proper compatibility markers set
 	($(VENV_RUN); python -m pytest --co tests/aws/)
 
 format:            		  ## Run ruff to format the whole codebase
-	($(VENV_RUN); python -m ruff format .; python -m ruff check --output-format=full --fix .)
+	($(VENV_RUN); python -m ruff check --output-format=full --fix .; python -m ruff format .)
 
 format-modified:          ## Run ruff to format only modified code
-	($(VENV_RUN); python -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
+	($(VENV_RUN); \
+	  python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; \
+	  python -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
 
 docker-build:
-	IMAGE_NAME=$(IMAGE_NAME) PLATFORM=$(platform) ./bin/docker-helper.sh build
+	IMAGE_NAME=$(IMAGE_NAME) PLATFORM=$(PLATFORM) ./bin/docker-helper.sh build
 
 clean:             		  ## Clean up (npm dependencies, downloaded infrastructure code, compiled Java classes)
 	rm -rf .filesystem

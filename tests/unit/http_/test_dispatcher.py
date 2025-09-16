@@ -1,4 +1,4 @@
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 from werkzeug.exceptions import NotFound
@@ -14,7 +14,7 @@ class TestHandlerDispatcher:
         def handler_foo(_request: Request) -> Response:
             return Response("ok")
 
-        def handler_bar(_request: Request, bar, baz) -> Dict[str, any]:
+        def handler_bar(_request: Request, bar, baz) -> dict[str, any]:
             response = Response()
             response.set_json({"bar": bar, "baz": baz})
             return response
@@ -42,7 +42,7 @@ class TestHandlerDispatcher:
     def test_handler_dispatcher_with_dict_return(self):
         router = Router(dispatcher=handler_dispatcher())
 
-        def handler(_request: Request, arg1) -> Dict[str, Any]:
+        def handler(_request: Request, arg1) -> dict[str, Any]:
             return {"arg1": arg1, "hello": "there"}
 
         router.add("/foo/<arg1>", handler)

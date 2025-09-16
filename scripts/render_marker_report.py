@@ -53,7 +53,7 @@ class EnrichedReport:
 
 
 def load_file(filepath: str) -> str:
-    with open(filepath, "r") as fd:
+    with open(filepath) as fd:
         return fd.read()
 
 
@@ -133,7 +133,7 @@ def main():
     rendered_markdown = render_template(
         template=load_file(template_path), enriched_report=enriched_report
     )
-    with open(output_path, "wt") as outfile:
+    with open(output_path, "w") as outfile:
         outfile.write(rendered_markdown)
 
 

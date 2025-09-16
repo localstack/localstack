@@ -1,8 +1,8 @@
 # A simple module to track deprecations over time / versions, and some simple functions guiding the affected users.
 import logging
 import os
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Callable, List, Optional
 
 from localstack.utils.analytics import log
 
@@ -329,8 +329,8 @@ DEPRECATIONS = [
 
 
 def collect_affected_deprecations(
-    deprecations: Optional[List[EnvVarDeprecation]] = None,
-) -> List[EnvVarDeprecation]:
+    deprecations: list[EnvVarDeprecation] | None = None,
+) -> list[EnvVarDeprecation]:
     """
     Collects all deprecations which are used in the OS environ.
     :param deprecations: List of deprecations to check. Uses DEPRECATIONS list by default.
@@ -341,7 +341,7 @@ def collect_affected_deprecations(
     return [deprecation for deprecation in deprecations if deprecation.is_affected]
 
 
-def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
+def log_env_warning(deprecations: list[EnvVarDeprecation]) -> None:
     """
     Logs warnings for the given deprecations.
     :param deprecations: list of affected deprecations to show a warning for
@@ -368,7 +368,7 @@ def log_env_warning(deprecations: List[EnvVarDeprecation]) -> None:
         log.event(event="deprecated_env_usage", payload={"deprecated_env_vars": env_vars})
 
 
-def log_deprecation_warnings(deprecations: Optional[List[EnvVarDeprecation]] = None) -> None:
+def log_deprecation_warnings(deprecations: list[EnvVarDeprecation] | None = None) -> None:
     affected_deprecations = collect_affected_deprecations(deprecations)
     log_env_warning(affected_deprecations)
 

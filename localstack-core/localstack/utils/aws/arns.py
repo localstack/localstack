@@ -120,7 +120,7 @@ def iam_role_arn(role_name: str, account_id: str, region_name: str) -> str:
         return role_name
     if re.match(f"{ARN_PARTITION_REGEX}:iam::", role_name):
         return role_name
-    return "arn:%s:iam::%s:role/%s" % (get_partition(region_name), account_id, role_name)
+    return f"arn:{get_partition(region_name)}:iam::{account_id}:role/{role_name}"
 
 
 def iam_resource_arn(resource: str, account_id: str, role: str = None) -> str:
@@ -155,14 +155,14 @@ def secretsmanager_secret_arn(
 def cloudformation_stack_arn(
     stack_name: str, stack_id: str, account_id: str, region_name: str
 ) -> str:
-    pattern = "arn:%s:cloudformation:%s:%s:stack/%s/{stack_id}".format(stack_id=stack_id)
+    pattern = f"arn:%s:cloudformation:%s:%s:stack/%s/{stack_id}"
     return _resource_arn(stack_name, pattern, account_id=account_id, region_name=region_name)
 
 
 def cloudformation_change_set_arn(
     change_set_name: str, change_set_id: str, account_id: str, region_name: str
 ) -> str:
-    pattern = "arn:%s:cloudformation:%s:%s:changeSet/%s/{cs_id}".format(cs_id=change_set_id)
+    pattern = f"arn:%s:cloudformation:%s:%s:changeSet/%s/{change_set_id}"
     return _resource_arn(change_set_name, pattern, account_id=account_id, region_name=region_name)
 
 
@@ -180,13 +180,7 @@ def dynamodb_table_arn(table_name: str, account_id: str, region_name: str) -> st
 def dynamodb_stream_arn(
     table_name: str, latest_stream_label: str, account_id: str, region_name: str
 ) -> str:
-    return "arn:%s:dynamodb:%s:%s:table/%s/stream/%s" % (
-        get_partition(region_name),
-        region_name,
-        account_id,
-        table_name,
-        latest_stream_label,
-    )
+    return f"arn:{get_partition(region_name)}:dynamodb:{region_name}:{account_id}:table/{table_name}/stream/{latest_stream_label}"
 
 
 #
@@ -453,7 +447,7 @@ def s3_bucket_arn(bucket_name_or_arn: str, region="us-east-1") -> str:
 
 def sqs_queue_arn(queue_name: str, account_id: str, region_name: str) -> str:
     queue_name = queue_name.split("/")[-1]
-    return "arn:%s:sqs:%s:%s:%s" % (get_partition(region_name), region_name, account_id, queue_name)
+    return f"arn:{get_partition(region_name)}:sqs:{region_name}:{account_id}:{queue_name}"
 
 
 #
@@ -462,20 +456,13 @@ def sqs_queue_arn(queue_name: str, account_id: str, region_name: str) -> str:
 
 
 def apigateway_restapi_arn(api_id: str, account_id: str, region_name: str) -> str:
-    return "arn:%s:apigateway:%s:%s:/restapis/%s" % (
-        get_partition(region_name),
-        region_name,
-        account_id,
-        api_id,
+    return (
+        f"arn:{get_partition(region_name)}:apigateway:{region_name}:{account_id}:/restapis/{api_id}"
     )
 
 
 def apigateway_invocations_arn(lambda_uri: str, region_name: str) -> str:
-    return "arn:%s:apigateway:%s:lambda:path/2015-03-31/functions/%s/invocations" % (
-        get_partition(region_name),
-        region_name,
-        lambda_uri,
-    )
+    return f"arn:{get_partition(region_name)}:apigateway:{region_name}:lambda:path/2015-03-31/functions/{lambda_uri}/invocations"
 
 
 #
@@ -555,7 +542,7 @@ def lambda_function_name(name_or_arn: str) -> str:
     if ":" in name_or_arn:
         arn = parse_arn(name_or_arn)
         if arn["service"] != "lambda":
-            raise ValueError("arn is not a lambda arn %s" % name_or_arn)
+            raise ValueError(f"arn is not a lambda arn {name_or_arn}")
 
         return parse_arn(name_or_arn)["resource"].split(":")[1]
     else:

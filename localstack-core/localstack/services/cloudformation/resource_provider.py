@@ -5,11 +5,12 @@ import logging
 import re
 import time
 import uuid
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from logging import Logger
 from math import ceil
-from typing import TYPE_CHECKING, Any, Callable, Generic, Optional, Type, TypedDict, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypedDict, TypeVar
 
 import botocore
 from botocore.client import BaseClient
@@ -19,13 +20,11 @@ from plux import Plugin, PluginManager
 
 from localstack import config
 from localstack.aws.connect import InternalClientFactory, ServiceLevelClientFactory
-from localstack.services.cloudformation import analytics
 from localstack.services.cloudformation.deployment_utils import (
     check_not_found_exception,
     convert_data_types,
     fix_account_id_in_arns,
     fix_boto_parameters_based_on_report,
-    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.quirks import PHYSICAL_RESOURCE_ID_SPECIAL_CASES
@@ -53,7 +52,7 @@ LOG = logging.getLogger(__name__)
 
 Properties = TypeVar("Properties")
 
-PUBLIC_REGISTRY: dict[str, Type[ResourceProvider]] = {}
+PUBLIC_REGISTRY: dict[str, type[ResourceProvider]] = {}
 
 PROVIDER_DEFAULTS = {}  # TODO: remove this after removing patching in -ext
 
@@ -68,12 +67,12 @@ class OperationStatus(Enum):
 @dataclass
 class ProgressEvent(Generic[Properties]):
     status: OperationStatus
-    resource_model: Optional[Properties] = None
-    resource_models: Optional[list[Properties]] = None
+    resource_model: Properties | None = None
+    resource_models: list[Properties] | None = None
 
     message: str = ""
-    result: Optional[str] = None
-    error_code: Optional[str] = None  # TODO: enum
+    result: str | None = None
+    error_code: str | None = None  # TODO: enum
     custom_context: dict = field(default_factory=dict)
 
 
@@ -86,7 +85,7 @@ class Credentials(TypedDict):
 class ResourceProviderPayloadRequestData(TypedDict):
     logicalResourceId: str
     resourceProperties: Properties
-    previousResourceProperties: Optional[Properties]
+    previousResourceProperties: Properties | None
     callerCredentials: Credentials
     providerCredentials: Credentials
     systemTags: dict[str, str]
@@ -186,8 +185,8 @@ class ResourceRequest(Generic[Properties]):
 
     custom_context: dict = field(default_factory=dict)
 
-    previous_state: Optional[Properties] = None
-    previous_tags: Optional[dict[str, str]] = None
+    previous_state: Properties | None = None
+    previous_tags: dict[str, str] | None = None
     tags: dict[str, str] = field(default_factory=dict)
 
 
@@ -237,7 +236,7 @@ def get_resource_type(resource: dict) -> str:
         LOG.warning(
             "Failed to retrieve resource type %s",
             resource.get("Type"),
-            exc_info=LOG.isEnabledFor(logging.DEBUG),
+            exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
         )
 
 
@@ -467,15 +466,18 @@ class ResourceProviderExecutor:
                             "A ResourceProvider should always have a SCHEMA property defined."
                         )
                     resource_type_schema = resource_provider.SCHEMA
-                    physical_resource_id = self.extract_physical_resource_id_from_model_with_schema(
-                        event.resource_model,
-                        raw_payload["resourceType"],
-                        resource_type_schema,
-                    )
+                    if raw_payload["action"] != "Remove":
+                        physical_resource_id = (
+                            self.extract_physical_resource_id_from_model_with_schema(
+                                event.resource_model,
+                                raw_payload["resourceType"],
+                                resource_type_schema,
+                            )
+                        )
 
-                    resource["PhysicalResourceId"] = physical_resource_id
-                    resource["Properties"] = event.resource_model
-                    resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
+                        resource["PhysicalResourceId"] = physical_resource_id
+                        resource["Properties"] = event.resource_model
+                        resource["_last_deployed_state"] = copy.deepcopy(event.resource_model)
                     return event
                 case OperationStatus.IN_PROGRESS:
                     # update the shared state
@@ -516,10 +518,14 @@ class ResourceProviderExecutor:
                 try:
                     return resource_provider.update(request)
                 except NotImplementedError:
+                    feature_request_url = "https://github.com/localstack/localstack/issues/new?template=feature-request.yml"
                     LOG.warning(
-                        'Unable to update resource type "%s", id "%s"',
+                        'Unable to update resource type "%s", id "%s", '
+                        "the update operation is not implemented for this resource. "
+                        "Please consider submitting a feature request at this URL: %s",
                         request.resource_type,
                         request.logical_resource_id,
+                        feature_request_url,
                     )
                     if request.previous_state is None:
                         # this is an issue with our update detection. We should never be in this state.
@@ -561,6 +567,8 @@ class ResourceProviderExecutor:
     @staticmethod
     def try_load_resource_provider(resource_type: str) -> ResourceProvider | None:
         # TODO: unify namespace of plugins
+        if resource_type and resource_type.startswith("Custom"):
+            resource_type = "AWS::CloudFormation::CustomResource"
 
         # 1. try to load pro resource provider
         # prioritise pro resource providers
@@ -575,13 +583,12 @@ class ResourceProviderExecutor:
                 LOG.warning(
                     "Failed to load PRO resource type %s as a ResourceProvider.",
                     resource_type,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
 
         # 2. try to load community resource provider
         try:
             plugin = plugin_manager.load(resource_type)
-            analytics.resources.labels(resource_type=resource_type, missing=False).increment()
             return plugin.factory()
         except ValueError:
             # could not find a plugin for that name
@@ -591,22 +598,11 @@ class ResourceProviderExecutor:
                 LOG.warning(
                     "Failed to load community resource type %s as a ResourceProvider.",
                     resource_type,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
 
-        # 3. we could not find the resource provider so log the missing resource provider
-        log_not_available_message(
-            resource_type,
-            f'No resource provider found for "{resource_type}"',
-        )
-
-        analytics.resources.labels(resource_type=resource_type, missing=True).increment()
-
-        if config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
-            # TODO: figure out a better way to handle non-implemented here?
-            return None
-        else:
-            raise NoResourceProvider
+        # we could not find the resource provider
+        return None
 
     def extract_physical_resource_id_from_model_with_schema(
         self, resource_model: Properties, resource_type: str, resource_type_schema: dict

@@ -1,5 +1,3 @@
-from typing import Optional
-
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.stepfunctions.asl.component.common.error_name.custom_error_name import (
     CustomErrorName,
@@ -22,11 +20,11 @@ class StateFail(CommonStateField):
             state_entered_event_type=HistoryEventType.FailStateEntered,
             state_exited_event_type=None,
         )
-        self.cause: Optional[CauseDecl] = None
-        self.error: Optional[ErrorDecl] = None
+        self.cause: CauseDecl | None = None
+        self.error: ErrorDecl | None = None
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateFail, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.cause = state_props.get(CauseDecl)
         self.error = state_props.get(ErrorDecl)
 

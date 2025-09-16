@@ -5,12 +5,13 @@ import os
 import re
 import textwrap
 import threading
+from collections.abc import Iterable
 from datetime import datetime
 from functools import cache
 from ipaddress import IPv4Address, IPv4Interface
 from pathlib import Path
 from socket import AddressFamily
-from typing import Iterable, Literal, Tuple
+from typing import Literal
 
 import psutil
 from cachetools import TTLCache, cached
@@ -90,7 +91,7 @@ THREAD_LOCAL = threading.local()
 
 # Type of the value given by DNSHandler.client_address
 # in the form (ip, port) e.g. ("127.0.0.1", 58291)
-ClientAddress = Tuple[str, int]
+ClientAddress = tuple[str, int]
 
 psutil_cache = TTLCache(maxsize=100, ttl=10)
 
@@ -253,7 +254,7 @@ class NonLoggingHandler(DNSHandler):
             THREAD_LOCAL.client_address = self.client_address
             THREAD_LOCAL.server = self.server
             THREAD_LOCAL.request = self.request
-            return super(NonLoggingHandler, self).handle(*args, **kwargs)
+            return super().handle(*args, **kwargs)
         except Exception:
             pass
 

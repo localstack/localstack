@@ -1,6 +1,6 @@
 import logging
 import re
-from typing import Optional, Protocol, Tuple
+from typing import Protocol
 
 from werkzeug.datastructures import Headers
 
@@ -58,7 +58,7 @@ class S3CorsHandler(Handler):
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         self.handle_cors(chain, context, response)
 
-    def pre_parse_s3_request(self, request: Request) -> Tuple[bool, Optional[str]]:
+    def pre_parse_s3_request(self, request: Request) -> tuple[bool, str | None]:
         """
         Parse the request to try to determine if it's directed towards S3. It tries to match on host, then check
         if the targeted bucket exists. If we could not determine it was a s3 request from the host, but the first
@@ -97,12 +97,6 @@ class S3CorsHandler(Handler):
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/cors.html
         https://docs.aws.amazon.com/AmazonS3/latest/userguide/ManageCorsUsing.html
         """
-
-        # this is used with the new ASF S3 provider
-        # although, we could use it to pre-parse the request and set the context to move the service name parser
-        if config.DISABLE_CUSTOM_CORS_S3:
-            return
-
         request = context.request
         is_s3, bucket_name = self.pre_parse_s3_request(context.request)
 
@@ -111,7 +105,13 @@ class S3CorsHandler(Handler):
             return
 
         # set the service so that the regular CORS enforcer knows it needs to ignore this request
+        # we always want to set the service early, because the `ContentDecoder` is very early in the chain and
+        # depends on S3
         context.service = self._service
+
+        if config.DISABLE_CUSTOM_CORS_S3:
+            # we do not apply S3 specific headers if this config flag is set
+            return
 
         is_options_request = request.method == "OPTIONS"
 
@@ -205,7 +205,12 @@ class S3CorsHandler(Handler):
 
         if requested_headers := request.headers.get("Access-Control-Request-Headers"):
             # if the rule matched, it means all Requested Headers are allowed
-            response.headers["Access-Control-Allow-Headers"] = requested_headers.lower()
+            requested_headers_formatted = [
+                header.strip().lower() for header in requested_headers.split(",")
+            ]
+            response.headers["Access-Control-Allow-Headers"] = ", ".join(
+                requested_headers_formatted
+            )
 
         if expose_headers := rule.get("ExposeHeaders"):
             response.headers["Access-Control-Expose-Headers"] = ", ".join(expose_headers)
@@ -219,7 +224,7 @@ class S3CorsHandler(Handler):
     def invalidate_cache(self):
         self.bucket_cors_index.invalidate()
 
-    def match_rules(self, request: Request, rules: CORSRules) -> Optional[CORSRule]:
+    def match_rules(self, request: Request, rules: CORSRules) -> CORSRule | None:
         """
         Try to match the request to the bucket rules. How to match rules:
           - The request's Origin header must match AllowedOrigin elements.
@@ -238,7 +243,7 @@ class S3CorsHandler(Handler):
                 return matched_rule
 
     @staticmethod
-    def _match_rule(rule: CORSRule, method: str, headers: Headers) -> Optional[CORSRule]:
+    def _match_rule(rule: CORSRule, method: str, headers: Headers) -> CORSRule | None:
         """
         Check if the request method and headers matches the given CORS rule.
         :param rule: CORSRule: a CORS Rule from the bucket
@@ -266,8 +271,8 @@ class S3CorsHandler(Handler):
 
             lower_case_allowed_headers = {header.lower() for header in allowed_headers}
             if "*" not in allowed_headers and not all(
-                header in lower_case_allowed_headers
-                for header in request_headers.lower().split(", ")
+                header.strip() in lower_case_allowed_headers
+                for header in request_headers.lower().split(",")
             ):
                 return
 

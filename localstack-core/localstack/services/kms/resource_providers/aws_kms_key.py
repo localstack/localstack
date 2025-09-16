@@ -3,7 +3,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,22 +15,22 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class KMSKeyProperties(TypedDict):
-    KeyPolicy: Optional[dict | str]
-    Arn: Optional[str]
-    Description: Optional[str]
-    EnableKeyRotation: Optional[bool]
-    Enabled: Optional[bool]
-    KeyId: Optional[str]
-    KeySpec: Optional[str]
-    KeyUsage: Optional[str]
-    MultiRegion: Optional[bool]
-    PendingWindowInDays: Optional[int]
-    Tags: Optional[list[Tag]]
+    KeyPolicy: dict | str | None
+    Arn: str | None
+    Description: str | None
+    EnableKeyRotation: bool | None
+    Enabled: bool | None
+    KeyId: str | None
+    KeySpec: str | None
+    KeyUsage: str | None
+    MultiRegion: bool | None
+    PendingWindowInDays: int | None
+    Tags: list[Tag] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 from datetime import datetime
-from typing import Final, NotRequired, Optional, TypedDict
+from typing import Final, NotRequired, TypedDict
 
 from botocore.client import BaseClient
 from botocore.exceptions import ClientError
@@ -111,7 +111,7 @@ class CloudWatchLoggingConfiguration:
     @staticmethod
     def extract_log_arn_parts_from(
         logging_configuration: LoggingConfiguration,
-    ) -> Optional[tuple[str, str, str]]:
+    ) -> tuple[str, str, str] | None:
         # Returns a tuple with: account_id, region, and log group name if the logging configuration
         # specifies a valid cloud watch log group arn, none otherwise.
 
@@ -155,7 +155,7 @@ class CloudWatchLoggingConfiguration:
     def from_logging_configuration(
         state_machine_arn: LongArn,
         logging_configuration: LoggingConfiguration,
-    ) -> Optional[CloudWatchLoggingConfiguration]:
+    ) -> CloudWatchLoggingConfiguration | None:
         log_level = logging_configuration.get("level", LogLevel.OFF)
         if log_level == LogLevel.OFF:
             return None

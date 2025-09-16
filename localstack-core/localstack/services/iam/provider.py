@@ -6,7 +6,7 @@ import re
 import string
 import uuid
 from datetime import datetime
-from typing import Any, Dict, List, TypeVar
+from typing import Any, TypeVar
 from urllib.parse import quote
 
 from moto.iam.models import (
@@ -53,9 +53,10 @@ from localstack.aws.api.iam import (
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
     SimulationPolicyListType,
-    Tag,
     User,
+    allUsers,
     arnType,
+    credentialAgeDays,
     customSuffixType,
     existingUserNameType,
     groupNameType,
@@ -182,7 +183,7 @@ class IamProvider(IamApi):
 
     @staticmethod
     def build_evaluation_result(
-        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: List[Dict]
+        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: list[dict]
     ) -> EvaluationResult:
         eval_res = EvaluationResult()
         eval_res["EvalActionName"] = action_name
@@ -248,7 +249,7 @@ class IamProvider(IamApi):
         if backend.managed_policies.get(policy_arn):
             backend.managed_policies.pop(policy_arn, None)
         else:
-            raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
 
     def detach_role_policy(
         self, context: RequestContext, role_name: roleNameType, policy_arn: arnType, **kwargs
@@ -259,7 +260,7 @@ class IamProvider(IamApi):
             policy = role.managed_policies[policy_arn]
             policy.detach_from(role)
         except KeyError:
-            raise NoSuchEntityException("Policy {0} was not found.".format(policy_arn))
+            raise NoSuchEntityException(f"Policy {policy_arn} was not found.")
 
     @staticmethod
     def moto_role_to_role_type(moto_role: MotoRole) -> Role:
@@ -278,7 +279,7 @@ class IamProvider(IamApi):
         if moto_role.permissions_boundary:
             role["PermissionsBoundary"] = moto_role.permissions_boundary
         if moto_role.tags:
-            role["Tags"] = [Tag(Key=k, Value=v) for k, v in moto_role.tags.items()]
+            role["Tags"] = moto_role.tags
         # role["RoleLastUsed"]: # TODO: add support
         return role
 
@@ -299,8 +300,9 @@ class IamProvider(IamApi):
         response_roles = []
         for moto_role in moto_roles:
             response_role = self.moto_role_to_role_type(moto_role)
-            # Permission boundary should not be a part of the response
+            # Permission boundary and Tags should not be a part of the response
             response_role.pop("PermissionsBoundary", None)
+            response_role.pop("Tags", None)
             response_roles.append(response_role)
             if path_prefix:  # TODO: this is consistent with the patch it migrates, but should add tests for this.
                 response_role["AssumeRolePolicyDocument"] = quote(
@@ -693,8 +695,14 @@ class IamProvider(IamApi):
         return {k: v for k, v in data.items() if k in key_set}
 
     def create_service_specific_credential(
-        self, context: RequestContext, user_name: userNameType, service_name: serviceName, **kwargs
+        self,
+        context: RequestContext,
+        user_name: userNameType,
+        service_name: serviceName,
+        credential_age_days: credentialAgeDays | None = None,
+        **kwargs,
     ) -> CreateServiceSpecificCredentialResponse:
+        # TODO add support for credential_age_days
         moto_user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         credential = self._new_service_specific_credential(user_name, service_name, context)
@@ -704,10 +712,14 @@ class IamProvider(IamApi):
     def list_service_specific_credentials(
         self,
         context: RequestContext,
-        user_name: userNameType = None,
-        service_name: serviceName = None,
+        user_name: userNameType | None = None,
+        service_name: serviceName | None = None,
+        all_users: allUsers | None = None,
+        marker: markerType | None = None,
+        max_items: maxItemsType | None = None,
         **kwargs,
     ) -> ListServiceSpecificCredentialsResponse:
+        # TODO add support for all_users, marker, max_items
         moto_user = self._get_user_or_raise_error(user_name, context)
         self._validate_service_name(service_name)
         result = [

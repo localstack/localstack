@@ -20,12 +20,12 @@ def patch_moto_instance_tracker_meta():
         cls = super(InstanceTrackerMeta, meta).__new__(meta, name, bases, dct)
         if name == "BaseModel":
             return cls
-        cls.instances = []
+        cls.instances_tracked = []
         return cls
 
     @patch(BaseModel.__new__, pass_target=False)
     def new_basemodel(cls, *args, **kwargs):
-        # skip cls.instances.append(..) which is done by the original/upstream constructor
+        # skip cls.instances_tracked.append(..) which is done by the original/upstream constructor
         instance = super(BaseModel, cls).__new__(cls)
         return instance
 

@@ -3,8 +3,8 @@ import copy
 import io
 import json
 import logging
+from collections.abc import Callable
 from gzip import GzipFile
-from typing import Callable, Dict
 
 from moto.core.utils import unix_time_millis
 from moto.logs.models import LogEvent, LogsBackend
@@ -243,7 +243,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
             )
 
 
-def get_pattern_matcher(pattern: str) -> Callable[[str, Dict], bool]:
+def get_pattern_matcher(pattern: str) -> Callable[[str, dict], bool]:
     """Returns a pattern matcher. Can be patched by plugins to return a more sophisticated pattern matcher."""
     return lambda _pattern, _log_event: True
 
@@ -410,7 +410,7 @@ def moto_put_log_events(self: "MotoLogStream", log_events):
                     Record={"Data": payload_gz_encoded},
                 )
 
-    return "{:056d}".format(self.upload_sequence_token)
+    return f"{self.upload_sequence_token:056d}"
 
 
 @patch(MotoLogStream.filter_log_events)

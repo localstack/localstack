@@ -9,7 +9,6 @@ import time
 import traceback
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
-from typing import Dict, List, Tuple, Union
 
 import requests
 from cryptography.hazmat.primitives import hashes
@@ -61,9 +60,9 @@ class SnsPublishContext:
 
 @dataclass
 class SnsBatchPublishContext:
-    messages: List[SnsMessage]
+    messages: list[SnsMessage]
     store: SnsStore
-    request_headers: Dict[str, str]
+    request_headers: dict[str, str]
     topic_attributes: dict[str, str] = field(default_factory=dict)
 
 
@@ -90,9 +89,10 @@ class TopicPublisher(abc.ABC):
         try:
             self._publish(context=context, subscriber=subscriber)
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "An internal error occurred while trying to send the SNS message %s",
                 context.message,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return
 
@@ -148,9 +148,10 @@ class EndpointPublisher(abc.ABC):
         try:
             self._publish(context=context, endpoint=endpoint)
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "An internal error occurred while trying to send the SNS message %s",
                 context.message,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             return
 
@@ -296,7 +297,10 @@ class SqsTopicPublisher(TopicPublisher):
             )
             kwargs = self.get_sqs_kwargs(msg_context=message_context, subscriber=subscriber)
         except Exception:
-            LOG.exception("An internal error occurred while trying to format the message for SQS")
+            LOG.error(
+                "An internal error occurred while trying to format the message for SQS",
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
+            )
             return
         try:
             queue_url: str = sqs_queue_url_for_arn(subscriber["Endpoint"])
@@ -336,19 +340,29 @@ class SqsTopicPublisher(TopicPublisher):
 
         # SNS now allows regular non-fifo subscriptions to FIFO topics. Validate that the subscription target is fifo
         # before passing the FIFO-only parameters
-        if subscriber["Endpoint"].endswith(".fifo"):
-            if msg_context.message_group_id:
-                kwargs["MessageGroupId"] = msg_context.message_group_id
-            if msg_context.message_deduplication_id:
-                kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
-            elif subscriber["TopicArn"].endswith(".fifo"):
-                # Amazon SNS uses the message body provided to generate a unique hash value to use as the deduplication
-                # ID for each message, so you don't need to set a deduplication ID when you send each message.
-                # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
-                content = msg_context.message_content("sqs")
-                kwargs["MessageDeduplicationId"] = hashlib.sha256(
-                    content.encode("utf-8")
-                ).hexdigest()
+
+        # SNS will only forward the `MessageGroupId` for Fair Queues in some scenarios:
+        # - non-FIFO SNS topic to Fair Queue
+        # - FIFO topic to FIFO queue
+        # It will NOT forward it with FIFO topic to regular Queue (possibly used for internal grouping without relying
+        # on SQS capabilities)
+        if subscriber["TopicArn"].endswith(".fifo"):
+            if subscriber["Endpoint"].endswith(".fifo"):
+                if msg_context.message_group_id:
+                    kwargs["MessageGroupId"] = msg_context.message_group_id
+                if msg_context.message_deduplication_id:
+                    kwargs["MessageDeduplicationId"] = msg_context.message_deduplication_id
+                else:
+                    # SNS uses the message body provided to generate a unique hash value to use as the deduplication ID
+                    # for each message, so you don't need to set a deduplication ID when you send each message.
+                    # https://docs.aws.amazon.com/sns/latest/dg/fifo-message-dedup.html
+                    content = msg_context.message_content("sqs")
+                    kwargs["MessageDeduplicationId"] = hashlib.sha256(
+                        content.encode("utf-8")
+                    ).hexdigest()
+
+        elif msg_context.message_group_id:
+            kwargs["MessageGroupId"] = msg_context.message_group_id
 
         # TODO: for message deduplication, we are using the underlying features of the SQS queue
         # however, SQS queue only deduplicate at the Queue level, where the SNS topic deduplicate on the topic level
@@ -818,7 +832,7 @@ class ApplicationEndpointPublisher(EndpointPublisher):
         # TODO: see about delivery log for individual endpoint message, need credentials for testing
         # store_delivery_log(subscriber, context, success=True)
 
-    def prepare_message(self, message_context: SnsMessage, endpoint: str) -> Union[str, Dict]:
+    def prepare_message(self, message_context: SnsMessage, endpoint: str) -> str | dict:
         platform_type = get_platform_type_from_endpoint_arn(endpoint)
         return {
             "TargetArn": endpoint,
@@ -862,7 +876,7 @@ def get_application_platform_arn_from_endpoint_arn(endpoint_arn: str) -> str:
     return f"{base_arn}:app/{platform_type}/{app_name}"
 
 
-def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Dict]:
+def get_attributes_for_application_endpoint(endpoint_arn: str) -> tuple[dict, dict]:
     """
     Retrieve the attributes necessary to send a message directly to the platform (credentials and token)
     :param endpoint_arn:
@@ -883,7 +897,7 @@ def get_attributes_for_application_endpoint(endpoint_arn: str) -> Tuple[Dict, Di
 
 
 def send_message_to_gcm(
-    context: SnsPublishContext, app_attributes: Dict[str, str], endpoint_attributes: Dict[str, str]
+    context: SnsPublishContext, app_attributes: dict[str, str], endpoint_attributes: dict[str, str]
 ) -> None:
     """
     Send the message directly to GCM, with the credentials used when creating the PlatformApplication and the Endpoint
@@ -1014,7 +1028,7 @@ def create_sns_message_body(
 
 def prepare_message_attributes(
     message_attributes: MessageAttributeMap,
-) -> Dict[str, Dict[str, str]]:
+) -> dict[str, dict[str, str]]:
     attributes = {}
     if not message_attributes:
         return attributes

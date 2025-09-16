@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,18 +14,18 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class EC2KeyPairProperties(TypedDict):
-    KeyName: Optional[str]
-    KeyFingerprint: Optional[str]
-    KeyFormat: Optional[str]
-    KeyPairId: Optional[str]
-    KeyType: Optional[str]
-    PublicKeyMaterial: Optional[str]
-    Tags: Optional[list[Tag]]
+    KeyName: str | None
+    KeyFingerprint: str | None
+    KeyFormat: str | None
+    KeyPairId: str | None
+    KeyType: str | None
+    PublicKeyMaterial: str | None
+    Tags: list[Tag] | None
 
 
 class Tag(TypedDict):
-    Key: Optional[str]
-    Value: Optional[str]
+    Key: str | None
+    Value: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

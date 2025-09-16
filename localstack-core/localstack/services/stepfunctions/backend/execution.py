@@ -3,7 +3,7 @@ from __future__ import annotations
 import datetime
 import json
 import logging
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.events import PutEventsRequestEntry
 from localstack.aws.api.stepfunctions import (
@@ -72,7 +72,7 @@ class BaseExecutionWorkerCommunication(ExecutionWorkerCommunication):
 
     def _reflect_execution_status(self):
         exit_program_state: ProgramState = self.execution.exec_worker.env.program_state()
-        self.execution.stop_date = datetime.datetime.now(tz=datetime.timezone.utc)
+        self.execution.stop_date = datetime.datetime.now(tz=datetime.UTC)
         if isinstance(exit_program_state, ProgramEnded):
             self.execution.exec_status = ExecutionStatus.SUCCEEDED
             self.execution.output = self.execution.exec_worker.env.states.get_input()
@@ -105,27 +105,27 @@ class Execution:
 
     state_machine: Final[StateMachineInstance]
     state_machine_arn: Final[Arn]
-    state_machine_version_arn: Final[Optional[Arn]]
-    state_machine_alias_arn: Final[Optional[Arn]]
+    state_machine_version_arn: Final[Arn | None]
+    state_machine_alias_arn: Final[Arn | None]
 
-    mock_test_case: Final[Optional[MockTestCase]]
+    mock_test_case: Final[MockTestCase | None]
 
     start_date: Final[Timestamp]
-    input_data: Final[Optional[json]]
-    input_details: Final[Optional[CloudWatchEventsExecutionDataDetails]]
-    trace_header: Final[Optional[TraceHeader]]
-    _cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
+    input_data: Final[json | None]
+    input_details: Final[CloudWatchEventsExecutionDataDetails | None]
+    trace_header: Final[TraceHeader | None]
+    _cloud_watch_logging_session: Final[CloudWatchLoggingSession | None]
 
-    exec_status: Optional[ExecutionStatus]
-    stop_date: Optional[Timestamp]
+    exec_status: ExecutionStatus | None
+    stop_date: Timestamp | None
 
-    output: Optional[json]
-    output_details: Optional[CloudWatchEventsExecutionDataDetails]
+    output: json | None
+    output_details: CloudWatchEventsExecutionDataDetails | None
 
-    error: Optional[SensitiveError]
-    cause: Optional[SensitiveCause]
+    error: SensitiveError | None
+    cause: SensitiveCause | None
 
-    exec_worker: Optional[ExecutionWorker]
+    exec_worker: ExecutionWorker | None
 
     _activity_store: dict[Arn, Activity]
 
@@ -139,12 +139,12 @@ class Execution:
         region_name: str,
         state_machine: StateMachineInstance,
         start_date: Timestamp,
-        cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
+        cloud_watch_logging_session: CloudWatchLoggingSession | None,
         activity_store: dict[Arn, Activity],
-        input_data: Optional[json] = None,
-        trace_header: Optional[TraceHeader] = None,
-        state_machine_alias_arn: Optional[Arn] = None,
-        mock_test_case: Optional[MockTestCase] = None,
+        input_data: json | None = None,
+        trace_header: TraceHeader | None = None,
+        state_machine_alias_arn: Arn | None = None,
+        mock_test_case: MockTestCase | None = None,
     ):
         self.name = name
         self.sm_type = sm_type
@@ -258,7 +258,7 @@ class Execution:
 
     def to_history_output(self) -> GetExecutionHistoryOutput:
         env = self.exec_worker.env
-        event_history: HistoryEventList = list()
+        event_history: HistoryEventList = []
         if env is not None:
             # The execution has not started yet.
             event_history: HistoryEventList = env.event_manager.get_event_history()
@@ -267,9 +267,7 @@ class Execution:
     @staticmethod
     def _to_serialized_date(timestamp: datetime.datetime) -> str:
         """See test in tests.aws.services.stepfunctions.v2.base.test_base.TestSnfBase.test_execution_dateformat"""
-        return (
-            f"{timestamp.astimezone(datetime.timezone.utc).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]}Z"
-        )
+        return f"{timestamp.astimezone(datetime.UTC).strftime('%Y-%m-%dT%H:%M:%S.%f')[:-3]}Z"
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return BaseExecutionWorkerCommunication(self)
@@ -318,14 +316,14 @@ class Execution:
         self.publish_execution_status_change_event()
         self.exec_worker.start()
 
-    def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
-        exec_worker: Optional[ExecutionWorker] = self.exec_worker
+    def stop(self, stop_date: datetime.datetime, error: str | None, cause: str | None):
+        exec_worker: ExecutionWorker | None = self.exec_worker
         if exec_worker:
             exec_worker.stop(stop_date=stop_date, cause=cause, error=error)
 
     def publish_execution_status_change_event(self):
         input_value = (
-            dict() if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
+            {} if not self.input_data else to_json_str(self.input_data, separators=(",", ":"))
         )
         output_value = (
             None if self.output is None else to_json_str(self.output, separators=(",", ":"))
@@ -358,10 +356,11 @@ class Execution:
         try:
             self._get_events_client().put_events(Entries=[entry])
         except Exception:
-            LOG.exception(
+            LOG.error(
                 "Unable to send notification of Entry='%s' for Step Function execution with Arn='%s' to EventBridge.",
                 entry,
                 self.exec_arn,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
 
 
@@ -380,7 +379,7 @@ class SyncExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
 
 
 class SyncExecution(Execution):
-    sync_execution_status: Optional[SyncExecutionStatus] = None
+    sync_execution_status: SyncExecutionStatus | None = None
 
     def _get_start_execution_worker(self) -> SyncExecutionWorker:
         return SyncExecutionWorker(

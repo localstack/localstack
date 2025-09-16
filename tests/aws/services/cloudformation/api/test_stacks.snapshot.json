@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_special_chars": {
-    "recorded-date": "05-08-2022, 13:03:43",
+    "recorded-date": "08-08-2025, 15:32:46",
     "recorded-content": {
       "describe_stack": {
         "Capabilities": [
@@ -1573,7 +1573,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::test_no_echo_parameter": {
-    "recorded-date": "19-12-2024, 11:35:19",
+    "recorded-date": "15-08-2025, 12:01:58",
     "recorded-content": {
       "describe_stacks": {
         "Stacks": [
@@ -1646,6 +1646,141 @@
           "HTTPStatusCode": 200
         }
       },
+      "describe_change_set_on_create_complete": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Modify",
+              "Details": [
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "CausingEntity": "SecretParameter",
+                  "ChangeSource": "ParameterReference",
+                  "Evaluation": "Static",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Metadata",
+                    "RequiresRecreation": "Never"
+                  }
+                },
+                {
+                  "ChangeSource": "DirectModification",
+                  "Evaluation": "Dynamic",
+                  "Target": {
+                    "Attribute": "Properties",
+                    "Name": "Tags",
+                    "RequiresRecreation": "Never"
+                  }
+                }
+              ],
+              "LogicalResourceId": "LocalBucket",
+              "PhysicalResourceId": "cfn-noecho-bucket",
+              "Replacement": "False",
+              "ResourceType": "AWS::S3::Bucket",
+              "Scope": [
+                "Metadata",
+                "Properties"
+              ]
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "Parameters": [
+          {
+            "ParameterKey": "NormalParameter",
+            "ParameterValue": "Some default value here"
+          },
+          {
+            "ParameterKey": "SecretParameter",
+            "ParameterValue": "****"
+          },
+          {
+            "ParameterKey": "SecretParameterWithDefault",
+            "ParameterValue": "****"
+          }
+        ],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_stack_on_create_complete": {
+        "Stacks": [
+          {
+            "Capabilities": [
+              "CAPABILITY_AUTO_EXPAND",
+              "CAPABILITY_IAM",
+              "CAPABILITY_NAMED_IAM"
+            ],
+            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+            "CreationTime": "datetime",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
+            },
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "Outputs": [
+              {
+                "Description": "Secret value from parameter",
+                "OutputKey": "SecretValue",
+                "OutputValue": "SecretValue"
+              }
+            ],
+            "Parameters": [
+              {
+                "ParameterKey": "NormalParameter",
+                "ParameterValue": "Some default value here"
+              },
+              {
+                "ParameterKey": "SecretParameter",
+                "ParameterValue": "****"
+              },
+              {
+                "ParameterKey": "SecretParameterWithDefault",
+                "ParameterValue": "****"
+              }
+            ],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "CREATE_COMPLETE",
+            "Tags": []
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
       "describe_updated_stacks": {
         "Stacks": [
           {
@@ -1697,8 +1832,8 @@
       },
       "describe_updated_change_set": {
         "Capabilities": [],
-        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
-        "ChangeSetName": "<change-set-name:1>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
+        "ChangeSetName": "<change-set-name:2>",
         "Changes": [
           {
             "ResourceChange": {
@@ -1831,8 +1966,8 @@
       },
       "describe_updated_change_set_no_echo_true": {
         "Capabilities": [],
-        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:4>",
-        "ChangeSetName": "<change-set-name:2>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:5>",
+        "ChangeSetName": "<change-set-name:3>",
         "Changes": [
           {
             "ResourceChange": {
@@ -1965,8 +2100,8 @@
       },
       "describe_updated_change_set_no_echo_false": {
         "Capabilities": [],
-        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:5>",
-        "ChangeSetName": "<change-set-name:3>",
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:6>",
+        "ChangeSetName": "<change-set-name:4>",
         "Changes": [
           {
             "ResourceChange": {
@@ -2284,6 +2419,1932 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
         }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_no_parameters_given": {
+    "recorded-date": "31-07-2025, 16:12:14",
+    "recorded-content": {
+      "deploy-error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameters: [Input] must have values"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_non_existing_stack_message": {
+    "recorded-date": "21-07-2025, 18:00:27",
+    "recorded-content": {
+      "Error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack with id <stack-name> does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[C]": {
+    "recorded-date": "01-08-2025, 16:11:25",
+    "recorded-content": {
+      "create-change-set-1": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1-prop-values": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "root",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "A",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "B",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "C",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "dummy",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Dummy",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "A",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "B",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "C",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Dummy",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-1-describe": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "create-change-set-2": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2-prop-values": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "C",
+              "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "C",
+              "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-2-describe": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "UPDATE_COMPLETE",
+        "Tags": []
+      },
+      "delete-describe": {
+        "CreationTime": "datetime",
+        "DeletionTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "DELETE_COMPLETE",
+        "Tags": []
+      },
+      "per-resource-events": {
+        "A": [
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VcYe9926zdSX",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "B": [
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-4E7MEkwnP10J",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "C": [
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-BzkgOdfSMyjL",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Dummy": [
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-89p1ywocoTYF",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Stack": [
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          }
+        ]
+      },
+      "all-events": [
+        [
+          "<stack-name:1>",
+          "REVIEW_IN_PROGRESS"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "A",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "B",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "C",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "A",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "Dummy",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_COMPLETE"
+        ]
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[B-C]": {
+    "recorded-date": "01-08-2025, 16:11:54",
+    "recorded-content": {
+      "create-change-set-1": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1-prop-values": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "root",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "A",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "B",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "C",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "dummy",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Dummy",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "A",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "B",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "C",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Dummy",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-1-describe": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "create-change-set-2": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2-prop-values": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "B",
+              "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "C",
+              "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "B",
+              "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "C",
+              "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-2-describe": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "UPDATE_COMPLETE",
+        "Tags": []
+      },
+      "delete-describe": {
+        "CreationTime": "datetime",
+        "DeletionTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "DELETE_COMPLETE",
+        "Tags": []
+      },
+      "per-resource-events": {
+        "A": [
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-VHDXP6O2wX1c",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "B": [
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-cqwh82b6Ge6W",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "C": [
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-RdurGWIjXPQz",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Dummy": [
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-jNZLIqoRVObD",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Stack": [
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          }
+        ]
+      },
+      "all-events": [
+        [
+          "<stack-name:1>",
+          "REVIEW_IN_PROGRESS"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "A",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "B",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "C",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "B",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "Dummy",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_COMPLETE"
+        ]
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::test_stack_deletion_order[A-B-C]": {
+    "recorded-date": "01-08-2025, 16:12:23",
+    "recorded-content": {
+      "create-change-set-1": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1-prop-values": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "root",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "A",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "B",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "C",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "AfterContext": {
+                "Properties": {
+                  "Value": "dummy",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "Dummy",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-1": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "A",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "B",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "C",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "Dummy",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-1": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-1-describe": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      },
+      "create-change-set-2": {
+        "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2-prop-values": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "root",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "A",
+              "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "B",
+              "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "BeforeContext": {
+                "Properties": {
+                  "Value": "{{changeSet:KNOWN_AFTER_APPLY}}",
+                  "Type": "String"
+                }
+              },
+              "Details": [],
+              "LogicalResourceId": "C",
+              "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-change-set-2": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "ChangeSetName": "<change-set-id:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "A",
+              "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "B",
+              "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          },
+          {
+            "ResourceChange": {
+              "Action": "Remove",
+              "Details": [],
+              "LogicalResourceId": "C",
+              "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+              "PolicyAction": "Delete",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "execute-change-set-2": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "post-create-2-describe": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "UPDATE_COMPLETE",
+        "Tags": []
+      },
+      "delete-describe": {
+        "CreationTime": "datetime",
+        "DeletionTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "DELETE_COMPLETE",
+        "Tags": []
+      },
+      "per-resource-events": {
+        "A": [
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "A",
+            "PhysicalResourceId": "CFN-A-Kdps7TfbhFx5",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "B": [
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "B",
+            "PhysicalResourceId": "CFN-B-1rCsPWv4xQPK",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "C": [
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "C",
+            "PhysicalResourceId": "CFN-C-MlTnjhK28Wet",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Dummy": [
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "Dummy",
+            "PhysicalResourceId": "CFN-Dummy-Gw0J4gFI8T7M",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::SSM::Parameter",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "Stack": [
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "REVIEW_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "CREATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "UPDATE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_IN_PROGRESS",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          },
+          {
+            "LogicalResourceId": "<stack-name:1>",
+            "PhysicalResourceId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "ResourceStatus": "DELETE_COMPLETE",
+            "ResourceType": "AWS::CloudFormation::Stack",
+            "Timestamp": "timestamp"
+          }
+        ]
+      },
+      "all-events": [
+        [
+          "<stack-name:1>",
+          "REVIEW_IN_PROGRESS"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "A",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "B",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "C",
+          "CREATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "CREATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "C",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "B",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "B",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "A",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "A",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "UPDATE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_IN_PROGRESS"
+        ],
+        [
+          "Dummy",
+          "DELETE_COMPLETE"
+        ],
+        [
+          "<stack-name:1>",
+          "DELETE_COMPLETE"
+        ]
+      ]
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_lifecycle[no-tags]": {
+    "recorded-date": "09-09-2025, 09:37:20",
+    "recorded-content": {
+      "change-set-pre-execute": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "TestResource",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack-pre-execute": {
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "REVIEW_IN_PROGRESS",
+        "StackStatusReason": "User Initiated",
+        "Tags": []
+      },
+      "stack-post-execute": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "Description": "test <env>.test.net",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": []
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_lifecycle[with-tags]": {
+    "recorded-date": "09-09-2025, 09:37:28",
+    "recorded-content": {
+      "change-set-pre-execute": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [
+          {
+            "ResourceChange": {
+              "Action": "Add",
+              "Details": [],
+              "LogicalResourceId": "TestResource",
+              "ResourceType": "AWS::SSM::Parameter",
+              "Scope": []
+            },
+            "Type": "Resource"
+          }
+        ],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "AVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "CREATE_COMPLETE",
+        "Tags": [
+          {
+            "Key": "foo",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack-pre-execute": {
+        "CreationTime": "datetime",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "REVIEW_IN_PROGRESS",
+        "StackStatusReason": "User Initiated",
+        "Tags": []
+      },
+      "stack-post-execute": {
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "CreationTime": "datetime",
+        "Description": "test <env>.test.net",
+        "DisableRollback": false,
+        "DriftInformation": {
+          "StackDriftStatus": "NOT_CHECKED"
+        },
+        "EnableTerminationProtection": false,
+        "LastUpdatedTime": "datetime",
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "StackStatus": "CREATE_COMPLETE",
+        "Tags": [
+          {
+            "Key": "foo",
+            "Value": "bar"
+          }
+        ]
       }
     }
   }

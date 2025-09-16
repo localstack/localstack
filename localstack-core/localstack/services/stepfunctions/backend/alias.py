@@ -4,7 +4,7 @@ import copy
 import datetime
 import random
 import threading
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import (
     AliasDescription,
@@ -20,9 +20,9 @@ from localstack.utils.strings import token_generator
 
 class Alias:
     _mutex: Final[threading.Lock]
-    update_date: Optional[datetime.datetime]
+    update_date: datetime.datetime | None
     name: Final[CharacterRestrictedName]
-    _description: Optional[AliasDescription]
+    _description: AliasDescription | None
     _routing_configuration_list: RoutingConfigurationList
     _state_machine_version_arns: list[Arn]
     _execution_probability_distribution: list[int]
@@ -34,7 +34,7 @@ class Alias:
         self,
         state_machine_arn: Arn,
         name: CharacterRestrictedName,
-        description: Optional[AliasDescription],
+        description: AliasDescription | None,
         routing_configuration_list: RoutingConfigurationList,
     ):
         self._mutex = threading.Lock()
@@ -66,7 +66,7 @@ class Alias:
 
     @staticmethod
     def _get_mutex_date() -> datetime.datetime:
-        return datetime.datetime.now(tz=datetime.timezone.utc)
+        return datetime.datetime.now(tz=datetime.UTC)
 
     def get_routing_configuration_list(self) -> RoutingConfigurationList:
         return copy.deepcopy(self._routing_configuration_list)
@@ -77,7 +77,7 @@ class Alias:
 
     def update(
         self,
-        description: Optional[AliasDescription],
+        description: AliasDescription | None,
         routing_configuration_list: RoutingConfigurationList,
     ) -> None:
         with self._mutex:
@@ -88,8 +88,8 @@ class Alias:
 
             if routing_configuration_list:
                 self._routing_configuration_list = routing_configuration_list
-                self._state_machine_version_arns = list()
-                self._execution_probability_distribution = list()
+                self._state_machine_version_arns = []
+                self._execution_probability_distribution = []
                 for routing_configuration in routing_configuration_list:
                     self._state_machine_version_arns.append(
                         routing_configuration["stateMachineVersionArn"]

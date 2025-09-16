@@ -7,7 +7,6 @@ import json
 import os
 import shutil
 import textwrap
-from typing import List
 
 import pytest
 
@@ -45,7 +44,7 @@ class LambdaJavaTestlibsPackage(Package):
     def __init__(self):
         super().__init__("JavaLambdaTestlibs", LOCALSTACK_MAVEN_VERSION)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [LOCALSTACK_MAVEN_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:

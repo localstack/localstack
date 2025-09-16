@@ -9,7 +9,6 @@ import time
 from contextlib import contextmanager
 from datetime import datetime
 from operator import itemgetter
-from typing import Dict, Optional
 
 import requests
 import werkzeug
@@ -24,6 +23,7 @@ from localstack.aws.api import (
     handler,
 )
 from localstack.aws.api.dynamodb import (
+    ApproximateCreationDateTimePrecision,
     BatchExecuteStatementOutput,
     BatchGetItemOutput,
     BatchGetRequestMap,
@@ -84,6 +84,7 @@ from localstack.aws.api.dynamodb import (
     ScanInput,
     ScanOutput,
     StreamArn,
+    TableArn,
     TableDescription,
     TableName,
     TagKeyList,
@@ -97,6 +98,8 @@ from localstack.aws.api.dynamodb import (
     UpdateGlobalTableOutput,
     UpdateItemInput,
     UpdateItemOutput,
+    UpdateKinesisStreamingConfiguration,
+    UpdateKinesisStreamingDestinationOutput,
     UpdateTableInput,
     UpdateTableOutput,
     UpdateTimeToLiveOutput,
@@ -336,7 +339,7 @@ class ExpiredItemsWorker:
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
+        self.thread: FuncThread | None = None
         self.mutex = threading.RLock()
 
     def start(self):
@@ -603,7 +606,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         store = get_store(context.account_id, context.region)
 
         # Update replication details
-        replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
+        replicas: dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
         replica_description_list = []
 
@@ -672,7 +675,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 store = get_store(context.account_id, global_table_region)
 
                 # Dict with source region to set of replicated regions
-                replicas: Dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
+                replicas: dict[RegionName, ReplicaDescription] = store.REPLICAS.get(table_name, {})
 
                 for replica_update in replica_updates:
                     for key, details in replica_update.items():
@@ -1032,7 +1035,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         replication_group: ReplicaList,
         **kwargs,
     ) -> CreateGlobalTableOutput:
-        global_tables: Dict = get_store(context.account_id, context.region).GLOBAL_TABLES
+        global_tables: dict = get_store(context.account_id, context.region).GLOBAL_TABLES
         if global_table_name in global_tables:
             raise GlobalTableAlreadyExistsException("Global table with this name already exists")
         replication_group = [grp.copy() for grp in replication_group or []]
@@ -1110,7 +1113,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
-        self.ensure_table_exists(context.account_id, context.region, table_name)
+        self.ensure_table_exists(
+            context.account_id,
+            context.region,
+            table_name,
+            error_message=f"Requested resource not found: Table: {table_name} not found",
+        )
+
+        enable_kinesis_streaming_configuration = enable_kinesis_streaming_configuration or {}
 
         if not kinesis_stream_exists(stream_arn=stream_arn):
             raise ValidationException("User does not have a permission to use kinesis stream")
@@ -1127,9 +1137,8 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "to perform ENABLE operation."
             )
 
-        table_def["KinesisDataStreamDestinations"] = (
-            table_def.get("KinesisDataStreamDestinations") or []
-        )
+        table_def.setdefault("KinesisDataStreamDestinations", [])
+
         # remove the stream destination if already present
         table_def["KinesisDataStreamDestinations"] = [
             t for t in table_def["KinesisDataStreamDestinations"] if t["StreamArn"] != stream_arn
@@ -1140,11 +1149,15 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "DestinationStatus": DestinationStatus.ACTIVE,
                 "DestinationStatusDescription": "Stream is active",
                 "StreamArn": stream_arn,
+                "ApproximateCreationDateTimePrecision": ApproximateCreationDateTimePrecision.MILLISECOND,
             }
         )
         table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.ACTIVE
         return KinesisStreamingDestinationOutput(
-            DestinationStatus=DestinationStatus.ACTIVE, StreamArn=stream_arn, TableName=table_name
+            DestinationStatus=DestinationStatus.ENABLING,
+            StreamArn=stream_arn,
+            TableName=table_name,
+            EnableKinesisStreamingConfiguration=enable_kinesis_streaming_configuration,
         )
 
     def disable_kinesis_streaming_destination(
@@ -1155,8 +1168,14 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         enable_kinesis_streaming_configuration: EnableKinesisStreamingConfiguration = None,
         **kwargs,
     ) -> KinesisStreamingDestinationOutput:
-        self.ensure_table_exists(context.account_id, context.region, table_name)
-        if not kinesis_stream_exists(stream_arn):
+        self.ensure_table_exists(
+            context.account_id,
+            context.region,
+            table_name,
+            error_message=f"Requested resource not found: Table: {table_name} not found",
+        )
+
+        if not kinesis_stream_exists(stream_arn=stream_arn):
             raise ValidationException(
                 "User does not have a permission to use kinesis stream",
             )
@@ -1177,7 +1196,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                         dest["DestinationStatusDescription"] = ("Stream is disabled",)
                         table_def["KinesisDataStreamDestinationStatus"] = DestinationStatus.DISABLED
                         return KinesisStreamingDestinationOutput(
-                            DestinationStatus=DestinationStatus.DISABLED,
+                            DestinationStatus=DestinationStatus.DISABLING,
                             StreamArn=stream_arn,
                             TableName=table_name,
                         )
@@ -1196,8 +1215,81 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         )
 
         stream_destinations = table_def.get("KinesisDataStreamDestinations") or []
+        stream_destinations = copy.deepcopy(stream_destinations)
+
+        for destination in stream_destinations:
+            destination.pop("ApproximateCreationDateTimePrecision", None)
+            destination.pop("DestinationStatusDescription", None)
+
         return DescribeKinesisStreamingDestinationOutput(
-            KinesisDataStreamDestinations=stream_destinations, TableName=table_name
+            KinesisDataStreamDestinations=stream_destinations,
+            TableName=table_name,
+        )
+
+    def update_kinesis_streaming_destination(
+        self,
+        context: RequestContext,
+        table_name: TableArn,
+        stream_arn: StreamArn,
+        update_kinesis_streaming_configuration: UpdateKinesisStreamingConfiguration | None = None,
+        **kwargs,
+    ) -> UpdateKinesisStreamingDestinationOutput:
+        self.ensure_table_exists(context.account_id, context.region, table_name)
+
+        if not update_kinesis_streaming_configuration:
+            raise ValidationException(
+                "Streaming destination cannot be updated with given parameters: "
+                "UpdateKinesisStreamingConfiguration cannot be null or contain only null values"
+            )
+
+        time_precision = update_kinesis_streaming_configuration.get(
+            "ApproximateCreationDateTimePrecision"
+        )
+        if time_precision not in (
+            ApproximateCreationDateTimePrecision.MILLISECOND,
+            ApproximateCreationDateTimePrecision.MICROSECOND,
+        ):
+            raise ValidationException(
+                f"1 validation error detected: Value '{time_precision}' at "
+                "'updateKinesisStreamingConfiguration.approximateCreationDateTimePrecision' failed to satisfy constraint: "
+                "Member must satisfy enum value set: [MILLISECOND, MICROSECOND]"
+            )
+
+        store = get_store(context.account_id, context.region)
+
+        table_def = store.table_definitions.get(table_name) or {}
+        table_def.setdefault("KinesisDataStreamDestinations", [])
+
+        table_id = table_def["TableId"]
+
+        destination = None
+        for stream in table_def["KinesisDataStreamDestinations"]:
+            if stream["StreamArn"] == stream_arn:
+                destination = stream
+
+        if destination is None:
+            raise ValidationException(
+                "Table is not in a valid state to enable Kinesis Streaming Destination: "
+                f"No streaming destination with streamArn: {stream_arn} found for table with tableName: {table_name}"
+            )
+
+        if (
+            existing_precision := destination["ApproximateCreationDateTimePrecision"]
+        ) == update_kinesis_streaming_configuration["ApproximateCreationDateTimePrecision"]:
+            raise ValidationException(
+                f"Invalid Request: Precision is already set to the desired value of {existing_precision} "
+                f"for tableId: {table_id}, kdsArn: {stream_arn}"
+            )
+
+        destination["ApproximateCreationDateTimePrecision"] = time_precision
+
+        return UpdateKinesisStreamingDestinationOutput(
+            TableName=table_name,
+            StreamArn=stream_arn,
+            DestinationStatus=DestinationStatus.UPDATING,
+            UpdateKinesisStreamingConfiguration=UpdateKinesisStreamingConfiguration(
+                ApproximateCreationDateTimePrecision=time_precision,
+            ),
         )
 
     #
@@ -1275,7 +1367,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return dynamodb_table_exists(table_name, client)
 
     @staticmethod
-    def ensure_table_exists(account_id: str, region_name: str, table_name: str):
+    def ensure_table_exists(
+        account_id: str,
+        region_name: str,
+        table_name: str,
+        error_message: str = "Cannot do operations on a non-existent table",
+    ):
         """
         Raise ResourceNotFoundException if the given table does not exist.
 
@@ -1285,7 +1382,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         :raise: ResourceNotFoundException if table does not exist in DynamoDB Local
         """
         if not DynamoDBProvider.table_exists(account_id, region_name, table_name):
-            raise ResourceNotFoundException("Cannot do operations on a non-existent table")
+            raise ResourceNotFoundException(error_message)
 
     @staticmethod
     def get_global_table_region(context: RequestContext, table_name: str) -> str:
@@ -1312,7 +1409,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         return context.region
 
     @staticmethod
-    def prepare_request_headers(headers: Dict, account_id: str, region_name: str):
+    def prepare_request_headers(headers: dict, account_id: str, region_name: str):
         """
         Modify the Credentials field of Authorization header to achieve namespacing in DynamoDBLocal.
         """
@@ -1329,7 +1426,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             flags=re.IGNORECASE,
         )
 
-    def fix_consumed_capacity(self, request: Dict, result: Dict):
+    def fix_consumed_capacity(self, request: dict, result: dict):
         # make sure we append 'ConsumedCapacity', which is properly
         # returned by dynalite, but not by AWS's DynamoDBLocal
         table_name = request.get("TableName")

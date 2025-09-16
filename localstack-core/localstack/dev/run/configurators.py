@@ -189,8 +189,8 @@ class EntryPointMountConfigurator:
     """
     Mounts ``entry_points.txt`` files of localstack and dependencies into the venv in the container.
 
-    For example, when starting the pro container, the entrypoints of localstack-ext on the host would be in
-    ``~/workspace/localstack-ext/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
+    For example, when starting the pro container, the entrypoints of localstack-pro on the host would be in
+    ``~/workspace/localstack-pro/localstack-pro-core/localstack_ext.egg-info/entry_points.txt``
     which needs to be mounted into the distribution info of the installed dependency within the container:
     ``/opt/code/localstack/.venv/.../site-packages/localstack_ext-2.1.0.dev0.dist-info/entry_points.txt``.
     """
@@ -363,10 +363,7 @@ def _list_files_in_container_image(container_client: ContainerClient, image_name
         try:
             # docker export yields paths without prefixed slashes, so we add them here
             # since the file is pretty big (~4MB for community, ~7MB for pro) we gzip it
-            cmd = "docker export %s | tar -t | awk '{ print \"/\" $0 }' | gzip > %s" % (
-                container_id,
-                cache_file,
-            )
+            cmd = f"docker export {container_id} | tar -t | awk '{{ print \"/\" $0 }}' | gzip > {cache_file}"
             run(cmd, shell=True)
         finally:
             container_client.remove_container(container_id)

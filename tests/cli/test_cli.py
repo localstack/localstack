@@ -71,6 +71,14 @@ def backup_and_remove_image(monkeypatch, container_client: ContainerClient):
     container_client.tag_image(tagged_image_name, source_image_name)
 
 
+@pytest.fixture
+def create_container(container_client: ContainerClient):
+    """Creates (but does not start) a docker container with the name 'localstack-main'"""
+    container_client.create_container(image_name="localstack/localstack", name="localstack-main")
+    yield
+    container_client.remove_container("localstack-main", force=True)
+
+
 @pytest.mark.skipif(condition=in_docker(), reason="cannot run CLI tests in docker")
 class TestCliContainerLifecycle:
     def test_start_wait_stop(self, runner, container_client):
@@ -88,7 +96,7 @@ class TestCliContainerLifecycle:
         # Note: if `LOCALSTACK_HOST` is set to a domain that does not resolve to `127.0.0.1` then
         # this test will fail
         health = requests.get(config.external_service_url() + "/_localstack/health")
-        assert health.ok, "health request did not return OK: %s" % health.text
+        assert health.ok, f"health request did not return OK: {health.text}"
 
         result = runner.invoke(cli, ["stop"])
         assert result.exit_code == 0
@@ -112,13 +120,39 @@ class TestCliContainerLifecycle:
         # presence of another message which is present when pulling the image.
         assert "download complete" in result.output
 
-    def test_start_already_running(self, runner, container_client):
-        runner.invoke(cli, ["start", "-d"])
-        runner.invoke(cli, ["wait", "-t", "180"])
+    def test_start_already_existing(self, runner, container_client, create_container):
+        # normal start
         result = runner.invoke(cli, ["start"])
         assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
         assert result.exit_code == 1
         assert "Error" in result.output
+        assert "already exists" in result.output
+
+        # detached start
+        result = runner.invoke(cli, ["start", "-d"])
+        assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "already exists" in result.output
+
+    def test_start_already_running(self, runner, container_client):
+        runner.invoke(cli, ["start", "-d"])
+        runner.invoke(cli, ["wait", "-t", "180"])
+
+        # normal start
+        # - non-idempotent: non-zero exit code + error log if the container is already running
+        result = runner.invoke(cli, ["start"])
+        assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
+        assert result.exit_code == 1
+        assert "Error" in result.output
+        assert "is already running" in result.output
+
+        # detached start
+        # - idempotent - zero exit code + no error log if the container is already running
+        result = runner.invoke(cli, ["start", "-d"])
+        assert container_exists(container_client, config.MAIN_CONTAINER_NAME)
+        assert result.exit_code == 0
+        assert "Error" not in result.output
         assert "is already running" in result.output
 
     def test_wait_timeout_raises_exception(self, runner, container_client):

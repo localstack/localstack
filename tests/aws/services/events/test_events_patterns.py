@@ -3,7 +3,6 @@ import json
 import os
 from datetime import datetime
 from pathlib import Path
-from typing import List, Tuple
 
 import json5
 import pytest
@@ -26,18 +25,18 @@ COMPLEX_MULTI_KEY_EVENT = os.path.join(REQUEST_TEMPLATE_DIR, "complex_multi_key_
 TEST_PAYLOAD_DIR = os.path.join(THIS_FOLDER, "test_payloads")
 
 
-def load_request_templates(directory_path: str) -> List[Tuple[dict, str]]:
+def load_request_templates(directory_path: str) -> list[tuple[dict, str]]:
     json5_files = list_files_with_suffix(directory_path, ".json5")
     return [load_request_template(file_path) for file_path in json5_files]
 
 
-def load_request_template(file_path: str) -> Tuple[dict, str]:
-    with open(file_path, "r") as df:
+def load_request_template(file_path: str) -> tuple[dict, str]:
+    with open(file_path) as df:
         template = json5.load(df)
     return template, Path(file_path).stem
 
 
-def list_files_with_suffix(directory_path: str, suffix: str) -> List[str]:
+def list_files_with_suffix(directory_path: str, suffix: str) -> list[str]:
     files = []
     for root, _, filenames in os.walk(directory_path):
         for filename in filenames:
@@ -117,8 +116,8 @@ class TestEventPattern:
         """
 
         with (
-            open(COMPLEX_MULTI_KEY_EVENT, "r") as event_file,
-            open(COMPLEX_MULTI_KEY_EVENT_PATTERN, "r") as event_pattern_file,
+            open(COMPLEX_MULTI_KEY_EVENT) as event_file,
+            open(COMPLEX_MULTI_KEY_EVENT_PATTERN) as event_pattern_file,
         ):
             event = event_file.read()
             event_pattern = event_pattern_file.read()
@@ -446,7 +445,7 @@ class TestRuleWithPattern:
         snapshot,
         aws_client,
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         # Create event bus
         event_bus_name = f"event-bus-{short_uid()}"

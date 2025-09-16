@@ -1,6 +1,7 @@
 import inspect
 import logging
-from typing import Any, Callable, Dict, NamedTuple, Optional, Union
+from collections.abc import Callable
+from typing import Any, NamedTuple
 
 from botocore import xform_name
 from botocore.model import ServiceModel
@@ -20,10 +21,10 @@ from localstack.utils.coverage_docs import get_coverage_link_for_service
 
 LOG = logging.getLogger(__name__)
 
-DispatchTable = Dict[str, ServiceRequestHandler]
+DispatchTable = dict[str, ServiceRequestHandler]
 
 
-def create_skeleton(service: Union[str, ServiceModel], delegate: Any):
+def create_skeleton(service: str | ServiceModel, delegate: Any):
     if isinstance(service, str):
         service = load_service(service)
 
@@ -49,10 +50,10 @@ def create_dispatch_table(delegate: object) -> DispatchTable:
     # scan class tree for @handler wrapped functions (reverse class tree so that inherited functions overwrite parent
     # functions)
     cls_tree = inspect.getmro(delegate.__class__)
-    handlers: Dict[str, HandlerAttributes] = {}
+    handlers: dict[str, HandlerAttributes] = {}
     cls_tree = reversed(list(cls_tree))
     for cls in cls_tree:
-        if cls == object:
+        if cls is object:
             continue
 
         for name, fn in inspect.getmembers(cls, inspect.isfunction):
@@ -98,9 +99,7 @@ class ServiceRequestDispatcher:
         self.pass_context = pass_context
         self.expand_parameters = expand_parameters
 
-    def __call__(
-        self, context: RequestContext, request: ServiceRequest
-    ) -> Optional[ServiceResponse]:
+    def __call__(self, context: RequestContext, request: ServiceRequest) -> ServiceResponse | None:
         args = []
         kwargs = {}
 
@@ -122,7 +121,7 @@ class Skeleton:
     service: ServiceModel
     dispatch_table: DispatchTable
 
-    def __init__(self, service: ServiceModel, implementation: Union[Any, DispatchTable]):
+    def __init__(self, service: ServiceModel, implementation: Any | DispatchTable):
         self.service = service
 
         if isinstance(implementation, dict):

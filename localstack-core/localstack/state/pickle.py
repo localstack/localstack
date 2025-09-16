@@ -29,7 +29,8 @@ https://dill.readthedocs.io/en/latest/index.html?highlight=register#dill.Pickler
 """
 
 import inspect
-from typing import Any, BinaryIO, Callable, Generic, Type, TypeVar
+from collections.abc import Callable
+from typing import Any, BinaryIO, Generic, TypeVar
 
 import dill
 from dill._dill import MetaCatchingDict
@@ -42,7 +43,7 @@ PythonPickler = Any
 """Type placeholder for pickle._Pickler (which has for instance the save_reduce method)"""
 
 
-def register(cls: Type = None, subclasses: bool = False):
+def register(cls: type = None, subclasses: bool = False):
     """
     Decorator to register a custom type or type tree into the dill pickling dispatcher table.
 
@@ -60,14 +61,14 @@ def register(cls: Type = None, subclasses: bool = False):
         elif callable(fn):
             add_dispatch_entry(cls, fn, subclasses=subclasses)
         else:
-            raise ValueError("cannot register %s" % fn)
+            raise ValueError(f"cannot register {fn}")
 
         return fn
 
     return _wrapper
 
 
-def reducer(cls: Type, restore: Callable = None, subclasses: bool = False):
+def reducer(cls: type, restore: Callable = None, subclasses: bool = False):
     """
     Convenience decorator to simplify the following pattern::
 
@@ -115,14 +116,14 @@ def reducer(cls: Type, restore: Callable = None, subclasses: bool = False):
 
 
 def add_dispatch_entry(
-    cls: Type, fn: Callable[[PythonPickler, Any], None], subclasses: bool = False
+    cls: type, fn: Callable[[PythonPickler, Any], None], subclasses: bool = False
 ):
     Pickler.dispatch_overwrite[cls] = fn
     if subclasses:
         Pickler.match_subclasses_of.add(cls)
 
 
-def remove_dispatch_entry(cls: Type):
+def remove_dispatch_entry(cls: type):
     try:
         del Pickler.dispatch_overwrite[cls]
     except KeyError:
@@ -136,42 +137,42 @@ def remove_dispatch_entry(cls: Type):
 
 def dumps(obj: Any) -> bytes:
     """
-    Pickle an object into bytes using a ``PickleEncoder``.
+    Pickle an object into bytes using a ``Encoder``.
 
     :param obj: the object to pickle
     :return: the pickled object
     """
-    return PickleEncoder().encodes(obj)
+    return get_default_encoder().encodes(obj)
 
 
 def dump(obj: Any, file: BinaryIO):
     """
-    Pickle an object into a buffer using a ``PickleEncoder``.
+    Pickle an object into a buffer using a ``Encoder``.
 
     :param obj: the object to pickle
     :param file: the IO buffer
     """
-    return PickleEncoder().encode(obj, file)
+    return get_default_encoder().encode(obj, file)
 
 
 def loads(data: bytes) -> Any:
     """
-    Unpickle am object from bytes using a ``PickleDecoder``.
+    Unpickle am object from bytes using a ``Decoder``.
 
     :param data: the pickled object
     :return: the unpickled object
     """
-    return PickleDecoder().decodes(data)
+    return get_default_decoder().decodes(data)
 
 
 def load(file: BinaryIO) -> Any:
     """
-    Unpickle am object from a buffer using a ``PickleDecoder``.
+    Unpickle am object from a buffer using a ``Decoder``.
 
     :param file: the buffer containing the pickled object
     :return: the unpickled object
     """
-    return PickleDecoder().decode(file)
+    return get_default_decoder().decode(file)
 
 
 class _SuperclassMatchingTypeDict(MetaCatchingDict):
@@ -187,7 +188,7 @@ class _SuperclassMatchingTypeDict(MetaCatchingDict):
 
     """
 
-    def __init__(self, seq=None, match_subclasses_of: set[Type] = None):
+    def __init__(self, seq=None, match_subclasses_of: set[type] = None):
         if seq is not None:
             super().__init__(seq)
         else:
@@ -212,8 +213,8 @@ class Pickler(dill.Pickler):
     Custom dill pickler that considers dispatchers and subclass dispatchers registered via ``register``.
     """
 
-    match_subclasses_of: set[Type] = set()
-    dispatch_overwrite: dict[Type, Callable] = {}
+    match_subclasses_of: set[type] = set()
+    dispatch_overwrite: dict[type, Callable] = {}
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -231,12 +232,12 @@ class PickleEncoder(Encoder):
     extended with custom serializers.
     """
 
-    pickler_class: Type[dill.Pickler]
+    pickler_class: type[dill.Pickler]
 
-    def __init__(self, pickler_class: Type[dill.Pickler] = None):
+    def __init__(self, pickler_class: type[dill.Pickler] = None):
         self.pickler_class = pickler_class or Pickler
 
-    def encode(self, obj: Any, file: BinaryIO):
+    def encode(self, obj: Any, file: BinaryIO, py_type: type = None) -> Any:
         return self.pickler_class(file).dump(obj)
 
 
@@ -246,13 +247,25 @@ class PickleDecoder(Decoder):
     extended with custom serializers.
     """
 
-    unpickler_class: Type[dill.Unpickler]
+    unpickler_class: type[dill.Unpickler]
 
-    def __init__(self, unpickler_class: Type[dill.Unpickler] = None):
+    def __init__(self, unpickler_class: type[dill.Unpickler] = None):
         self.unpickler_class = unpickler_class or dill.Unpickler
 
-    def decode(self, file: BinaryIO) -> Any:
+    def decode(self, file: BinaryIO, py_type=None) -> Any:
         return self.unpickler_class(file).load()
+
+
+def get_default_encoder() -> Encoder:
+    from .codecs import get_default_encoder
+
+    return get_default_encoder()
+
+
+def get_default_decoder() -> Decoder:
+    from .codecs import get_default_decoder
+
+    return get_default_decoder()
 
 
 class ObjectStateReducer(Generic[_T]):

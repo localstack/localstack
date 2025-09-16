@@ -1,5 +1,4 @@
 import os
-from typing import Type
 
 import pytest
 
@@ -22,7 +21,7 @@ def _check_skip(client: ContainerClient):
     ids=["CmdDockerClient", "SdkDockerClient"],
     scope="class",
 )
-def docker_client_class(request) -> Type[ContainerClient]:
+def docker_client_class(request) -> type[ContainerClient]:
     return request.param
 
 

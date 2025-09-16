@@ -12,7 +12,7 @@ import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from io import BytesIO
-from typing import Dict, TypeVar
+from typing import TypeVar
 
 import pytest
 import requests
@@ -131,6 +131,7 @@ TEST_LAMBDA_NOTIFIER = os.path.join(THIS_FOLDER, "functions/lambda_notifier.py")
 TEST_LAMBDA_CLOUDWATCH_LOGS = os.path.join(THIS_FOLDER, "functions/lambda_cloudwatch_logs.py")
 TEST_LAMBDA_XRAY_TRACEID = os.path.join(THIS_FOLDER, "functions/xray_tracing_traceid.py")
 TEST_LAMBDA_HOST_PREFIX_OPERATION = os.path.join(THIS_FOLDER, "functions/host_prefix_operation.py")
+TEST_LAMBDA_RESPONSE_STREAMING = os.path.join(THIS_FOLDER, "functions/lambda_response_streaming.js")
 
 PYTHON_TEST_RUNTIMES = RUNTIMES_AGGREGATED["python"]
 NODE_TEST_RUNTIMES = RUNTIMES_AGGREGATED["nodejs"]
@@ -153,7 +154,7 @@ T = TypeVar("T")
 def read_streams(payload: T) -> T:
     new_payload = {}
     for k, v in payload.items():
-        if isinstance(v, Dict):
+        if isinstance(v, dict):
             new_payload[k] = read_streams(v)
         elif isinstance(v, StreamingBody):
             new_payload[k] = to_str(v.read())
@@ -397,7 +398,7 @@ class TestLambdaBaseFeatures:
             )
             return json.load(result["Payload"])["environment"]
 
-        def _transform_to_key_dict(env: Dict[str, str]):
+        def _transform_to_key_dict(env: dict[str, str]):
             return {
                 "AccessKeyId": env["AWS_ACCESS_KEY_ID"],
                 "SecretAccessKey": env["AWS_SECRET_ACCESS_KEY"],
@@ -461,6 +462,7 @@ class TestLambdaBehavior:
     )
     @markers.aws.validated
     @markers.only_on_amd64
+    @markers.requires_docker  # required due to environment mismatch
     def test_runtime_introspection_x86(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_x86_{short_uid()}"
         create_lambda_function(
@@ -489,6 +491,7 @@ class TestLambdaBehavior:
     )
     @markers.aws.validated
     @markers.only_on_arm64
+    @markers.requires_docker  # required due to environment mismatch
     def test_runtime_introspection_arm(self, create_lambda_function, snapshot, aws_client):
         func_name = f"test_lambda_arm_{short_uid()}"
         create_lambda_function(
@@ -503,6 +506,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_arm_introspection", invoke_result)
 
     @markers.aws.validated
+    @markers.requires_docker  # also requires in process, but the docker part is more important here by design
     def test_runtime_ulimits(self, create_lambda_function, snapshot, monkeypatch, aws_client):
         """We consider ulimits parity as opt-in because development environments could hit these limits unlike in
         optimized production deployments."""
@@ -523,6 +527,7 @@ class TestLambdaBehavior:
         snapshot.match("invoke_runtime_ulimits", invoke_result)
 
     @markers.aws.only_localstack
+    @markers.requires_in_process
     def test_ignore_architecture(self, create_lambda_function, monkeypatch, aws_client):
         """Test configuration to ignore lambda architecture by creating a lambda with non-native architecture."""
         monkeypatch.setattr(config, "LAMBDA_IGNORE_ARCHITECTURE", True)
@@ -555,6 +560,7 @@ class TestLambdaBehavior:
     # Special case requiring both architectures
     @markers.only_on_amd64
     @markers.only_on_arm64
+    @markers.requires_docker
     def test_mixed_architecture(self, create_lambda_function, aws_client, snapshot):
         """Test emulation of a lambda function changing architectures.
         Limitation: only works on hosts that support both ARM and AMD64 architectures.
@@ -833,6 +839,7 @@ class TestLambdaBehavior:
             "$..Payload.environment._X_AMZN_TRACE_ID",
         ]
     )
+    @markers.requires_in_process
     def test_lambda_init_environment(
         self, aws_client, create_lambda_function, snapshot, monkeypatch
     ):
@@ -981,6 +988,32 @@ class TestLambdaURL:
                 "content": to_str(result.content),
             },
         )
+
+    @markers.aws.validated
+    def test_function_url_with_response_streaming(
+        self, aws_client, create_lambda_function, snapshot
+    ):
+        function_name = f"test_lambda_{short_uid()}"
+        create_lambda_function(
+            func_name=function_name,
+            handler_file=TEST_LAMBDA_RESPONSE_STREAMING,
+            handler="lambda_response_streaming.handler",
+            runtime=Runtime.nodejs18_x,
+        )
+        url_config = aws_client.lambda_.create_function_url_config(
+            FunctionName=function_name, AuthType="NONE", InvokeMode="RESPONSE_STREAM"
+        )
+        aws_client.lambda_.add_permission(
+            FunctionName=function_name,
+            StatementId=str(short_uid()),
+            Action="lambda:InvokeFunctionUrl",
+            Principal="*",
+            FunctionUrlAuthType="NONE",
+        )
+
+        result = safe_requests.post(url_config["FunctionUrl"], data=b"{'key':'value'}")
+        snapshot.match("response_status", result.status_code)
+        snapshot.match("response_data", result.text)
 
     @markers.aws.validated
     def test_lambda_url_invocation_custom_id(self, create_lambda_function, aws_client):
@@ -3511,6 +3544,7 @@ class TestRequestIdHandling:
         snapshot.match("end_log_entries", end_log_entries)
 
     @markers.aws.validated
+    @markers.requires_in_process
     def test_request_id_async_invoke_with_retry(
         self, aws_client, create_lambda_function, monkeypatch, snapshot
     ):

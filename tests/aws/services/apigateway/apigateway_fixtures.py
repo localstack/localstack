@@ -1,5 +1,4 @@
 from enum import Enum
-from typing import Dict
 
 from localstack.services.apigateway.helpers import (
     host_based_url,
@@ -12,16 +11,16 @@ from localstack.utils.aws import aws_stack
 # TODO convert the test util functions in this file to pytest fixtures
 
 
-def assert_response_status(response: Dict, status: int):
+def assert_response_status(response: dict, status: int):
     assert response.get("ResponseMetadata").get("HTTPStatusCode") == status
 
 
-def assert_response_is_200(response: Dict) -> bool:
+def assert_response_is_200(response: dict) -> bool:
     assert_response_status(response, 200)
     return True
 
 
-def assert_response_is_201(response: Dict) -> bool:
+def assert_response_is_201(response: dict) -> bool:
     assert_response_status(response, 201)
     return True
 

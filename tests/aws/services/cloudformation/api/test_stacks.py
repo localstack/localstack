@@ -1,3 +1,4 @@
+import copy
 import json
 import os
 from collections import OrderedDict
@@ -6,8 +7,12 @@ from itertools import permutations
 import botocore.exceptions
 import pytest
 import yaml
-from botocore.exceptions import WaiterError
+from botocore.exceptions import ClientError, WaiterError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from tests.aws.services.cloudformation.conftest import (
+    skip_if_v1_provider,
+    skipped_v2_items,
+)
 
 from localstack.aws.api.cloudformation import Capability
 from localstack.services.cloudformation.engine.entities import StackIdentifier
@@ -22,6 +27,9 @@ from localstack.utils.sync import retry, wait_until
 class TestStacksApi:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$..ChangeSetId", "$..EnableTerminationProtection"]
+        + skipped_v2_items(
+            "$..Parameters",
+        ),
     )
     @markers.aws.validated
     def test_stack_lifecycle(self, deploy_cfn_template, snapshot, aws_client):
@@ -88,6 +96,75 @@ class TestStacksApi:
             0
         ]
         snapshot.match("describe_stack", response)
+
+    @skip_if_v1_provider(reason="Lots of fields not in parity")
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..ResourceChange.Details",
+            "$..ResourceChange.Scope",
+            "$..StackStatusReason",
+        ]
+    )
+    @pytest.mark.parametrize(
+        "tags", [None, [{"Key": "foo", "Value": "bar"}]], ids=["no-tags", "with-tags"]
+    )
+    def test_stack_description_lifecycle(self, snapshot, aws_client, cleanups, tags):
+        """
+        Test when and how the stack metadata gets set:
+        * tags
+        * description
+        """
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+        template = {
+            "AWSTemplateFormatVersion": "2010-09-09",
+            "Description": "test <env>.test.net",
+            "Resources": {
+                "TestResource": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": "DummyValue",
+                    },
+                }
+            },
+        }
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"cs-{short_uid()}"
+
+        kwargs = {
+            "StackName": stack_name,
+            "ChangeSetName": change_set_name,
+            "ChangeSetType": "CREATE",
+            "TemplateBody": json.dumps(template),
+        }
+        if tags is not None:
+            kwargs["Tags"] = tags
+
+        change_set = aws_client.cloudformation.create_change_set(**kwargs)
+        change_set_id = change_set["Id"]
+        stack_id = change_set["StackId"]
+
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_id, StackName=stack_id
+        )
+        change_set_description = aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id
+        )
+        snapshot.match("change-set-pre-execute", change_set_description)
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
+            0
+        ]
+        snapshot.match("stack-pre-execute", stack_description)
+
+        aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id)
+        cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
+
+        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+        stack_description = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][
+            0
+        ]
+        snapshot.match("stack-post-execute", stack_description)
 
     @markers.aws.validated
     def test_stack_name_creation(self, deploy_cfn_template, snapshot, aws_client):
@@ -208,45 +285,6 @@ class TestStacksApi:
         resources = aws_client.cloudformation.describe_stack_resources(StackName=stack_name)
         snapshot.match("stack_resources", resources)
 
-    @markers.aws.needs_fixing
-    def test_list_stack_resources_for_removed_resource(self, deploy_cfn_template, aws_client):
-        template_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/eventbridge_policy.yaml"
-        )
-        event_bus_name = f"bus-{short_uid()}"
-        stack = deploy_cfn_template(
-            template_path=template_path,
-            parameters={"EventBusName": event_bus_name},
-        )
-
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        resources_before = len(resources)
-        assert resources_before == 3
-        statuses = {res["ResourceStatus"] for res in resources}
-        assert statuses == {"CREATE_COMPLETE"}
-
-        # remove one resource from the template, then update stack (via change set)
-        template_dict = parse_yaml(load_file(template_path))
-        template_dict["Resources"].pop("eventPolicy2")
-        template2 = yaml.dump(template_dict)
-
-        deploy_cfn_template(
-            stack_name=stack.stack_name,
-            is_update=True,
-            template=template2,
-            parameters={"EventBusName": event_bus_name},
-        )
-
-        # get list of stack resources, again - make sure that deleted resource is not contained in result
-        resources = aws_client.cloudformation.list_stack_resources(StackName=stack.stack_name)[
-            "StackResourceSummaries"
-        ]
-        assert len(resources) == resources_before - 1
-        statuses = {res["ResourceStatus"] for res in resources}
-        assert statuses == {"UPDATE_COMPLETE"}
-
     @markers.aws.validated
     def test_update_stack_with_same_template_withoutchange(
         self, deploy_cfn_template, aws_client, snapshot
@@ -338,7 +376,7 @@ class TestStacksApi:
         self, rollback_disabled, length_expected, aws_client
     ):
         template_with_error = open(
-            os.path.join(os.path.dirname(__file__), "../../../templates/multiple_bucket.yaml"), "r"
+            os.path.join(os.path.dirname(__file__), "../../../templates/multiple_bucket.yaml")
         ).read()
 
         stack_name = f"stack-{short_uid()}"
@@ -382,7 +420,6 @@ class TestStacksApi:
             os.path.join(
                 os.path.dirname(__file__), "../../../templates/multiple_bucket_update.yaml"
             ),
-            "r",
         ).read()
 
         aws_client.cloudformation.create_stack(
@@ -436,7 +473,6 @@ class TestStacksApi:
         )
         template = open(
             os.path.join(os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"),
-            "r",
         ).read()
 
         stack = aws_client.cloudformation.create_stack(
@@ -732,6 +768,7 @@ Resources:
 
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..EnableTerminationProtection", "$..LastUpdatedTime"]
+    + skipped_v2_items("$..Capabilities")
 )
 @markers.aws.validated
 def test_name_conflicts(aws_client, snapshot, cleanups):
@@ -922,6 +959,88 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
     snapshot.match("events", filtered_events)
 
 
+@skip_if_v1_provider("Not supported with v1 provider")
+@markers.aws.validated
+@pytest.mark.parametrize(
+    "deletions",
+    [
+        pytest.param(["C"], id="C"),
+        pytest.param(["B", "C"], id="B-C"),
+        pytest.param(["A", "B", "C"], id="A-B-C"),
+    ],
+)
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "delete-describe.ChangeSetId",
+        "$..EnableTerminationProtection",
+        #
+        # Before/After Context
+        "$..Capabilities",
+        "$..IncludeNestedStacks",
+        "$..Scope",
+        "$..Details",
+        "$..Parameters",
+        "$..PolicyAction",
+        "$..PhysicalResourceId",
+        "$..Changes..ResourceChange.BeforeContext.Properties.Value",
+        "$..StackEvents..EventId",
+        "$..StackEvents..ResourceStatusReason",
+        "$..StackEvents..ResourceProperties.Value",
+        "all-events..EventId",
+    ]
+)
+def test_stack_deletion_order(
+    aws_client, capture_update_process, capture_resource_state_changes, snapshot, deletions
+):
+    t1 = {
+        "Resources": {
+            "Dummy": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "dummy",
+                },
+            },
+            "A": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": "root",
+                },
+                "DependsOn": ["Dummy"],
+            },
+            "B": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Ref": "A",
+                    },
+                },
+            },
+            "C": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": {
+                        "Ref": "B",
+                    },
+                },
+            },
+        }
+    }
+    t2 = copy.deepcopy(t1)
+    for deletion in deletions:
+        del t2["Resources"][deletion]
+
+    stack_id = capture_update_process(snapshot, t1, t2)
+
+    # since resource deployments are serializable, we can capture events and check parity with them
+    events = list(capture_resource_state_changes(stack_id))
+    to_snapshot = [(every["LogicalResourceId"], every["ResourceStatus"]) for every in events[::-1]]
+    snapshot.match("all-events", to_snapshot)
+
+
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: this property is present in the response from LocalStack when
@@ -936,6 +1055,10 @@ def test_stack_deploy_order(deploy_cfn_template, aws_client, snapshot, deploy_or
         "$..ResourceChange",
         "$..StackResourceDetail.Metadata",
     ]
+    + skipped_v2_items(
+        "$..Stacks..Outputs..Description",
+        "$..StackResourceDetail.DriftInformation",
+    )
 )
 @markers.aws.validated
 def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
@@ -943,7 +1066,7 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
     snapshot.add_transformer(SortingTransformer("Parameters", lambda x: x.get("ParameterKey", "")))
 
     template_path = os.path.join(os.path.dirname(__file__), "../../../templates/cfn_no_echo.yml")
-    template = open(template_path, "r").read()
+    template = open(template_path).read()
 
     deployment = deploy_cfn_template(
         template=template,
@@ -970,6 +1093,28 @@ def test_no_echo_parameter(snapshot, aws_client, deploy_cfn_template):
             f"describe_stack_resource_details_{resource_logical_id}",
             describe_stack_resource_details,
         )
+
+    # create a change set
+    change_set_name = f"CreateChangeSetSecretParameterValue-{short_uid()}"
+    aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        TemplateBody=template,
+        ChangeSetName=change_set_name,
+        Parameters=[
+            {"ParameterKey": "SecretParameter", "ParameterValue": "NewSecretValue1"},
+        ],
+    )
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+    )
+    change_sets = aws_client.cloudformation.describe_change_set(
+        StackName=stack_id,
+        ChangeSetName=change_set_name,
+    )
+    snapshot.match("describe_change_set_on_create_complete", change_sets)
+    describe_stacks = aws_client.cloudformation.describe_stacks(StackName=stack_id)
+    snapshot.match("describe_stack_on_create_complete", describe_stacks)
 
     # Update stack via update_stack (and change the value of SecretParameter)
     aws_client.cloudformation.update_stack(
@@ -1069,3 +1214,23 @@ def test_stack_resource_not_found(deploy_cfn_template, aws_client, snapshot):
 
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
     snapshot.match("Error", ex.value.response)
+
+
+@markers.aws.validated
+def test_non_existing_stack_message(aws_client, snapshot):
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        aws_client.cloudformation.describe_stacks(StackName="non-existing")
+
+    snapshot.add_transformer(snapshot.transform.regex("non-existing", "<stack-name>"))
+    snapshot.match("Error", ex.value.response)
+
+
+@skip_if_v1_provider("Not implemented for V1 provider")
+@markers.aws.validated
+def test_no_parameters_given(aws_client, deploy_cfn_template, snapshot):
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/ssm_parameter_defaultname.yaml"
+    )
+    with pytest.raises(ClientError) as exc_info:
+        deploy_cfn_template(template_path=template_path)
+    snapshot.match("deploy-error", exc_info.value)

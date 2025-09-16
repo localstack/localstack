@@ -915,5 +915,171 @@
         }
       }
     }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[True-Bounce]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-bounce-enabled-True": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-bounce-enabled-True-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[True-Complaint]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-complaint-enabled-True": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-complaint-enabled-True-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[True-Delivery]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-delivery-enabled-True": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-delivery-enabled-True-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[False-Bounce]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-bounce-enabled-False": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-bounce-enabled-False-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[False-Complaint]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-complaint-enabled-False": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-complaint-enabled-False-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_success[False-Delivery]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-delivery-enabled-False": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "set-headers-delivery-enabled-False-idempotent": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_invalid_type": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-error-invalidtype": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "Invalid notification type: InvalidType. Valid values are: Bounce, Complaint, Delivery.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_unknown_identity[Bounce]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-error-unknown-identity-bounce": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Identity unknown@example.com is not verified or does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_unknown_identity[Complaint]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-error-unknown-identity-complaint": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Identity unknown@example.com is not verified or does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/ses/test_ses.py::TestSES::test_set_identity_headers_in_notifications_enabled_failure_unknown_identity[Delivery]": {
+    "recorded-date": "29-07-2025, 13:55:22",
+    "recorded-content": {
+      "set-headers-error-unknown-identity-delivery": {
+        "Error": {
+          "Code": "MessageRejected",
+          "Message": "Identity unknown@example.com is not verified or does not exist.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

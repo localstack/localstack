@@ -7,7 +7,7 @@ import time
 import traceback
 from datetime import timedelta
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import botocore.config
 import requests
@@ -37,7 +37,7 @@ PHANTOM_OPERATIONS = {"s3": ["PostObject"]}
 
 # will only include available services
 response = requests.get("http://localhost:4566/_localstack/health").content.decode("utf-8")
-latest_services_pro = [k for k in json.loads(response).get("services").keys()]
+latest_services_pro = list(json.loads(response).get("services").keys())
 
 exclude_services = {"azure"}
 latest_services_pro = [s for s in latest_services_pro if s not in exclude_services]
@@ -150,7 +150,7 @@ def simulate_call(service: str, op: str) -> RowEntry:
     return result
 
 
-def _make_api_call(client, service: str, op: str, parameters: Optional[Instance]):
+def _make_api_call(client, service: str, op: str, parameters: Instance | None):
     result = RowEntry(service=service, operation=op, status_code=0)
     try:
         response = client._make_api_call(op, parameters)
@@ -190,7 +190,7 @@ def map_to_notimplemented(row: RowEntry) -> bool:
     Some simple heuristics to check the API responses and classify them into implemented/notimplemented
 
     Ideally they all should behave the same way when receiving requests for not yet implemented endpoints
-    (501 with a "not yet implemented" message)
+    (501 error code and avoids relying on static "not yet implemented" error message strings)
 
     :param row: the RowEntry
     :return: True if we assume it is not implemented, False otherwise
@@ -231,16 +231,6 @@ def map_to_notimplemented(row: RowEntry) -> bool:
         and row["status_code"] == 404
         and row.get("error_message") is not None
         and "The requested URL was not found on the server" in row.get("error_message")
-    ):
-        return True
-    if (
-        row["status_code"] == 501
-        and row.get("error_message") is not None
-        and "not yet implemented" in row.get("error_message", "")
-    ):
-        return True
-    if row.get("error_message") is not None and "not yet implemented" in row.get(
-        "error_message", ""
     ):
         return True
     if row["status_code"] == 501:
@@ -337,7 +327,7 @@ def calculate_percentages():
     implemented_aggregate = {}
     aggregate_list = []
 
-    with open("./output-notimplemented.csv", "r") as fd:
+    with open("./output-notimplemented.csv") as fd:
         reader = csv.DictReader(fd, fieldnames=["service", "operation", "implemented"])
         for line in reader:
             if line["implemented"] == "implemented":

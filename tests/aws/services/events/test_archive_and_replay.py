@@ -1,5 +1,5 @@
 import json
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from botocore.exceptions import ClientError
@@ -377,7 +377,7 @@ class TestReplay:
         aws_client,
         snapshot,
     ):
-        event_start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(UTC)
         event_end_time = event_start_time + timedelta(minutes=1)
 
         # setup event bus
@@ -393,7 +393,7 @@ class TestReplay:
         rule_arn = response["RuleArn"]
 
         # setup sqs target
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
         target_id = f"target-{short_uid()}"
         aws_client.events.put_targets(
             Rule=rule_name,
@@ -503,7 +503,7 @@ class TestReplay:
     def test_list_replays_with_prefix(
         self, events_create_archive, events_create_event_bus, aws_client, snapshot
     ):
-        event_start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(UTC)
         event_end_time = event_start_time + timedelta(minutes=1)
 
         event_bus_name = f"test-bus-{short_uid()}"
@@ -558,7 +558,7 @@ class TestReplay:
     def test_list_replays_with_event_source_arn(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
-        event_start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(UTC)
         event_end_time = event_start_time + timedelta(minutes=1)
 
         event_bus_name = f"test-bus-{short_uid()}"
@@ -596,7 +596,7 @@ class TestReplay:
     def test_list_replay_with_limit(
         self, events_create_event_bus, events_create_archive, aws_client, snapshot
     ):
-        event_start_time = datetime.now(timezone.utc)
+        event_start_time = datetime.now(UTC)
         event_end_time = event_start_time + timedelta(minutes=1)
 
         event_bus_name = f"test-bus-{short_uid()}"
@@ -666,8 +666,8 @@ class TestReplay:
             f"arn:aws:events:{region_name}:{account_id}:event-bus/{not_existing_event_bus_name}"
         )
 
-        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        end_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC) - timedelta(minutes=1)
+        end_time = datetime.now(UTC)
 
         replay_name = f"test-replay-{short_uid()}"
         with pytest.raises(ClientError) as error:
@@ -708,8 +708,8 @@ class TestReplay:
         self, aws_client, region_name, account_id, snapshot
     ):
         not_existing_archive_name = f"doesnotexist-{short_uid()}"
-        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        end_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC) - timedelta(minutes=1)
+        end_time = datetime.now(UTC)
         with pytest.raises(ClientError) as error:
             aws_client.events.start_replay(
                 ReplayName="test-replay",
@@ -739,8 +739,8 @@ class TestReplay:
         ]
 
         replay_name = f"test-replay-{short_uid()}"
-        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        end_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC) - timedelta(minutes=1)
+        end_time = datetime.now(UTC)
         aws_client.events.start_replay(
             ReplayName=replay_name,
             Description="description of the replay",
@@ -786,8 +786,8 @@ class TestReplay:
             "ArchiveArn"
         ]
 
-        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        end_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC) - timedelta(minutes=1)
+        end_time = datetime.now(UTC)
 
         replay_name = f"test-replay-{short_uid()}"
         aws_client.events.start_replay(
@@ -828,7 +828,7 @@ class TestReplay:
         response = events_create_archive()
         archive_arn = response["ArchiveArn"]
 
-        start_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC)
         end_time = start_time.replace(microsecond=0) - timedelta(
             seconds=negative_time_delta_seconds
         )
@@ -864,8 +864,8 @@ class TestReplay:
         )["ArchiveArn"]
 
         replay_name_prefix = short_uid()
-        start_time = datetime.now(timezone.utc) - timedelta(minutes=1)
-        end_time = datetime.now(timezone.utc)
+        start_time = datetime.now(UTC) - timedelta(minutes=1)
+        end_time = datetime.now(UTC)
 
         num_replays = 10
         for i in range(num_replays):

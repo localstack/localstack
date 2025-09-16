@@ -1,8 +1,8 @@
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import Enum
-from typing import Literal, Optional, TypeAlias, TypedDict
+from typing import Literal, TypeAlias, TypedDict
 
 from localstack.aws.api.core import ServiceException
 from localstack.aws.api.events import (
@@ -85,14 +85,14 @@ FormattedEvent = TypedDict(  # functional syntax required due to name-name keys
     {
         "version": str,
         "id": str,
-        "detail-type": Optional[str],
-        "source": Optional[EventSourceName],
+        "detail-type": str | None,
+        "source": EventSourceName | None,
         "account": str,
         "time": EventTime,
         "region": str,
-        "resources": Optional[EventResourceList],
+        "resources": EventResourceList | None,
         "detail": dict[str, str | dict],
-        "replay-name": Optional[ReplayName],
+        "replay-name": ReplayName | None,
         "event-bus-name": EventBusName,
     },
 )
@@ -134,15 +134,15 @@ class Rule:
     name: RuleName
     region: str
     account_id: str
-    schedule_expression: Optional[ScheduleExpression] = None
-    event_pattern: Optional[EventPattern] = None
-    state: Optional[RuleState] = None
-    description: Optional[RuleDescription] = None
-    role_arn: Optional[RoleArn] = None
+    schedule_expression: ScheduleExpression | None = None
+    event_pattern: EventPattern | None = None
+    state: RuleState | None = None
+    description: RuleDescription | None = None
+    role_arn: RoleArn | None = None
     tags: TagList = field(default_factory=list)
     event_bus_name: EventBusName = "default"
     targets: TargetDict = field(default_factory=dict)
-    managed_by: Optional[ManagedBy] = None  # can only be set by AWS services
+    managed_by: ManagedBy | None = None  # can only be set by AWS services
     created_by: CreatedBy = field(init=False)
 
     def __post_init__(self):
@@ -171,12 +171,12 @@ class Replay:
     destination: ReplayDestination  # Event Bus Arn or Rule Arns
     event_start_time: Timestamp
     event_end_time: Timestamp
-    description: Optional[ReplayDescription] = None
-    state: Optional[ReplayState] = None
-    state_reason: Optional[ReplayStateReason] = None
-    event_last_replayed_time: Optional[Timestamp] = None
-    replay_start_time: Optional[Timestamp] = None
-    replay_end_time: Optional[Timestamp] = None
+    description: ReplayDescription | None = None
+    state: ReplayState | None = None
+    state_reason: ReplayStateReason | None = None
+    event_last_replayed_time: Timestamp | None = None
+    replay_start_time: Timestamp | None = None
+    replay_end_time: Timestamp | None = None
 
     @property
     def arn(self) -> Arn:
@@ -217,17 +217,17 @@ class EventBus:
     name: EventBusName
     region: str
     account_id: str
-    event_source_name: Optional[str] = None
-    description: Optional[str] = None
+    event_source_name: str | None = None
+    description: str | None = None
     tags: TagList = field(default_factory=list)
-    policy: Optional[ResourcePolicy] = None
+    policy: ResourcePolicy | None = None
     rules: RuleDict = field(default_factory=dict)
     creation_time: Timestamp = field(init=False)
     last_modified_time: Timestamp = field(init=False)
 
     def __post_init__(self):
-        self.creation_time = datetime.now(timezone.utc)
-        self.last_modified_time = datetime.now(timezone.utc)
+        self.creation_time = datetime.now(UTC)
+        self.last_modified_time = datetime.now(UTC)
         if self.rules is None:
             self.rules = {}
         if self.tags is None:
@@ -259,7 +259,7 @@ class Connection:
     id: str = str(uuid.uuid4())
 
     def __post_init__(self):
-        timestamp_now = datetime.now(timezone.utc)
+        timestamp_now = datetime.now(UTC)
         self.creation_time = timestamp_now
         self.last_modified_time = timestamp_now
         self.last_authorized_time = timestamp_now
@@ -292,7 +292,7 @@ class ApiDestination:
     id: str = str(short_uid())
 
     def __post_init__(self):
-        timestamp_now = datetime.now(timezone.utc)
+        timestamp_now = datetime.now(UTC)
         self.creation_time = timestamp_now
         self.last_modified_time = timestamp_now
         self.last_authorized_time = timestamp_now

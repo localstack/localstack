@@ -4690,5 +4690,12 @@
         "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\t\n"
       ]
     }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_function_url_with_response_streaming": {
+    "recorded-date": "30-07-2025, 20:58:56",
+    "recorded-content": {
+      "response_status": 200,
+      "response_data": "Hello, world!"
+    }
   }
 }

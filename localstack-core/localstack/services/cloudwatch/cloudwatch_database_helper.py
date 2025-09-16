@@ -2,8 +2,7 @@ import logging
 import os
 import sqlite3
 import threading
-from datetime import datetime, timezone
-from typing import Dict, List, Optional
+from datetime import UTC, datetime
 
 from localstack import config
 from localstack.aws.api.cloudwatch import MetricData, MetricDataQuery, ScanBy
@@ -92,7 +91,7 @@ class CloudwatchDatabase:
         self, account_id: str, region: str, namespace: str, metric_data: MetricData
     ):
         def _get_current_unix_timestamp_utc():
-            now = datetime.utcnow().replace(tzinfo=timezone.utc)
+            now = datetime.utcnow().replace(tzinfo=UTC)
             return int(now.timestamp())
 
         for metric in metric_data:
@@ -218,7 +217,7 @@ class CloudwatchDatabase:
         start_time: datetime,
         end_time: datetime,
         scan_by: str,
-    ) -> Dict[str, List]:
+    ) -> dict[str, list]:
         metric_stat = query.get("MetricStat")
         metric = metric_stat.get("Metric")
         period = metric_stat.get("Period")
@@ -389,7 +388,7 @@ class CloudwatchDatabase:
             cur.execute("VACUUM")
             conn.commit()
 
-    def _get_ordered_dimensions_with_separator(self, dims: Optional[List[Dict]], for_search=False):
+    def _get_ordered_dimensions_with_separator(self, dims: list[dict] | None, for_search=False):
         """
         Returns a string with the dimensions in the format "Name=Value\tName=Value\tName=Value" in order to store the metric
         with the dimensions in a single column in the database

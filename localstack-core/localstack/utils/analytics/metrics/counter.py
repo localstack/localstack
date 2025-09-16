@@ -66,7 +66,7 @@ class ThreadSafeCounter:
     _count: int
 
     def __init__(self):
-        super(ThreadSafeCounter, self).__init__()
+        super().__init__()
         self._mutex = threading.Lock()
         self._count = 0
 
@@ -113,11 +113,11 @@ class Counter(Metric, ThreadSafeCounter):
     def collect(self) -> list[CounterPayload]:
         """Collects the metric unless events are disabled."""
         if config.DISABLE_EVENTS:
-            return list()
+            return []
 
         if self._count == 0:
             # Return an empty list if the count is 0, as there are no metrics to send to the analytics backend.
-            return list()
+            return []
 
         return [
             CounterPayload(
@@ -146,9 +146,7 @@ class LabeledCounter(Metric):
     ]
 
     def __init__(self, namespace: str, name: str, labels: list[str], schema_version: int = 1):
-        super(LabeledCounter, self).__init__(
-            namespace=namespace, name=name, schema_version=schema_version
-        )
+        super().__init__(namespace=namespace, name=name, schema_version=schema_version)
 
         if not labels:
             raise ValueError("At least one label is required; the labels list cannot be empty.")
@@ -184,7 +182,7 @@ class LabeledCounter(Metric):
 
     def collect(self) -> list[LabeledCounterPayload]:
         if config.DISABLE_EVENTS:
-            return list()
+            return []
 
         payload = []
         num_labels = len(self._labels)
@@ -200,10 +198,7 @@ class LabeledCounter(Metric):
                 )
 
             # Create labels dictionary
-            labels_dict = {
-                label_name: label_value
-                for label_name, label_value in zip(self._labels, label_values)
-            }
+            labels_dict = dict(zip(self._labels, label_values))
 
             payload.append(
                 LabeledCounterPayload(

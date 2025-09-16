@@ -5,7 +5,7 @@ import re
 from abc import ABC, abstractmethod
 from functools import lru_cache
 from http import HTTPMethod, HTTPStatus
-from typing import Any, Dict
+from typing import Any
 from urllib.parse import urljoin
 
 import requests
@@ -91,7 +91,7 @@ class BackendIntegration(ABC):
 
     @classmethod
     def apply_request_parameters(
-        cls, integration_params: IntegrationParameters, headers: Dict[str, Any]
+        cls, integration_params: IntegrationParameters, headers: dict[str, Any]
     ):
         for k, v in integration_params.get("headers").items():
             headers.update({k: v})
@@ -569,7 +569,7 @@ class KinesisIntegration(BackendIntegration):
         return invocation_context.response
 
     @classmethod
-    def _validate_required_params(cls, request_parameters: Dict[str, Any]) -> None:
+    def _validate_required_params(cls, request_parameters: dict[str, Any]) -> None:
         if not request_parameters:
             raise BadRequestException("Missing required parameters")
         # https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-develop-integrations-aws-services-reference.html#Kinesis-PutRecord
@@ -588,7 +588,7 @@ class KinesisIntegration(BackendIntegration):
 
     def _create_request_parameters(
         self, invocation_context: ApiInvocationContext
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         request_parameters = invocation_context.integration.get("requestParameters", {})
         self._validate_required_params(request_parameters)
 
@@ -756,7 +756,7 @@ class S3Integration(BackendIntegration):
 
 class HTTPIntegration(BackendIntegration):
     @staticmethod
-    def _set_http_apigw_headers(headers: Dict[str, Any], invocation_context: ApiInvocationContext):
+    def _set_http_apigw_headers(headers: dict[str, Any], invocation_context: ApiInvocationContext):
         del headers["host"]
         headers["x-amzn-apigateway-api-id"] = invocation_context.api_id
         return headers
@@ -783,7 +783,7 @@ class HTTPIntegration(BackendIntegration):
             instances = client.list_instances(ServiceId=service_id)["Instances"]
             instance = (instances or [None])[0]
             if instance and instance.get("Id"):
-                uri = "http://%s/%s" % (instance["Id"], invocation_path.lstrip("/"))
+                uri = "http://{}/{}".format(instance["Id"], invocation_path.lstrip("/"))
 
         # apply custom request template
         invocation_context.context = get_event_request_context(invocation_context)
@@ -902,7 +902,7 @@ class SNSIntegration(BackendIntegration):
 
 class StepFunctionIntegration(BackendIntegration):
     @classmethod
-    def _validate_required_params(cls, request_parameters: Dict[str, Any]) -> None:
+    def _validate_required_params(cls, request_parameters: dict[str, Any]) -> None:
         if not request_parameters:
             raise BadRequestException("Missing required parameters")
         # stateMachineArn and input are required
@@ -977,8 +977,9 @@ class StepFunctionIntegration(BackendIntegration):
                     headers={"Content-Type": APPLICATION_JSON},
                     data=json.dumps(
                         {
-                            "message": "StepFunctions execution %s failed with status '%s'"
-                            % (result["executionArn"], result_status)
+                            "message": "StepFunctions execution {} failed with status '{}'".format(
+                                result["executionArn"], result_status
+                            )
                         }
                     ),
                 )
@@ -1065,7 +1066,7 @@ class MockIntegration(BackendIntegration):
 
 # TODO: remove once we migrate all usages to `apply_request_parameters` on BackendIntegration
 def apply_request_parameters(
-    uri: str, integration: Dict[str, Any], path_params: Dict[str, str], query_params: Dict[str, str]
+    uri: str, integration: dict[str, Any], path_params: dict[str, str], query_params: dict[str, str]
 ):
     request_parameters = integration.get("requestParameters")
     uri = uri or integration.get("uri") or integration.get("integrationUri") or ""

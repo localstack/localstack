@@ -3,7 +3,7 @@
 import logging
 import traceback
 from collections import defaultdict
-from typing import Any, Dict, Union
+from typing import Any
 
 from botocore.model import OperationModel, ServiceModel
 
@@ -49,10 +49,10 @@ class ServiceRequestParser(Handler):
     already be resolved in the RequestContext (e.g., through a ServiceNameParser)
     """
 
-    parsers: Dict[str, RequestParser]
+    parsers: dict[str, RequestParser]
 
     def __init__(self):
-        self.parsers = dict()
+        self.parsers = {}
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         # determine service
@@ -89,10 +89,10 @@ class ServiceRequestRouter(Handler):
     Routes ServiceOperations to Handlers.
     """
 
-    handlers: Dict[ServiceOperation, Handler]
+    handlers: dict[ServiceOperation, Handler]
 
     def __init__(self):
-        self.handlers = dict()
+        self.handlers = {}
 
     def __call__(self, chain: HandlerChain, context: RequestContext, response: Response):
         if not context.service:
@@ -118,7 +118,7 @@ class ServiceRequestRouter(Handler):
 
         self.handlers[key] = handler
 
-    def add_provider(self, provider: Any, service: Union[str, ServiceModel]):
+    def add_provider(self, provider: Any, service: str | ServiceModel):
         self.add_skeleton(create_skeleton(service, provider))
 
     def add_skeleton(self, skeleton: Skeleton):
@@ -184,32 +184,29 @@ class ServiceExceptionSerializer(ExceptionHandler):
             if not self.handle_internal_failures:
                 return
 
-            if config.DEBUG:
-                exception = "".join(
+            if config.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE:
+                message = "".join(
                     traceback.format_exception(
                         type(exception), value=exception, tb=exception.__traceback__
                     )
                 )
+            else:
+                message = str(exception)
 
             # wrap exception for serialization
             if operation:
                 operation_name = operation.name
-                msg = "exception while calling %s.%s: %s" % (
-                    service_name,
-                    operation_name,
-                    exception,
-                )
+                msg = f"exception while calling {service_name}.{operation_name}: {message}"
             else:
                 # just use any operation for mocking purposes (the parser needs it to populate the default response)
                 operation = context.service.operation_model(context.service.operation_names[0])
-                msg = "exception while calling %s with unknown operation: %s" % (
-                    service_name,
-                    exception,
-                )
+                msg = f"exception while calling {service_name} with unknown operation: {message}"
 
             status_code = 501 if config.FAIL_FAST else 500
 
-            error = CommonServiceException("InternalError", msg, status_code=status_code)
+            error = CommonServiceException(
+                "InternalError", msg, status_code=status_code
+            ).with_traceback(exception.__traceback__)
             context.service_exception = error
 
         serializer = create_serializer(context.service)  # TODO: serializer cache
@@ -278,7 +275,7 @@ class ServiceResponseHandlers(Handler):
     are only called if the request context has a service, and there are handlers for that particular service.
     """
 
-    handlers: Dict[str, CompositeResponseHandler]
+    handlers: dict[str, CompositeResponseHandler]
 
     def __init__(self):
         self.handlers = defaultdict(CompositeResponseHandler)

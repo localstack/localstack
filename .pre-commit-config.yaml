@@ -3,7 +3,7 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     # Ruff version.
-    rev: v0.12.0
+    rev: v0.12.12
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
@@ -11,17 +11,19 @@ repos:
       - id: ruff-format
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: v1.16.1
+    rev: v1.17.1
     hooks:
       - id: mypy
         entry: bash -c 'cd localstack-core && mypy --install-types --non-interactive'
         additional_dependencies: ['botocore-stubs', 'rolo']
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: end-of-file-fixer
       - id: trailing-whitespace
+      - id: check-json
+        files: .*\.(snapshot|validation)\.json
 
   - repo: https://github.com/localstack/pre-commit-hooks
     rev: v1.2.1

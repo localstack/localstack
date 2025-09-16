@@ -9,8 +9,9 @@ import shlex
 import signal
 import threading
 import time
+from collections.abc import Iterable
 from functools import wraps
-from typing import Any, Callable, Dict, Iterable, List, Optional, Set, Union
+from typing import Any, Callable, Optional, Union
 
 from localstack import config, constants
 from localstack.config import (
@@ -66,6 +67,8 @@ API_DEPENDENCIES = {
     "transcribe": ["s3"],
     # secretsmanager uses lambda for rotation
     "secretsmanager": ["kms", "lambda"],
+    # ssm uses secretsmanager for get_parameter
+    "ssm": ["secretsmanager"],
 }
 
 # Optional dependencies of services on other services
@@ -154,7 +157,7 @@ def log_duration(name=None, min_ms=500):
     return wrapper
 
 
-def get_docker_image_details(image_name: str = None) -> Dict[str, str]:
+def get_docker_image_details(image_name: str = None) -> dict[str, str]:
     image_name = image_name or get_docker_image_to_start()
     try:
         result = DOCKER_CLIENT.inspect_image(image_name)
@@ -247,7 +250,7 @@ def setup_logging():
 # --------------
 
 
-def resolve_apis(services: Iterable[str]) -> Set[str]:
+def resolve_apis(services: Iterable[str]) -> set[str]:
     """
     Resolves recursively for the given collection of services (e.g., ["serverless", "cognito"]) the list of actual
     API services that need to be included (e.g., {'dynamodb', 'cloudformation', 'logs', 'kinesis', 'sts',
@@ -287,8 +290,8 @@ def resolve_apis(services: Iterable[str]) -> Set[str]:
     return result
 
 
-@functools.lru_cache()
-def get_enabled_apis() -> Set[str]:
+@functools.lru_cache
+def get_enabled_apis() -> set[str]:
     """
     Returns the list of APIs that are enabled through the combination of the SERVICES variable and
     STRICT_SERVICE_LOADING variable. If the SERVICES variable is empty, then it will return all available services.
@@ -322,8 +325,8 @@ def is_api_enabled(api: str) -> bool:
     return api in get_enabled_apis()
 
 
-@functools.lru_cache()
-def get_preloaded_services() -> Set[str]:
+@functools.lru_cache
+def get_preloaded_services() -> set[str]:
     """
     Returns the list of APIs that are marked to be eager loaded through the combination of SERVICES variable and
     EAGER_SERVICE_LOADING. If the SERVICES variable is empty, then it will return all available services.
@@ -424,15 +427,13 @@ def validate_localstack_config(name: str):
 
     def port_exposed(port):
         for exposed in docker_ports:
-            if re.match(r"^([0-9]+-)?%s(-[0-9]+)?$" % port, exposed):
+            if re.match(rf"^([0-9]+-)?{port}(-[0-9]+)?$", exposed):
                 return True
 
     if not port_exposed(edge_port):
         warns.append(
-            (
-                f"Edge port {edge_port} is not exposed. You may have to add the entry "
-                'to the "ports" section of the docker-compose file.'
-            )
+            f"Edge port {edge_port} is not exposed. You may have to add the entry "
+            'to the "ports" section of the docker-compose file.'
         )
 
     # print warning/info messages
@@ -454,7 +455,7 @@ def get_docker_image_to_start():
 
 def extract_port_flags(user_flags, port_mappings: PortMappings):
     regex = r"-p\s+([0-9]+)(\-([0-9]+))?:([0-9]+)(\-([0-9]+))?"
-    matches = re.match(".*%s" % regex, user_flags)
+    matches = re.match(f".*{regex}", user_flags)
     if matches:
         for match in re.findall(regex, user_flags):
             start = int(match[0])
@@ -636,7 +637,7 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
-    def custom_command(cmd: List[str]):
+    def custom_command(cmd: list[str]):
         """
         Overwrites the container command and unsets the default entrypoint.
 
@@ -651,7 +652,7 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
-    def env_vars(env_vars: Dict[str, str]):
+    def env_vars(env_vars: dict[str, str]):
         def _cfg(cfg: ContainerConfiguration):
             cfg.env_vars.update(env_vars)
 
@@ -672,7 +673,7 @@ class ContainerConfigurators:
         return _cfg
 
     @staticmethod
-    def cli_params(params: Dict[str, Any]):
+    def cli_params(params: dict[str, Any]):
         """
         Parse docker CLI parameters and add them to the config. The currently known CLI params are::
 
@@ -806,7 +807,7 @@ def get_gateway_port(container: Container) -> int:
     :param container: the localstack container
     :return: the gateway port reachable from the host
     """
-    candidates: List[int]
+    candidates: list[int]
 
     gateway_listen = container.config.env_vars.get("GATEWAY_LISTEN")
     if gateway_listen:
@@ -999,7 +1000,7 @@ class RunningContainer:
                     return
                 raise
 
-    def inspect(self) -> Dict[str, Union[Dict, str]]:
+    def inspect(self) -> dict[str, Union[dict, str]]:
         return self.container_client.inspect_container(container_name_or_id=self.id)
 
     def attach(self):
@@ -1031,7 +1032,7 @@ class ContainerLogPrinter:
 
     def _can_start_streaming(self):
         if self._closed.is_set():
-            raise IOError("Already stopped")
+            raise OSError("Already stopped")
         if not self.container.running_container:
             return False
         return self.container.running_container.is_running()
@@ -1039,7 +1040,7 @@ class ContainerLogPrinter:
     def run(self):
         try:
             poll_condition(self._can_start_streaming)
-        except IOError:
+        except OSError:
             return
         self._stream = self.container.running_container.stream_logs()
         for line in self._stream:
@@ -1113,8 +1114,8 @@ class LocalstackContainerServer(Server):
 
     def do_run(self):
         if self.is_container_running():
-            raise ContainerExists(
-                'LocalStack container named "%s" is already running' % self.container.name
+            raise ContainerRunning(
+                f'LocalStack container named "{self.container.name}" is already running'
             )
 
         config.dirs.mkdirs()
@@ -1150,12 +1151,19 @@ class ContainerExists(Exception):
     pass
 
 
+class ContainerRunning(Exception):
+    pass
+
+
 def prepare_docker_start():
     # prepare environment for docker start
     container_name = config.MAIN_CONTAINER_NAME
 
     if DOCKER_CLIENT.is_container_running(container_name):
-        raise ContainerExists('LocalStack container named "%s" is already running' % container_name)
+        raise ContainerRunning(f'LocalStack container named "{container_name}" is already running')
+
+    if container_name in DOCKER_CLIENT.get_all_container_names():
+        raise ContainerExists(f'LocalStack container named "{container_name}" already exists')
 
     config.dirs.mkdirs()
 
@@ -1225,7 +1233,7 @@ def prepare_host(console):
     hooks.prepare_host.run()
 
 
-def start_infra_in_docker(console, cli_params: Dict[str, Any] = None):
+def start_infra_in_docker(console, cli_params: dict[str, Any] = None):
     prepare_docker_start()
 
     # create and prepare container
@@ -1300,14 +1308,15 @@ def ensure_container_image(console, container: Container):
         console.log("download complete")
 
 
-def start_infra_in_docker_detached(console, cli_params: Dict[str, Any] = None):
+def start_infra_in_docker_detached(console, cli_params: dict[str, Any] = None):
     """
     An alternative to start_infra_in_docker where the terminal is not blocked by the follow on the logfile.
     """
     console.log("preparing environment")
     try:
         prepare_docker_start()
-    except ContainerExists as e:
+    except ContainerRunning as e:
+        # starting in detached mode is idempotent, return if container is already running
         console.print(str(e))
         return
 

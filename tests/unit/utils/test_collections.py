@@ -9,13 +9,14 @@ from localstack.utils.collections import (
     ImmutableList,
     convert_to_typed_dict,
     is_comma_delimited_list,
+    optional_list,
     select_from_typed_dict,
 )
 
 
 class MyTypeDict(TypedDict):
     key_one: str
-    key_optional: Optional[str]
+    key_optional: str | None
 
 
 def test_select_from_typed_dict():
@@ -42,7 +43,7 @@ def test_immutable_dict():
     d1 = ImmutableDict({"a": ["b"], "c": 1})
 
     assert dict(d1) == {"a": ["b"], "c": 1}
-    assert {k for k in d1} == {"a", "c"}
+    assert set(d1) == {"a", "c"}
     assert d1["a"] == ["b"]
     assert d1["c"] == 1
     assert len(d1) == 2
@@ -129,7 +130,7 @@ def test_convert_to_typed_dict():
 
 def test_convert_to_typed_dict_with_union():
     class TestTypedDict(TypedDict):
-        union_member: Union[str, int]
+        union_member: Union[str, int]  # noqa
 
     test_dict = {"union_member": 1}
 
@@ -140,7 +141,7 @@ def test_convert_to_typed_dict_with_union():
 
 def test_convert_to_typed_dict_with_optional():
     class TestTypedDict(TypedDict):
-        optional_member: Optional[str]
+        optional_member: Optional[str]  # noqa
 
     test_dict = {"optional_member": 1}
 
@@ -193,3 +194,16 @@ def test_is_comma_limited_list():
     assert not is_comma_delimited_list("foo, bar baz")
     assert not is_comma_delimited_list("foo,")
     assert not is_comma_delimited_list("")
+
+
+@pytest.mark.parametrize(
+    "condition,input,expected",
+    [
+        (True, [1, 2, 3], [1, 2, 3]),
+        (False, [1, 2, 3], []),
+        (True, [], []),
+        (False, [], []),
+    ],
+)
+def test_optional_list(condition, input, expected):
+    assert optional_list(condition, input) == expected

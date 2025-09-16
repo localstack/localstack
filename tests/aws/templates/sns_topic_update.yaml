@@ -1,0 +1,30 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Parameters:
+  TopicName:
+    Type: String
+  DisplayName:
+    Type: String
+  Environment:
+    Type: String
+  Project:
+    Type: String
+Resources:
+  TestTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      TopicName: !Ref TopicName
+      DisplayName: !Ref DisplayName
+      Tags:
+        - Key: Environment
+          Value: !Ref Environment
+        - Key: Project
+          Value: !Ref Project
+  FixedTestSubscription:
+    Type: AWS::SNS::Subscription
+    Properties:
+      Protocol: email
+      Endpoint: "test@example.com"
+      TopicArn: !Ref TestTopic
+Outputs:
+  TopicArn:
+    Value: !Ref TestTopic

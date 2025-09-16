@@ -8,6 +8,7 @@ ArchivalReason = str
 AttributeName = str
 AutoScalingPolicyName = str
 AutoScalingRoleArn = str
+AvailabilityErrorMessage = str
 Backfilling = bool
 BackupArn = str
 BackupName = str
@@ -61,10 +62,12 @@ PartiQLStatement = str
 PolicyRevisionId = str
 PositiveIntegerObject = int
 ProjectionExpression = str
+Reason = str
 RecoveryPeriodInDays = int
 RegionName = str
 ReplicaStatusDescription = str
 ReplicaStatusPercentProgress = str
+Resource = str
 ResourceArnString = str
 ResourcePolicy = str
 RestoreInProgress = bool
@@ -169,6 +172,11 @@ class ContributorInsightsAction(StrEnum):
     DISABLE = "DISABLE"
 
 
+class ContributorInsightsMode(StrEnum):
+    ACCESSED_AND_THROTTLED_KEYS = "ACCESSED_AND_THROTTLED_KEYS"
+    THROTTLED_KEYS = "THROTTLED_KEYS"
+
+
 class ContributorInsightsStatus(StrEnum):
     ENABLING = "ENABLING"
     ENABLED = "ENABLED"
@@ -270,6 +278,9 @@ class ReplicaStatus(StrEnum):
     ACTIVE = "ACTIVE"
     REGION_DISABLED = "REGION_DISABLED"
     INACCESSIBLE_ENCRYPTION_CREDENTIALS = "INACCESSIBLE_ENCRYPTION_CREDENTIALS"
+    ARCHIVING = "ARCHIVING"
+    ARCHIVED = "ARCHIVED"
+    REPLICATION_NOT_AUTHORIZED = "REPLICATION_NOT_AUTHORIZED"
 
 
 class ReturnConsumedCapacity(StrEnum):
@@ -347,6 +358,7 @@ class TableStatus(StrEnum):
     INACCESSIBLE_ENCRYPTION_CREDENTIALS = "INACCESSIBLE_ENCRYPTION_CREDENTIALS"
     ARCHIVING = "ARCHIVING"
     ARCHIVED = "ARCHIVED"
+    REPLICATION_NOT_AUTHORIZED = "REPLICATION_NOT_AUTHORIZED"
 
 
 class TimeToLiveStatus(StrEnum):
@@ -354,6 +366,12 @@ class TimeToLiveStatus(StrEnum):
     DISABLING = "DISABLING"
     ENABLED = "ENABLED"
     DISABLED = "DISABLED"
+
+
+class WitnessStatus(StrEnum):
+    CREATING = "CREATING"
+    DELETING = "DELETING"
+    ACTIVE = "ACTIVE"
 
 
 class BackupInUseException(ServiceException):
@@ -499,10 +517,19 @@ class PolicyNotFoundException(ServiceException):
     status_code: int = 400
 
 
+class ThrottlingReason(TypedDict, total=False):
+    reason: Optional[Reason]
+    resource: Optional[Resource]
+
+
+ThrottlingReasonList = List[ThrottlingReason]
+
+
 class ProvisionedThroughputExceededException(ServiceException):
     code: str = "ProvisionedThroughputExceededException"
     sender_fault: bool = False
     status_code: int = 400
+    ThrottlingReasons: Optional[ThrottlingReasonList]
 
 
 class ReplicaAlreadyExistsException(ServiceException):
@@ -527,6 +554,7 @@ class RequestLimitExceeded(ServiceException):
     code: str = "RequestLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
+    ThrottlingReasons: Optional[ThrottlingReasonList]
 
 
 class ResourceInUseException(ServiceException):
@@ -557,6 +585,13 @@ class TableNotFoundException(ServiceException):
     code: str = "TableNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
+
+
+class ThrottlingException(ServiceException):
+    code: str = "ThrottlingException"
+    sender_fault: bool = False
+    status_code: int = 400
+    throttlingReasons: Optional[ThrottlingReasonList]
 
 
 class CancellationReason(TypedDict, total=False):
@@ -971,6 +1006,7 @@ class ContributorInsightsSummary(TypedDict, total=False):
     TableName: Optional[TableName]
     IndexName: Optional[IndexName]
     ContributorInsightsStatus: Optional[ContributorInsightsStatus]
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 ContributorInsightsSummaries = List[ContributorInsightsSummary]
@@ -1075,6 +1111,10 @@ class CreateGlobalTableOutput(TypedDict, total=False):
     GlobalTableDescription: Optional[GlobalTableDescription]
 
 
+class CreateGlobalTableWitnessGroupMemberAction(TypedDict, total=False):
+    RegionName: RegionName
+
+
 class CreateReplicaAction(TypedDict, total=False):
     RegionName: RegionName
 
@@ -1157,6 +1197,12 @@ class RestoreSummary(TypedDict, total=False):
     RestoreInProgress: RestoreInProgress
 
 
+class GlobalTableWitnessDescription(TypedDict, total=False):
+    RegionName: Optional[RegionName]
+    WitnessStatus: Optional[WitnessStatus]
+
+
+GlobalTableWitnessDescriptionList = List[GlobalTableWitnessDescription]
 NonNegativeLongObject = int
 
 
@@ -1216,6 +1262,7 @@ class TableDescription(TypedDict, total=False):
     LatestStreamArn: Optional[StreamArn]
     GlobalTableVersion: Optional[String]
     Replicas: Optional[ReplicaDescriptionList]
+    GlobalTableWitnesses: Optional[GlobalTableWitnessDescriptionList]
     RestoreSummary: Optional[RestoreSummary]
     SSEDescription: Optional[SSEDescription]
     ArchivalSummary: Optional[ArchivalSummary]
@@ -1257,6 +1304,10 @@ class DeleteBackupOutput(TypedDict, total=False):
 
 class DeleteGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
+
+
+class DeleteGlobalTableWitnessGroupMemberAction(TypedDict, total=False):
+    RegionName: RegionName
 
 
 class ExpectedAttributeValue(TypedDict, total=False):
@@ -1350,6 +1401,7 @@ class DescribeContributorInsightsOutput(TypedDict, total=False):
     ContributorInsightsStatus: Optional[ContributorInsightsStatus]
     LastUpdateDateTime: Optional[LastUpdateDateTime]
     FailureException: Optional[FailureException]
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 class DescribeEndpointsRequest(ServiceRequest):
@@ -1757,6 +1809,14 @@ GlobalTableGlobalSecondaryIndexSettingsUpdateList = List[
     GlobalTableGlobalSecondaryIndexSettingsUpdate
 ]
 GlobalTableList = List[GlobalTable]
+
+
+class GlobalTableWitnessGroupUpdate(TypedDict, total=False):
+    Create: Optional[CreateGlobalTableWitnessGroupMemberAction]
+    Delete: Optional[DeleteGlobalTableWitnessGroupMemberAction]
+
+
+GlobalTableWitnessGroupUpdateList = List[GlobalTableWitnessGroupUpdate]
 
 
 class ImportSummary(TypedDict, total=False):
@@ -2167,12 +2227,14 @@ class UpdateContributorInsightsInput(ServiceRequest):
     TableName: TableArn
     IndexName: Optional[IndexName]
     ContributorInsightsAction: ContributorInsightsAction
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 class UpdateContributorInsightsOutput(TypedDict, total=False):
     TableName: Optional[TableName]
     IndexName: Optional[IndexName]
     ContributorInsightsStatus: Optional[ContributorInsightsStatus]
+    ContributorInsightsMode: Optional[ContributorInsightsMode]
 
 
 class UpdateGlobalTableInput(ServiceRequest):
@@ -2253,6 +2315,7 @@ class UpdateTableInput(ServiceRequest):
     TableClass: Optional[TableClass]
     DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
     MultiRegionConsistency: Optional[MultiRegionConsistency]
+    GlobalTableWitnessUpdates: Optional[GlobalTableWitnessGroupUpdateList]
     OnDemandThroughput: Optional[OnDemandThroughput]
     WarmThroughput: Optional[WarmThroughput]
 
@@ -2824,6 +2887,7 @@ class DynamodbApi:
         table_name: TableArn,
         contributor_insights_action: ContributorInsightsAction,
         index_name: IndexName | None = None,
+        contributor_insights_mode: ContributorInsightsMode | None = None,
         **kwargs,
     ) -> UpdateContributorInsightsOutput:
         raise NotImplementedError
@@ -2901,6 +2965,7 @@ class DynamodbApi:
         table_class: TableClass | None = None,
         deletion_protection_enabled: DeletionProtectionEnabled | None = None,
         multi_region_consistency: MultiRegionConsistency | None = None,
+        global_table_witness_updates: GlobalTableWitnessGroupUpdateList | None = None,
         on_demand_throughput: OnDemandThroughput | None = None,
         warm_throughput: WarmThroughput | None = None,
         **kwargs,

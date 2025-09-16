@@ -1,6 +1,6 @@
 import json
 import time
-from datetime import timedelta, timezone
+from datetime import UTC, timedelta
 
 import pytest
 from botocore.exceptions import ClientError
@@ -148,7 +148,7 @@ class TestScheduleRate:
     def tests_schedule_rate_custom_input_target_sqs(
         self, sqs_as_events_target, events_put_rule, aws_client, snapshot
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"
@@ -343,7 +343,7 @@ class TestScheduleCron:
         aws_client,
         snapshot,
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         schedule_cron, target_datetime = get_cron_expression(
             1
@@ -377,7 +377,7 @@ class TestScheduleCron:
         # check if message was delivered at the correct time
         time_message = events_time_string_to_timestamp(
             json.loads(messages[0]["Body"])["time"]
-        ).replace(tzinfo=timezone.utc)
+        ).replace(tzinfo=UTC)
 
         # TODO fix JobScheduler to execute on exact time
         # round datetime to nearest minute
@@ -391,7 +391,7 @@ class TestScheduleCron:
     def tests_scheduled_rule_does_not_trigger_on_put_events(
         self, sqs_as_events_target, events_put_rule, aws_client
     ):
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         bus_name = "default"
         rule_name = f"test-rule-{short_uid()}"

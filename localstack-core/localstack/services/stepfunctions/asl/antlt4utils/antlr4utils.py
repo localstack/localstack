@@ -1,11 +1,10 @@
 import ast
-from typing import Optional
 
 from antlr4 import ParserRuleContext
 from antlr4.tree.Tree import ParseTree, TerminalNodeImpl
 
 
-def is_production(pt: ParseTree, rule_index: Optional[int] = None) -> Optional[ParserRuleContext]:
+def is_production(pt: ParseTree, rule_index: int | None = None) -> ParserRuleContext | None:
     if isinstance(pt, ParserRuleContext):
         prc = pt.getRuleContext()  # noqa
         if rule_index is not None:
@@ -14,7 +13,7 @@ def is_production(pt: ParseTree, rule_index: Optional[int] = None) -> Optional[P
     return None
 
 
-def is_terminal(pt: ParseTree, token_type: Optional[int] = None) -> Optional[TerminalNodeImpl]:
+def is_terminal(pt: ParseTree, token_type: int | None = None) -> TerminalNodeImpl | None:
     if isinstance(pt, TerminalNodeImpl):
         if token_type is not None:
             return pt if pt.getSymbol().type == token_type else None
@@ -22,7 +21,7 @@ def is_terminal(pt: ParseTree, token_type: Optional[int] = None) -> Optional[Ter
     return None
 
 
-def from_string_literal(parser_rule_context: ParserRuleContext) -> Optional[str]:
+def from_string_literal(parser_rule_context: ParserRuleContext) -> str | None:
     string_literal = parser_rule_context.getText()
     if string_literal.startswith('"') and string_literal.endswith('"'):
         string_literal = string_literal[1:-1]

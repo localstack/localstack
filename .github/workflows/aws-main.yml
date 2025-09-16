@@ -16,7 +16,9 @@ on:
       - '!.git-blame-ignore-revs'
       - '!docs/**'
     branches:
-      - master
+      - main
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
   pull_request:
     paths:
       - '**'
@@ -81,7 +83,7 @@ jobs:
       # default "disableCaching" to `false` if it's a push or schedule event
       disableCaching: ${{ inputs.disableCaching == true }}
       # default "disableTestSelection" to `true` if it's a push or schedule event
-      disableTestSelection: ${{ (inputs.enableTestSelection != '' && inputs.enableTestSelection) || github.event_name == 'push' }}
+      disableTestSelection: ${{ (inputs.enableTestSelection != '' && !inputs.enableTestSelection) || github.event_name == 'push' }}
       PYTEST_LOGLEVEL: ${{ inputs.PYTEST_LOGLEVEL }}
       forceARMTests: ${{ inputs.forceARMTests == true }}
     secrets:
@@ -94,12 +96,14 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - test
+    # Do not push coverage data if only parts of the tests were executed
+    if: ${{ !(inputs.onlyAcceptanceTests == true || inputs.enableTestSelection == true || github.event_name == 'push') && !failure() && !cancelled() && github.repository == 'localstack/localstack' }}
     steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@v5
 
         - name: Set up Python
-          uses: actions/setup-python@v5
+          uses: actions/setup-python@v6
           with:
             python-version-file: '.python-version'
             cache: 'pip'
@@ -110,7 +114,7 @@ jobs:
           run: make install-dev
 
         - name: Load all test results
-          uses: actions/download-artifact@v4
+          uses: actions/download-artifact@v5
           with:
             pattern: test-results-*
             path: target/coverage/
@@ -136,6 +140,7 @@ jobs:
         - name: Report coverage statistics
           env:
             COVERALLS_REPO_TOKEN: ${{ secrets.COVERALLS_REPO_TOKEN }}
+            GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           run: |
             source .venv/bin/activate
             coverage report || true
@@ -187,14 +192,14 @@ jobs:
   push:
     name: "Push images"
     runs-on: ubuntu-latest
-    # push image on master, target branch not set, and the dependent steps were either successful or skipped
-    if: github.ref == 'refs/heads/master' && !failure() && !cancelled() && github.repository == 'localstack/localstack'
+    # push image on main, target branch not set, and the dependent steps were either successful or skipped
+    if: ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && !failure() && !cancelled() && github.repository == 'localstack/localstack'
     needs:
       # all tests need to be successful for the image to be pushed
       - test
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -205,7 +210,7 @@ jobs:
           platform: ${{ env.PLATFORM_NAME_AMD64 }}
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v5
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -267,7 +272,7 @@ jobs:
 
   push-to-tinybird:
     name: Push Workflow Status to Tinybird
-    if: always() && github.ref == 'refs/heads/master' && github.repository == 'localstack/localstack'
+    if: always() && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && github.repository == 'localstack/localstack'
     runs-on: ubuntu-latest
     needs:
       - test

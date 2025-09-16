@@ -68,8 +68,9 @@ import datetime
 import functools
 import re
 from abc import ABC
+from collections.abc import Mapping
 from email.utils import parsedate_to_datetime
-from typing import IO, Any, Dict, List, Mapping, Optional, Tuple, Union
+from typing import IO, Any
 from xml.etree import ElementTree as ETree
 
 import dateutil.parser
@@ -107,7 +108,7 @@ def _text_content(func):
         self,
         request: Request,
         shape: Shape,
-        node_or_string: Union[ETree.Element, str],
+        node_or_string: ETree.Element | str,
         uri_params: Mapping[str, Any] = None,
     ):
         if hasattr(node_or_string, "text"):
@@ -203,7 +204,7 @@ class RequestParser(abc.ABC):
         self.service = service
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         """
         Determines which operation the request was aiming for and parses the incoming request such that the resulting
         dictionary can be used to invoke the service's function implementation.
@@ -233,13 +234,21 @@ class RequestParser(abc.ABC):
         if location is not None:
             if location == "header":
                 header_name = shape.serialization.get("name")
-                payload = request.headers.get(header_name)
-                if payload and shape.type_name == "list":
+                if shape.type_name == "list":
                     # headers may contain a comma separated list of values (e.g., the ObjectAttributes member in
                     # s3.GetObjectAttributes), so we prepare it here for the handler, which will be `_parse_list`.
                     # Header lists can contain optional whitespace, so we strip it
                     # https://www.rfc-editor.org/rfc/rfc9110.html#name-lists-rule-abnf-extension
-                    payload = [value.strip() for value in payload.split(",")]
+                    # It can also directly contain a list of headers
+                    # See https://datatracker.ietf.org/doc/html/rfc2616
+                    payload = request.headers.getlist(header_name) or None
+                    if payload:
+                        headers = ",".join(payload)
+                        payload = [value.strip() for value in headers.split(",")]
+
+                else:
+                    payload = request.headers.get(header_name)
+
             elif location == "headers":
                 payload = self._parse_header_map(shape, request.headers)
                 # shapes with the location trait "headers" only contain strings and are not further processed
@@ -256,12 +265,12 @@ class RequestParser(abc.ABC):
                 if uri_param_name in uri_params:
                     payload = uri_params[uri_param_name]
             else:
-                raise UnknownParserError("Unknown shape location '%s'." % location)
+                raise UnknownParserError(f"Unknown shape location '{location}'.")
         else:
             # If we don't have to use a specific location, we use the node
             payload = node
 
-        fn_name = "_parse_%s" % shape.type_name
+        fn_name = f"_parse_{shape.type_name}"
         handler = getattr(self, fn_name, self._noop_parser)
         try:
             return handler(request, shape, payload, uri_params) if payload is not None else None
@@ -313,7 +322,7 @@ class RequestParser(abc.ABC):
             return True
         if value == "false":
             return False
-        raise ValueError("cannot parse boolean value %s" % node)
+        raise ValueError(f"cannot parse boolean value {node}")
 
     @_text_content
     def _noop_parser(self, _, __, node: Any, ___):
@@ -327,7 +336,7 @@ class RequestParser(abc.ABC):
         if timestamp_format is None:
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
-        converter = getattr(self, "_timestamp_%s" % timestamp_format)
+        converter = getattr(self, f"_timestamp_{timestamp_format}")
         final_value = converter(value)
         return final_value
 
@@ -367,7 +376,7 @@ class QueryRequestParser(RequestParser):
     """
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         instance = request.values
         if "Action" not in instance:
             raise ProtocolParserError(
@@ -510,7 +519,7 @@ class QueryRequestParser(RequestParser):
 
         # We collect the list value as well as the integer indicating the list position so we can
         # later sort the list by the position, in case they attribute values are unordered
-        result: List[Tuple[int, Any]] = []
+        result: list[tuple[int, Any]] = []
 
         i = 0
         while True:
@@ -559,7 +568,7 @@ class BaseRestRequestParser(RequestParser):
         self._operation_router = RestServiceOperationRouter(service)
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         try:
             operation, uri_params = self._operation_router.match(request)
         except NotFound as e:
@@ -578,7 +587,7 @@ class BaseRestRequestParser(RequestParser):
         self,
         request: Request,
         shape: Shape,
-        member_shapes: Dict[str, Shape],
+        member_shapes: dict[str, Shape],
         uri_params: Mapping[str, Any],
         final_parsed: dict,
     ) -> None:
@@ -662,7 +671,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
     """
 
     def __init__(self, service_model: ServiceModel):
-        super(RestXMLRequestParser, self).__init__(service_model)
+        super().__init__(service_model)
         self.ignore_get_body_errors = True
         self._namespace_re = re.compile("{.*}")
 
@@ -731,7 +740,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
                 elif tag_name == value_location_name:
                     val_name = self._parse_shape(request, value_shape, single_pair, uri_params)
                 else:
-                    raise ProtocolParserError("Unknown tag: %s" % tag_name)
+                    raise ProtocolParserError(f"Unknown tag: {tag_name}")
             parsed[key_name] = val_name
         return parsed
 
@@ -749,7 +758,7 @@ class RestXMLRequestParser(BaseRestRequestParser):
         # it's flattened, and if it's not, then we make it a one element list.
         if shape.serialization.get("flattened") and not isinstance(node, list):
             node = [node]
-        return super(RestXMLRequestParser, self)._parse_list(request, shape, node, uri_params)
+        return super()._parse_list(request, shape, node, uri_params)
 
     def _node_tag(self, node: ETree.Element) -> str:
         return self._namespace_re.sub("", node.tag)
@@ -777,11 +786,11 @@ class RestXMLRequestParser(BaseRestRequestParser):
             root = parser.close()
         except ETree.ParseError as e:
             raise ProtocolParserError(
-                "Unable to parse request (%s), invalid XML received:\n%s" % (e, xml_string)
+                f"Unable to parse request ({e}), invalid XML received:\n{xml_string}"
             ) from e
         return root
 
-    def _build_name_to_xml_node(self, parent_node: Union[list, ETree.Element]) -> dict:
+    def _build_name_to_xml_node(self, parent_node: list | ETree.Element) -> dict:
         # If the parent node is actually a list. We should not be trying
         # to serialize it to a dictionary. Instead, return the first element
         # in the list.
@@ -824,9 +833,9 @@ class BaseJSONRequestParser(RequestParser, ABC):
         self,
         request: Request,
         shape: StructureShape,
-        value: Optional[dict],
+        value: dict | None,
         uri_params: Mapping[str, Any] = None,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         if shape.is_document_type:
             final_parsed = value
         else:
@@ -849,9 +858,9 @@ class BaseJSONRequestParser(RequestParser, ABC):
         self,
         request: Request,
         shape: MapShape,
-        value: Optional[dict],
+        value: dict | None,
         uri_params: Mapping[str, Any] = None,
-    ) -> Optional[dict]:
+    ) -> dict | None:
         if value is None:
             return None
         parsed = {}
@@ -916,7 +925,7 @@ class JSONRequestParser(BaseJSONRequestParser):
     """
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         target = request.headers["X-Amz-Target"]
         # assuming that the last part of the target string (e.g., "x.y.z.MyAction") contains the operation name
         operation_name = target.rpartition(".")[2]
@@ -1038,9 +1047,7 @@ class S3RequestParser(RestXMLRequestParser):
                 )
 
         @staticmethod
-        def _set_request_props(
-            request: Request, path: str, host: str, raw_uri: Optional[str] = None
-        ):
+        def _set_request_props(request: Request, path: str, host: str, raw_uri: str | None = None):
             """Sets the HTTP request's path and host and clears the cache in the request object."""
             request.path = path
             request.headers["Host"] = host
@@ -1072,7 +1079,7 @@ class S3RequestParser(RestXMLRequestParser):
             return uses_host_addressing(request.headers)
 
     @_handle_exceptions
-    def parse(self, request: Request) -> Tuple[OperationModel, Any]:
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
         """Handle virtual-host-addressing for S3."""
         with self.VirtualHostRewriter(request):
             return super().parse(request)

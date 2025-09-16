@@ -76,7 +76,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_sqs.py::test_cfn_handle_sqs_resource": {
-    "recorded-date": "03-07-2024, 20:03:51",
+    "recorded-date": "27-08-2025, 09:37:44",
     "recorded-content": {
       "queue": {
         "Attributes": {
@@ -90,7 +90,7 @@
           "FifoQueue": "true",
           "FifoThroughputLimit": "perQueue",
           "LastModifiedTimestamp": "timestamp",
-          "MaximumMessageSize": "262144",
+          "MaximumMessageSize": "1048576",
           "MessageRetentionPeriod": "345600",
           "QueueArn": "arn:<partition>:sqs:<region>:111111111111:<queue-name>.fifo",
           "ReceiveMessageWaitTimeSeconds": "0",

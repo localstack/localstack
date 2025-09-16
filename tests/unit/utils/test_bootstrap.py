@@ -1,6 +1,6 @@
 import os
 from contextlib import contextmanager
-from typing import Any, Dict
+from typing import Any
 
 import pytest
 
@@ -16,7 +16,7 @@ from localstack.utils.container_utils.container_client import BindMount, Contain
 
 
 @contextmanager
-def temporary_env(env: Dict[str, Any]):
+def temporary_env(env: dict[str, Any]):
     old = os.environ.copy()
     try:
         os.environ.update(env)

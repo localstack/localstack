@@ -5,9 +5,10 @@ import logging
 import re
 import threading
 import time
+from collections.abc import Iterable
 from concurrent.futures.thread import ThreadPoolExecutor
 from itertools import islice
-from typing import Dict, Iterable, List, Literal, Optional, Tuple
+from typing import Literal
 
 from botocore.utils import InvalidArnException
 from moto.sqs.models import BINARY_TYPE_FIELD_INDEX, STRING_TYPE_FIELD_INDEX
@@ -310,7 +311,7 @@ class CloudwatchPublishWorker:
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
+        self.thread: FuncThread | None = None
 
     def publish_approximate_cloudwatch_metrics(self):
         """Publishes the metrics for ApproximateNumberOfMessagesVisible, ApproximateNumberOfMessagesNotVisible
@@ -391,31 +392,39 @@ class QueueUpdateWorker:
     def __init__(self) -> None:
         super().__init__()
         self.scheduler = Scheduler()
-        self.thread: Optional[FuncThread] = None
+        self.thread: FuncThread | None = None
         self.mutex = threading.RLock()
 
     def iter_queues(self) -> Iterable[SqsQueue]:
         for account_id, region, store in sqs_stores.iter_stores():
-            for queue in store.queues.values():
-                yield queue
+            yield from store.queues.values()
 
     def do_update_all_queues(self):
         for queue in self.iter_queues():
             try:
                 queue.requeue_inflight_messages()
             except Exception:
-                LOG.exception("error re-queueing inflight messages")
+                LOG.error(
+                    "error re-queueing inflight messages",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
             try:
                 queue.enqueue_delayed_messages()
             except Exception:
-                LOG.exception("error enqueueing delayed messages")
+                LOG.error(
+                    "error enqueueing delayed messages",
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
+                )
 
             if config.SQS_ENABLE_MESSAGE_RETENTION_PERIOD:
                 try:
                     queue.remove_expired_messages()
                 except Exception:
-                    LOG.exception("error removing expired messages")
+                    LOG.error(
+                        "error removing expired messages",
+                        exc_info=LOG.isEnabledFor(logging.DEBUG),
+                    )
 
     def start(self):
         with self.mutex:
@@ -460,7 +469,7 @@ class MessageMoveTaskManager:
     def __init__(self, stores: AccountRegionBundle[SqsStore] = None) -> None:
         self.stores = stores or sqs_stores
         self.mutex = threading.RLock()
-        self.move_tasks: dict[str, MessageMoveTask] = dict()
+        self.move_tasks: dict[str, MessageMoveTask] = {}
         self.executor = ThreadPoolExecutor(max_workers=100, thread_name_prefix="sqs-move-message")
 
     def submit(self, move_task: MessageMoveTask):
@@ -621,17 +630,13 @@ def check_attributes(message_attributes: MessageBodyAttributeMap):
                 raise InvalidParameterValueException(e.args[0])
 
 
-def check_fifo_id(fifo_id, parameter):
-    if not fifo_id:
+def check_fifo_id(fifo_id: str | None, parameter: str):
+    if fifo_id is None:
         return
-    if len(fifo_id) > 128:
-        raise InvalidParameterValueException(
-            f"Value {fifo_id} for parameter {parameter} is invalid. Reason: {parameter} can only include alphanumeric and punctuation characters. 1 to 128 in length."
-        )
     if not re.match(sqs_constants.FIFO_MSG_REGEX, fifo_id):
         raise InvalidParameterValueException(
-            "Invalid characters found. Deduplication ID and group ID can only contain"
-            "alphanumeric characters as well as TODO"
+            f"Value {fifo_id} for parameter {parameter} is invalid. "
+            f"Reason: {parameter} can only include alphanumeric and punctuation characters. 1 to 128 in length."
         )
 
 
@@ -700,8 +705,10 @@ class SqsDeveloperEndpoints:
         try:
             account_id, region, queue_name = parse_queue_url(service_request.get("QueueUrl"))
         except ValueError:
-            LOG.exception(
-                "Error while parsing Queue URL from request values: %s", service_request.get
+            LOG.error(
+                "Error while parsing Queue URL from request values: %s",
+                service_request.get,
+                exc_info=LOG.isEnabledFor(logging.DEBUG),
             )
             raise InvalidAddress()
 
@@ -748,7 +755,7 @@ class SqsDeveloperEndpoints:
 
     def _collect_messages(
         self, queue: SqsQueue, show_invisible: bool = False, show_delayed: bool = False
-    ) -> List[Message]:
+    ) -> list[Message]:
         """
         Retrieves from a given SqsQueue all visible messages without causing any side effects (not setting any
         receive timestamps, receive counts, or visibility state).
@@ -760,7 +767,7 @@ class SqsDeveloperEndpoints:
         """
         receipt_handle = "SQS/BACKDOOR/ACCESS"  # dummy receipt handle
 
-        sqs_messages: List[SqsMessage] = []
+        sqs_messages: list[SqsMessage] = []
 
         if show_invisible:
             sqs_messages.extend(queue.inflight)
@@ -815,7 +822,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         - UntagQueue
     """
 
-    queues: Dict[str, SqsQueue]
+    queues: dict[str, SqsQueue]
 
     def __init__(self) -> None:
         super().__init__()
@@ -827,6 +834,24 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     @staticmethod
     def get_store(account_id: str, region: str) -> SqsStore:
         return sqs_stores[account_id][region]
+
+    def on_after_init(self):
+        # this configuration increases the processing power for Query protocol requests, which are form-encoded and by
+        # default are limited to 500kb payload size by Werkzeug. we make sure we only *increase* the limit if it's
+        # already set, and if it's already set to unlimited we leave it.
+        from rolo import Request as RoloRequest
+        from werkzeug import Request as WerkzeugRequest
+
+        # needed for the webserver integration (webservers create Werkzeug request objects)
+        if WerkzeugRequest.max_form_memory_size is not None:
+            WerkzeugRequest.max_form_memory_size = max(
+                WerkzeugRequest.max_form_memory_size, sqs_constants.DEFAULT_MAXIMUM_MESSAGE_SIZE * 2
+            )
+        # needed for internal/proxy requests (which create rolo request objects)
+        if RoloRequest.max_form_memory_size is not None:
+            RoloRequest.max_form_memory_size = max(
+                RoloRequest.max_form_memory_size, sqs_constants.DEFAULT_MAXIMUM_MESSAGE_SIZE * 2
+            )
 
     def on_before_start(self):
         query_api.register(ROUTER)
@@ -881,8 +906,8 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
     def _resolve_queue(
         self,
         context: RequestContext,
-        queue_name: Optional[str] = None,
-        queue_url: Optional[str] = None,
+        queue_name: str | None = None,
+        queue_url: str | None = None,
     ) -> SqsQueue:
         """
         Determines the name of the queue from available information (request context, queue URL) to return the respective queue,
@@ -1674,11 +1699,18 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         message_system_attributes: MessageBodySystemAttributeMap = None,
-    ) -> Dict[MessageSystemAttributeName, str]:
-        result: Dict[MessageSystemAttributeName, str] = {
+    ) -> dict[MessageSystemAttributeName, str]:
+        result: dict[MessageSystemAttributeName, str] = {
             MessageSystemAttributeName.SenderId: context.account_id,  # not the account ID in AWS
             MessageSystemAttributeName.SentTimestamp: str(now(millis=True)),
         }
+        # we are not using the `context.trace_context` here as it is automatically populated
+        # AWS only adds the `AWSTraceHeader` attribute if the header is explicitly present
+        # TODO: check maybe with X-Ray Active mode?
+        if "X-Amzn-Trace-Id" in context.request.headers:
+            result[MessageSystemAttributeName.AWSTraceHeader] = str(
+                context.request.headers["X-Amzn-Trace-Id"]
+            )
 
         if message_system_attributes is not None:
             for attr in message_system_attributes:
@@ -1702,7 +1734,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
     def _assert_batch(
         self,
-        batch: List,
+        batch: list,
         *,
         require_fifo_queue_params: bool = False,
         require_message_deduplication_id: bool = False,
@@ -1738,7 +1770,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             else:
                 visited.add(entry_id)
 
-    def _assert_valid_batch_size(self, batch: List, max_message_size: int):
+    def _assert_valid_batch_size(self, batch: list, max_message_size: int):
         batch_message_size = sum(
             _message_body_size(entry.get("MessageBody"))
             + _message_attributes_size(entry.get("MessageAttributes"))
@@ -1749,7 +1781,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
             error += f" You have sent {batch_message_size} bytes."
             raise BatchRequestTooLong(error)
 
-    def _assert_valid_message_ids(self, batch: List):
+    def _assert_valid_message_ids(self, batch: list):
         batch_id_regex = r"^[\w-]{1,80}$"
         for message in batch:
             if not re.match(batch_id_regex, message.get("Id", "")):
@@ -1779,7 +1811,7 @@ class SqsProvider(SqsApi, ServiceLifecycleHook):
 
 
 # Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object
-def _create_message_attribute_hash(message_attributes) -> Optional[str]:
+def _create_message_attribute_hash(message_attributes) -> str | None:
     # To avoid the need to check for dict conformity everytime we invoke this function
     if not isinstance(message_attributes, dict):
         return
@@ -1807,8 +1839,8 @@ def _create_message_attribute_hash(message_attributes) -> Optional[str]:
 
 
 def resolve_queue_location(
-    context: RequestContext, queue_name: Optional[str] = None, queue_url: Optional[str] = None
-) -> Tuple[str, Optional[str], str]:
+    context: RequestContext, queue_name: str | None = None, queue_url: str | None = None
+) -> tuple[str, str | None, str]:
     """
     Resolves a queue location from the given information.
 
@@ -1865,7 +1897,7 @@ def to_sqs_api_message(
     return message
 
 
-def message_filter_attributes(message: Message, names: Optional[AttributeNameList]):
+def message_filter_attributes(message: Message, names: AttributeNameList | None):
     """
     Utility function filter from the given message (in-place) the system attributes from the given list. It will
     apply all rules according to:
@@ -1889,7 +1921,7 @@ def message_filter_attributes(message: Message, names: Optional[AttributeNameLis
             del message["Attributes"][k]
 
 
-def message_filter_message_attributes(message: Message, names: Optional[MessageAttributeNameList]):
+def message_filter_message_attributes(message: Message, names: MessageAttributeNameList | None):
     """
     Utility function filter from the given message (in-place) the message attributes from the given list. It will
     apply all rules according to:

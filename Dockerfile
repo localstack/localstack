@@ -1,7 +1,7 @@
 #
 # base: Stage which installs necessary runtime dependencies (OS packages, etc.)
 #
-FROM python:3.11.13-slim-bookworm@sha256:9e1912aab0a30bbd9488eb79063f68f42a68ab0946cbe98fecf197fe5b085506 AS base
+FROM python:3.11.13-slim-bookworm@sha256:838ff46ae6c481e85e369706fa3dea5166953824124735639f3c9f52af85f319 AS base
 ARG TARGETARCH
 
 # Install runtime OS package dependencies
@@ -14,10 +14,9 @@ RUN --mount=type=cache,target=/var/cache/apt \
         # patch for CVE-2024-45490, CVE-2024-45491, CVE-2024-45492
         apt-get install --only-upgrade libexpat1
 
-# FIXME Node 18 actually shouldn't be necessary in Community, but we assume its presence in lots of tests
 # Install nodejs package from the dist release server. Note: we're installing from dist binaries, and not via
-#  `apt-get`, to avoid installing `python3.9` into the image (which otherwise comes as a dependency of nodejs).
-# See https://github.com/nodejs/docker-node/blob/main/18/bullseye/Dockerfile
+#  `apt-get`, to avoid installing `python3.11` into the image (which otherwise comes as a dependency of nodejs).
+# See https://github.com/nodejs/docker-node/blob/main/22/trixie/Dockerfile
 RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   && case "${dpkgArch##*-}" in \
     amd64) ARCH='x64';; \
@@ -27,7 +26,7 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
   # gpg keys listed at https://github.com/nodejs/node#release-keys
   && set -ex \
   && for key in \
-    C0D6248439F1D5604AAFFB4021D900FFDB233756 \
+    5BE8A3F6C8A5C01D106C0AD820B1A390B168D356 \
     DD792F5973C6DE52C432CBDAC77ABFA00DDBF2B7 \
     CC68F5A3106FF448322E48ED27F5E38D5B0A215F \
     8FCCA13FEF1D0C2E91008E09770F7A9A5AE15600 \
@@ -39,11 +38,11 @@ RUN ARCH= && dpkgArch="$(dpkg --print-architecture)" \
       gpg --batch --keyserver hkps://keys.openpgp.org --recv-keys "$key" || \
       gpg --batch --keyserver keyserver.ubuntu.com --recv-keys "$key" ; \
   done \
-  && curl -LO https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt \
+  && curl -LO https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt \
   && LATEST_VERSION_FILENAME=$(cat SHASUMS256.txt | grep -o "node-v.*-linux-$ARCH" | sort | uniq) \
   && rm SHASUMS256.txt \
-  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/$LATEST_VERSION_FILENAME.tar.xz" \
-  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v18.x/SHASUMS256.txt.asc" \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v22.x/$LATEST_VERSION_FILENAME.tar.xz" \
+  && curl -fsSLO --compressed "https://nodejs.org/dist/latest-v22.x/SHASUMS256.txt.asc" \
   && gpg --batch --decrypt --output SHASUMS256.txt SHASUMS256.txt.asc \
   && grep " $LATEST_VERSION_FILENAME.tar.xz\$" SHASUMS256.txt | sha256sum -c - \
   && tar -xJf "$LATEST_VERSION_FILENAME.tar.xz" -C /usr/local --strip-components=1 --no-same-owner \

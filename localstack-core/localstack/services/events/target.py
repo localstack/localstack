@@ -4,7 +4,7 @@ import logging
 import re
 import uuid
 from abc import ABC, abstractmethod
-from typing import Any, Dict, Set, Type
+from typing import Any
 from urllib.parse import urlencode
 
 import requests
@@ -59,7 +59,7 @@ AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES = {
 }
 AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES = {"aws.events.event", "aws.events.event.json"}
 
-PREDEFINED_PLACEHOLDERS: Set[str] = AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES.union(
+PREDEFINED_PLACEHOLDERS: set[str] = AWS_PREDEFINED_PLACEHOLDERS_STRING_VALUES.union(
     AWS_PREDEFINED_PLACEHOLDERS_JSON_VALUES
 )
 
@@ -222,7 +222,7 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_template = input_template.strip().startswith(("{"))
+        is_json_template = input_template.strip().startswith("{")
         populated_template = replace_template_placeholders(
             input_template, template_replacements, is_json_template
         )
@@ -424,7 +424,7 @@ class ApiGatewayTargetSender(TargetSender):
         # if not collections.get_safe(target, "$.RoleArn"):
         #     raise ValueError("RoleArn is required for ApiGateway target")
 
-    def _get_predefined_template_replacements(self, event: Dict[str, Any]) -> Dict[str, Any]:
+    def _get_predefined_template_replacements(self, event: dict[str, Any]) -> dict[str, Any]:
         """Extracts predefined values from the event."""
         predefined_template_replacements = {}
         predefined_template_replacements["aws.events.rule-arn"] = self.rule_arn
@@ -731,7 +731,7 @@ class TargetSenderFactory:
         self.account_id = account_id
 
     @classmethod
-    def register_target_sender(cls, service_name: str, sender_class: Type[TargetSender]):
+    def register_target_sender(cls, service_name: str, sender_class: type[TargetSender]):
         cls.target_map[service_name] = sender_class
 
     def get_target_sender(self) -> TargetSender:

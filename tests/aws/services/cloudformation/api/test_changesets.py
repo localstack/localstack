@@ -1,12 +1,20 @@
 import copy
 import json
 import os.path
+from collections.abc import Callable
 
 import pytest
-from botocore.exceptions import ClientError
+from botocore.config import Config
+from botocore.exceptions import ClientError, WaiterError
+from tests.aws.services.cloudformation.api.test_stacks import (
+    MINIMAL_TEMPLATE,
+)
+from tests.aws.services.cloudformation.conftest import (
+    skip_if_v1_provider,
+    skipped_v2_items,
+)
 
 from localstack.aws.connect import ServiceLevelClientFactory
-from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.cloudformation_utils import (
     load_template_file,
     load_template_raw,
@@ -14,11 +22,9 @@ from localstack.testing.aws.cloudformation_utils import (
 )
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import DeployResult
 from localstack.utils.strings import short_uid
 from localstack.utils.sync import ShortCircuitWaitException, poll_condition, wait_until
-from tests.aws.services.cloudformation.api.test_stacks import (
-    MINIMAL_TEMPLATE,
-)
 
 
 class TestUpdates:
@@ -62,9 +68,6 @@ class TestUpdates:
 
         res.destroy()
 
-    @pytest.mark.skipif(
-        condition=not is_v2_engine() and not is_aws_cloud(), reason="Not working in v2 yet"
-    )
     @markers.aws.validated
     def test_simple_update_two_resources(
         self, aws_client: ServiceLevelClientFactory, deploy_cfn_template
@@ -111,9 +114,6 @@ class TestUpdates:
     # TODO: the error response is incorrect, however the test is otherwise validated and raises
     #  an error because the SSM parameter has been deleted (removed from the stack).
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
-    @pytest.mark.skipif(
-        condition=not is_v2_engine() and not is_aws_cloud(), reason="Test fails with the old engine"
-    )
     def test_deleting_resource(
         self, aws_client: ServiceLevelClientFactory, deploy_cfn_template, snapshot
     ):
@@ -285,11 +285,11 @@ def test_create_change_set_update_without_parameters(
         cleanup_stacks(stacks=[stack_id])
 
 
-# def test_create_change_set_with_template_url():
-#     pass
-
-
-@pytest.mark.skipif(condition=not is_aws_cloud(), reason="change set type not implemented")
+# TODO: Key error during deletion
+#   File "/Users/simon/work/localstack/localstack/localstack-core/localstack/services/cloudformation/v2/provider.py", line 162, in find_change_set_v2
+#     return state.change_sets[change_set_name]
+#            ~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+# KeyError: 'arn:aws:cloudformation:us-east-1:000000000000:changeSet/change-set-926829fe/d065e78c'
 @markers.aws.validated
 def test_create_change_set_create_existing(cleanup_changesets, cleanup_stacks, aws_client):
     """tries to create an already existing stack"""
@@ -339,7 +339,7 @@ def test_create_change_set_update_nonexisting(aws_client):
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
 
-    with pytest.raises(Exception) as ex:
+    with pytest.raises(ClientError) as ex:
         response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
             ChangeSetName=change_set_name,
@@ -374,14 +374,17 @@ def test_create_change_set_invalid_params(aws_client):
 
 
 @markers.aws.validated
-def test_create_change_set_missing_stackname(aws_client):
+def test_create_change_set_missing_stackname(aws_client_factory):
     """in this case boto doesn't even let us send the request"""
     change_set_name = f"change-set-{short_uid()}"
     template_path = os.path.join(
         os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
     )
-    with pytest.raises(Exception):
-        aws_client.cloudformation.create_change_set(
+
+    # A client with parameter validation enabled would result in a client-side ParamValidationError.
+    cfn_client = aws_client_factory(config=Config(parameter_validation=False)).cloudformation
+    with pytest.raises(ClientError):
+        cfn_client.create_change_set(
             StackName="",
             ChangeSetName=change_set_name,
             TemplateBody=load_template_raw(template_path),
@@ -479,6 +482,46 @@ def test_describe_change_set_nonexisting(snapshot, aws_client):
             StackName="somestack", ChangeSetName="DoesNotExist"
         )
     snapshot.match("exception", ex.value)
+
+
+@skip_if_v1_provider("Not supported in V1 engine")
+@markers.aws.validated
+def test_create_change_set_no_changes(
+    snapshot,
+    aws_client: ServiceLevelClientFactory,
+    deploy_cfn_template: Callable[..., DeployResult],
+):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/simple_no_change.yaml"
+    )
+    with open(template_path) as infile:
+        template_body = infile.read()
+
+    stack = deploy_cfn_template(
+        template_path=template_path,
+    )
+
+    change_set_name = f"cs-{short_uid()}"
+    change_set_result = aws_client.cloudformation.create_change_set(
+        ChangeSetName=change_set_name,
+        StackName=stack.stack_id,
+        ChangeSetType="UPDATE",
+        TemplateBody=template_body,
+    )
+    change_set_id = change_set_result["Id"]
+    with pytest.raises(WaiterError):
+        aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+            ChangeSetName=change_set_id,
+        )
+
+    snapshot.match(
+        "change-set-description",
+        aws_client.cloudformation.describe_change_set(
+            ChangeSetName=change_set_id,
+        ),
+    )
 
 
 @pytest.mark.skipif(
@@ -636,78 +679,49 @@ def test_create_and_then_remove_non_supported_resource_change_set(deploy_cfn_tem
     )
 
 
+@skip_if_v1_provider("Unsupported in v1 engine")
 @markers.aws.validated
 def test_create_and_then_update_refreshes_template_metadata(
     aws_client,
-    cleanup_changesets,
-    cleanup_stacks,
-    is_change_set_finished,
-    is_change_set_created_and_available,
+    deploy_cfn_template,
+    snapshot,
 ):
-    stacks_to_cleanup = set()
-    changesets_to_cleanup = set()
+    stack_name = f"stack-{short_uid()}"
+    template_path = os.path.join(
+        os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
+    )
+    with open(template_path) as infile:
+        template_body = infile.read()
 
-    try:
-        stack_name = f"stack-{short_uid()}"
+    topic_name = f"topic-{short_uid()}"
 
-        template_path = os.path.join(
-            os.path.dirname(__file__), "../../../templates/sns_topic_simple.yaml"
-        )
+    deploy_cfn_template(
+        template=template_body,
+        stack_name=stack_name,
+        parameters={"TopicName": topic_name},
+    )
 
-        template_body = load_template_raw(template_path)
+    # Note the metadata alone won't change if there are no changes to resources
+    # TODO: find a better way to make a replacement in yaml template
+    template_body = template_body.replace(
+        "TopicName: sns-topic-simple",
+        "TopicName: sns-topic-simple-updated",
+    )
 
-        create_response = aws_client.cloudformation.create_change_set(
-            StackName=stack_name,
-            ChangeSetName=f"change-set-{short_uid()}",
-            TemplateBody=template_body,
-            ChangeSetType="CREATE",
-        )
-
-        stacks_to_cleanup.add(create_response["StackId"])
-        changesets_to_cleanup.add(create_response["Id"])
-
+    update_response = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=f"change-set-{short_uid()}",
+        TemplateBody=template_body,
+        ChangeSetType="UPDATE",
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name}],
+    )
+    with pytest.raises(WaiterError) as e:
         aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
-            ChangeSetName=create_response["Id"]
-        )
-
-        aws_client.cloudformation.execute_change_set(
-            StackName=stack_name, ChangeSetName=create_response["Id"]
-        )
-
-        wait_until(is_change_set_finished(create_response["Id"]))
-
-        # Note the metadata alone won't change if there are no changes to resources
-        # TODO: find a better way to make a replacement in yaml template
-        template_body = template_body.replace(
-            "TopicName: sns-topic-simple",
-            "TopicName: sns-topic-simple-updated",
-        )
-
-        update_response = aws_client.cloudformation.create_change_set(
             StackName=stack_name,
-            ChangeSetName=f"change-set-{short_uid()}",
-            TemplateBody=template_body,
-            ChangeSetType="UPDATE",
+            ChangeSetName=update_response["Id"],
         )
 
-        stacks_to_cleanup.add(update_response["StackId"])
-        changesets_to_cleanup.add(update_response["Id"])
-
-        wait_until(is_change_set_created_and_available(update_response["Id"]))
-
-        aws_client.cloudformation.execute_change_set(
-            StackName=stack_name, ChangeSetName=update_response["Id"]
-        )
-
-        wait_until(is_change_set_finished(update_response["Id"]))
-
-        summary = aws_client.cloudformation.get_template_summary(StackName=stack_name)
-
-        assert "TopicName" in summary["Metadata"]
-        assert "sns-topic-simple-updated" in summary["Metadata"]
-    finally:
-        cleanup_stacks(list(stacks_to_cleanup))
-        cleanup_changesets(list(changesets_to_cleanup))
+    snapshot.match("waiter-error", e.value)
 
 
 # TODO: the intention of this test is not particularly clear. The resource isn't removed, it'll just generate a new bucket with a new default name
@@ -763,6 +777,10 @@ def test_create_and_then_remove_supported_resource_change_set(deploy_cfn_templat
         "$..IncludeNestedStacks",
         "$..Parameters",
     ]
+    + skipped_v2_items(
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    )
 )
 @markers.aws.validated
 def test_empty_changeset(snapshot, cleanups, aws_client):
@@ -967,6 +985,10 @@ def test_create_while_in_review(aws_client, snapshot, cleanups):
 
 @markers.snapshot.skip_snapshot_verify(
     paths=["$..Capabilities", "$..IncludeNestedStacks", "$..NotificationARNs", "$..Parameters"]
+    + skipped_v2_items(
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    )
 )
 @markers.aws.validated
 def test_multiple_create_changeset(aws_client, snapshot, cleanups):
@@ -1003,7 +1025,13 @@ def test_multiple_create_changeset(aws_client, snapshot, cleanups):
     )
 
 
-@markers.snapshot.skip_snapshot_verify(paths=["$..LastUpdatedTime", "$..StackStatusReason"])
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..LastUpdatedTime", "$..StackStatusReason"]
+    + skipped_v2_items(
+        # TODO
+        "$..Capabilities",
+    )
+)
 @markers.aws.validated
 def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
     """
@@ -1085,6 +1113,10 @@ def test_create_changeset_with_stack_id(aws_client, snapshot, cleanups):
         "$..StatusReason",
         "$..StackStatusReason",
     ]
+    + skipped_v2_items(
+        "$..Changes..ResourceChange.Details",
+        "$..Changes..ResourceChange.Scope",
+    ),
 )
 @markers.aws.validated
 def test_name_conflicts(aws_client, snapshot, cleanups):

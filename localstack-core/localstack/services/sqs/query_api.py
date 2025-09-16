@@ -4,7 +4,6 @@ generic implementation that creates from Query API requests the respective AWS r
 to make the request."""
 
 import logging
-from typing import Dict, Optional, Tuple
 from urllib.parse import urlencode
 
 from botocore.exceptions import ClientError
@@ -167,7 +166,11 @@ def handle_request(request: Request, region: str) -> Response:
         op = service.operation_model(service.operation_names[0])
         return serializer.serialize_error_to_response(e, op, request.headers, request_id)
     except Exception as e:
-        LOG.exception("exception")
+        LOG.error(
+            "Internal Server exception while executing SQS Query operation: '%s'",
+            e,
+            exc_info=LOG.isEnabledFor(logging.DEBUG),
+        )
         op = service.operation_model(service.operation_names[0])
         return serializer.serialize_error_to_response(
             CommonServiceException(
@@ -179,7 +182,7 @@ def handle_request(request: Request, region: str) -> Response:
         )
 
 
-def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
+def try_call_sqs(request: Request, region: str) -> tuple[dict, OperationModel]:
     action = request.values.get("Action")
     if not action:
         raise UnknownOperationException()
@@ -209,7 +212,7 @@ def try_call_sqs(request: Request, region: str) -> Tuple[Dict, OperationModel]:
     # Extract from auth header to allow cross-account operations
     # TODO: permissions encoded in URL as AUTHPARAMS cannot be accounted for in this method, which is not a big
     #  problem yet since we generally don't enforce permissions.
-    account_id: Optional[str] = extract_access_key_id_from_auth_header(headers)
+    account_id: str | None = extract_access_key_id_from_auth_header(headers)
 
     client = connect_to(
         region_name=region,

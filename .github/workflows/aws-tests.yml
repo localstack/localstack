@@ -1,4 +1,4 @@
-name: AWS Integration Tests
+name: AWS / Integration Tests
 
 on:
   workflow_dispatch:
@@ -131,11 +131,15 @@ env:
   CI_COMMIT_BRANCH: ${{ github.head_ref || github.ref_name }}
   CI_COMMIT_SHA: ${{ github.sha }}
   CI_JOB_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}/attempts/${{ github.run_attempt }}
-  # report to tinybird if executed on master
-  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && github.ref == 'refs/heads/master' && '--report-to-tinybird ' || '' }}"
+  # report to tinybird if executed on main
+  TINYBIRD_PYTEST_ARGS: "${{ github.repository == 'localstack/localstack' && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) && '--report-to-tinybird ' || '' }}"
   DOCKER_PULL_SECRET_AVAILABLE: ${{ secrets.DOCKERHUB_PULL_USERNAME != '' && secrets.DOCKERHUB_PULL_TOKEN != '' && 'true' || 'false' }}
 
-
+# Only one pull-request triggered run should be executed at a time
+# (head_ref is only set for PR events, otherwise fallback to run_id which differs for every run).
+concurrency:
+  group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -148,9 +152,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     steps:
@@ -159,14 +163,14 @@ jobs:
         run: echo "PLATFORM=${{ (runner.arch == 'X64' && 'amd64') || (runner.arch == 'ARM64' && 'arm64') || '' }}" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           path: localstack
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
       - name: Build Image
-        uses: localstack/localstack/.github/actions/build-image@master
+        uses: localstack/localstack/.github/actions/build-image@main
         with:
           disableCaching: ${{ inputs.disableCaching == true && 'true' || 'false' }}
           dockerhubPullUsername: ${{ secrets.DOCKERHUB_PULL_USERNAME }}
@@ -206,10 +210,11 @@ jobs:
       cloudwatch-v1: ${{ steps.changes.outputs.cloudwatch-v1 }}
       dynamodb-v2: ${{ steps.changes.outputs.dynamodb-v2 }}
       events-v1: ${{ steps.changes.outputs.events-v1 }}
-      cloudformation-v2: ${{ steps.changes.outputs.cloudformation-v2 }}
+      cloudformation-legacy: ${{ steps.changes.outputs.cloudformation-legacy }}
+      sns-v2: ${{ steps.changes.outputs.sns-v2 }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -259,15 +264,21 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           filters: |
             cloudwatch-v1:
+               - 'localstack-core/localstack/services/cloudwatch/**'
                - 'tests/aws/services/cloudwatch/**'
             dynamodb-v2:
+               - 'localstack-core/localstack/services/dynamodb/**'
                - 'tests/aws/services/dynamodb/**'
                - 'tests/aws/services/dynamodbstreams/**'
                - 'tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py'
             events-v1:
+               - 'localstack-core/localstack/services/events/**'
                - 'tests/aws/services/events/**'
-            cloudformation-v2:
-               - 'tests/aws/services/cloudformation/v2/**'
+            cloudformation-legacy:
+               - 'localstack-core/localstack/services/cloudformation/**'
+               - 'tests/aws/services/cloudformation/**'
+            sns-v2:
+               - 'tests/aws/services/sns/**' # todo: potentially add more locations (lambda/sqs tests?)
 
       - name: Run Unit Tests
         timeout-minutes: 8
@@ -308,7 +319,7 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-preflight
 
@@ -317,7 +328,7 @@ jobs:
         if: success() || failure()
         with:
           files: |
-            test-results-preflight/*.xml
+            **/pytest-junit-*.xml
           check_name: "Test Results ${{ inputs.testAWSAccountId != '000000000000' && '(MA/MR) ' || ''}}- Preflight, Unit"
           test_file_prefix: "-/opt/code/localstack/"
           action_fail_on_inconclusive: true
@@ -336,9 +347,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -365,13 +376,13 @@ jobs:
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
 
       - name: Download Lambda Common packages
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: lambda-common-${{ env.PLATFORM }}
           path: |
@@ -384,7 +395,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -429,6 +440,14 @@ jobs:
             target/.coverage.integration-${{ env.PLATFORM }}-${{ matrix.group }}
           retention-days: 30
 
+      - name: Archive Parity Metric Results
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: parity-metric-raw-${{ env.PLATFORM }}-${{ matrix.group }}
+          path: target/metric_reports
+          retention-days: 30
+
   test-bootstrap:
     name: Test Bootstrap
     if: ${{ !inputs.onlyAcceptanceTests }}
@@ -444,7 +463,7 @@ jobs:
       CI_JOB_ID: ${{ github.job }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -487,9 +506,9 @@ jobs:
           - amd64
           - arm64
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
+          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
     needs:
       - test-integration
       - test-bootstrap
@@ -503,13 +522,13 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Bootstrap Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         if: ${{ matrix.arch == 'amd64' }}
         with:
           pattern: test-results-bootstrap
 
       - name: Download Integration Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-integration-${{ matrix.arch }}-*
 
@@ -533,9 +552,9 @@ jobs:
           - ubuntu-latest
           - ubuntu-24.04-arm
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
+          - runner: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'ubuntu-24.04-arm' || ''}}
       fail-fast: false
     runs-on: ${{ matrix.runner }}
     env:
@@ -564,7 +583,7 @@ jobs:
           echo "${{ inputs.testEnvironmentVariables }}" | sed "s/;/\n/" >> $GITHUB_ENV
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0
@@ -608,9 +627,9 @@ jobs:
           - amd64
           - arm64
         exclude:
-          # skip the ARM integration tests in forks, and also if not on master/upgrade-dependencies and forceARMTests is not set to true
+          # skip the ARM integration tests in forks, and also if not on main/upgrade-dependencies and forceARMTests is not set to true
           # TODO ARM runners are not yet available for private repositories; skip them for potential private forks
-          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/master' && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
+          - arch: ${{ ((github.repository != 'localstack/localstack') || (github.ref != 'refs/heads/main' && !startsWith(github.ref, 'refs/tags/v') && github.ref != 'upgrade-dependencies' && inputs.forceARMTests == false)) && 'arm64' || ''}}
     needs:
       - test-acceptance
     runs-on: ubuntu-latest
@@ -623,7 +642,7 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Acceptance Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-acceptance-${{ matrix.arch }}
 
@@ -639,7 +658,7 @@ jobs:
 
   test-cloudwatch-v1:
     name: Test CloudWatch V1
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudwatch-v1 == 'true') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.disableTestSelection || needs.test-preflight.outputs.cloudwatch-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -649,16 +668,19 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -689,7 +711,7 @@ jobs:
 
   test-ddb-v2:
     name: Test DynamoDB(Streams) v2
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.dynamodb-v2 == 'true') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.disableTestSelection || needs.test-preflight.outputs.dynamodb-v2 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -699,16 +721,19 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -806,7 +831,7 @@ jobs:
 
   test-events-v1:
     name: Test EventBridge v1
-    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/master' || needs.test-preflight.outputs.events-v1 == 'true') }}
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.disableTestSelection || needs.test-preflight.outputs.events-v1 == 'true') }}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
@@ -816,16 +841,19 @@ jobs:
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
@@ -853,90 +881,152 @@ jobs:
             .coverage.events_v1
           retention-days: 30
 
-  test-cfn-v2-engine:
-    name: Test CloudFormation Engine v2
-    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/master' || needs.test-preflight.outputs.cloudformation-v2 == 'true' )}}
+  test-cfn-legacy-engine:
+    name: Test CloudFormation Engine legacy
+    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || inputs.disableTestSelection || needs.test-preflight.outputs.cloudformation-legacy == 'true' )}}
     runs-on: ubuntu-latest
     needs:
       - test-preflight
       - build
     timeout-minutes: 60
     env:
-      COVERAGE_FILE: ".coverage.cloudformation_v2"
-      JUNIT_REPORTS_FILE: "pytest-junit-cloudformation-v2.xml"
+      COVERAGE_FILE: ".coverage.cloudformation_legacy"
+      JUNIT_REPORTS_FILE: "pytest-junit-cloudformation-legacy.xml"
       # Set job-specific environment variables for pytest-tinybird
       CI_JOB_NAME: ${{ github.job }}
       CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Prepare Local Test Environment
         uses: ./.github/actions/setup-tests-env
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: test-selection
           path: dist/testselection/
 
-      - name: Run CloudFormation Engine v2 Tests
-        timeout-minutes: 30
+      - name: Run CloudFormation Engine legacy Tests
+        timeout-minutes: 60
         env:
           # add the GitHub API token to avoid rate limit issues
           GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          TEST_PATH: "tests/aws/services/cloudformation/v2"
-          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_v2'"
-          PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-v2"
+          TEST_PATH: "tests/aws/services/cloudformation"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name='cloudformation_legacy'"
+          PROVIDER_OVERRIDE_CLOUDFORMATION: "engine-legacy"
         run: make test-coverage
 
       - name: Archive Test Results
         uses: actions/upload-artifact@v4
         if: success() || failure()
         with:
-          name: test-results-cloudformation-v2
+          name: test-results-cloudformation-legacy
           include-hidden-files: true
           path: |
             ${{ env.COVERAGE_FILE }}
             ${{ env.JUNIT_REPORTS_FILE }}
           retention-days: 30
 
+  test-sns-v2:
+    name: Test SNS V2
+    if: ${{ !inputs.onlyAcceptanceTests && (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') || needs.test-preflight.outputs.sns-v2 == 'true') }}
+    runs-on: ubuntu-latest
+    needs:
+      - test-preflight
+      - build
+    timeout-minutes: 60
+    env:
+      # Set job-specific environment variables for pytest-tinybird
+      CI_JOB_NAME: ${{ github.job }}
+      CI_JOB_ID: ${{ github.job }}
+    outputs:
+      # we need this output to conditionally execute the Publishing step
+      job_status: "executed"
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Prepare Local Test Environment
+        uses: ./.github/actions/setup-tests-env
+
+      - name: Download Test Selection
+        if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
+        uses: actions/download-artifact@v5
+        with:
+          name: test-selection
+          path: dist/testselection/
+
+      - name: Run SNS v2 Provider Tests
+        timeout-minutes: 30
+        env:
+          # add the GitHub API token to avoid rate limit issues
+          GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEBUG: 1
+          COVERAGE_FILE: ".coverage.sns_v2"
+          TEST_PATH: "tests/aws/services/sns/"
+          JUNIT_REPORTS_FILE: "pytest-junit-sns-v2.xml"
+          PYTEST_ARGS: "${{ env.TINYBIRD_PYTEST_ARGS }}${{ env.TESTSELECTION_PYTEST_ARGS }} --reruns 3 -o junit_suite_name=sns_v2"
+          PROVIDER_OVERRIDE_SNS: "v2"
+        run: make test-coverage
+
+      - name: Archive Test Results
+        uses: actions/upload-artifact@v4
+        if: success() || failure()
+        with:
+          name: test-results-sns-v2
+          include-hidden-files: true
+          path: |
+            pytest-junit-sns-v2.xml
+            .coverage.sns_v2
+          retention-days: 30
+
   publish-alternative-provider-test-results:
     name: Publish Alternative Provider Test Results
+    # execute on success or failure, but not if the workflow is cancelled or all of the dependencies has been skipped
+    if: ${{ !cancelled() && (contains(needs.*.outputs.job_status, 'executed')) }}
     needs:
-      - test-cfn-v2-engine
+      - test-cfn-legacy-engine
       - test-events-v1
       - test-ddb-v2
       - test-cloudwatch-v1
+      - test-sns-v2
     runs-on: ubuntu-latest
     permissions:
       checks: write
       pull-requests: write
       contents: read
       issues: read
-    # execute on success or failure, but not if the workflow is cancelled or any of the dependencies has been skipped
-    if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
-      - name: Download Cloudformation v2 Artifacts
-        uses: actions/download-artifact@v4
+      - name: Download Cloudformation legacy Artifacts
+        uses: actions/download-artifact@v5
         with:
-          pattern: test-results-cloudformation-v2
+          pattern: test-results-cloudformation-legacy
 
       - name: Download EventBridge v1 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-events-v1
 
       - name: Download DynamoDB v2 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-dynamodb-v2
 
       - name: Download CloudWatch v1 Artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           pattern: test-results-cloudwatch-v1
+
+      - name: Download SNS v2 Artifacts
+        uses: actions/download-artifact@v5
+        with:
+          pattern: test-results-sns-v2
 
       - name: Publish Bootstrap and Integration Test Results
         uses: EnricoMi/publish-unit-test-result-action@v2
@@ -950,7 +1040,7 @@ jobs:
 
   capture-not-implemented:
     name: "Capture Not Implemented"
-    if: ${{ !inputs.onlyAcceptanceTests && github.ref == 'refs/heads/master' }}
+    if: ${{ !inputs.onlyAcceptanceTests && ( github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v') ) }}
     runs-on: ubuntu-latest
     needs: build
     env:
@@ -965,7 +1055,7 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PULL_TOKEN }}
 
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
         with:
           # setuptools_scm requires the git history (at least until the last tag) to determine the version
           fetch-depth: 0

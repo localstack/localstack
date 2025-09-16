@@ -1,5 +1,3 @@
-from typing import Optional
-
 from localstack.services.stepfunctions.asl.component.common.error_name.failure_event import (
     FailureEventException,
 )
@@ -35,9 +33,9 @@ class DistributedIteratorWorker(InlineIteratorWorker):
         work_name: str,
         job_pool: JobPool,
         env: Environment,
-        parameters: Optional[Parameters],
+        parameters: Parameters | None,
         map_run_record: MapRunRecord,
-        item_selector: Optional[ItemSelector],
+        item_selector: ItemSelector | None,
     ):
         super().__init__(
             work_name=work_name,
@@ -99,7 +97,7 @@ class DistributedIteratorWorker(InlineIteratorWorker):
             self._map_run_record.item_counter.running.offset(-1)
             job.job_output = job_output
 
-    def _eval_pool(self, job: Optional[Job], worker_frame: Environment) -> None:
+    def _eval_pool(self, job: Job | None, worker_frame: Environment) -> None:
         # Note: the frame has to be closed before the job, to ensure the owner environment is correctly updated
         #  before the evaluation continues; map states await for job termination not workers termination.
         if job is None:

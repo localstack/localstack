@@ -31,17 +31,17 @@ from localstack.services.stepfunctions.asl.eval.event.event_detail import EventD
 
 class StateTask(ExecutionState, abc.ABC):
     resource: Resource
-    parargs: Optional[Parargs]
-    credentials: Optional[Credentials]
+    parargs: Parargs | None
+    credentials: Credentials | None
 
     def __init__(self):
-        super(StateTask, self).__init__(
+        super().__init__(
             state_entered_event_type=HistoryEventType.TaskStateEntered,
             state_exited_event_type=HistoryEventType.TaskStateExited,
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateTask, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.resource = state_props.get(Resource)
         self.parargs = state_props.get(Parargs)
         self.credentials = state_props.get(Credentials)
@@ -51,7 +51,7 @@ class StateTask(ExecutionState, abc.ABC):
 
     def _eval_parameters(self, env: Environment) -> dict:
         # Eval raw parameters.
-        parameters = dict()
+        parameters = {}
         if self.parargs is not None:
             self.parargs.eval(env=env)
             parameters = env.stack.pop()

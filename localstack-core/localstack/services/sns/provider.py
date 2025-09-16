@@ -1,9 +1,9 @@
 import base64
+import contextlib
 import copy
 import functools
 import json
 import logging
-from typing import Dict, List
 from uuid import uuid4
 
 from botocore.utils import InvalidArnException
@@ -420,6 +420,10 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
     def unsubscribe(
         self, context: RequestContext, subscription_arn: subscriptionARN, **kwargs
     ) -> None:
+        if subscription_arn is None:
+            raise InvalidParameterException(
+                "Invalid parameter: SubscriptionArn Reason: no value for required parameter",
+            )
         count = len(subscription_arn.split(":"))
         try:
             parsed_arn = parse_arn(subscription_arn)
@@ -470,7 +474,8 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
                 subscription_arn=subscription_arn,
             )
 
-        store.topic_subscriptions[subscription["TopicArn"]].remove(subscription_arn)
+        with contextlib.suppress(ValueError):
+            store.topic_subscriptions[subscription["TopicArn"]].remove(subscription_arn)
         store.subscription_filter_policy.pop(subscription_arn, None)
         store.subscriptions.pop(subscription_arn, None)
 
@@ -584,10 +589,7 @@ class SnsProvider(SnsApi, ServiceLifecycleHook):
             raise InvalidParameterException(
                 "Invalid parameter: MessageDeduplicationId Reason: The request includes MessageDeduplicationId parameter that is not valid for this topic type"
             )
-        elif message_group_id:
-            raise InvalidParameterException(
-                "Invalid parameter: MessageGroupId Reason: The request includes MessageGroupId parameter that is not valid for this topic type"
-            )
+
         is_endpoint_publish = target_arn and ":endpoint/" in target_arn
         if message_structure == "json":
             try:
@@ -1130,7 +1132,7 @@ def register_sns_api_resource(router: Router):
     router.add(SNSServiceSubscriptionTokenApiResource())
 
 
-def _format_messages(sent_messages: List[Dict[str, str]], validated_keys: List[str]):
+def _format_messages(sent_messages: list[dict[str, str]], validated_keys: list[str]):
     """
     This method format the messages to be more readable and undo the format change that was needed for Moto
     Should be removed once we refactor SNS.

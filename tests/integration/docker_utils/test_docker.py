@@ -6,7 +6,8 @@ import os
 import re
 import textwrap
 import time
-from typing import Callable, NamedTuple, Type
+from collections.abc import Callable
+from typing import NamedTuple
 
 import pytest
 from docker.models.containers import Container
@@ -48,13 +49,11 @@ from localstack.utils.sync import retry
 from localstack.utils.threads import FuncThread
 from tests.integration.docker_utils.conftest import is_podman_test, skip_for_podman
 
-ContainerInfo = NamedTuple(
-    "ContainerInfo",
-    [
-        ("container_id", str),
-        ("container_name", str),
-    ],
-)
+
+class ContainerInfo(NamedTuple):
+    container_id: str
+    container_name: str
+
 
 LOG = logging.getLogger(__name__)
 
@@ -365,7 +364,7 @@ class TestDockerClient:
         with pytest.raises(NoSuchContainer):
             docker_client.start_container("this_container_does_not_exist")
 
-    def test_docker_not_available(self, docker_client_class: Type[ContainerClient], monkeypatch):
+    def test_docker_not_available(self, docker_client_class: type[ContainerClient], monkeypatch):
         monkeypatch.setattr(config, "DOCKER_CMD", "non-existing-binary")
         monkeypatch.setenv("DOCKER_HOST", "/var/run/docker.sock1")
         # initialize the client after mocking the environment
@@ -827,6 +826,83 @@ class TestDockerClient:
         with pytest.raises(ContainerException):
             docker_client.list_containers(filter="illegalfilter=foobar")
 
+    def test_get_running_container_names_should_ignore_stopped_containers(
+        self, docker_client: ContainerClient, create_container
+    ):
+        cn1 = _random_container_name()
+        cn2 = _random_container_name()
+        cn3 = _random_container_name()
+
+        create_container("alpine", name=cn1, command=["sleep", "30"])
+        create_container("alpine", name=cn2, command=["sleep", "30"])
+        create_container("alpine", name=cn3, command=["sleep", "30"])
+
+        docker_client.start_container(cn1)
+        docker_client.start_container(cn2)
+
+        container_names = docker_client.get_running_container_names()
+        # We dont do equal comparison here to avoid brittle tests since there could be other containers.
+        assert 2 <= len(container_names)
+        assert all(x in container_names for x in [cn1, cn2])
+        assert cn3 not in container_names
+
+    def test_get_all_container_names_should_include_even_stopped_containers(
+        self, docker_client: ContainerClient, create_container
+    ):
+        cn1 = _random_container_name()
+        cn2 = _random_container_name()
+        cn3 = _random_container_name()
+
+        create_container("alpine", name=cn1, command=["sleep", "30"])
+        create_container("alpine", name=cn2, command=["sleep", "30"])
+        create_container("alpine", name=cn3, command=["sleep", "30"])
+
+        docker_client.start_container(cn1)
+        docker_client.start_container(cn2)
+
+        container_names = docker_client.get_all_container_names()
+        # We dont do equal comparison here to avoid brittle tests since there could be other containers.
+        assert 3 <= len(container_names)
+        assert all(x in container_names for x in [cn1, cn2, cn3])
+
+    def test_remove_container_should_work_when_container_is_running_and_checking_container_existence(
+        self, docker_client: ContainerClient, create_container
+    ):
+        cn1 = _random_container_name()
+        create_container("alpine", name=cn1, command=["sleep", "30"])
+
+        docker_client.start_container(cn1)
+
+        docker_client.remove_container(cn1, check_existence=True)
+
+        container_names = docker_client.get_all_container_names()
+        assert cn1 not in container_names
+
+    def test_remove_container_should_work_when_container_is_stopped_and_checking_container_existence(
+        self, docker_client: ContainerClient, create_container
+    ):
+        cn1 = _random_container_name()
+        create_container("alpine", name=cn1, command=["sleep", "30"])
+        docker_client.remove_container(cn1, check_existence=True)
+
+        container_names = docker_client.get_all_container_names()
+        assert cn1 not in container_names
+
+    def test_remove_container_should_throw_exception_when_container_doesnt_exist_and_not_forcing(
+        self, docker_client: ContainerClient
+    ):
+        with pytest.raises(NoSuchContainer):
+            docker_client.remove_container(
+                "mygiganonexistingcontainer", check_existence=False, force=False
+            )
+
+    def test_remove_container_should_work_even_when_container_doesnt_exist_because_of_forcing(
+        self, docker_client: ContainerClient
+    ):
+        docker_client.remove_container(
+            "mygiganonexistingcontainer", check_existence=False, force=True
+        )
+
     def test_list_containers_filter(self, docker_client: ContainerClient, create_container):
         name_prefix = "filter_tests_"
         cn1 = name_prefix + _random_container_name()
@@ -1155,6 +1231,19 @@ class TestDockerClient:
         )
 
     @markers.skip_offline
+    def test_pull_docker_image_with_log_handler(self, docker_client: ContainerClient):
+        log_result: list[str] = []
+
+        def _process(line: str):
+            log_result.append(line)
+
+        docker_client.pull_image("alpine", log_handler=_process)
+
+        assert any("Pulling from library/alpine" in log for log in log_result), (
+            f"Should display useful logs in {log_result}"
+        )
+
+    @markers.skip_offline
     def test_run_container_automatic_pull(self, docker_client: ContainerClient):
         try:
             docker_client.remove_image("alpine")
@@ -1262,6 +1351,57 @@ class TestDockerClient:
         result = docker_client.inspect_image(image_name, pull=False)
         assert "foo=bar" in result["Config"]["Env"]
         assert "45329/tcp" in result["Config"]["ExposedPorts"]
+
+    @markers.skip_offline
+    def test_remove_anonymous_volumes(
+        self, docker_client: ContainerClient, create_container, tmp_path, cleanups
+    ):
+        dockerfile_dir = tmp_path / "dockerfile"
+        tmp_file = short_uid()
+        ctx_dir = dockerfile_dir
+        dockerfile_path = os.path.join(dockerfile_dir, "Dockerfile")
+
+        # Create a custom Dockerfile that creates an anonymous volume
+        dockerfile = f"""
+        FROM alpine
+        ADD {tmp_file} .
+        VOLUME [ "/tmp" ]
+        ENV foo=bar
+        EXPOSE 45329
+        """
+        save_file(dockerfile_path, dockerfile)
+        save_file(os.path.join(ctx_dir, tmp_file), "test content 123")
+
+        dockerfile_ref = str(dockerfile_dir)
+
+        # Using the SDK directly, as our abstraction doesn't directly expose volumes yet
+        docker_sdk = SdkDockerClient().docker_client
+
+        image_name = f"img-{short_uid()}"
+        docker_client.build_image(dockerfile_path=dockerfile_ref, image_name=image_name)
+        cleanups.append(lambda: docker_client.remove_image(image_name, force=True))
+
+        container = create_container(
+            image_name,
+            command=["sh", "-c", "while true; do sleep 1; done"],
+        )
+
+        volumes = docker_client.inspect_container_volumes(container.container_id)
+        assert len(volumes) == 1, "We should have a single (anonymous) volume in our custom image"
+        anon_volume_name = [v.name for v in volumes][0]
+
+        # Verify that the anonymous volume exists
+        current_volumes = docker_sdk.volumes.list()
+        current_volume_names = [v.name for v in current_volumes]
+        assert anon_volume_name in current_volume_names
+
+        # Remove the container, and explicilty remove anonymous volumes
+        docker_client.remove_container(container_name=container.container_name, volumes=True)
+
+        # Verify that the anonymous volume has been removed
+        current_volumes = docker_sdk.volumes.list()
+        current_volume_names = [v.name for v in current_volumes]
+        assert anon_volume_name not in current_volume_names
 
     @markers.skip_offline
     def test_run_container_non_existent_image(self, docker_client: ContainerClient):

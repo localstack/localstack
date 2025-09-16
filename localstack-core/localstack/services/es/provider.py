@@ -1,5 +1,5 @@
 from contextlib import contextmanager
-from typing import Dict, Optional, cast
+from typing import cast
 
 from botocore.exceptions import ClientError
 
@@ -71,8 +71,8 @@ from localstack.aws.connect import connect_to
 
 
 def _version_to_opensearch(
-    version: Optional[ElasticsearchVersionString],
-) -> Optional[VersionString]:
+    version: ElasticsearchVersionString | None,
+) -> VersionString | None:
     if version is not None:
         if version.startswith("OpenSearch_"):
             return version
@@ -81,8 +81,8 @@ def _version_to_opensearch(
 
 
 def _version_from_opensearch(
-    version: Optional[VersionString],
-) -> Optional[ElasticsearchVersionString]:
+    version: VersionString | None,
+) -> ElasticsearchVersionString | None:
     if version is not None:
         if version.startswith("Elasticsearch_"):
             return version.split("_")[1]
@@ -90,19 +90,19 @@ def _version_from_opensearch(
             return version
 
 
-def _instancetype_to_opensearch(instance_type: Optional[str]) -> Optional[str]:
+def _instancetype_to_opensearch(instance_type: str | None) -> str | None:
     if instance_type is not None:
         return instance_type.replace("elasticsearch", "search")
 
 
-def _instancetype_from_opensearch(instance_type: Optional[str]) -> Optional[str]:
+def _instancetype_from_opensearch(instance_type: str | None) -> str | None:
     if instance_type is not None:
         return instance_type.replace("search", "elasticsearch")
 
 
 def _clusterconfig_from_opensearch(
-    cluster_config: Optional[ClusterConfig],
-) -> Optional[ElasticsearchClusterConfig]:
+    cluster_config: ClusterConfig | None,
+) -> ElasticsearchClusterConfig | None:
     if cluster_config is not None:
         # Just take the whole typed dict and typecast it to our target type
         result = cast(ElasticsearchClusterConfig, cluster_config)
@@ -117,8 +117,8 @@ def _clusterconfig_from_opensearch(
 
 
 def _domainstatus_from_opensearch(
-    domain_status: Optional[DomainStatus],
-) -> Optional[ElasticsearchDomainStatus]:
+    domain_status: DomainStatus | None,
+) -> ElasticsearchDomainStatus | None:
     if domain_status is not None:
         # Just take the whole typed dict and typecast it to our target type
         result = cast(ElasticsearchDomainStatus, domain_status)
@@ -135,8 +135,8 @@ def _domainstatus_from_opensearch(
 
 
 def _clusterconfig_to_opensearch(
-    elasticsearch_cluster_config: Optional[ElasticsearchClusterConfig],
-) -> Optional[ClusterConfig]:
+    elasticsearch_cluster_config: ElasticsearchClusterConfig | None,
+) -> ClusterConfig | None:
     if elasticsearch_cluster_config is not None:
         result = cast(ClusterConfig, elasticsearch_cluster_config)
         if instance_type := result.get("InstanceType"):
@@ -149,8 +149,8 @@ def _clusterconfig_to_opensearch(
 
 
 def _domainconfig_from_opensearch(
-    domain_config: Optional[DomainConfig],
-) -> Optional[ElasticsearchDomainConfig]:
+    domain_config: DomainConfig | None,
+) -> ElasticsearchDomainConfig | None:
     if domain_config is not None:
         result = cast(ElasticsearchDomainConfig, domain_config)
         engine_version = domain_config.get("EngineVersion", {})
@@ -169,8 +169,8 @@ def _domainconfig_from_opensearch(
 
 
 def _compatible_version_list_from_opensearch(
-    compatible_version_list: Optional[CompatibleVersionsList],
-) -> Optional[CompatibleElasticsearchVersionsList]:
+    compatible_version_list: CompatibleVersionsList | None,
+) -> CompatibleElasticsearchVersionsList | None:
     if compatible_version_list is not None:
         return [
             CompatibleVersionsMap(
@@ -304,7 +304,7 @@ class EsProvider(EsApi):
             region_name=context.region, aws_access_key_id=context.account_id
         ).opensearch
 
-        payload: Dict
+        payload: dict
         if "ElasticsearchClusterConfig" in payload:
             payload["ClusterConfig"] = payload["ElasticsearchClusterConfig"]
             payload["ClusterConfig"]["InstanceType"] = _instancetype_to_opensearch(
@@ -347,7 +347,7 @@ class EsProvider(EsApi):
         with exception_mapper():
             domain_names = opensearch_client.list_domain_names(**kwargs)["DomainNames"]
 
-        return ListDomainNamesResponse(DomainNames=cast(Optional[DomainInfoList], domain_names))
+        return ListDomainNamesResponse(DomainNames=cast(DomainInfoList | None, domain_names))
 
     def list_elasticsearch_versions(
         self,

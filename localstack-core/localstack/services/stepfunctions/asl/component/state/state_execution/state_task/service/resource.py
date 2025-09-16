@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import abc
 from itertools import takewhile
-from typing import Final, Optional
+from typing import Final
 
 from localstack.services.stepfunctions.asl.component.eval_component import EvalComponent
 from localstack.services.stepfunctions.asl.eval.environment import Environment
@@ -33,7 +33,7 @@ class ResourceARN:
         account: str,
         task_type: str,
         name: str,
-        option: Optional[str],
+        option: str | None,
     ):
         self.arn = arn
         self.partition = partition
@@ -137,7 +137,7 @@ class ServiceResource(Resource):
     service_name: Final[str]
     api_name: Final[str]
     api_action: Final[str]
-    condition: Final[Optional[str]]
+    condition: Final[str | None]
 
     def __init__(self, resource_arn: ResourceARN):
         super().__init__(resource_arn=resource_arn)

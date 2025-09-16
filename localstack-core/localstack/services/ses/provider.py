@@ -4,10 +4,11 @@ import logging
 import os
 import re
 from collections import defaultdict
-from datetime import date, datetime, time, timezone
-from typing import TYPE_CHECKING, Any, Dict, List, Optional
+from datetime import UTC, date, datetime, time
+from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import ClientError
+from moto.core.parsers import XFormedDict
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
 
@@ -26,10 +27,13 @@ from localstack.aws.api.ses import (
     DeleteConfigurationSetResponse,
     DeleteTemplateResponse,
     Destination,
+    Enabled,
     EventDestination,
     EventDestinationDoesNotExistException,
     EventDestinationName,
+    EventType,
     GetIdentityVerificationAttributesResponse,
+    Identity,
     IdentityList,
     IdentityVerificationAttributes,
     InvalidSNSDestinationException,
@@ -40,12 +44,14 @@ from localstack.aws.api.ses import (
     MessageRejected,
     MessageTagList,
     NextToken,
+    NotificationType,
     RawMessage,
     ReceiptRuleSetName,
     SendEmailResponse,
     SendRawEmailResponse,
     SendTemplatedEmailResponse,
     SesApi,
+    SetIdentityHeadersInNotificationsEnabledResponse,
     TemplateData,
     TemplateName,
     VerificationAttributes,
@@ -56,7 +62,7 @@ from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Resource, Response
 from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
-from localstack.services.ses.models import SentEmail, SentEmailBody
+from localstack.services.ses.models import EmailType, SentEmail, SentEmailBody
 from localstack.utils.aws import arns
 from localstack.utils.files import mkdir
 from localstack.utils.strings import long_uid, to_str
@@ -69,7 +75,7 @@ LOGGER = logging.getLogger(__name__)
 
 # Keep record of all sent emails
 # These can be retrieved via a service endpoint
-EMAILS: Dict[MessageId, Dict[str, Any]] = {}
+EMAILS: dict[MessageId, dict[str, Any]] = {}
 
 # Endpoint to access all the sent emails
 # (relative to LocalStack internal HTTP resources base endpoint)
@@ -112,7 +118,7 @@ def save_for_retrospection(sent_email: SentEmail):
     LOGGER.debug("Email saved at: %s", path)
 
 
-def recipients_from_destination(destination: Destination) -> List[str]:
+def recipients_from_destination(destination: Destination) -> list[str]:
     """Get list of recipient email addresses from a Destination object."""
     return (
         destination.get("ToAddresses", [])
@@ -184,7 +190,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     # Helpers
     #
 
-    def get_source_from_raw(self, raw_data: str) -> Optional[str]:
+    def get_source_from_raw(self, raw_data: str) -> str | None:
         """Given a raw representation of email, return the source/from field."""
         entities = raw_data.split("\n")
         for entity in entities:
@@ -210,7 +216,9 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             emitter = SNSEmitter(context)
             emitter.emit_create_configuration_set_event_destination_test_message(sns_topic_arn)
 
-        # only register the event destiation if emitting the message worked
+        # FIXME: Moto stores the Event Destinations as a single value when it should be a list
+        #  it only considers the last Event Destination created, when AWS is able to store multiple configurations
+        # only register the event destination if emitting the message worked
         try:
             result = call_moto(context)
         except CommonServiceException as e:
@@ -269,6 +277,9 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             # FIXME: inconsistent state
             LOGGER.warning("inconsistent state encountered in ses backend")
 
+        # FIXME: Moto stores the Event Destinations as a single value when it should be a list
+        #  it only considers the last Event Destination created, when AWS is able to store multiple configurations
+        #  don't pop the whole value which should be a list but is currently a dict
         backend.config_set_event_destination.pop(configuration_set_name)
 
         return DeleteConfigurationSetEventDestinationResponse()
@@ -358,25 +369,21 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         response = call_moto(context)
 
         backend = get_ses_backend(context)
-        emitter = SNSEmitter(context)
-        recipients = recipients_from_destination(destination)
 
-        for event_destination in backend.config_set_event_destination.values():
-            if not event_destination["Enabled"]:
-                continue
-
-            sns_destination_arn = event_destination.get("SNSDestination")
-            if not sns_destination_arn:
-                continue
-
-            payload = SNSPayload(
+        if event_destinations := backend.config_set_event_destination.get(configuration_set_name):
+            recipients = recipients_from_destination(destination)
+            payload = EventDestinationPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
                 destination_addresses=recipients,
                 tags=tags,
             )
-            emitter.emit_send_event(payload, sns_destination_arn)
-            emitter.emit_delivery_event(payload, sns_destination_arn)
+            notify_event_destinations(
+                context=context,
+                event_destinations=event_destinations,
+                payload=payload,
+                email_type=EmailType.EMAIL,
+            )
 
         text_part = message["Body"].get("Text", {}).get("Data")
         html_part = message["Body"].get("Html", {}).get("Data")
@@ -414,25 +421,21 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         response = call_moto(context)
 
         backend = get_ses_backend(context)
-        emitter = SNSEmitter(context)
-        recipients = recipients_from_destination(destination)
 
-        for event_destination in backend.config_set_event_destination.values():
-            if not event_destination["Enabled"]:
-                continue
-
-            sns_destination_arn = event_destination.get("SNSDestination")
-            if not sns_destination_arn:
-                continue
-
-            payload = SNSPayload(
+        if event_destinations := backend.config_set_event_destination.get(configuration_set_name):
+            recipients = recipients_from_destination(destination)
+            payload = EventDestinationPayload(
                 message_id=response["MessageId"],
                 sender_email=source,
                 destination_addresses=recipients,
                 tags=tags,
             )
-            emitter.emit_send_event(payload, sns_destination_arn, emit_source_arn=False)
-            emitter.emit_delivery_event(payload, sns_destination_arn)
+            notify_event_destinations(
+                context=context,
+                event_destinations=event_destinations,
+                payload=payload,
+                email_type=EmailType.TEMPLATED,
+            )
 
         save_for_retrospection(
             SentEmail(
@@ -477,23 +480,19 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         backend = get_ses_backend(context)
         message = backend.send_raw_email(source, destinations, raw_data)
 
-        emitter = SNSEmitter(context)
-        for event_destination in backend.config_set_event_destination.values():
-            if not event_destination["Enabled"]:
-                continue
-
-            sns_destination_arn = event_destination.get("SNSDestination")
-            if not sns_destination_arn:
-                continue
-
-            payload = SNSPayload(
+        if event_destinations := backend.config_set_event_destination.get(configuration_set_name):
+            payload = EventDestinationPayload(
                 message_id=message.id,
                 sender_email=source,
                 destination_addresses=destinations,
                 tags=tags,
             )
-            emitter.emit_send_event(payload, sns_destination_arn)
-            emitter.emit_delivery_event(payload, sns_destination_arn)
+            notify_event_destinations(
+                context=context,
+                event_destinations=event_destinations,
+                payload=payload,
+                email_type=EmailType.RAW,
+            )
 
         save_for_retrospection(
             SentEmail(
@@ -519,18 +518,54 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         backend.create_receipt_rule_set(rule_set_name)
         original_rule_set = backend.describe_receipt_rule_set(original_rule_set_name)
 
-        for rule in original_rule_set:
+        for rule in original_rule_set.rules:
             backend.create_receipt_rule(rule_set_name, rule)
 
         return CloneReceiptRuleSetResponse()
 
+    @handler("SetIdentityHeadersInNotificationsEnabled")
+    def set_identity_headers_in_notifications_enabled(
+        self,
+        context: RequestContext,
+        identity: Identity,
+        notification_type: NotificationType,
+        enabled: Enabled,
+        **kwargs,
+    ) -> SetIdentityHeadersInNotificationsEnabledResponse:
+        """
+        Sets whether Amazon SES includes the original email headers in the Amazon SNS notifications
+        for a specified identity and notification type.
+        """
+        # Validate notification_type
+        if notification_type not in (
+            NotificationType.Bounce,
+            NotificationType.Complaint,
+            NotificationType.Delivery,
+        ):
+            raise InvalidParameterValue(
+                f"Invalid notification type: {notification_type}. "
+                "Valid values are: Bounce, Complaint, Delivery."
+            )
+
+        backend = get_ses_backend(context)
+        if identity not in backend.addresses:
+            raise MessageRejected(f"Identity {identity} is not verified or does not exist.")
+
+        # Store the setting in the backend
+        if not hasattr(backend, "identity_headers_in_notifications_enabled"):
+            backend.identity_headers_in_notifications_enabled = {}
+        backend.identity_headers_in_notifications_enabled.setdefault(identity, {})[
+            notification_type
+        ] = enabled
+        return SetIdentityHeadersInNotificationsEnabledResponse()
+
 
 @dataclasses.dataclass(frozen=True)
-class SNSPayload:
+class EventDestinationPayload:
     message_id: str
     sender_email: Address
     destination_addresses: AddressList
-    tags: Optional[MessageTagList]
+    tags: MessageTagList | None
 
 
 class SNSEmitter:
@@ -558,9 +593,9 @@ class SNSEmitter:
         )
 
     def emit_send_event(
-        self, payload: SNSPayload, sns_topic_arn: str, emit_source_arn: bool = True
+        self, payload: EventDestinationPayload, sns_topic_arn: str, emit_source_arn: bool = True
     ):
-        now = datetime.now(tz=timezone.utc)
+        now = datetime.now(tz=UTC)
 
         tags = defaultdict(list)
         for every in payload.tags or []:
@@ -592,10 +627,10 @@ class SNSEmitter:
                 Subject="Amazon SES Email Event Notification",
             )
         except ClientError:
-            LOGGER.exception("sending SNS message")
+            LOGGER.error("sending SNS message", exc_info=LOGGER.isEnabledFor(logging.DEBUG))
 
-    def emit_delivery_event(self, payload: SNSPayload, sns_topic_arn: str):
-        now = datetime.now(tz=timezone.utc)
+    def emit_delivery_event(self, payload: EventDestinationPayload, sns_topic_arn: str):
+        now = datetime.now(tz=UTC)
 
         tags = defaultdict(list)
         for every in payload.tags or []:
@@ -625,7 +660,7 @@ class SNSEmitter:
                 Subject="Amazon SES Email Event Notification",
             )
         except ClientError:
-            LOGGER.exception("sending SNS message")
+            LOGGER.error("sending SNS message", exc_info=LOGGER.isEnabledFor(logging.DEBUG))
 
     @staticmethod
     def _client_for_topic(topic_arn: str) -> "SNSClient":
@@ -638,6 +673,35 @@ class SNSEmitter:
             aws_access_key_id=access_key_id,
             aws_secret_access_key=INTERNAL_AWS_SECRET_ACCESS_KEY,
         ).sns
+
+
+def notify_event_destinations(
+    context: RequestContext,
+    # FIXME: Moto stores the Event Destinations as a single value when it should be a list
+    event_destinations: XFormedDict,
+    payload: EventDestinationPayload,
+    email_type: EmailType,
+):
+    emitter = SNSEmitter(context)
+
+    if not isinstance(event_destinations, list):
+        event_destinations = [event_destinations]
+
+    for event_destination in event_destinations:
+        if not event_destination["enabled"]:
+            continue
+
+        sns_destination_arn = event_destination.get("sns_destination", {}).get("topic_arn")
+        if not sns_destination_arn:
+            continue
+
+        matching_event_types = event_destination.get("matching_event_types") or []
+        if EventType.send in matching_event_types:
+            emitter.emit_send_event(
+                payload, sns_destination_arn, emit_source_arn=email_type != EmailType.TEMPLATED
+            )
+        if EventType.delivery in matching_event_types:
+            emitter.emit_delivery_event(payload, sns_destination_arn)
 
 
 class InvalidParameterValue(CommonServiceException):

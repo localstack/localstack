@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/cloudformation/api/test_resources.py::test_describe_non_existent_resource": {
+    "recorded-date": "25-07-2025, 22:01:35",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the DescribeStackResource operation: Resource not-a-valid-resource does not exist for stack <stack-id>"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_resources.py::test_describe_non_existent_stack": {
+    "recorded-date": "25-07-2025, 22:02:38",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the DescribeStackResource operation: Stack 'not-a-valid-stack' does not exist"
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_resources.py::test_invalid_logical_resource_id": {
+    "recorded-date": "25-07-2025, 22:21:31",
+    "recorded-content": {
+      "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: Resource name my-bad-resource-id is non alphanumeric."
+    }
+  }
+}

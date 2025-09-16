@@ -71,7 +71,7 @@ def create_and_test_comparison_function(
         COT.COMPARISON_OPERATOR_PLACEHOLDER, comparison_func_name
     )
 
-    input_output_cases: list[dict[str, Any]] = list()
+    input_output_cases: list[dict[str, Any]] = []
     for i, (variable, value) in enumerate(comparisons):
         exec_input = json.dumps({COT.VARIABLE_KEY: variable, COT.VALUE_KEY: value})
 

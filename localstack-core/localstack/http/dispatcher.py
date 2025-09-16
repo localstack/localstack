@@ -1,5 +1,4 @@
 from json import JSONEncoder
-from typing import Type
 
 from rolo.routing.handler import Handler, ResultValue
 from rolo.routing.handler import handler_dispatcher as _handler_dispatcher
@@ -14,7 +13,7 @@ __all__ = [
 ]
 
 
-def handler_dispatcher(json_encoder: Type[JSONEncoder] = None) -> Dispatcher[Handler]:
+def handler_dispatcher(json_encoder: type[JSONEncoder] = None) -> Dispatcher[Handler]:
     """
     Replacement for ``rolo.dispatcher.handler_dispatcher`` that uses by default LocalStack's CustomEncoder for
     serializing JSON documents.

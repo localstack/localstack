@@ -6,13 +6,12 @@ import shutil
 import stat
 import tempfile
 from pathlib import Path
-from typing import Dict
 
 LOG = logging.getLogger(__name__)
 TMP_FILES = []
 
 
-def parse_config_file(file_or_str: str, single_section: bool = True) -> Dict:
+def parse_config_file(file_or_str: str, single_section: bool = True) -> dict:
     """Parse the given properties config file/string and return a dict of section->key->value.
     If the config contains a single section, and 'single_section' is True, returns"""
 
@@ -81,7 +80,7 @@ def save_file(file, content, append=False, permissions=None):
         f.flush()
 
 
-def load_file(file_path, default=None, mode=None):
+def load_file(file_path: str, default=None, mode=None):
     if not os.path.isfile(file_path):
         return default
     if not mode:
@@ -179,7 +178,11 @@ def idempotent_chmod(path: str, mode: int):
     try:
         os.chmod(path, mode)
     except Exception:
-        existing_mode = os.stat(path)
+        try:
+            existing_mode = os.stat(path)
+        except FileNotFoundError:
+            # file deleted in the meantime, or otherwise not accessible (socket)
+            return
         if mode in (existing_mode.st_mode, stat.S_IMODE(existing_mode.st_mode)):
             # file already has the desired permissions -> return
             return
@@ -198,7 +201,7 @@ def rm_rf(path: str):
     # Running the native command can be an order of magnitude faster in Alpine on Travis-CI
     if is_debian():
         try:
-            return run('rm -rf "%s"' % path)
+            return run(f'rm -rf "{path}"')
         except Exception:
             pass
     # Make sure all files are writeable and dirs executable to remove
@@ -244,11 +247,7 @@ def cp_r(src: str, dst: str, rm_dest_on_conflict=False, ignore_copystat_errors=F
     except Exception as e:
 
         def _info(_path):
-            return "%s (file=%s, symlink=%s)" % (
-                _path,
-                os.path.isfile(_path),
-                os.path.islink(_path),
-            )
+            return f"{_path} (file={os.path.isfile(_path)}, symlink={os.path.islink(_path)})"
 
         LOG.debug("Error copying files from %s to %s: %s", _info(src), _info(dst), e)
         raise

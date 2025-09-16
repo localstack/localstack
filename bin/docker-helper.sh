@@ -31,6 +31,9 @@ function usage() {
     echo "  push-manifests"
     echo "      Create and push the multi-arch Docker manifests for already pushed platform-specific images"
     echo ""
+    echo "  get-release-version"
+    echo "      Output the current release version if HEAD is at a release tag"
+    echo ""
     echo "  help"
     echo "      Show this message"
 }
@@ -51,8 +54,7 @@ function _fail {
 function _get_current_version() {
     # check if setuptools_scm is installed, if not prompt to install. python3 is expected to be present
     if ! python3 -m pip -qqq show setuptools_scm > /dev/null ; then
-      echo "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'" >&2
-      exit 1
+      _fail "ERROR: setuptools_scm is not installed. Run 'pip install --upgrade setuptools setuptools_scm'"
     fi
     python3 -m setuptools_scm
 }
@@ -65,15 +67,28 @@ function _get_current_branch() {
     git branch --show-current
 }
 
+function _get_current_tag() {
+    git describe --tags --exact-match 2> /dev/null || true
+}
+
 function _enforce_image_name() {
     if [ -z "$IMAGE_NAME" ]; then _fail "Mandatory parameter IMAGE_NAME missing."; fi
 }
 
-function _enforce_main_branch() {
-    MAIN_BRANCH=${MAIN_BRANCH-"master"}
+function _enforce_tagged_or_main_branch() {
+    MAIN_BRANCH=${MAIN_BRANCH-"main"}
     CURRENT_BRANCH=$(_get_current_branch)
+    CURRENT_TAG=$(_get_current_tag)
     echo "Current git branch: '$CURRENT_BRANCH'"
-    test "$CURRENT_BRANCH" == "$MAIN_BRANCH" || _fail "Current branch ($CURRENT_BRANCH) is not $MAIN_BRANCH."
+    echo "Current tag: '$CURRENT_TAG'"
+    test -n "$CURRENT_TAG" || test "$CURRENT_BRANCH" == "$MAIN_BRANCH" || _fail "Current branch ($CURRENT_BRANCH) is not $MAIN_BRANCH and current tag ($CURRENT_TAG) is not set."
+
+    # if we're not on the main branch but have a tag, ensure it's a version tag like v1.2.3
+    if [[ "$CURRENT_BRANCH" != "$MAIN_BRANCH" && -n "$CURRENT_TAG" ]]; then
+      if ! [[ "$CURRENT_TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        _fail "tag '$CURRENT_TAG' is not a version tag of the shape ^v[0-9]+\.[0-9]+\.[0-9]+$"
+      fi
+    fi
 }
 
 function _enforce_no_fork() {
@@ -110,6 +125,7 @@ function _set_version_defaults() {
 function cmd-build() {
     # start build of a platform-specific image (this target will get called for multiple archs like AMD64/ARM64)
     _enforce_image_name
+    _enforce_platform
     _set_version_defaults
 
     if [ ! -f "pyproject.toml" ]; then
@@ -122,7 +138,7 @@ function cmd-build() {
     # --add-host: Fix for Centos host OS
     # --build-arg BUILDKIT_INLINE_CACHE=1: Instruct buildkit to inline the caching information into the image
     # --cache-from: Use the inlined caching information when building the image
-    DOCKER_BUILDKIT=1 docker buildx build --pull --progress=plain \
+    DOCKER_BUILDKIT=1 docker buildx build --platform linux/$PLATFORM --pull --progress=plain \
       --cache-from "$IMAGE_NAME" --build-arg BUILDKIT_INLINE_CACHE=1 \
       --build-arg LOCALSTACK_PRE_RELEASE=$(_is_release_commit && echo "0" || echo "1") \
       --build-arg LOCALSTACK_BUILD_GIT_HASH=$(git rev-parse --short HEAD) \
@@ -158,7 +174,7 @@ function cmd-load() {
 
 function cmd-push() {
     _enforce_image_name
-    _enforce_main_branch
+    _enforce_tagged_or_main_branch
     _enforce_no_fork
     _enforce_docker_credentials
     _enforce_platform
@@ -213,7 +229,7 @@ function cmd-push() {
 
 function cmd-push-manifests() {
     _enforce_image_name
-    _enforce_main_branch
+    _enforce_tagged_or_main_branch
     _enforce_no_fork
     _enforce_docker_credentials
     _set_version_defaults
@@ -275,6 +291,14 @@ function cmd-push-manifests() {
     fi
 }
 
+function cmd-get-release-version() {
+    if _is_release_commit; then
+        _get_current_version
+    else
+        _fail "Not a release commit."
+    fi
+}
+
 
 
 ##############
@@ -294,6 +318,7 @@ function main() {
         "load")                cmd-load "$@" ;;
         "push")                cmd-push "$@" ;;
         "push-manifests")      cmd-push-manifests "$@" ;;
+        "get-release-version") cmd-get-release-version "$@" ;;
         "help")                usage && exit 0 ;;
         *)                     usage && exit 1 ;;
     esac

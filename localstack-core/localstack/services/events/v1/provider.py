@@ -4,7 +4,7 @@ import logging
 import os
 import re
 import time
-from typing import Any, Dict, Optional
+from typing import Any
 
 from moto.events import events_backends
 from moto.events.responses import EventsHandler as MotoEventsHandler
@@ -119,7 +119,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def get_scheduled_rule_func(
         store: EventsStore,
         rule_name: RuleName,
-        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
+        event_bus_name_or_arn: EventBusNameOrArn | None = None,
     ):
         def func(*args, **kwargs):
             account_id = store._account_id
@@ -206,21 +206,21 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 raise ValueError("If the value is greater than 1, the unit must be plural")
 
             if "minute" in unit:
-                return "*/%s * * * *" % value
+                return f"*/{value} * * * *"
             if "hour" in unit:
-                return "0 */%s * * *" % value
+                return f"0 */{value} * * *"
             if "day" in unit:
-                return "0 0 */%s * *" % value
-            raise ValueError("Unable to parse events schedule expression: %s" % schedule)
+                return f"0 0 */{value} * *"
+            raise ValueError(f"Unable to parse events schedule expression: {schedule}")
         return schedule
 
     @staticmethod
     def put_rule_job_scheduler(
         store: EventsStore,
-        name: Optional[RuleName],
-        state: Optional[RuleState],
-        schedule_expression: Optional[ScheduleExpression],
-        event_bus_name_or_arn: Optional[EventBusNameOrArn] = None,
+        name: RuleName | None,
+        state: RuleState | None,
+        schedule_expression: ScheduleExpression | None,
+        event_bus_name_or_arn: EventBusNameOrArn | None = None,
     ):
         if not schedule_expression:
             return
@@ -374,7 +374,7 @@ def _dump_events_to_files(events_with_added_uuid):
         for event in events_with_added_uuid:
             target = os.path.join(
                 _get_events_tmp_dir(),
-                "%s_%s" % (current_time_millis, event["uuid"]),
+                "{}_{}".format(current_time_millis, event["uuid"]),
             )
             save_file(target, json.dumps(event["event"]))
     except Exception as e:
@@ -398,14 +398,14 @@ def filter_event_based_on_event_format(
     return True
 
 
-def filter_event_with_target_input_path(target: Dict, event: Dict) -> Dict:
+def filter_event_with_target_input_path(target: dict, event: dict) -> dict:
     input_path = target.get("InputPath")
     if input_path:
         event = extract_jsonpath(event, input_path)
     return event
 
 
-def process_event_with_input_transformer(input_transformer: Dict, event: Dict) -> Dict:
+def process_event_with_input_transformer(input_transformer: dict, event: dict) -> dict:
     """
     Process the event with the input transformer of the target event,
     by replacing the message with the populated InputTemplate.
@@ -426,7 +426,7 @@ def process_event_with_input_transformer(input_transformer: Dict, event: Dict) -
     return templated_event
 
 
-def process_events(event: Dict, targets: list[Dict]):
+def process_events(event: dict, targets: list[dict]):
     for target in targets:
         arn = target["Arn"]
         changed_event = filter_event_with_target_input_path(target, event)
@@ -453,7 +453,7 @@ def process_events(event: Dict, targets: list[Dict]):
             )
 
 
-def get_event_bus_name(event_bus_name_or_arn: Optional[EventBusNameOrArn] = None) -> str:
+def get_event_bus_name(event_bus_name_or_arn: EventBusNameOrArn | None = None) -> str:
     event_bus_name_or_arn = event_bus_name_or_arn or DEFAULT_EVENT_BUS_NAME
     return event_bus_name_or_arn.split("/")[-1]
 

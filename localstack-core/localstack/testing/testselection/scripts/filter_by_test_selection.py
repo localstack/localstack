@@ -24,7 +24,7 @@ def main():
         sys.exit(1)
 
     testselection_file_path = sys.argv[1]
-    with open(testselection_file_path, "r") as file:
+    with open(testselection_file_path) as file:
         selected_tests = [line.strip() for line in file.readlines() if line.strip()]
         test_files = [line.strip() for line in sys.stdin]
         filter_test_files(test_files, selected_tests)

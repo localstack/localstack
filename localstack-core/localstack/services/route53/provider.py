@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional
 
 import moto.route53.models as route53_models
 from botocore.exceptions import ClientError
@@ -79,7 +78,7 @@ class Route53Provider(Route53Api, ServiceLifecycleHook):
     def get_health_check(
         self, context: RequestContext, health_check_id: HealthCheckId, **kwargs
     ) -> GetHealthCheckResponse:
-        health_check: Optional[route53_models.HealthCheck] = route53_backends[context.account_id][
+        health_check: route53_models.HealthCheck | None = route53_backends[context.account_id][
             context.partition
         ].health_checks.get(health_check_id, None)
         if not health_check:

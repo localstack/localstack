@@ -135,7 +135,7 @@ class TestInitScriptManager:
         script_01.touch(mode=0o777)
         script_02.touch(mode=0o777)
 
-        script_01.write_text("#!/bin/bash\necho 'hello 1' >> %s/script_01.out" % tmp_path)
+        script_01.write_text(f"#!/bin/bash\necho 'hello 1' >> {tmp_path}/script_01.out")
         script_02.write_text("#!/bin/bash\nexit 1")
         script_03.write_text(
             "import pathlib; pathlib.Path('%s').write_text('hello 3')"
@@ -261,10 +261,10 @@ class TestInitScriptManager:
         script_02.touch(mode=0o777)
         script_03.touch(mode=0o777)
 
-        script_00.write_text("#!/bin/bash\necho 'hello 0' >> %s/script_00.out" % tmp_path)
-        script_01.write_text("#!/bin/bash\necho 'hello 1' >> %s/script_01.out" % tmp_path)
-        script_02.write_text("#!/bin/bash\necho 'hello 2' >> %s/script_02.out" % tmp_path)
-        script_03.write_text("#!/bin/bash\necho 'hello 3' >> %s/script_03.out" % tmp_path)
+        script_00.write_text(f"#!/bin/bash\necho 'hello 0' >> {tmp_path}/script_00.out")
+        script_01.write_text(f"#!/bin/bash\necho 'hello 1' >> {tmp_path}/script_01.out")
+        script_02.write_text(f"#!/bin/bash\necho 'hello 2' >> {tmp_path}/script_02.out")
+        script_03.write_text(f"#!/bin/bash\necho 'hello 3' >> {tmp_path}/script_03.out")
 
         result = manager.run_stage(Stage.READY)
 

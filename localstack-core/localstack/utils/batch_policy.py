@@ -1,6 +1,6 @@
 import copy
 import time
-from typing import Generic, List, Optional, TypeVar, overload
+from typing import Generic, Optional, TypeVar, overload
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
@@ -76,7 +76,7 @@ class Batcher(Generic[T]):
     def add(self, item: T, *, deep_copy: bool = False) -> BatchPolicyTriggered: ...
 
     @overload
-    def add(self, items: List[T], *, deep_copy: bool = False) -> BatchPolicyTriggered: ...
+    def add(self, items: list[T], *, deep_copy: bool = False) -> BatchPolicyTriggered: ...
 
     def add(self, item_or_items: T | list[T], *, deep_copy: bool = False) -> BatchPolicyTriggered:
         """

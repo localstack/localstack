@@ -1,11 +1,10 @@
 import functools
+from collections.abc import Callable
 from typing import (
     Any,
-    Callable,
     NamedTuple,
     ParamSpec,
     Protocol,
-    Type,
     TypedDict,
     TypeVar,
 )
@@ -42,7 +41,7 @@ class ServiceException(Exception):
     message: str
 
     def __init__(self, *args: Any, **kwargs: Any):
-        super(ServiceException, self).__init__(*args)
+        super().__init__(*args)
 
         if len(args) >= 1:
             self.message = args[0]
@@ -61,13 +60,13 @@ class CommonServiceException(ServiceException):
     """
 
     def __init__(self, code: str, message: str, status_code: int = 400, sender_fault: bool = False):
-        super(CommonServiceException, self).__init__(message)
+        super().__init__(message)
         self.code = code
         self.status_code = status_code
         self.sender_fault = sender_fault
 
 
-Operation = Type[ServiceRequest]
+Operation = type[ServiceRequest]
 
 
 class ServiceOperation(NamedTuple):

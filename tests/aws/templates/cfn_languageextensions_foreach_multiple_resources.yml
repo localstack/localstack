@@ -1,0 +1,19 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform: 'AWS::LanguageExtensions'
+Resources:
+  'Fn::ForEach::TopLevel':
+    - Prefix
+    - [ Foo, Bar ]
+    - 'My${Prefix}Parameter':
+        Type: AWS::SSM::Parameter
+        Properties:
+          Type: String
+          Value: !Sub "my value ${Prefix}"
+      'Fn::ForEach::LowerLevel':
+        - Suffix
+        - [ A, B, C ]
+        - 'My${Prefix}Parameter${Suffix}':
+            Type: AWS::SSM::Parameter
+            Properties:
+              Type: String
+              Value: !Sub "my value ${Suffix}"

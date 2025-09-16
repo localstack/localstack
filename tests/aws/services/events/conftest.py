@@ -1,6 +1,5 @@
 import json
 import logging
-from typing import Tuple
 
 import pytest
 
@@ -28,42 +27,6 @@ def events_create_default_or_custom_event_bus(events_create_event_bus, region_na
         return event_bus_name, event_bus_arn
 
     return _create_default_or_custom_event_bus
-
-
-@pytest.fixture
-def create_role_event_bus_source_to_bus_target(create_iam_role_with_policy):
-    def _create_role_event_bus_to_bus():
-        assume_role_policy_document_bus_source_to_bus_target = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Effect": "Allow",
-                    "Principal": {"Service": "events.amazonaws.com"},
-                    "Action": "sts:AssumeRole",
-                }
-            ],
-        }
-
-        policy_document_bus_source_to_bus_target = {
-            "Version": "2012-10-17",
-            "Statement": [
-                {
-                    "Sid": "",
-                    "Effect": "Allow",
-                    "Action": "events:PutEvents",
-                    "Resource": "arn:aws:events:*:*:event-bus/*",
-                }
-            ],
-        }
-
-        role_arn_bus_source_to_bus_target = create_iam_role_with_policy(
-            RoleDefinition=assume_role_policy_document_bus_source_to_bus_target,
-            PolicyDefinition=policy_document_bus_source_to_bus_target,
-        )
-
-        return role_arn_bus_source_to_bus_target
-
-    yield _create_role_event_bus_to_bus
 
 
 @pytest.fixture
@@ -192,7 +155,7 @@ def put_events_with_filter_to_sqs(
 ):
     def _put_events_with_filter_to_sqs(
         pattern: dict,
-        entries_asserts: list[Tuple[list[dict], bool]],
+        entries_asserts: list[tuple[list[dict], bool]],
         event_bus_name: str = None,
         input_path: str = None,
         input_transformer: dict[dict, str] = None,
@@ -203,7 +166,7 @@ def put_events_with_filter_to_sqs(
             event_bus_name = f"test-bus-{short_uid()}"
             events_create_event_bus(Name=event_bus_name)
 
-        queue_url, queue_arn = sqs_as_events_target()
+        queue_url, queue_arn, _ = sqs_as_events_target()
 
         events_put_rule(
             Name=rule_name,
@@ -348,47 +311,6 @@ def add_resource_policy_logs_events_access(aws_client):
 
     for policy_name in policies:
         aws_client.logs.delete_resource_policy(policyName=policy_name)
-
-
-@pytest.fixture
-def get_primary_secondary_client(
-    aws_client_factory,
-    secondary_aws_client_factory,
-    region_name,
-    secondary_region_name,
-    account_id,
-    secondary_account_id,
-):
-    def _get_primary_secondary_clients(cross_scenario: str):
-        secondary_region = secondary_region_name
-        secondary_account = secondary_account_id
-        if cross_scenario not in ["region", "account", "region_account"]:
-            raise ValueError(f"cross_scenario {cross_scenario} not supported")
-
-        primary_client = aws_client_factory(region_name=region_name)
-
-        if cross_scenario == "region":
-            secondary_account = account_id
-            secondary_client = aws_client_factory(region_name=secondary_region_name)
-
-        elif cross_scenario == "account":
-            secondary_region = region_name
-            secondary_client = secondary_aws_client_factory(region_name=region_name)
-
-        elif cross_scenario == "region_account":
-            secondary_client = secondary_aws_client_factory(region_name=secondary_region)
-
-        else:
-            raise ValueError(f"cross_scenario {cross_scenario} not supported")
-
-        return {
-            "primary_aws_client": primary_client,
-            "secondary_aws_client": secondary_client,
-            "secondary_region_name": secondary_region,
-            "secondary_account_id": secondary_account,
-        }
-
-    return _get_primary_secondary_clients
 
 
 @pytest.fixture

@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -14,12 +14,12 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class LogsSubscriptionFilterProperties(TypedDict):
-    DestinationArn: Optional[str]
-    FilterPattern: Optional[str]
-    LogGroupName: Optional[str]
-    Distribution: Optional[str]
-    FilterName: Optional[str]
-    RoleArn: Optional[str]
+    DestinationArn: str | None
+    FilterPattern: str | None
+    LogGroupName: str | None
+    Distribution: str | None
+    FilterName: str | None
+    RoleArn: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

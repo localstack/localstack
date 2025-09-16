@@ -1,4 +1,4 @@
-from typing import Callable
+from collections.abc import Callable
 
 import botocore.config
 
@@ -18,6 +18,7 @@ from localstack.aws.api.pipes import (
     PipeTargetParameters,
 )
 from localstack.services.lambda_ import hooks as lambda_hooks
+from localstack.services.lambda_ import ldm
 from localstack.services.lambda_.event_source_mapping.esm_event_processor import (
     EsmEventProcessor,
 )
@@ -39,10 +40,6 @@ from localstack.services.lambda_.event_source_mapping.pollers.sqs_poller import 
 from localstack.services.lambda_.event_source_mapping.senders.lambda_sender import LambdaSender
 from localstack.utils.aws.arns import parse_arn
 from localstack.utils.aws.client_types import ServicePrincipal
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
-    DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
-    is_lambda_debug_mode,
-)
 
 
 class PollerHolder:
@@ -65,8 +62,8 @@ class EsmWorkerFactory:
         # Sender (always Lambda)
         function_arn = self.esm_config["FunctionArn"]
 
-        if is_lambda_debug_mode():
-            timeout_seconds = DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
+        if ldm.IS_LDM_ENABLED:
+            timeout_seconds = ldm.DEFAULT_LDM_TIMEOUT_SECONDS
         else:
             # 900s is the maximum amount of time a Lambda can run for.
             lambda_max_timeout_seconds = 900

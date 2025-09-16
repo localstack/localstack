@@ -2,8 +2,10 @@ import os.path
 
 import pytest
 
+from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.collections import optional_list
 from localstack.utils.files import load_file
 from localstack.utils.strings import short_uid
 
@@ -348,9 +350,14 @@ class TestCloudFormationConditions:
         ["should_use_fallback", "match_value"],
         [
             (None, "FallbackParamValue"),
-            ("true", "FallbackParamValue"),
             ("false", "DefaultParamValue"),
-        ],
+        ]
+        + optional_list(
+            not is_v2_engine(),
+            [
+                ("true", "FallbackParamValue"),
+            ],
+        ),
     )
     @markers.aws.validated
     def test_dependency_in_non_evaluated_if_branch(

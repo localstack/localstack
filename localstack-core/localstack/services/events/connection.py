@@ -2,7 +2,7 @@ import json
 import logging
 import re
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from localstack.aws.api.events import (
     Arn,
@@ -138,7 +138,7 @@ class ConnectionService:
                     auth_parameters,
                 )
                 self.connection.secret_arn = secret_arn
-                self.connection.last_authorized_time = datetime.now(timezone.utc)
+                self.connection.last_authorized_time = datetime.now(UTC)
 
             # Set new values
             self.connection.authorization_type = auth_type
@@ -149,7 +149,7 @@ class ConnectionService:
             )
             self.connection.auth_parameters = public_auth_parameters
             self.set_state(ConnectionState.AUTHORIZED)
-            self.connection.last_modified_time = datetime.now(timezone.utc)
+            self.connection.last_modified_time = datetime.now(UTC)
 
         except Exception as error:
             LOG.warning(
@@ -162,7 +162,7 @@ class ConnectionService:
         self.set_state(ConnectionState.DELETING)
         self.delete_connection_secret(self.connection.secret_arn)
         self.set_state(ConnectionState.DELETING)  # required for AWS parity
-        self.connection.last_modified_time = datetime.now(timezone.utc)
+        self.connection.last_modified_time = datetime.now(UTC)
 
     def create_connection_secret(
         self,
@@ -204,7 +204,7 @@ class ConnectionService:
         try:
             secretsmanager_client.update_secret(SecretId=secret_arn, SecretString=secret_value)
             self.set_state(ConnectionState.AUTHORIZED)
-            self.connection.last_authorized_time = datetime.now(timezone.utc)
+            self.connection.last_authorized_time = datetime.now(UTC)
         except Exception as error:
             LOG.warning("Secret with id %s updating failed with errors: %s.", secret_arn, error)
 

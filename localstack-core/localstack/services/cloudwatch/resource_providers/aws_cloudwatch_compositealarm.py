@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import localstack.services.cloudformation.provider_utils as util
 from localstack.services.cloudformation.resource_provider import (
@@ -15,17 +15,17 @@ from localstack.utils.strings import str_to_bool
 
 
 class CloudWatchCompositeAlarmProperties(TypedDict):
-    AlarmRule: Optional[str]
-    ActionsEnabled: Optional[bool]
-    ActionsSuppressor: Optional[str]
-    ActionsSuppressorExtensionPeriod: Optional[int]
-    ActionsSuppressorWaitPeriod: Optional[int]
-    AlarmActions: Optional[list[str]]
-    AlarmDescription: Optional[str]
-    AlarmName: Optional[str]
-    Arn: Optional[str]
-    InsufficientDataActions: Optional[list[str]]
-    OKActions: Optional[list[str]]
+    AlarmRule: str | None
+    ActionsEnabled: bool | None
+    ActionsSuppressor: str | None
+    ActionsSuppressorExtensionPeriod: int | None
+    ActionsSuppressorWaitPeriod: int | None
+    AlarmActions: list[str] | None
+    AlarmDescription: str | None
+    AlarmName: str | None
+    Arn: str | None
+    InsufficientDataActions: list[str] | None
+    OKActions: list[str] | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"

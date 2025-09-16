@@ -37,7 +37,7 @@ class CustomMaskSensitiveInputFilter(MaskSensitiveInputFilter):
     sensitive_keys = ["sensitive_key"]
 
     def __init__(self):
-        super(CustomMaskSensitiveInputFilter, self).__init__(self.sensitive_keys)
+        super().__init__(self.sensitive_keys)
 
 
 @pytest.fixture

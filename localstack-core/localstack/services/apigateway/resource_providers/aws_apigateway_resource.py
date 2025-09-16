@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from botocore.exceptions import ClientError
 
@@ -17,10 +17,10 @@ from localstack.services.cloudformation.resource_provider import (
 
 
 class ApiGatewayResourceProperties(TypedDict):
-    ParentId: Optional[str]
-    PathPart: Optional[str]
-    RestApiId: Optional[str]
-    ResourceId: Optional[str]
+    ParentId: str | None
+    PathPart: str | None
+    RestApiId: str | None
+    ResourceId: str | None
 
 
 REPEATED_INVOCATION = "repeated_invocation"
@@ -72,7 +72,7 @@ class ApiGatewayResourceProvider(ResourceProvider[ApiGatewayResourceProperties])
             root_resource = ([r for r in resources if r["path"] == "/"] or [None])[0]
             if not root_resource:
                 raise Exception(
-                    "Unable to find root resource for REST API %s" % params["restApiId"]
+                    "Unable to find root resource for REST API {}".format(params["restApiId"])
                 )
             params["parentId"] = root_resource["id"]
         response = apigw.create_resource(**params)

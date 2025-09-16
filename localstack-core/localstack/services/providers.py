@@ -41,7 +41,7 @@ def apigateway_legacy():
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
 
 
-@aws_provider()
+@aws_provider(api="cloudformation", name="engine-legacy")
 def cloudformation():
     from localstack.services.cloudformation.provider import CloudformationProvider
 
@@ -49,7 +49,7 @@ def cloudformation():
     return Service.for_provider(provider)
 
 
-@aws_provider(api="cloudformation", name="engine-v2")
+@aws_provider(api="cloudformation")
 def cloudformation_v2():
     from localstack.services.cloudformation.v2.provider import CloudformationProviderV2
 
@@ -316,6 +316,14 @@ def sns():
 
     provider = SnsProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider(api="sns", name="v2")
+def sns_v2():
+    from localstack.services.sns.v2.provider import SnsProvider
+
+    provider = SnsProvider()
+    return Service.for_provider(provider)
 
 
 @aws_provider()

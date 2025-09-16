@@ -1,5 +1,4 @@
 import copy
-from typing import Optional
 
 from localstack.aws.api.stepfunctions import HistoryEventType
 from localstack.services.stepfunctions.asl.component.common.catch.catch_outcome import CatchOutcome
@@ -25,7 +24,7 @@ class StateParallel(ExecutionState):
     # machine object must have fields named States and StartAt, whose meanings are exactly
     # like those in the top level of a state machine.
     branches: BranchesDecl
-    parargs: Optional[Parargs]
+    parargs: Parargs | None
 
     def __init__(self):
         super().__init__(
@@ -34,7 +33,7 @@ class StateParallel(ExecutionState):
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateParallel, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         self.branches = state_props.get(
             typ=BranchesDecl,
             raise_on_missing=ValueError(f"Missing Branches definition in props '{state_props}'."),

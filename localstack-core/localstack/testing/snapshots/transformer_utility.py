@@ -3,7 +3,7 @@ import logging
 import re
 from datetime import datetime
 from json import JSONDecodeError
-from typing import Optional, Pattern
+from re import Pattern
 
 from localstack_snapshot.snapshots.transformer import (
     PATTERN_ISO8601,
@@ -45,12 +45,16 @@ PATTERN_KEY_ARN = re.compile(
     r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}"
 )
 
+PATTERN_MRK_KEY_ARN = re.compile(
+    r"arn:(aws[a-zA-Z-]*)?:([a-zA-Z0-9-_.]+)?:([^:]+)?:(\d{12})?:key/mrk-[a-fA-F0-9]{32}"
+)
+
 
 # TODO: split into generic/aws and put into lib
 class TransformerUtility:
     @staticmethod
     def key_value(
-        key: str, value_replacement: Optional[str] = None, reference_replacement: bool = True
+        key: str, value_replacement: str | None = None, reference_replacement: bool = True
     ):
         """Creates a new KeyValueBasedTransformer. If the key matches, the value will be replaced.
 
@@ -500,7 +504,7 @@ class TransformerUtility:
                 replacement="<stream-name>",
             ),
             TransformerUtility.key_value(
-                "ContinuationSequenceNumber", "<continuation_sequence_number>"
+                "ContinuationSequenceNumber", "continuation_sequence_number"
             ),
         ]
 
@@ -573,6 +577,7 @@ class TransformerUtility:
             TransformerUtility.key_value("CiphertextBlob", reference_replacement=False),
             TransformerUtility.key_value("Plaintext", reference_replacement=False),
             RegexTransformer(PATTERN_KEY_ARN, replacement="<key-arn>"),
+            RegexTransformer(PATTERN_MRK_KEY_ARN, replacement="<mrk-key-arn>"),
         ]
 
     @staticmethod

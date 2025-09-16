@@ -1,11 +1,14 @@
 import os.path
 
 import aws_cdk as cdk
-import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
+from localstack.aws.api.cloudformation import Stack
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
+from localstack.utils.aws.arns import parse_arn
 from localstack.utils.common import short_uid
+from localstack.utils.sync import wait_until
 
 
 @markers.aws.validated
@@ -38,26 +41,69 @@ def test_sns_topic_fifo_with_deduplication(deploy_cfn_template, aws_client, snap
     snapshot.match("get-topic-attrs", topic_attrs)
 
 
-@markers.aws.needs_fixing
-def test_sns_topic_fifo_without_suffix_fails(deploy_cfn_template, aws_client):
+@markers.aws.validated
+@skip_if_v1_provider("Not supported with v1 provider")
+def test_sns_topic_fifo_without_suffix_fails(cleanups, aws_client, snapshot):
     stack_name = f"stack-{short_uid()}"
+    change_set_name = f"cs-{short_uid()}"
     topic_name = f"topic-{short_uid()}"
+
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic-name>"))
+
     path = os.path.join(
         os.path.dirname(__file__),
         "../../../templates/sns_topic_fifo_dedup.yaml",
     )
+    with open(path) as infile:
+        template_body = infile.read()
 
-    with pytest.raises(Exception) as ex:
-        deploy_cfn_template(
-            stack_name=stack_name, template_path=path, parameters={"TopicName": topic_name}
-        )
-    assert ex.typename == "StackDeployError"
-
-    stack = aws_client.cloudformation.describe_stacks(StackName=stack_name)["Stacks"][0]
+    delay = 1
+    max_attempts = 30
     if is_aws_cloud():
-        assert stack.get("StackStatus") in ["ROLLBACK_COMPLETED", "ROLLBACK_IN_PROGRESS"]
-    else:
-        assert stack.get("StackStatus") == "CREATE_FAILED"
+        delay = 5
+        max_attempts = 100
+    waiter_config = {"Delay": delay, "MaxAttempts": max_attempts}
+
+    change_set = aws_client.cloudformation.create_change_set(
+        StackName=stack_name,
+        ChangeSetName=change_set_name,
+        TemplateBody=template_body,
+        ChangeSetType="CREATE",
+        Parameters=[{"ParameterKey": "TopicName", "ParameterValue": topic_name}],
+    )
+    change_set_id = change_set["Id"]
+    stack_id = change_set["StackId"]
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=change_set_id,
+        StackName=stack_name,
+        WaiterConfig=waiter_config,
+    )
+
+    def _cleanup():
+        aws_client.cloudformation.delete_stack(StackName=stack_id)
+        aws_client.cloudformation.get_waiter("stack_delete_complete").wait(
+            StackName=stack_id, WaiterConfig=waiter_config
+        )
+
+    cleanups.append(_cleanup)
+
+    aws_client.cloudformation.execute_change_set(ChangeSetName=change_set_id, StackName=stack_id)
+
+    # we cannot use a waiter here since they all check for success
+    def describe_stack() -> Stack:
+        result = aws_client.cloudformation.describe_stacks(StackName=stack_id)["Stacks"][0]
+        return result
+
+    assert wait_until(
+        lambda: describe_stack()["StackStatus"] in {"ROLLBACK_COMPLETE", "CREATE_FAILED"},
+        strategy="static",
+        wait=delay,
+        max_retries=max_attempts,
+    )
+
+    stack = describe_stack()
+    snapshot.match("describe-stack", stack)
 
 
 @markers.aws.validated
@@ -153,6 +199,61 @@ def test_sns_topic_with_attributes(infrastructure_setup, aws_client, snapshot):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Statement..Action",  # TODO: see https://github.com/getmoto/moto/pull/9041
+    ]
+)
+def test_sns_topic_policy_resets_to_default(
+    sns_topic, infrastructure_setup, aws_client, snapshot, account_id
+):
+    """Tests the delete statement of a ``AWS::SNS::TopicPolicy`` resource, which should reset the topic's policy to the
+    default policy."""
+    # simulate a pre-existing topic
+    existing_topic_arn = sns_topic["Attributes"]["TopicArn"]
+    existing_topic_name = parse_arn(existing_topic_arn)["resource"]
+    snapshot.add_transformer(snapshot.transform.regex(existing_topic_name, "<topic-name>"))
+
+    # create the stack
+    stack_name = "SnsTopicPolicyStack"
+    infra = infrastructure_setup(namespace="SnsTests")
+    # persisting the stack means persisting the existing_topic_arn reference, but that changes every test run
+    infra.persist_output = False
+    stack = cdk.Stack(infra.cdk_app, stack_name=stack_name)
+
+    # get the existing topic
+    topic = cdk.aws_sns.Topic.from_topic_arn(stack, "Topic", existing_topic_arn)
+
+    # add the topic policy resource
+    topic_policy = cdk.aws_sns.TopicPolicy(stack, "CustomTopicPolicy", topics=[topic])
+    topic_policy.document.add_statements(
+        cdk.aws_iam.PolicyStatement(
+            effect=cdk.aws_iam.Effect.ALLOW,
+            principals=[cdk.aws_iam.AnyPrincipal()],
+            actions=["sns:Publish"],
+            resources=[topic.topic_arn],
+            conditions={"StringEquals": {"aws:SourceAccount": account_id}},
+        )
+    )
+
+    # snapshot its policy
+    default = aws_client.sns.get_topic_attributes(TopicArn=existing_topic_arn)
+    snapshot.match("default-topic-attributes", default["Attributes"]["Policy"])
+
+    # deploy the stack
+    cdk.CfnOutput(stack, "TopicArn", value=topic.topic_arn)
+    with infra.provisioner() as prov:
+        assert prov.get_stack_outputs(stack_name=stack_name)["TopicArn"] == existing_topic_arn
+
+        modified = aws_client.sns.get_topic_attributes(TopicArn=existing_topic_arn)
+        snapshot.match("modified-topic-attributes", modified["Attributes"]["Policy"])
+
+    # now that it's destroyed, get the topic attributes again
+    reverted = aws_client.sns.get_topic_attributes(TopicArn=existing_topic_arn)
+    snapshot.match("reverted-topic-attributes", reverted["Attributes"]["Policy"])
+
+
+@markers.aws.validated
 def test_sns_subscription_region(
     snapshot,
     deploy_cfn_template,
@@ -191,3 +292,167 @@ def test_sns_subscription_region(
     sub_arn = stack.outputs["SubscriptionArn"]
     subscription = sns_client.get_subscription_attributes(SubscriptionArn=sub_arn)
     snapshot.match("subscription-1", subscription)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Attributes.DeliveryPolicy",
+        "$..Attributes.EffectiveDeliveryPolicy",
+        "$..Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+    ]
+)
+def test_sns_topic_update_attributes(deploy_cfn_template, aws_client, snapshot):
+    """Test updating SNS Topic DisplayName and Tags."""
+    snapshot.add_transformer(snapshot.transform.key_value("TopicArn"))
+    snapshot.add_transformer(
+        snapshot.transform.key_value(
+            "SubscriptionArn", "PendingConfirmation", reference_replacement=False
+        ),
+    )
+
+    topic_name = f"test-topic-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        parameters={
+            "TopicName": topic_name,
+            "DisplayName": "Initial Display Name",
+            "Environment": "test",  # tag
+            "Project": "localstack",  # tag
+        },
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_update.yaml"
+        ),
+    )
+
+    topic_arn = stack.outputs["TopicArn"]
+
+    initial_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+    snapshot.match("initial-topic-attributes", initial_attrs)
+
+    initial_tags = aws_client.sns.list_tags_for_resource(ResourceArn=topic_arn)
+    tag_dict = {tag["Key"]: tag["Value"] for tag in initial_tags["Tags"]}
+    assert tag_dict["Environment"] == "test"
+    assert tag_dict["Project"] == "localstack"
+
+    initial_subscriptions = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+    snapshot.match("initial-subscriptions", initial_subscriptions)
+
+    deploy_cfn_template(
+        parameters={
+            "TopicName": topic_name,
+            "DisplayName": "Updated Display Name",
+            "Environment": "production",  # tag
+            "Project": "backend",  # tag
+        },
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_update.yaml"
+        ),
+        stack_name=stack.stack_name,
+        is_update=True,
+    )
+
+    updated_attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+    snapshot.match("updated-topic-attributes", updated_attrs)
+
+    updated_tags = aws_client.sns.list_tags_for_resource(ResourceArn=topic_arn)
+    updated_tag_dict = {tag["Key"]: tag["Value"] for tag in updated_tags["Tags"]}
+    assert updated_tag_dict["Environment"] == "production"
+    assert updated_tag_dict["Project"] == "backend"
+
+    # Subscriptions should be preserved
+    new_subscriptions = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+    snapshot.match("new-subscriptions", new_subscriptions)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=[
+        "$..Attributes.DeliveryPolicy",
+        "$..Attributes.EffectiveDeliveryPolicy",
+        "$..Attributes.Policy.Statement..Action",
+    ]
+)
+def test_sns_topic_update_name(deploy_cfn_template, aws_client, snapshot):
+    """Test updating SNS Topic with TopicName change (requires resource replacement)."""
+    snapshot.add_transformer(snapshot.transform.key_value("TopicArn"))
+    snapshot.add_transformer(
+        snapshot.transform.key_value(
+            "SubscriptionArn", "PendingConfirmation", reference_replacement=False
+        ),
+    )
+
+    initial_topic_name = f"test-topic-{short_uid()}"
+
+    stack = deploy_cfn_template(
+        parameters={
+            "TopicName": initial_topic_name,
+            "DisplayName": "Initial Display Name",
+            "Environment": "test",  # tag
+            "Project": "localstack",  # tag
+        },
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_update.yaml"
+        ),
+    )
+
+    initial_topic_arn = stack.outputs["TopicArn"]
+
+    initial_attrs = aws_client.sns.get_topic_attributes(TopicArn=initial_topic_arn)
+    snapshot.match("initial-topic-attributes", initial_attrs)
+
+    # Store initial tags to verify they are preserved
+    initial_tags = aws_client.sns.list_tags_for_resource(ResourceArn=initial_topic_arn)
+    initial_tag_dict = {tag["Key"]: tag["Value"] for tag in initial_tags["Tags"]}
+    assert initial_tag_dict["Environment"] == "test"
+    assert initial_tag_dict["Project"] == "localstack"
+
+    # Get initial subscriptions
+    initial_subscriptions = aws_client.sns.list_subscriptions_by_topic(TopicArn=initial_topic_arn)
+    snapshot.match("initial-subscriptions", initial_subscriptions)
+
+    new_topic_name = f"test-topic-new-{short_uid()}"
+
+    # Update the stack with new TopicName
+    updated_stack = deploy_cfn_template(
+        parameters={
+            "TopicName": new_topic_name,
+            "DisplayName": "Updated Display Name",
+            "Environment": "production",  # tag
+            "Project": "localstack",  # tag
+        },
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/sns_topic_update.yaml"
+        ),
+        stack_name=stack.stack_name,
+        is_update=True,
+    )
+
+    new_topic_arn = updated_stack.outputs["TopicArn"]
+    assert new_topic_arn != initial_topic_arn  # Confirm topic was replaced
+
+    # Verify new topic state
+    new_attrs = aws_client.sns.get_topic_attributes(TopicArn=new_topic_arn)
+    snapshot.match("new-topic-attributes", new_attrs)
+
+    # Verify tags were preserved and updated
+    new_tags = aws_client.sns.list_tags_for_resource(ResourceArn=new_topic_arn)
+    new_tag_dict = {tag["Key"]: tag["Value"] for tag in new_tags["Tags"]}
+
+    # Assert tags were preserved (Project tag should still exist)
+    assert "Project" in new_tag_dict
+    assert new_tag_dict["Project"] == initial_tag_dict["Project"]  # Should be "localstack"
+    # Assert Environment tag was updated
+    assert new_tag_dict["Environment"] == "production"
+
+    # Verify subscriptions were preserved
+    new_subscriptions = aws_client.sns.list_subscriptions_by_topic(TopicArn=new_topic_arn)
+    snapshot.match("new-subscriptions", new_subscriptions)
+
+    # Verify old topic was deleted
+    try:
+        aws_client.sns.get_topic_attributes(TopicArn=initial_topic_arn)
+        raise AssertionError("Old topic should have been deleted")
+    except aws_client.sns.exceptions.NotFoundException:
+        # Expected - old topic should be deleted
+        pass

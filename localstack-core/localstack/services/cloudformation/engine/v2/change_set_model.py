@@ -2,11 +2,19 @@ from __future__ import annotations
 
 import abc
 import enum
+from collections.abc import Generator
 from itertools import zip_longest
-from typing import Any, Final, Generator, Optional, TypedDict, Union, cast
+from typing import Any, Final, TypedDict, cast
 
 from typing_extensions import TypeVar
 
+from localstack.aws.api.cloudformation import ChangeAction
+from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
+from localstack.services.cloudformation.v2.types import (
+    EngineParameter,
+    engine_parameter_value,
+)
+from localstack.utils.json import extract_jsonpath
 from localstack.utils.strings import camel_to_snake_case
 
 T = TypeVar("T")
@@ -42,7 +50,7 @@ class NothingType:
         return False
 
 
-Maybe = Union[T, NothingType]
+Maybe = T | NothingType
 Nothing = NothingType()
 
 
@@ -62,6 +70,9 @@ def parent_change_type_of(children: list[Maybe[ChangeSetEntity]]):
     change_types = [c.change_type for c in children if not is_nothing(c)]
     if not change_types:
         return ChangeType.UNCHANGED
+    # TODO: rework this logic. Currently if any values are different then we consider it
+    #  modified, but e.g. if everything is unchanged or created, the result should probably be
+    #  "created"
     first_type = change_types[0]
     if all(ct == first_type for ct in change_types):
         return first_type
@@ -84,7 +95,7 @@ class NormalisedGlobalTransformDefinition(TypedDict):
 
 
 class Scope(str):
-    _ROOT_SCOPE: Final[str] = str()
+    _ROOT_SCOPE: Final[str] = ""
     _SEPARATOR: Final[str] = "/"
 
     def __new__(cls, scope: str = _ROOT_SCOPE) -> Scope:
@@ -99,6 +110,30 @@ class Scope(str):
     def unwrap(self) -> list[str]:
         return self.split(self._SEPARATOR)
 
+    @property
+    def parent(self) -> Scope:
+        return Scope(self._SEPARATOR.join(self.split(self._SEPARATOR)[:-1]))
+
+    @property
+    def jsonpath(self) -> str:
+        parts = self.split("/")
+        json_parts = []
+
+        for part in parts:
+            if not part:  # Skip empty strings from leading/trailing slashes
+                continue
+
+            if part == "divergence":
+                continue
+
+            # Wrap keys with special characters (e.g., colon) in quotes
+            if ":" in part:
+                json_parts.append(f'"{part}"')
+            else:
+                json_parts.append(part)
+
+        return f"$.{'.'.join(json_parts)}"
+
 
 class ChangeType(enum.Enum):
     UNCHANGED = "Unchanged"
@@ -109,10 +144,18 @@ class ChangeType(enum.Enum):
     def __str__(self):
         return self.value
 
+    def to_change_action(self) -> ChangeAction:
+        # Convert this change type into the change action used throughout the CFn API
+        return {
+            ChangeType.CREATED: ChangeAction.Add,
+            ChangeType.MODIFIED: ChangeAction.Modify,
+            ChangeType.REMOVED: ChangeAction.Remove,
+        }.get(self, ChangeAction.Add)
+
 
 class ChangeSetEntity(abc.ABC):
     scope: Final[Scope]
-    change_type: Final[ChangeType]
+    change_type: ChangeType
 
     def __init__(self, scope: Scope, change_type: ChangeType):
         self.scope = scope
@@ -147,6 +190,22 @@ class ChangeSetNode(ChangeSetEntity, abc.ABC): ...
 class ChangeSetTerminal(ChangeSetEntity, abc.ABC): ...
 
 
+class UpdateModel:
+    # TODO: may be expanded to keep track of other runtime values such as resolved_parameters.
+
+    node_template: Final[NodeTemplate]
+    before_runtime_cache: Final[dict]
+    after_runtime_cache: Final[dict]
+
+    def __init__(
+        self,
+        node_template: NodeTemplate,
+    ):
+        self.node_template = node_template
+        self.before_runtime_cache = {}
+        self.after_runtime_cache = {}
+
+
 class NodeTemplate(ChangeSetNode):
     transform: Final[NodeTransform]
     mappings: Final[NodeMappings]
@@ -165,7 +224,9 @@ class NodeTemplate(ChangeSetNode):
         resources: NodeResources,
         outputs: NodeOutputs,
     ):
-        change_type = parent_change_type_of([transform, resources, outputs])
+        change_type = parent_change_type_of(
+            [transform, mappings, parameters, conditions, resources, outputs]
+        )
         super().__init__(scope=scope, change_type=change_type)
         self.transform = transform
         self.mappings = mappings
@@ -310,11 +371,21 @@ class NodeTransform(ChangeSetNode):
 
 class NodeResources(ChangeSetNode):
     resources: Final[list[NodeResource]]
+    fn_transform: Final[Maybe[NodeIntrinsicFunctionFnTransform]]
+    fn_foreaches: Final[list[NodeForEach]]
 
-    def __init__(self, scope: Scope, resources: list[NodeResource]):
-        change_type = parent_change_type_of(resources)
+    def __init__(
+        self,
+        scope: Scope,
+        resources: list[NodeResource],
+        fn_transform: Maybe[NodeIntrinsicFunctionFnTransform],
+        fn_foreaches: list[NodeForEach],
+    ):
+        change_type = parent_change_type_of(resources + [fn_transform] + fn_foreaches)
         super().__init__(scope=scope, change_type=change_type)
         self.resources = resources
+        self.fn_transform = fn_transform
+        self.fn_foreaches = fn_foreaches
 
 
 class NodeResource(ChangeSetNode):
@@ -323,6 +394,10 @@ class NodeResource(ChangeSetNode):
     properties: Final[NodeProperties]
     condition_reference: Final[Maybe[TerminalValue]]
     depends_on: Final[Maybe[NodeDependsOn]]
+    requires_replacement: Final[bool]
+    deletion_policy: Final[Maybe[ChangeSetTerminal]]
+    update_replace_policy: Final[Maybe[ChangeSetTerminal]]
+    fn_transform: Final[Maybe[NodeIntrinsicFunctionFnTransform]]
 
     def __init__(
         self,
@@ -333,6 +408,10 @@ class NodeResource(ChangeSetNode):
         properties: NodeProperties,
         condition_reference: Maybe[TerminalValue],
         depends_on: Maybe[NodeDependsOn],
+        requires_replacement: bool,
+        deletion_policy: Maybe[ChangeSetTerminal],
+        update_replace_policy: Maybe[ChangeSetTerminal],
+        fn_transform: Maybe[NodeIntrinsicFunctionFnTransform],
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.name = name
@@ -340,15 +419,26 @@ class NodeResource(ChangeSetNode):
         self.properties = properties
         self.condition_reference = condition_reference
         self.depends_on = depends_on
+        self.requires_replacement = requires_replacement
+        self.deletion_policy = deletion_policy
+        self.update_replace_policy = update_replace_policy
+        self.fn_transform = fn_transform
 
 
 class NodeProperties(ChangeSetNode):
     properties: Final[list[NodeProperty]]
+    fn_transform: Final[Maybe[NodeIntrinsicFunctionFnTransform]]
 
-    def __init__(self, scope: Scope, properties: list[NodeProperty]):
+    def __init__(
+        self,
+        scope: Scope,
+        properties: list[NodeProperty],
+        fn_transform: Maybe[NodeIntrinsicFunctionFnTransform],
+    ):
         change_type = parent_change_type_of(properties)
         super().__init__(scope=scope, change_type=change_type)
         self.properties = properties
+        self.fn_transform = fn_transform
 
 
 class NodeDependsOn(ChangeSetNode):
@@ -382,6 +472,40 @@ class NodeIntrinsicFunction(ChangeSetNode):
     ):
         super().__init__(scope=scope, change_type=change_type)
         self.intrinsic_function = intrinsic_function
+        self.arguments = arguments
+
+
+class NodeIntrinsicFunctionFnTransform(NodeIntrinsicFunction):
+    def __init__(
+        self,
+        scope: Scope,
+        change_type: ChangeType,
+        intrinsic_function: str,
+        arguments: ChangeSetEntity,
+        before_siblings: list[Any],
+        after_siblings: list[Any],
+    ):
+        super().__init__(
+            scope=scope,
+            change_type=change_type,
+            intrinsic_function=intrinsic_function,
+            arguments=arguments,
+        )
+        self.before_siblings = before_siblings
+        self.after_siblings = after_siblings
+
+
+class NodeForEach(ChangeSetNode):
+    def __init__(
+        self,
+        scope: Scope,
+        change_type: Final[ChangeType],
+        arguments: Final[ChangeSetEntity],
+    ):
+        super().__init__(
+            scope=scope,
+            change_type=change_type,
+        )
         self.arguments = arguments
 
 
@@ -446,6 +570,8 @@ ValueKey: Final[str] = "Value"
 ExportKey: Final[str] = "Export"
 OutputsKey: Final[str] = "Outputs"
 DependsOnKey: Final[str] = "DependsOn"
+DeletionPolicyKey: Final[str] = "DeletionPolicy"
+UpdateReplacePolicyKey: Final[str] = "UpdateReplacePolicy"
 # TODO: expand intrinsic functions set.
 RefKey: Final[str] = "Ref"
 RefConditionKey: Final[str] = "Condition"
@@ -463,6 +589,7 @@ FnSelect: Final[str] = "Fn::Select"
 FnSplit: Final[str] = "Fn::Split"
 FnGetAZs: Final[str] = "Fn::GetAZs"
 FnBase64: Final[str] = "Fn::Base64"
+FnImportValue: Final[str] = "Fn::ImportValue"
 INTRINSIC_FUNCTIONS: Final[set[str]] = {
     RefKey,
     RefConditionKey,
@@ -480,6 +607,7 @@ INTRINSIC_FUNCTIONS: Final[set[str]] = {
     FnSplit,
     FnGetAZs,
     FnBase64,
+    FnImportValue,
 }
 
 
@@ -500,24 +628,24 @@ class ChangeSetModel:
 
     def __init__(
         self,
-        before_template: Optional[dict],
-        after_template: Optional[dict],
-        before_parameters: Optional[dict],
-        after_parameters: Optional[dict],
+        before_template: dict | None,
+        after_template: dict | None,
+        before_parameters: dict | None,
+        after_parameters: dict[str, EngineParameter] | None,
     ):
         self._before_template = before_template or Nothing
         self._after_template = after_template or Nothing
         self._before_parameters = before_parameters or Nothing
         self._after_parameters = after_parameters or Nothing
-        self._visited_scopes = dict()
+        self._visited_scopes = {}
+        # TODO: move this modeling process to the `get_update_model` method as constructors shouldn't do work
         self._node_template = self._model(
             before_template=self._before_template, after_template=self._after_template
         )
         # TODO: need to do template preprocessing e.g. parameter resolution, conditions etc.
 
-    def get_update_model(self) -> NodeTemplate:
-        # TODO: rethink naming of this for outer utils
-        return self._node_template
+    def get_update_model(self) -> UpdateModel:
+        return UpdateModel(node_template=self._node_template)
 
     def _visit_terminal_value(
         self, scope: Scope, before_value: Maybe[Any], after_value: Maybe[Any]
@@ -548,9 +676,14 @@ class ChangeSetModel:
         node_intrinsic_function = self._visited_scopes.get(scope)
         if isinstance(node_intrinsic_function, NodeIntrinsicFunction):
             return node_intrinsic_function
+        arguments_scope = scope.open_scope("args")
         arguments = self._visit_value(
-            scope=scope, before_value=before_arguments, after_value=after_arguments
+            scope=arguments_scope, before_value=before_arguments, after_value=after_arguments
         )
+
+        if intrinsic_function == "Ref" and arguments.value == "AWS::NoValue":
+            arguments.value = Nothing
+
         if is_created(before=before_arguments, after=after_arguments):
             change_type = ChangeType.CREATED
         elif is_removed(before=before_arguments, after=after_arguments):
@@ -564,14 +697,46 @@ class ChangeSetModel:
                 change_type = resolve_function(arguments)
             else:
                 change_type = arguments.change_type
-        node_intrinsic_function = NodeIntrinsicFunction(
-            scope=scope,
-            change_type=change_type,
-            intrinsic_function=intrinsic_function,
-            arguments=arguments,
-        )
+
+        if intrinsic_function == FnTransform:
+            if scope.count(FnTransform) > 1:
+                raise RuntimeError(
+                    "Invalid: Fn::Transforms cannot be nested inside another Fn::Transform"
+                )
+
+            path = scope.parent.jsonpath
+            before_siblings = extract_jsonpath(self._before_template, path)
+            after_siblings = extract_jsonpath(self._after_template, path)
+
+            node_intrinsic_function = NodeIntrinsicFunctionFnTransform(
+                scope=scope,
+                change_type=change_type,
+                arguments=arguments,
+                intrinsic_function=intrinsic_function,
+                before_siblings=before_siblings,
+                after_siblings=after_siblings,
+            )
+        else:
+            node_intrinsic_function = NodeIntrinsicFunction(
+                scope=scope,
+                change_type=change_type,
+                intrinsic_function=intrinsic_function,
+                arguments=arguments,
+            )
         self._visited_scopes[scope] = node_intrinsic_function
         return node_intrinsic_function
+
+    def _visit_foreach(
+        self, scope: Scope, before_arguments: Maybe[list], after_arguments: Maybe[list]
+    ) -> NodeForEach:
+        node_foreach = self._visited_scopes.get(scope)
+        if isinstance(node_foreach, NodeForEach):
+            return node_foreach
+        arguments_scope = scope.open_scope("args")
+        arguments = self._visit_array(
+            arguments_scope, before_array=before_arguments, after_array=after_arguments
+        )
+        return NodeForEach(scope=scope, change_type=arguments.change_type, arguments=arguments)
 
     def _resolve_intrinsic_function_fn_sub(self, arguments: ChangeSetEntity) -> ChangeType:
         # TODO: This routine should instead export the implicit Ref and GetAtt calls within the first
@@ -619,6 +784,9 @@ class ChangeSetModel:
             return arguments.change_type
 
         logical_id = arguments.value
+
+        if isinstance(logical_id, str) and logical_id.startswith("AWS::"):
+            return arguments.change_type
 
         node_condition = self._retrieve_condition_if_exists(condition_name=logical_id)
         if isinstance(node_condition, NodeCondition):
@@ -690,13 +858,38 @@ class ChangeSetModel:
         )
         if not isinstance(node_condition, NodeCondition):
             raise RuntimeError()
-        change_type = parent_change_type_of([node_condition, *arguments[1:]])
+        change_type = parent_change_type_of([node_condition, *arguments.array[1:]])
         return change_type
+
+    def _resolve_requires_replacement(
+        self, node_properties: NodeProperties, resource_type: TerminalValue
+    ) -> bool:
+        # a bit hacky but we have to load the resource provider executor _and_ resource provider to get the schema
+        # Note: we don't log the attempt to load the resource provider, we need to make sure this is only done once and we already do this in the executor
+
+        resource_provider = ResourceProviderExecutor.try_load_resource_provider(resource_type.value)
+        if not resource_provider:
+            # if we don't support a resource, assume an in-place update for simplicity
+            return False
+
+        create_only_properties: list[str] = resource_provider.SCHEMA.get("createOnlyProperties", [])
+        # TODO: also hacky: strip the leading `/properties/` string from the definition
+        #       ideally we should use a jsonpath or similar
+        create_only_properties = [
+            property.replace("/properties/", "", 1) for property in create_only_properties
+        ]
+        for node_property in node_properties.properties:
+            if (
+                node_property.change_type == ChangeType.MODIFIED
+                and node_property.name in create_only_properties
+            ):
+                return True
+        return False
 
     def _visit_array(
         self, scope: Scope, before_array: Maybe[list], after_array: Maybe[list]
     ) -> NodeArray:
-        array: list[ChangeSetEntity] = list()
+        array: list[ChangeSetEntity] = []
         for index, (before_value, after_value) in enumerate(
             zip_longest(before_array, after_array, fillvalue=Nothing)
         ):
@@ -715,7 +908,7 @@ class ChangeSetModel:
         if isinstance(node_object, NodeObject):
             return node_object
         binding_names = self._safe_keys_of(before_object, after_object)
-        bindings: dict[str, ChangeSetEntity] = dict()
+        bindings: dict[str, ChangeSetEntity] = {}
         for binding_name in binding_names:
             binding_scope, (before_value, after_value) = self._safe_access_in(
                 scope, binding_name, before_object, after_object
@@ -777,7 +970,7 @@ class ChangeSetModel:
                     self._safe_access_in(scope, dominant_type_name, before_value, after_value)
                 )
                 value = self._visit_intrinsic_function(
-                    scope=scope,
+                    scope=intrinsic_function_scope,
                     intrinsic_function=dominant_type_name,
                     before_arguments=before_arguments,
                     after_arguments=after_arguments,
@@ -817,11 +1010,19 @@ class ChangeSetModel:
         if isinstance(node_properties, NodeProperties):
             return node_properties
         property_names: list[str] = self._safe_keys_of(before_properties, after_properties)
-        properties: list[NodeProperty] = list()
+        properties: list[NodeProperty] = []
+        fn_transform = Nothing
+
         for property_name in property_names:
             property_scope, (before_property, after_property) = self._safe_access_in(
                 scope, property_name, before_properties, after_properties
             )
+            if property_name == FnTransform:
+                fn_transform = self._visit_intrinsic_function(
+                    property_scope, FnTransform, before_property, after_property
+                )
+                continue
+
             property_ = self._visit_property(
                 scope=property_scope,
                 property_name=property_name,
@@ -829,12 +1030,39 @@ class ChangeSetModel:
                 after_property=after_property,
             )
             properties.append(property_)
-        node_properties = NodeProperties(scope=scope, properties=properties)
+
+        node_properties = NodeProperties(
+            scope=scope, properties=properties, fn_transform=fn_transform
+        )
         self._visited_scopes[scope] = node_properties
         return node_properties
 
     def _visit_type(self, scope: Scope, before_type: Any, after_type: Any) -> TerminalValue:
         value = self._visit_value(scope=scope, before_value=before_type, after_value=after_type)
+        if not isinstance(value, TerminalValue):
+            # TODO: decide where template schema validation should occur.
+            raise RuntimeError()
+        return value
+
+    def _visit_deletion_policy(
+        self, scope: Scope, before_deletion_policy: Any, after_deletion_policy: Any
+    ) -> TerminalValue:
+        value = self._visit_value(
+            scope=scope, before_value=before_deletion_policy, after_value=after_deletion_policy
+        )
+        if not isinstance(value, TerminalValue):
+            # TODO: decide where template schema validation should occur.
+            raise RuntimeError()
+        return value
+
+    def _visit_update_replace_policy(
+        self, scope: Scope, before_update_replace_policy: Any, after_deletion_policy: Any
+    ) -> TerminalValue:
+        value = self._visit_value(
+            scope=scope,
+            before_value=before_update_replace_policy,
+            after_value=after_deletion_policy,
+        )
         if not isinstance(value, TerminalValue):
             # TODO: decide where template schema validation should occur.
             raise RuntimeError()
@@ -885,8 +1113,67 @@ class ChangeSetModel:
             after_properties=after_properties,
         )
 
+        deletion_policy = Nothing
+        scope_deletion_policy, (before_deletion_policy, after_deletion_policy) = (
+            self._safe_access_in(scope, DeletionPolicyKey, before_resource, after_resource)
+        )
+        if before_deletion_policy or after_deletion_policy:
+            deletion_policy = self._visit_deletion_policy(
+                scope_deletion_policy, before_deletion_policy, after_deletion_policy
+            )
+
+        update_replace_policy = Nothing
+        scope_update_replace_policy, (before_update_replace_policy, after_update_replace_policy) = (
+            self._safe_access_in(scope, UpdateReplacePolicyKey, before_resource, after_resource)
+        )
+        if before_update_replace_policy or after_update_replace_policy:
+            update_replace_policy = self._visit_update_replace_policy(
+                scope_update_replace_policy,
+                before_update_replace_policy,
+                after_update_replace_policy,
+            )
+
+        fn_transform = Nothing
+        scope_fn_transform, (before_fn_transform_args, after_fn_transform_args) = (
+            self._safe_access_in(scope, FnTransform, before_resource, after_resource)
+        )
+        if not is_nothing(before_fn_transform_args) or not is_nothing(after_fn_transform_args):
+            if scope_fn_transform.count(FnTransform) > 1:
+                raise RuntimeError(
+                    "Invalid: Fn::Transforms cannot be nested inside another Fn::Transform"
+                )
+            path = "$" + ".".join(scope_fn_transform.split("/")[:-1])
+            before_siblings = extract_jsonpath(self._before_template, path)
+            after_siblings = extract_jsonpath(self._after_template, path)
+            arguments_scope = scope.open_scope("args")
+            arguments = self._visit_value(
+                scope=arguments_scope,
+                before_value=before_fn_transform_args,
+                after_value=after_fn_transform_args,
+            )
+            fn_transform = NodeIntrinsicFunctionFnTransform(
+                scope=scope_fn_transform,
+                change_type=ChangeType.MODIFIED,  # TODO
+                arguments=arguments,  # TODO
+                intrinsic_function=FnTransform,
+                before_siblings=before_siblings,
+                after_siblings=after_siblings,
+            )
+
         change_type = change_type_of(
-            before_resource, after_resource, [properties, condition_reference, depends_on]
+            before_resource,
+            after_resource,
+            [
+                properties,
+                condition_reference,
+                depends_on,
+                deletion_policy,
+                update_replace_policy,
+                fn_transform,
+            ],
+        )
+        requires_replacement = self._resolve_requires_replacement(
+            node_properties=properties, resource_type=terminal_value_type
         )
         node_resource = NodeResource(
             scope=scope,
@@ -896,6 +1183,10 @@ class ChangeSetModel:
             properties=properties,
             condition_reference=condition_reference,
             depends_on=depends_on,
+            requires_replacement=requires_replacement,
+            deletion_policy=deletion_policy,
+            update_replace_policy=update_replace_policy,
+            fn_transform=fn_transform,
         )
         self._visited_scopes[scope] = node_resource
         return node_resource
@@ -904,12 +1195,30 @@ class ChangeSetModel:
         self, scope: Scope, before_resources: Maybe[dict], after_resources: Maybe[dict]
     ) -> NodeResources:
         # TODO: investigate type changes behavior.
-        resources: list[NodeResource] = list()
+        resources: list[NodeResource] = []
         resource_names = self._safe_keys_of(before_resources, after_resources)
+        fn_transform = Nothing
+        fn_foreaches = []
         for resource_name in resource_names:
             resource_scope, (before_resource, after_resource) = self._safe_access_in(
                 scope, resource_name, before_resources, after_resources
             )
+            if resource_name == FnTransform:
+                fn_transform = self._visit_intrinsic_function(
+                    scope=resource_scope,
+                    intrinsic_function=resource_name,
+                    before_arguments=before_resource,
+                    after_arguments=after_resource,
+                )
+                continue
+            elif resource_name.startswith("Fn::ForEach"):
+                fn_for_each = self._visit_foreach(
+                    scope=resource_scope,
+                    before_arguments=before_resource,
+                    after_arguments=after_resource,
+                )
+                fn_foreaches.append(fn_for_each)
+                continue
             resource = self._visit_resource(
                 scope=resource_scope,
                 resource_name=resource_name,
@@ -917,7 +1226,12 @@ class ChangeSetModel:
                 after_resource=after_resource,
             )
             resources.append(resource)
-        return NodeResources(scope=scope, resources=resources)
+        return NodeResources(
+            scope=scope,
+            resources=resources,
+            fn_transform=fn_transform,
+            fn_foreaches=fn_foreaches,
+        )
 
     def _visit_mapping(
         self, scope: Scope, name: str, before_mapping: Maybe[dict], after_mapping: Maybe[dict]
@@ -930,14 +1244,14 @@ class ChangeSetModel:
     def _visit_mappings(
         self, scope: Scope, before_mappings: Maybe[dict], after_mappings: Maybe[dict]
     ) -> NodeMappings:
-        mappings: list[NodeMapping] = list()
+        mappings: list[NodeMapping] = []
         mapping_names = self._safe_keys_of(before_mappings, after_mappings)
         for mapping_name in mapping_names:
             scope_mapping, (before_mapping, after_mapping) = self._safe_access_in(
                 scope, mapping_name, before_mappings, after_mappings
             )
             mapping = self._visit_mapping(
-                scope=scope,
+                scope=scope_mapping,
                 name=mapping_name,
                 before_mapping=before_mapping,
                 after_mapping=after_mapping,
@@ -947,9 +1261,22 @@ class ChangeSetModel:
 
     def _visit_dynamic_parameter(self, parameter_name: str) -> ChangeSetEntity:
         scope = Scope("Dynamic").open_scope("Parameters")
-        scope_parameter, (before_parameter, after_parameter) = self._safe_access_in(
+        scope_parameter, (before_parameter_dct, after_parameter_dct) = self._safe_access_in(
             scope, parameter_name, self._before_parameters, self._after_parameters
         )
+
+        before_parameter = Nothing
+        if not is_nothing(before_parameter_dct):
+            before_parameter = before_parameter_dct.get("resolved_value") or engine_parameter_value(
+                before_parameter_dct
+            )
+
+        after_parameter = Nothing
+        if not is_nothing(after_parameter_dct):
+            after_parameter = after_parameter_dct.get("resolved_value") or engine_parameter_value(
+                after_parameter_dct
+            )
+
         parameter = self._visit_value(
             scope=scope_parameter, before_value=before_parameter, after_value=after_parameter
         )
@@ -995,7 +1322,7 @@ class ChangeSetModel:
         if isinstance(node_parameters, NodeParameters):
             return node_parameters
         parameter_names: list[str] = self._safe_keys_of(before_parameters, after_parameters)
-        parameters: list[NodeParameter] = list()
+        parameters: list[NodeParameter] = []
         for parameter_name in parameter_names:
             parameter_scope, (before_parameter, after_parameter) = self._safe_access_in(
                 scope, parameter_name, before_parameters, after_parameters
@@ -1065,7 +1392,7 @@ class ChangeSetModel:
         if isinstance(node_conditions, NodeConditions):
             return node_conditions
         condition_names: list[str] = self._safe_keys_of(before_conditions, after_conditions)
-        conditions: list[NodeCondition] = list()
+        conditions: list[NodeCondition] = []
         for condition_name in condition_names:
             condition_scope, (before_condition, after_condition) = self._safe_access_in(
                 scope, condition_name, before_conditions, after_conditions
@@ -1117,7 +1444,7 @@ class ChangeSetModel:
     def _visit_outputs(
         self, scope: Scope, before_outputs: Maybe[dict], after_outputs: Maybe[dict]
     ) -> NodeOutputs:
-        outputs: list[NodeOutput] = list()
+        outputs: list[NodeOutput] = []
         output_names: list[str] = self._safe_keys_of(before_outputs, after_outputs)
         for output_name in output_names:
             scope_output, (before_output, after_output) = self._safe_access_in(
@@ -1164,7 +1491,7 @@ class ChangeSetModel:
         elif isinstance(value, str):
             value = [NormalisedGlobalTransformDefinition(Name=value, Parameters=Nothing)]
         elif isinstance(value, list):
-            tmp_value = list()
+            tmp_value = []
             for item in value:
                 if isinstance(item, str):
                     tmp_value.append(
@@ -1188,7 +1515,7 @@ class ChangeSetModel:
     ) -> NodeTransform:
         before_transform_normalised = self._normalise_transformer_value(before_transform)
         after_transform_normalised = self._normalise_transformer_value(after_transform)
-        global_transforms = list()
+        global_transforms = []
         for index, (before_global_transform, after_global_transform) in enumerate(
             zip_longest(before_transform_normalised, after_transform_normalised, fillvalue=Nothing)
         ):
@@ -1269,8 +1596,8 @@ class ChangeSetModel:
         conditions_scope, (before_conditions, after_conditions) = self._safe_access_in(
             Scope(), ConditionsKey, self._before_template, self._after_template
         )
-        before_conditions = before_conditions or dict()
-        after_conditions = after_conditions or dict()
+        before_conditions = before_conditions or {}
+        after_conditions = after_conditions or {}
         if condition_name in before_conditions or condition_name in after_conditions:
             condition_scope, (before_condition, after_condition) = self._safe_access_in(
                 conditions_scope, condition_name, before_conditions, after_conditions
@@ -1340,7 +1667,7 @@ class ChangeSetModel:
 
     @staticmethod
     def _safe_access_in(scope: Scope, key: str, *objects: Maybe[dict]) -> tuple[Scope, Maybe[Any]]:
-        results = list()
+        results = []
         for obj in objects:
             if not isinstance(obj, (dict, NothingType)):
                 raise RuntimeError(f"Invalid definition type at '{obj}'")
@@ -1364,7 +1691,7 @@ class ChangeSetModel:
         return keys
 
     @staticmethod
-    def _name_if_intrinsic_function(value: Maybe[Any]) -> Optional[str]:
+    def _name_if_intrinsic_function(value: Maybe[Any]) -> str | None:
         if isinstance(value, dict):
             keys = ChangeSetModel._safe_keys_of(value)
             if len(keys) == 1:

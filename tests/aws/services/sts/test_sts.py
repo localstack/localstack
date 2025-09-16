@@ -3,6 +3,7 @@ from base64 import b64encode
 
 import pytest
 import requests
+from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from localstack import config
@@ -187,12 +188,8 @@ class TestSTSIntegrations:
             fed_name=fed_name,
         ).replace("\n", "")
 
-        role_arn = "arn:aws:iam::{account_id}:role/{role_name}".format(
-            account_id=account_id, role_name=role_name
-        )
-        principal_arn = "arn:aws:iam:{account_id}:saml-provider/{provider_name}".format(
-            account_id=account_id, provider_name=provider_name
-        )
+        role_arn = f"arn:aws:iam::{account_id}:role/{role_name}"
+        principal_arn = f"arn:aws:iam:{account_id}:saml-provider/{provider_name}"
         base64_saml_assertion = b64encode(saml_assertion.encode("utf-8")).decode("utf-8")
         response = aws_client.sts.assume_role_with_saml(
             RoleArn=role_arn,
@@ -325,6 +322,45 @@ class TestSTSIntegrations:
         response = sts_role_client_2.get_caller_identity()
         assert fake_account_id == response["Account"]
         assert assume_role_response_other_account["AssumedRoleUser"]["Arn"] == response["Arn"]
+
+    @markers.aws.validated
+    def test_sts_invalid_parameters(
+        self,
+        aws_client_factory,
+        snapshot,
+    ):
+        aws_client = aws_client_factory(config=Config(parameter_validation=False))
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(RoleArn="nothing-valid-in-here", RoleSessionName="Session1")
+        snapshot.match("malformed-arn", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn::b:::something/test-role", RoleSessionName="Session1"
+            )
+        snapshot.match("no-partition", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn:a::::something/test-role", RoleSessionName="Session1"
+            )
+        snapshot.match("no-service", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn:a:::something/test-role", RoleSessionName="Session1"
+            )
+        snapshot.match("not-enough-colons", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(RoleArn="arn:a:a::aaaaaaaaaa:", RoleSessionName="Session1")
+        snapshot.match("no-resource", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sts.assume_role(
+                RoleArn="arn:a:b:::something/test-role", RoleSessionName="Session1:2"
+            )
+        snapshot.match("invalid-session-name", e.value.response)
 
 
 class TestSTSAssumeRoleTagging:

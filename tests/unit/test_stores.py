@@ -86,10 +86,12 @@ class TestStores:
         backend1_eu = sample_stores[account1][eu_region]
         assert backend1_eu._account_id == account1
         assert backend1_eu._region_name == eu_region
+        assert backend1_eu._service_name == "zzz"
 
         backend1_ap = sample_stores[account1][ap_region]
         assert backend1_ap._account_id == account1
         assert backend1_ap._region_name == ap_region
+        assert backend1_ap._service_name == "zzz"
 
         # Ensure region-specific data isolation
         backend1_eu.region_specific_attr.extend([1, 2, 3])

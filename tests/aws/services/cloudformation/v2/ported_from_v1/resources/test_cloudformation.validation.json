@@ -1,8 +1,0 @@
-{
-  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_cloudformation.py::test_create_macro": {
-    "last_validated_date": "2023-06-09T12:30:11+00:00"
-  },
-  "tests/aws/services/cloudformation/v2/ported_from_v1/resources/test_cloudformation.py::test_waitcondition": {
-    "last_validated_date": "2023-05-18T09:09:21+00:00"
-  }
-}

@@ -3,6 +3,7 @@ import logging
 import threading
 import time
 from concurrent.futures import Future
+from concurrent.futures._base import CancelledError
 
 from localstack import config
 from localstack.aws.api.lambda_ import (
@@ -11,6 +12,7 @@ from localstack.aws.api.lambda_ import (
     State,
     StateReasonCode,
 )
+from localstack.services.lambda_ import hooks as lambda_hooks
 from localstack.services.lambda_.invocation.assignment import AssignmentService
 from localstack.services.lambda_.invocation.counting_service import CountingService
 from localstack.services.lambda_.invocation.execution_environment import ExecutionEnvironment
@@ -29,7 +31,8 @@ from localstack.services.lambda_.invocation.metrics import (
     record_cw_metric_invocation,
 )
 from localstack.services.lambda_.invocation.runtime_executor import get_runtime_executor
-from localstack.utils.strings import long_uid, truncate
+from localstack.services.lambda_.ldm import LDMProvisioner
+from localstack.utils.strings import long_uid, to_bytes, truncate
 from localstack.utils.threads import FuncThread, start_thread
 
 LOG = logging.getLogger(__name__)
@@ -51,6 +54,8 @@ class LambdaVersionManager:
     log_handler: LogHandler
     counting_service: CountingService
     assignment_service: AssignmentService
+
+    ldm_provisioner: LDMProvisioner | None
 
     def __init__(
         self,
@@ -78,6 +83,9 @@ class LambdaVersionManager:
         self.provisioned_state_lock = threading.RLock()
         # https://aws.amazon.com/blogs/compute/coming-soon-expansion-of-aws-lambda-states-to-all-functions/
         self.state = VersionState(state=State.Pending)
+
+        self.ldm_provisioner = None
+        lambda_hooks.inject_ldm_provisioner.run(self)
 
     def start(self) -> VersionState:
         try:
@@ -190,6 +198,46 @@ class LambdaVersionManager:
             message = f"Got an invocation with request_id {invocation.request_id} for a version shutting down"
             LOG.warning(message)
             raise ServiceException(message)
+
+        # If the environment has debugging enabled, route the invocation there;
+        # debug environments bypass Lambda service quotas.
+        if self.ldm_provisioner and (
+            ldm_execution_environment := self.ldm_provisioner.get_execution_environment(
+                qualified_lambda_arn=self.function_version.qualified_arn,
+                user_agent=invocation.user_agent,
+            )
+        ):
+            try:
+                invocation_result = ldm_execution_environment.invoke(invocation)
+                invocation_result.executed_version = self.function_version.id.qualifier
+                self.store_logs(
+                    invocation_result=invocation_result, execution_env=ldm_execution_environment
+                )
+            except CancelledError as e:
+                # Timeouts for invocation futures are managed by LDM, a cancelled error here is
+                # aligned with the debug container terminating whilst debugging/invocation.
+                LOG.debug("LDM invocation future encountered a cancelled error: '%s'", e)
+                invocation_result = InvocationResult(
+                    request_id="",
+                    payload=to_bytes(
+                        "The invocation was canceled because the debug configuration "
+                        "was removed or the operation timed out"
+                    ),
+                    is_error=True,
+                    logs="",
+                    executed_version=self.function_version.id.qualifier,
+                )
+            except StatusErrorException as e:
+                invocation_result = InvocationResult(
+                    request_id="",
+                    payload=e.payload,
+                    is_error=True,
+                    logs="",
+                    executed_version=self.function_version.id.qualifier,
+                )
+            finally:
+                ldm_execution_environment.release()
+            return invocation_result
 
         with self.counting_service.get_invocation_lease(
             self.function, self.function_version

@@ -65,7 +65,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_nested_stacks.py::test_deletion_of_failed_nested_stack": {
-    "recorded-date": "17-09-2024, 20:09:36",
+    "recorded-date": "20-08-2025, 14:06:53",
     "recorded-content": {
       "error": {
         "Error": {

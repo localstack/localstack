@@ -17,7 +17,7 @@ class StateSucceed(CommonStateField):
         )
 
     def from_state_props(self, state_props: StateProps) -> None:
-        super(StateSucceed, self).from_state_props(state_props)
+        super().from_state_props(state_props)
         # TODO: assert all other fields are undefined?
 
         # No Next or End field: Succeed states are terminal states.

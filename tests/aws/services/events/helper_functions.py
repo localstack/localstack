@@ -1,6 +1,6 @@
 import json
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.utils.sync import retry
@@ -24,7 +24,7 @@ def events_time_string_to_timestamp(time_string: str) -> datetime:
 
 def get_cron_expression(delta_minutes: int) -> tuple[str, datetime]:
     """Get a exact cron expression for a future time in UTC from now rounded to the next full minute + delta_minutes."""
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     future_time = now + timedelta(minutes=delta_minutes)
 
     # Round to the next full minute

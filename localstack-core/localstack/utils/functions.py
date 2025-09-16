@@ -3,7 +3,7 @@
 import functools
 import inspect
 import logging
-from typing import Any, Callable, Dict, Optional, Tuple
+from typing import Any, Callable, Optional
 
 LOG = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ def run_safe(_python_lambda, *args, _default=None, **kwargs):
 
 
 def call_safe(
-    func: Callable, args: Tuple = None, kwargs: Dict = None, exception_message: str = None
+    func: Callable, args: tuple = None, kwargs: dict = None, exception_message: str = None
 ) -> Optional[Any]:
     """
     Call the given function with the given arguments, and if it fails, log the given exception_message.
@@ -32,7 +32,7 @@ def call_safe(
     :return: whatever the func returns
     """
     if exception_message is None:
-        exception_message = "error calling function %s" % func.__name__
+        exception_message = f"error calling function {func.__name__}"
     if args is None:
         args = ()
     if kwargs is None:

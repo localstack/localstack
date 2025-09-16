@@ -1,6 +1,6 @@
 """Slightly extends the ``botocore.validate`` package to provide better integration with our parser/serializer."""
 
-from typing import Any, Dict, List, NamedTuple
+from typing import Any, NamedTuple
 
 from botocore.model import OperationModel, Shape
 from botocore.validate import ParamValidator as BotocoreParamValidator
@@ -22,7 +22,7 @@ class Error(NamedTuple):
 
     reason: str
     name: str
-    attributes: Dict[str, Any]
+    attributes: dict[str, Any]
 
 
 class ParameterValidationError(Exception):
@@ -88,11 +88,11 @@ class EmptyInput(ParameterValidationError):
 
 
 class ValidationErrors(BotocoreValidationErrors):
-    def __init__(self, shape: Shape, params: Dict[str, Any]):
+    def __init__(self, shape: Shape, params: dict[str, Any]):
         super().__init__()
         self.shape = shape
         self.params = params
-        self._exceptions: List[ParameterValidationError] = []
+        self._exceptions: list[ParameterValidationError] = []
 
     @property
     def exceptions(self):
@@ -133,7 +133,7 @@ class ValidationErrors(BotocoreValidationErrors):
 
 
 class ParamValidator(BotocoreParamValidator):
-    def validate(self, params: Dict[str, Any], shape: Shape):
+    def validate(self, params: dict[str, Any], shape: Shape):
         """Validate parameters against a shape model.
 
         This method will validate the parameters against a provided shape model.
@@ -159,7 +159,7 @@ class ParamValidator(BotocoreParamValidator):
             if required_member in params and params[required_member] is None:
                 params.pop(required_member)
 
-        super(ParamValidator, self)._validate_structure(params, shape, errors, name)
+        super()._validate_structure(params, shape, errors, name)
 
 
 def validate_request(operation: OperationModel, request: ServiceRequest) -> ValidationErrors:

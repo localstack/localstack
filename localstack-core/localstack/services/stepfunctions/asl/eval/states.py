@@ -1,5 +1,5 @@
 import copy
-from typing import Any, Final, NotRequired, Optional, TypedDict
+from typing import Any, Final, NotRequired, TypedDict
 
 from localstack.services.stepfunctions.asl.jsonata.jsonata import (
     VariableDeclarations,
@@ -18,7 +18,7 @@ _STATES_ERROR_OUTPUT_PREFIX: Final[str] = "$states.errorOutput"
 
 class ExecutionData(TypedDict):
     Id: str
-    Input: Optional[Any]
+    Input: Any | None
     Name: str
     RoleArn: str
     StartTime: str  # Format: ISO 8601.
@@ -43,7 +43,7 @@ class ItemData(TypedDict):
     # Contains the index number for the array item that is being currently processed.
     Index: int
     # Contains the array item being processed.
-    Value: Optional[Any]
+    Value: Any | None
 
 
 class MapData(TypedDict):
@@ -73,8 +73,8 @@ class ContextObject:
 class StatesData(TypedDict):
     input: Any
     context: ContextObjectData
-    result: NotRequired[Optional[Any]]
-    errorOutput: NotRequired[Optional[Any]]
+    result: NotRequired[Any | None]
+    errorOutput: NotRequired[Any | None]
 
 
 class States:
@@ -87,7 +87,7 @@ class States:
         self.context_object = ContextObject(context_object=context)
 
     @staticmethod
-    def _extract(query: Optional[str], data: Any) -> Any:
+    def _extract(query: str | None, data: Any) -> Any:
         if query is None:
             result = data
         else:
@@ -100,7 +100,7 @@ class States:
         jsonpath_states_query = "$." + query[1:]
         return self._extract(jsonpath_states_query, self._states_data)
 
-    def get_input(self, query: Optional[str] = None) -> Any:
+    def get_input(self, query: str | None = None) -> Any:
         return self._extract(query, self._states_data["input"])
 
     def reset(self, input_value: Any) -> None:
@@ -109,10 +109,10 @@ class States:
         self._states_data["result"] = None
         self._states_data["errorOutput"] = None
 
-    def get_context(self, query: Optional[str] = None) -> Any:
+    def get_context(self, query: str | None = None) -> Any:
         return self._extract(query, self._states_data["context"])
 
-    def get_result(self, query: Optional[str] = None) -> Any:
+    def get_result(self, query: str | None = None) -> Any:
         if "result" not in self._states_data:
             raise RuntimeError("Illegal access to $states.result")
         return self._extract(query, self._states_data["result"])
@@ -121,7 +121,7 @@ class States:
         clone_result = copy.deepcopy(result)
         self._states_data["result"] = clone_result
 
-    def get_error_output(self, query: Optional[str] = None) -> Any:
+    def get_error_output(self, query: str | None = None) -> Any:
         if "errorOutput" not in self._states_data:
             raise RuntimeError("Illegal access to $states.errorOutput")
         return self._extract(query, self._states_data["errorOutput"])
@@ -131,7 +131,7 @@ class States:
         self._states_data["errorOutput"] = clone_error_output
 
     def to_variable_declarations(
-        self, variable_references: Optional[set[VariableReference]] = None
+        self, variable_references: set[VariableReference] | None = None
     ) -> VariableDeclarations:
         if not variable_references or _STATES_PREFIX in variable_references:
             return encode_jsonata_variable_declarations(
@@ -143,7 +143,7 @@ class States:
             "result": _STATES_RESULT_PREFIX,
             "errorOutput": _STATES_ERROR_OUTPUT_PREFIX,
         }
-        sub_states = dict()
+        sub_states = {}
         for variable_reference in variable_references:
             if not candidate_sub_states:
                 break

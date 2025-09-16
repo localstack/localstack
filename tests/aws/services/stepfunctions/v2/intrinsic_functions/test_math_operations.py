@@ -144,7 +144,7 @@ class TestMathOperations:
             (-2.5, 0),  # python: -2, # java: -3
             (-3.5, 0),  # python: -4, # java: -4
         ]
-        input_values = list()
+        input_values = []
         for fst, snd in add_tuples:
             input_values.append({"fst": fst, "snd": snd})
         create_and_test_on_inputs(

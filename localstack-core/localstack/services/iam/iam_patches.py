@@ -1,5 +1,4 @@
 import threading
-from typing import Dict, List, Optional
 
 from moto.iam.models import (
     AccessKey,
@@ -106,11 +105,11 @@ def apply_iam_patches():
         role_name: str,
         assume_role_policy_document: str,
         path: str,
-        permissions_boundary: Optional[str],
+        permissions_boundary: str | None,
         description: str,
-        tags: List[Dict[str, str]],
-        max_session_duration: Optional[str],
-        linked_service: Optional[str] = None,
+        tags: list[dict[str, str]],
+        max_session_duration: str | None,
+        linked_service: str | None = None,
     ):
         role = fn(
             self,
@@ -143,7 +142,7 @@ def apply_iam_patches():
     def access_key__init__(
         fn,
         self,
-        user_name: Optional[str],
+        user_name: str | None,
         prefix: str,
         account_id: str,
         status: str = "Active",

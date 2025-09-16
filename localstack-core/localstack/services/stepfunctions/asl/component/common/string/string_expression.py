@@ -1,6 +1,6 @@
 import abc
 import copy
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.aws.api.stepfunctions import HistoryEventType, TaskFailedEventDetails
 from localstack.services.events.utils import to_json_str
@@ -46,7 +46,7 @@ class StringExpression(EvalComponent, abc.ABC):
     def __init__(self, literal_value: str):
         self.literal_value = literal_value
 
-    def _field_name(self) -> Optional[str]:
+    def _field_name(self) -> str | None:
         return None
 
 
@@ -129,7 +129,7 @@ class StringVariableSample(StringSampler):
         expression_variable_references: set[VariableReference] = (
             extract_jsonata_variable_references(self.expression)
         )
-        variable_declarations_list = list()
+        variable_declarations_list = []
         if self.query_language_mode == QueryLanguageMode.JSONata:
             # Sample $states values into expression.
             states_variable_declarations: VariableDeclarations = (

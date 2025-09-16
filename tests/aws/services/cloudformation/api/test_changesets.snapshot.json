@@ -172,7 +172,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_delete_change_set_exception": {
-    "recorded-date": "12-03-2025, 10:14:25",
+    "recorded-date": "21-07-2025, 18:04:27",
     "recorded-content": {
       "e1": {
         "Error": {
@@ -492,6 +492,51 @@
       "additional_changeset": {
         "Id": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:3>",
         "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::TestUpdates::test_deleting_resource": {
+    "recorded-date": "02-06-2025, 10:29:41",
+    "recorded-content": {
+      "get-parameter-error": {
+        "Error": {
+          "Code": "ParameterNotFound",
+          "Message": ""
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_and_then_update_refreshes_template_metadata": {
+    "recorded-date": "20-08-2025, 22:16:11",
+    "recorded-content": {
+      "waiter-error": "Waiter ChangeSetCreateComplete failed: Waiter encountered a terminal failure state: For expression \"Status\" we matched expected path: \"FAILED\""
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_no_changes": {
+    "recorded-date": "09-09-2025, 22:08:24",
+    "recorded-content": {
+      "change-set-description": {
+        "Capabilities": [],
+        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+        "ChangeSetName": "<change-set-name:1>",
+        "Changes": [],
+        "CreationTime": "datetime",
+        "ExecutionStatus": "UNAVAILABLE",
+        "IncludeNestedStacks": false,
+        "NotificationARNs": [],
+        "RollbackConfiguration": {},
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+        "StackName": "<stack-name:1>",
+        "Status": "FAILED",
+        "StatusReason": "The submitted information didn't contain changes. Submit different information to create a change set.",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

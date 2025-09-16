@@ -4,16 +4,17 @@ import logging
 import re
 import traceback
 import uuid
-from typing import Optional
 
 from botocore.exceptions import ClientError
 
 from localstack import config
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
+from localstack.services.cloudformation.analytics import track_resource_operation
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     get_action_name_for_resource_change,
+    log_not_available_message,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.changes import ChangeConfig, ResourceChange
@@ -31,6 +32,7 @@ from localstack.services.cloudformation.engine.template_utils import (
 )
 from localstack.services.cloudformation.resource_provider import (
     Credentials,
+    NoResourceProvider,
     OperationStatus,
     ProgressEvent,
     ResourceProviderExecutor,
@@ -83,7 +85,7 @@ def get_attr_from_model_instance(
     attribute_name: str,
     resource_type: str,
     resource_id: str,
-    attribute_sub_name: Optional[str] = None,
+    attribute_sub_name: str | None = None,
 ) -> str:
     if resource["PhysicalResourceId"] == MOCK_REFERENCE:
         LOG.warning(
@@ -327,7 +329,7 @@ def _resolve_refs_recursively(
                 account_id, region_name, stack_name, resources, parameters, value["Ref"]
             )
             if ref is None:
-                msg = 'Unable to resolve Ref for resource "%s" (yet)' % value["Ref"]
+                msg = 'Unable to resolve Ref for resource "{}" (yet)'.format(value["Ref"])
                 LOG.debug("%s - %s", msg, resources.get(value["Ref"]) or set(resources.keys()))
 
                 raise DependencyNotYetSatisfied(resource_ids=value["Ref"], message=msg)
@@ -448,7 +450,7 @@ def _resolve_refs_recursively(
                     raise DependencyNotYetSatisfied(
                         resource_ids=key, message=f"Could not resolve {val} to terminal value type"
                     )
-                result = result.replace("${%s}" % key, str(resolved_val))
+                result = result.replace(f"${{{key}}}", str(resolved_val))
 
             # resolve placeholders
             result = resolve_placeholders_in_string(
@@ -1026,7 +1028,7 @@ class TemplateDeployer:
             stack.set_resource_status(resource_id, f"{action}_IN_PROGRESS")
 
     def get_change_config(
-        self, action: str, resource: dict, change_set_id: Optional[str] = None
+        self, action: str, resource: dict, change_set_id: str | None = None
     ) -> ChangeConfig:
         result = ChangeConfig(
             **{
@@ -1102,10 +1104,10 @@ class TemplateDeployer:
         existing_stack,
         new_stack,
         # TODO: remove initialize argument from here, and determine action based on resource status
-        initialize: Optional[bool] = False,
+        initialize: bool | None = False,
         change_set_id=None,
-        append_to_changeset: Optional[bool] = False,
-        filter_unchanged_resources: Optional[bool] = False,
+        append_to_changeset: bool | None = False,
+        filter_unchanged_resources: bool | None = False,
     ) -> list[ChangeConfig]:
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1137,9 +1139,9 @@ class TemplateDeployer:
         self,
         existing_stack: Stack,
         new_stack: StackChangeSet,
-        change_set_id: Optional[str] = None,
-        initialize: Optional[bool] = False,
-        action: Optional[str] = None,
+        change_set_id: str | None = None,
+        initialize: bool | None = False,
+        action: str | None = None,
     ):
         old_resources = existing_stack.template["Resources"]
         new_resources = new_stack.template["Resources"]
@@ -1198,7 +1200,7 @@ class TemplateDeployer:
         self,
         changes: list[ChangeConfig],
         stack: Stack,
-        action: Optional[str] = None,
+        action: str | None = None,
         new_stack=None,
     ):
         def _run(*args):
@@ -1295,7 +1297,9 @@ class TemplateDeployer:
             action, logical_resource_id=resource_id
         )
 
-        resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
+        resource_type = get_resource_type(resource)
+        resource_provider = executor.try_load_resource_provider(resource_type)
+        track_resource_operation(action, resource_type, missing=resource_provider is None)
         if resource_provider is not None:
             # add in-progress event
             resource_status = f"{get_action_name_for_resource_change(action)}_IN_PROGRESS"
@@ -1321,6 +1325,15 @@ class TemplateDeployer:
                 resource_provider, resource, resource_provider_payload
             )
         else:
+            # track that we don't handle the resource, and possibly raise an exception
+            log_not_available_message(
+                resource_type,
+                f'No resource provider found for "{resource_type}"',
+            )
+
+            if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                raise NoResourceProvider
+
             resource["PhysicalResourceId"] = MOCK_REFERENCE
             progress_event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
 
@@ -1419,6 +1432,7 @@ class TemplateDeployer:
         )
         for i, resource_id in enumerate(ordered_resource_ids):
             resource = resources[resource_id]
+            resource_type = get_resource_type(resource)
             try:
                 # TODO: cache condition value in resource details on deployment and use cached value here
                 if not evaluate_resource_condition(
@@ -1427,23 +1441,32 @@ class TemplateDeployer:
                 ):
                     continue
 
+                action = "Remove"
                 executor = self.create_resource_provider_executor()
                 resource_provider_payload = self.create_resource_provider_payload(
-                    "Remove", logical_resource_id=resource_id
+                    action, logical_resource_id=resource_id
                 )
                 LOG.debug(
                     'Handling "Remove" for resource "%s" (%s/%s) type "%s"',
                     resource_id,
                     i + 1,
                     len(resources),
-                    resource["ResourceType"],
+                    resource_type,
                 )
-                resource_provider = executor.try_load_resource_provider(get_resource_type(resource))
+                resource_provider = executor.try_load_resource_provider(resource_type)
+                track_resource_operation(action, resource_type, missing=resource_provider is None)
                 if resource_provider is not None:
                     event = executor.deploy_loop(
                         resource_provider, resource, resource_provider_payload
                     )
                 else:
+                    log_not_available_message(
+                        resource_type,
+                        f'No resource provider found for "{resource_type}"',
+                    )
+
+                    if not config.CFN_IGNORE_UNSUPPORTED_RESOURCE_TYPES:
+                        raise NoResourceProvider
                     event = ProgressEvent(OperationStatus.SUCCESS, resource_model={})
                 match event.status:
                     case OperationStatus.SUCCESS:
@@ -1456,10 +1479,11 @@ class TemplateDeployer:
                         # correct order yet.
                         continue
                     case OperationStatus.FAILED:
-                        LOG.exception(
+                        LOG.error(
                             "Failed to delete resource with id %s. Reason: %s",
                             resource_id,
                             event.message or "unknown",
+                            exc_info=LOG.isEnabledFor(logging.DEBUG),
                         )
                     case OperationStatus.IN_PROGRESS:
                         # the resource provider executor should not return this state, so
@@ -1471,10 +1495,11 @@ class TemplateDeployer:
                         raise Exception(f"Use of unsupported status found: {other_status}")
 
             except Exception as e:
-                LOG.exception(
+                LOG.error(
                     "Failed to delete resource with id %s. Final exception: %s",
                     resource_id,
                     e,
+                    exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
 
         # update status

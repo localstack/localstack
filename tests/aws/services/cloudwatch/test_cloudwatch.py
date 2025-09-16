@@ -5,7 +5,7 @@ import logging
 import os
 import threading
 import time
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import TYPE_CHECKING
 from urllib.request import Request, urlopen
 
@@ -40,7 +40,7 @@ class TestCloudwatch:
     def test_put_metric_data_values_list(self, snapshot, aws_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
-        utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        utc_now = datetime.utcnow().replace(tzinfo=UTC)
         snapshot.add_transformer(
             snapshot.transform.key_value("Timestamp", reference_replacement=False)
         )
@@ -80,8 +80,8 @@ class TestCloudwatch:
         namespace = "namespace"
         data = (
             "Action=PutMetricData&MetricData.member.1."
-            "MetricName=%s&MetricData.member.1.Value=1&"
-            "Namespace=%s&Version=2010-08-01" % (metric_name, namespace)
+            f"MetricName={metric_name}&MetricData.member.1.Value=1&"
+            f"Namespace={namespace}&Version=2010-08-01"
         )
         bytes_data = bytes(data, encoding="utf-8")
         encoded_data = gzip.compress(bytes_data)
@@ -117,7 +117,7 @@ class TestCloudwatch:
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_put_metric_data_validation(self, aws_client):
         namespace = f"ns-{short_uid()}"
-        utc_now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        utc_now = datetime.utcnow().replace(tzinfo=UTC)
 
         # test invalid due to having both Values and Value
         with pytest.raises(Exception) as ex:
@@ -212,13 +212,13 @@ class TestCloudwatch:
         namespace2 = f"test/{short_uid()}"
 
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
+            Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 23}]
         )
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=18)]
+            Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 18}]
         )
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace2, MetricData=[dict(MetricName="ug", Value=23)]
+            Namespace=namespace2, MetricData=[{"MetricName": "ug", "Value": 23}]
         )
 
         now = datetime.utcnow().replace(microsecond=0)
@@ -303,7 +303,7 @@ class TestCloudwatch:
     @markers.aws.validated
     def test_get_metric_data_for_multiple_metrics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
         aws_client.cloudwatch.put_metric_data(
@@ -389,7 +389,7 @@ class TestCloudwatch:
         ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
     def test_get_metric_data_stats(self, aws_client, snapshot, stat):
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
         aws_client.cloudwatch.put_metric_data(
@@ -445,7 +445,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
         aws_client.cloudwatch.put_metric_data(
@@ -528,7 +528,7 @@ class TestCloudwatch:
         """
         namespace1 = f"test/{short_uid()}"
         aws_client.cloudwatch.put_metric_data(
-            Namespace=namespace1, MetricData=[dict(MetricName="someMetric", Value=23)]
+            Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 23}]
         )
         # the new v2 provider doesn't need the headers, will return results for all accounts/regions
         headers = mock_aws_request_headers(
@@ -1299,14 +1299,14 @@ class TestCloudwatch:
                 "MetricName": metric_name,
                 "Dimensions": dimension,
                 "Value": 21,
-                "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                "Timestamp": datetime.utcnow().replace(tzinfo=UTC),
                 "Unit": "Seconds",
             },
             {
                 "MetricName": metric_name,
                 "Dimensions": dimension,
                 "Value": 22,
-                "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                "Timestamp": datetime.utcnow().replace(tzinfo=UTC),
                 "Unit": "Seconds",
             },
         ]
@@ -1914,7 +1914,7 @@ class TestCloudwatch:
             MetricData=[
                 {
                     "MetricName": metric_name,
-                    "Timestamp": datetime.utcnow().replace(tzinfo=timezone.utc),
+                    "Timestamp": datetime.utcnow().replace(tzinfo=UTC),
                     "Values": [1.0, 10.0],
                     "Counts": [2, 4],
                     "Unit": "Count",
@@ -2006,7 +2006,7 @@ class TestCloudwatch:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_get_metric_data_with_zero_and_labels(self, aws_client, snapshot):
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
 
         namespace1 = f"test/{short_uid()}"
         # put metric data
@@ -2050,14 +2050,18 @@ class TestCloudwatch:
     @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"])
     def test_get_metric_statistics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
         for i in range(10):
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
-                    dict(MetricName="metric", Value=i, Timestamp=utc_now + timedelta(seconds=1))
+                    {
+                        "MetricName": "metric",
+                        "Value": i,
+                        "Timestamp": utc_now + timedelta(seconds=1),
+                    }
                 ],
             )
 
@@ -2106,7 +2110,7 @@ class TestCloudwatch:
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         max_data_points = 10  # default is 100,800 according to AWS docs
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=UTC)
         for i in range(0, max_data_points * 2):
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
@@ -2191,7 +2195,7 @@ class TestCloudwatch:
     def test_default_ordering(self, aws_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=UTC)
         for i in range(0, 10):
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
@@ -2280,7 +2284,7 @@ class TestCloudwatch:
     def test_handle_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=UTC)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -2325,7 +2329,7 @@ class TestCloudwatch:
     def test_get_metric_data_with_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=UTC)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -2423,7 +2427,7 @@ class TestCloudwatch:
 
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
-        now = datetime.utcnow().replace(tzinfo=timezone.utc)
+        now = datetime.utcnow().replace(tzinfo=UTC)
 
         for m in metric_data:
             m["MetricName"] = metric_name
@@ -2471,7 +2475,7 @@ class TestCloudwatch:
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
     def test_label_generation(self, aws_client, snapshot, input_pairs):
         # Whenever values differ for a statistic type or period, that value is added to the label
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
 
         namespace1 = f"test/{short_uid()}"
         # put metric data
@@ -2636,7 +2640,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     def test_get_metric_with_no_results(self, snapshot, aws_client):
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         namespace = f"n-{short_uid()}"
         metric = f"m-{short_uid()}"
 
@@ -2805,7 +2809,7 @@ class TestCloudwatch:
     def test_multiple_dimensions_statistics(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
 
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
         metric_name = "http.server.requests.count"
         dimensions = [
@@ -2825,7 +2829,7 @@ class TestCloudwatch:
                     "Unit": "Count",
                     "StorageResolution": 1,
                     "Dimensions": dimensions,
-                    "Timestamp": datetime.now(tz=timezone.utc),
+                    "Timestamp": datetime.now(tz=UTC),
                 }
             ],
         )
@@ -2838,7 +2842,7 @@ class TestCloudwatch:
                     "Unit": "Count",
                     "StorageResolution": 1,
                     "Dimensions": dimensions,
-                    "Timestamp": datetime.now(tz=timezone.utc),
+                    "Timestamp": datetime.now(tz=UTC),
                 }
             ],
         )
@@ -2894,7 +2898,7 @@ class TestCloudwatch:
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_invalid_amount_of_datapoints(self, aws_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
-        utc_now = datetime.now(tz=timezone.utc)
+        utc_now = datetime.now(tz=UTC)
         with pytest.raises(ClientError) as ex:
             aws_client.cloudwatch.get_metric_statistics(
                 Namespace="namespace",

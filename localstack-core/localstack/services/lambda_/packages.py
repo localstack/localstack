@@ -4,7 +4,6 @@ import os
 import stat
 from functools import cache
 from pathlib import Path
-from typing import List
 
 from localstack import config
 from localstack.packages import DownloadInstaller, InstallTarget, Package, PackageInstaller
@@ -13,9 +12,7 @@ from localstack.utils.platform import get_arch
 """Customized LocalStack version of the AWS Lambda Runtime Interface Emulator (RIE).
 https://github.com/localstack/lambda-runtime-init/blob/localstack/README-LOCALSTACK.md
 """
-LAMBDA_RUNTIME_DEFAULT_VERSION = (
-    "v0.0.7-dev"  # Temporarily set this value to ensure all tests use Lambda RIE v2
-)
+LAMBDA_RUNTIME_DEFAULT_VERSION = "v0.1.35-pre"
 LAMBDA_RUNTIME_VERSION = config.LAMBDA_INIT_RELEASE_VERSION or LAMBDA_RUNTIME_DEFAULT_VERSION
 LAMBDA_RUNTIME_INIT_URL = "https://github.com/localstack/lambda-runtime-init/releases/download/{version}/aws-lambda-rie-{arch}"
 
@@ -37,7 +34,7 @@ class LambdaRuntimePackage(Package):
     def __init__(self, default_version: str = LAMBDA_RUNTIME_VERSION):
         super().__init__(name="Lambda", default_version=default_version)
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return [LAMBDA_RUNTIME_VERSION]
 
     def _get_installer(self, version: str) -> PackageInstaller:
@@ -77,7 +74,7 @@ class LambdaJavaPackage(Package):
     def __init__(self):
         super().__init__("LambdaJavaLibs", "0.2.22")
 
-    def get_versions(self) -> List[str]:
+    def get_versions(self) -> list[str]:
         return ["0.2.22", "0.2.21"]
 
     def _get_installer(self, version: str) -> PackageInstaller:

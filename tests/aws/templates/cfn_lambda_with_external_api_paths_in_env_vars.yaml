@@ -1,3 +1,6 @@
+Parameters:
+  CustomURL:
+    Type: String
 Resources:
   SimpleFnServiceRole6574647D:
     Type: AWS::IAM::Role
@@ -35,6 +38,7 @@ Resources:
             API_URL_2: https://storage.execute-api.us-east-2.amazonaws.com/test-resource
             API_URL_3: https://reporting.execute-api.us-east-1.amazonaws.com/test-resource
             API_URL_4: https://blockchain.execute-api.us-west-1.amazonaws.com/test-resource
+            API_URL_CUSTOM: !Ref CustomURL
     DependsOn:
       - SimpleFnServiceRole6574647D
 Outputs:

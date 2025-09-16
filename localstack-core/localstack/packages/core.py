@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import requests
 
@@ -13,7 +13,7 @@ from localstack import config
 from ..constants import LOCALSTACK_VENV_FOLDER, MAVEN_REPO_URL
 from ..utils.archives import download_and_extract
 from ..utils.files import chmod_r, chown_r, mkdir, rm_rf
-from ..utils.http import download
+from ..utils.http import download, get_proxies
 from ..utils.run import is_root, run
 from ..utils.venv import VirtualEnvironment
 from .api import InstallTarget, PackageException, PackageInstaller
@@ -63,7 +63,12 @@ class DownloadInstaller(ExecutableInstaller):
 
 
 class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
-    def __init__(self, name: str, version: str, extract_single_directory: bool = False):
+    def __init__(
+        self,
+        name: str,
+        version: str,
+        extract_single_directory: bool = False,
+    ):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
@@ -77,6 +82,16 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
 
     def _get_download_url(self) -> str:
         raise NotImplementedError()
+
+    def _get_checksum_url(self) -> str | None:
+        """
+        Checksum URL for the archive. This is used to verify the integrity of the downloaded archive.
+        This method can be implemented by subclasses to provide the correct URL for the checksum file.
+        If not implemented, checksum verification will be skipped.
+
+        :return: URL to the checksum file for the archive, or None if not available.
+        """
+        return None
 
     def get_installed_dir(self) -> str | None:
         installed_dir = super().get_installed_dir()
@@ -107,29 +122,55 @@ class ArchiveDownloadAndExtractInstaller(ExecutableInstaller):
                 return self._get_install_marker_path(install_dir)
         return None
 
-    def _install(self, target: InstallTarget) -> None:
+    def _handle_single_directory_extraction(self, target_directory: str) -> None:
+        """
+        Handle extraction of archives that contain a single root directory.
+        Moves the contents up one level if extract_single_directory is True.
+
+        :param target_directory: The target extraction directory
+        :return: None
+        """
+        if not self.extract_single_directory:
+            return
+
+        dir_contents = os.listdir(target_directory)
+        if len(dir_contents) != 1:
+            return
+        target_subdir = os.path.join(target_directory, dir_contents[0])
+        if not os.path.isdir(target_subdir):
+            return
+        os.rename(target_subdir, f"{target_directory}.backup")
+        rm_rf(target_directory)
+        os.rename(f"{target_directory}.backup", target_directory)
+
+    def _download_archive(
+        self,
+        target: InstallTarget,
+        download_url: str,
+    ) -> None:
         target_directory = self._get_install_dir(target)
         mkdir(target_directory)
-        download_url = self._get_download_url()
+        download_url = download_url or self._get_download_url()
         archive_name = os.path.basename(download_url)
         archive_path = os.path.join(config.dirs.tmp, archive_name)
-        download_and_extract(
-            download_url,
-            retries=3,
-            tmp_archive=archive_path,
-            target_dir=target_directory,
-        )
-        rm_rf(archive_path)
-        if self.extract_single_directory:
-            dir_contents = os.listdir(target_directory)
-            if len(dir_contents) != 1:
-                return
-            target_subdir = os.path.join(target_directory, dir_contents[0])
-            if not os.path.isdir(target_subdir):
-                return
-            os.rename(target_subdir, f"{target_directory}.backup")
-            rm_rf(target_directory)
-            os.rename(f"{target_directory}.backup", target_directory)
+
+        # Get checksum info if available
+        checksum_url = self._get_checksum_url()
+
+        try:
+            download_and_extract(
+                download_url,
+                retries=3,
+                tmp_archive=archive_path,
+                target_dir=target_directory,
+                checksum_url=checksum_url,
+            )
+            self._handle_single_directory_extraction(target_directory)
+        finally:
+            rm_rf(archive_path)
+
+    def _install(self, target: InstallTarget) -> None:
+        self._download_archive(target, self._get_download_url())
 
 
 class PermissionDownloadInstaller(DownloadInstaller, ABC):
@@ -149,7 +190,7 @@ class GitHubReleaseInstaller(PermissionDownloadInstaller):
             f"https://api.github.com/repos/{github_slug}/releases/tags/{self.version}"
         )
 
-    @lru_cache()
+    @lru_cache
     def _get_download_url(self) -> str:
         asset_name = self._get_github_asset_name()
         # try to use a token when calling the GH API for increased API rate limits
@@ -157,7 +198,7 @@ class GitHubReleaseInstaller(PermissionDownloadInstaller):
         gh_token = os.environ.get("GITHUB_API_TOKEN")
         if gh_token:
             headers = {"authorization": f"Bearer {gh_token}"}
-        response = requests.get(self.github_tag_url, headers=headers)
+        response = requests.get(self.github_tag_url, headers=headers, proxies=get_proxies())
         if not response.ok:
             raise PackageException(
                 f"Could not get list of releases from {self.github_tag_url}: {response.text}"
@@ -363,7 +404,7 @@ class MavenPackageInstaller(MavenDownloadInstaller):
         super()._install(target)
 
 
-def parse_maven_package_url(package_url: str) -> Tuple[str, str, str]:
+def parse_maven_package_url(package_url: str) -> tuple[str, str, str]:
     """Example: parse_maven_package_url("pkg:maven/software.amazon.event.ruler/event-ruler@1.7.3")
     -> software.amazon.event.ruler, event-ruler, 1.7.3
     """

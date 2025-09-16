@@ -9,7 +9,7 @@ MSG_CONTENT_REGEX = "^[\u0009\u000a\u000d\u0020-\ud7ff\ue000-\ufffd\U00010000-\U
 ATTR_NAME_CHAR_REGEX = "^[\u00c0-\u017fa-zA-Z0-9_.-]*$"
 ATTR_NAME_PREFIX_SUFFIX_REGEX = r"^(?!(aws\.|amazon\.|\.)).*(?<!\.)$"
 ATTR_TYPE_REGEX = "^(String|Number|Binary).*$"
-FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]*$"
+FIFO_MSG_REGEX = "^[0-9a-zA-z!\"#$%&'()*+,./:;<=>?@[\\]^_`{|}~-]{1,128}$"
 
 DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 
@@ -18,7 +18,7 @@ DEDUPLICATION_INTERVAL_IN_SEC = 5 * 60
 RECENTLY_DELETED_TIMEOUT = 60
 
 # the default maximum message size in SQS
-DEFAULT_MAXIMUM_MESSAGE_SIZE = 262144
+DEFAULT_MAXIMUM_MESSAGE_SIZE = 1048576
 INTERNAL_QUEUE_ATTRIBUTES = [
     # these attributes cannot be changed by set_queue_attributes and should
     # therefore be ignored when comparing queue attributes for create_queue

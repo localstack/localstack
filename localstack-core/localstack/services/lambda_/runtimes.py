@@ -1,7 +1,5 @@
 """This Lambda Runtimes reference defines everything around Lambda runtimes to facilitate adding new runtimes."""
 
-from typing import Optional
-
 from localstack.aws.api.lambda_ import Runtime
 
 # LocalStack Lambda runtimes support policy
@@ -77,7 +75,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
 #  We currently use them in LocalStack logs as bonus recommendation (DevX).
 # When updating the recommendation,
 # please regenerate all tests with @markers.lambda_runtime_update
-DEPRECATED_RUNTIMES_UPGRADES: dict[Runtime, Optional[Runtime]] = {
+DEPRECATED_RUNTIMES_UPGRADES: dict[Runtime, Runtime | None] = {
     # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024
     Runtime.java8: Runtime.java21,
     # deprecated Jan 8, 2024 => Feb 8, 2024 => Mar 12, 2024

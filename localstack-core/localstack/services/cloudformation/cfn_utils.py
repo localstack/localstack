@@ -1,5 +1,5 @@
 import json
-from typing import Callable
+from collections.abc import Callable
 
 from localstack.utils.objects import recurse_object
 
@@ -59,7 +59,7 @@ def convert_types(obj, types):
         def recurse(o, path):
             if isinstance(o, dict):
                 for k, v in dict(o).items():
-                    key_path = "%s%s" % (path or ".", k)
+                    key_path = "{}{}".format(path or ".", k)
                     if key in [k, key_path]:
                         o[k] = type_class(v)
             return o

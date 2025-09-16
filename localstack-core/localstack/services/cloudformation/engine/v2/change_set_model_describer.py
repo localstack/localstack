@@ -1,13 +1,15 @@
 from __future__ import annotations
 
 import json
-from typing import Final, Optional
+from typing import Final
 
 import localstack.aws.api.cloudformation as cfn_api
+from localstack.aws.api.cloudformation import Replacement
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeIntrinsicFunction,
     NodeProperty,
     NodeResource,
+    NodeResources,
     PropertiesKey,
     is_nothing,
 )
@@ -33,12 +35,26 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     ):
         super().__init__(change_set=change_set)
         self._include_property_values = include_property_values
-        self._changes = list()
+        self._changes = []
 
     def get_changes(self) -> cfn_api.Changes:
         self._changes.clear()
         self.process()
         return self._changes
+
+    def _setup_runtime_cache(self) -> None:
+        # The describer can output {{changeSet:KNOWN_AFTER_APPLY}} values as not every field
+        # is computable at describe time. Until a filtering logic or executor override logic
+        # is available, the describer cannot benefit of previous evaluations to compute
+        # change set resource changes.
+        pass
+
+    def _save_runtime_cache(self) -> None:
+        # The describer can output {{changeSet:KNOWN_AFTER_APPLY}} values as not every field
+        # is computable at describe time. Until a filtering logic or executor override logic
+        # is available, there are no benefits in having the describer saving its runtime cache
+        # for future changes chains.
+        pass
 
     def _resolve_attribute(self, arguments: str | list[str], select_before: bool) -> str:
         if select_before:
@@ -57,9 +73,10 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         attribute_name = arguments_list[1]
 
         node_resource = self._get_node_resource_for(
-            resource_name=logical_name_of_resource, node_template=self._node_template
+            resource_name=logical_name_of_resource,
+            node_template=self._change_set.update_model.node_template,
         )
-        node_property: Optional[NodeProperty] = self._get_node_property_for(
+        node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )
         if node_property is not None:
@@ -82,8 +99,11 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_join(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        # TODO: investigate the behaviour and impact of this logic with the user defining
-        #       {{changeSet:KNOWN_AFTER_APPLY}} string literals as delimiters or arguments.
+        delta_args = super().visit(node_intrinsic_function.arguments)
+        if isinstance(delta_args.after, list) and CHANGESET_KNOWN_AFTER_APPLY in delta_args.after:
+            delta_args.after = CHANGESET_KNOWN_AFTER_APPLY
+            return delta_args
+
         delta = super().visit_node_intrinsic_function_fn_join(
             node_intrinsic_function=node_intrinsic_function
         )
@@ -95,13 +115,39 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
             delta.after = CHANGESET_KNOWN_AFTER_APPLY
         return delta
 
+    def visit_node_intrinsic_function_fn_select(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ):
+        # TODO: should this not _ALWAYS_ return CHANGESET_KNOWN_AFTER_APPLY?
+        arguments_delta = self.visit(node_intrinsic_function.arguments)
+        delta = PreprocEntityDelta()
+        if not is_nothing(arguments_delta.before):
+            idx = arguments_delta.before[0]
+            arr = arguments_delta.before[1]
+            try:
+                delta.before = arr[int(idx)]
+            except Exception:
+                delta.before = CHANGESET_KNOWN_AFTER_APPLY
+
+        if not is_nothing(arguments_delta.after):
+            idx = arguments_delta.after[0]
+            arr = arguments_delta.after[1]
+            try:
+                delta.after = arr[int(idx)]
+            except Exception:
+                delta.after = CHANGESET_KNOWN_AFTER_APPLY
+
+        return delta
+
     def _register_resource_change(
         self,
         logical_id: str,
         type_: str,
-        physical_id: Optional[str],
-        before_properties: Optional[PreprocProperties],
-        after_properties: Optional[PreprocProperties],
+        physical_id: str | None,
+        before_properties: PreprocProperties | None,
+        after_properties: PreprocProperties | None,
+        # TODO: remove default
+        requires_replacement: bool = False,
     ) -> None:
         action = cfn_api.ChangeAction.Modify
         if before_properties is None:
@@ -115,20 +161,29 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         resource_change["ResourceType"] = type_
         if physical_id:
             resource_change["PhysicalResourceId"] = physical_id
-        if self._include_property_values and before_properties is not None:
-            before_context_properties = {PropertiesKey: before_properties.properties}
-            before_context_properties_json_str = json.dumps(before_context_properties)
-            resource_change["BeforeContext"] = before_context_properties_json_str
-        if self._include_property_values and after_properties is not None:
-            after_context_properties = {PropertiesKey: after_properties.properties}
-            after_context_properties_json_str = json.dumps(after_context_properties)
-            resource_change["AfterContext"] = after_context_properties_json_str
+        if self._include_property_values:
+            if before_properties is not None:
+                before_context_properties = {PropertiesKey: before_properties.properties}
+                before_context_properties_json_str = json.dumps(before_context_properties)
+                resource_change["BeforeContext"] = before_context_properties_json_str
+
+            if after_properties is not None:
+                after_context_properties = {PropertiesKey: after_properties.properties}
+                after_context_properties_json_str = json.dumps(after_context_properties)
+                resource_change["AfterContext"] = after_context_properties_json_str
+
+        if action == cfn_api.ChangeAction.Modify:
+            # TODO: handle "Conditional" case
+            resource_change["Replacement"] = (
+                Replacement.True_ if requires_replacement else Replacement.False_
+            )
+
         self._changes.append(
             cfn_api.Change(Type=cfn_api.ChangeType.Resource, ResourceChange=resource_change)
         )
 
     def _describe_resource_change(
-        self, name: str, before: Optional[PreprocResource], after: Optional[PreprocResource]
+        self, name: str, before: PreprocResource | None, after: PreprocResource | None
     ) -> None:
         if before == after:
             # unchanged: nothing to do.
@@ -143,6 +198,7 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                     type_=before.resource_type,
                     before_properties=before.properties,
                     after_properties=after.properties,
+                    requires_replacement=after.requires_replacement,
                 )
             # Case: type migration.
             # TODO: Add test to assert that on type change the resources are replaced.
@@ -182,6 +238,13 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 after_properties=after.properties,
             )
 
+    def visit_node_resources(self, node_resources: NodeResources) -> None:
+        for node_resource in node_resources.resources:
+            delta_resource = self.visit(node_resource)
+            self._describe_resource_change(
+                name=node_resource.name, before=delta_resource.before, after=delta_resource.after
+            )
+
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
@@ -189,7 +252,29 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
         after_resource = delta.after
         if not is_nothing(after_resource) and after_resource.physical_resource_id is None:
             after_resource.physical_resource_id = CHANGESET_KNOWN_AFTER_APPLY
-        self._describe_resource_change(
-            name=node_resource.name, before=delta.before, after=delta.after
+        return delta
+
+    def visit_node_intrinsic_function_fn_import_value(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_import_value(
+            node_intrinsic_function=node_intrinsic_function
         )
+        after_value = delta.after
+        if is_nothing(after_value) and self._include_property_values:
+            # TODO find correct way to obtain parent resource
+            resource_name = node_intrinsic_function.scope.split("/")[2]
+            export_name = node_intrinsic_function.arguments.value
+
+            self._change_set.status_reason = f"[WARN] --include-property-values option can return incomplete ChangeSet data because: ChangeSet creation failed for resource [{resource_name}] because: No export named {export_name}"
+            delta.after = CHANGESET_KNOWN_AFTER_APPLY
+
+        return delta
+
+    def visit_node_intrinsic_function_fn_split(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> PreprocEntityDelta:
+        delta = super().visit_node_intrinsic_function_fn_split(node_intrinsic_function)
+        if isinstance(delta.after, list) and ":".join(delta.after) == CHANGESET_KNOWN_AFTER_APPLY:
+            delta.after = [CHANGESET_KNOWN_AFTER_APPLY]
         return delta

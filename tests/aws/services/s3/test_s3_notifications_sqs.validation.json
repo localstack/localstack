@@ -1,12 +1,18 @@
 {
-  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_bucket_notification_with_invalid_filter_rules": {
-    "last_validated_date": "2025-01-21T23:22:02+00:00"
-  },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_delete_objects": {
     "last_validated_date": "2025-01-21T23:21:22+00:00"
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_case_insensitive": {
     "last_validated_date": "2025-01-21T23:22:01+00:00"
+  },
+  "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_filter_rules_empty_value": {
+    "last_validated_date": "2025-09-02T21:50:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.98,
+      "call": 1.0,
+      "teardown": 0.81,
+      "total": 2.79
+    }
   },
   "tests/aws/services/s3/test_s3_notifications_sqs.py::TestS3NotificationsToSQS::test_invalid_sqs_arn": {
     "last_validated_date": "2025-01-21T23:22:05+00:00"

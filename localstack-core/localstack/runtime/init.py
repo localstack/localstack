@@ -7,7 +7,6 @@ import subprocess
 import time
 from enum import Enum
 from functools import cached_property
-from typing import Dict, List, Optional
 
 from plux import Plugin, PluginManager
 
@@ -92,7 +91,7 @@ class ShellScriptRunner(ScriptRunner):
     def run(self, path: str) -> None:
         exit_code = subprocess.call(args=[], executable=path)
         if exit_code != 0:
-            raise OSError("Script %s returned a non-zero exit code %s" % (path, exit_code))
+            raise OSError(f"Script {path} returned a non-zero exit code {exit_code}")
 
 
 class PythonScriptRunner(ScriptRunner):
@@ -109,7 +108,7 @@ class PythonScriptRunner(ScriptRunner):
 
 
 class InitScriptManager:
-    _stage_directories: Dict[Stage, str] = {
+    _stage_directories: dict[Stage, str] = {
         Stage.BOOT: "boot.d",
         Stage.START: "start.d",
         Stage.READY: "ready.d",
@@ -117,7 +116,7 @@ class InitScriptManager:
     }
 
     script_root: str
-    stage_completed: Dict[Stage, bool]
+    stage_completed: dict[Stage, bool]
 
     def __init__(self, script_root: str):
         self.script_root = script_root
@@ -125,10 +124,10 @@ class InitScriptManager:
         self.runner_manager: PluginManager[ScriptRunner] = PluginManager(ScriptRunner.namespace)
 
     @cached_property
-    def scripts(self) -> Dict[Stage, List[Script]]:
+    def scripts(self) -> dict[Stage, list[Script]]:
         return self._find_scripts()
 
-    def get_script_runner(self, script_file: str) -> Optional[ScriptRunner]:
+    def get_script_runner(self, script_file: str) -> ScriptRunner | None:
         runners = self.runner_manager.load_all()
         for runner in runners:
             if runner.should_run(script_file):
@@ -138,7 +137,7 @@ class InitScriptManager:
     def has_script_runner(self, script_file: str) -> bool:
         return self.get_script_runner(script_file) is not None
 
-    def run_stage(self, stage: Stage) -> List[Script]:
+    def run_stage(self, stage: Stage) -> list[Script]:
         """
         Runs all scripts in the given stage.
 
@@ -188,7 +187,7 @@ class InitScriptManager:
 
         return scripts
 
-    def _find_scripts(self) -> Dict[Stage, List[Script]]:
+    def _find_scripts(self) -> dict[Stage, list[Script]]:
         scripts = {}
 
         if self.script_root is None:

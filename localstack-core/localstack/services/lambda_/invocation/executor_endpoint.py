@@ -3,19 +3,16 @@ import logging
 import time
 from concurrent.futures import CancelledError, Future
 from http import HTTPStatus
-from typing import Any, Dict, Optional
+from typing import Any
 
 import requests
 from werkzeug import Request
 
 from localstack.http import Response, route
 from localstack.services.edge import ROUTER
+from localstack.services.lambda_ import ldm
 from localstack.services.lambda_.invocation.lambda_models import InvocationResult
 from localstack.utils.backoff import ExponentialBackoff
-from localstack.utils.lambda_debug_mode.lambda_debug_mode import (
-    DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS,
-    is_lambda_debug_mode,
-)
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import to_str
 
@@ -121,8 +118,8 @@ class ExecutorEndpoint(Endpoint):
     def __init__(
         self,
         executor_id: str,
-        container_address: Optional[str] = None,
-        container_port: Optional[int] = INVOCATION_PORT,
+        container_address: str | None = None,
+        container_port: int | None = INVOCATION_PORT,
     ) -> None:
         self.container_address = container_address
         self.container_port = container_port
@@ -143,7 +140,7 @@ class ExecutorEndpoint(Endpoint):
 
     def invocation_logs(self, request: Request, invoke_id: str) -> Response:
         logs = request.json
-        if isinstance(logs, Dict):
+        if isinstance(logs, dict):
             self.logs = logs["logs"]
         else:
             LOG.error("Invalid logs from init! Logs: %s", logs)
@@ -186,7 +183,7 @@ class ExecutorEndpoint(Endpoint):
         if self.invocation_future:
             self.invocation_future.cancel()
 
-    def invoke(self, payload: Dict[str, str]) -> InvocationResult:
+    def invoke(self, payload: dict[str, str]) -> InvocationResult:
         self.invocation_future = Future()
         self.logs = None
         if not self.container_address:
@@ -209,9 +206,9 @@ class ExecutorEndpoint(Endpoint):
         # Note that if timeouts are enforced for the lambda function invoked at this endpoint
         # (this is needs to be configured in the Lambda Debug Mode Config file), the lambda
         # function will continue to enforce the expected timeouts.
-        if is_lambda_debug_mode():
+        if ldm.IS_LDM_ENABLED:
             # The value is set to a default high value to ensure eventual termination.
-            timeout_seconds = DEFAULT_LAMBDA_DEBUG_MODE_TIMEOUT_SECONDS
+            timeout_seconds = ldm.DEFAULT_LDM_TIMEOUT_SECONDS
         else:
             # Do not wait longer for an invoke than the maximum lambda timeout plus a buffer
             lambda_max_timeout_seconds = 900

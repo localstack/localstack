@@ -7,6 +7,8 @@ from copy import deepcopy
 import botocore.exceptions
 import pytest
 import yaml
+from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_v1_provider
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.services.cloudformation.engine.yaml_parser import parse_yaml
@@ -273,6 +275,16 @@ class TestIntrinsicFunctions:
 
         snapshot.match("join-output", stack.outputs)
 
+    @markers.aws.validated
+    def test_fn_select_has_intrinsic_function(self, deploy_cfn_template, snapshot, aws_client):
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../templates/engine/fn_select_fn_mapp.yml"
+            )
+        )
+
+        snapshot.match("fn-select-fn-map-output", stack.outputs)
+
 
 class TestImports:
     @markers.aws.validated
@@ -331,8 +343,10 @@ class TestSsmParameters:
         matching = [arn for arn in topic_arns if parameter_value in arn]
         assert len(matching) == 1
 
-        tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])
-        snapshot.match("topic-tags", tags)
+        tags = aws_client.sns.list_tags_for_resource(ResourceArn=matching[0])["Tags"]
+        snapshot.match(
+            "topic-tags", [tag for tag in tags if not tag["Key"].startswith("aws:cloudformation")]
+        )
 
     @markers.aws.validated
     def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
@@ -392,6 +406,31 @@ class TestSsmParameters:
 
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
+
+    @skip_if_v1_provider("Not supported in the v1 provider")
+    @markers.aws.validated
+    def test_resolve_ssm_missing_parameter(self, snapshot, deploy_cfn_template):
+        template = {
+            "Parameters": {
+                "InputValue": {
+                    "Type": "AWS::SSM::Parameter::Value<String>",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "InputValue"},
+                    },
+                },
+            },
+        }
+        with pytest.raises(ClientError) as exc_info:
+            deploy_cfn_template(
+                template=json.dumps(template), parameters={"InputValue": "parameter-does-not-exist"}
+            )
+        snapshot.match("error-response", exc_info.value)
 
     @markers.aws.validated
     def test_ssm_nested_with_nested_stack(self, s3_create_bucket, deploy_cfn_template, aws_client):
@@ -781,7 +820,7 @@ class TestMacros:
         assert "test-" in resulting_value
 
     @markers.aws.validated
-    @pytest.mark.skip(reason="Fn::Transform does not support array of transformations")
+    @skip_if_v1_provider("V1 is unable to resolve fn::transform with lists")
     def test_scope_order_and_parameters(
         self, deploy_cfn_template, create_lambda_function, snapshot, aws_client
     ):
@@ -1030,7 +1069,7 @@ class TestMacros:
         self, deploy_cfn_template, create_lambda_function, snapshot, cleanups, aws_client
     ):
         """
-        This tests shows the state of instrinsic functions during the execution of the macro
+        This tests shows the state of intrinsic functions during the execution of the macro
         """
         macro_function_path = os.path.join(
             os.path.dirname(__file__), "../../templates/macros/print_references.py"
@@ -1169,7 +1208,7 @@ class TestMacros:
         assert bucket_name_output
 
         tagging = aws_client.s3.get_bucket_tagging(Bucket=bucket_name_output)
-        tags_s3 = [tag for tag in tagging["TagSet"]]
+        tags_s3 = list(tagging["TagSet"])
 
         resp = []
         for tag in tags_s3:

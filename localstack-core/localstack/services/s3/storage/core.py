@@ -1,6 +1,7 @@
 import abc
+from collections.abc import Iterable, Iterator
 from io import RawIOBase
-from typing import IO, Iterable, Iterator, Literal, Optional
+from typing import IO, Literal
 
 from localstack.aws.api.s3 import BucketName, PartNumber
 from localstack.services.s3.models import S3Multipart, S3Object, S3Part
@@ -108,7 +109,7 @@ class S3StoredObject(abc.ABC, Iterable[bytes]):
 
     @property
     @abc.abstractmethod
-    def checksum(self) -> Optional[str]:
+    def checksum(self) -> str | None:
         if not self.s3_object.checksum_algorithm:
             return None
 
@@ -170,7 +171,7 @@ class S3StoredMultipart(abc.ABC):
         s3_part: S3Part,
         src_bucket: BucketName,
         src_s3_object: S3Object,
-        range_data: Optional[ObjectRange],
+        range_data: ObjectRange | None,
     ) -> None:
         pass
 

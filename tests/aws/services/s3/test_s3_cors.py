@@ -1,3 +1,6 @@
+import gzip
+from io import BytesIO
+
 import pytest
 import requests
 import xmltodict
@@ -14,7 +17,7 @@ from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.config import TEST_AWS_ACCESS_KEY_ID
 from localstack.testing.pytest import markers
 from localstack.utils.aws.request_context import mock_aws_request_headers
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import checksum_crc32, short_uid
 
 
 def _bucket_url_vhost(bucket_name: str, region: str = "", localstack_host: str = None) -> str:
@@ -551,6 +554,18 @@ class TestS3Cors:
         match_headers("opt-get-allowed-diff-casing", opt_req)
         assert opt_req.ok
 
+        # test with specific headers and no space after the comma
+        opt_req = requests.options(
+            key_url,
+            headers={
+                "Origin": origin,
+                "Access-Control-Request-Method": "GET",
+                "Access-Control-Request-Headers": "x-amz-expected-bucket-owner,x-amz-server-side-encryption",
+            },
+        )
+        match_headers("opt-get-allowed-no-space", opt_req)
+        assert opt_req.ok
+
         # test GET with Access-Control-Request-Headers: should not happen in reality, AWS is considering it like an
         # OPTIONS request
         get_req = requests.get(
@@ -779,3 +794,34 @@ class TestS3Cors:
             aws_client.s3.get_bucket_cors(Bucket=s3_bucket)
 
         snapshot.match("get-cors-deleted", e.value.response)
+
+    @markers.aws.only_localstack
+    def test_s3_cors_disabled(self, s3_bucket, aws_client, monkeypatch):
+        monkeypatch.setattr(config, "DISABLE_CUSTOM_CORS_S3", True)
+        # the ContentDecoder handler depends on the S3 CORS/pre-process handler to determine the service name
+
+        data = "1234567890"
+        # Write contents to memory rather than a file.
+        upload_file_object = BytesIO()
+        mtime = 1676569620  # hardcode the GZIP timestamp
+        with gzip.GzipFile(fileobj=upload_file_object, mode="w", mtime=mtime) as filestream:
+            filestream.write(data.encode("utf-8"))
+
+        raw_gzip_value = upload_file_object.getvalue()
+        checksum = checksum_crc32(raw_gzip_value)
+
+        # Upload gzip
+        put_obj = aws_client.s3.put_object(
+            Bucket=s3_bucket,
+            Key="test.gz",
+            ContentEncoding="gzip",
+            Body=raw_gzip_value,
+        )
+        assert put_obj["ChecksumCRC32"] == checksum
+
+        get_obj = aws_client.s3.get_object(
+            Bucket=s3_bucket,
+            Key="test.gz",
+        )
+        assert get_obj["ContentEncoding"] == "gzip"
+        assert get_obj["Body"].read() == raw_gzip_value

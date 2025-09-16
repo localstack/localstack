@@ -5,7 +5,7 @@ import json
 import logging
 import re
 import time
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 import moto.secretsmanager.exceptions as moto_exception
 from botocore.utils import InvalidArnException
@@ -135,7 +135,7 @@ class SecretsmanagerProvider(SecretsmanagerApi):
         return bool(re.match(r"^[A-Za-z0-9/_+=.@-]+\Z", secret_id))
 
     @staticmethod
-    def _raise_if_invalid_secret_id(secret_id: Union[SecretIdType, NameType]):
+    def _raise_if_invalid_secret_id(secret_id: SecretIdType | NameType):
         # Patches moto's implementation for which secret_ids are not validated, by raising a ValidationException.
         # Skips this check if the secret_id provided appears to be an arn (starting with 'arn:').
         if not re.match(
@@ -149,12 +149,10 @@ class SecretsmanagerProvider(SecretsmanagerApi):
 
     @staticmethod
     def _raise_if_missing_client_req_token(
-        request: Union[
-            CreateSecretRequest,
-            PutSecretValueRequest,
-            RotateSecretRequest,
-            UpdateSecretRequest,
-        ],
+        request: CreateSecretRequest
+        | PutSecretValueRequest
+        | RotateSecretRequest
+        | UpdateSecretRequest,
     ):
         if "ClientRequestToken" not in request:
             raise InvalidRequestException(
@@ -201,8 +199,8 @@ class SecretsmanagerProvider(SecretsmanagerApi):
     ) -> DeleteSecretResponse:
         secret_id: str = request["SecretId"]
         self._raise_if_invalid_secret_id(secret_id)
-        recovery_window_in_days: Optional[int] = request.get("RecoveryWindowInDays")
-        force_delete_without_recovery: Optional[bool] = request.get("ForceDeleteWithoutRecovery")
+        recovery_window_in_days: int | None = request.get("RecoveryWindowInDays")
+        force_delete_without_recovery: bool | None = request.get("ForceDeleteWithoutRecovery")
 
         backend = SecretsmanagerProvider.get_moto_backend_for_resource(secret_id, context)
         try:
@@ -495,7 +493,7 @@ def moto_smb_get_secret_value(fn, self, secret_id, version_id, version_stage):
 def moto_smb_create_secret(fn, self, name, *args, **kwargs):
     # Creating a secret with a SecretId equal to one that is scheduled for
     # deletion should raise an 'InvalidRequestException'.
-    secret: Optional[FakeSecret] = self.secrets.get(name)
+    secret: FakeSecret | None = self.secrets.get(name)
     if secret is not None and secret.deleted_date is not None:
         raise InvalidRequestException(AWS_INVALID_REQUEST_MESSAGE_CREATE_WITH_SCHEDULED_DELETION)
 
@@ -523,7 +521,7 @@ def moto_smb_list_secret_version_ids(
     secret = self.secrets[secret_id]
 
     # Patch: output format, report exact createdate instead of current time.
-    versions: list[SecretVersionsListEntry] = list()
+    versions: list[SecretVersionsListEntry] = []
     for version_id, version in secret.versions.items():
         version_stages = version["version_stages"]
         # Patch: include deprecated versions if include_deprecated is True.

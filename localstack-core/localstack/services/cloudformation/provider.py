@@ -137,6 +137,9 @@ ARN_CHANGESET_REGEX = re.compile(
 ARN_STACK_REGEX = re.compile(
     r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
 )
+ARN_STACK_SET_REGEX = re.compile(
+    r"arn:(aws|aws-us-gov|aws-cn):cloudformation:[-a-zA-Z0-9]+:\d{12}:stack-set/[a-zA-Z][-a-zA-Z0-9]*/[-a-zA-Z0-9:/._+]+"
+)
 
 
 def clone_stack_params(stack_params):
@@ -156,7 +159,7 @@ def find_stack_instance(stack_set: StackSet, account: str, region: str):
 
 def stack_not_found_error(stack_name: str):
     # FIXME
-    raise ValidationError("Stack with id %s does not exist" % stack_name)
+    raise ValidationError(f"Stack with id {stack_name} does not exist")
 
 
 def not_found_error(message: str):
@@ -244,7 +247,6 @@ class CloudformationProvider(CloudformationApi):
             old_parameters={},
         )
 
-        # handle conditions
         stack = Stack(context.account_id, context.region, request, template)
 
         try:
@@ -269,11 +271,14 @@ class CloudformationProvider(CloudformationApi):
             state.stacks[stack.stack_id] = stack
             return CreateStackOutput(StackId=stack.stack_id)
 
+        # HACK: recreate the stack (including all of its confusing processes in the __init__ method
+        # to set the stack template to be the transformed template, rather than the untransformed
+        # template
+        stack = Stack(context.account_id, context.region, request, template)
+
         # perform basic static analysis on the template
         for validation_fn in DEFAULT_TEMPLATE_VALIDATIONS:
             validation_fn(template)
-
-        stack = Stack(context.account_id, context.region, request, template)
 
         # resolve conditions
         raw_conditions = template.get("Conditions", {})
@@ -300,8 +305,8 @@ class CloudformationProvider(CloudformationApi):
             deployer.deploy_stack()
         except Exception as e:
             stack.set_stack_status("CREATE_FAILED")
-            msg = 'Unable to create stack "%s": %s' % (stack.stack_name, e)
-            LOG.exception("%s")
+            msg = f'Unable to create stack "{stack.stack_name}": {e}'
+            LOG.error("%s", exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError(msg) from e
 
         return CreateStackOutput(StackId=stack.stack_id)
@@ -418,7 +423,7 @@ class CloudformationProvider(CloudformationApi):
         except Exception as e:
             stack.set_stack_status("UPDATE_FAILED")
             msg = f'Unable to update stack "{stack_name}": {e}'
-            LOG.exception("%s", msg)
+            LOG.error("%s", msg, exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError(msg) from e
 
         return UpdateStackOutput(StackId=stack.stack_id)
@@ -512,8 +517,18 @@ class CloudformationProvider(CloudformationApi):
 
         if template_stage == TemplateStage.Processed and "Transform" in stack.template_body:
             copy_template = clone(stack.template_original)
-            copy_template.pop("ChangeSetName", None)
-            copy_template.pop("StackName", None)
+            for key in [
+                "ChangeSetName",
+                "StackName",
+                "StackId",
+                "Transform",
+                "Conditions",
+                "Mappings",
+            ]:
+                copy_template.pop(key, None)
+            for key in ["Parameters", "Outputs"]:
+                if key in copy_template and not copy_template[key]:
+                    copy_template.pop(key)
             for resource in copy_template.get("Resources", {}).values():
                 resource.pop("LogicalResourceId", None)
             template_body = json.dumps(copy_template)
@@ -590,6 +605,8 @@ class CloudformationProvider(CloudformationApi):
         req_params = request
         change_set_type = req_params.get("ChangeSetType", "UPDATE")
         stack_name = req_params.get("StackName")
+        if not stack_name:
+            raise ValidationError("Member must have length greater than or equal to 1")
         change_set_name = req_params.get("ChangeSetName")
         template_body = req_params.get("TemplateBody")
         # s3 or secretsmanager url
@@ -912,7 +929,7 @@ class CloudformationProvider(CloudformationApi):
         self, context: RequestContext, next_token: NextToken = None, **kwargs
     ) -> ListExportsOutput:
         state = get_cloudformation_store(context.account_id, context.region)
-        return ListExportsOutput(Exports=state.exports)
+        return ListExportsOutput(Exports=state.exports.values())
 
     @handler("ListImports")
     def list_imports(
@@ -1037,7 +1054,7 @@ class CloudformationProvider(CloudformationApi):
                 Description=valid_template.get("Description"), Parameters=parameters
             )
         except Exception as e:
-            LOG.exception("Error validating template")
+            LOG.error("Error validating template", exc_info=LOG.isEnabledFor(logging.DEBUG))
             raise ValidationError("Template Validation Error") from e
 
     # =======================================

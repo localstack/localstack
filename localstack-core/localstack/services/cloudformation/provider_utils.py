@@ -9,9 +9,9 @@ import builtins
 import json
 import re
 import uuid
+from collections.abc import Callable
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, List, Optional
 
 from botocore.model import Shape, StructureShape
 
@@ -73,8 +73,11 @@ def recurse_properties(properties: dict, fn: Callable) -> dict:
     return _recurse_properties(deepcopy(properties), fn)
 
 
-def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
+def keys_pascalcase_to_lower_camelcase(model: dict, skip_keys: set = None) -> dict:
     """Recursively change any dicts keys to lower camelcase"""
+
+    if skip_keys:
+        return _pascal_to_camel_keys_preserve_values(model, skip_keys)
 
     def _keys_pascalcase_to_lower_camelcase(obj):
         if isinstance(obj, dict):
@@ -83,6 +86,33 @@ def keys_pascalcase_to_lower_camelcase(model: dict) -> dict:
             return obj
 
     return _recurse_properties(model, _keys_pascalcase_to_lower_camelcase)
+
+
+def _pascal_to_camel_keys_preserve_values(model: dict, skip_keys: set = None) -> dict:
+    """
+    Variant of keys_pascalcase_to_lower_camelcase
+    All VALUES of provided keys are skipped and not transformed to lower camelcase.
+    The keys themselves will be transformed.
+    The function simply stops recursion if a key matches, so make sure no lower level values are ignored.
+    """
+    skip_keys = skip_keys or set()
+
+    def _transform(obj):
+        if isinstance(obj, dict):
+            new_dict = {}
+            for k, v in obj.items():
+                new_key = convert_pascalcase_to_lower_camelcase(k)
+                if k in skip_keys:
+                    new_dict[new_key] = v
+                else:
+                    new_dict[new_key] = _transform(v)
+            return new_dict
+        elif isinstance(obj, list):
+            return [_transform(i) for i in obj]
+        else:
+            return obj
+
+    return _transform(model)
 
 
 def keys_lower_camelcase_to_pascalcase(model: dict) -> dict:
@@ -152,7 +182,7 @@ def fix_boto_parameters_based_on_report(original_params: dict, report: str) -> d
         cast_class = getattr(builtins, valid_class)
         old_value = get_nested(params, param_name)
 
-        if cast_class == bool and str(old_value).lower() in ["true", "false"]:
+        if isinstance(cast_class, bool) and str(old_value).lower() in ["true", "false"]:
             new_value = str(old_value).lower() == "true"
         else:
             new_value = cast_class(old_value)
@@ -213,7 +243,7 @@ def convert_request_kwargs(parameters: dict, input_shape: StructureShape) -> dic
     return transformed_dict
 
 
-def convert_values_to_numbers(input_dict: dict, keys_to_skip: Optional[List[str]] = None):
+def convert_values_to_numbers(input_dict: dict, keys_to_skip: list[str] | None = None):
     """
     Recursively converts all string values that represent valid integers
     in a dictionary (including nested dictionaries and lists) to integers.

@@ -2,7 +2,6 @@ import contextlib
 import json
 import os
 from datetime import date, datetime
-from typing import Optional, Tuple
 
 import pytest
 import requests
@@ -13,7 +12,7 @@ from localstack.services.ses.provider import EMAILS, EMAILS_ENDPOINT
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
-from localstack.utils.sync import retry
+from localstack.utils.sync import poll_condition, retry
 
 SAMPLE_TEMPLATE = {
     "TemplateName": "hello-world",
@@ -93,8 +92,8 @@ def setup_email_addresses(ses_verify_identity):
     """
 
     def inner(
-        sender_email_address: Optional[str] = None, recipient_email_address: Optional[str] = None
-    ) -> Tuple[str, str]:
+        sender_email_address: str | None = None, recipient_email_address: str | None = None
+    ) -> tuple[str, str]:
         if is_aws_cloud():
             if sender_email_address is None:
                 raise ValueError(
@@ -390,6 +389,75 @@ class TestSES:
         assert cloned_rule_set["Metadata"]["Name"] == rule_set_name
         assert cloned_rule_set["Rules"] == original_rule_set["Rules"]
         assert [x["Name"] for x in cloned_rule_set["Rules"]] == rule_names
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("notification_type", ["Bounce", "Complaint", "Delivery"])
+    @pytest.mark.parametrize("enabled", [True, False])
+    def test_set_identity_headers_in_notifications_enabled_success(
+        self, aws_client, setup_email_addresses, snapshot, notification_type, enabled
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for valid identities and notification types.
+        Also checks idempotency.
+        """
+        sender_email, _ = setup_email_addresses()
+
+        response = aws_client.ses.set_identity_headers_in_notifications_enabled(
+            Identity=sender_email,
+            NotificationType=notification_type,
+            Enabled=enabled,
+        )
+        snapshot.match(f"set-headers-{notification_type.lower()}-enabled-{enabled}", response)
+
+        # Idempotency check
+        response2 = aws_client.ses.set_identity_headers_in_notifications_enabled(
+            Identity=sender_email,
+            NotificationType=notification_type,
+            Enabled=enabled,
+        )
+        snapshot.match(
+            f"set-headers-{notification_type.lower()}-enabled-{enabled}-idempotent", response2
+        )
+
+    @markers.aws.validated
+    def test_set_identity_headers_in_notifications_enabled_failure_invalid_type(
+        self, aws_client, setup_email_addresses, snapshot
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for invalid notification types.
+        """
+        sender_email, _ = setup_email_addresses()
+        enabled = True
+        notification_type = "InvalidType"
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.ses.set_identity_headers_in_notifications_enabled(
+                Identity=sender_email,
+                NotificationType=notification_type,
+                Enabled=enabled,
+            )
+        snapshot.match("set-headers-error-invalidtype", exc.value.response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("notification_type", ["Bounce", "Complaint", "Delivery"])
+    def test_set_identity_headers_in_notifications_enabled_failure_unknown_identity(
+        self, aws_client, snapshot, notification_type
+    ):
+        """
+        Test SetIdentityHeadersInNotificationsEnabled for unknown identity.
+        """
+        enabled = True
+        unknown_email = "unknown@example.com"
+
+        with pytest.raises(ClientError) as exc:
+            aws_client.ses.set_identity_headers_in_notifications_enabled(
+                Identity=unknown_email,
+                NotificationType=notification_type,
+                Enabled=enabled,
+            )
+        snapshot.match(
+            f"set-headers-error-unknown-identity-{notification_type.lower()}", exc.value.response
+        )
 
     @markers.aws.manual_setup_required
     @markers.snapshot.skip_snapshot_verify(
@@ -850,6 +918,87 @@ class TestSES:
 
         assert exc.match("MessageRejected")
 
+    # we cannot really introspect received emails in AWS
+    @markers.aws.only_localstack
+    def test_ses_sns_topic_integration_send_email_ses_destination(
+        self,
+        sns_topic,
+        sns_subscription,
+        ses_configuration_set,
+        ses_configuration_set_sns_event_destination,
+        setup_email_addresses,
+        aws_client,
+    ):
+        """
+        Validates that configure Event Destinations and sending an email does not trigger an infinite loop of sending
+        SNS notifications that sends an email that would trigger SNS.
+        """
+
+        sender_email_address, recipient_email_address = setup_email_addresses()
+        config_set_name = f"config-set-{short_uid()}"
+
+        emails_url = config.internal_service_url() + EMAILS_ENDPOINT
+        response = requests.delete(emails_url)
+        assert response.status_code == 204
+
+        # create subscription to get notified about SES events
+        topic_arn = sns_topic["Attributes"]["TopicArn"]
+        sns_subscription(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint=sender_email_address,
+        )
+
+        # create the config set
+        ses_configuration_set(config_set_name)
+        event_destination_name = f"config-set-event-destination-{short_uid()}"
+        ses_configuration_set_sns_event_destination(
+            config_set_name, event_destination_name, topic_arn
+        )
+
+        # send an email to trigger the SNS message and SES message
+        destination = {
+            "ToAddresses": [recipient_email_address],
+        }
+        send_email = aws_client.ses.send_email(
+            Destination=destination,
+            Message=SAMPLE_SIMPLE_EMAIL,
+            ConfigurationSetName=config_set_name,
+            Source=sender_email_address,
+            Tags=[
+                {
+                    "Name": "custom-tag",
+                    "Value": "tag-value",
+                }
+            ],
+        )
+
+        def _get_emails():
+            _resp = requests.get(emails_url)
+            return _resp.json()["messages"]
+
+        poll_condition(lambda: len(_get_emails()) >= 4, timeout=3)
+        requests.delete(emails_url, params={"id": send_email["MessageId"]})
+
+        emails = _get_emails()
+        # we assert that we only received 3 emails
+        assert len(emails) == 3
+
+        emails = sorted(emails, key=lambda x: x["Body"]["text_part"])
+        # the first email is the validation of SNS confirming the SES subscription
+        ses_delivery_notification = emails[1]
+        ses_send_notification = emails[2]
+
+        assert ses_delivery_notification["Subject"] == "SNS-Subscriber-Endpoint"
+        delivery_payload = json.loads(ses_delivery_notification["Body"]["text_part"])
+        assert delivery_payload["eventType"] == "Delivery"
+        assert delivery_payload["mail"]["source"] == sender_email_address
+
+        assert ses_send_notification["Subject"] == "SNS-Subscriber-Endpoint"
+        send_payload = json.loads(ses_send_notification["Body"]["text_part"])
+        assert send_payload["eventType"] == "Send"
+        assert send_payload["mail"]["source"] == sender_email_address
+
 
 @pytest.mark.usefixtures("openapi_validate")
 class TestSESRetrospection:
@@ -863,7 +1012,7 @@ class TestSESRetrospection:
         def _read_message_from_filesystem(message_id: str) -> dict:
             """Given a message ID, read the message from filesystem and deserialise it."""
             data_dir = config.dirs.data or config.dirs.tmp
-            with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
+            with open(os.path.join(data_dir, "ses", message_id + ".json")) as f:
                 message = f.read()
             return json.loads(message)
 
@@ -956,7 +1105,7 @@ class TestSESRetrospection:
         )
         message_id = message["MessageId"]
 
-        with open(os.path.join(data_dir, "ses", message_id + ".json"), "r") as f:
+        with open(os.path.join(data_dir, "ses", message_id + ".json")) as f:
             message = f.read()
 
         contents = json.loads(message)

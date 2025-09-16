@@ -1,4 +1,5 @@
-from typing import Any, Callable, Final, Optional
+from collections.abc import Callable
+from typing import Any, Final
 
 from botocore.exceptions import ClientError
 from moto.batch.utils import JobStatus
@@ -62,7 +63,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
     def __init__(self):
         super().__init__(supported_integration_patterns=_SUPPORTED_INTEGRATION_PATTERNS)
 
-    def _get_supported_parameters(self) -> Optional[set[str]]:
+    def _get_supported_parameters(self) -> set[str] | None:
         return _SUPPORTED_API_PARAM_BINDINGS.get(self.resource.api_action.lower())
 
     @staticmethod
@@ -70,12 +71,12 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         # Attaches to the ContainerOverrides environment variables the AWS managed flags.
         container_overrides = parameters.get("ContainerOverrides")
         if container_overrides is None:
-            container_overrides = dict()
+            container_overrides = {}
             parameters["ContainerOverrides"] = container_overrides
 
         environment = container_overrides.get("Environment")
         if environment is None:
-            environment = list()
+            environment = []
             container_overrides["Environment"] = environment
 
         environment.append(
@@ -117,7 +118,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
                     "Proxy: null",
                 ]
             )
-            cause = f"Error executing request, Exception : {error_message}, RequestId: {request_id} ({response_details})"
+            cause = f"{error_message} ({response_details})"
             return FailureEvent(
                 env=env,
                 error_name=CustomErrorName(error_name),
@@ -139,7 +140,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         resource_runtime_part: ResourceRuntimePart,
         normalised_parameters: dict,
         state_credentials: StateCredentials,
-    ) -> Callable[[], Optional[Any]]:
+    ) -> Callable[[], Any | None]:
         batch_client = boto_client_for(
             service="batch",
             region=resource_runtime_part.region,
@@ -148,7 +149,7 @@ class StateTaskServiceBatch(StateTaskServiceCallback):
         submission_output: dict = env.stack.pop()
         job_id = submission_output["JobId"]
 
-        def _sync_resolver() -> Optional[dict]:
+        def _sync_resolver() -> dict | None:
             describe_jobs_response = batch_client.describe_jobs(jobs=[job_id])
             describe_jobs = describe_jobs_response["jobs"]
             if describe_jobs:

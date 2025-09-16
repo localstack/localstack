@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, Final, Optional
+from typing import Any, Final
 
 from localstack.services.stepfunctions.asl.jsonata.jsonata import (
     VariableDeclarations,
@@ -51,12 +51,12 @@ class VariableStore:
 
     _declaration_tracing: Final[set[str]]
 
-    _outer_variable_declaration_cache: Optional[VariableDeclarations]
-    _variable_declarations_cache: Optional[VariableDeclarations]
+    _outer_variable_declaration_cache: VariableDeclarations | None
+    _variable_declarations_cache: VariableDeclarations | None
 
     def __init__(self):
-        self._outer_scope = dict()
-        self._inner_scope = dict()
+        self._outer_scope = {}
+        self._inner_scope = {}
         self._declaration_tracing = set()
         self._outer_variable_declaration_cache = None
         self._variable_declarations_cache = None
@@ -73,7 +73,7 @@ class VariableStore:
 
     # TODO: add typing when this available in service init.
     def get_assigned_variables(self) -> dict[str, str]:
-        assigned_variables: dict[str, str] = dict()
+        assigned_variables: dict[str, str] = {}
         for traced_declaration_identifier in self._declaration_tracing:
             traced_declaration_value = self.get(traced_declaration_identifier)
             if isinstance(traced_declaration_value, str):

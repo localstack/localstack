@@ -2,7 +2,7 @@ import base64
 import json
 import logging
 import re
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.config import TagsList
@@ -65,6 +65,7 @@ from localstack.aws.api.events import (
     ListRulesResponse,
     ListTagsForResourceResponse,
     ListTargetsByRuleResponse,
+    LogConfig,
     NextToken,
     NonPartnerEventBusName,
     Principal,
@@ -192,7 +193,7 @@ def encode_next_token(token: int) -> NextToken:
 
 def get_filtered_dict(name_prefix: str, input_dict: dict) -> dict:
     """Filter dictionary by prefix."""
-    return {name: value for name, value in input_dict.items() if name.startswith(name_prefix)}
+    return {name: value for name, value in dict(input_dict).items() if name.startswith(name_prefix)}
 
 
 def validate_event(event: PutEventsRequestEntry) -> None | PutEventsResultEntry:
@@ -523,11 +524,12 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         name: EventBusName,
-        event_source_name: EventSourceName = None,
-        description: EventBusDescription = None,
-        kms_key_identifier: KmsKeyIdentifier = None,
-        dead_letter_config: DeadLetterConfig = None,
-        tags: TagList = None,
+        event_source_name: EventSourceName | None = None,
+        description: EventBusDescription | None = None,
+        kms_key_identifier: KmsKeyIdentifier | None = None,
+        dead_letter_config: DeadLetterConfig | None = None,
+        log_config: LogConfig | None = None,
+        tags: TagList | None = None,
         **kwargs,
     ) -> CreateEventBusResponse:
         region = context.region
@@ -766,8 +768,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
         # Find all rules that have a target with the specified ARN
         matching_rule_names = []
-        for rule_name, rule in event_bus.rules.items():
-            for target_id, target in rule.targets.items():
+        for rule_name, rule in dict(event_bus.rules).items():
+            for target_id, target in dict(rule.targets).items():
                 if target["Arn"] == target_arn:
                     matching_rule_names.append(rule_name)
                     break  # Found a match in this rule, no need to check other targets
@@ -1026,7 +1028,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
             self._check_event_bus_exists(event_source_arn, store)
             archives = {
                 key: archive
-                for key, archive in store.archives.items()
+                for key, archive in dict(store.archives).items()
                 if archive.event_source_arn == event_source_arn
             }
         elif name_prefix:
@@ -1159,7 +1161,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         if event_source_arn:
             replays = {
                 key: replay
-                for key, replay in store.replays.items()
+                for key, replay in dict(store.replays).items()
                 if replay.event_source_arn == event_source_arn
             }
         elif name_prefix:
@@ -1347,9 +1349,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: EventBusName,
         region: str,
         account_id: str,
-        event_source_name: Optional[EventSourceName],
-        description: Optional[EventBusDescription],
-        tags: Optional[TagList],
+        event_source_name: EventSourceName | None,
+        description: EventBusDescription | None,
+        tags: TagList | None,
     ) -> EventBusService:
         event_bus_service = EventBusService.create_event_bus_service(
             name,
@@ -1367,14 +1369,14 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         name: RuleName,
         region: str,
         account_id: str,
-        schedule_expression: Optional[ScheduleExpression],
-        event_pattern: Optional[EventPattern],
-        state: Optional[RuleState],
-        description: Optional[RuleDescription],
-        role_arn: Optional[RoleArn],
-        tags: Optional[TagList],
-        event_bus_name: Optional[EventBusName],
-        targets: Optional[TargetDict],
+        schedule_expression: ScheduleExpression | None,
+        event_pattern: EventPattern | None,
+        state: RuleState | None,
+        description: RuleDescription | None,
+        role_arn: RoleArn | None,
+        tags: TagList | None,
+        event_bus_name: EventBusName | None,
+        targets: TargetDict | None,
     ) -> RuleService:
         rule_service = RuleService.create_rule_service(
             name,
@@ -1506,7 +1508,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """
         if isinstance(rules, Rule):
             rules = {rules.name: rules}
-        for rule in rules.values():
+        for rule in list(rules.values()):
             del self._rule_services_store[rule.arn]
 
     def _delete_target_sender(self, ids: TargetIdList, rule) -> None:
@@ -1569,7 +1571,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     def _get_scheduled_rule_job_function(self, account_id, region, rule: Rule) -> Callable:
         def func(*args, **kwargs):
             """Create custom scheduled event and send it to all targets specified by associated rule using respective TargetSender"""
-            for target in rule.targets.values():
+            for target in list(rule.targets.values()):
                 if custom_input := target.get("Input"):
                     event = json.loads(custom_input)
                 else:
@@ -1634,7 +1636,8 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
     ) -> EventBusList:
         """Return a converted dict of EventBus model objects as a list of event buses in API type EventBus format."""
         event_bus_list = [
-            self._event_bus_to_api_type_event_bus(event_bus) for event_bus in event_buses.values()
+            self._event_bus_to_api_type_event_bus(event_bus)
+            for event_bus in list(event_buses.values())
         ]
         return event_bus_list
 
@@ -1678,7 +1681,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _rule_dict_to_rule_response_list(self, rules: RuleDict) -> RuleResponseList:
         """Return a converted dict of Rule model objects as a list of rules in API type Rule format."""
-        rule_list = [self._rule_to_api_type_rule(rule) for rule in rules.values()]
+        rule_list = [self._rule_to_api_type_rule(rule) for rule in list(rules.values())]
         return rule_list
 
     def _rule_to_api_type_rule(self, rule: Rule) -> ApiTypeRule:
@@ -1698,7 +1701,9 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _archive_dict_to_archive_response_list(self, archives: ArchiveDict) -> ArchiveResponseList:
         """Return a converted dict of Archive model objects as a list of archives in API type Archive format."""
-        archive_list = [self._archive_to_api_type_archive(archive) for archive in archives.values()]
+        archive_list = [
+            self._archive_to_api_type_archive(archive) for archive in list(archives.values())
+        ]
         return archive_list
 
     def _archive_to_api_type_archive(self, archive: Archive) -> ApiTypeArchive:
@@ -1732,7 +1737,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
 
     def _replay_dict_to_replay_response_list(self, replays: ReplayDict) -> ReplayList:
         """Return a converted dict of Replay model objects as a list of replays in API type Replay format."""
-        replay_list = [self._replay_to_api_type_replay(replay) for replay in replays.values()]
+        replay_list = [self._replay_to_api_type_replay(replay) for replay in list(replays.values())]
         return replay_list
 
     def _replay_to_api_type_replay(self, replay: Replay) -> ApiTypeReplay:
@@ -1787,7 +1792,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Return a converted dict of Connection model objects as a list of connections in API type Connection format."""
         connection_list = [
             self._connection_to_api_type_connection(connection)
-            for connection in connections.values()
+            for connection in list(connections.values())
         ]
         return connection_list
 
@@ -1814,7 +1819,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
         """Return a converted dict of ApiDestination model objects as a list of connections in API type ApiDestination format."""
         api_destination_list = [
             self._api_destination_to_api_type_api_destination(api_destination)
-            for api_destination in api_destinations.values()
+            for api_destination in list(api_destinations.values())
         ]
         return api_destination_list
 
@@ -1940,7 +1945,7 @@ class EventsProvider(EventsApi, ServiceLifecycleHook):
                 )
                 return
 
-            for target in rule.targets.values():
+            for target in list(rule.targets.values()):
                 target_id = target["Id"]
                 if is_archive_arn(target["Arn"]):
                     self._put_to_archive(

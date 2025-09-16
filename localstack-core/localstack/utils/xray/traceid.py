@@ -29,7 +29,7 @@ class TraceId:
         """
         Convert TraceId object to a string.
         """
-        return "%s%s%s%s%s" % (
+        return "{}{}{}{}{}".format(
             TraceId.VERSION,
             TraceId.DELIMITER,
             format(self.start_time, "x"),

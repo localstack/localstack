@@ -1,6 +1,6 @@
 import datetime
 from threading import Thread
-from typing import Final, Optional
+from typing import Final
 
 from localstack.aws.api.stepfunctions import (
     Arn,
@@ -36,19 +36,19 @@ from localstack.utils.common import TMP_THREADS
 class ExecutionWorker:
     _evaluation_details: Final[EvaluationDetails]
     _execution_communication: Final[ExecutionWorkerCommunication]
-    _cloud_watch_logging_session: Final[Optional[CloudWatchLoggingSession]]
-    _mock_test_case: Final[Optional[MockTestCase]]
+    _cloud_watch_logging_session: Final[CloudWatchLoggingSession | None]
+    _mock_test_case: Final[MockTestCase | None]
     _activity_store: dict[Arn, Activity]
 
-    env: Optional[Environment]
+    env: Environment | None
 
     def __init__(
         self,
         evaluation_details: EvaluationDetails,
         exec_comm: ExecutionWorkerCommunication,
-        cloud_watch_logging_session: Optional[CloudWatchLoggingSession],
+        cloud_watch_logging_session: CloudWatchLoggingSession | None,
         activity_store: dict[Arn, Activity],
-        mock_test_case: Optional[MockTestCase] = None,
+        mock_test_case: MockTestCase | None = None,
     ):
         self._evaluation_details = evaluation_details
         self._execution_communication = exec_comm
@@ -113,7 +113,7 @@ class ExecutionWorker:
         TMP_THREADS.append(execution_logic_thread)
         execution_logic_thread.start()
 
-    def stop(self, stop_date: datetime.datetime, error: Optional[str], cause: Optional[str]):
+    def stop(self, stop_date: datetime.datetime, error: str | None, cause: str | None):
         self.env.set_stop(stop_date=stop_date, cause=cause, error=error)
 
 

@@ -23,6 +23,10 @@ from localstack.utils.net import (
 )
 
 
+class TestPortRange(PortRange):
+    pass
+
+
 @markers.skip_offline
 def test_resolve_hostname():
     assert "127." in resolve_hostname(LOCALHOST)
@@ -115,6 +119,14 @@ def test_subrange():
 
     sr.mark_reserved(50005)
     assert r.is_port_reserved(50005)
+
+
+def test_subrange_from_subclass():
+    r = TestPortRange(1000, 5000)
+    sr = r.subrange(1000, 2000)
+
+    assert isinstance(sr, TestPortRange)
+    assert sr.as_range() == range(1000, 2001)
 
 
 def test_get_free_tcp_port_range_fails_if_reserved(monkeypatch):

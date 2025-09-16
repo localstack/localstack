@@ -3,7 +3,7 @@ import logging
 import shlex
 import subprocess
 import sys
-from typing import List, Optional, TypeVar
+from typing import TypeVar
 
 from localstack import config, constants
 from localstack.config import HostAndPort
@@ -32,7 +32,7 @@ the actual AWS service call is made."""
 
 
 def do_start_edge(
-    listen: HostAndPort | List[HostAndPort], use_ssl: bool, asynchronous: bool = False
+    listen: HostAndPort | list[HostAndPort], use_ssl: bool, asynchronous: bool = False
 ):
     from localstack.aws.serving.edge import serve_gateway
 
@@ -50,7 +50,7 @@ def can_use_sudo():
 def ensure_can_use_sudo():
     if not is_root() and not can_use_sudo():
         if not sys.stdin.isatty():
-            raise IOError("cannot get sudo password from non-tty input")
+            raise OSError("cannot get sudo password from non-tty input")
         print("Please enter your sudo password (required to configure local network):")
         run("sudo -v", stdin=True)
 
@@ -72,7 +72,7 @@ def start_component(
                 default_port=constants.DEFAULT_PORT_EDGE,
             ),
         )
-    raise Exception("Unexpected component name '%s' received during start up" % component)
+    raise Exception(f"Unexpected component name '{component}' received during start up")
 
 
 def start_proxy(
@@ -166,7 +166,7 @@ def start_edge(listen_str: str, use_ssl: bool = True, asynchronous: bool = False
 
 
 def run_module_as_sudo(
-    module: str, arguments: Optional[List[str]] = None, asynchronous=False, env_vars=None
+    module: str, arguments: list[str] | None = None, asynchronous=False, env_vars=None
 ):
     # prepare environment
     env_vars = env_vars or {}
@@ -195,7 +195,7 @@ def run_module_as_sudo(
     return result
 
 
-def parse_gateway_listen(listen: str, default_host: str, default_port: int) -> List[HostAndPort]:
+def parse_gateway_listen(listen: str, default_host: str, default_port: int) -> list[HostAndPort]:
     addresses = []
     for address in listen.split(","):
         addresses.append(HostAndPort.parse(address, default_host, default_port))
