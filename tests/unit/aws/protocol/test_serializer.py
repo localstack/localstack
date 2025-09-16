@@ -1558,7 +1558,6 @@ def test_rpc_v2_undefined_map_and_list_serialization():
                 "recoveryApproach": "activePassive",
                 "primaryRegion": "us-east-1",
                 "version": "1",
-                "updatedAt": datetime(2025, 9, 16, 14, 54, 5, 262000, tzinfo=tzlocal()),
                 "executionRole": "arn:aws:iam::671107678412:role/testswitch",
             }
         ]
@@ -1573,12 +1572,38 @@ def test_rpc_v2_undefined_map_and_list_serialization():
     # this has been validated with AWS, AWS uses undefined length CBOR map and list
     assert raw_response_body[:10] == b"\xbfeplans\x9f\xbfc"
     assert raw_response_body[-3:] == b"\xff\xff\xff"
+
+
+def test_rpc_v2_timestamp_serialization():
+    service = load_service("arc-region-switch")
+    response_serializer = create_serializer(service, protocol="smithy-rpc-v2-cbor")
+    response_data = {
+        "plans": [
+            {
+                "arn": "arn:aws:arc-region-switch::671107678412:plan/TestPlan:a1b61f",
+                "owner": "671107678412",
+                "name": "TestPlan",
+                "regions": ["us-east-1", "us-east-2"],
+                "recoveryApproach": "activePassive",
+                "primaryRegion": "us-east-1",
+                "version": "1",
+                "updatedAt": datetime(2025, 9, 16, 14, 54, 5, 262000, tzinfo=tzutc()),
+                "executionRole": "arn:aws:iam::671107678412:role/testswitch",
+            }
+        ]
+    }
+
+    result: Response = response_serializer.serialize_to_response(
+        response_data, service.operation_model("ListPlans"), {}, long_uid()
+    )
+    raw_response_body = result.data
     # we also validate its timestamp serialization (with double)
     timestamp_key_index = raw_response_body.find(b"updatedAt")
     timestamp_value_index = timestamp_key_index + len(b"updatedAt")
     # this has been validated with AWS as well, it encodes the timestamp as a double of length 8
     assert (
-        raw_response_body[timestamp_value_index : timestamp_value_index + 8] == b"\xc1\xfbA\xda2W{P"
+        raw_response_body[timestamp_value_index : timestamp_value_index + 8]
+        == b"\xc1\xfbA\xda2^\x83P"
     )
 
 
