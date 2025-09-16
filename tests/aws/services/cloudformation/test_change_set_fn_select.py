@@ -236,3 +236,73 @@ class TestChangeSetFnSelect:
             )
 
         snapshot.match("error", exc_info.value.response)
+
+    @markers.aws.validated
+    def test_nested_select_within_other_intrinsics(self, snapshot, deploy_cfn_template):
+        template = json.dumps(
+            {
+                "Resources": {
+                    "Repo": {
+                        "Type": "AWS::ECR::Repository",
+                    },
+                    "Parameter": {
+                        "Type": "AWS::SSM::Parameter",
+                        "Properties": {
+                            "Type": "String",
+                            "Value": {
+                                "Fn::Join": [
+                                    "",
+                                    [
+                                        {
+                                            "Fn::Select": [
+                                                4,
+                                                {
+                                                    "Fn::Split": [
+                                                        ":",
+                                                        {"Fn::GetAtt": ["Repo", "Arn"]},
+                                                    ]
+                                                },
+                                            ]
+                                        },
+                                        ".dkr.ecr.",
+                                        {
+                                            "Fn::Select": [
+                                                3,
+                                                {
+                                                    "Fn::Split": [
+                                                        ":",
+                                                        {"Fn::GetAtt": ["Repo", "Arn"]},
+                                                    ]
+                                                },
+                                            ]
+                                        },
+                                        ".",
+                                        {"Ref": "AWS::URLSuffix"},
+                                        "/",
+                                        {"Ref": "Repo"},
+                                    ],
+                                ]
+                            },
+                        },
+                    },
+                },
+                "Outputs": {
+                    "RepoName": {"Value": {"Ref": "Repo"}},
+                    "ParameterValue": {
+                        "Value": {
+                            "Fn::GetAtt": ["Parameter", "Value"],
+                        },
+                    },
+                },
+            }
+        )
+        stack = deploy_cfn_template(template=template)
+        snapshot.add_transformer(snapshot.transform.regex(stack.outputs["RepoName"], "<repo-name>"))
+        # the domain name is different between AWS and LocalStack so transform this value out
+        snapshot.add_transformer(
+            snapshot.transform.regex(
+                r"(localhost\.localstack\.cloud(:\d+)?|amazonaws\.com)", "<domain>"
+            )
+        )
+
+        snapshot.match("parameter-value", stack.outputs)
