@@ -1,5 +1,6 @@
 from typing import TypedDict
 
+import moto.core.exceptions
 import pytest
 from botocore.parsers import create_parser
 
@@ -250,9 +251,16 @@ def test_skeleton_e2e_sqs_send_message_not_implemented(api_class, oracle_message
     }
 
 
-def test_dispatch_common_service_exception():
+@pytest.mark.parametrize(
+    "exc_factory",
+    [
+        CommonServiceException,
+        moto.core.exceptions.ServiceException,
+    ],
+)
+def test_dispatch_common_service_exception(exc_factory):
     def delete_queue(_context: RequestContext, _request: ServiceRequest):
-        raise CommonServiceException("NonExistentQueue", "No such queue")
+        raise exc_factory("NonExistentQueue", "No such queue")
 
     table: DispatchTable = {}
     table["DeleteQueue"] = delete_queue
