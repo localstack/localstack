@@ -43,5 +43,14 @@
       "teardown": 0.0,
       "total": 0.14
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_nested_select_within_other_intrinsics": {
+    "last_validated_date": "2025-09-16T10:30:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.95,
+      "call": 12.37,
+      "teardown": 6.51,
+      "total": 19.83
+    }
   }
 }
