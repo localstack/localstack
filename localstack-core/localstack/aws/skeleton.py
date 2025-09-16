@@ -3,6 +3,7 @@ import logging
 from collections.abc import Callable
 from typing import Any, NamedTuple
 
+import moto.core.exceptions
 from botocore import xform_name
 from botocore.model import ServiceModel
 
@@ -151,6 +152,14 @@ class Skeleton:
                 raise NotImplementedError
 
             return self.dispatch_request(serializer, context, instance)
+        except moto.core.exceptions.ServiceException as moto_exc:
+            # Translate Moto ServiceException into native one.
+            # This gracefully handles errors when provider handlers invoke Moto methods directly.
+            exc = CommonServiceException(
+                code=moto_exc.code,
+                message=moto_exc.message,
+            )
+            return self.on_service_exception(serializer, context, exc)
         except ServiceException as e:
             return self.on_service_exception(serializer, context, e)
         except NotImplementedError as e:
