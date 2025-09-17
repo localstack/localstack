@@ -1167,8 +1167,12 @@ class BaseCBORRequestParser(RequestParser, ABC):
         return node
 
     @_text_content
-    def _parse_timestamp(self, _, shape: Shape, node: datetime.datetime, ___) -> datetime.datetime:
-        return node
+    def _parse_timestamp(
+        self, _, shape: Shape, node: datetime.datetime | str, ___
+    ) -> datetime.datetime:
+        if isinstance(node, datetime.datetime):
+            return node
+        return super()._parse_timestamp(_, shape, node, ___)
 
     # This helper method is intended for use when parsing indefinite length items.
     # It does nothing if the next byte is not the break code.  If the next byte is
