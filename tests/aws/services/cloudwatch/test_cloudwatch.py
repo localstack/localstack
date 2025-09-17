@@ -2934,6 +2934,21 @@ class TestCloudwatch:
         snapshot.match("get-metric-statitics", response)
 
 
+class TestCloudWatchMultiProtocol:
+    # TODO: run the whole test suite with all available protocols
+    def test_basic_operations_json_protocol_raw(self):
+        pass
+
+    def test_basic_operations_rpc_v2_cbor_protocol_raw(self):
+        pass
+
+    def test_basic_operations_json_protocol_with_client(self):
+        pass
+
+    def test_basic_operations_rpc_v2_cbor_protocol_with_client(self):
+        pass
+
+
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
     log_events = logs_client.filter_log_events(logGroupName=f"/aws/lambda/{fn_name}")["events"]
     filtered_logs = [event for event in log_events if event["message"].startswith("{")]
