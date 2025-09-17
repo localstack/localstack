@@ -340,12 +340,19 @@ def test_query_parser_pass_str_as_int_raises_error():
 
 
 def _botocore_parser_integration_test(
-    service: str, action: str, headers: dict = None, expected: dict = None, **kwargs
+    *,
+    service: str,
+    action: str,
+    protocol: str = None,
+    headers: dict = None,
+    expected: dict = None,
+    **kwargs,
 ):
     # Load the appropriate service
     service = load_service(service)
+    service_protocol = protocol or service.protocol
     # Use the serializer from botocore to serialize the request params
-    serializer = create_serializer(service.protocol)
+    serializer = create_serializer(service_protocol)
 
     operation_model = service.operation_model(action)
     serialized_request = serializer.serialize_to_request(kwargs, operation_model)
@@ -366,12 +373,12 @@ def _botocore_parser_integration_test(
     # use custom headers (if provided), or headers from serialized request as default
     headers = serialized_request.get("headers") if headers is None else headers
 
-    if service.protocol in ["query", "ec2"]:
+    if service_protocol in ["query", "ec2"]:
         # Serialize the body as query parameter
         body = urlencode(serialized_request["body"])
 
     # Use our parser to parse the serialized body
-    parser = create_parser(service)
+    parser = create_parser(service, service_protocol)
     parsed_operation_model, parsed_request = parser.parse(
         HttpRequest(
             method=serialized_request.get("method") or "GET",
@@ -1440,3 +1447,111 @@ def test_restxml_ignores_get_body():
     assert "Bucket" in parsed_request
     assert parsed_request["Bucket"] == "test-bucket"
     assert parsed_request["Key"] == "foo"
+
+
+def test_smithy_rpc_v2_cbor():
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+    # TODO: test timestamp parsing
+    # example taken from:
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/arc-region-switch/client/create_plan.html
+
+    _botocore_parser_integration_test(
+        service="arc-region-switch",
+        protocol="smithy-rpc-v2-cbor",
+        action="CreatePlan",
+        description="string",
+        workflows=[
+            {
+                "steps": [
+                    {
+                        "name": "string",
+                        "description": "string",
+                        "executionBlockConfiguration": {
+                            "customActionLambdaConfig": {
+                                "timeoutMinutes": 123,
+                                "lambdas": [
+                                    {
+                                        "crossAccountRole": "string",
+                                        "externalId": "string",
+                                        "arn": "string",
+                                    },
+                                ],
+                                "retryIntervalMinutes": 10.0,
+                                "regionToRun": "activatingRegion",
+                                "ungraceful": {"behavior": "skip"},
+                            },
+                        },
+                        "executionBlockType": "CustomActionLambda",
+                    },
+                ],
+                "workflowTargetAction": "activate",
+                "workflowTargetRegion": "string",
+                "workflowDescription": "string",
+            },
+        ],
+        executionRole="string",
+        recoveryTimeObjectiveMinutes=123,
+        associatedAlarms={
+            "string": {
+                "crossAccountRole": "string",
+                "externalId": "string",
+                "resourceIdentifier": "string",
+                "alarmType": "applicationHealth",
+            }
+        },
+        triggers=[
+            {
+                "description": "string",
+                "targetRegion": "string",
+                "action": "activate",
+                "conditions": [
+                    {
+                        "associatedAlarmName": "string",
+                        "condition": "red",
+                    },
+                ],
+                "minDelayMinutesBetweenExecutions": 123,
+            },
+        ],
+        name="string",
+        regions=[
+            "region1",
+            "region2",
+        ],
+        recoveryApproach="activeActive",
+        primaryRegion="string",
+        tags={"string": "string"},
+    )
+
+
+@pytest.mark.parametrize("protocol", ("json", "smithy-rpc-v2-cbor"))
+def test_protocol_selection(protocol):
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+
+    _botocore_parser_integration_test(
+        service="arc-region-switch",
+        protocol=protocol,
+        action="TagResource",
+        arn="string",
+        tags={"string": "string"},
+    )
+
+
+def test_rpcv2_operation_detection_with_prefix():
+    """
+    Every request for the rpcv2Cbor protocol MUST be sent to a URL with the following form:
+    {prefix?}/service/{serviceName}/operation/{operationName}
+    The Smithy RPCv2 CBOR protocol will only use the last four segments of the URL when routing requests.
+    For example, a service could use a v1 prefix in the URL path, which would not affect the operation a request
+    is routed to: `v1/service/FooService/operation/BarOperation`
+    """
+    request = HttpRequest(
+        method="POST",
+        path="/v1/service/ArcRegionSwitch/operation/TagResource",
+        body=b"\xa2carnfstringdtags\xa1fstringfstring",
+    )
+    parser = create_parser(load_service("arc-region-switch"))
+    parsed_operation_model, parsed_request = parser.parse(request)
+    assert parsed_operation_model.name == "TagResource"

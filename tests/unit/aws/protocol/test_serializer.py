@@ -46,7 +46,7 @@ from localstack.aws.protocol.serializer import (
     create_serializer,
 )
 from localstack.aws.spec import load_service
-from localstack.constants import APPLICATION_AMZ_CBOR_1_1
+from localstack.constants import APPLICATION_AMZ_CBOR_1_1, APPLICATION_CBOR
 from localstack.http import Request, Response
 from localstack.utils.common import to_str
 from localstack.utils.strings import long_uid
@@ -55,17 +55,19 @@ _skip_assert = {}
 
 
 def _botocore_serializer_integration_test(
+    *,
     service: str,
     action: str,
     response: dict,
-    status_code=200,
-    expected_response_content: dict = None,
+    status_code: int = 200,
+    expected_response_content: dict | None = None,
+    protocol: str | None = None,
 ) -> dict:
     """
     Performs an integration test for the serializer using botocore as parser.
     It executes the following steps:
     - Load the given service (f.e. "sqs")
-    - Serialize the response with the appropriate serializer from the AWS Serivce Framework
+    - Serialize the response with the appropriate serializer from the AWS Service Framework
     - Parse the serialized response using the botocore parser
     - Checks if the metadata is correct (status code, requestID,...)
     - Checks if the parsed response content is equal to the input to the serializer
@@ -76,14 +78,17 @@ def _botocore_serializer_integration_test(
     :param status_code: Optional - expected status code of the response - defaults to 200
     :param expected_response_content: Optional - if the input data ("response") differs from the actually expected data
                                       (because f.e. it contains None values)
+    :param: protocol: Optional: to specify which protocol to use for the service. If not provided,
+                    fallback to the service's default protocol
     :return: boto-parsed serialized response
     """
 
     # Load the appropriate service
     service = load_service(service)
+    service_protocol = protocol or service.protocol
 
     # Use our serializer to serialize the response
-    response_serializer = create_serializer(service)
+    response_serializer = create_serializer(service, protocol=service_protocol)
     # The serializer changes the incoming dict, therefore copy it before passing it to the serializer
     response_to_parse = copy.deepcopy(response)
     serialized_response = response_serializer.serialize_to_response(
@@ -91,7 +96,7 @@ def _botocore_serializer_integration_test(
     )
 
     # Use the parser from botocore to parse the serialized response
-    response_parser = create_parser(service.protocol)
+    response_parser = create_parser(service_protocol)
     parsed_response = response_parser.parse(
         serialized_response.to_readonly_response_dict(),
         service.operation_model(action).output_shape,
@@ -123,7 +128,7 @@ def _botocore_error_serializer_integration_test(
     status_code: int,
     message: str | None,
     is_sender_fault: bool = False,
-    **additional_error_fields: dict[str, Any],
+    **additional_error_fields: Any,
 ) -> dict:
     """
     Performs an integration test for the error serialization using botocore as parser.
@@ -277,7 +282,9 @@ def test_rest_xml_serializer_cloudfront_with_botocore():
             "FunctionOutput": "string",
         }
     }
-    _botocore_serializer_integration_test("cloudfront", "TestFunction", parameters)
+    _botocore_serializer_integration_test(
+        service="cloudfront", action="TestFunction", response=parameters
+    )
 
 
 def test_rest_xml_serializer_route53_with_botocore():
@@ -290,7 +297,9 @@ def test_rest_xml_serializer_route53_with_botocore():
         },
         "DelegationSet": {"NameServers": ["dns.localhost.localstack.cloud"]},
     }
-    _botocore_serializer_integration_test("route53", "CreateHostedZone", parameters, 201)
+    _botocore_serializer_integration_test(
+        service="route53", action="CreateHostedZone", response=parameters, status_code=201
+    )
 
 
 def test_rest_xml_serializer_s3_with_botocore():
@@ -322,7 +331,9 @@ def test_rest_xml_serializer_s3_with_botocore():
             },
         }
     }
-    _botocore_serializer_integration_test("s3", "GetBucketAnalyticsConfiguration", parameters)
+    _botocore_serializer_integration_test(
+        service="s3", action="GetBucketAnalyticsConfiguration", response=parameters
+    )
 
 
 def test_rest_xml_serializer_s3_2_with_botocore():
@@ -362,7 +373,7 @@ def test_rest_xml_serializer_s3_2_with_botocore():
         "ObjectLockLegalHoldStatus": "ON",
         "StatusCode": 200,
     }
-    _botocore_serializer_integration_test("s3", "GetObject", parameters)
+    _botocore_serializer_integration_test(service="s3", action="GetObject", response=parameters)
 
 
 def test_query_serializer_cloudformation_with_botocore():
@@ -392,7 +403,9 @@ def test_query_serializer_cloudformation_with_botocore():
             "Timestamp": datetime(2015, 1, 1, 23, 59, 59, 6000, tzinfo=tzutc()),
         }
     }
-    _botocore_serializer_integration_test("cloudformation", "DetectStackResourceDrift", parameters)
+    _botocore_serializer_integration_test(
+        service="cloudformation", action="DetectStackResourceDrift", response=parameters
+    )
 
 
 def test_query_serializer_redshift_with_botocore():
@@ -417,11 +430,13 @@ def test_query_serializer_redshift_with_botocore():
             },
         ],
     }
-    _botocore_serializer_integration_test("redshift", "DescribeClusterDbRevisions", parameters)
+    _botocore_serializer_integration_test(
+        service="redshift", action="DescribeClusterDbRevisions", response=parameters
+    )
 
 
 def test_query_serializer_sqs_empty_return_shape_with_botocore():
-    _botocore_serializer_integration_test("sqs", "SetQueueAttributes", {})
+    _botocore_serializer_integration_test(service="sqs", action="SetQueueAttributes", response={})
 
 
 def test_query_serializer_sqs_flattened_list_with_botocore():
@@ -431,7 +446,7 @@ def test_query_serializer_sqs_flattened_list_with_botocore():
             "http://localhost:4566/000000000000/myqueue2",
         ]
     }
-    _botocore_serializer_integration_test("sqs", "ListQueues", response)
+    _botocore_serializer_integration_test(service="sqs", action="ListQueues", response=response)
 
 
 def test_query_serializer_sqs_flattened_map_with_botocore():
@@ -441,7 +456,9 @@ def test_query_serializer_sqs_flattened_map_with_botocore():
             "DelaySeconds": "0",
         }
     }
-    _botocore_serializer_integration_test("sqs", "GetQueueAttributes", response)
+    _botocore_serializer_integration_test(
+        service="sqs", action="GetQueueAttributes", response=response
+    )
 
 
 def test_query_serializer_sqs_flattened_list_map_with_botocore():
@@ -461,7 +478,7 @@ def test_query_serializer_sqs_flattened_list_map_with_botocore():
             }
         ]
     }
-    _botocore_serializer_integration_test("sqs", "ReceiveMessage", response)
+    _botocore_serializer_integration_test(service="sqs", action="ReceiveMessage", response=response)
 
 
 def test_query_serializer_sqs_none_value_in_map():
@@ -478,7 +495,13 @@ def test_query_serializer_sqs_none_value_in_map():
     }
     expected_response = copy.deepcopy(response)
     del expected_response["Messages"][0]["Attributes"]
-    _botocore_serializer_integration_test("sqs", "ReceiveMessage", response, 200, expected_response)
+    _botocore_serializer_integration_test(
+        service="sqs",
+        action="ReceiveMessage",
+        response=response,
+        status_code=200,
+        expected_response_content=expected_response,
+    )
 
 
 def test_query_protocol_error_serialization():
@@ -848,6 +871,43 @@ def test_rest_xml_protocol_error_serialization_with_additional_members():
     )
 
 
+def test_rpc_v2_cbor_protocol_error_serialization():
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = True
+        status_code: int = 404
+
+    exception = _ResourceNotFoundException("Not Found!")
+
+    _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ListPlans",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Not Found!",
+    )
+
+
+def test_rpc_v2_cbor_protocol_error_serialization_default_headers():
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = True
+        status_code: int = 404
+
+    exception = _ResourceNotFoundException("Not Found!")
+    service = load_service("arc-region-switch")
+    response_serializer = create_serializer(service)
+    serialized_response = response_serializer.serialize_error_to_response(
+        exception,
+        service.operation_model("ListPlans"),
+        {},
+        long_uid(),
+    )
+    assert serialized_response.headers["Content-Type"] == APPLICATION_CBOR
+    assert serialized_response.headers["Smithy-Protocol"] == "rpc-v2-cbor"
+
+
 def test_json_protocol_content_type_1_0():
     """AppRunner defines the jsonVersion 1.0, therefore the Content-Type needs to be application/x-amz-json-1.0."""
     service = load_service("apprunner")
@@ -975,7 +1035,9 @@ def test_json_serializer_cognito_with_botocore():
             },
         }
     }
-    _botocore_serializer_integration_test("cognito-idp", "DescribeUserPool", parameters)
+    _botocore_serializer_integration_test(
+        service="cognito-idp", action="DescribeUserPool", response=parameters
+    )
 
 
 def test_json_serializer_date_serialization_with_botocore():
@@ -984,7 +1046,9 @@ def test_json_serializer_date_serialization_with_botocore():
             "LastModifiedDate": datetime(2022, 2, 8, 9, 17, 40, 122939, tzinfo=tzlocal()),
         }
     }
-    _botocore_serializer_integration_test("cognito-idp", "DescribeUserPool", parameters)
+    _botocore_serializer_integration_test(
+        service="cognito-idp", action="DescribeUserPool", response=parameters
+    )
 
 
 def test_restjson_protocol_error_serialization():
@@ -1057,7 +1121,9 @@ def test_restjson_serializer_xray_with_botocore():
         }
     }
 
-    _botocore_serializer_integration_test("xray", "UpdateSamplingRule", parameters)
+    _botocore_serializer_integration_test(
+        service="xray", action="UpdateSamplingRule", response=parameters
+    )
 
 
 def test_restjson_header_target_serialization():
@@ -1093,9 +1159,9 @@ def test_restjson_header_target_serialization():
     }
 
     result = _botocore_serializer_integration_test(
-        "glacier",
-        "InitiateJob",
-        response,
+        service="glacier",
+        action="InitiateJob",
+        response=response,
         status_code=202,
     )
 
@@ -1124,7 +1190,10 @@ def test_restjson_headers_target_serialization():
     # skipping assert here, because the response will contain all HTTP headers (given the nature of "ResponseHeaders"
     # attribute).
     result = _botocore_serializer_integration_test(
-        "dataexchange", "SendApiAsset", response, expected_response_content=_skip_assert
+        service="dataexchange",
+        action="SendApiAsset",
+        response=response,
+        expected_response_content=_skip_assert,
     )
 
     assert result["Body"] == "hello"
@@ -1140,9 +1209,9 @@ def test_restjson_headers_target_serialization():
 
 def test_restjson_statuscode_target_serialization():
     _botocore_serializer_integration_test(
-        "lambda",
-        "Invoke",
-        {
+        service="lambda",
+        action="Invoke",
+        response={
             "StatusCode": 203,
             "LogResult": "Log Message!",
             "ExecutedVersion": "Latest",
@@ -1184,9 +1253,9 @@ def test_restjson_payload_serialization():
     }
 
     result = _botocore_serializer_integration_test(
-        "appconfig",
-        "GetConfiguration",
-        response,
+        service="appconfig",
+        action="GetConfiguration",
+        response=response,
         status_code=200,
     )
     headers = result["ResponseMetadata"]["HTTPHeaders"]
@@ -1208,7 +1277,11 @@ def test_restjson_none_serialization():
         "DeadLetterConfig": {},
     }
     _botocore_serializer_integration_test(
-        "lambda", "CreateFunction", parameters, status_code=201, expected_response_content=expected
+        service="lambda",
+        action="CreateFunction",
+        response=parameters,
+        status_code=201,
+        expected_response_content=expected,
     )
     exception = CommonServiceException("CodeVerificationFailedException", None)
     _botocore_error_serializer_integration_test(
@@ -1224,18 +1297,27 @@ def test_restjson_none_serialization():
 def test_restxml_none_serialization():
     # Structure = None
     _botocore_serializer_integration_test(
-        "route53", "ListHostedZonesByName", {}, expected_response_content={}
+        service="route53",
+        action="ListHostedZonesByName",
+        response={},
+        expected_response_content={},
     )
     # Structure Value = None
     parameters = {"HostedZones": None}
     _botocore_serializer_integration_test(
-        "route53", "ListHostedZonesByName", parameters, expected_response_content={}
+        service="route53",
+        action="ListHostedZonesByName",
+        response=parameters,
+        expected_response_content={},
     )
     # List Value = None
     parameters = {"HostedZones": [None]}
     expected = {"HostedZones": []}
     _botocore_serializer_integration_test(
-        "route53", "ListHostedZonesByName", parameters, expected_response_content=expected
+        service="route53",
+        action="ListHostedZonesByName",
+        response=parameters,
+        expected_response_content=expected,
     )
     # Exception without a message
     exception = CommonServiceException("NoSuchKeySigningKey", None)
@@ -1256,7 +1338,9 @@ def test_restjson_int_header_serialization():
         "NextPollConfigurationToken": "abcdefg",
         "NextPollIntervalInSeconds": 42,
     }
-    _botocore_serializer_integration_test("appconfigdata", "GetLatestConfiguration", response)
+    _botocore_serializer_integration_test(
+        service="appconfigdata", action="GetLatestConfiguration", response=response
+    )
 
 
 def test_ec2_serializer_ec2_with_botocore():
@@ -1291,11 +1375,13 @@ def test_ec2_serializer_ec2_with_botocore():
         }
     }
 
-    _botocore_serializer_integration_test("ec2", "CreateInstanceEventWindow", parameters)
+    _botocore_serializer_integration_test(
+        service="ec2", action="CreateInstanceEventWindow", response=parameters
+    )
 
 
 def test_ec2_serializer_ec2_with_empty_response():
-    _botocore_serializer_integration_test("ec2", "CreateTags", {})
+    _botocore_serializer_integration_test(service="ec2", action="CreateTags", response={})
 
 
 def test_ec2_protocol_custom_error_serialization():
@@ -1344,15 +1430,17 @@ def test_restxml_s3_errors_have_error_root_element():
 
 
 def test_restxml_without_output_shape():
-    _botocore_serializer_integration_test("cloudfront", "DeleteDistribution", {}, status_code=204)
+    _botocore_serializer_integration_test(
+        service="cloudfront", action="DeleteDistribution", response={}, status_code=204
+    )
 
 
 def test_restxml_header_location():
     """Tests fields with the location trait "header" for rest-xml."""
     _botocore_serializer_integration_test(
-        "cloudfront",
-        "CreateCloudFrontOriginAccessIdentity",
-        {
+        service="cloudfront",
+        action="CreateCloudFrontOriginAccessIdentity",
+        response={
             "Location": "location-header-field",
             "ETag": "location-etag-field",
             "CloudFrontOriginAccessIdentity": {},
@@ -1368,15 +1456,15 @@ def test_restxml_header_location():
         "Metadata": {"string": "string"},
         "StatusCode": 200,
     }
-    _botocore_serializer_integration_test("s3", "GetObject", parameters)
+    _botocore_serializer_integration_test(service="s3", action="GetObject", response=parameters)
 
 
 def test_restxml_headers_location():
     """Tests fields with the location trait "headers" for rest-xml."""
     _botocore_serializer_integration_test(
-        "s3",
-        "HeadObject",
-        {
+        service="s3",
+        action="HeadObject",
+        response={
             "DeleteMarker": False,
             "Metadata": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
             "ContentType": "application/octet-stream",
@@ -1390,16 +1478,18 @@ def test_restxml_headers_location():
 def test_restjson_header_location():
     """Tests fields with the location trait "header" for rest-xml."""
     _botocore_serializer_integration_test(
-        "ebs", "GetSnapshotBlock", {"BlockData": "binary-data", "DataLength": 15}
+        service="ebs",
+        action="GetSnapshotBlock",
+        response={"BlockData": "binary-data", "DataLength": 15},
     )
 
 
 def test_restjson_headers_location():
     """Tests fields with the location trait "headers" for rest-json."""
     response = _botocore_serializer_integration_test(
-        "dataexchange",
-        "SendApiAsset",
-        {
+        service="dataexchange",
+        action="SendApiAsset",
+        response={
             "ResponseHeaders": {"headers_key1": "headers_value1", "headers_key2": "headers_value2"},
         },
         expected_response_content=_skip_assert,
@@ -1412,6 +1502,125 @@ def test_restjson_headers_location():
     assert "headers_key2" in response["ResponseHeaders"]
     assert "headers_value1" == response["ResponseHeaders"]["headers_key1"]
     assert "headers_value2" == response["ResponseHeaders"]["headers_key2"]
+
+
+def test_rpc_v2_cbor_serializer_arc_region_switch_with_botocore():
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+    # example taken from:
+    # https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/arc-region-switch/client/list_plans.html
+    parameters = {
+        "plans": [
+            {
+                "arn": "string",
+                "owner": "string",
+                "name": "string",
+                "regions": [
+                    "string",
+                ],
+                "recoveryApproach": "activeActive",
+                "primaryRegion": "string",
+                "version": "string",
+                # validated with AWS, it returns millisecond precision
+                "updatedAt": datetime(2015, 1, 1, 23, 59, 59, microsecond=262000, tzinfo=tzlocal()),
+                "description": "string",
+                "executionRole": "string",
+                "activePlanExecution": "string",
+                "recoveryTimeObjectiveMinutes": 123,
+            },
+        ],
+        "nextToken": "string",
+    }
+
+    _botocore_serializer_integration_test(
+        service="arc-region-switch",
+        action="ListPlans",
+        response=parameters,
+        protocol="smithy-rpc-v2-cbor",
+    )
+
+
+def test_rpc_v2_undefined_map_and_list_serialization():
+    # they are two types of map/list in CBOR, indefinite length types and "defined" ones:
+    # You'd use \xbf to indicate a map with indefinite length, then \xff to indicate the end of the map.
+    # You can also use \xa4 to indicate a map with exactly 4 things in it, so \xff is not required at the end.
+    # The Smithy specs are asking to follow the CBOR specs and use defined length structures, but AWS is returning
+    # undefined one with `\xbf` and `\xff`
+    service = load_service("arc-region-switch")
+    response_serializer = create_serializer(service, protocol="smithy-rpc-v2-cbor")
+    response_data = {
+        "plans": [
+            {
+                "arn": "arn:aws:arc-region-switch::671107678412:plan/TestPlan:a1b61f",
+                "owner": "671107678412",
+                "name": "TestPlan",
+                "regions": ["us-east-1", "us-east-2"],
+                "recoveryApproach": "activePassive",
+                "primaryRegion": "us-east-1",
+                "version": "1",
+                "executionRole": "arn:aws:iam::671107678412:role/testswitch",
+            }
+        ]
+    }
+
+    result: Response = response_serializer.serialize_to_response(
+        response_data, service.operation_model("ListPlans"), {}, long_uid()
+    )
+    assert result is not None
+    assert result.content_type == "application/cbor"
+    raw_response_body = result.data
+    # this has been validated with AWS, AWS uses undefined length CBOR map and list
+    assert raw_response_body[:10] == b"\xbfeplans\x9f\xbfc"
+    assert raw_response_body[-3:] == b"\xff\xff\xff"
+
+
+def test_rpc_v2_timestamp_serialization():
+    service = load_service("arc-region-switch")
+    response_serializer = create_serializer(service, protocol="smithy-rpc-v2-cbor")
+    response_data = {
+        "plans": [
+            {
+                "arn": "arn:aws:arc-region-switch::671107678412:plan/TestPlan:a1b61f",
+                "owner": "671107678412",
+                "name": "TestPlan",
+                "regions": ["us-east-1", "us-east-2"],
+                "recoveryApproach": "activePassive",
+                "primaryRegion": "us-east-1",
+                "version": "1",
+                "updatedAt": datetime(2025, 9, 16, 14, 54, 5, 262000, tzinfo=tzutc()),
+                "executionRole": "arn:aws:iam::671107678412:role/testswitch",
+            }
+        ]
+    }
+
+    result: Response = response_serializer.serialize_to_response(
+        response_data, service.operation_model("ListPlans"), {}, long_uid()
+    )
+    raw_response_body = result.data
+    # we also validate its timestamp serialization (with double)
+    timestamp_key_index = raw_response_body.find(b"updatedAt")
+    timestamp_value_index = timestamp_key_index + len(b"updatedAt")
+    # this has been validated with AWS as well, it encodes the timestamp as a double of length 8
+    assert (
+        raw_response_body[timestamp_value_index : timestamp_value_index + 8]
+        == b"\xc1\xfbA\xda2^\x83P"
+    )
+
+
+@pytest.mark.parametrize("protocol", ("json", "smithy-rpc-v2-cbor"))
+def test_protocol_selection(protocol):
+    # we are using a service that LocalStack does not implement yet because it implements `smithy-rpc-v2-cbor`
+    # we can replace this service by CloudWatch once it has support in Botocore
+    parameters = {
+        "resourceTags": {"string": "string"},
+    }
+
+    _botocore_serializer_integration_test(
+        service="arc-region-switch",
+        protocol=protocol,
+        action="ListTagsForResource",
+        response=parameters,
+    )
 
 
 def _iterable_to_stream(iterable, buffer_size=io.DEFAULT_BUFFER_SIZE):
@@ -1507,9 +1716,9 @@ def test_all_non_existing_key():
     """Tests the different protocols to allow non-existing keys in structures / dicts."""
     # query
     _botocore_serializer_integration_test(
-        "cloudformation",
-        "DetectStackResourceDrift",
-        {
+        service="cloudformation",
+        action="DetectStackResourceDrift",
+        response={
             "StackResourceDrift": {
                 "StackId": "arn:aws:cloudformation:us-west-2:123456789012:stack/MyStack/d0a825a0-e4cd-xmpl-b9fb-061c69e99204",
                 "unknown": {"foo": "bar"},
@@ -1523,9 +1732,9 @@ def test_all_non_existing_key():
     )
     # ec2
     _botocore_serializer_integration_test(
-        "ec2",
-        "CreateInstanceEventWindow",
-        {
+        service="ec2",
+        action="CreateInstanceEventWindow",
+        response={
             "InstanceEventWindow": {
                 "InstanceEventWindowId": "string",
                 "unknown": {"foo": "bar"},
@@ -1540,9 +1749,9 @@ def test_all_non_existing_key():
     )
     # json
     _botocore_serializer_integration_test(
-        "cognito-idp",
-        "DescribeUserPool",
-        {
+        service="cognito-idp",
+        action="DescribeUserPool",
+        response={
             "UserPool": {
                 "Id": "string",
                 "Unknown": "Ignored",
@@ -1556,9 +1765,9 @@ def test_all_non_existing_key():
     )
     # rest-json
     _botocore_serializer_integration_test(
-        "xray",
-        "UpdateSamplingRule",
-        {
+        service="xray",
+        action="UpdateSamplingRule",
+        response={
             "SamplingRuleRecord": {
                 "SamplingRule": {
                     "ResourceARN": "123456789001234567890",
@@ -1576,9 +1785,9 @@ def test_all_non_existing_key():
     )
     # rest-xml
     _botocore_serializer_integration_test(
-        "cloudfront",
-        "TestFunction",
-        {
+        service="cloudfront",
+        action="TestFunction",
+        response={
             "TestResult": {
                 "FunctionErrorMessage": "string",
             },
@@ -1726,7 +1935,7 @@ def test_restxml_streaming_payload(payload):
         "Metadata": {},
         "StatusCode": 200,
     }
-    _botocore_serializer_integration_test("s3", "GetObject", parameters)
+    _botocore_serializer_integration_test(service="s3", action="GetObject", response=parameters)
 
 
 @pytest.mark.parametrize(
@@ -1742,9 +1951,9 @@ def test_restxml_streaming_payload(payload):
 def test_restjson_streaming_payload(payload):
     """See docs for ``test_restxml_streaming_payload``."""
     _botocore_serializer_integration_test(
-        "lambda",
-        "Invoke",
-        {
+        service="lambda",
+        action="Invoke",
+        response={
             "StatusCode": 200,
             "Payload": payload,
         },

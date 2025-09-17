@@ -19,19 +19,18 @@ The class hierarchy looks as follows:
                           │RequestParser│
                           └─────────────┘
                              ▲   ▲   ▲
-           ┌─────────────────┘   │   └────────────────────┬───────────────────────┐
-  ┌────────┴─────────┐ ┌─────────┴───────────┐ ┌──────────┴──────────┐ ┌──────────┴──────────┐
-  │QueryRequestParser│ │BaseRestRequestParser│ │BaseJSONRequestParser│ │BaseCBORRequestParser│
-  └──────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘
-          ▲                    ▲            ▲   ▲           ▲             ▲
-  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │  ┌────────┴────────┐    │
-  │EC2RequestParser│ │RestXMLRequestParser│ │   │  │JSONRequestParser│    │
-  └────────────────┘ └────────────────────┘ │   │  └─────────────────┘    │
+           ┌─────────────────┘   │   └────────────────────┬───────────────────────┬───────────────────────┐
+  ┌────────┴─────────┐ ┌─────────┴───────────┐ ┌──────────┴──────────┐ ┌──────────┴──────────┐ ┌──────────┴───────────┐
+  │QueryRequestParser│ │BaseRestRequestParser│ │BaseJSONRequestParser│ │BaseCBORRequestParser│ │BaseRpcV2RequestParser│
+  └──────────────────┘ └─────────────────────┘ └─────────────────────┘ └─────────────────────┘ └──────────────────────┘
+          ▲                    ▲            ▲   ▲           ▲             ▲             ▲             ▲
+  ┌───────┴────────┐ ┌─────────┴──────────┐ │   │  ┌────────┴────────┐    │         ┌───┴─────────────┴────┐
+  │EC2RequestParser│ │RestXMLRequestParser│ │   │  │JSONRequestParser│    │         │RpcV2CBORRequestParser│
+  └────────────────┘ └────────────────────┘ │   │  └─────────────────┘    │         └──────────────────────┘
                            ┌────────────────┴───┴┐                 ▲      │
                            │RestJSONRequestParser│             ┌───┴──────┴──────┐
                            └─────────────────────┘             │CBORRequestParser│
                                                                └─────────────────┘
-
 ::
 
 The ``RequestParser`` contains the logic that is used among all the
@@ -46,6 +45,8 @@ The classes are structured as follows:
   which is shared among all different protocols.
 * The ``BaseRestRequestParser`` contains the logic for the REST
   protocol specifics (i.e. specific HTTP metadata parsing).
+* The ``BaseRpcV2RequestParser`` contains the logic for the RPC v2
+  protocol specifics (special path routing, no logic about body decoding)
 * The ``BaseJSONRequestParser`` contains the logic for the JSON body
   parsing.
 * The ``BaseCBORRequestParser`` contains the logic for the CBOR body
@@ -56,8 +57,9 @@ The classes are structured as follows:
 * The ``CBORRequestParser`` inherits the ``json``-protocol specific
   logic from the ``JSONRequestParser`` and the CBOR body parsing
   from the ``BaseCBORRequestParser``.
-* The ``QueryRequestParser``, ``RestXMLRequestParser`` and
-``JSONRequestParser`` have a conventional inheritance structure.
+* The ``QueryRequestParser``, ``RestXMLRequestParser``,
+  ``RpcV2CBORRequestParser`` and ``JSONRequestParser`` have a
+  conventional inheritance structure.
 
 The services and their protocols are defined by using AWS's Smithy
 (a language to define services in a - somewhat - protocol-agnostic
@@ -99,6 +101,7 @@ from cbor2._decoder import loads as cbor2_loads
 from werkzeug.exceptions import BadRequest, NotFound
 
 from localstack.aws.protocol.op_router import RestServiceOperationRouter
+from localstack.aws.spec import ProtocolName
 from localstack.http import Request
 
 
@@ -1200,7 +1203,7 @@ class CBORRequestParser(BaseCBORRequestParser, JSONRequestParser):
     it for now.
     """
 
-    # timestamp format is different from traditional CBOR
+    # timestamp format is different from traditional CBOR, and is encoded as a milliseconds integer
     TIMESTAMP_FORMAT = "unixtimestampmillis"
 
     def _do_parse(
@@ -1242,6 +1245,132 @@ class CBORRequestParser(BaseCBORRequestParser, JSONRequestParser):
     ) -> datetime.datetime:
         # TODO: remove once CBOR support has been removed from `JSONRequestParser`
         return super()._parse_timestamp(request, shape, node, uri_params)
+
+
+class BaseRpcV2RequestParser(RequestParser):
+    """
+    The ``BaseRpcV2RequestParser`` is the base class for all RPC V2-based AWS service protocols.
+    This base class handles the routing of the request, which is specific based on the path.
+    The body decoding is done in the respective subclasses.
+    """
+
+    @_handle_exceptions
+    def parse(self, request: Request) -> tuple[OperationModel, Any]:
+        # see https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+        if request.method != "POST":
+            raise ProtocolParserError("RPC v2 only accepts POST requests.")
+
+        headers = request.headers
+        if "X-Amz-Target" in headers or "X-Amzn-Target" in headers:
+            raise ProtocolParserError(
+                "RPC v2 does not accept 'X-Amz-Target' or 'X-Amzn-Target'. "
+                "Such requests are rejected for security reasons."
+            )
+        # TODO: add this special path handling to the ServiceNameParser to allow RPC v2 service to be properly extracted
+        #  path = '/service/{service_name}/operation/{operation_name}'
+        # The Smithy RPCv2 CBOR protocol will only use the last four segments of the URL when routing requests.
+        rpc_v2_params = request.path.lstrip("/").split("/")
+        if len(rpc_v2_params) < 4 or not (
+            operation := self.service.operation_model(rpc_v2_params[-1])
+        ):
+            raise OperationNotFoundParserError(
+                f"Unable to find operation for request to service "
+                f"{self.service.service_name}: {request.method} {request.path}"
+            )
+
+        # there are no URI params in RPC v2
+        uri_params = {}
+        shape: StructureShape = operation.input_shape
+        final_parsed = self._do_parse(request, shape, uri_params)
+        return operation, final_parsed
+
+    @_handle_exceptions
+    def _do_parse(
+        self, request: Request, shape: Shape, uri_params: Mapping[str, Any] = None
+    ) -> dict[str, Any]:
+        parsed = {}
+        if shape is not None:
+            event_stream_name = shape.event_stream_name
+            if event_stream_name:
+                parsed = self._handle_event_stream(request, shape, event_stream_name)
+            else:
+                parsed = {}
+                self._parse_payload(request, shape, parsed, uri_params)
+
+        return parsed
+
+    def _handle_event_stream(self, request: Request, shape: Shape, event_name: str):
+        # TODO handle event streams
+        raise NotImplementedError
+
+    def _parse_structure(
+        self,
+        request: Request,
+        shape: StructureShape,
+        node: dict | None,
+        uri_params: Mapping[str, Any] = None,
+    ):
+        if shape.is_document_type:
+            final_parsed = node
+        else:
+            if node is None:
+                # If the comes across the wire as "null" (None in python),
+                # we should be returning this unchanged, instead of as an
+                # empty dict.
+                return None
+            final_parsed = {}
+            members = shape.members
+            if shape.is_tagged_union:
+                cleaned_value = node.copy()
+                cleaned_value.pop("__type", None)
+                cleaned_value = {k: v for k, v in cleaned_value.items() if v is not None}
+                if len(cleaned_value) != 1:
+                    raise ProtocolParserError(
+                        f"Invalid service response: {shape.name} must have one and only one member set."
+                    )
+
+            for member_name, member_shape in members.items():
+                member_value = node.get(member_name)
+                if member_value is not None:
+                    final_parsed[member_name] = self._parse_shape(
+                        request, member_shape, member_value, uri_params
+                    )
+
+        return final_parsed
+
+    def _parse_payload(
+        self,
+        request: Request,
+        shape: Shape,
+        final_parsed: dict,
+        uri_params: Mapping[str, Any] = None,
+    ) -> None:
+        original_parsed = self._initial_body_parse(request)
+        body_parsed = self._parse_shape(request, shape, original_parsed, uri_params)
+        final_parsed.update(body_parsed)
+
+    def _initial_body_parse(self, request: Request):
+        # This method should do the initial parsing of the
+        # body.  We still need to walk the parsed body in order
+        # to convert types, but this method will do the first round
+        # of parsing.
+        raise NotImplementedError("_initial_body_parse")
+
+
+class RpcV2CBORRequestParser(BaseRpcV2RequestParser, BaseCBORRequestParser):
+    """
+    The ``RpcV2CBORRequestParser`` is responsible for parsing incoming requests for services which use the
+    ``rpc-v2-cbor`` protocol. The requests for these services encode all of their parameters as CBOR in the
+    request body.
+    """
+
+    # TODO: investigate datetime format for RpcV2CBOR protocol, which might be different than Kinesis CBOR
+    def _initial_body_parse(self, request: Request):
+        body_contents = request.data
+        if body_contents == b"":
+            return body_contents
+        body_contents_stream = self.get_peekable_stream_from_bytes(body_contents)
+        return self.parse_data_item(body_contents_stream)
 
 
 class EC2RequestParser(QueryRequestParser):
@@ -1422,11 +1551,12 @@ class SQSQueryRequestParser(QueryRequestParser):
 
 
 @functools.cache
-def create_parser(service: ServiceModel) -> RequestParser:
+def create_parser(service: ServiceModel, protocol: ProtocolName | None = None) -> RequestParser:
     """
     Creates the right parser for the given service model.
 
     :param service: to create the parser for
+    :param protocol: the protocol for the parser. If not provided, fallback to the service's default protocol
     :return: RequestParser which can handle the protocol of the service
     """
     # Unfortunately, some services show subtle differences in their parsing or operation detection behavior, even though
@@ -1444,17 +1574,22 @@ def create_parser(service: ServiceModel) -> RequestParser:
         "rest-json": RestJSONRequestParser,
         "rest-xml": RestXMLRequestParser,
         "ec2": EC2RequestParser,
+        "smithy-rpc-v2-cbor": RpcV2CBORRequestParser,
         # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
         #  CBOR handling from JSONRequestParser
         # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
 
+    # TODO: do we want to add a check if the user-defined protocol is part of the available ones in the ServiceModel?
+    #  or should it be checked once
+    service_protocol = protocol or service.protocol
+
     # Try to select a service- and protocol-specific parser implementation
     if (
         service.service_name in service_specific_parsers
-        and service.protocol in service_specific_parsers[service.service_name]
+        and service_protocol in service_specific_parsers[service.service_name]
     ):
-        return service_specific_parsers[service.service_name][service.protocol](service)
+        return service_specific_parsers[service.service_name][service_protocol](service)
     else:
         # Otherwise, pick the protocol-specific parser for the protocol of the service
-        return protocol_specific_parsers[service.protocol](service)
+        return protocol_specific_parsers[service_protocol](service)
