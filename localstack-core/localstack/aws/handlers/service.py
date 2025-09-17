@@ -9,8 +9,8 @@ from botocore.model import OperationModel, ServiceModel
 
 from localstack import config
 from localstack.http import Response
-from localstack.utils.coverage_docs import get_coverage_link_for_service
 
+from ...utils.coverage_docs import get_coverage_link_for_service
 from ..api import CommonServiceException, RequestContext, ServiceException
 from ..api.core import ServiceOperation
 from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, HandlerChain
@@ -176,8 +176,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
             action_name = operation.name
             exception_message: str | None = exception.args[0] if exception.args else None
             message = exception_message or get_coverage_link_for_service(service_name, action_name)
-            LOG.info(message)
             error = CommonServiceException("InternalFailure", message, status_code=501)
+            LOG.info(message)
             context.service_exception = error
 
         elif not isinstance(exception, ServiceException):
