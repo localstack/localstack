@@ -445,7 +445,7 @@ class Resolver(DnsServerProtocol):
                 return True
         return False
 
-    def _find_matching_aliases(self, question: DNSQuestion) -> list[AliasTarget] | None :
+    def _find_matching_aliases(self, question: DNSQuestion) -> list[AliasTarget] | None:
         """
         Find aliases matching the question, supporting wildcards.
         """

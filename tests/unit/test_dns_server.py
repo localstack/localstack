@@ -139,11 +139,9 @@ class TestDNSServer:
 
     def test_dns_server_resolves_alias_wildcards(self, dns_server, query_dns):
         """Check if server resolves aliases with wildcards"""
-        dns_server.add_host(
-            "example.org", TargetRecord("1.1.1.1", RecordType.A)
-        )
+        dns_server.add_host("example.org", TargetRecord("1.1.1.1", RecordType.A))
         answer = query_dns("subdomain1.example.org", "A")
-        assert len(answer.answer) is 0
+        assert len(answer.answer) == 0
 
         dns_server.add_alias(
             source_name="*.example.org",
