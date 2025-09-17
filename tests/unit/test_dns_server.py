@@ -137,6 +137,20 @@ class TestDNSServer:
         assert answer.answer
         assert "123.123.123.123" in answer.to_text()
 
+    def test_dns_server_resolves_alias_wildcards(self, dns_server, query_dns):
+        """Check if server resolves aliases with wildcards"""
+        dns_server.add_host(
+            "example.org", TargetRecord("1.1.1.1", RecordType.A)
+        )
+        dns_server.add_alias(
+            source_name="*.example.org",
+            record_type=RecordType.A,
+            target=AliasTarget(target="example.org"),
+        )
+        answer = query_dns("something.example.org", "A")
+        assert answer.answer
+        assert "1.1.1.1" in answer.to_text()
+
     def test_overriding_with_dns_resolve_ip(self, dns_server, query_dns, monkeypatch):
         monkeypatch.setattr(config, "DNS_RESOLVE_IP", "2.2.2.2")
 
