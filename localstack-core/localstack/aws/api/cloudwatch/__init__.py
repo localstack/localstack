@@ -218,7 +218,7 @@ class ConcurrentModificationException(ServiceException):
 class ConflictException(ServiceException):
     code: str = "ConflictException"
     sender_fault: bool = False
-    status_code: int = 400
+    status_code: int = 409
 
 
 class DashboardValidationMessage(TypedDict, total=False):
