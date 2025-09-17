@@ -294,23 +294,38 @@ def test_endpoint_prefix_based_routing_for_sqs():
 
 
 def test_multi_protocols_detection():
-    # test without content type
-    detected_service_model = determine_aws_service_model(
-        Request(method="GET", path="/", headers={"Host": "sqs.localhost.localstack.cloud"})
+    rpc_v2_request = Request(
+        method="POST",
+        path="/service/ArcRegionSwitch/operation/ListPlans",
+        headers={
+            "Host": "localhost.localstack.cloud",
+            "Smithy-Protocol": "rpc-v2-cbor",
+            "Content-Type": "application/cbor",
+        },
     )
-    assert detected_service_model.service_name == "sqs"
-    assert detected_service_model.protocol == "query"
+
+    detected_service_model = determine_aws_service_model(rpc_v2_request)
+    assert detected_service_model.service_name == "arc-region-switch"
+    assert detected_service_model.protocol == "smithy-rpc-v2-cbor"
+
+    detected_protocol = determine_aws_protocol(rpc_v2_request, detected_service_model)
+    assert detected_protocol == "smithy-rpc-v2-cbor"
 
     # test explicitly with JSON
-    detected_service_model = determine_aws_service_model(
-        Request(
-            method="GET",
-            path="/",
-            headers={
-                "Host": "sqs.localhost.localstack.cloud",
-                "Content-Type": "application/x-amz-json-1.0",
-            },
-        )
+    json_request = Request(
+        method="POST",
+        path="/",
+        headers={
+            "Host": "localhost.localstack.cloud",
+            "X-Amz-Target": "ArcRegionSwitch.ListPlans",
+            "Content-Type": "application/x-amz-json-1.0",
+        },
     )
-    assert detected_service_model.service_name == "sqs"
-    assert detected_service_model.protocol == "json"
+
+    detected_service_model = determine_aws_service_model(json_request)
+    assert detected_service_model.service_name == "arc-region-switch"
+    # the default service model protocol is still RPC v2 CBOR
+    assert detected_service_model.protocol == "smithy-rpc-v2-cbor"
+
+    detected_protocol = determine_aws_protocol(json_request, detected_service_model)
+    assert detected_protocol == "json"

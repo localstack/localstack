@@ -2304,7 +2304,7 @@ def aws_response_serializer(
     def _decorate(fn):
         service_model = load_service(service_name, protocol=protocol)
         operation_model = service_model.operation_model(operation)
-        serializer = create_serializer(service_model)
+        serializer = create_serializer(service_model, protocol=protocol)
 
         def _proxy(*args, **kwargs) -> WerkzeugResponse:
             # extract request from function invocation (decorator can be used for methods as well as for functions).

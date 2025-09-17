@@ -66,7 +66,7 @@ class ServiceRequestParser(Handler):
         return self.parse_and_enrich(context)
 
     def parse_and_enrich(self, context: RequestContext):
-        parser = create_parser(context.service)
+        parser = create_parser(context.service, context.protocol)
         operation, instance = parser.parse(context.request)
 
         # enrich context
@@ -140,7 +140,7 @@ class ServiceRequestRouter(Handler):
         operation_name = operation.name
         message = f"no handler for operation '{operation_name}' on service '{service_name}'"
         error = CommonServiceException("InternalFailure", message, status_code=501)
-        serializer = create_serializer(context.service)
+        serializer = create_serializer(context.service, context.protocol)
         return serializer.serialize_error_to_response(
             error, operation, context.request.headers, context.request_id
         )
@@ -212,7 +212,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             ).with_traceback(exception.__traceback__)
             context.service_exception = error
 
-        serializer = create_serializer(context.service)  # TODO: serializer cache
+        serializer = create_serializer(context.service, context.protocol)
         return serializer.serialize_error_to_response(
             error, operation, context.request.headers, context.request_id
         )

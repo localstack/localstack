@@ -130,14 +130,16 @@ class Skeleton:
             self.dispatch_table = create_dispatch_table(implementation)
 
     def invoke(self, context: RequestContext) -> Response:
-        serializer = create_serializer(context.service)
+        serializer = create_serializer(context.service, context.protocol)
 
         if context.operation and context.service_request:
             # if the parsed request is already set in the context, re-use them
             operation, instance = context.operation, context.service_request
         else:
             # otherwise, parse the incoming HTTPRequest
-            operation, instance = create_parser(context.service).parse(context.request)
+            operation, instance = create_parser(context.service, context.protocol).parse(
+                context.request
+            )
             context.operation = operation
 
         try:
