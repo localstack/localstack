@@ -446,9 +446,15 @@ class Resolver(DnsServerProtocol):
         return False
 
     def _find_matching_aliases(self, question: DNSQuestion) -> list[AliasTarget] | None :
-        key = (DNSLabel(to_bytes(question.qname)), RecordType[QTYPE[question.qtype]])
-        # check if we have aliases defined for our given qname/qtype pair
-        return self.aliases.get(key)
+        """
+        Find aliases matching the question, supporting wildcards.
+        """
+        qlabel = DNSLabel(to_bytes(question.qname))
+        qtype = RecordType[QTYPE[question.qtype]]
+        for (label, rtype), targets in self.aliases.items():
+            if rtype == qtype and qlabel.matchWildcard(label):
+                return targets
+        return None
 
     def _resolve_alias(
         self, request: DNSRecord, reply: DNSRecord, client_address: ClientAddress
