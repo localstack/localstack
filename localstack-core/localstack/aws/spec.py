@@ -115,8 +115,6 @@ def load_service(
     :raises: UnknownServiceProtocolError if the specific protocol of the service cannot be found
     """
     service_description = loader.load_service_model(service, "service-2", version)
-    print(f"{service_description=}")
-    # TODO: look at this and verify it works!
     service_metadata = service_description.get("metadata", {})
     service_protocols = {service_metadata.get("protocol")}
     if protocols := service_metadata.get("protocols"):
