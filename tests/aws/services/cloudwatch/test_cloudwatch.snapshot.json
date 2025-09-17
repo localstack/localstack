@@ -2264,5 +2264,122 @@
         "StateValue": "ALARM"
       }
     }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[json]": {
+    "recorded-date": "17-09-2025, 21:25:31",
+    "recorded-content": {
+      "describe-alarms": {
+        "CompositeAlarms": [],
+        "LogAlarms": [],
+        "MetricAlarms": []
+      },
+      "get-metric-data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "some",
+            "Label": "<label:1>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              41.0
+            ]
+          },
+          {
+            "Id": "part",
+            "Label": "<label:2>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              23.0
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[smithy-rpc-v2-cbor]": {
+    "recorded-date": "17-09-2025, 21:25:34",
+    "recorded-content": {
+      "describe-alarms": {
+        "CompositeAlarms": [],
+        "LogAlarms": [],
+        "MetricAlarms": []
+      },
+      "get-metric-data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "some",
+            "Label": "<label:1>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              41.0
+            ]
+          },
+          {
+            "Id": "part",
+            "Label": "<label:2>",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              23.0
+            ]
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[query]": {
+    "recorded-date": "17-09-2025, 21:25:37",
+    "recorded-content": {
+      "describe-alarms": {
+        "DescribeAlarmsResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "DescribeAlarmsResult": {
+            "CompositeAlarms": null,
+            "LogAlarms": null,
+            "MetricAlarms": null
+          },
+          "ResponseMetadata": {
+            "RequestId": "<uuid:1>"
+          }
+        }
+      },
+      "get-metric-data": {
+        "GetMetricDataResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "GetMetricDataResult": {
+            "Messages": null,
+            "MetricDataResults": {
+              "member": [
+                {
+                  "Id": "some",
+                  "Label": "<label:1>",
+                  "StatusCode": "Complete",
+                  "Timestamps": "timestamp",
+                  "Values": {
+                    "member": "41.0"
+                  }
+                },
+                {
+                  "Id": "part",
+                  "Label": "<label:2>",
+                  "StatusCode": "Complete",
+                  "Timestamps": "timestamp",
+                  "Values": {
+                    "member": "23.0"
+                  }
+                }
+              ]
+            }
+          },
+          "ResponseMetadata": {
+            "RequestId": "<uuid:2>"
+          }
+        }
+      }
+    }
   }
 }

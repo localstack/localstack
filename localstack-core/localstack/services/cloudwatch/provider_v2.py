@@ -280,7 +280,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             timestamp_value_dicts = [
                 {
                     "Timestamp": timestamp,
-                    "Value": value,
+                    "Value": float(value),
                 }
                 for timestamp, value in zip(timestamps, values, strict=False)
             ]
