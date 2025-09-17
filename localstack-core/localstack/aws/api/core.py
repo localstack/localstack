@@ -115,6 +115,7 @@ class RequestContext(RoloRequestContext):
     def __init__(self, request: Request):
         super().__init__(request)
         self.service = None
+        self.protocol = None
         self.operation = None
         self.region = None  # type: ignore[assignment]  # type=str, because we know it will always be set downstream
         self.partition = "aws"  # Sensible default - will be overwritten by region-handler
