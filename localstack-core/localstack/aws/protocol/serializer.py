@@ -14,18 +14,19 @@ The different protocols have many similarities. The class hierarchy is
 designed such that the serializers share as much logic as possible.
 The class hierarchy looks as follows:
 ::
-                                      ┌───────────────────┐
-                                      │ResponseSerializer │
-                                      └───────────────────┘
-                                          ▲    ▲      ▲
-                   ┌──────────────────────┘    │      └──────────────────┐
-      ┌────────────┴────────────┐ ┌────────────┴─────────────┐ ┌─────────┴────────────┐
-      │BaseXMLResponseSerializer│ │BaseRestResponseSerializer│ │JSONResponseSerializer│
-      └─────────────────────────┘ └──────────────────────────┘ └──────────────────────┘
-                         ▲    ▲             ▲             ▲              ▲
-  ┌──────────────────────┴─┐ ┌┴─────────────┴──────────┐ ┌┴──────────────┴──────────┐
-  │QueryResponseSerializer │ │RestXMLResponseSerializer│ │RestJSONResponseSerializer│
-  └────────────────────────┘ └─────────────────────────┘ └──────────────────────────┘
+                                    ┌────────────────────┐
+                                    │ ResponseSerializer │
+                                    └────────────────────┘
+                                         ▲   ▲   ▲   ▲
+                                         │   │   │   └─────────────────────────────────────────────┐
+                 ┌───────────────────────┘   │   └─────────────────────┐                           │
+    ┌────────────┴────────────┐ ┌────────────┴─────────────┐ ┌─────────┴────────────┐ ┌────────────┴─────────────┐
+    │BaseXMLResponseSerializer│ │BaseRestResponseSerializer│ │JSONResponseSerializer│ │BaseCBORResponseSerializer│
+    └─────────────────────────┘ └──────────────────────────┘ └──────────────────────┘ └──────────────────────────┘
+                        ▲    ▲             ▲             ▲              ▲                          ▲
+ ┌──────────────────────┴─┐ ┌┴─────────────┴──────────┐ ┌┴──────────────┴──────────┐   ┌───────────┴────────────┐
+ │QueryResponseSerializer │ │RestXMLResponseSerializer│ │RestJSONResponseSerializer│   │ CBORResponseSerializer │
+ └────────────────────────┘ └─────────────────────────┘ └──────────────────────────┘   └────────────────────────┘
               ▲
    ┌──────────┴──────────┐
    │EC2ResponseSerializer│
@@ -33,8 +34,8 @@ The class hierarchy looks as follows:
 ::
 
 The ``ResponseSerializer`` contains the logic that is used among all the
-different protocols (``query``, ``json``, ``rest-json``, ``rest-xml``, and
-``ec2``).
+different protocols (``query``, ``json``, ``rest-json``, ``rest-xml``, ``cbor``
+and ``ec2``).
 The protocols relate to each other in the following ways:
 
 * The ``query`` and the ``rest-xml`` protocols both have XML bodies in their
@@ -42,8 +43,10 @@ The protocols relate to each other in the following ways:
   type).
 * The ``json`` and the ``rest-json`` protocols both have JSON bodies in their
   responses which are serialized the same way.
+* The ``cbor`` protocol is not properly defined in the spec, but mirrors the
+  ``json`` protocol.
 * The ``rest-json`` and ``rest-xml`` protocols serialize some metadata in
-  the HTTP response's header fields
+  the HTTP response's header fields.
 * The ``ec2`` protocol is basically similar to the ``query`` protocol with a
   specific error response formatting.
 
@@ -54,13 +57,17 @@ The classes are structured as follows:
 
 * The ``ResponseSerializer`` contains all the basic logic for the
   serialization which is shared among all different protocols.
-* The ``BaseXMLResponseSerializer`` and the ``JSONResponseSerializer``
-  contain the logic for the XML and the JSON serialization respectively.
+* The ``BaseXMLResponseSerializer``, ``JSONResponseSerializer`` and
+  ``BaseCBORResponseSerializer`` contain the logic for the XML, JSON
+  and the CBOR serialization respectively.
 * The ``BaseRestResponseSerializer`` contains the logic for the REST
   protocol specifics (i.e. specific HTTP header serializations).
 * The ``RestXMLResponseSerializer`` and the ``RestJSONResponseSerializer``
   inherit the ReST specific logic from the ``BaseRestResponseSerializer``
   and the XML / JSON body serialization from their second super class.
+* The ``CBORResponseSerializer`` contains the logic specific to the
+  non-official ``cbor`` protocol, mirroring the ``json`` protocol but
+  with CBOR encoded body
 
 The services and their protocols are defined by using AWS's Smithy
 (a language to define services in a - somewhat - protocol-agnostic
@@ -73,21 +80,32 @@ be sent back to the calling client.
 
 import abc
 import base64
+import copy
 import functools
 import json
 import logging
+import math
 import string
+import struct
 from abc import ABC
 from binascii import crc32
 from collections.abc import Iterable, Iterator
 from datetime import datetime
 from email.utils import formatdate
 from struct import pack
-from typing import Any
+from typing import IO, Any
 from xml.etree import ElementTree as ETree
 
 import xmltodict
-from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
+from botocore.model import (
+    ListShape,
+    MapShape,
+    OperationModel,
+    ServiceModel,
+    Shape,
+    StringShape,
+    StructureShape,
+)
 from botocore.serialize import ISO8601, ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 
@@ -1407,6 +1425,318 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
             serialized.headers["Content-Type"] = mime_type
 
 
+class BaseCBORResponseSerializer(ResponseSerializer):
+    UNSIGNED_INT_MAJOR_TYPE = 0
+    NEGATIVE_INT_MAJOR_TYPE = 1
+    BLOB_MAJOR_TYPE = 2
+    STRING_MAJOR_TYPE = 3
+    LIST_MAJOR_TYPE = 4
+    MAP_MAJOR_TYPE = 5
+    TAG_MAJOR_TYPE = 6
+    FLOAT_AND_SIMPLE_MAJOR_TYPE = 7
+
+    def _serialize_data_item(
+        self, serialized: bytearray, value: Any, shape: Shape | None, name: str | None = None
+    ) -> None:
+        method = getattr(self, f"_serialize_type_{shape.type_name}")
+        if method is None:
+            raise ValueError(
+                f"Unrecognized C2J type: {shape.type_name}, unable to serialize request"
+            )
+        method(serialized, value, shape, name)
+
+    def _serialize_type_integer(
+        self, serialized: bytearray, value: int, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if value >= 0:
+            major_type = self.UNSIGNED_INT_MAJOR_TYPE
+        else:
+            major_type = self.NEGATIVE_INT_MAJOR_TYPE
+            # The only differences in serializing negative and positive integers is
+            # that for negative, we set the major type to 1 and set the value to -1
+            # minus the value
+            value = -1 - value
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(value)
+        initial_byte = self._get_initial_byte(major_type, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + value.to_bytes(num_bytes, "big"))
+
+    def _serialize_type_long(
+        self, serialized: bytearray, value: int, shape: Shape, name: str | None = None
+    ) -> None:
+        self._serialize_type_integer(serialized, value, shape, name)
+
+    def _serialize_type_blob(
+        self,
+        serialized: bytearray,
+        value: str | bytes | IO[bytes],
+        shape: Shape | None,
+        name: str | None = None,
+    ) -> None:
+        if isinstance(value, str):
+            value = value.encode("utf-8")
+        elif not isinstance(value, (bytes, bytearray)):
+            # We support file-like objects for blobs; these already have been
+            # validated to ensure they have a read method
+            value = value.read()
+        length = len(value)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+        initial_byte = self._get_initial_byte(self.BLOB_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big"))
+        serialized.extend(value)
+
+    def _serialize_type_string(
+        self, serialized: bytearray, value: str, shape: Shape | None, name: str | None = None
+    ) -> None:
+        encoded = value.encode("utf-8")
+        length = len(encoded)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+        initial_byte = self._get_initial_byte(self.STRING_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte + encoded)
+        else:
+            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big") + encoded)
+
+    def _serialize_type_list(
+        self, serialized: bytearray, value: str, shape: Shape | None, name: str | None = None
+    ) -> None:
+        length = len(value)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+        initial_byte = self._get_initial_byte(self.LIST_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big"))
+        for item in value:
+            self._serialize_data_item(serialized, item, shape.member)
+
+    def _serialize_type_map(
+        self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
+    ) -> None:
+        length = len(value)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+        initial_byte = self._get_initial_byte(self.MAP_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big"))
+        for key_item, item in value.items():
+            self._serialize_data_item(serialized, key_item, shape.key)
+            self._serialize_data_item(serialized, item, shape.value)
+
+    def _serialize_type_structure(
+        self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if name is not None:
+            # For nested structures, we need to serialize the key first
+            self._serialize_data_item(serialized, name, shape.key_shape)
+
+        # Remove `None` values from the dictionary
+        value = {k: v for k, v in value.items() if v is not None}
+
+        map_length = len(value)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(map_length)
+        initial_byte = self._get_initial_byte(self.MAP_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + map_length.to_bytes(num_bytes, "big"))
+
+        members = shape.members
+        for member_key, member_value in value.items():
+            member_shape = members[member_key]
+            if "name" in member_shape.serialization:
+                member_key = member_shape.serialization["name"]
+            if member_value is not None:
+                self._serialize_type_string(serialized, member_key, None, None)
+                self._serialize_data_item(serialized, member_value, member_shape)
+
+    def _serialize_type_timestamp(
+        self,
+        serialized: bytearray,
+        value: int | str | datetime,
+        shape: Shape | None,
+        name: str | None = None,
+    ) -> None:
+        timestamp = int(self._convert_timestamp_to_str(value))
+        tag = 1  # Use tag 1 for unix timestamp
+        initial_byte = self._get_initial_byte(self.TAG_MAJOR_TYPE, tag)
+        serialized.extend(initial_byte)  # Tagging the timestamp
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(timestamp)
+
+        if num_bytes == 0:
+            initial_byte = self._get_initial_byte(self.UNSIGNED_INT_MAJOR_TYPE, timestamp)
+            serialized.extend(initial_byte)
+        else:
+            initial_byte = self._get_initial_byte(self.UNSIGNED_INT_MAJOR_TYPE, additional_info)
+            serialized.extend(initial_byte + timestamp.to_bytes(num_bytes, "big"))
+
+    def _serialize_type_float(
+        self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if self._is_special_number(value):
+            serialized.extend(
+                self._get_bytes_for_special_numbers(value)
+            )  # Handle special values like NaN or Infinity
+        else:
+            initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, 26)
+            serialized.extend(initial_byte + struct.pack(">f", value))
+
+    def _serialize_type_double(
+        self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if self._is_special_number(value):
+            serialized.extend(
+                self._get_bytes_for_special_numbers(value)
+            )  # Handle special values like NaN or Infinity
+        else:
+            initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, 27)
+            serialized.extend(initial_byte + struct.pack(">d", value))
+
+    def _serialize_type_boolean(
+        self, serialized: bytearray, value: bool, shape: Shape | None, name: str | None = None
+    ) -> None:
+        additional_info = 21 if value else 20
+        serialized.extend(self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, additional_info))
+
+    @staticmethod
+    def _get_additional_info_and_num_bytes(value: int) -> tuple[int, int]:
+        # Values under 24 can be stored in the initial byte and don't need further
+        # encoding
+        if value < 24:
+            return value, 0
+        # Values between 24 and 255 (inclusive) can be stored in 1 byte and
+        # correspond to additional info 24
+        elif value < 256:
+            return 24, 1
+        # Values up to 65535 can be stored in two bytes and correspond to additional
+        # info 25
+        elif value < 65536:
+            return 25, 2
+        # Values up to 4294967296 can be stored in four bytes and correspond to
+        # additional info 26
+        elif value < 4294967296:
+            return 26, 4
+        # The maximum number of bytes in a definite length data items is 8 which
+        # to additional info 27
+        else:
+            return 27, 8
+
+    def _get_initial_byte(self, major_type: int, additional_info: int) -> bytes:
+        # The highest order three bits are the major type, so we need to bitshift the
+        # major type by 5
+        major_type_bytes = major_type << 5
+        return (major_type_bytes | additional_info).to_bytes(1, "big")
+
+    @staticmethod
+    def _is_special_number(value: int | float) -> bool:
+        return any(
+            [
+                value == float("inf"),
+                value == float("-inf"),
+                math.isnan(value),
+            ]
+        )
+
+    def _get_bytes_for_special_numbers(self, value: int | float) -> bytes:
+        additional_info = 25
+        initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, additional_info)
+        if value == float("inf"):
+            return initial_byte + struct.pack(">H", 0x7C00)
+        elif value == float("-inf"):
+            return initial_byte + struct.pack(">H", 0xFC00)
+        elif math.isnan(value):
+            return initial_byte + struct.pack(">H", 0x7E00)
+
+
+class CBORResponseSerializer(BaseCBORResponseSerializer):
+    """
+    The ``CBORResponseSerializer`` is responsible for the serialization of responses from services with the ``cbor``
+    protocol. It implements the CBOR response body serialization, which is only currently used by Kinesis and is derived
+    conceptually from the ``JSONResponseSerializer``
+    """
+
+    SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
+
+    TIMESTAMP_FORMAT = "unixtimestamp"
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: Response,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        body = bytearray()
+        response.content_type = mime_type
+        response.headers["X-Amzn-Errortype"] = error.code
+
+        if shape:
+            # FIXME: we need to manually add the `__type` field to the shape as it is not part of the specs
+            #  think about a better way, this is very hacky
+            shape_copy = copy.deepcopy(shape)
+            shape_copy.members["__type"] = StringShape(
+                shape_name="__type", shape_model={"type": "string"}
+            )
+            remaining_params = {"__type": error.code}
+
+            for member_name in shape_copy.members:
+                if hasattr(error, member_name):
+                    remaining_params[member_name] = getattr(error, member_name)
+                # Default error message fields can sometimes have different casing in the specs
+                elif member_name.lower() in ["code", "message"] and hasattr(
+                    error, member_name.lower()
+                ):
+                    remaining_params[member_name] = getattr(error, member_name.lower())
+
+            self._serialize_data_item(body, remaining_params, shape_copy, None)
+
+        response.set_response(bytes(body))
+
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: Response,
+        shape: Shape | None,
+        shape_members: dict,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        response.content_type = mime_type
+        response.set_response(
+            self._serialize_body_params(parameters, shape, operation_model, mime_type, request_id)
+        )
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> bytes | None:
+        body = bytearray()
+        self._serialize_data_item(body, params, shape)
+        return bytes(body)
+
+    def _prepare_additional_traits_in_response(
+        self, response: Response, operation_model: OperationModel, request_id: str
+    ) -> Response:
+        response.headers["x-amzn-requestid"] = request_id
+        response = super()._prepare_additional_traits_in_response(
+            response, operation_model, request_id
+        )
+        return response
+
+
 class S3ResponseSerializer(RestXMLResponseSerializer):
     """
     The ``S3ResponseSerializer`` adds some minor logic to handle S3 specific peculiarities with the error response
@@ -1768,6 +2098,9 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "rest-json": RestJSONResponseSerializer,
         "rest-xml": RestXMLResponseSerializer,
         "ec2": EC2ResponseSerializer,
+        # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
+        #  CBOR handling from JSONResponseParser
+        # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
 
     # Try to select a service- and protocol-specific serializer implementation

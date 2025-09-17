@@ -24,6 +24,7 @@ from localstack.services.kinesis import provider as kinesis_provider
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.aws import resources
+from localstack.utils.aws.arns import kinesis_stream_arn
 from localstack.utils.common import retry, select_attributes, short_uid
 from localstack.utils.files import load_file
 from localstack.utils.kinesis import kinesis_connector
@@ -722,6 +723,36 @@ class TestKinesis:
 
         record = retry(_get_record, sleep=1, retries=5)
         assert record["Data"].decode("utf-8") == test_data
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        # error message is wrong in Kinesis (returns the full ARN)
+        paths=["$..message"],
+    )
+    def test_cbor_exceptions(
+        self,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client,
+        kinesis_http_client,
+        region_name,
+        account_id,
+        snapshot,
+    ):
+        fake_name = "wrong-stream-name"
+        fake_stream_arn = kinesis_stream_arn(
+            account_id=account_id, region_name=region_name, stream_name=fake_name
+        )
+        describe_response_raw = kinesis_http_client.post_raw(
+            operation="DescribeStream",
+            payload={"StreamARN": fake_stream_arn},
+        )
+        assert describe_response_raw.status_code == 400
+        cbor_content = describe_response_raw.content
+        describe_response_data = cbor2_loads(cbor_content)
+        snapshot.match("cbor-error", describe_response_data)
+        assert describe_response_data["__type"] == "ResourceNotFoundException"
+        # TODO: add manual assertion on CBOR body?
 
 
 class TestKinesisJavaSDK:
