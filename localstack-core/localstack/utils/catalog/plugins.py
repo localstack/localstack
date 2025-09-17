@@ -21,4 +21,8 @@ def get_aws_catalog() -> CatalogPlugin:
             "Failed to load catalog plugin with the latest LocalStack services support data, falling back to catalog without remote state: %s",
             e,
         )
-        return plugin_manager.load("aws-catalog-runtime-only")
+        # Try to load runtime catalog from pro version first
+        fallback_plugin_name = "aws-catalog-runtime-only-with-license"
+        if not plugin_manager.exists(fallback_plugin_name):
+            fallback_plugin_name = "aws-catalog-runtime-only"
+        return plugin_manager.load(fallback_plugin_name)
