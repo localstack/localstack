@@ -445,13 +445,16 @@ class Resolver(DnsServerProtocol):
                 return True
         return False
 
+    def _find_matching_aliases(self, question: DNSQuestion) -> list[AliasTarget] | None :
+        key = (DNSLabel(to_bytes(question.qname)), RecordType[QTYPE[question.qtype]])
+        # check if we have aliases defined for our given qname/qtype pair
+        return self.aliases.get(key)
+
     def _resolve_alias(
         self, request: DNSRecord, reply: DNSRecord, client_address: ClientAddress
     ) -> bool:
         if request.q.qtype in (QTYPE.A, QTYPE.AAAA, QTYPE.CNAME):
-            key = (DNSLabel(to_bytes(request.q.qname)), RecordType[QTYPE[request.q.qtype]])
-            # check if we have aliases defined for our given qname/qtype pair
-            if aliases := self.aliases.get(key):
+            if aliases := self._find_matching_aliases(request.q):
                 for alias in aliases:
                     # if there is no health check, or the healthcheck is successful, we will consider this alias
                     # take the first alias passing this check
