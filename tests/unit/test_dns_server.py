@@ -142,12 +142,18 @@ class TestDNSServer:
         dns_server.add_host(
             "example.org", TargetRecord("1.1.1.1", RecordType.A)
         )
+        answer = query_dns("subdomain1.example.org", "A")
+        assert len(answer.answer) is 0
+
         dns_server.add_alias(
             source_name="*.example.org",
             record_type=RecordType.A,
             target=AliasTarget(target="example.org"),
         )
-        answer = query_dns("something.example.org", "A")
+        answer = query_dns("subdomain1.example.org", "A")
+        assert answer.answer
+        assert "1.1.1.1" in answer.to_text()
+        answer = query_dns("subdomain2.example.org", "A")
         assert answer.answer
         assert "1.1.1.1" in answer.to_text()
 
