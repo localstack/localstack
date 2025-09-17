@@ -89,7 +89,7 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
 
 def _matches_protocol(request: Request, protocol: ProtocolName) -> bool:
     headers = request.headers
-    content_type = headers.get("Content-Type", "").lower()
+    mimetype = request.mimetype.lower()
     match protocol:
         case "smithy-rpc-v2-cbor":
             # Every request for the rpcv2Cbor protocol MUST contain a `Smithy-Protocol` header with the value
@@ -97,10 +97,10 @@ def _matches_protocol(request: Request, protocol: ProtocolName) -> bool:
             # https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
             return headers.get("Smithy-Protocol", "") == "rpc-v2-cbor"
         case "json":
-            return content_type.startswith("application/x-amz-json")
+            return mimetype.startswith("application/x-amz-json")
         case "query" | "ec2":
             # https://smithy.io/2.0/aws/protocols/aws-query-protocol.html#request-serialization
-            return content_type == "application/x-www-form-urlencoded"
+            return mimetype.startswith("application/x-www-form-urlencoded")
         case "rest-xml" | "rest-json":
             # `rest-json` and `rest-xml` can accept any kind of Content-Type, and it can be configured on the operation
             # level.
@@ -337,6 +337,7 @@ def determine_aws_protocol(request: Request, service_model: ServiceModel) -> Pro
     if protocol := _get_protocol_from_request(request, available_protocols=protocols):
         return protocol
 
+    # TODO: raise error here!!!
     # if we could not determine the protocol based on the request, we fall back to the default protocol of the service
     return service_model.protocol
 
