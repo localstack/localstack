@@ -33,7 +33,7 @@ class ServiceModelIdentifier(NamedTuple):
 
     name: ServiceName
     protocol: ProtocolName | None = None
-    protocols: list[ProtocolName] | None = None
+    protocols: tuple[ProtocolName] | None = None
 
 
 spec_patches_json = os.path.join(os.path.dirname(__file__), "spec-patches.json")
@@ -166,6 +166,15 @@ def is_protocol_in_service_model_identifier(
     return protocol in protocols or protocol == service_model_identifier.protocol
 
 
+def get_service_model_identifier(service_model: ServiceModel) -> ServiceModelIdentifier:
+    protocols = service_model.metadata.get("protocols")
+    return ServiceModelIdentifier(
+        name=service_model.service_name,
+        protocol=service_model.protocol,
+        protocols=tuple(protocols) if protocols else None,
+    )
+
+
 @dataclasses.dataclass
 class ServiceCatalogIndex:
     """
@@ -195,13 +204,7 @@ class LazyServiceCatalogIndex:
             for service_model in service_models:
                 target_prefix = service_model.metadata.get("targetPrefix")
                 if target_prefix:
-                    result[target_prefix].append(
-                        ServiceModelIdentifier(
-                            name=service_model.service_name,
-                            protocol=service_model.protocol,
-                            protocols=service_model.metadata.get("protocols"),
-                        )
-                    )
+                    result[target_prefix].append(get_service_model_identifier(service_model))
         return dict(result)
 
     @cached_property
@@ -210,11 +213,7 @@ class LazyServiceCatalogIndex:
         for service_models in self._services.values():
             for service_model in service_models:
                 result[service_model.signing_name].append(
-                    ServiceModelIdentifier(
-                        name=service_model.service_name,
-                        protocol=service_model.protocol,
-                        protocols=service_model.metadata.get("protocols"),
-                    )
+                    get_service_model_identifier(service_model)
                 )
         return dict(result)
 
@@ -226,13 +225,7 @@ class LazyServiceCatalogIndex:
                 operations = service_model.operation_names
                 if operations:
                     for operation in operations:
-                        result[operation].append(
-                            ServiceModelIdentifier(
-                                name=service_model.service_name,
-                                protocol=service_model.protocol,
-                                protocols=service_model.metadata.get("protocols"),
-                            )
-                        )
+                        result[operation].append(get_service_model_identifier(service_model))
         return dict(result)
 
     @cached_property
@@ -241,11 +234,7 @@ class LazyServiceCatalogIndex:
         for service_models in self._services.values():
             for service_model in service_models:
                 result[service_model.endpoint_prefix].append(
-                    ServiceModelIdentifier(
-                        name=service_model.service_name,
-                        protocol=service_model.protocol,
-                        protocols=service_model.metadata.get("protocols"),
-                    )
+                    get_service_model_identifier(service_model)
                 )
         return dict(result)
 
