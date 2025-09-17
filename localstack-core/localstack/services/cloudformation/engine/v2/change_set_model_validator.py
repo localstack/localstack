@@ -4,7 +4,6 @@ from typing import Any
 from botocore.exceptions import ParamValidationError
 
 from localstack.services.cloudformation.engine.v2.change_set_model import (
-    Maybe,
     NodeIntrinsicFunction,
     NodeProperty,
     NodeResource,
@@ -32,19 +31,10 @@ class ChangeSetModelValidator(ChangeSetModelPreproc):
     def visit_node_intrinsic_function_fn_get_att(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        arguments_delta = self.visit(node_intrinsic_function.arguments)
-        before_arguments: Maybe[str | list[str]] = arguments_delta.before
-        after_arguments: Maybe[str | list[str]] = arguments_delta.after
-
-        before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
-        if is_nothing(before) and not is_nothing(before_arguments):
-            before = ".".join(before_arguments)
-
-        after = self._after_cache.get(node_intrinsic_function.scope, Nothing)
-        if is_nothing(after) and not is_nothing(after_arguments):
-            after = ".".join(after_arguments)
-
-        return PreprocEntityDelta(before=before, after=after)
+        try:
+            return super().visit_node_intrinsic_function_fn_get_att(node_intrinsic_function)
+        except RuntimeError:
+            return self.visit(node_intrinsic_function.arguments)
 
     def visit_node_intrinsic_function_fn_sub(
         self, node_intrinsic_function: NodeIntrinsicFunction

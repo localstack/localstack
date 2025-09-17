@@ -2436,5 +2436,14 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_select.py::TestChangeSetFnSelect::test_nested_select_within_other_intrinsics": {
+    "recorded-date": "16-09-2025, 10:30:37",
+    "recorded-content": {
+      "parameter-value": {
+        "ParameterValue": "111111111111.dkr.ecr.<region>.<domain>/<repo-name>",
+        "RepoName": "<repo-name>"
+      }
+    }
   }
 }

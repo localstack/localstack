@@ -36,7 +36,7 @@ plux==1.13.0
     # via localstack-core (pyproject.toml)
 psutil==7.0.0
     # via localstack-core (pyproject.toml)
-pycparser==2.22
+pycparser==2.23
     # via cffi
 pygments==2.19.2
     # via rich

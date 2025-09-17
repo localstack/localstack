@@ -90,6 +90,10 @@ class ECRRepositoryProvider(ResourceProvider[ECRRepositoryProperties]):
 
         """
         model = request.desired_state
+        model["RepositoryName"] = (
+            model.get("RepositoryName")
+            or util.generate_default_name(request.stack_name, request.logical_resource_id).lower()
+        )
 
         default_repos_per_stack[request.stack_name] = model["RepositoryName"]
         LOG.warning(
