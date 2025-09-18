@@ -1,6 +1,7 @@
 import time
-from datetime import UTC, date, datetime, timezone, tzinfo
+from datetime import date, datetime, timezone, tzinfo
 from typing import Optional
+from zoneinfo import ZoneInfo
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
 TIMESTAMP_FORMAT_TZ = "%Y-%m-%dT%H:%M:%SZ"
@@ -56,7 +57,7 @@ def parse_timestamp(ts_str: str) -> datetime:
         try:
             value = datetime.strptime(ts_str, ts_format)
             if value.tzinfo is None:
-                value = value.replace(tzinfo=UTC)
+                value = value.replace(tzinfo=ZoneInfo("UTC"))
             return value
         except ValueError:
             pass
