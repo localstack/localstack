@@ -12,7 +12,7 @@ from localstack.aws.protocol.service_router import (
     ProtocolError,
     determine_aws_protocol,
     determine_aws_service_model,
-    get_protocol_from_request,
+    match_available_protocols,
 )
 from localstack.aws.spec import get_service_catalog
 from localstack.http import Request
@@ -367,4 +367,4 @@ def test_query_protocol_detection_with_empty_body():
     assert detected_service_model.protocol == "query"
 
     # we set wrong protocol here just to verify we can match `query` even if we don't have the Content-Type
-    assert get_protocol_from_request(sns_request, ["query", "json"])
+    assert match_available_protocols(sns_request, ["query", "json"])

@@ -120,7 +120,7 @@ def _matches_protocol(request: Request, protocol: ProtocolName) -> bool:
             return False
 
 
-def get_protocol_from_request(
+def match_available_protocols(
     request: Request, available_protocols: list[ProtocolName]
 ) -> ProtocolName | None:
     """
@@ -318,7 +318,7 @@ def resolve_conflicts(
         # The `application/x-amz-json-1.0` header is mandatory for requests targeting SQS with the `json` protocol. We
         # can safely route them to the `sqs` JSON parser/serializer. If not present, route the request to the
         # sqs-query protocol.
-        protocol = get_protocol_from_request(request, available_protocols=["json", "query"])
+        protocol = match_available_protocols(request, available_protocols=["json", "query"])
         return (
             ServiceModelIdentifier("sqs")
             if protocol == "json"
@@ -347,7 +347,7 @@ def determine_aws_protocol(request: Request, service_model: ServiceModel) -> Pro
     if len(protocols) == 1:
         return protocols[0]
 
-    if protocol := get_protocol_from_request(request, available_protocols=protocols):
+    if protocol := match_available_protocols(request, available_protocols=protocols):
         return protocol
 
     raise ProtocolError(
