@@ -13,7 +13,6 @@ from localstack.testing.snapshots.transformer_utility import (
     TransformerUtility,
 )
 from localstack.utils.aws.arns import get_partition
-from tests.aws.test_terraform import TestTerraform
 
 
 def pytest_configure(config: Config):
@@ -56,13 +55,6 @@ def pytest_runtestloop(session):
             )
 
             test_init_functions.add(transcribe_install_async)
-
-    # add init functions for certain tests that download/install things
-    for test_class in test_classes:
-        # set flag that terraform will be used
-        if TestTerraform is test_class:
-            test_init_functions.add(TestTerraform.init_async)
-            continue
 
     if not session.items:
         return
