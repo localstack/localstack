@@ -46,18 +46,7 @@ jobs:
             --with botocore==${{ steps.boto_versions.outputs.botocore_version }} \
             python scripts/update_cfn_resources.py --resource-file localstack-core/localstack/services/cloudformation/resources.py
 
-      - name: Detect changes
-        id: diff
-        run: |
-          git diff --stat
-          if git diff --quiet; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          fi
-
       - name: Create Pull Request
-        if: steps.diff.outputs.changed == 'true'
         uses: peter-evans/create-pull-request@v7
         with:
           title: "Update CloudFormation resource availability"
@@ -69,7 +58,3 @@ jobs:
           labels: "area: cloudformation, semver: patch, skip-docs"
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           signoff: true
-
-      - name: No changes detected
-        if: steps.diff.outputs.changed != 'true'
-        run: echo "No CloudFormation resource updates detected"
