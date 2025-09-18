@@ -2969,6 +2969,10 @@ class TestCloudWatchMultiProtocol:
             "DescribeAlarms",
             payload={},
         )
+        # FIXME: the snapshot library doesn't deal well with ResponseMetadata in raw responses, will be fixed when
+        #  we release a new version
+        #  https://github.com/localstack/localstack-snapshot/pull/13
+        response.pop("ResponseMetadata", None)
         snapshot.match("describe-alarms", response)
 
         namespace1 = f"test/{short_uid()}"
@@ -3044,9 +3048,6 @@ class TestCloudWatchMultiProtocol:
             operation="GetMetricData",
             payload=get_metric_input,
         )
-        # FIXME: the snapshot library doesn't deal well with ResponseMetadata in raw responses, will be fixed when
-        #  we release a new version
-        #  https://github.com/localstack/localstack-snapshot/pull/13
         response.pop("ResponseMetadata", None)
         snapshot.match("get-metric-data", response)
 
