@@ -51,7 +51,11 @@ def collect_region_resource_types(
 
     while True:
         try:
-            params = {"Visibility": "PUBLIC", "Type": "RESOURCE"}
+            params = {
+                "Visibility": "PUBLIC",
+                "Type": "RESOURCE",
+                "Filters": {"Category": "AWS_TYPES"},
+            }
             if token:
                 params["NextToken"] = token
             response = client.list_types(**params)
@@ -62,7 +66,7 @@ def collect_region_resource_types(
 
         for summary in response.get("TypeSummaries", []):
             type_name = summary.get("TypeName")
-            if type_name and type_name.startswith("AWS::"):
+            if type_name:
                 resources.add(type_name)
 
         token = response.get("NextToken")
