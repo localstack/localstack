@@ -81,7 +81,7 @@ class AwsRequestProxy:
         if not self.parse_response:
             return http_response
         parsed_response = parse_response(
-            context.operation, http_response, self.include_response_metadata
+            context.operation, context.protocol, http_response, self.include_response_metadata
         )
         raise_service_exception(http_response, parsed_response)
         return parsed_response
