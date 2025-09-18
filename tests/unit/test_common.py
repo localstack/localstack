@@ -46,6 +46,19 @@ class TestCommon:
         env = common.isoformat_milliseconds(datetime(2010, 3, 20, 7, 24, 00, 0))
         assert env == "2010-03-20T07:24:00.000"
 
+    @pytest.mark.parametrize(
+        "str_format",
+        [
+            "2025-09-18T14:07:30",
+            "2025-09-18T14:07:30Z",
+            "2025-09-18T14:07:30.70300Z",
+            "18/Sep/2025:14:07:30 +0000",
+        ],
+    )
+    def test_parse_timestamp_timezone_aware(self, str_format):
+        datetime_obj = common.parse_timestamp(str_format)
+        assert datetime_obj.tzinfo == UTC
+
     def test_base64_to_hex(self):
         env = common.base64_to_hex("Zm9vIGJhcg ==")
         assert env == b"666f6f20626172"
