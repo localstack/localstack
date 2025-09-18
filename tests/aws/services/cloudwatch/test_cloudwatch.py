@@ -2959,6 +2959,10 @@ class TestCloudWatchMultiProtocol:
     def test_basic_operations_multiple_protocols(
         self, cloudwatch_http_client, aws_client, snapshot, protocol
     ):
+        if is_old_provider() and protocol != "query":
+            pytest.skip(
+                "Skipping as Moto does not support any other protocol than `query` for CloudWatch for now"
+            )
         snapshot.add_transformer(snapshot.transform.key_value("Label"))
         http_client = cloudwatch_http_client(protocol)
         response = http_client.post(
