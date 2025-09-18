@@ -133,7 +133,14 @@ class CloudWatchQueryHTTPClient(BaseCloudWatchHttpClient):
         if content_type.startswith(constants.APPLICATION_XML) or content_type.startswith(
             constants.TEXT_XML
         ):
-            return xmltodict.parse(response.content)
+            # FIXME: the snapshot library doesn't deal well with ResponseMetadata in raw responses, will be fixed when
+            #  we release a new version
+            #  https://github.com/localstack/localstack-snapshot/pull/13
+            response = xmltodict.parse(response.content)
+            container = response[next(iter(response.keys()))]
+            if isinstance(container, dict):
+                container.pop("ResponseMetadata", None)
+            return response
         elif content_type.startswith(constants.APPLICATION_JSON):
             return json.loads(response.content)
         else:

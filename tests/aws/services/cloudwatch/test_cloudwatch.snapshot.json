@@ -2266,7 +2266,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[json]": {
-    "recorded-date": "17-09-2025, 21:25:31",
+    "recorded-date": "18-09-2025, 13:56:03",
     "recorded-content": {
       "describe-alarms": {
         "CompositeAlarms": [],
@@ -2299,7 +2299,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[smithy-rpc-v2-cbor]": {
-    "recorded-date": "17-09-2025, 21:25:34",
+    "recorded-date": "18-09-2025, 13:56:06",
     "recorded-content": {
       "describe-alarms": {
         "CompositeAlarms": [],
@@ -2332,7 +2332,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[query]": {
-    "recorded-date": "17-09-2025, 21:25:37",
+    "recorded-date": "18-09-2025, 13:56:09",
     "recorded-content": {
       "describe-alarms": {
         "DescribeAlarmsResponse": {
@@ -2341,9 +2341,6 @@
             "CompositeAlarms": null,
             "LogAlarms": null,
             "MetricAlarms": null
-          },
-          "ResponseMetadata": {
-            "RequestId": "<uuid:1>"
           }
         }
       },
@@ -2374,9 +2371,6 @@
                 }
               ]
             }
-          },
-          "ResponseMetadata": {
-            "RequestId": "<uuid:2>"
           }
         }
       }
