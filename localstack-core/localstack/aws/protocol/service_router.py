@@ -353,7 +353,7 @@ def determine_aws_protocol(request: Request, service_model: ServiceModel) -> Pro
     raise ProtocolError(
         f"Could not determine the protocol for the request: "
         f"{request.method} {request.path} for the service '{service_model.service_name}' "
-        f"(available protocols: {protocols}"
+        f"(available protocols: {protocols})"
     )
 
 
