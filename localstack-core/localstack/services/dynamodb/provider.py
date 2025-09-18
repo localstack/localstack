@@ -968,8 +968,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         **kwargs,
     ) -> DescribeContributorInsightsOutput:
         return DescribeContributorInsightsOutput(
-            TableName=table_name,
-            ContributorInsightsStatus="DISABLED"
+            TableName=table_name, ContributorInsightsStatus="DISABLED"
         )
 
     #
