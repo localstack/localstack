@@ -3034,13 +3034,16 @@ class TestCloudWatchMultiProtocol:
                     assert 23.0 == sum(_data_metric["Values"]) == 23.0
 
         # need to retry because the might most likely not be ingested immediately (it's fairly quick though)
-        response = retry(_get_metric_data_sum, retries=10, sleep_before=2)
+        retry(_get_metric_data_sum, retries=10, sleep_before=2)
 
         response = http_client.post(
             operation="GetMetricData",
             payload=get_metric_input,
         )
-        print(f"{response=}")
+        # FIXME: the snapshot library doesn't deal well with ResponseMetadata in raw responses, will be fixed when
+        #  we release a new version
+        #  https://github.com/localstack/localstack-snapshot/pull/13
+        response.pop("ResponseMetadata", None)
         snapshot.match("get-metric-data", response)
 
 
