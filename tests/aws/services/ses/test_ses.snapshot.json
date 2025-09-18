@@ -806,7 +806,7 @@
     }
   },
   "tests/aws/services/ses/test_ses.py::TestSES::test_clone_receipt_rule_set": {
-    "recorded-date": "25-08-2023, 23:05:14",
+    "recorded-date": "17-09-2025, 11:56:18",
     "recorded-content": {
       "create-receipt-rule-set": {
         "ResponseMetadata": {
