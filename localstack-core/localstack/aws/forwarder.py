@@ -302,7 +302,7 @@ def _convert_to_request_dict_with_protocol(
     Botocore does not expose a way to create a client with a specific protocol, but we need this functionality
     to support multi-protocols.
     """
-    serializer = create_serializer(protocol)
+    serializer = create_serializer(protocol, include_validation=False)
     request_dict = serializer.serialize_to_request(api_params, operation_model)
     if not client._client_config.inject_host_prefix:
         request_dict.pop("host_prefix", None)
