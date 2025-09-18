@@ -108,7 +108,9 @@ def _matches_protocol(request: Request, protocol: ProtocolName) -> bool:
             return mimetype.startswith("application/x-amz-json")
         case "query" | "ec2":
             # https://smithy.io/2.0/aws/protocols/aws-query-protocol.html#request-serialization
-            return mimetype.startswith("application/x-www-form-urlencoded")
+            return (
+                mimetype.startswith("application/x-www-form-urlencoded") or "Action" in request.args
+            )
         case "rest-xml" | "rest-json":
             # `rest-json` and `rest-xml` can accept any kind of Content-Type, and it can be configured on the operation
             # level.
@@ -118,7 +120,7 @@ def _matches_protocol(request: Request, protocol: ProtocolName) -> bool:
             return False
 
 
-def _get_protocol_from_request(
+def get_protocol_from_request(
     request: Request, available_protocols: list[ProtocolName]
 ) -> ProtocolName | None:
     """
@@ -316,7 +318,7 @@ def resolve_conflicts(
         # The `application/x-amz-json-1.0` header is mandatory for requests targeting SQS with the `json` protocol. We
         # can safely route them to the `sqs` JSON parser/serializer. If not present, route the request to the
         # sqs-query protocol.
-        protocol = _get_protocol_from_request(request, available_protocols=["json", "query"])
+        protocol = get_protocol_from_request(request, available_protocols=["json", "query"])
         return (
             ServiceModelIdentifier("sqs")
             if protocol == "json"
@@ -342,7 +344,10 @@ def determine_aws_protocol(request: Request, service_model: ServiceModel) -> Pro
         # if the service does not define multiple protocols, return the `protocol` defined for the service
         return service_model.protocol
 
-    if protocol := _get_protocol_from_request(request, available_protocols=protocols):
+    if len(protocols) == 1:
+        return protocols[0]
+
+    if protocol := get_protocol_from_request(request, available_protocols=protocols):
         return protocol
 
     raise ProtocolError(

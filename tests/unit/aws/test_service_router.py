@@ -12,6 +12,7 @@ from localstack.aws.protocol.service_router import (
     ProtocolError,
     determine_aws_protocol,
     determine_aws_service_model,
+    get_protocol_from_request,
 )
 from localstack.aws.spec import get_service_catalog
 from localstack.http import Request
@@ -349,3 +350,21 @@ def test_multi_protocols_detection_error():
 
     with pytest.raises(ProtocolError):
         determine_aws_protocol(bad_request, detected_service_model)
+
+
+def test_query_protocol_detection_with_empty_body():
+    sns_request = Request(
+        method="POST",
+        path="/",
+        headers={
+            "Host": "localhost.localstack.cloud",
+        },
+        query_string="Action=ConfirmSubscription&TopicArn=bad_arn&Token=token",
+    )
+
+    detected_service_model = determine_aws_service_model(sns_request)
+    assert detected_service_model.service_name == "sns"
+    assert detected_service_model.protocol == "query"
+
+    # we set wrong protocol here just to verify we can match `query` even if we don't have the Content-Type
+    assert get_protocol_from_request(sns_request, ["query", "json"])
