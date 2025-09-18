@@ -29,6 +29,14 @@ _PROTOCOL_DETECTION_PRIORITY: list[ProtocolName] = [
 ]
 
 
+class ProtocolError(Exception):
+    """
+    Error which is thrown if we cannot detect the protocol for the request.
+    """
+
+    pass
+
+
 class _ServiceIndicators(NamedTuple):
     """
     Encapsulates the different fields that might indicate which service a request is targeting.
@@ -337,9 +345,11 @@ def determine_aws_protocol(request: Request, service_model: ServiceModel) -> Pro
     if protocol := _get_protocol_from_request(request, available_protocols=protocols):
         return protocol
 
-    # TODO: raise error here!!!
-    # if we could not determine the protocol based on the request, we fall back to the default protocol of the service
-    return service_model.protocol
+    raise ProtocolError(
+        f"Could not determine the protocol for the request: "
+        f"{request.method} {request.path} for the service '{service_model.service_name}' "
+        f"(available protocols: {protocols}"
+    )
 
 
 def determine_aws_service_model(

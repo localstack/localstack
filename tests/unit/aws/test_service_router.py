@@ -9,6 +9,7 @@ from botocore.model import OperationModel, ServiceModel, Shape, StructureShape
 from botocore.serialize import create_serializer
 
 from localstack.aws.protocol.service_router import (
+    ProtocolError,
     determine_aws_protocol,
     determine_aws_service_model,
 )
@@ -329,3 +330,22 @@ def test_multi_protocols_detection():
 
     detected_protocol = determine_aws_protocol(json_request, detected_service_model)
     assert detected_protocol == "json"
+
+
+def test_multi_protocols_detection_error():
+    bad_request = Request(
+        method="POST",
+        path="/",
+        headers={
+            "Host": "localhost.localstack.cloud",
+            "X-Amz-Target": "ArcRegionSwitch.ListPlans",
+        },
+    )
+
+    detected_service_model = determine_aws_service_model(bad_request)
+    assert detected_service_model.service_name == "arc-region-switch"
+    # the default service model protocol is still RPC v2 CBOR
+    assert detected_service_model.protocol == "smithy-rpc-v2-cbor"
+
+    with pytest.raises(ProtocolError):
+        determine_aws_protocol(bad_request, detected_service_model)
