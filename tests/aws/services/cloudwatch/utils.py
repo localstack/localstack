@@ -48,7 +48,6 @@ class BaseCloudWatchHttpClient(abc.ABC):
         query_serializer = create_serializer(self.protocol)
         operation_model = self.service_model.operation_model(operation)
         request = query_serializer.serialize_to_request(body, operation_model)
-        print(f"{request=}")
         return request["body"]
 
     @property
@@ -91,8 +90,6 @@ class CloudWatchCBORHTTPClient(BaseCloudWatchHttpClient):
     protocol = "smithy-rpc-v2-cbor"
 
     def _deserialize_response(self, response: Response) -> Any:
-        print(f"{response.content=}")
-        print(f"{response.headers=}")
         if response.content:
             return cbor2_loads(response.content)
         return {}
@@ -113,8 +110,6 @@ class CloudWatchJSONHTTPClient(BaseCloudWatchHttpClient):
     protocol = "json"
 
     def _deserialize_response(self, response: Response) -> Any:
-        print(f"{response.content=}")
-        print(f"{response.headers=}")
         if response.content:
             return json.loads(response.content)
         return {}

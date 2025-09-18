@@ -21,6 +21,7 @@ from localstack.utils.strings import to_str
 from .api import CommonServiceException, RequestContext, ServiceException, ServiceResponse
 from .connect import get_service_endpoint
 from .gateway import Gateway
+from .spec import ProtocolName
 
 LOG = logging.getLogger(__name__)
 
@@ -284,13 +285,17 @@ def _patch_botocore_endpoint_in_memory():
 
 
 def parse_response(
-    operation: OperationModel, response: Response, include_response_metadata: bool = True
+    operation: OperationModel,
+    protocol: ProtocolName,
+    response: Response,
+    include_response_metadata: bool = True,
 ) -> ServiceResponse:
     """
     Parses an HTTP Response object into an AWS response object using botocore. It does this by adapting the
     procedure of ``botocore.endpoint.convert_to_response_dict`` to work with Werkzeug's server-side response object.
 
     :param operation: the operation of the original request
+    :param protocol: the protocol of the original request
     :param response: the HTTP response object containing the response of the operation
     :param include_response_metadata: True if the ResponseMetadata (typical for boto response dicts) should be included
     :return: a parsed dictionary as it is returned by botocore
@@ -322,7 +327,7 @@ def parse_response(
             timestamp_parser=_cbor_timestamp_parser, blob_parser=_cbor_blob_parser
         )
 
-    parser = factory.create_parser(operation.service_model.protocol)
+    parser = factory.create_parser(protocol)
     parsed_response = parser.parse(response_dict, operation.output_shape)
 
     if response.status_code >= 301:

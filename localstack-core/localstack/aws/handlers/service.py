@@ -255,7 +255,9 @@ class ServiceResponseParser(Handler):
             return
 
         # in this case we need to parse the raw response
-        parsed = parse_response(context.operation, response, include_response_metadata=False)
+        parsed = parse_response(
+            context.operation, context.protocol, response, include_response_metadata=False
+        )
         if service_exception := parse_service_exception(response, parsed):
             context.service_exception = service_exception
         else:
