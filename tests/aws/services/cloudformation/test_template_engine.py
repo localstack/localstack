@@ -1295,3 +1295,31 @@ class TestPseudoParameters:
         snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
 
         snapshot.match("StackId", stack.outputs["StackId"])
+
+
+class TestCircularDependencyValidation:
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "elements",
+        ["1", "2", "3"],
+        ids=["1-element", "2-elements", "3-elements"],
+    )
+    def test_circular_dependency(self, elements, aws_client, snapshot):
+        change_set_name = f"ch-{short_uid()}"
+        stack_name = f"stack-{short_uid()}"
+        template = load_template_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                f"../../templates/engine/circular_dependency_{elements}.yml",
+            )
+        )
+
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=change_set_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                TemplateBody=template,
+            )
+
+        snapshot.match("error", exc_info.value.response)

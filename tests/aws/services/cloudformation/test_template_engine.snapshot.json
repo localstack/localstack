@@ -691,5 +691,53 @@
     "recorded-content": {
       "error-response": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameter InputValue should either have input value or default value"
     }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestCircularDependencyValidation::test_circular_dependency[1-element]": {
+    "recorded-date": "15-09-2025, 19:59:35",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Circular dependency between resources: [MyParameter]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestCircularDependencyValidation::test_circular_dependency[2-elements]": {
+    "recorded-date": "15-09-2025, 19:59:35",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Circular dependency between resources: [MyParameter2, MyParameter]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestCircularDependencyValidation::test_circular_dependency[3-elements]": {
+    "recorded-date": "15-09-2025, 19:59:35",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Circular dependency between resources: [MyParameter2, MyParameter3, MyParameter]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

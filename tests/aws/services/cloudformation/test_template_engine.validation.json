@@ -1,4 +1,31 @@
 {
+  "tests/aws/services/cloudformation/test_template_engine.py::TestCircularDependencyValidation::test_circular_dependency[1-element]": {
+    "last_validated_date": "2025-09-15T19:59:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.26,
+      "call": 0.37,
+      "teardown": 0.0,
+      "total": 0.63
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestCircularDependencyValidation::test_circular_dependency[2-elements]": {
+    "last_validated_date": "2025-09-15T19:59:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.14,
+      "teardown": 0.0,
+      "total": 0.14
+    }
+  },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestCircularDependencyValidation::test_circular_dependency[3-elements]": {
+    "last_validated_date": "2025-09-15T19:59:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.14,
+      "teardown": 0.0,
+      "total": 0.14
+    }
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestImportValues::test_cfn_with_exports": {
     "last_validated_date": "2024-06-21T18:37:15+00:00"
   },
