@@ -563,6 +563,9 @@ class TestCloudwatch:
         retry(_check_metrics, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..MetricAlarms..StateTransitionedTimestamp"]
+    )
     def test_describe_alarms_converts_date_format_correctly(
         self, aws_cloudwatch_client, cleanups, snapshot
     ):
@@ -831,6 +834,9 @@ class TestCloudwatch:
         )
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        condition=is_old_provider, paths=["$..MetricAlarms..StateTransitionedTimestamp"]
+    )
     def test_put_metric_alarm_escape_character(self, cleanups, aws_cloudwatch_client, snapshot):
         snapshot.add_transformers_list(
             [
