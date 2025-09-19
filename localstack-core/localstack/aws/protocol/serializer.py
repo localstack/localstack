@@ -1270,7 +1270,8 @@ class JSONResponseSerializer(ResponseSerializer):
         # if the operation is query compatible, we need to add to use shape name
         # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
         # as the exception code.
-        if shape and operation_model.service_model.is_query_compatible:
+        is_query_compatible = operation_model.service_model.is_query_compatible
+        if shape and is_query_compatible:
             code = shape.name
         else:
             code = error.code
@@ -1283,16 +1284,24 @@ class JSONResponseSerializer(ResponseSerializer):
             # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
             for member in shape.members:
                 if hasattr(error, member):
-                    remaining_params[member] = getattr(error, member)
+                    value = getattr(error, member)
                 # Default error message fields can sometimes have different casing in the specs
                 elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                    remaining_params[member] = getattr(error, member.lower())
+                    value = getattr(error, member.lower())
+                else:
+                    continue
+
+                if not value and is_query_compatible:
+                    # query compatible service do not serialize empty value
+                    continue
+                remaining_params[member] = value
+
             self._serialize(body, remaining_params, shape, None, mime_type)
 
         # Only set the message if it has not been set with the shape members
         if "message" not in body and "Message" not in body:
             message = self._get_error_message(error)
-            if message is not None:
+            if message is not None and not is_query_compatible:
                 body["message"] = message
 
         if mime_type in self.CBOR_TYPES:
@@ -1886,10 +1895,11 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
         # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
         # Type information is always serialized in the payload. This is different from the `json` protocol
 
+        is_query_compatible = operation_model.service_model.is_query_compatible
         # if the operation is query compatible, we need to add to use shape name
         # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
         # as the exception code.
-        if shape and operation_model.service_model.is_query_compatible:
+        if shape and is_query_compatible:
             code = shape.name
         else:
             code = error.code
@@ -1905,14 +1915,19 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             )
             remaining_params = {"__type": code}
 
-            for member_name in shape_copy.members:
-                if hasattr(error, member_name):
-                    remaining_params[member_name] = getattr(error, member_name)
+            for member in shape.members:
+                if hasattr(error, member):
+                    value = getattr(error, member)
                 # Default error message fields can sometimes have different casing in the specs
-                elif member_name.lower() in ["code", "message"] and hasattr(
-                    error, member_name.lower()
-                ):
-                    remaining_params[member_name] = getattr(error, member_name.lower())
+                elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
+                    value = getattr(error, member.lower())
+                else:
+                    continue
+
+                if not value and is_query_compatible:
+                    # query compatible service do not serialize empty value
+                    continue
+                remaining_params[member] = value
 
             self._serialize_data_item(body, remaining_params, shape_copy, None)
 

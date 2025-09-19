@@ -5,7 +5,7 @@ import re
 import threading
 import uuid
 
-from localstack.aws.api import CommonServiceException, RequestContext, handler
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AccountId,
     ActionPrefix,
@@ -71,6 +71,7 @@ from localstack.aws.api.cloudwatch import (
     TagResourceOutput,
     Timestamp,
     UntagResourceOutput,
+    ValidationException,
 )
 from localstack.aws.connect import connect_to
 from localstack.http import Request
@@ -106,17 +107,6 @@ HISTORY_VERSION = "1.0"
 LOG = logging.getLogger(__name__)
 _STORE_LOCK = threading.RLock()
 AWS_MAX_DATAPOINTS_ACCEPTED: int = 1440
-
-
-class ValidationError(CommonServiceException):
-    # TODO: check this error against AWS (doesn't exist in the API)
-    def __init__(self, message: str):
-        super().__init__("ValidationError", message, 400, True)
-
-
-class InvalidParameterCombination(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("InvalidParameterCombination", message, 400, True)
 
 
 def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
@@ -334,7 +324,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             old_state = alarm.alarm["StateValue"]
             if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
-                raise ValidationError(
+                raise ValidationException(
                     f"1 validation error detected: Value '{state_value}' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
                 )
 
@@ -416,7 +406,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "ignore",
             "missing",
         ]:
-            raise ValidationError(
+            raise ValidationException(
                 f"The value {request['TreatMissingData']} is not supported for TreatMissingData parameter. Supported values are [breaching, notBreaching, ignore, missing]."
             )
             # do some sanity checks:
@@ -425,7 +415,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             value = request.get("Period")
             if value not in (10, 30):
                 if value % 60 != 0:
-                    raise ValidationError("Period must be 10, 30 or a multiple of 60")
+                    raise ValidationException("Period must be 10, 30 or a multiple of 60")
         if request.get("Statistic"):
             if request.get("Statistic") not in [
                 "SampleCount",
@@ -434,7 +424,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "Minimum",
                 "Maximum",
             ]:
-                raise ValidationError(
+                raise ValidationException(
                     f"Value '{request.get('Statistic')}' at 'statistic' failed to satisfy constraint: Member must satisfy enum value set: [Maximum, SampleCount, Sum, Minimum, Average]"
                 )
 
@@ -448,7 +438,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "evaluate",
             "ignore",
         ):
-            raise ValidationError(
+            raise ValidationException(
                 f"Option {evaluate_low_sample_count_percentile} is not supported. "
                 "Supported options for parameter EvaluateLowSampleCountPercentile are evaluate and ignore."
             )
@@ -691,7 +681,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         expected_datapoints = (end_time_unix - start_time_unix) / period
 
         if expected_datapoints > AWS_MAX_DATAPOINTS_ACCEPTED:
-            raise InvalidParameterCombination(
+            raise InvalidParameterCombinationException(
                 f"You have requested up to {int(expected_datapoints)} datapoints, which exceeds the limit of {AWS_MAX_DATAPOINTS_ACCEPTED}. "
                 f"You may reduce the datapoints requested by increasing Period, or decreasing the time range."
             )
