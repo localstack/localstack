@@ -738,7 +738,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 for i, timestamp in enumerate(timestamps):
                     stat_datapoints.setdefault(selected_unit, {})
                     stat_datapoints[selected_unit].setdefault(timestamp, {})
-                    stat_datapoints[selected_unit][timestamp][stat] = values[i]
+                    stat_datapoints[selected_unit][timestamp][stat] = float(values[i])
                     stat_datapoints[selected_unit][timestamp]["Unit"] = selected_unit
 
         datapoints: list[Datapoint] = []

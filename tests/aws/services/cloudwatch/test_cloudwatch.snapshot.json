@@ -626,27 +626,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list": {
-    "recorded-date": "25-09-2023, 10:26:17",
-    "recorded-content": {
-      "get_metric_statistics": {
-        "Datapoints": [
-          {
-            "Maximum": 10.0,
-            "SampleCount": 6.0,
-            "Sum": 42.0,
-            "Timestamp": "timestamp",
-            "Unit": "Count"
-          }
-        ],
-        "Label": "test-metric",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags": {
     "recorded-date": "02-09-2024, 14:03:31",
     "recorded-content": {
@@ -2372,6 +2351,195 @@
               ]
             }
           }
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list[query]": {
+    "recorded-date": "19-09-2025, 17:40:30",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Maximum": 10.0,
+            "SampleCount": 6.0,
+            "Sum": 42.0,
+            "Timestamp": "timestamp",
+            "Unit": "Count"
+          }
+        ],
+        "Label": "test-metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list[json]": {
+    "recorded-date": "19-09-2025, 17:40:31",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Maximum": 10.0,
+            "SampleCount": 6.0,
+            "Sum": 42.0,
+            "Timestamp": "timestamp",
+            "Unit": "Count"
+          }
+        ],
+        "Label": "test-metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_values_list[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 17:40:32",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Maximum": 10.0,
+            "SampleCount": 6.0,
+            "Sum": 42.0,
+            "Timestamp": "timestamp",
+            "Unit": "Count"
+          }
+        ],
+        "Label": "test-metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_validation[query]": {
+    "recorded-date": "19-09-2025, 18:08:03",
+    "recorded-content": {
+      "invalid-param-combination": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-param-value": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-param-combination-2": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_validation[json]": {
+    "recorded-date": "19-09-2025, 18:08:04",
+    "recorded-content": {
+      "invalid-param-combination": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both.",
+          "QueryErrorCode": "InvalidParameterCombinationException",
+          "Type": "Sender"
+        },
+        "message": "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-param-value": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "message": "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-param-combination-2": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both.",
+          "QueryErrorCode": "InvalidParameterCombinationException",
+          "Type": "Sender"
+        },
+        "message": "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_validation[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 18:08:05",
+    "recorded-content": {
+      "invalid-param-combination": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both.",
+          "QueryErrorCode": "InvalidParameterCombinationException",
+          "Type": "Sender"
+        },
+        "message": "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-param-value": {
+        "Error": {
+          "Code": "InvalidParameterValue",
+          "Message": "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size.",
+          "QueryErrorCode": "InvalidParameterValueException",
+          "Type": "Sender"
+        },
+        "message": "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "invalid-param-combination-2": {
+        "Error": {
+          "Code": "InvalidParameterCombination",
+          "Message": "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both.",
+          "QueryErrorCode": "InvalidParameterCombinationException",
+          "Type": "Sender"
+        },
+        "message": "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
