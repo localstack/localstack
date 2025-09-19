@@ -75,6 +75,8 @@ class Markers:
     """The test requires docker or a compatible container engine - will not work on kubernetes"""
     lambda_runtime_update = pytest.mark.lambda_runtime_update
     """Tests to execute when updating snapshots for a new Lambda runtime"""
+    k8s_always_run = pytest.mark.k8s_always_run
+    """This tests will always run against k8s environment"""
 
 
 # pytest plugin
