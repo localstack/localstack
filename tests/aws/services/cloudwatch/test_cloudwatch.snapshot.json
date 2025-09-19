@@ -5636,7 +5636,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[query]": {
-    "recorded-date": "19-09-2025, 21:48:00",
+    "recorded-date": "19-09-2025, 22:29:26",
     "recorded-content": {
       "error-invalid-state": {
         "Error": {
@@ -5662,7 +5662,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[json]": {
-    "recorded-date": "19-09-2025, 21:48:01",
+    "recorded-date": "19-09-2025, 22:29:27",
     "recorded-content": {
       "error-invalid-state": {
         "Error": {
@@ -5671,6 +5671,7 @@
           "QueryErrorCode": "ValidationException",
           "Type": "Sender"
         },
+        "message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -5691,7 +5692,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[smithy-rpc-v2-cbor]": {
-    "recorded-date": "19-09-2025, 21:48:02",
+    "recorded-date": "19-09-2025, 22:29:28",
     "recorded-content": {
       "error-invalid-state": {
         "Error": {
@@ -5700,6 +5701,7 @@
           "QueryErrorCode": "ValidationException",
           "Type": "Sender"
         },
+        "message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400

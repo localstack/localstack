@@ -1395,13 +1395,20 @@
       "path": "/shapes/ValidationException",
       "value": {
         "type": "structure",
+        "members":{
+          "message":{
+            "shape":"AwsQueryErrorMessage",
+            "documentation":"<p/>"
+          }
+        },
         "error": {
           "code":"ValidationError",
           "httpStatusCode": 400,
           "senderFault": true
         },
         "documentation": "<p>Validation Exception</p>",
-        "exception": true
+        "exception": true,
+        "synthetic":true
       }
     }
   ]
