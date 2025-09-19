@@ -5,7 +5,7 @@ import re
 import threading
 import uuid
 
-from localstack.aws.api import CommonServiceException, RequestContext, handler
+from localstack.aws.api import RequestContext, handler
 from localstack.aws.api.cloudwatch import (
     AccountId,
     ActionPrefix,
@@ -107,11 +107,6 @@ HISTORY_VERSION = "1.0"
 LOG = logging.getLogger(__name__)
 _STORE_LOCK = threading.RLock()
 AWS_MAX_DATAPOINTS_ACCEPTED: int = 1440
-
-
-class InvalidParameterCombination(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("InvalidParameterCombination", message, 400, True)
 
 
 def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
@@ -686,7 +681,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         expected_datapoints = (end_time_unix - start_time_unix) / period
 
         if expected_datapoints > AWS_MAX_DATAPOINTS_ACCEPTED:
-            raise InvalidParameterCombination(
+            raise InvalidParameterCombinationException(
                 f"You have requested up to {int(expected_datapoints)} datapoints, which exceeds the limit of {AWS_MAX_DATAPOINTS_ACCEPTED}. "
                 f"You may reduce the datapoints requested by increasing Period, or decreasing the time range."
             )

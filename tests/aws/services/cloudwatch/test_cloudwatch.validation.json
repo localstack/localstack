@@ -218,8 +218,32 @@
       "total": 3.35
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm": {
-    "last_validated_date": "2024-01-12T14:06:42+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm[json]": {
+    "last_validated_date": "2025-09-19T23:06:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.7,
+      "teardown": 0.0,
+      "total": 0.7
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm[query]": {
+    "last_validated_date": "2025-09-19T23:06:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 1.06,
+      "teardown": 0.01,
+      "total": 1.58
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T23:06:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.06,
+      "teardown": 0.0,
+      "total": 1.06
+    }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_describe_alarms_converts_date_format_correctly[json]": {
     "last_validated_date": "2025-09-19T20:38:28+00:00",
@@ -329,14 +353,86 @@
       "total": 2.86
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data0]": {
-    "last_validated_date": "2024-01-11T11:07:38+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[json-metric_data0]": {
+    "last_validated_date": "2025-09-19T22:59:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.24,
+      "teardown": 0.01,
+      "total": 2.25
+    }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data1]": {
-    "last_validated_date": "2024-01-11T11:07:41+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[json-metric_data1]": {
+    "last_validated_date": "2025-09-19T22:59:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.23,
+      "teardown": 0.0,
+      "total": 2.23
+    }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[metric_data2]": {
-    "last_validated_date": "2024-01-11T11:07:43+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[json-metric_data2]": {
+    "last_validated_date": "2025-09-19T22:59:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.55,
+      "teardown": 0.0,
+      "total": 2.55
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[query-metric_data0]": {
+    "last_validated_date": "2025-09-19T22:59:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 2.55,
+      "teardown": 0.01,
+      "total": 3.06
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[query-metric_data1]": {
+    "last_validated_date": "2025-09-19T22:59:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.24,
+      "teardown": 0.01,
+      "total": 2.25
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[query-metric_data2]": {
+    "last_validated_date": "2025-09-19T22:59:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.24,
+      "teardown": 0.01,
+      "total": 2.25
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[smithy-rpc-v2-cbor-metric_data0]": {
+    "last_validated_date": "2025-09-19T22:59:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.23,
+      "teardown": 0.01,
+      "total": 2.24
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[smithy-rpc-v2-cbor-metric_data1]": {
+    "last_validated_date": "2025-09-19T22:59:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.23,
+      "teardown": 0.0,
+      "total": 2.23
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_different_units_no_unit_in_query[smithy-rpc-v2-cbor-metric_data2]": {
+    "last_validated_date": "2025-09-19T22:59:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.23,
+      "teardown": 0.0,
+      "total": 2.23
+    }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics[json]": {
     "last_validated_date": "2025-09-19T20:29:18+00:00",
@@ -527,6 +623,33 @@
       "total": 2.65
     }
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_different_units[json]": {
+    "last_validated_date": "2025-09-19T22:57:26+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.22,
+      "teardown": 0.0,
+      "total": 2.22
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_different_units[query]": {
+    "last_validated_date": "2025-09-19T22:57:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 2.55,
+      "teardown": 0.0,
+      "total": 3.02
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_different_units[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T22:57:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.24,
+      "teardown": 0.01,
+      "total": 2.25
+    }
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_dimensions[json]": {
     "last_validated_date": "2025-09-19T20:33:41+00:00",
     "durations_in_seconds": {
@@ -608,14 +731,86 @@
       "total": 3.47
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results": {
-    "last_validated_date": "2024-01-10T15:29:50+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results[json]": {
+    "last_validated_date": "2025-09-19T23:05:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 8.46,
+      "teardown": 0.01,
+      "total": 8.47
+    }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions": {
-    "last_validated_date": "2024-03-05T14:34:47+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results[query]": {
+    "last_validated_date": "2025-09-19T23:04:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.52,
+      "call": 11.03,
+      "teardown": 0.01,
+      "total": 11.56
+    }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units": {
-    "last_validated_date": "2024-01-05T16:15:39+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_no_results[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T23:05:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 8.43,
+      "teardown": 0.0,
+      "total": 8.43
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions[json]": {
+    "last_validated_date": "2025-09-19T23:02:13+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.22,
+      "teardown": 0.0,
+      "total": 2.22
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions[query]": {
+    "last_validated_date": "2025-09-19T23:02:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 2.56,
+      "teardown": 0.01,
+      "total": 3.08
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_with_null_dimensions[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T23:02:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.22,
+      "teardown": 0.0,
+      "total": 2.22
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units[json]": {
+    "last_validated_date": "2025-09-19T22:56:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.22,
+      "teardown": 0.01,
+      "total": 2.23
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units[query]": {
+    "last_validated_date": "2025-09-19T22:56:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 2.54,
+      "teardown": 0.01,
+      "total": 3.04
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T22:56:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.22,
+      "teardown": 0.01,
+      "total": 2.23
+    }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_insight_rule[json]": {
     "last_validated_date": "2025-09-19T21:45:14+00:00",
@@ -644,8 +839,32 @@
       "total": 1.53
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_amount_of_datapoints": {
-    "last_validated_date": "2024-08-23T14:16:44+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_amount_of_datapoints[json]": {
+    "last_validated_date": "2025-09-19T23:08:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.92,
+      "teardown": 0.01,
+      "total": 0.93
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_amount_of_datapoints[query]": {
+    "last_validated_date": "2025-09-19T23:08:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 1.27,
+      "teardown": 0.01,
+      "total": 1.79
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_amount_of_datapoints[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T23:08:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.94,
+      "teardown": 0.0,
+      "total": 0.94
+    }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_invalid_dashboard_name[json]": {
     "last_validated_date": "2025-09-19T21:32:13+00:00",
@@ -672,6 +891,195 @@
       "call": 0.51,
       "teardown": 0.01,
       "total": 0.52
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs0]": {
+    "last_validated_date": "2025-09-19T23:00:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.36,
+      "teardown": 0.01,
+      "total": 1.37
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs1]": {
+    "last_validated_date": "2025-09-19T23:00:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.34,
+      "teardown": 0.0,
+      "total": 1.34
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs2]": {
+    "last_validated_date": "2025-09-19T23:00:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.35,
+      "teardown": 0.01,
+      "total": 1.36
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs3]": {
+    "last_validated_date": "2025-09-19T23:00:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.69,
+      "teardown": 0.01,
+      "total": 1.7
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs4]": {
+    "last_validated_date": "2025-09-19T23:00:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.34,
+      "teardown": 0.0,
+      "total": 1.34
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs5]": {
+    "last_validated_date": "2025-09-19T23:00:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.33,
+      "teardown": 0.0,
+      "total": 1.33
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[json-input_pairs6]": {
+    "last_validated_date": "2025-09-19T23:00:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.67,
+      "teardown": 0.01,
+      "total": 1.68
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs0]": {
+    "last_validated_date": "2025-09-19T23:00:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.49,
+      "call": 1.68,
+      "teardown": 0.01,
+      "total": 2.18
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs1]": {
+    "last_validated_date": "2025-09-19T23:00:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.35,
+      "teardown": 0.01,
+      "total": 1.36
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs2]": {
+    "last_validated_date": "2025-09-19T23:00:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.35,
+      "teardown": 0.01,
+      "total": 1.36
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs3]": {
+    "last_validated_date": "2025-09-19T23:00:40+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.68,
+      "teardown": 0.01,
+      "total": 1.69
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs4]": {
+    "last_validated_date": "2025-09-19T23:00:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.35,
+      "teardown": 0.01,
+      "total": 1.36
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs5]": {
+    "last_validated_date": "2025-09-19T23:00:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.46,
+      "teardown": 0.01,
+      "total": 2.47
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[query-input_pairs6]": {
+    "last_validated_date": "2025-09-19T23:00:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.53,
+      "teardown": 0.01,
+      "total": 0.54
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs0]": {
+    "last_validated_date": "2025-09-19T23:00:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.48,
+      "teardown": 0.01,
+      "total": 1.49
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs1]": {
+    "last_validated_date": "2025-09-19T23:00:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.35,
+      "teardown": 0.01,
+      "total": 1.36
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs2]": {
+    "last_validated_date": "2025-09-19T23:00:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.67,
+      "teardown": 0.01,
+      "total": 1.68
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs3]": {
+    "last_validated_date": "2025-09-19T23:01:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.33,
+      "teardown": 0.0,
+      "total": 1.33
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs4]": {
+    "last_validated_date": "2025-09-19T23:01:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.33,
+      "teardown": 0.0,
+      "total": 1.33
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs5]": {
+    "last_validated_date": "2025-09-19T23:01:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.35,
+      "teardown": 0.0,
+      "total": 1.35
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_label_generation[smithy-rpc-v2-cbor-input_pairs6]": {
+    "last_validated_date": "2025-09-19T23:01:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.66,
+      "teardown": 0.01,
+      "total": 1.67
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_list_metrics_pagination[json]": {
@@ -809,8 +1217,32 @@
       "total": 9.21
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_multiple_dimensions_statistics": {
-    "last_validated_date": "2024-07-29T07:56:05+00:00"
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_multiple_dimensions_statistics[json]": {
+    "last_validated_date": "2025-09-19T23:07:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 8.12,
+      "teardown": 0.01,
+      "total": 8.13
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_multiple_dimensions_statistics[query]": {
+    "last_validated_date": "2025-09-19T23:07:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 4.83,
+      "teardown": 0.01,
+      "total": 5.35
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_multiple_dimensions_statistics[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-19T23:07:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.47,
+      "teardown": 0.01,
+      "total": 11.48
+    }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_composite_alarm_describe_alarms[json]": {
     "last_validated_date": "2025-09-19T20:41:15+00:00",
