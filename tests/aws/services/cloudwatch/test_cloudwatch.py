@@ -193,27 +193,27 @@ class TestCloudwatch:
         )
 
     @markers.aws.validated
-    def test_get_metric_data(self, aws_client):
+    def test_get_metric_data(self, aws_cloudwatch_client):
         namespace1 = f"test/{short_uid()}"
         namespace2 = f"test/{short_uid()}"
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 23}]
         )
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace1, MetricData=[{"MetricName": "someMetric", "Value": 18}]
         )
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace2, MetricData=[{"MetricName": "ug", "Value": 23}]
         )
 
-        now = datetime.utcnow().replace(microsecond=0)
+        now = datetime.now(tz=UTC).replace(microsecond=0)
         start_time = now - timedelta(minutes=10)
         end_time = now + timedelta(minutes=5)
 
         def _get_metric_data_sum():
             # filtering metric data with current time interval
-            response = aws_client.cloudwatch.get_metric_data(
+            response = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "some",
@@ -240,21 +240,21 @@ class TestCloudwatch:
             )
             assert 2 == len(response["MetricDataResults"])
 
-            for data_metric in response["MetricDataResults"]:
+            for _data_metric in response["MetricDataResults"]:
                 # TODO: there's an issue in the implementation of the service here.
                 #  The returned timestamps should have the seconds set to 0
-                if data_metric["Id"] == "some":
+                if _data_metric["Id"] == "some":
                     assert 41.0 == sum(
-                        data_metric["Values"]
+                        _data_metric["Values"]
                     )  # might fall under different 60s "buckets"
-                if data_metric["Id"] == "part":
-                    assert 23.0 == sum(data_metric["Values"])
+                if _data_metric["Id"] == "part":
+                    assert 23.0 == sum(_data_metric["Values"])
 
         # need to retry because the might most likely not be ingested immediately (it's fairly quick though)
         retry(_get_metric_data_sum, retries=10, sleep_before=2)
 
         # filtering metric data with current time interval
-        response = aws_client.cloudwatch.get_metric_data(
+        get_metric_data = aws_cloudwatch_client.get_metric_data(
             MetricDataQueries=[
                 {
                     "Id": "some",
@@ -276,23 +276,23 @@ class TestCloudwatch:
                     },
                 },
             ],
-            StartTime=datetime.utcnow() + timedelta(hours=1),
-            EndTime=datetime.utcnow() + timedelta(hours=2),
+            StartTime=datetime.now(tz=UTC) + timedelta(hours=1),
+            EndTime=datetime.now(tz=UTC) + timedelta(hours=2),
         )
 
-        for data_metric in response["MetricDataResults"]:
+        for data_metric in get_metric_data["MetricDataResults"]:
             if data_metric["Id"] == "some":
                 assert len(data_metric["Values"]) == 0
             if data_metric["Id"] == "part":
                 assert len(data_metric["Values"]) == 0
 
     @markers.aws.validated
-    def test_get_metric_data_for_multiple_metrics(self, aws_client, snapshot):
+    def test_get_metric_data_for_multiple_metrics(self, aws_cloudwatch_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -303,7 +303,7 @@ class TestCloudwatch:
                 }
             ],
         )
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -315,7 +315,7 @@ class TestCloudwatch:
             ],
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -333,7 +333,7 @@ class TestCloudwatch:
         )
 
         def assert_results():
-            response = aws_client.cloudwatch.get_metric_data(
+            response = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "result1",
@@ -364,7 +364,7 @@ class TestCloudwatch:
                 EndTime=utc_now + timedelta(seconds=60),
             )
 
-            assert len(response["MetricDataResults"][0]["Values"]) > 0
+            assert len(response["MetricDataResults"][2]["Values"]) > 0
             snapshot.match("get_metric_data", response)
 
         retry(assert_results, retries=10, sleep_before=1)
@@ -374,11 +374,11 @@ class TestCloudwatch:
         "stat",
         ["Sum", "SampleCount", "Minimum", "Maximum", "Average"],
     )
-    def test_get_metric_data_stats(self, aws_client, snapshot, stat):
+    def test_get_metric_data_stats(self, aws_cloudwatch_client, snapshot, stat):
         utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -390,7 +390,7 @@ class TestCloudwatch:
             ],
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -408,7 +408,7 @@ class TestCloudwatch:
         )
 
         def assert_results():
-            response = aws_client.cloudwatch.get_metric_data(
+            response = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "result1",

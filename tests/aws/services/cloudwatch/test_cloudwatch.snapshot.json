@@ -1184,162 +1184,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics": {
-    "recorded-date": "23-11-2023, 14:39:07",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              50.0
-            ]
-          },
-          {
-            "Id": "result2",
-            "Label": "metric2",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              25.0
-            ]
-          },
-          {
-            "Id": "result3",
-            "Label": "metric3",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              55.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Sum]": {
-    "recorded-date": "04-12-2023, 12:22:53",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              66.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[SampleCount]": {
-    "recorded-date": "04-12-2023, 12:22:55",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              11.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Minimum]": {
-    "recorded-date": "04-12-2023, 12:22:58",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              1.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Maximum]": {
-    "recorded-date": "04-12-2023, 12:23:00",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              11.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[Average]": {
-    "recorded-date": "04-12-2023, 12:23:02",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              6.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_dimensions": {
     "recorded-date": "23-11-2023, 15:10:11",
     "recorded-content": {
@@ -2540,6 +2384,474 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics[query]": {
+    "recorded-date": "19-09-2025, 20:29:17",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              50.0
+            ]
+          },
+          {
+            "Id": "result2",
+            "Label": "metric2",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              25.0
+            ]
+          },
+          {
+            "Id": "result3",
+            "Label": "metric3",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              55.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics[json]": {
+    "recorded-date": "19-09-2025, 20:29:18",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              50.0
+            ]
+          },
+          {
+            "Id": "result2",
+            "Label": "metric2",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              25.0
+            ]
+          },
+          {
+            "Id": "result3",
+            "Label": "metric3",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              55.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 20:29:20",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              50.0
+            ]
+          },
+          {
+            "Id": "result2",
+            "Label": "metric2",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              25.0
+            ]
+          },
+          {
+            "Id": "result3",
+            "Label": "metric3",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              55.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[query-Sum]": {
+    "recorded-date": "19-09-2025, 20:31:51",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              66.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[query-SampleCount]": {
+    "recorded-date": "19-09-2025, 20:31:54",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[query-Minimum]": {
+    "recorded-date": "19-09-2025, 20:31:56",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[query-Maximum]": {
+    "recorded-date": "19-09-2025, 20:31:59",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[query-Average]": {
+    "recorded-date": "19-09-2025, 20:32:03",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              6.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[json-Sum]": {
+    "recorded-date": "19-09-2025, 20:32:05",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              66.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[json-SampleCount]": {
+    "recorded-date": "19-09-2025, 20:32:08",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[json-Minimum]": {
+    "recorded-date": "19-09-2025, 20:32:10",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[json-Maximum]": {
+    "recorded-date": "19-09-2025, 20:32:13",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[json-Average]": {
+    "recorded-date": "19-09-2025, 20:32:15",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              6.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[smithy-rpc-v2-cbor-Sum]": {
+    "recorded-date": "19-09-2025, 20:32:18",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              66.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[smithy-rpc-v2-cbor-SampleCount]": {
+    "recorded-date": "19-09-2025, 20:32:20",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[smithy-rpc-v2-cbor-Minimum]": {
+    "recorded-date": "19-09-2025, 20:32:22",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              1.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[smithy-rpc-v2-cbor-Maximum]": {
+    "recorded-date": "19-09-2025, 20:32:25",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_stats[smithy-rpc-v2-cbor-Average]": {
+    "recorded-date": "19-09-2025, 20:32:27",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              6.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
