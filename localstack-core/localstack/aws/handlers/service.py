@@ -17,7 +17,7 @@ from ..chain import CompositeResponseHandler, ExceptionHandler, Handler, Handler
 from ..client import parse_response, parse_service_exception
 from ..protocol.parser import RequestParser, create_parser
 from ..protocol.serializer import create_serializer
-from ..protocol.service_router import determine_aws_service_model
+from ..protocol.service_router import determine_aws_protocol, determine_aws_service_model
 from ..skeleton import Skeleton, create_skeleton
 
 LOG = logging.getLogger(__name__)
@@ -33,6 +33,8 @@ class ServiceNameParser(Handler):
         # example). If it is already set, we can skip the parsing of the request. It is very important for S3, because
         # parsing the request will consume the data stream and prevent streaming.
         if context.service:
+            if not context.protocol:
+                context.protocol = determine_aws_protocol(context.request, context.service)
             return
 
         service_model = determine_aws_service_model(context.request)
@@ -41,6 +43,7 @@ class ServiceNameParser(Handler):
             return
 
         context.service = service_model
+        context.protocol = determine_aws_protocol(context.request, service_model)
 
 
 class ServiceRequestParser(Handler):
@@ -63,7 +66,7 @@ class ServiceRequestParser(Handler):
         return self.parse_and_enrich(context)
 
     def parse_and_enrich(self, context: RequestContext):
-        parser = create_parser(context.service)
+        parser = create_parser(context.service, context.protocol)
         operation, instance = parser.parse(context.request)
 
         # enrich context
@@ -137,7 +140,7 @@ class ServiceRequestRouter(Handler):
         operation_name = operation.name
         message = f"no handler for operation '{operation_name}' on service '{service_name}'"
         error = CommonServiceException("InternalFailure", message, status_code=501)
-        serializer = create_serializer(context.service)
+        serializer = create_serializer(context.service, context.protocol)
         return serializer.serialize_error_to_response(
             error, operation, context.request.headers, context.request_id
         )
@@ -209,7 +212,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
             ).with_traceback(exception.__traceback__)
             context.service_exception = error
 
-        serializer = create_serializer(context.service)  # TODO: serializer cache
+        serializer = create_serializer(context.service, context.protocol)
         return serializer.serialize_error_to_response(
             error, operation, context.request.headers, context.request_id
         )
