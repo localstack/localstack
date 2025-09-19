@@ -1971,13 +1971,13 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
-    def test_get_metric_data_with_zero_and_labels(self, aws_client, snapshot):
+    def test_get_metric_data_with_zero_and_labels(self, aws_cloudwatch_client, snapshot):
         utc_now = datetime.now(tz=UTC)
 
         namespace1 = f"test/{short_uid()}"
         # put metric data
         values = [0, 2, 4, 3.5, 7, 100]
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace1,
             MetricData=[
                 {"MetricName": "metric1", "Value": val, "Unit": "Seconds"} for val in values
@@ -1987,7 +1987,7 @@ class TestCloudwatch:
         stats = ["Average", "Sum", "Minimum", "Maximum"]
 
         def _get_metric_data():
-            return aws_client.cloudwatch.get_metric_data(
+            return aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "result_" + stat,
@@ -2014,13 +2014,13 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..Datapoints..Unit"])
-    def test_get_metric_statistics(self, aws_client, snapshot):
+    def test_get_metric_statistics(self, aws_cloudwatch_client, snapshot):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
         for i in range(10):
-            aws_client.cloudwatch.put_metric_data(
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -2032,7 +2032,7 @@ class TestCloudwatch:
             )
 
         def assert_results():
-            stats_responce = aws_client.cloudwatch.get_metric_statistics(
+            stats_responce = aws_cloudwatch_client.get_metric_statistics(
                 Namespace=namespace,
                 MetricName="metric",
                 StartTime=utc_now - timedelta(seconds=60),
@@ -2048,12 +2048,12 @@ class TestCloudwatch:
         retry(assert_results, retries=10, sleep=1.0, sleep_before=sleep_before)
 
     @markers.aws.validated
-    def test_list_metrics_pagination(self, aws_client):
+    def test_list_metrics_pagination(self, aws_cloudwatch_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         max_metrics = 500  # max metrics per page according to AWS docs
         for i in range(0, max_metrics + 1):
-            aws_client.cloudwatch.put_metric_data(
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -2065,7 +2065,7 @@ class TestCloudwatch:
             )
 
         def assert_metrics_count():
-            response = aws_client.cloudwatch.list_metrics(Namespace=namespace)
+            response = aws_cloudwatch_client.list_metrics(Namespace=namespace)
             assert len(response["Metrics"]) == max_metrics and response.get("NextToken") is not None
 
         retry(assert_metrics_count, retries=10, sleep=1.0, sleep_before=1.0)
@@ -2476,10 +2476,10 @@ class TestCloudwatch:
         def _match_results():
             response = _get_metric_data()
             # keep one assert to avoid storing incorrect values
-            sum = [
+            _sum = [
                 res for res in response["MetricDataResults"] if res["Id"].startswith("result_Sum")
             ][0]
-            assert [int(val) for val in sum["Values"]] == [109]
+            assert [int(val) for val in _sum["Values"]] == [109]
             snapshot.match("label_generation", response)
 
         retry(_match_results, retries=10, sleep=1.0)

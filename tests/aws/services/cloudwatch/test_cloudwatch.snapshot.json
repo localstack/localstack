@@ -42,79 +42,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_statistics": {
-    "recorded-date": "04-12-2023, 14:13:08",
-    "recorded-content": {
-      "get_metric_statistics": {
-        "Datapoints": [
-          {
-            "Average": 4.5,
-            "Maximum": 9.0,
-            "Minimum": 0.0,
-            "SampleCount": 10.0,
-            "Sum": 45.0,
-            "Timestamp": "timestamp",
-            "Unit": "None"
-          }
-        ],
-        "Label": "metric",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_zero_and_labels": {
-    "recorded-date": "04-12-2023, 09:13:59",
-    "recorded-content": {
-      "get_metric_data_with_zero_and_labels": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result_Average",
-            "Label": "metric1 Average",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              19.416666666666668
-            ]
-          },
-          {
-            "Id": "result_Sum",
-            "Label": "metric1 Sum",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              116.5
-            ]
-          },
-          {
-            "Id": "result_Minimum",
-            "Label": "metric1 Minimum",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              0.0
-            ]
-          },
-          {
-            "Id": "result_Maximum",
-            "Label": "metric1 Maximum",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              100.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_handle_different_units": {
     "recorded-date": "05-01-2024, 16:15:39",
     "recorded-content": {
@@ -5717,6 +5644,225 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_zero_and_labels[query]": {
+    "recorded-date": "19-09-2025, 22:46:59",
+    "recorded-content": {
+      "get_metric_data_with_zero_and_labels": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Average",
+            "Label": "metric1 Average",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              19.416666666666668
+            ]
+          },
+          {
+            "Id": "result_Sum",
+            "Label": "metric1 Sum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              116.5
+            ]
+          },
+          {
+            "Id": "result_Minimum",
+            "Label": "metric1 Minimum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              0.0
+            ]
+          },
+          {
+            "Id": "result_Maximum",
+            "Label": "metric1 Maximum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              100.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_zero_and_labels[json]": {
+    "recorded-date": "19-09-2025, 22:47:00",
+    "recorded-content": {
+      "get_metric_data_with_zero_and_labels": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Average",
+            "Label": "metric1 Average",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              19.416666666666668
+            ]
+          },
+          {
+            "Id": "result_Sum",
+            "Label": "metric1 Sum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              116.5
+            ]
+          },
+          {
+            "Id": "result_Minimum",
+            "Label": "metric1 Minimum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              0.0
+            ]
+          },
+          {
+            "Id": "result_Maximum",
+            "Label": "metric1 Maximum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              100.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_zero_and_labels[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 22:47:02",
+    "recorded-content": {
+      "get_metric_data_with_zero_and_labels": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result_Average",
+            "Label": "metric1 Average",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              19.416666666666668
+            ]
+          },
+          {
+            "Id": "result_Sum",
+            "Label": "metric1 Sum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              116.5
+            ]
+          },
+          {
+            "Id": "result_Minimum",
+            "Label": "metric1 Minimum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              0.0
+            ]
+          },
+          {
+            "Id": "result_Maximum",
+            "Label": "metric1 Maximum",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              100.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_statistics[query]": {
+    "recorded-date": "19-09-2025, 22:47:57",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Average": 4.5,
+            "Maximum": 9.0,
+            "Minimum": 0.0,
+            "SampleCount": 10.0,
+            "Sum": 45.0,
+            "Timestamp": "timestamp",
+            "Unit": "None"
+          }
+        ],
+        "Label": "metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_statistics[json]": {
+    "recorded-date": "19-09-2025, 22:48:01",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Average": 4.5,
+            "Maximum": 9.0,
+            "Minimum": 0.0,
+            "SampleCount": 10.0,
+            "Sum": 45.0,
+            "Timestamp": "timestamp",
+            "Unit": "None"
+          }
+        ],
+        "Label": "metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_statistics[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 22:48:04",
+    "recorded-content": {
+      "get_metric_statistics": {
+        "Datapoints": [
+          {
+            "Average": 4.5,
+            "Maximum": 9.0,
+            "Minimum": 0.0,
+            "SampleCount": 10.0,
+            "Sum": 45.0,
+            "Timestamp": "timestamp",
+            "Unit": "None"
+          }
+        ],
+        "Label": "metric",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
