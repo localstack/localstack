@@ -1739,167 +1739,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm": {
-    "recorded-date": "14-11-2024, 14:25:30",
-    "recorded-content": {
-      "put-composite-alarm": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
-        "ActionsEnabled": true,
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
-        "AlarmConfigurationUpdatedTimestamp": "timestamp",
-        "AlarmDescription": "composite alarm description",
-        "AlarmName": "<composite-alarm-name>",
-        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
-        "InsufficientDataActions": [],
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
-        ],
-        "StateReason": "<state-reason:1>",
-        "StateReasonData": {
-          "triggeringAlarms": [
-            {
-              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
-              "state": {
-                "value": "ALARM",
-                "timestamp": "date"
-              }
-            }
-          ]
-        },
-        "StateTransitionedTimestamp": "timestamp",
-        "StateUpdatedTimestamp": "timestamp",
-        "StateValue": "ALARM"
-      },
-      "composite-alarm-in-ok-when-alarm-1-is-back-to-ok": {
-        "ActionsEnabled": true,
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
-        "AlarmConfigurationUpdatedTimestamp": "timestamp",
-        "AlarmDescription": "composite alarm description",
-        "AlarmName": "<composite-alarm-name>",
-        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
-        "InsufficientDataActions": [],
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
-        ],
-        "StateReason": "<state-reason:2>",
-        "StateReasonData": {
-          "triggeringAlarms": [
-            {
-              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
-              "state": {
-                "value": "OK",
-                "timestamp": "date"
-              }
-            }
-          ]
-        },
-        "StateTransitionedTimestamp": "timestamp",
-        "StateUpdatedTimestamp": "timestamp",
-        "StateValue": "OK"
-      },
-      "composite-alarm-in-alarm-when-alarm-2-is-in-alarm": {
-        "ActionsEnabled": true,
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
-        "AlarmConfigurationUpdatedTimestamp": "timestamp",
-        "AlarmDescription": "composite alarm description",
-        "AlarmName": "<composite-alarm-name>",
-        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
-        "InsufficientDataActions": [],
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
-        ],
-        "StateReason": "<state-reason:3>",
-        "StateReasonData": {
-          "triggeringAlarms": [
-            {
-              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
-              "state": {
-                "value": "ALARM",
-                "timestamp": "date"
-              }
-            }
-          ]
-        },
-        "StateTransitionedTimestamp": "timestamp",
-        "StateUpdatedTimestamp": "timestamp",
-        "StateValue": "ALARM"
-      },
-      "composite-alarm-in-ok-when-alarm-2-is-back-to-ok": {
-        "ActionsEnabled": true,
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
-        "AlarmConfigurationUpdatedTimestamp": "timestamp",
-        "AlarmDescription": "composite alarm description",
-        "AlarmName": "<composite-alarm-name>",
-        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
-        "InsufficientDataActions": [],
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
-        ],
-        "StateReason": "<state-reason:4>",
-        "StateReasonData": {
-          "triggeringAlarms": [
-            {
-              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
-              "state": {
-                "value": "OK",
-                "timestamp": "date"
-              }
-            }
-          ]
-        },
-        "StateTransitionedTimestamp": "timestamp",
-        "StateUpdatedTimestamp": "timestamp",
-        "StateValue": "OK"
-      },
-      "composite-alarm-is-triggered-by-alarm-1-and-then-unchanged-by-alarm-2": {
-        "ActionsEnabled": true,
-        "AlarmActions": [
-          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
-        ],
-        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
-        "AlarmConfigurationUpdatedTimestamp": "timestamp",
-        "AlarmDescription": "composite alarm description",
-        "AlarmName": "<composite-alarm-name>",
-        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
-        "InsufficientDataActions": [],
-        "OKActions": [
-          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
-        ],
-        "StateReason": "<state-reason:5>",
-        "StateReasonData": {
-          "triggeringAlarms": [
-            {
-              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
-              "state": {
-                "value": "ALARM",
-                "timestamp": "date"
-              }
-            }
-          ]
-        },
-        "StateTransitionedTimestamp": "timestamp",
-        "StateUpdatedTimestamp": "timestamp",
-        "StateValue": "ALARM"
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[json]": {
     "recorded-date": "18-09-2025, 13:56:03",
     "recorded-content": {
@@ -3442,6 +3281,1059 @@
             "Threshold": 50.0,
             "TreatMissingData": "ignore",
             "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm[query]": {
+    "recorded-date": "19-09-2025, 21:03:22",
+    "recorded-content": {
+      "put-composite-alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:1>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      },
+      "composite-alarm-in-ok-when-alarm-1-is-back-to-ok": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:2>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "OK",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "OK"
+      },
+      "composite-alarm-in-alarm-when-alarm-2-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:3>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      },
+      "composite-alarm-in-ok-when-alarm-2-is-back-to-ok": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:4>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "OK",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "OK"
+      },
+      "composite-alarm-is-triggered-by-alarm-1-and-then-unchanged-by-alarm-2": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:5>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm[json]": {
+    "recorded-date": "19-09-2025, 21:03:34",
+    "recorded-content": {
+      "put-composite-alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:1>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      },
+      "composite-alarm-in-ok-when-alarm-1-is-back-to-ok": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:2>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "OK",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "OK"
+      },
+      "composite-alarm-in-alarm-when-alarm-2-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:3>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      },
+      "composite-alarm-in-ok-when-alarm-2-is-back-to-ok": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:4>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "OK",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "OK"
+      },
+      "composite-alarm-is-triggered-by-alarm-1-and-then-unchanged-by-alarm-2": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:5>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_trigger_composite_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 21:03:49",
+    "recorded-content": {
+      "put-composite-alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "composite-alarm-in-alarm-when-alarm-1-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:1>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      },
+      "composite-alarm-in-ok-when-alarm-1-is-back-to-ok": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:2>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "OK",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "OK"
+      },
+      "composite-alarm-in-alarm-when-alarm-2-is-in-alarm": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:3>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      },
+      "composite-alarm-in-ok-when-alarm-2-is-back-to-ok": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:4>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>",
+              "state": {
+                "value": "OK",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "OK"
+      },
+      "composite-alarm-is-triggered-by-alarm-1-and-then-unchanged-by-alarm-2": {
+        "ActionsEnabled": true,
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<alarm-topic-name>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<composite-alarm-name>",
+        "AlarmConfigurationUpdatedTimestamp": "timestamp",
+        "AlarmDescription": "composite alarm description",
+        "AlarmName": "<composite-alarm-name>",
+        "AlarmRule": "ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>\") OR ALARM(\"arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-2-name>\")",
+        "InsufficientDataActions": [],
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<ok-topic-name>"
+        ],
+        "StateReason": "<state-reason:5>",
+        "StateReasonData": {
+          "triggeringAlarms": [
+            {
+              "arn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<simple-alarm-1-name>",
+              "state": {
+                "value": "ALARM",
+                "timestamp": "date"
+              }
+            }
+          ]
+        },
+        "StateTransitionedTimestamp": "timestamp",
+        "StateUpdatedTimestamp": "timestamp",
+        "StateValue": "ALARM"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm[query]": {
+    "recorded-date": "19-09-2025, 21:08:24",
+    "recorded-content": {
+      "describe-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-triggered-sqs-msg": {
+        "AWSAccountId": "111111111111",
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmConfigurationUpdatedTimestamp": "date",
+        "AlarmDescription": "testing cloudwatch alarms",
+        "AlarmName": "<alarm-name:1>",
+        "InsufficientDataActions": [],
+        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+        "NewStateValue": "ALARM",
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "OldStateValue": "INSUFFICIENT_DATA",
+        "Region": "<region-name-full:1>",
+        "StateChangeTime": "date",
+        "Trigger": {
+          "ComparisonOperator": "GreaterThanThreshold",
+          "Dimensions": [
+            {
+              "name": "InstanceId",
+              "value": "abc"
+            }
+          ],
+          "EvaluateLowSampleCountPercentile": "",
+          "EvaluationPeriods": 1,
+          "MetricName": "my-metric1",
+          "Namespace": "<namespace:1>",
+          "Period": 10,
+          "Statistic": "AVERAGE",
+          "StatisticType": "Statistic",
+          "Threshold": 21.0,
+          "TreatMissingData": "ignore",
+          "Unit": "Seconds"
+        }
+      },
+      "describe-alarm-history": {
+        "AlarmHistoryItems": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmType": "MetricAlarm",
+            "HistoryData": {
+              "version": "1.0",
+              "oldState": {
+                "stateValue": "INSUFFICIENT_DATA",
+                "stateReason": "Unchecked: Initial alarm creation"
+              },
+              "newState": {
+                "stateValue": "ALARM",
+                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+                "stateReasonData": {
+                  "version": "1.0",
+                  "queryDate": "date",
+                  "startDate": "date",
+                  "unit": "Seconds",
+                  "statistic": "Average",
+                  "period": 10,
+                  "recentDatapoints": [
+                    21.5
+                  ],
+                  "threshold": 21.0,
+                  "evaluatedDatapoints": [
+                    {
+                      "timestamp": "date",
+                      "sampleCount": 2.0,
+                      "value": 21.5
+                    }
+                  ]
+                }
+              }
+            },
+            "HistoryItemType": "StateUpdate",
+            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-alarms-for-metric": {
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [
+                21.5
+              ],
+              "threshold": 21.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 2.0,
+                  "value": 21.5
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm[json]": {
+    "recorded-date": "19-09-2025, 21:08:43",
+    "recorded-content": {
+      "describe-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-triggered-sqs-msg": {
+        "AWSAccountId": "111111111111",
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmConfigurationUpdatedTimestamp": "date",
+        "AlarmDescription": "testing cloudwatch alarms",
+        "AlarmName": "<alarm-name:1>",
+        "InsufficientDataActions": [],
+        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+        "NewStateValue": "ALARM",
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "OldStateValue": "INSUFFICIENT_DATA",
+        "Region": "<region-name-full:1>",
+        "StateChangeTime": "date",
+        "Trigger": {
+          "ComparisonOperator": "GreaterThanThreshold",
+          "Dimensions": [
+            {
+              "name": "InstanceId",
+              "value": "abc"
+            }
+          ],
+          "EvaluateLowSampleCountPercentile": "",
+          "EvaluationPeriods": 1,
+          "MetricName": "my-metric1",
+          "Namespace": "<namespace:1>",
+          "Period": 10,
+          "Statistic": "AVERAGE",
+          "StatisticType": "Statistic",
+          "Threshold": 21.0,
+          "TreatMissingData": "ignore",
+          "Unit": "Seconds"
+        }
+      },
+      "describe-alarm-history": {
+        "AlarmHistoryItems": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmType": "MetricAlarm",
+            "HistoryData": {
+              "version": "1.0",
+              "oldState": {
+                "stateValue": "INSUFFICIENT_DATA",
+                "stateReason": "Unchecked: Initial alarm creation"
+              },
+              "newState": {
+                "stateValue": "ALARM",
+                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+                "stateReasonData": {
+                  "version": "1.0",
+                  "queryDate": "date",
+                  "startDate": "date",
+                  "unit": "Seconds",
+                  "statistic": "Average",
+                  "period": 10,
+                  "recentDatapoints": [
+                    21.5
+                  ],
+                  "threshold": 21.0,
+                  "evaluatedDatapoints": [
+                    {
+                      "timestamp": "date",
+                      "sampleCount": 2.0,
+                      "value": 21.5
+                    }
+                  ]
+                }
+              }
+            },
+            "HistoryItemType": "StateUpdate",
+            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-alarms-for-metric": {
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [
+                21.5
+              ],
+              "threshold": 21.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 2.0,
+                  "value": 21.5
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 21:09:02",
+    "recorded-content": {
+      "describe-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "alarm-triggered-sqs-msg": {
+        "AWSAccountId": "111111111111",
+        "AlarmActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+        "AlarmConfigurationUpdatedTimestamp": "date",
+        "AlarmDescription": "testing cloudwatch alarms",
+        "AlarmName": "<alarm-name:1>",
+        "InsufficientDataActions": [],
+        "NewStateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+        "NewStateValue": "ALARM",
+        "OKActions": [
+          "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+        ],
+        "OldStateValue": "INSUFFICIENT_DATA",
+        "Region": "<region-name-full:1>",
+        "StateChangeTime": "date",
+        "Trigger": {
+          "ComparisonOperator": "GreaterThanThreshold",
+          "Dimensions": [
+            {
+              "name": "InstanceId",
+              "value": "abc"
+            }
+          ],
+          "EvaluateLowSampleCountPercentile": "",
+          "EvaluationPeriods": 1,
+          "MetricName": "my-metric1",
+          "Namespace": "<namespace:1>",
+          "Period": 10,
+          "Statistic": "AVERAGE",
+          "StatisticType": "Statistic",
+          "Threshold": 21.0,
+          "TreatMissingData": "ignore",
+          "Unit": "Seconds"
+        }
+      },
+      "describe-alarm-history": {
+        "AlarmHistoryItems": [
+          {
+            "AlarmName": "<alarm-name:1>",
+            "AlarmType": "MetricAlarm",
+            "HistoryData": {
+              "version": "1.0",
+              "oldState": {
+                "stateValue": "INSUFFICIENT_DATA",
+                "stateReason": "Unchecked: Initial alarm creation"
+              },
+              "newState": {
+                "stateValue": "ALARM",
+                "stateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+                "stateReasonData": {
+                  "version": "1.0",
+                  "queryDate": "date",
+                  "startDate": "date",
+                  "unit": "Seconds",
+                  "statistic": "Average",
+                  "period": 10,
+                  "recentDatapoints": [
+                    21.5
+                  ],
+                  "threshold": 21.0,
+                  "evaluatedDatapoints": [
+                    {
+                      "timestamp": "date",
+                      "sampleCount": 2.0,
+                      "value": 21.5
+                    }
+                  ]
+                }
+              }
+            },
+            "HistoryItemType": "StateUpdate",
+            "HistorySummary": "Alarm updated from INSUFFICIENT_DATA to ALARM",
+            "Timestamp": "timestamp"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-alarms-for-metric": {
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "testing cloudwatch alarms",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "abc"
+              }
+            ],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "my-metric1",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_arn>"
+            ],
+            "Period": 10,
+            "StateReason": "Threshold Crossed: 1 datapoint [21.5 (MM/DD/YY HH:MM:SS)] was greater than the threshold (21.0).",
+            "StateReasonData": {
+              "version": "1.0",
+              "queryDate": "date",
+              "startDate": "date",
+              "unit": "Seconds",
+              "statistic": "Average",
+              "period": 10,
+              "recentDatapoints": [
+                21.5
+              ],
+              "threshold": 21.0,
+              "evaluatedDatapoints": [
+                {
+                  "timestamp": "date",
+                  "sampleCount": 2.0,
+                  "value": 21.5
+                }
+              ]
+            },
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 21.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Seconds"
           }
         ],
         "ResponseMetadata": {

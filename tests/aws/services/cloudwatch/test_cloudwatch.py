@@ -928,7 +928,7 @@ class TestCloudwatch:
             Threshold=expected_trigger["Threshold"],
             Dimensions=[{"Name": "InstanceId", "Value": "i-0317828c84edbe100"}],
             Unit=expected_trigger["Unit"],
-            Statistic=expected_trigger["Statistic"].capitalize(),
+            Statistic="Average",
             OKActions=[topic_arn_ok],
             AlarmActions=[topic_arn_alarm],
             EvaluationPeriods=expected_trigger["EvaluationPeriods"],
@@ -938,10 +938,11 @@ class TestCloudwatch:
         cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
 
         # trigger alarm
-        state_value = "ALARM"
         state_reason = "testing alarm"
         aws_cloudwatch_client.set_alarm_state(
-            AlarmName=alarm_name, StateReason=state_reason, StateValue=state_value
+            AlarmName=alarm_name,
+            StateReason=state_reason,
+            StateValue="ALARM",
         )
 
         retry(
@@ -951,7 +952,7 @@ class TestCloudwatch:
             sqs_client=aws_client.sqs,
             expected_queue_url=queue_url_alarm,
             expected_topic_arn=topic_arn_alarm,
-            expected_new=state_value,
+            expected_new="ALARM",
             expected_reason=state_reason,
             alarm_name=alarm_name,
             alarm_description=alarm_description,
@@ -960,10 +961,9 @@ class TestCloudwatch:
         describe_alarm = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("triggered-alarm", describe_alarm)
         # trigger OK
-        state_value = "OK"
         state_reason = "resetting alarm"
         aws_cloudwatch_client.set_alarm_state(
-            AlarmName=alarm_name, StateReason=state_reason, StateValue=state_value
+            AlarmName=alarm_name, StateReason=state_reason, StateValue="OK"
         )
 
         retry(
@@ -973,7 +973,7 @@ class TestCloudwatch:
             sqs_client=aws_client.sqs,
             expected_queue_url=queue_url_ok,
             expected_topic_arn=topic_arn_ok,
-            expected_new=state_value,
+            expected_new="OK",
             expected_reason=state_reason,
             alarm_name=alarm_name,
             alarm_description=alarm_description,
@@ -985,7 +985,14 @@ class TestCloudwatch:
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
     def test_trigger_composite_alarm(
-        self, sns_create_topic, sqs_create_queue, aws_client, cleanups, snapshot
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        aws_client,
+        cleanups,
+        snapshot,
+        sns_create_sqs_subscription,
+        aws_cloudwatch_client,
     ):
         # create topics for state 'ALARM' and 'OK' of the composite alarm
         topic_name_alarm = f"topic-alarm-{short_uid()}"
@@ -996,45 +1003,23 @@ class TestCloudwatch:
         sns_topic_ok = sns_create_topic(Name=topic_name_ok)
         topic_arn_ok = sns_topic_ok["TopicArn"]
 
-        # TODO extract SNS-to-SQS into a fixture
         # create queues for 'ALARM' and 'OK' of the composite alarm (will receive sns messages)
         queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{short_uid()}")
         queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{short_uid()}")
 
-        arn_queue_alarm = aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url_alarm, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        arn_queue_ok = aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url_ok, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_alarm,
-            Attributes={"Policy": get_sqs_policy(arn_queue_alarm, topic_arn_alarm)},
+        sns_create_sqs_subscription(
+            topic_arn=topic_arn_alarm,
+            queue_url=queue_url_alarm,
         )
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_ok, Attributes={"Policy": get_sqs_policy(arn_queue_ok, topic_arn_ok)}
-        )
-
-        # subscribe to SQS
-        subscription_alarm = aws_client.sns.subscribe(
-            TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue_alarm
-        )
-        cleanups.append(
-            lambda: aws_client.sns.unsubscribe(
-                SubscriptionArn=subscription_alarm["SubscriptionArn"]
-            )
-        )
-        subscription_ok = aws_client.sns.subscribe(
-            TopicArn=topic_arn_ok, Protocol="sqs", Endpoint=arn_queue_ok
-        )
-        cleanups.append(
-            lambda: aws_client.sns.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
+        sns_create_sqs_subscription(
+            topic_arn=topic_arn_ok,
+            queue_url=queue_url_ok,
         )
 
         # put metric alarms that would be parts of a composite one
         # TODO extract put metric alarm and associated cleanups into a fixture
         def _put_metric_alarm(alarm_name: str):
-            aws_client.cloudwatch.put_metric_alarm(
+            aws_cloudwatch_client.put_metric_alarm(
                 AlarmName=alarm_name,
                 MetricName="CPUUtilization",
                 Namespace="AWS/EC2",
@@ -1044,7 +1029,7 @@ class TestCloudwatch:
                 ComparisonOperator="GreaterThanThreshold",
                 Threshold=30,
             )
-            cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+            cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
 
         alarm_1_name = f"simple-alarm-1-{short_uid()}"
         alarm_2_name = f"simple-alarm-2-{short_uid()}"
@@ -1052,10 +1037,10 @@ class TestCloudwatch:
         _put_metric_alarm(alarm_1_name)
         _put_metric_alarm(alarm_2_name)
 
-        alarm_1_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_1_name])[
+        alarm_1_arn = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_1_name])[
             "MetricAlarms"
         ][0]["AlarmArn"]
-        alarm_2_arn = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_2_name])[
+        alarm_2_arn = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_2_name])[
             "MetricAlarms"
         ][0]["AlarmArn"]
 
@@ -1065,7 +1050,7 @@ class TestCloudwatch:
 
         composite_alarm_rule = f'ALARM("{alarm_1_arn}") OR ALARM("{alarm_2_arn}")'
 
-        put_composite_alarm_response = aws_client.cloudwatch.put_composite_alarm(
+        put_composite_alarm_response = aws_cloudwatch_client.put_composite_alarm(
             AlarmName=composite_alarm_name,
             AlarmDescription=composite_alarm_description,
             AlarmRule=composite_alarm_rule,
@@ -1073,11 +1058,11 @@ class TestCloudwatch:
             AlarmActions=[topic_arn_alarm],
         )
         cleanups.append(
-            lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[composite_alarm_name])
+            lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[composite_alarm_name])
         )
         snapshot.match("put-composite-alarm", put_composite_alarm_response)
 
-        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+        composite_alarms_list = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm = composite_alarms_list["CompositeAlarms"][0]
@@ -1142,7 +1127,7 @@ class TestCloudwatch:
             )
 
         # trigger alarm 1 - composite one should also go into ALARM state
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
         )
 
@@ -1151,7 +1136,7 @@ class TestCloudwatch:
             expected_triggering_child_state="ALARM",
         )
 
-        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+        composite_alarms_list = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_alarm_when_alarm_1_in_alarm = composite_alarms_list["CompositeAlarms"][0]
@@ -1161,7 +1146,7 @@ class TestCloudwatch:
         )
 
         # trigger OK for alarm 1 - composite one should also go back to OK
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_1_name, StateValue="OK", StateReason="resetting alarm 1"
         )
 
@@ -1170,7 +1155,7 @@ class TestCloudwatch:
             expected_triggering_child_state="OK",
         )
 
-        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+        composite_alarms_list = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_ok_when_alarm_1_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
@@ -1180,7 +1165,7 @@ class TestCloudwatch:
         )
 
         # trigger alarm 2 - composite one should go again into ALARM state
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
         )
 
@@ -1189,7 +1174,7 @@ class TestCloudwatch:
             expected_triggering_child_state="ALARM",
         )
 
-        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+        composite_alarms_list = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_alarm_when_alarm_2_in_alarm = composite_alarms_list["CompositeAlarms"][0]
@@ -1199,7 +1184,7 @@ class TestCloudwatch:
         )
 
         # trigger OK for alarm 2 - composite one should also go back to OK
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_2_name, StateValue="OK", StateReason="resetting alarm 2"
         )
 
@@ -1208,7 +1193,7 @@ class TestCloudwatch:
             expected_triggering_child_state="OK",
         )
 
-        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+        composite_alarms_list = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_in_ok_when_alarm_2_back_to_ok = composite_alarms_list["CompositeAlarms"][0]
@@ -1218,14 +1203,14 @@ class TestCloudwatch:
         )
 
         # trigger alarm 2 while alarm 1 is triggered - composite one shouldn't change
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_1_name, StateValue="ALARM", StateReason="trigger alarm 1"
         )
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_2_name, StateValue="ALARM", StateReason="trigger alarm 2"
         )
 
-        composite_alarms_list = aws_client.cloudwatch.describe_alarms(
+        composite_alarms_list = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         composite_alarm_is_triggered_by_alarm_1_and_then_not_changed_by_alarm_2 = (
@@ -1250,10 +1235,16 @@ class TestCloudwatch:
         condition=is_old_provider(), reason="DescribeAlarmHistory is not implemented"
     )
     def test_put_metric_alarm(
-        self, sns_create_topic, sqs_create_queue, snapshot, aws_client, cleanups
+        self,
+        sns_create_topic,
+        sqs_queue,
+        snapshot,
+        aws_client,
+        cleanups,
+        sns_create_sqs_subscription,
+        aws_cloudwatch_client,
     ):
-        sns_topic_alarm = sns_create_topic()
-        topic_arn_alarm = sns_topic_alarm["TopicArn"]
+        topic_arn_alarm = sns_create_topic()["TopicArn"]
 
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         snapshot.add_transformer(
@@ -1269,25 +1260,15 @@ class TestCloudwatch:
         namespace = f"test-nsp-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.regex(namespace, "<metric-namespace>"))
 
-        sqs_queue = sqs_create_queue()
-        arn_queue = aws_client.sqs.get_queue_attributes(
-            QueueUrl=sqs_queue, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        # required for AWS:
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=sqs_queue,
-            Attributes={"Policy": get_sqs_policy(arn_queue, topic_arn_alarm)},
-        )
         metric_name = "my-metric1"
         dimension = [{"Name": "InstanceId", "Value": "abc"}]
         alarm_name = f"test-alarm-{short_uid()}"
 
-        subscription = aws_client.sns.subscribe(
-            TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue
+        sns_create_sqs_subscription(
+            topic_arn=topic_arn_alarm,
+            queue_url=sqs_queue,
         )
-        cleanups.append(
-            lambda: aws_client.sns.unsubscribe(SubscriptionArn=subscription["SubscriptionArn"])
-        )
+
         data = [
             {
                 "MetricName": metric_name,
@@ -1306,7 +1287,7 @@ class TestCloudwatch:
         ]
 
         # create alarm with action for "ALARM"
-        aws_client.cloudwatch.put_metric_alarm(
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             AlarmDescription="testing cloudwatch alarms",
             MetricName=metric_name,
@@ -1324,11 +1305,11 @@ class TestCloudwatch:
             TreatMissingData="ignore",
             # notBreaching had some downsides, as depending on the alarm evaluation interval it would first go into OK
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
-        response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
+        response = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe-alarm", response)
 
-        aws_client.cloudwatch.put_metric_data(Namespace=namespace, MetricData=data)
+        aws_cloudwatch_client.put_metric_data(Namespace=namespace, MetricData=data)
         retry(
             _sqs_messages_snapshot,
             retries=60,
@@ -1342,13 +1323,13 @@ class TestCloudwatch:
         )
 
         # describe alarm history
-        history = aws_client.cloudwatch.describe_alarm_history(
+        history = aws_cloudwatch_client.describe_alarm_history(
             AlarmName=alarm_name, HistoryItemType="StateUpdate"
         )
         snapshot.match("describe-alarm-history", history)
 
         # describe alarms for metric
-        alarms = aws_client.cloudwatch.describe_alarms_for_metric(
+        alarms = aws_cloudwatch_client.describe_alarms_for_metric(
             MetricName=metric_name,
             Namespace=namespace,
             Dimensions=dimension,
