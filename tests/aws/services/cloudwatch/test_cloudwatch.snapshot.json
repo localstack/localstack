@@ -2419,7 +2419,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_validation[query]": {
-    "recorded-date": "19-09-2025, 17:40:36",
+    "recorded-date": "19-09-2025, 18:08:03",
     "recorded-content": {
       "invalid-param-combination": {
         "Error": {
@@ -2457,7 +2457,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_validation[json]": {
-    "recorded-date": "19-09-2025, 17:40:38",
+    "recorded-date": "19-09-2025, 18:08:04",
     "recorded-content": {
       "invalid-param-combination": {
         "Error": {
@@ -2501,7 +2501,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_data_validation[smithy-rpc-v2-cbor]": {
-    "recorded-date": "19-09-2025, 17:40:39",
+    "recorded-date": "19-09-2025, 18:08:05",
     "recorded-content": {
       "invalid-param-combination": {
         "Error": {

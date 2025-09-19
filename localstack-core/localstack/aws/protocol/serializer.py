@@ -614,6 +614,15 @@ class ResponseSerializer(abc.ABC):
     def _get_error_message(self, error: Exception) -> str | None:
         return str(error) if error is not None and str(error) != "None" else None
 
+    def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
+        """
+        Add an `x-amzn-query-error` header for client to  translate errors codes from former `query` services
+        into other protocols.
+        """
+
+        sender_fault = "Sender" if error.sender_fault else "Receiver"
+        response.headers["x-amzn-query-error"] = f"{error.code};{sender_fault}"
+
 
 class BaseXMLResponseSerializer(ResponseSerializer):
     """
@@ -1254,8 +1263,18 @@ class JSONResponseSerializer(ResponseSerializer):
         # TODO implement different service-specific serializer configurations
         #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header
         #   - the specification defines that it's either the __type field OR the header
-        response.headers["X-Amzn-Errortype"] = error.code
-        body["__type"] = error.code
+        # this depends on the JSON protocol version as well. If json-1.0 the Error should be the full shape ID, like
+        # com.amazon.coral.service#ExceptionName
+        # if json-1.1, it should only be the name
+
+        # if the operation is query compatible, we need to add the `Exception` suffix to it
+        if operation_model.service_model.is_query_compatible:
+            code = f"{error.code}Exception"
+        else:
+            code = error.code
+
+        response.headers["X-Amzn-Errortype"] = code
+        body["__type"] = code
 
         if shape:
             remaining_params = {}
@@ -1279,6 +1298,9 @@ class JSONResponseSerializer(ResponseSerializer):
             response.content_type = mime_type
         else:
             response.set_json(body)
+
+        if operation_model.service_model.is_query_compatible:
+            self._add_query_compatible_error_header(response, error)
 
     def _serialize_response(
         self,
@@ -1858,10 +1880,15 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
     ) -> None:
         body = bytearray()
         response.content_type = mime_type  # can only be 'application/cbor'
-        # TODO: the Botocore parser is able to look at the `x-amzn-query-error` header for the RpcV2 CBOR protocol
-        #  we'll need to investigate which services need it
+
         # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
-        # Type information is always serialized in the payload. This is different than `json` protocol
+        # Type information is always serialized in the payload. This is different from the `json` protocol
+
+        # if the operation is query compatible, we need to add the `Exception` suffix to it
+        if operation_model.service_model.is_query_compatible:
+            code = f"{error.code}Exception"
+        else:
+            code = error.code
 
         if shape:
             # FIXME: we need to manually add the `__type` field to the shape as it is not part of the specs
@@ -1872,7 +1899,7 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             shape_copy.members["__type"] = StringShape(
                 shape_name="__type", shape_model={"type": "string"}
             )
-            remaining_params = {"__type": error.code}
+            remaining_params = {"__type": code}
 
             for member_name in shape_copy.members:
                 if hasattr(error, member_name):
@@ -1886,6 +1913,9 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             self._serialize_data_item(body, remaining_params, shape_copy, None)
 
         response.set_response(bytes(body))
+
+        if operation_model.service_model.is_query_compatible:
+            self._add_query_compatible_error_header(response, error)
 
     def _prepare_additional_traits_in_response(
         self, response: Response, operation_model: OperationModel, request_id: str
@@ -2191,26 +2221,12 @@ class SqsJsonResponseSerializer(JSONResponseSerializer):
         "QueueNameExists": "QueueAlreadyExists",
     }
 
-    def _serialize_error(
-        self,
-        error: ServiceException,
-        response: Response,
-        shape: StructureShape,
-        operation_model: OperationModel,
-        mime_type: str,
-        request_id: str,
-    ) -> None:
-        """
-        Overrides _serialize_error as SQS has a special header for query API legacy reason: 'x-amzn-query-error',
-        which contained the exception code as well as a Sender field.
-        Ex: 'x-amzn-query-error': 'InvalidParameterValue;Sender'
-        """
-        # TODO: for body["__type"] = error.code, it seems AWS differs from what we send for SQS
-        # AWS: "com.amazon.coral.service#InvalidParameterValueException"
-        # or AWS: "com.amazonaws.sqs#BatchRequestTooLong"
-        # LocalStack: "InvalidParameterValue"
-        super()._serialize_error(error, response, shape, operation_model, mime_type, request_id)
-        # We need to add a prefix to certain errors, as they have been deleted in the specs. These will not change
+    # TODO: on body error serialization (body["__type"]),it seems AWS differs from what we send for SQS
+    #  AWS: "com.amazon.coral.service#InvalidParameterValueException"
+    #  or AWS: "com.amazonaws.sqs#BatchRequestTooLong"
+    #  LocalStack: "InvalidParameterValue"
+
+    def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
         if error.code in self.JSON_TO_QUERY_ERROR_CODES:
             code = self.JSON_TO_QUERY_ERROR_CODES[error.code]
         elif error.code in self.QUERY_PREFIXED_ERRORS:
@@ -2218,7 +2234,8 @@ class SqsJsonResponseSerializer(JSONResponseSerializer):
         else:
             code = error.code
 
-        response.headers["x-amzn-query-error"] = f"{code};Sender"
+        sender_fault = "Sender" if error.sender_fault else "Receiver"
+        response.headers["x-amzn-query-error"] = f"{code};{sender_fault}"
 
 
 def gen_amzn_requestid():
