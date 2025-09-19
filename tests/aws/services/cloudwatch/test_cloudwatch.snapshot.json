@@ -626,82 +626,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags": {
-    "recorded-date": "02-09-2024, 14:03:31",
-    "recorded-content": {
-      "put_metric_alarm": {
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "describe_alarms": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [],
-            "EvaluationPeriods": 1,
-            "InsufficientDataActions": [],
-            "MetricName": "store_tags",
-            "Namespace": "<namespace:1>",
-            "OKActions": [],
-            "Period": 60,
-            "StateReason": "Unchecked: Initial alarm creation",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "INSUFFICIENT_DATA",
-            "Statistic": "Sum",
-            "Threshold": 30.0
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_tags_for_resource_empty ": {
-        "Tags": [],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_tags_for_resource": {
-        "Tags": [
-          {
-            "Key": "tag1",
-            "Value": "foo"
-          },
-          {
-            "Key": "tag2",
-            "Value": "bar"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list_tags_for_resource_post_untag": {
-        "Tags": [
-          {
-            "Key": "tag2",
-            "Value": "bar"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_dashboard_lifecycle": {
     "recorded-date": "21-11-2023, 13:38:11",
     "recorded-content": {
@@ -2998,6 +2922,234 @@
             "StateValue": "INSUFFICIENT_DATA",
             "Statistic": "Sum",
             "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags[query]": {
+    "recorded-date": "19-09-2025, 20:42:24",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "store_tags",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags[json]": {
+    "recorded-date": "19-09-2025, 20:42:26",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "store_tags",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 20:42:27",
+    "recorded-content": {
+      "put_metric_alarm": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe_alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "store_tags",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_empty ": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource": {
+        "Tags": [
+          {
+            "Key": "tag1",
+            "Value": "foo"
+          },
+          {
+            "Key": "tag2",
+            "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list_tags_for_resource_post_untag": {
+        "Tags": [
+          {
+            "Key": "tag2",
+            "Value": "bar"
           }
         ],
         "ResponseMetadata": {

@@ -631,12 +631,12 @@ class TestCloudwatch:
         condition=is_old_provider,
         paths=["$..MetricAlarms..AlarmDescription", "$..MetricAlarms..StateTransitionedTimestamp"],
     )
-    def test_store_tags(self, aws_client, cleanups, snapshot):
+    def test_store_tags(self, aws_cloudwatch_client, cleanups, snapshot):
         alarm_name = f"a-{short_uid()}"
         metric_name = "store_tags"
         namespace = f"test-ns-{short_uid()}"
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
-        put_metric_alarm = aws_client.cloudwatch.put_metric_alarm(
+        put_metric_alarm = aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             Namespace=namespace,
             MetricName=metric_name,
@@ -646,31 +646,31 @@ class TestCloudwatch:
             Statistic="Sum",
             Threshold=30,
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
         snapshot.match("put_metric_alarm", put_metric_alarm)
 
-        describe_alarms = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        describe_alarms = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe_alarms", describe_alarms)
         alarm = describe_alarms["MetricAlarms"][0]
         alarm_arn = alarm["AlarmArn"]
-        list_tags_for_resource = aws_client.cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        list_tags_for_resource = aws_cloudwatch_client.list_tags_for_resource(ResourceARN=alarm_arn)
         snapshot.match("list_tags_for_resource_empty ", list_tags_for_resource)
 
         # add tags
         tags = [{"Key": "tag1", "Value": "foo"}, {"Key": "tag2", "Value": "bar"}]
-        response = aws_client.cloudwatch.tag_resource(ResourceARN=alarm_arn, Tags=tags)
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        list_tags_for_resource = aws_client.cloudwatch.list_tags_for_resource(ResourceARN=alarm_arn)
+        response = aws_cloudwatch_client.tag_resource(ResourceARN=alarm_arn, Tags=tags)
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        list_tags_for_resource = aws_cloudwatch_client.list_tags_for_resource(ResourceARN=alarm_arn)
         snapshot.match("list_tags_for_resource", list_tags_for_resource)
-        response = aws_client.cloudwatch.untag_resource(ResourceARN=alarm_arn, TagKeys=["tag1"])
-        assert 200 == response["ResponseMetadata"]["HTTPStatusCode"]
-        list_tags_for_resource_post_untag = aws_client.cloudwatch.list_tags_for_resource(
+        response = aws_cloudwatch_client.untag_resource(ResourceARN=alarm_arn, TagKeys=["tag1"])
+        assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
+        list_tags_for_resource_post_untag = aws_cloudwatch_client.list_tags_for_resource(
             ResourceARN=alarm_arn
         )
         snapshot.match("list_tags_for_resource_post_untag", list_tags_for_resource_post_untag)
 
     @markers.aws.validated
-    def test_list_metrics_uniqueness(self, aws_client):
+    def test_list_metrics_uniqueness(self, aws_cloudwatch_client):
         """
         This can take quite a while on AWS unfortunately
         From the AWS docs:
@@ -681,7 +681,7 @@ class TestCloudwatch:
         namespace = f"test/{short_uid()}"
         sleep_seconds = 10 if is_aws_cloud() else 1
         retries = 100 if is_aws_cloud() else 10
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -691,7 +691,7 @@ class TestCloudwatch:
                 }
             ],
         )
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -703,7 +703,7 @@ class TestCloudwatch:
         )
 
         # duplicating existing metric
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -715,13 +715,13 @@ class TestCloudwatch:
         )
 
         def _count_single_metrics():
-            results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
+            results = aws_cloudwatch_client.list_metrics(Namespace=namespace)["Metrics"]
             assert len(results) == 2
 
         # asserting only unique values are returned
         retry(_count_single_metrics, retries=retries, sleep_before=sleep_seconds)
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -738,17 +738,17 @@ class TestCloudwatch:
         )
 
         def _count_aggregated_metrics():
-            results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
+            results = aws_cloudwatch_client.list_metrics(Namespace=namespace)["Metrics"]
             assert len(results) == 3
 
         retry(_count_aggregated_metrics, retries=retries, sleep_before=sleep_seconds)
 
     @markers.aws.validated
-    def test_list_metrics_with_filters(self, aws_client):
+    def test_list_metrics_with_filters(self, aws_cloudwatch_client):
         namespace = f"test/{short_uid()}"
         sleep_seconds = 10 if is_aws_cloud() else 1
         retries = 100 if is_aws_cloud() else 10
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -757,7 +757,7 @@ class TestCloudwatch:
                 }
             ],
         )
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -768,7 +768,7 @@ class TestCloudwatch:
             ],
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -779,7 +779,7 @@ class TestCloudwatch:
             ],
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -796,13 +796,13 @@ class TestCloudwatch:
         )
 
         def _count_all_metrics_in_namespace():
-            results = aws_client.cloudwatch.list_metrics(Namespace=namespace)["Metrics"]
+            results = aws_cloudwatch_client.list_metrics(Namespace=namespace)["Metrics"]
             assert len(results) == 4
 
         retry(_count_all_metrics_in_namespace, retries=retries, sleep_before=sleep_seconds)
 
         def _count_specific_metric_in_namespace():
-            results = aws_client.cloudwatch.list_metrics(
+            results = aws_cloudwatch_client.list_metrics(
                 Namespace=namespace, MetricName="CPUUtilization"
             )["Metrics"]
             assert len(results) == 1
@@ -810,7 +810,7 @@ class TestCloudwatch:
         retry(_count_specific_metric_in_namespace, retries=retries, sleep_before=sleep_seconds)
 
         def _count_metrics_in_namespace_with_dimension():
-            results = aws_client.cloudwatch.list_metrics(
+            results = aws_cloudwatch_client.list_metrics(
                 Namespace=namespace, Dimensions=[{"Name": "InstanceId"}]
             )["Metrics"]
             assert len(results) == 3
@@ -820,7 +820,7 @@ class TestCloudwatch:
         )
 
         def _count_metrics_in_namespace_with_dimension_value():
-            results = aws_client.cloudwatch.list_metrics(
+            results = aws_cloudwatch_client.list_metrics(
                 Namespace=namespace, Dimensions=[{"Name": "InstanceId", "Value": "two"}]
             )["Metrics"]
             assert len(results) == 2
