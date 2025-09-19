@@ -1578,95 +1578,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm": {
-    "recorded-date": "19-01-2024, 15:29:42",
-    "recorded-content": {
-      "triggered-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "i-0317828c84edbe100"
-              }
-            ],
-            "EvaluationPeriods": 2,
-            "InsufficientDataActions": [],
-            "MetricName": "CPUUtilization-3",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "<topic_ok>"
-            ],
-            "Period": 300,
-            "StateReason": "testing alarm",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "ALARM",
-            "Statistic": "Average",
-            "Threshold": 50.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Percent"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "reset-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "i-0317828c84edbe100"
-              }
-            ],
-            "EvaluationPeriods": 2,
-            "InsufficientDataActions": [],
-            "MetricName": "CPUUtilization-3",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "<topic_ok>"
-            ],
-            "Period": 300,
-            "StateReason": "resetting alarm",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "OK",
-            "Statistic": "Average",
-            "Threshold": 50.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Percent"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm": {
     "recorded-date": "12-01-2024, 14:06:14",
     "recorded-content": {
@@ -3150,6 +3061,387 @@
           {
             "Key": "tag2",
             "Value": "bar"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm_escape_character[query]": {
+    "recorded-date": "19-09-2025, 20:51:19",
+    "recorded-content": {
+      "describe-alarms-escaped-character": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111122223333:MyTopic"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "<",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 600,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 1.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm_escape_character[json]": {
+    "recorded-date": "19-09-2025, 20:51:19",
+    "recorded-content": {
+      "describe-alarms-escaped-character": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111122223333:MyTopic"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "<",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 600,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 1.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm_escape_character[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 20:51:20",
+    "recorded-content": {
+      "describe-alarms-escaped-character": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111122223333:MyTopic"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "<",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 600,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 1.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm[query]": {
+    "recorded-date": "19-09-2025, 20:56:47",
+    "recorded-content": {
+      "triggered-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "testing alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "resetting alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm[json]": {
+    "recorded-date": "19-09-2025, 20:56:54",
+    "recorded-content": {
+      "triggered-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "testing alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "resetting alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 20:57:01",
+    "recorded-content": {
+      "triggered-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "testing alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "resetting alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
           }
         ],
         "ResponseMetadata": {

@@ -832,8 +832,16 @@ class TestCloudwatch:
         )
 
     @markers.aws.validated
-    def test_put_metric_alarm_escape_character(self, cleanups, aws_client):
-        aws_client.cloudwatch.put_metric_alarm(
+    def test_put_metric_alarm_escape_character(self, cleanups, aws_cloudwatch_client, snapshot):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("AlarmName"),
+                snapshot.transform.key_value("MetricName"),
+                snapshot.transform.key_value("Namespace"),
+            ]
+        )
+
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName="cpu-mon",
             AlarmDescription="<",
             MetricName="CPUUtilization-2",
@@ -845,16 +853,26 @@ class TestCloudwatch:
             EvaluationPeriods=1,
             AlarmActions=["arn:aws:sns:us-east-1:111122223333:MyTopic"],
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=["cpu-mon"]))
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=["cpu-mon"]))
 
-        result = aws_client.cloudwatch.describe_alarms(AlarmNames=["cpu-mon"])
+        result = aws_cloudwatch_client.describe_alarms(AlarmNames=["cpu-mon"])
         assert result.get("MetricAlarms")[0]["AlarmDescription"] == "<"
+        snapshot.match("describe-alarms-escaped-character", result)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..MetricAlarms..StateTransitionedTimestamp"]
     )
-    def test_set_alarm(self, sns_create_topic, sqs_create_queue, aws_client, cleanups, snapshot):
+    def test_set_alarm(
+        self,
+        sns_create_topic,
+        sqs_create_queue,
+        aws_client,
+        aws_cloudwatch_client,
+        cleanups,
+        snapshot,
+        sns_create_sqs_subscription,
+    ):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         # create topics for state 'ALARM' and 'OK'
         topic_name_alarm = f"topic-{short_uid()}"
@@ -871,20 +889,6 @@ class TestCloudwatch:
         uid = short_uid()
         queue_url_alarm = sqs_create_queue(QueueName=f"AlarmQueue-{uid}")
         queue_url_ok = sqs_create_queue(QueueName=f"OKQueue-{uid}")
-
-        arn_queue_alarm = aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url_alarm, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        arn_queue_ok = aws_client.sqs.get_queue_attributes(
-            QueueUrl=queue_url_ok, AttributeNames=["QueueArn"]
-        )["Attributes"]["QueueArn"]
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_alarm,
-            Attributes={"Policy": get_sqs_policy(arn_queue_alarm, topic_arn_alarm)},
-        )
-        aws_client.sqs.set_queue_attributes(
-            QueueUrl=queue_url_ok, Attributes={"Policy": get_sqs_policy(arn_queue_ok, topic_arn_ok)}
-        )
 
         alarm_name = "test-alarm"
         alarm_description = "Test Alarm when CPU exceeds 50 percent"
@@ -904,23 +908,17 @@ class TestCloudwatch:
             "Statistic": "AVERAGE",
         }
         # subscribe to SQS
-        subscription_alarm = aws_client.sns.subscribe(
-            TopicArn=topic_arn_alarm, Protocol="sqs", Endpoint=arn_queue_alarm
+        sns_create_sqs_subscription(
+            topic_arn=topic_arn_alarm,
+            queue_url=queue_url_alarm,
         )
-        cleanups.append(
-            lambda: aws_client.sns.unsubscribe(
-                SubscriptionArn=subscription_alarm["SubscriptionArn"]
-            )
-        )
-        subscription_ok = aws_client.sns.subscribe(
-            TopicArn=topic_arn_ok, Protocol="sqs", Endpoint=arn_queue_ok
-        )
-        cleanups.append(
-            lambda: aws_client.sns.unsubscribe(SubscriptionArn=subscription_ok["SubscriptionArn"])
+        sns_create_sqs_subscription(
+            topic_arn=topic_arn_ok,
+            queue_url=queue_url_ok,
         )
 
         # create alarm with actions for "OK" and "ALARM"
-        aws_client.cloudwatch.put_metric_alarm(
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             AlarmDescription=alarm_description,
             MetricName=expected_trigger["MetricName"],
@@ -942,7 +940,7 @@ class TestCloudwatch:
         # trigger alarm
         state_value = "ALARM"
         state_reason = "testing alarm"
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_name, StateReason=state_reason, StateValue=state_value
         )
 
@@ -959,12 +957,12 @@ class TestCloudwatch:
             alarm_description=alarm_description,
             expected_trigger=expected_trigger,
         )
-        describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        describe_alarm = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("triggered-alarm", describe_alarm)
         # trigger OK
         state_value = "OK"
         state_reason = "resetting alarm"
-        aws_client.cloudwatch.set_alarm_state(
+        aws_cloudwatch_client.set_alarm_state(
             AlarmName=alarm_name, StateReason=state_reason, StateValue=state_value
         )
 
@@ -981,7 +979,7 @@ class TestCloudwatch:
             alarm_description=alarm_description,
             expected_trigger=expected_trigger,
         )
-        describe_alarm = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        describe_alarm = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("reset-alarm", describe_alarm)
 
     @markers.aws.validated
