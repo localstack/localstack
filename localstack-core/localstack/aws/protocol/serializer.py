@@ -1886,9 +1886,11 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
         # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
         # Type information is always serialized in the payload. This is different from the `json` protocol
 
-        # if the operation is query compatible, we need to add the `Exception` suffix to it
-        if operation_model.service_model.is_query_compatible:
-            code = f"{error.code}Exception"
+        # if the operation is query compatible, we need to add to use shape name
+        # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
+        # as the exception code.
+        if shape and operation_model.service_model.is_query_compatible:
+            code = shape.name
         else:
             code = error.code
 

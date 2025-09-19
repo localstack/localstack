@@ -2,7 +2,6 @@ import copy
 import gzip
 import json
 import logging
-import os
 import threading
 import time
 from datetime import UTC, datetime, timedelta, timezone
@@ -24,6 +23,7 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition, wait_until
 
+from .conftest import is_old_provider
 from .utils import get_cloudwatch_client
 
 if TYPE_CHECKING:
@@ -32,10 +32,6 @@ if TYPE_CHECKING:
 PUBLICATION_RETRIES = 5
 
 LOG = logging.getLogger(__name__)
-
-
-def is_old_provider():
-    return os.environ.get("PROVIDER_OVERRIDE_CLOUDWATCH") == "v1" and not is_aws_cloud()
 
 
 class TestCloudwatch:
