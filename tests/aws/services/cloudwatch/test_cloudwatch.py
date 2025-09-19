@@ -2072,13 +2072,13 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=is_old_provider(), reason="not supported by the old provider")
-    def test_get_metric_data_pagination(self, aws_client):
+    def test_get_metric_data_pagination(self, aws_cloudwatch_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         max_data_points = 10  # default is 100,800 according to AWS docs
         now = datetime.now(tz=UTC)
         for i in range(0, max_data_points * 2):
-            aws_client.cloudwatch.put_metric_data(
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -2091,7 +2091,7 @@ class TestCloudwatch:
             )
 
         def assert_data_points_count():
-            response = aws_client.cloudwatch.get_metric_data(
+            response = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "m1",
@@ -2116,14 +2116,14 @@ class TestCloudwatch:
         retry(assert_data_points_count, retries=10, sleep=1.0, sleep_before=2.0)
 
     @markers.aws.validated
-    def test_put_metric_uses_utc(self, aws_client):
+    def test_put_metric_uses_utc(self, aws_cloudwatch_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         now_local = datetime.now(timezone(timedelta(hours=-5), "America/Cancun")).replace(
             tzinfo=None
         )  # Remove the tz info to avoid boto converting it to UTC
         now_utc = datetime.now(tz=UTC)
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -2135,7 +2135,7 @@ class TestCloudwatch:
         )
 
         def assert_found_in_utc():
-            response = aws_client.cloudwatch.get_metric_statistics(
+            response = aws_cloudwatch_client.get_metric_statistics(
                 Namespace=namespace,
                 MetricName=metric_name,
                 StartTime=now_local - timedelta(seconds=60),
@@ -2145,7 +2145,7 @@ class TestCloudwatch:
             )
             assert len(response["Datapoints"]) == 0
 
-            response = aws_client.cloudwatch.get_metric_statistics(
+            response = aws_cloudwatch_client.get_metric_statistics(
                 Namespace=namespace,
                 MetricName=metric_name,
                 StartTime=now_utc - timedelta(seconds=60),
@@ -2158,12 +2158,12 @@ class TestCloudwatch:
         retry(assert_found_in_utc, retries=10, sleep=1.0)
 
     @markers.aws.validated
-    def test_default_ordering(self, aws_client):
+    def test_default_ordering(self, aws_cloudwatch_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         now = datetime.now(tz=UTC)
         for i in range(0, 10):
-            aws_client.cloudwatch.put_metric_data(
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -2176,7 +2176,7 @@ class TestCloudwatch:
             )
 
         def assert_ordering():
-            default_ordering = aws_client.cloudwatch.get_metric_data(
+            default_ordering = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "m1",
@@ -2195,7 +2195,7 @@ class TestCloudwatch:
                 MaxDatapoints=10,
             )
 
-            ascending_ordering = aws_client.cloudwatch.get_metric_data(
+            ascending_ordering = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "m1",
@@ -2215,7 +2215,7 @@ class TestCloudwatch:
                 ScanBy="TimestampAscending",
             )
 
-            descening_ordering = aws_client.cloudwatch.get_metric_data(
+            descening_ordering = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "m1",
