@@ -2977,6 +2977,7 @@ def create_custom_context(
     ctx = create_aws_request_context(
         service_name=context.service.service_name,
         action=action,
+        protocol=context.service.protocol,
         parameters=parameters,
         region=context.region,
     )

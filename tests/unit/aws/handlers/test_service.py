@@ -16,14 +16,16 @@ def service_response_handler_chain() -> HandlerChain:
 
 class TestServiceResponseHandler:
     def test_use_set_response(self, service_response_handler_chain):
-        context = create_aws_request_context("opensearch", "CreateDomain", {"DomainName": "foobar"})
+        context = create_aws_request_context(
+            "opensearch", "CreateDomain", "rest-json", {"DomainName": "foobar"}
+        )
         context.service_response = {"sure": "why not"}
 
         service_response_handler_chain.handle(context, Response(status=200))
         assert context.service_response == {"sure": "why not"}
 
     def test_parse_response(self, service_response_handler_chain):
-        context = create_aws_request_context("sqs", "CreateQueue", {"QueueName": "foobar"})
+        context = create_aws_request_context("sqs", "CreateQueue", "json", {"QueueName": "foobar"})
         backend_response = {"QueueUrl": "http://localhost:4566/000000000000/foobar"}
         http_response = create_serializer(context.service).serialize_to_response(
             backend_response, context.operation, context.request.headers, context.request_id
@@ -33,7 +35,9 @@ class TestServiceResponseHandler:
         assert context.service_response == backend_response
 
     def test_parse_response_with_streaming_response(self, service_response_handler_chain):
-        context = create_aws_request_context("s3", "GetObject", {"Bucket": "foo", "Key": "bar.bin"})
+        context = create_aws_request_context(
+            "s3", "GetObject", "rest-xml", {"Bucket": "foo", "Key": "bar.bin"}
+        )
         backend_response = {"Body": b"\x00\x01foo", "ContentType": "application/octet-stream"}
         http_response = create_serializer(context.service).serialize_to_response(
             backend_response, context.operation, context.request.headers, context.request_id
@@ -45,7 +49,9 @@ class TestServiceResponseHandler:
         assert context.service_response["Body"].read() == b"\x00\x01foo"
 
     def test_common_service_exception(self, service_response_handler_chain):
-        context = create_aws_request_context("opensearch", "CreateDomain", {"DomainName": "foobar"})
+        context = create_aws_request_context(
+            "opensearch", "CreateDomain", "rest-json", {"DomainName": "foobar"}
+        )
         context.service_exception = CommonServiceException(
             "MyCommonException", "oh noes", status_code=409, sender_fault=True
         )
@@ -59,7 +65,9 @@ class TestServiceResponseHandler:
     def test_service_exception(self, service_response_handler_chain):
         from localstack.aws.api.opensearch import ResourceAlreadyExistsException
 
-        context = create_aws_request_context("opensearch", "CreateDomain", {"DomainName": "foobar"})
+        context = create_aws_request_context(
+            "opensearch", "CreateDomain", "rest-json", {"DomainName": "foobar"}
+        )
         context.service_exception = ResourceAlreadyExistsException("oh noes")
 
         response = create_serializer(context.service).serialize_error_to_response(
@@ -81,6 +89,7 @@ class TestServiceResponseHandler:
         context = create_aws_request_context(
             "sqs",
             "SendMessage",
+            "json",
             {"QueueUrl": "http://localhost:4566/000000000000/foobared", "MessageBody": "foo"},
         )
         context.service_exception = QueueDoesNotExist()
@@ -101,7 +110,7 @@ class TestServiceResponseHandler:
 
     def test_sets_exception_from_error_response(self, service_response_handler_chain):
         context = create_aws_request_context(
-            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+            "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
         )
         response = Response(
             b'{"__type": "ResourceNotFoundException", "message": "Domain not found: foobar"}',
@@ -126,7 +135,7 @@ class TestServiceResponseHandler:
 
     def test_invalid_exception_does_nothing(self, service_response_handler_chain):
         context = create_aws_request_context(
-            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+            "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
         )
         context.service_exception = ValueError()
         service_response_handler_chain.handle(context, Response(status=500))
@@ -145,7 +154,7 @@ class TestServiceExceptionSerializer:
     )
     def test_not_implemented_error(self, message, output):
         context = create_aws_request_context(
-            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+            "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
         )
         not_implemented_exception = NotImplementedError(message)
 
@@ -181,7 +190,7 @@ class TestServiceExceptionSerializer:
         )
 
         err_context = create_aws_request_context(
-            "opensearch", "DescribeDomain", {"DomainName": "foobar"}
+            "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
         )
         err_chain.handle(err_context, Response())
 

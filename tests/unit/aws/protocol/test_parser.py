@@ -745,7 +745,7 @@ def test_restjson_parser_xray_with_botocore():
         action="PutTelemetryRecords",
         TelemetryRecords=[
             {
-                "Timestamp": datetime(2015, 1, 1),
+                "Timestamp": datetime(2015, 1, 1, tzinfo=UTC),
                 "SegmentsReceivedCount": 123,
                 "SegmentsSentCount": 123,
                 "SegmentsSpilloverCount": 123,
@@ -853,7 +853,7 @@ def test_restjson_opensearch_with_botocore():
             "RollbackOnDisable": "DEFAULT_ROLLBACK",
             "MaintenanceSchedules": [
                 {
-                    "StartAt": datetime(2015, 1, 1),
+                    "StartAt": datetime(2015, 1, 1, tzinfo=UTC),
                     "Duration": {"Value": 123, "Unit": "HOURS"},
                     "CronExpressionForRecurrence": "string",
                 },

@@ -1,4 +1,31 @@
 {
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[json]": {
+    "last_validated_date": "2025-09-18T13:56:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 3.45,
+      "teardown": 0.0,
+      "total": 3.93
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[query]": {
+    "last_validated_date": "2025-09-18T13:56:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.05,
+      "teardown": 0.0,
+      "total": 3.05
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-18T13:56:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.05,
+      "teardown": 0.0,
+      "total": 3.05
+    }
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_alarm_lambda_target": {
     "last_validated_date": "2024-01-03T17:30:00+00:00"
   },

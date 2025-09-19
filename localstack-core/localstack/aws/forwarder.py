@@ -8,6 +8,8 @@ from typing import Any
 
 from botocore.awsrequest import AWSPreparedRequest, prepare_request_dict
 from botocore.config import Config as BotoConfig
+from botocore.model import OperationModel
+from botocore.serialize import create_serializer
 from werkzeug.datastructures import Headers
 
 from localstack.aws.api.core import (
@@ -19,7 +21,7 @@ from localstack.aws.api.core import (
 from localstack.aws.client import create_http_request, parse_response, raise_service_exception
 from localstack.aws.connect import connect_to
 from localstack.aws.skeleton import DispatchTable, create_dispatch_table
-from localstack.aws.spec import load_service
+from localstack.aws.spec import ProtocolName, load_service
 from localstack.constants import AWS_REGION_US_EAST_1
 from localstack.http import Response
 from localstack.http.proxy import Proxy
@@ -79,7 +81,7 @@ class AwsRequestProxy:
         if not self.parse_response:
             return http_response
         parsed_response = parse_response(
-            context.operation, http_response, self.include_response_metadata
+            context.operation, context.protocol, http_response, self.include_response_metadata
         )
         raise_service_exception(http_response, parsed_response)
         return parsed_response
@@ -90,6 +92,7 @@ class AwsRequestProxy:
             action=original.operation.name,
             parameters=service_request,
             region=original.region,
+            protocol=original.protocol,
         )
         # update the newly created context with non-payload specific request headers (the payload can differ from
         # the original request, f.e. it could be JSON encoded now while the initial request was CBOR encoded)
@@ -184,7 +187,9 @@ def dispatch_to_backend(
     :raises ServiceException: if the dispatcher returned an error response
     """
     http_response = http_request_dispatcher(context)
-    parsed_response = parse_response(context.operation, http_response, include_response_metadata)
+    parsed_response = parse_response(
+        context.operation, context.protocol, http_response, include_response_metadata
+    )
     raise_service_exception(http_response, parsed_response)
     return parsed_response
 
@@ -196,6 +201,7 @@ _non_validating_boto_config = BotoConfig(parameter_validation=False)
 def create_aws_request_context(
     service_name: str,
     action: str,
+    protocol: ProtocolName = None,
     parameters: Mapping[str, Any] = None,
     region: str = None,
     endpoint_url: str | None = None,
@@ -210,6 +216,7 @@ def create_aws_request_context(
 
     :param service_name: the AWS service
     :param action: the action to invoke
+    :param protocol: the protocol to use
     :param parameters: the invocation parameters
     :param region: the region name (default is us-east-1)
     :param endpoint_url: the endpoint to call (defaults to localstack)
@@ -222,6 +229,8 @@ def create_aws_request_context(
 
     service = load_service(service_name)
     operation = service.operation_model(action)
+    # TODO: remove this once every usage upstream has been removed
+    protocol = protocol or service.resolved_protocol
 
     # we re-use botocore internals here to serialize the HTTP request,
     # but deactivate validation (validation errors should be handled by the backend)
@@ -243,8 +252,14 @@ def create_aws_request_context(
         endpoint_url = "http://localhost.localstack.cloud"
     # pre-process the request args (some params are modified using botocore event handlers)
     parameters = client._emit_api_params(parameters, operation, request_context)
-    request_dict = client._convert_to_request_dict(
-        parameters, operation, endpoint_url, context=request_context
+
+    request_dict = _convert_to_request_dict_with_protocol(
+        client=client,
+        protocol=protocol,
+        api_params=parameters,
+        operation_model=operation,
+        endpoint_url=endpoint_url,
+        context=request_context,
     )
 
     if auth_path := request_dict.get("auth_path"):
@@ -266,7 +281,39 @@ def create_aws_request_context(
     context = RequestContext(request=create_http_request(aws_request))
     context.service = service
     context.operation = operation
+    context.protocol = protocol
     context.region = region
     context.service_request = parameters
 
     return context
+
+
+def _convert_to_request_dict_with_protocol(
+    client,
+    protocol: ProtocolName,
+    api_params: dict,
+    operation_model: OperationModel,
+    endpoint_url: str,
+    context: dict,
+    set_user_agent_header: bool = True,
+) -> dict:
+    """
+    This function is taken from botocore Client._convert_to_request_dict, but we are overriding the serializer
+    Botocore does not expose a way to create a client with a specific protocol, but we need this functionality
+    to support multi-protocols.
+    """
+    serializer = create_serializer(protocol, include_validation=False)
+    request_dict = serializer.serialize_to_request(api_params, operation_model)
+    if not client._client_config.inject_host_prefix:
+        request_dict.pop("host_prefix", None)
+    if set_user_agent_header:
+        user_agent = client._user_agent_creator.to_string()
+    else:
+        user_agent = None
+    prepare_request_dict(
+        request_dict,
+        endpoint_url=endpoint_url,
+        user_agent=user_agent,
+        context=context,
+    )
+    return request_dict

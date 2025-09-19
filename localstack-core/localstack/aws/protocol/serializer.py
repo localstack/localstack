@@ -1773,6 +1773,8 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
         mime_type: str,
         request_id: str,
     ) -> bytes | None:
+        if shape is None:
+            return b""
         body = bytearray()
         self._serialize_data_item(body, params, shape)
         return bytes(body)
@@ -1839,6 +1841,8 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
         mime_type: str,
         request_id: str,
     ) -> bytes | None:
+        if shape is None:
+            return b""
         body = bytearray()
         self._serialize_data_item(body, params, shape)
         return bytes(body)

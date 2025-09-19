@@ -359,13 +359,11 @@ class RequestParser(abc.ABC):
 
     @staticmethod
     def _timestamp_unixtimestamp(timestamp_string: str) -> datetime.datetime:
-        dt = datetime.datetime.fromtimestamp(int(timestamp_string), tz=datetime.UTC)
-        return dt.replace(tzinfo=None)
+        return datetime.datetime.fromtimestamp(int(timestamp_string), tz=datetime.UTC)
 
     @staticmethod
     def _timestamp_unixtimestampmillis(timestamp_string: str) -> datetime.datetime:
-        dt = datetime.datetime.fromtimestamp(float(timestamp_string) / 1000, tz=datetime.UTC)
-        return dt.replace(tzinfo=None)
+        return datetime.datetime.fromtimestamp(float(timestamp_string) / 1000, tz=datetime.UTC)
 
     @staticmethod
     def _timestamp_rfc822(datetime_string: str) -> datetime.datetime:
@@ -1167,6 +1165,14 @@ class BaseCBORRequestParser(RequestParser, ABC):
     @_text_content
     def _parse_blob(self, _, __, node: bytes, ___) -> bytes:
         return node
+
+    @_text_content
+    def _parse_timestamp(
+        self, _, shape: Shape, node: datetime.datetime | str, ___
+    ) -> datetime.datetime:
+        if isinstance(node, datetime.datetime):
+            return node
+        return super()._parse_timestamp(_, shape, node, ___)
 
     # This helper method is intended for use when parsing indefinite length items.
     # It does nothing if the next byte is not the break code.  If the next byte is

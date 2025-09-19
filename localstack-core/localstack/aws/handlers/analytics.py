@@ -60,7 +60,7 @@ class ServiceRequestCounter:
             if context.service_exception:
                 return context.service_exception.code
 
-            response = parse_response(context.operation, response)
+            response = parse_response(context.operation, context.protocol, response)
             return response["Error"]["Code"]
         except Exception:
             if config.DEBUG_ANALYTICS:

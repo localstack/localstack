@@ -24,6 +24,8 @@ from localstack.utils.aws.request_context import mock_aws_request_headers
 from localstack.utils.common import retry, short_uid, to_str
 from localstack.utils.sync import poll_condition, wait_until
 
+from .utils import get_cloudwatch_client
+
 if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
 PUBLICATION_RETRIES = 5
@@ -2932,6 +2934,117 @@ class TestCloudwatch:
         )
 
         snapshot.match("get-metric-statitics", response)
+
+
+class TestCloudWatchMultiProtocol:
+    # TODO: run the whole test suite with all available protocols
+
+    @pytest.fixture
+    def cloudwatch_http_client(self, region_name, aws_http_client_factory):
+        def _create_client(protocol: str):
+            return get_cloudwatch_client(
+                client_factory=aws_http_client_factory, region=region_name, protocol=protocol
+            )
+
+        return _create_client
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("protocol", ["json", "smithy-rpc-v2-cbor", "query"])
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            # LogAlarms is not defined in the Boto specs anywhere, but is returned in raw responses (deprecated?)
+            "$.describe-alarms..LogAlarms",
+        ]
+    )
+    def test_basic_operations_multiple_protocols(
+        self, cloudwatch_http_client, aws_client, snapshot, protocol
+    ):
+        if is_old_provider() and protocol != "query":
+            pytest.skip(
+                "Skipping as Moto does not support any other protocol than `query` for CloudWatch for now"
+            )
+        snapshot.add_transformer(snapshot.transform.key_value("Label"))
+        http_client = cloudwatch_http_client(protocol)
+        response = http_client.post(
+            "DescribeAlarms",
+            payload={},
+        )
+        snapshot.match("describe-alarms", response)
+
+        namespace1 = f"test/{short_uid()}"
+        namespace2 = f"test/{short_uid()}"
+        now = datetime.now(tz=UTC).replace(microsecond=0)
+        start_time = now - timedelta(minutes=1)
+        end_time = now + timedelta(minutes=5)
+
+        parameters = [
+            {
+                "Namespace": namespace1,
+                "MetricData": [{"MetricName": "someMetric", "Value": 23}],
+            },
+            {
+                "Namespace": namespace1,
+                "MetricData": [{"MetricName": "someMetric", "Value": 18}],
+            },
+            {
+                "Namespace": namespace2,
+                "MetricData": [{"MetricName": "ug", "Value": 23, "Timestamp": now}],
+            },
+        ]
+        for index, input_values in enumerate(parameters):
+            response = http_client.post_raw(
+                operation="PutMetricData",
+                payload=input_values,
+            )
+            assert response.status_code == 200
+
+        get_metric_input = {
+            "MetricDataQueries": [
+                {
+                    "Id": "some",
+                    "MetricStat": {
+                        "Metric": {
+                            "Namespace": namespace1,
+                            "MetricName": "someMetric",
+                        },
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+                {
+                    "Id": "part",
+                    "MetricStat": {
+                        "Metric": {"Namespace": namespace2, "MetricName": "ug"},
+                        "Period": 60,
+                        "Stat": "Sum",
+                    },
+                },
+            ],
+            "StartTime": start_time,
+            "EndTime": end_time,
+        }
+
+        def _get_metric_data_sum():
+            # we can use the default AWS Client here, it is for the retries
+            _response = aws_client.cloudwatch.get_metric_data(**get_metric_input)
+            assert len(_response["MetricDataResults"]) == 2
+
+            for _data_metric in _response["MetricDataResults"]:
+                # TODO: there's an issue in the implementation of the service here.
+                #  The returned timestamps should have the seconds set to 0
+                if _data_metric["Id"] == "some":
+                    assert sum(_data_metric["Values"]) == 41.0
+                if _data_metric["Id"] == "part":
+                    assert 23.0 == sum(_data_metric["Values"]) == 23.0
+
+        # need to retry because the might most likely not be ingested immediately (it's fairly quick though)
+        retry(_get_metric_data_sum, retries=10, sleep_before=2)
+
+        response = http_client.post(
+            operation="GetMetricData",
+            payload=get_metric_input,
+        )
+        snapshot.match("get-metric-data", response)
 
 
 def _get_lambda_logs(logs_client: "CloudWatchLogsClient", fn_name: str):
