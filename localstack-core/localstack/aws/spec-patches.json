@@ -1389,6 +1389,20 @@
       "value": {
         "httpStatusCode": 409
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/ValidationException",
+      "value": {
+        "type": "structure",
+        "error": {
+          "code":"ValidationError",
+          "httpStatusCode": 400,
+          "senderFault": true
+        },
+        "documentation": "<p>Validation Exception</p>",
+        "exception": true
+      }
     }
   ]
 }

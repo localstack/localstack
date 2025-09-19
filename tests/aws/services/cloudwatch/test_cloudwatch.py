@@ -1615,7 +1615,7 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=is_old_provider(), reason="Old provider is not raising exception")
-    def test_invalid_dashboard_name(self, aws_client, region_name, snapshot):
+    def test_invalid_dashboard_name(self, aws_cloudwatch_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}:invalid"
         dashboard_body = {
             "widgets": [
@@ -1635,8 +1635,8 @@ class TestCloudwatch:
             ]
         }
 
-        with pytest.raises(Exception) as ex:
-            aws_client.cloudwatch.put_dashboard(
+        with pytest.raises(ClientError) as ex:
+            aws_cloudwatch_client.put_dashboard(
                 DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
             )
 
@@ -1654,7 +1654,7 @@ class TestCloudwatch:
             "$..DashboardEntries..Size",  # need to be skipped because size changes if the region name length is longer
         ]
     )
-    def test_dashboard_lifecycle(self, aws_client, region_name, snapshot):
+    def test_dashboard_lifecycle(self, aws_cloudwatch_client, region_name, snapshot):
         dashboard_name = f"test-{short_uid()}"
         dashboard_body = {
             "widgets": [
@@ -1673,31 +1673,31 @@ class TestCloudwatch:
                 }
             ]
         }
-        aws_client.cloudwatch.put_dashboard(
+        aws_cloudwatch_client.put_dashboard(
             DashboardName=dashboard_name, DashboardBody=json.dumps(dashboard_body)
         )
-        response = aws_client.cloudwatch.get_dashboard(DashboardName=dashboard_name)
+        response = aws_cloudwatch_client.get_dashboard(DashboardName=dashboard_name)
         snapshot.add_transformer(snapshot.transform.key_value("DashboardName"))
         snapshot.match("get_dashboard", response)
 
-        dashboards_list = aws_client.cloudwatch.list_dashboards()
+        dashboards_list = aws_cloudwatch_client.list_dashboards()
         snapshot.match("list_dashboards", dashboards_list)
 
         # assert prefix filtering working
-        dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="no-valid")
+        dashboards_list = aws_cloudwatch_client.list_dashboards(DashboardNamePrefix="no-valid")
         snapshot.match("list_dashboards_prefix_empty", dashboards_list)
-        dashboards_list = aws_client.cloudwatch.list_dashboards(DashboardNamePrefix="test")
+        dashboards_list = aws_cloudwatch_client.list_dashboards(DashboardNamePrefix="test")
         snapshot.match("list_dashboards_prefix", dashboards_list)
 
-        aws_client.cloudwatch.delete_dashboards(DashboardNames=[dashboard_name])
-        dashboards_list = aws_client.cloudwatch.list_dashboards()
+        aws_cloudwatch_client.delete_dashboards(DashboardNames=[dashboard_name])
+        dashboards_list = aws_cloudwatch_client.list_dashboards()
         snapshot.match("list_dashboards_empty", dashboards_list)
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
     def test_create_metric_stream(
         self,
-        aws_client,
+        aws_cloudwatch_client,
         firehose_create_delivery_stream,
         s3_create_bucket,
         create_role_with_policy,
@@ -1756,7 +1756,7 @@ class TestCloudwatch:
             time.sleep(15)
 
         metric_stream_name = f"MyMetricStream-{short_uid()}"
-        response_create = aws_client.cloudwatch.put_metric_stream(
+        response_create = aws_cloudwatch_client.put_metric_stream(
             Name=metric_stream_name,
             FirehoseArn=stream_arn,
             RoleArn=role_arn,
@@ -1768,32 +1768,32 @@ class TestCloudwatch:
 
         snapshot.match("create_metric_stream", response_create)
 
-        get_response = aws_client.cloudwatch.get_metric_stream(Name=metric_stream_name)
+        get_response = aws_cloudwatch_client.get_metric_stream(Name=metric_stream_name)
         snapshot.match("get_metric_stream", get_response)
 
-        response_list = aws_client.cloudwatch.list_metric_streams()
+        response_list = aws_cloudwatch_client.list_metric_streams()
         metric_streams = response_list.get("Entries", [])
         metric_streams_names = [metric_stream["Name"] for metric_stream in metric_streams]
         assert metric_stream_name in metric_streams_names
 
-        start_response = aws_client.cloudwatch.start_metric_streams(Names=[metric_stream_name])
+        start_response = aws_cloudwatch_client.start_metric_streams(Names=[metric_stream_name])
         snapshot.match("start_metric_stream", start_response)
 
-        stop_response = aws_client.cloudwatch.stop_metric_streams(Names=[metric_stream_name])
+        stop_response = aws_cloudwatch_client.stop_metric_streams(Names=[metric_stream_name])
         snapshot.match("stop_metric_stream", stop_response)
 
-        response_delete = aws_client.cloudwatch.delete_metric_stream(Name=metric_stream_name)
+        response_delete = aws_cloudwatch_client.delete_metric_stream(Name=metric_stream_name)
         snapshot.match("delete_metric_stream", response_delete)
-        response_list = aws_client.cloudwatch.list_metric_streams()
+        response_list = aws_cloudwatch_client.list_metric_streams()
         metric_streams = response_list.get("Entries", [])
         metric_streams_names = [metric_stream["Name"] for metric_stream in metric_streams]
         assert metric_stream_name not in metric_streams_names
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
-    def test_insight_rule(self, aws_client, snapshot):
+    def test_insight_rule(self, aws_cloudwatch_client, snapshot):
         insight_rule_name = f"MyInsightRule-{short_uid()}"
-        response_create = aws_client.cloudwatch.put_insight_rule(
+        response_create = aws_cloudwatch_client.put_insight_rule(
             RuleName=insight_rule_name,
             RuleState="ENABLED",
             RuleDefinition=json.dumps(
@@ -1813,43 +1813,43 @@ class TestCloudwatch:
         snapshot.add_transformer(snapshot.transform.key_value("Name"))
         snapshot.match("create_insight_rule", response_create)
 
-        response_describe = aws_client.cloudwatch.describe_insight_rules()
+        response_describe = aws_cloudwatch_client.describe_insight_rules()
         snapshot.match("describe_insight_rule", response_describe)
 
-        response_disable = aws_client.cloudwatch.disable_insight_rules(
+        response_disable = aws_cloudwatch_client.disable_insight_rules(
             RuleNames=[insight_rule_name]
         )
         snapshot.match("disable_insight_rule", response_disable)
 
-        response_enable = aws_client.cloudwatch.enable_insight_rules(RuleNames=[insight_rule_name])
+        response_enable = aws_cloudwatch_client.enable_insight_rules(RuleNames=[insight_rule_name])
         snapshot.match("enable_insight_rule", response_enable)
 
-        insight_rule_report = aws_client.cloudwatch.get_insight_rule_report(
+        insight_rule_report = aws_cloudwatch_client.get_insight_rule_report(
             RuleName=insight_rule_name,
-            StartTime=datetime.utcnow() - timedelta(hours=1),
-            EndTime=datetime.utcnow(),
+            StartTime=datetime.now(tz=UTC) - timedelta(hours=1),
+            EndTime=datetime.now(tz=UTC),
             Period=300,
             MaxContributorCount=10,
             Metrics=["UniqueContributors"],
         )
         snapshot.match("get_insight_rule_report", insight_rule_report)
 
-        response_list = aws_client.cloudwatch.describe_insight_rules()
+        response_list = aws_cloudwatch_client.describe_insight_rules()
         insight_rules_names = [
             insight_rule["Name"] for insight_rule in response_list["InsightRules"]
         ]
         assert insight_rule_name in insight_rules_names
 
-        response_delete = aws_client.cloudwatch.delete_insight_rules(RuleNames=[insight_rule_name])
+        response_delete = aws_cloudwatch_client.delete_insight_rules(RuleNames=[insight_rule_name])
         snapshot.match("delete_insight_rule", response_delete)
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
-    def test_anomaly_detector_lifecycle(self, aws_client, snapshot):
+    def test_anomaly_detector_lifecycle(self, aws_cloudwatch_client, snapshot):
         namespace = "MyNamespace"
         metric_name = "MyMetric"
 
-        response_create = aws_client.cloudwatch.put_anomaly_detector(
+        response_create = aws_cloudwatch_client.put_anomaly_detector(
             MetricName=metric_name,
             Namespace=namespace,
             Stat="Sum",
@@ -1858,10 +1858,10 @@ class TestCloudwatch:
         )
         snapshot.match("create_anomaly_detector", response_create)
 
-        response_list = aws_client.cloudwatch.describe_anomaly_detectors()
+        response_list = aws_cloudwatch_client.describe_anomaly_detectors()
         snapshot.match("describe_anomaly_detector", response_list)
 
-        response_delete = aws_client.cloudwatch.delete_anomaly_detector(
+        response_delete = aws_cloudwatch_client.delete_anomaly_detector(
             MetricName=metric_name,
             Namespace=namespace,
             Stat="Sum",
@@ -1871,16 +1871,16 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="Operations not supported")
-    def test_metric_widget(self, aws_client):
+    def test_metric_widget(self, aws_cloudwatch_client):
         metric_name = f"test-metric-{short_uid()}"
         namespace = f"ns-{short_uid()}"
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
                     "MetricName": metric_name,
-                    "Timestamp": datetime.utcnow().replace(tzinfo=UTC),
+                    "Timestamp": datetime.now(tz=UTC),
                     "Values": [1.0, 10.0],
                     "Counts": [2, 4],
                     "Unit": "Count",
@@ -1888,7 +1888,7 @@ class TestCloudwatch:
             ],
         )
 
-        response = aws_client.cloudwatch.get_metric_widget_image(
+        response = aws_cloudwatch_client.get_metric_widget_image(
             MetricWidget=json.dumps(
                 {
                     "metrics": [
@@ -1914,14 +1914,14 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
-    def test_describe_minimal_metric_alarm(self, snapshot, aws_client, cleanups):
+    def test_describe_minimal_metric_alarm(self, snapshot, aws_cloudwatch_client, cleanups):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         alarm_name = f"a-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         name_space = f"n-sp-{short_uid()}"
 
         snapshot.add_transformer(TransformerUtility.key_value("MetricName"))
-        aws_client.cloudwatch.put_metric_alarm(
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             MetricName=metric_name,
             Namespace=name_space,
@@ -1931,20 +1931,20 @@ class TestCloudwatch:
             ComparisonOperator="GreaterThanThreshold",
             Threshold=30,
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
-        response = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
+        response = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         snapshot.match("describe_minimal_metric_alarm", response)
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="New test for v2 provider")
-    def test_set_alarm_invalid_input(self, aws_client, snapshot, cleanups):
+    def test_set_alarm_invalid_input(self, aws_cloudwatch_client, snapshot, cleanups):
         snapshot.add_transformer(snapshot.transform.cloudwatch_api())
         alarm_name = f"a-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         name_space = f"n-sp-{short_uid()}"
 
         snapshot.add_transformer(TransformerUtility.key_value("MetricName"))
-        aws_client.cloudwatch.put_metric_alarm(
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             MetricName=metric_name,
             Namespace=name_space,
@@ -1954,16 +1954,16 @@ class TestCloudwatch:
             ComparisonOperator="GreaterThanThreshold",
             Threshold=30,
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
-        with pytest.raises(Exception) as ex:
-            aws_client.cloudwatch.set_alarm_state(
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
+        with pytest.raises(ClientError) as ex:
+            aws_cloudwatch_client.set_alarm_state(
                 AlarmName=alarm_name, StateValue="INVALID", StateReason="test"
             )
 
         snapshot.match("error-invalid-state", ex.value.response)
 
-        with pytest.raises(Exception) as ex:
-            aws_client.cloudwatch.set_alarm_state(
+        with pytest.raises(ClientError) as ex:
+            aws_cloudwatch_client.set_alarm_state(
                 AlarmName=f"{alarm_name}-nonexistent", StateValue="OK", StateReason="test"
             )
 
@@ -2076,7 +2076,7 @@ class TestCloudwatch:
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
         max_data_points = 10  # default is 100,800 according to AWS docs
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(tz=UTC)
         for i in range(0, max_data_points * 2):
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
@@ -2122,7 +2122,7 @@ class TestCloudwatch:
         now_local = datetime.now(timezone(timedelta(hours=-5), "America/Cancun")).replace(
             tzinfo=None
         )  # Remove the tz info to avoid boto converting it to UTC
-        now_utc = datetime.utcnow()
+        now_utc = datetime.now(tz=UTC)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -2161,7 +2161,7 @@ class TestCloudwatch:
     def test_default_ordering(self, aws_client):
         namespace = f"n-sp-{short_uid()}"
         metric_name = f"m-{short_uid()}"
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(tz=UTC)
         for i in range(0, 10):
             aws_client.cloudwatch.put_metric_data(
                 Namespace=namespace,
@@ -2250,7 +2250,7 @@ class TestCloudwatch:
     def test_handle_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(tz=UTC)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -2295,7 +2295,7 @@ class TestCloudwatch:
     def test_get_metric_data_with_different_units(self, aws_client, snapshot):
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(tz=UTC)
         aws_client.cloudwatch.put_metric_data(
             Namespace=namespace,
             MetricData=[
@@ -2393,7 +2393,7 @@ class TestCloudwatch:
 
         namespace = f"n-sp-{short_uid()}"
         metric_name = "m-test"
-        now = datetime.utcnow().replace(tzinfo=UTC)
+        now = datetime.now(tz=UTC)
 
         for m in metric_data:
             m["MetricName"] = metric_name
@@ -2529,8 +2529,8 @@ class TestCloudwatch:
                         },
                     }
                 ],
-                StartTime=datetime.utcnow() - timedelta(hours=1),
-                EndTime=datetime.utcnow(),
+                StartTime=datetime.now(tz=UTC) - timedelta(hours=1),
+                EndTime=datetime.now(tz=UTC),
             )
             assert len(response["MetricDataResults"][0]["Values"]) == 0
             snapshot.match("get_metric_with_null_dimensions", response)
@@ -2686,7 +2686,7 @@ class TestCloudwatch:
                         ],
                     )
                 else:
-                    now = datetime.utcnow().replace(microsecond=0)
+                    now = datetime.now(tz=UTC).replace(microsecond=0)
                     start_time = now - timedelta(minutes=10)
                     end_time = now + timedelta(minutes=5)
                     aws_client.cloudwatch.get_metric_data(

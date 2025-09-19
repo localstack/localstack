@@ -304,6 +304,12 @@ class ResourceNotFoundException(ServiceException):
     ResourceId: Optional[ResourceId]
 
 
+class ValidationException(ServiceException):
+    code: str = "ValidationError"
+    sender_fault: bool = True
+    status_code: int = 400
+
+
 Timestamp = datetime
 ContributorAttributes = Dict[AttributeName, AttributeValue]
 
