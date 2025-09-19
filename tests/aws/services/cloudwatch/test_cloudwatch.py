@@ -28,6 +28,7 @@ from .utils import get_cloudwatch_client
 
 if TYPE_CHECKING:
     from mypy_boto3_logs import CloudWatchLogsClient
+
 PUBLICATION_RETRIES = 5
 
 LOG = logging.getLogger(__name__)
@@ -39,15 +40,15 @@ def is_old_provider():
 
 class TestCloudwatch:
     @markers.aws.validated
-    def test_put_metric_data_values_list(self, snapshot, aws_client):
+    def test_put_metric_data_values_list(self, snapshot, aws_cloudwatch_client):
         metric_name = "test-metric"
         namespace = f"ns-{short_uid()}"
-        utc_now = datetime.utcnow().replace(tzinfo=UTC)
+        utc_now = datetime.now(tz=UTC)
         snapshot.add_transformer(
             snapshot.transform.key_value("Timestamp", reference_replacement=False)
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -60,9 +61,11 @@ class TestCloudwatch:
             ],
         )
 
+        stats = {}
+
         def get_stats() -> int:
-            global stats
-            stats = aws_client.cloudwatch.get_metric_statistics(
+            nonlocal stats
+            stats = aws_cloudwatch_client.get_metric_statistics(
                 Namespace=namespace,
                 MetricName=metric_name,
                 StartTime=utc_now - timedelta(seconds=60),
@@ -77,7 +80,7 @@ class TestCloudwatch:
         snapshot.match("get_metric_statistics", stats)
 
     @markers.aws.only_localstack
-    def test_put_metric_data_gzip(self, aws_client, region_name):
+    def test_put_metric_data_gzip_with_query_protocol(self, aws_client, region_name):
         metric_name = "test-metric"
         namespace = "namespace"
         data = (
@@ -117,13 +120,13 @@ class TestCloudwatch:
 
     @markers.aws.validated
     @pytest.mark.skipif(is_old_provider(), reason="not supported by the old provider")
-    def test_put_metric_data_validation(self, aws_client):
+    def test_put_metric_data_validation(self, aws_cloudwatch_client, snapshot):
         namespace = f"ns-{short_uid()}"
-        utc_now = datetime.utcnow().replace(tzinfo=UTC)
+        utc_now = datetime.now(tz=UTC)
 
         # test invalid due to having both Values and Value
-        with pytest.raises(Exception) as ex:
-            aws_client.cloudwatch.put_metric_data(
+        with pytest.raises(ClientError) as ex:
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -135,16 +138,11 @@ class TestCloudwatch:
                     }
                 ],
             )
-        err = ex.value.response["Error"]
-        assert err["Code"] == "InvalidParameterCombination"
-        assert (
-            err["Message"]
-            == "The parameters MetricData.member.1.Value and MetricData.member.1.Values are mutually exclusive and you have specified both."
-        )
+        snapshot.match("invalid-param-combination", ex.value.response)
 
         # test invalid due to data can not have and values mismatched_counts
-        with pytest.raises(Exception) as ex:
-            aws_client.cloudwatch.put_metric_data(
+        with pytest.raises(ClientError) as ex:
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -156,16 +154,11 @@ class TestCloudwatch:
                     }
                 ],
             )
-        err = ex.value.response["Error"]
-        assert err["Code"] == "InvalidParameterValue"
-        assert (
-            err["Message"]
-            == "The parameters MetricData.member.1.Values and MetricData.member.1.Counts must be of the same size."
-        )
+        snapshot.match("invalid-param-value", ex.value.response)
 
         # test invalid due to inserting both value and statistic values
-        with pytest.raises(Exception) as ex:
-            aws_client.cloudwatch.put_metric_data(
+        with pytest.raises(ClientError) as ex:
+            aws_cloudwatch_client.put_metric_data(
                 Namespace=namespace,
                 MetricData=[
                     {
@@ -182,15 +175,10 @@ class TestCloudwatch:
                     }
                 ],
             )
-        err = ex.value.response["Error"]
-        assert err["Code"] == "InvalidParameterCombination"
-        assert (
-            err["Message"]
-            == "The parameters MetricData.member.1.Value and MetricData.member.1.StatisticValues are mutually exclusive and you have specified both."
-        )
+        snapshot.match("invalid-param-combination-2", ex.value.response)
 
         # For some strange reason the AWS implementation allows this
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -2937,8 +2925,6 @@ class TestCloudwatch:
 
 
 class TestCloudWatchMultiProtocol:
-    # TODO: run the whole test suite with all available protocols
-
     @pytest.fixture
     def cloudwatch_http_client(self, region_name, aws_http_client_factory):
         def _create_client(protocol: str):
@@ -2947,6 +2933,22 @@ class TestCloudWatchMultiProtocol:
             )
 
         return _create_client
+
+    @markers.aws.validated
+    def test_multi_protocol_client_fixture(self, aws_cloudwatch_client):
+        """
+        Smoke test to validate that the client is indeed using the right protocol
+        """
+        response = aws_cloudwatch_client.describe_alarms()
+        response_headers = response["ResponseMetadata"]["HTTPHeaders"]
+        content_type = response_headers["content-type"]
+        if aws_cloudwatch_client.test_client_protocol == "query":
+            assert content_type in ("text/xml", "application/xml")
+        elif aws_cloudwatch_client.test_client_protocol == "json":
+            assert content_type == "application/x-amz-json-1.0"
+        elif aws_cloudwatch_client.test_client_protocol == "smithy-rpc-v2-cbor":
+            assert content_type == "application/cbor"
+            assert response_headers["smithy-protocol"] == "rpc-v2-cbor"
 
     @markers.aws.validated
     @pytest.mark.parametrize("protocol", ["json", "smithy-rpc-v2-cbor", "query"])
