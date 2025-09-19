@@ -2236,8 +2236,8 @@ class SqsJsonResponseSerializer(JSONResponseSerializer):
         else:
             code = error.code
 
-        sender_fault = "Sender" if error.sender_fault else "Receiver"
-        response.headers["x-amzn-query-error"] = f"{code};{sender_fault}"
+        # SQS exceptions all have sender fault set to False, so we hardcode it to `Sender`
+        response.headers["x-amzn-query-error"] = f"{code};Sender"
 
 
 def gen_amzn_requestid():
