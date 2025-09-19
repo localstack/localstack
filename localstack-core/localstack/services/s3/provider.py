@@ -3298,7 +3298,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_object = s3_bucket.get_object(key=key, version_id=version_id, http_method="DELETE")
 
-        store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+        store.TAGS.tags.pop(get_unique_key_id(bucket, key, s3_object.version_id), None)
         response = DeleteObjectTaggingOutput()
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
