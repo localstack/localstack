@@ -1184,29 +1184,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_dimensions": {
-    "recorded-date": "23-11-2023, 15:10:11",
-    "recorded-content": {
-      "get_metric_data": {
-        "Messages": [],
-        "MetricDataResults": [
-          {
-            "Id": "result1",
-            "Label": "metric1",
-            "StatusCode": "Complete",
-            "Timestamps": "timestamp",
-            "Values": [
-              11.0
-            ]
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_statistics": {
     "recorded-date": "04-12-2023, 14:13:08",
     "recorded-content": {
@@ -2847,6 +2824,180 @@
             "Values": [
               6.0
             ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_dimensions[query]": {
+    "recorded-date": "19-09-2025, 20:33:39",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_dimensions[json]": {
+    "recorded-date": "19-09-2025, 20:33:41",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_with_dimensions[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 20:33:44",
+    "recorded-content": {
+      "get_metric_data": {
+        "Messages": [],
+        "MetricDataResults": [
+          {
+            "Id": "result1",
+            "Label": "metric1",
+            "StatusCode": "Complete",
+            "Timestamps": "timestamp",
+            "Values": [
+              11.0
+            ]
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_describe_alarms_converts_date_format_correctly[query]": {
+    "recorded-date": "19-09-2025, 20:38:27",
+    "recorded-content": {
+      "describe-alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_describe_alarms_converts_date_format_correctly[json]": {
+    "recorded-date": "19-09-2025, 20:38:27",
+    "recorded-content": {
+      "describe-alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_describe_alarms_converts_date_format_correctly[smithy-rpc-v2-cbor]": {
+    "recorded-date": "19-09-2025, 20:38:28",
+    "recorded-content": {
+      "describe-alarms": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [],
+            "EvaluationPeriods": 1,
+            "InsufficientDataActions": [],
+            "MetricName": "<metric-name:1>",
+            "Namespace": "<namespace:1>",
+            "OKActions": [],
+            "Period": 60,
+            "StateReason": "Unchecked: Initial alarm creation",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "INSUFFICIENT_DATA",
+            "Statistic": "Sum",
+            "Threshold": 30.0
           }
         ],
         "ResponseMetadata": {

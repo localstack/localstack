@@ -430,11 +430,11 @@ class TestCloudwatch:
         retry(assert_results, retries=10, sleep_before=sleep_before)
 
     @markers.aws.validated
-    def test_get_metric_data_with_dimensions(self, aws_client, snapshot):
+    def test_get_metric_data_with_dimensions(self, aws_cloudwatch_client, snapshot):
         utc_now = datetime.now(tz=UTC)
         namespace = f"test/{short_uid()}"
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -447,7 +447,7 @@ class TestCloudwatch:
             ],
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -460,7 +460,7 @@ class TestCloudwatch:
             ],
         )
 
-        aws_client.cloudwatch.put_metric_data(
+        aws_cloudwatch_client.put_metric_data(
             Namespace=namespace,
             MetricData=[
                 {
@@ -478,7 +478,7 @@ class TestCloudwatch:
         )
 
         def assert_results():
-            response = aws_client.cloudwatch.get_metric_data(
+            response = aws_cloudwatch_client.get_metric_data(
                 MetricDataQueries=[
                     {
                         "Id": "result1",
@@ -508,7 +508,7 @@ class TestCloudwatch:
 
     @markers.aws.only_localstack
     # this feature was a customer request and added with https://github.com/localstack/localstack/pull/3535
-    def test_raw_metric_data(self, aws_client, region_name):
+    def test_raw_metric_data_internal_endpoint(self, aws_client, region_name):
         """
         tests internal endpoint at "/_aws/cloudwatch/metrics/raw"
         """
@@ -529,7 +529,7 @@ class TestCloudwatch:
         assert len(metrics_with_ns) == 1
 
     @markers.aws.validated
-    def test_multiple_dimensions(self, aws_client):
+    def test_multiple_dimensions(self, aws_cloudwatch_client):
         namespaces = [
             f"ns1-{short_uid()}",
             f"ns2-{short_uid()}",
@@ -538,7 +538,7 @@ class TestCloudwatch:
         num_dimensions = 2
         for ns in namespaces:
             for i in range(3):
-                rs = aws_client.cloudwatch.put_metric_data(
+                put_metric_data = aws_cloudwatch_client.put_metric_data(
                     Namespace=ns,
                     MetricData=[
                         {
@@ -553,10 +553,10 @@ class TestCloudwatch:
                         }
                     ],
                 )
-                assert 200 == rs["ResponseMetadata"]["HTTPStatusCode"]
+                assert put_metric_data["ResponseMetadata"]["HTTPStatusCode"] == 200
 
         def _check_metrics():
-            rs = aws_client.cloudwatch.get_paginator("list_metrics").paginate().build_full_result()
+            rs = aws_cloudwatch_client.get_paginator("list_metrics").paginate().build_full_result()
             metrics = [m for m in rs["Metrics"] if m.get("Namespace") in namespaces]
             assert metrics
             assert len(metrics) == len(namespaces) * num_dimensions
@@ -564,11 +564,20 @@ class TestCloudwatch:
         retry(_check_metrics, sleep=2, retries=10, sleep_before=2)
 
     @markers.aws.validated
-    def test_describe_alarms_converts_date_format_correctly(self, aws_client, cleanups):
+    def test_describe_alarms_converts_date_format_correctly(
+        self, aws_cloudwatch_client, cleanups, snapshot
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("AlarmName"),
+                snapshot.transform.key_value("MetricName"),
+                snapshot.transform.key_value("Namespace"),
+            ]
+        )
         alarm_name = f"a-{short_uid()}:test"
         metric_name = f"test-metric-{short_uid()}"
         namespace = f"test-ns-{short_uid()}"
-        aws_client.cloudwatch.put_metric_alarm(
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             Namespace=namespace,
             MetricName=metric_name,
@@ -578,20 +587,21 @@ class TestCloudwatch:
             Statistic="Sum",
             Threshold=30,
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
-        result = aws_client.cloudwatch.describe_alarms(AlarmNames=[alarm_name])
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
+        result = aws_cloudwatch_client.describe_alarms(AlarmNames=[alarm_name])
         alarm = result["MetricAlarms"][0]
         assert isinstance(alarm["AlarmConfigurationUpdatedTimestamp"], datetime)
         assert isinstance(alarm["StateUpdatedTimestamp"], datetime)
+        snapshot.match("describe-alarms", result)
 
     @markers.aws.validated
-    def test_put_composite_alarm_describe_alarms(self, aws_client, cleanups):
+    def test_put_composite_alarm_describe_alarms(self, aws_cloudwatch_client, cleanups):
         composite_alarm_name = f"composite-a-{short_uid()}"
         alarm_name = f"a-{short_uid()}"
         metric_name = "something"
         namespace = f"test-ns-{short_uid()}"
         alarm_rule = f'ALARM("{alarm_name}")'
-        aws_client.cloudwatch.put_metric_alarm(
+        aws_cloudwatch_client.put_metric_alarm(
             AlarmName=alarm_name,
             Namespace=namespace,
             MetricName=metric_name,
@@ -601,15 +611,15 @@ class TestCloudwatch:
             Statistic="Sum",
             Threshold=30,
         )
-        cleanups.append(lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[alarm_name]))
-        aws_client.cloudwatch.put_composite_alarm(
+        cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[alarm_name]))
+        aws_cloudwatch_client.put_composite_alarm(
             AlarmName=composite_alarm_name,
             AlarmRule=alarm_rule,
         )
         cleanups.append(
-            lambda: aws_client.cloudwatch.delete_alarms(AlarmNames=[composite_alarm_name])
+            lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=[composite_alarm_name])
         )
-        result = aws_client.cloudwatch.describe_alarms(
+        result = aws_cloudwatch_client.describe_alarms(
             AlarmNames=[composite_alarm_name], AlarmTypes=["CompositeAlarm"]
         )
         alarm = result["CompositeAlarms"][0]
