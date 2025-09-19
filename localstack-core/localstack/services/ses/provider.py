@@ -60,7 +60,7 @@ from localstack.aws.api.ses import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.http import Resource, Response
-from localstack.services.moto import call_moto, translate_service_exception
+from localstack.services.moto import call_moto
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.services.ses.models import EmailType, SentEmail, SentEmailBody
 from localstack.utils.aws import arns
@@ -486,8 +486,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         destinations = destinations or []
 
         backend = get_ses_backend(context)
-        with translate_service_exception:
-            message = backend.send_raw_email(source, destinations, raw_data)
+        message = backend.send_raw_email(source, destinations, raw_data)
 
         if event_destinations := backend.config_set_event_destination.get(configuration_set_name):
             payload = EventDestinationPayload(
