@@ -1267,9 +1267,11 @@ class JSONResponseSerializer(ResponseSerializer):
         # com.amazon.coral.service#ExceptionName
         # if json-1.1, it should only be the name
 
-        # if the operation is query compatible, we need to add the `Exception` suffix to it
-        if operation_model.service_model.is_query_compatible:
-            code = f"{error.code}Exception"
+        # if the operation is query compatible, we need to add to use shape name
+        # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
+        # as the exception code.
+        if shape and operation_model.service_model.is_query_compatible:
+            code = shape.name
         else:
             code = error.code
 
