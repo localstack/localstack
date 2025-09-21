@@ -2,7 +2,7 @@
 
 This license is for your protection as a Contributor as well as the protection of the maintainers of the LocalStack software; it does not change your rights to use your own Contributions for any other purpose. In the following, the maintainers of LocalStack are referred to as "LocalStack".
 
-You accept and agree to the following terms and conditions for Your present and future Contributions submitted to "LocalStack". Except for the license granted herein to LocalSack and recipients of software distributed by "LocalStack", You reserve all right, title, and interest in and to Your Contributions.
+You accept and agree to the following terms and conditions for Your present and future Contributions submitted to "LocalStack". Except for the license granted herein to LocalStack and recipients of software distributed by "LocalStack", You reserve all right, title, and interest in and to Your Contributions.
 
 1. Definitions.
 
