@@ -26,6 +26,33 @@
       "total": 3.05
     }
   },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[json]": {
+    "last_validated_date": "2025-09-22T19:17:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.43,
+      "call": 2.35,
+      "teardown": 0.01,
+      "total": 2.79
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[query]": {
+    "last_validated_date": "2025-09-22T19:17:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.02,
+      "teardown": 0.0,
+      "total": 1.02
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-22T19:17:53+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.32,
+      "teardown": 0.0,
+      "total": 1.32
+    }
+  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_multi_protocol_client_fixture[json]": {
     "last_validated_date": "2025-09-19T17:26:49+00:00",
     "durations_in_seconds": {
@@ -195,6 +222,33 @@
       "call": 5.45,
       "teardown": 1.29,
       "total": 6.74
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[json]": {
+    "last_validated_date": "2025-09-22T19:16:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.0,
+      "total": 0.55
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[query]": {
+    "last_validated_date": "2025-09-22T19:16:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 0.87,
+      "teardown": 0.0,
+      "total": 1.34
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[smithy-rpc-v2-cbor]": {
+    "last_validated_date": "2025-09-22T19:16:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.57,
+      "teardown": 0.0,
+      "total": 0.57
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_store_tags": {

@@ -293,7 +293,11 @@ class ResponseSerializer(abc.ABC):
                 f"Error to serialize ({error.__class__.__name__ if error else None}) is not a ServiceException."
             )
         shape = operation_model.service_model.shape_for_error_code(error.code)
-        serialized_response.status_code = error.status_code
+        serialized_response.status_code = self._get_error_status_code(
+            error=error,
+            headers=headers,
+            service_model=operation_model.service_model,
+        )
 
         self._serialize_error(
             error, serialized_response, shape, operation_model, mime_type, request_id
@@ -613,6 +617,18 @@ class ResponseSerializer(abc.ABC):
 
     def _get_error_message(self, error: Exception) -> str | None:
         return str(error) if error is not None and str(error) != "None" else None
+
+    def _get_error_status_code(
+        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+    ) -> int:
+        return error.status_code
+
+    @staticmethod
+    def _is_service_query_compatible(service_model: ServiceModel) -> bool:
+        return service_model.is_query_compatible
+
+    def _is_request_query_compatible(self, headers: Headers) -> bool:
+        return headers.get("x-amzn-query-mode") == "true"
 
     def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
         """
@@ -1270,7 +1286,8 @@ class JSONResponseSerializer(ResponseSerializer):
         # if the operation is query compatible, we need to add to use shape name
         # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
         # as the exception code.
-        if shape and operation_model.service_model.is_query_compatible:
+        is_query_compatible = operation_model.service_model.is_query_compatible
+        if shape and is_query_compatible:
             code = shape.name
         else:
             code = error.code
@@ -1283,16 +1300,24 @@ class JSONResponseSerializer(ResponseSerializer):
             # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
             for member in shape.members:
                 if hasattr(error, member):
-                    remaining_params[member] = getattr(error, member)
+                    value = getattr(error, member)
                 # Default error message fields can sometimes have different casing in the specs
                 elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                    remaining_params[member] = getattr(error, member.lower())
+                    value = getattr(error, member.lower())
+                else:
+                    continue
+
+                if not value and is_query_compatible:
+                    # query compatible service do not serialize empty value
+                    continue
+                remaining_params[member] = value
+
             self._serialize(body, remaining_params, shape, None, mime_type)
 
         # Only set the message if it has not been set with the shape members
         if "message" not in body and "Message" not in body:
             message = self._get_error_message(error)
-            if message is not None:
+            if message is not None and not is_query_compatible:
                 body["message"] = message
 
         if mime_type in self.CBOR_TYPES:
@@ -1440,6 +1465,27 @@ class JSONResponseSerializer(ResponseSerializer):
             response, operation_model, request_id
         )
         return response
+
+    def _get_error_status_code(
+        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+    ) -> int:
+        # by default, `json` services might not define exception status code, so they are not defined in the exception
+        # object and will use the default value of `400`
+        # But Query compatible service always do define them, so we get the wrong code for service that are
+        # multi-protocols like CloudWatch
+        # we need to verify if the service is compatible, and if the client has requested the query compatible error
+        # code
+        if not self._is_service_query_compatible(service_model):
+            return error.status_code
+
+        if self._is_request_query_compatible(headers):
+            return error.status_code
+
+        # we only want to override status code 4XX
+        if 400 < error.status_code <= 499:
+            return 400
+
+        return error.status_code
 
 
 class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSerializer):
@@ -1886,10 +1932,11 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
         # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
         # Type information is always serialized in the payload. This is different from the `json` protocol
 
+        is_query_compatible = operation_model.service_model.is_query_compatible
         # if the operation is query compatible, we need to add to use shape name
         # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
         # as the exception code.
-        if shape and operation_model.service_model.is_query_compatible:
+        if shape and is_query_compatible:
             code = shape.name
         else:
             code = error.code
@@ -1905,14 +1952,19 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             )
             remaining_params = {"__type": code}
 
-            for member_name in shape_copy.members:
-                if hasattr(error, member_name):
-                    remaining_params[member_name] = getattr(error, member_name)
+            for member in shape.members:
+                if hasattr(error, member):
+                    value = getattr(error, member)
                 # Default error message fields can sometimes have different casing in the specs
-                elif member_name.lower() in ["code", "message"] and hasattr(
-                    error, member_name.lower()
-                ):
-                    remaining_params[member_name] = getattr(error, member_name.lower())
+                elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
+                    value = getattr(error, member.lower())
+                else:
+                    continue
+
+                if not value and is_query_compatible:
+                    # query compatible service do not serialize empty value
+                    continue
+                remaining_params[member] = value
 
             self._serialize_data_item(body, remaining_params, shape_copy, None)
 
@@ -1930,6 +1982,26 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             response, operation_model, request_id
         )
         return response
+
+    def _get_error_status_code(
+        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+    ) -> int:
+        # by default, `smithy-rpc-v2-cbor` services might not define exception status code, so they are not defined
+        # in the exception object and will use the default value of `400`
+        # But Query compatible service do define them, so we get the wrong code
+        # we need to verify if the service is compatible, and if the client has requested the query compatible error
+        # code
+        if not self._is_service_query_compatible(service_model):
+            return error.status_code
+
+        if self._is_request_query_compatible(headers):
+            return error.status_code
+
+        # we only want to override status code 4XX
+        if 400 < error.status_code <= 499:
+            return 400
+
+        return error.status_code
 
 
 class S3ResponseSerializer(RestXMLResponseSerializer):

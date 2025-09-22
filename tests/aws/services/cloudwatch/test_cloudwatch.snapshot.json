@@ -1158,32 +1158,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input": {
-    "recorded-date": "24-11-2023, 12:23:16",
-    "recorded-content": {
-      "error-invalid-state": {
-        "Error": {
-          "Code": "ValidationError",
-          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "error-resource-not-found": {
-        "Error": {
-          "Code": "ResourceNotFound",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics": {
     "recorded-date": "23-11-2023, 14:39:07",
     "recorded-content": {
@@ -2718,6 +2692,156 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[query]": {
+    "recorded-date": "22-09-2025, 19:16:47",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[json]": {
+    "recorded-date": "22-09-2025, 19:16:48",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "QueryErrorCode": "ValidationException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Message": "",
+          "QueryErrorCode": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[smithy-rpc-v2-cbor]": {
+    "recorded-date": "22-09-2025, 19:16:48",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "QueryErrorCode": "ValidationException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Message": "",
+          "QueryErrorCode": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[json]": {
+    "recorded-date": "22-09-2025, 19:17:52",
+    "recorded-content": {
+      "invalid-value-response": {
+        "__type": "com.amazon.coral.validate#ValidationException",
+        "message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
+      },
+      "not-found-response": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      },
+      "not-found-response-query-mode-true": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[smithy-rpc-v2-cbor]": {
+    "recorded-date": "22-09-2025, 19:17:53",
+    "recorded-content": {
+      "invalid-value-response": {
+        "__type": "com.amazon.coral.validate#ValidationException",
+        "message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
+      },
+      "not-found-response": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      },
+      "not-found-response-query-mode-true": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[query]": {
+    "recorded-date": "22-09-2025, 19:17:54",
+    "recorded-content": {
+      "invalid-value-response": {
+        "ErrorResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "Error": {
+            "Code": "ValidationError",
+            "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+            "Type": "Sender"
+          },
+          "RequestId": "<uuid:1>"
+        }
+      },
+      "not-found-response": {
+        "ErrorResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "Error": {
+            "Code": "ResourceNotFound",
+            "Type": "Sender"
+          },
+          "RequestId": "<uuid:2>"
+        }
+      },
+      "not-found-response-query-mode-true": {
+        "ErrorResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "Error": {
+            "Code": "ResourceNotFound",
+            "Type": "Sender"
+          },
+          "RequestId": "<uuid:3>"
         }
       }
     }
