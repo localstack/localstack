@@ -113,11 +113,6 @@ class ValidationException(CommonServiceException):
         super().__init__("ValidationError", message, 400, True)
 
 
-class InvalidParameterCombination(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("InvalidParameterCombination", message, 400, True)
-
-
 def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
     for index, metric_item in enumerate(metric_data):
         indexplusone = index + 1
@@ -691,7 +686,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         expected_datapoints = (end_time_unix - start_time_unix) / period
 
         if expected_datapoints > AWS_MAX_DATAPOINTS_ACCEPTED:
-            raise InvalidParameterCombination(
+            raise InvalidParameterCombinationException(
                 f"You have requested up to {int(expected_datapoints)} datapoints, which exceeds the limit of {AWS_MAX_DATAPOINTS_ACCEPTED}. "
                 f"You may reduce the datapoints requested by increasing Period, or decreasing the time range."
             )
