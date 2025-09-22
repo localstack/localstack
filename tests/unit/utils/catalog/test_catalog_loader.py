@@ -6,7 +6,7 @@ import pytest
 from localstack.utils.catalog.catalog_loader import AwsCatalogLoaderException, RemoteCatalogLoader
 from localstack.utils.catalog.common import AwsRemoteCatalog
 from localstack.utils.json import FileMappedDocument
-from unit.utils.catalog.common import CATALOG
+from unit.utils.catalog.conftest import CATALOG
 
 
 class TestCatalogLoader:
