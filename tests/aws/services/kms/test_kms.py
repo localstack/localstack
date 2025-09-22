@@ -735,12 +735,7 @@ class TestKMS:
         snapshot.match("generate-random-exc", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Error.Message",
-            "$..message",
-        ]
-    )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     @pytest.mark.parametrize(
         "key_spec,sign_algo",
         [
@@ -1459,11 +1454,6 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..message",
-        ],
-    )
     def test_rotate_key_on_demand_raises_error_given_non_symmetric_key(
         self, kms_create_key, aws_client, snapshot
     ):
@@ -1968,7 +1958,6 @@ class TestKMS:
         snapshot.match("generate-mac", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     @pytest.mark.parametrize(
         "key_spec,mac_algo,verify_msg",
         [
@@ -2065,7 +2054,7 @@ class TestKMS:
         snapshot.match("invalid-plaintext-size-encrypt", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..message", "$..KeyMaterialId"])
+    @markers.snapshot.skip_snapshot_verify(paths=["$..KeyMaterialId"])
     def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
         key_id = kms_create_key()["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
@@ -2417,7 +2406,6 @@ class TestKMSGenerateKeys:
         snapshot.match("generate-data-key-without-plaintext", result)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_encryption_context_generate_data_key(self, kms_key, aws_client, snapshot):
         encryption_context = {"context-key": "context-value"}
         key_id = kms_key["KeyId"]
@@ -2430,7 +2418,6 @@ class TestKMSGenerateKeys:
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message", "$..message"])
     def test_encryption_context_generate_data_key_without_plaintext(
         self, kms_key, aws_client, snapshot
     ):
@@ -2445,7 +2432,6 @@ class TestKMSGenerateKeys:
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_encryption_context_generate_data_key_pair(self, kms_key, aws_client, snapshot):
         encryption_context = {"context-key": "context-value"}
         key_id = kms_key["KeyId"]
@@ -2458,7 +2444,6 @@ class TestKMSGenerateKeys:
         snapshot.match("decrypt-without-encryption-context", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(paths=["$..message"])
     def test_encryption_context_generate_data_key_pair_without_plaintext(
         self, kms_key, aws_client, snapshot
     ):

@@ -1353,10 +1353,7 @@ class JSONResponseSerializer(ResponseSerializer):
             else:
                 continue
 
-            if is_query_compatible:
-                if value:
-                    remaining_params[member] = value
-            else:
+            if value:
                 remaining_params[member] = value
 
         self._serialize(body, remaining_params, shape, None, mime_type)
@@ -2017,10 +2014,7 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             else:
                 continue
 
-            if is_query_compatible:
-                if value:
-                    remaining_params[member] = value
-            else:
+            if value:
                 remaining_params[member] = value
 
         self._serialize_data_item(body, remaining_params, shape_copy, None)

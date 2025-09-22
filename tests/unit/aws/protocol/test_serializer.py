@@ -903,6 +903,7 @@ def test_rpc_v2_cbor_protocol_custom_error_serialization():
         "UserDefinedException",
         400,
         "Parameter x was invalid!",
+        protocol="smithy-rpc-v2-cbor",
     )
 
 
