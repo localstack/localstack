@@ -9,7 +9,7 @@ from localstack.utils.catalog.common import (
     CloudFormationResourcesSupportAtRuntime,
     CloudFormationResourcesSupportInLatest,
 )
-from unit.utils.catalog.conftest import CATALOG
+from tests.unit.utils.catalog.conftest import CATALOG
 
 
 class FakeCatalogLoader(RemoteCatalogLoader):
