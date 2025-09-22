@@ -658,7 +658,7 @@ class ResponseSerializer(abc.ABC):
         return str(error) if error is not None and str(error) != "None" else None
 
     def _get_error_status_code(
-        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+        self, error: ServiceException, headers: dict | Headers | None, service_model: ServiceModel
     ) -> int:
         # by default, some protocols (namely `json` and `smithy-rpc-v2-cbor`) might not define exception status code in
         # their specs, so they are not defined in the `ServiceException` object and will use the default value of `400`
@@ -678,8 +678,8 @@ class ResponseSerializer(abc.ABC):
 
         return error.status_code
 
-    def _is_request_query_compatible(self, headers: Headers) -> bool:
-        return headers.get("x-amzn-query-mode") == "true"
+    def _is_request_query_compatible(self, headers: Headers | dict | None) -> bool:
+        return headers and headers.get("x-amzn-query-mode") == "true"
 
     def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
         """
