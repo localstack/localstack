@@ -3020,6 +3020,7 @@ class TestCloudWatchMultiProtocol:
         snapshot.match("get-metric-data", response)
 
     @markers.aws.validated
+    @pytest.mark.skipif(is_old_provider(), reason="Wrong behavior in v1 in SetAlarmState")
     @pytest.mark.parametrize("protocol", ["json", "smithy-rpc-v2-cbor", "query"])
     def test_exception_serializing_with_no_shape_in_spec(
         self, cloudwatch_http_client, snapshot, protocol
