@@ -291,12 +291,16 @@ class RemediationExecutionState(StrEnum):
     IN_PROGRESS = "IN_PROGRESS"
     SUCCEEDED = "SUCCEEDED"
     FAILED = "FAILED"
+    UNKNOWN = "UNKNOWN"
 
 
 class RemediationExecutionStepState(StrEnum):
     SUCCEEDED = "SUCCEEDED"
     PENDING = "PENDING"
     FAILED = "FAILED"
+    IN_PROGRESS = "IN_PROGRESS"
+    EXITED = "EXITED"
+    UNKNOWN = "UNKNOWN"
 
 
 class RemediationTargetType(StrEnum):

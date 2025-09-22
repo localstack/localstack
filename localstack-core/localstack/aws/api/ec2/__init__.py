@@ -171,6 +171,8 @@ HostReservationId = str
 Hour = int
 IamInstanceProfileAssociationId = str
 ImageId = str
+ImageName = str
+ImageNameRequest = str
 ImageProvider = str
 ImageProviderRequest = str
 ImageUsageReportId = str
@@ -237,12 +239,16 @@ LocalGatewayVirtualInterfaceGroupId = str
 LocalGatewayVirtualInterfaceId = str
 Location = str
 MacModificationTaskId = str
+MarketplaceProductCode = str
+MarketplaceProductCodeRequest = str
 MaxIpv4AddrPerInterface = int
 MaxIpv6AddrPerInterface = int
 MaxNetworkInterfaces = int
 MaxResults = int
 MaxResultsParam = int
 MaximumBandwidthInMbps = int
+MaximumDaysSinceCreatedValue = int
+MaximumDaysSinceDeprecatedValue = int
 MaximumEbsAttachments = int
 MaximumEfaInterfaces = int
 MaximumEnaQueueCount = int
@@ -2439,6 +2445,8 @@ class InstanceType(StrEnum):
     i8ge_48xlarge = "i8ge.48xlarge"
     i8ge_metal_24xl = "i8ge.metal-24xl"
     i8ge_metal_48xl = "i8ge.metal-48xl"
+    mac_m4_metal = "mac-m4.metal"
+    mac_m4pro_metal = "mac-m4pro.metal"
 
 
 class InstanceTypeHypervisor(StrEnum):
@@ -10692,6 +10700,14 @@ class CreateVpnGatewayResult(TypedDict, total=False):
     VpnGateway: Optional[VpnGateway]
 
 
+class CreationDateCondition(TypedDict, total=False):
+    MaximumDaysSinceCreated: Optional[MaximumDaysSinceCreatedValue]
+
+
+class CreationDateConditionRequest(TypedDict, total=False):
+    MaximumDaysSinceCreated: Optional[MaximumDaysSinceCreatedValue]
+
+
 CustomerGatewayIdStringList = List[CustomerGatewayId]
 CustomerGatewayList = List[CustomerGateway]
 
@@ -11543,6 +11559,14 @@ class DeleteVpnConnectionRouteRequest(ServiceRequest):
 class DeleteVpnGatewayRequest(ServiceRequest):
     VpnGatewayId: VpnGatewayId
     DryRun: Optional[Boolean]
+
+
+class DeprecationTimeCondition(TypedDict, total=False):
+    MaximumDaysSinceDeprecated: Optional[MaximumDaysSinceDeprecatedValue]
+
+
+class DeprecationTimeConditionRequest(TypedDict, total=False):
+    MaximumDaysSinceDeprecated: Optional[MaximumDaysSinceDeprecatedValue]
 
 
 class DeprovisionByoipCidrRequest(ServiceRequest):
@@ -17391,11 +17415,17 @@ class GetAllowedImagesSettingsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
 
+ImageNameList = List[ImageName]
+MarketplaceProductCodeList = List[MarketplaceProductCode]
 ImageProviderList = List[ImageProvider]
 
 
 class ImageCriterion(TypedDict, total=False):
     ImageProviders: Optional[ImageProviderList]
+    MarketplaceProductCodes: Optional[MarketplaceProductCodeList]
+    ImageNames: Optional[ImageNameList]
+    DeprecationTimeCondition: Optional[DeprecationTimeCondition]
+    CreationDateCondition: Optional[CreationDateCondition]
 
 
 ImageCriterionList = List[ImageCriterion]
@@ -18495,11 +18525,17 @@ class ImageAttribute(TypedDict, total=False):
     BlockDeviceMappings: Optional[BlockDeviceMappingList]
 
 
+ImageNameRequestList = List[ImageNameRequest]
+MarketplaceProductCodeRequestList = List[MarketplaceProductCodeRequest]
 ImageProviderRequestList = List[ImageProviderRequest]
 
 
 class ImageCriterionRequest(TypedDict, total=False):
     ImageProviders: Optional[ImageProviderRequestList]
+    MarketplaceProductCodes: Optional[MarketplaceProductCodeRequestList]
+    ImageNames: Optional[ImageNameRequestList]
+    DeprecationTimeCondition: Optional[DeprecationTimeConditionRequest]
+    CreationDateCondition: Optional[CreationDateConditionRequest]
 
 
 ImageCriterionRequestList = List[ImageCriterionRequest]
