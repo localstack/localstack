@@ -595,7 +595,9 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         )
         return delta
 
-    def _compute_sub(self, args: str | list[Any], select_before: bool) -> str:
+    def _compute_sub(
+        self, args: str | list[Any], select_before: bool
+    ) -> MaybeComputable[PreprocEntityDelta]:
         # TODO: add further schema validation.
         string_template: str
         sub_parameters: dict
@@ -630,28 +632,21 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             elif template_variable_name in sub_parameters:
                 template_variable_value = sub_parameters[template_variable_name]
 
-            # Try to resolve the variable name as GetAtt.
-            elif "." in template_variable_name:
-                try:
-                    template_variable_value = self._resolve_attribute(
-                        arguments=template_variable_name, select_before=select_before
-                    )
-                except RuntimeError:
-                    pass
-
-            # Try to resolve the variable name as Ref.
+            # Try to resolve the variable name as Ref but only of the statically knowable values.
             else:
-                try:
-                    resource_delta = self._resolve_reference(logical_id=template_variable_name)
-                    template_variable_value = (
-                        resource_delta.before if select_before else resource_delta.after
-                    )
-                    if isinstance(template_variable_value, PreprocResource):
-                        template_variable_value = template_variable_value.physical_resource_id
-                except RuntimeError:
-                    pass
+                resource_delta = self._resolve_reference(logical_id=template_variable_name)
+                if not is_computable(resource_delta):
+                    # we cannot continue since part of the intrinsic function call is not computable
+                    return UnComputable
+
+                template_variable_value = (
+                    resource_delta.before if select_before else resource_delta.after
+                )
+                if isinstance(template_variable_value, PreprocResource):
+                    template_variable_value = template_variable_value.physical_resource_id
 
             if is_nothing(template_variable_value):
+                # TODO: can we surface this in a better way?
                 raise RuntimeError(
                     f"Undefined variable name in Fn::Sub string template '{template_variable_name}'"
                 )
@@ -663,22 +658,22 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
                 f"${{{template_variable_name}}}", template_variable_value
             )
 
-            # FIXME: the following type reduction is ported from v1; however it appears as though such
-            #        reduction is not performed by the engine, and certainly not at this depth given the
-            #        lack of context. This section should be removed with Fn::Sub always retuning a string
-            #        and the resource providers reviewed.
-            account_id = self._change_set.account_id
-            is_another_account_id = sub_string.isdigit() and len(sub_string) == len(account_id)
-            if sub_string == account_id or is_another_account_id:
+        # FIXME: the following type reduction is ported from v1; however it appears as though such
+        #        reduction is not performed by the engine, and certainly not at this depth given the
+        #        lack of context. This section should be removed with Fn::Sub always retuning a string
+        #        and the resource providers reviewed.
+        account_id = self._change_set.account_id
+        is_another_account_id = sub_string.isdigit() and len(sub_string) == len(account_id)
+        if sub_string == account_id or is_another_account_id:
+            result = sub_string
+        elif sub_string.isdigit():
+            result = int(sub_string)
+        else:
+            try:
+                result = float(sub_string)
+            except ValueError:
                 result = sub_string
-            elif sub_string.isdigit():
-                result = int(sub_string)
-            else:
-                try:
-                    result = float(sub_string)
-                except ValueError:
-                    result = sub_string
-            return result
+        return result
 
     def visit_node_intrinsic_function_fn_sub(
         self, node_intrinsic_function: NodeIntrinsicFunction
