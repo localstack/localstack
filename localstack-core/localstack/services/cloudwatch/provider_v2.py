@@ -691,7 +691,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         expected_datapoints = (end_time_unix - start_time_unix) / period
 
         if expected_datapoints > AWS_MAX_DATAPOINTS_ACCEPTED:
-            raise InvalidParameterCombinationException(
+            raise InvalidParameterCombination(
                 f"You have requested up to {int(expected_datapoints)} datapoints, which exceeds the limit of {AWS_MAX_DATAPOINTS_ACCEPTED}. "
                 f"You may reduce the datapoints requested by increasing Period, or decreasing the time range."
             )
