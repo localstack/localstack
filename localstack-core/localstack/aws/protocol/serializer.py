@@ -1336,18 +1336,28 @@ class JSONResponseSerializer(ResponseSerializer):
 
         if not shape:
             shape = DEFAULT_ERROR_STRUCTURE_SHAPE
-        else:
-            # the `__type` field is not defined in default botocore error shapes
-            body["__type"] = code
+
+        # the `__type` field is not defined in default botocore error shapes
+        body["__type"] = code
 
         remaining_params = {}
         # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
         for member in shape.members:
             if hasattr(error, member):
-                remaining_params[member] = getattr(error, member)
+                value = getattr(error, member)
+
             # Default error message fields can sometimes have different casing in the specs
             elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                remaining_params[member] = getattr(error, member.lower())
+                value = getattr(error, member.lower())
+
+            else:
+                continue
+
+            if is_query_compatible:
+                if value:
+                    remaining_params[member] = value
+            else:
+                remaining_params[member] = value
 
         self._serialize(body, remaining_params, shape, None, mime_type)
 
@@ -1998,11 +2008,20 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
 
         for member in shape_copy.members:
             if hasattr(error, member):
-                remaining_params[member] = getattr(error, member)
+                value = getattr(error, member)
 
             # Default error message fields can sometimes have different casing in the specs
             elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                remaining_params[member] = getattr(error, member.lower())
+                value = getattr(error, member.lower())
+
+            else:
+                continue
+
+            if is_query_compatible:
+                if value:
+                    remaining_params[member] = value
+            else:
+                remaining_params[member] = value
 
         self._serialize_data_item(body, remaining_params, shape_copy, None)
 

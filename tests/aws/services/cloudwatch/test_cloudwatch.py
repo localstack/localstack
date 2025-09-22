@@ -3027,6 +3027,7 @@ class TestCloudWatchMultiProtocol:
         alarm_name = f"a-{short_uid()}"
         http_client = cloudwatch_http_client(protocol)
 
+        # ValidationError is not defined in Botocore specs
         invalid_value_response = http_client.post(
             "SetAlarmState",
             payload={

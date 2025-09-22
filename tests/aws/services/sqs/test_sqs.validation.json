@@ -405,21 +405,21 @@
     "last_validated_date": "2024-04-30T13:40:12+00:00"
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
-    "last_validated_date": "2025-09-19T18:26:04+00:00",
+    "last_validated_date": "2025-09-22T16:21:08+00:00",
     "durations_in_seconds": {
-      "setup": 0.96,
-      "call": 0.12,
-      "teardown": 0.16,
-      "total": 1.24
+      "setup": 1.03,
+      "call": 0.11,
+      "teardown": 0.17,
+      "total": 1.31
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
-    "last_validated_date": "2025-09-19T18:26:05+00:00",
+    "last_validated_date": "2025-09-22T16:21:09+00:00",
     "durations_in_seconds": {
-      "setup": 0.14,
-      "call": 0.42,
-      "teardown": 0.2,
-      "total": 0.76
+      "setup": 0.15,
+      "call": 0.43,
+      "teardown": 0.15,
+      "total": 0.73
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_message_batch[sqs]": {
