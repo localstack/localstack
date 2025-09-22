@@ -1378,6 +1378,11 @@ class JSONResponseSerializer(ResponseSerializer):
 
         self._serialize(body, remaining_params, shape, None, mime_type)
 
+        # this is a workaround, some Error Shape do not define a `Message` field, but it is always returned
+        # this could be solved at the same time as the `__type` field
+        if "message" not in body and "Message" not in body:
+            body["message"] = self._get_error_message(error)
+
         if mime_type in self.CBOR_TYPES:
             response.set_response(cbor2_dumps(body, datetime_as_timestamp=True))
             response.content_type = mime_type

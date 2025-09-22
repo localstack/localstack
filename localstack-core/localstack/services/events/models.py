@@ -4,7 +4,7 @@ from datetime import UTC, datetime
 from enum import Enum
 from typing import Literal, TypeAlias, TypedDict
 
-from localstack.aws.api.core import ServiceException
+from localstack.aws.api import CommonServiceException
 from localstack.aws.api.events import (
     ApiDestinationDescription,
     ApiDestinationHttpMethod,
@@ -66,10 +66,9 @@ from localstack.utils.tagging import TaggingService
 TargetDict = dict[TargetId, Target]
 
 
-class ValidationException(ServiceException):
-    code: str = "ValidationException"
-    sender_fault: bool = True
-    status_code: int = 400
+class ValidationException(CommonServiceException):
+    def __init__(self, message: str):
+        super().__init__("ValidationException", message, 400, True)
 
 
 class InvalidEventPatternException(Exception):
