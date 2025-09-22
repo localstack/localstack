@@ -85,7 +85,6 @@ class BaseCloudWatchHttpClient(abc.ABC):
         response = self.post_raw(operation, payload, query_mode=query_mode)
         response_body = self._deserialize_response(response)
         if response.status_code != status_code:
-            print(f"{response.content=}")
             raise ValueError(f"Bad status: {response.status_code}, response body: {response_body}")
         return response_body
 

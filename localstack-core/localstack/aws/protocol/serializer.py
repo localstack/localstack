@@ -660,15 +660,23 @@ class ResponseSerializer(abc.ABC):
     def _get_error_status_code(
         self, error: ServiceException, headers: Headers, service_model: ServiceModel
     ) -> int:
-        return error.status_code
+        # by default, some protocols (namely `json` and `smithy-rpc-v2-cbor`) might not define exception status code in
+        # their specs, so they are not defined in the `ServiceException` object and will use the default value of `400`
+        # But Query compatible service always do define them, so we get the wrong code for service that are
+        # multi-protocols like CloudWatch
+        # we need to verify if the service is compatible, and if the client has requested the query compatible error
+        # code to return the right value
+        if not service_model.is_query_compatible:
+            return error.status_code
 
-    def _get_error_code(
-        self,
-        error: ServiceException,
-        shape: StructureShape | None = None,
-        is_query_compatible: bool = False,
-    ) -> str:
-        return error.code
+        if self._is_request_query_compatible(headers):
+            return error.status_code
+
+        # we only want to override status code 4XX
+        if 400 < error.status_code <= 499:
+            return 400
+
+        return error.status_code
 
     def _is_request_query_compatible(self, headers: Headers) -> bool:
         return headers.get("x-amzn-query-mode") == "true"
@@ -1238,6 +1246,11 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         request_id_element = ETree.SubElement(response_metadata, "RequestId")
         request_id_element.text = request_id
 
+    def _get_error_status_code(
+        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+    ) -> int:
+        return error.status_code
+
 
 class EC2ResponseSerializer(QueryResponseSerializer):
     """
@@ -1326,11 +1339,18 @@ class JSONResponseSerializer(ResponseSerializer):
         # com.amazon.coral.service#ExceptionName
         # if json-1.1, it should only be the name
 
-        # if the operation is query compatible, we need to add to use shape name
-        # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
-        # as the exception code.
         is_query_compatible = operation_model.service_model.is_query_compatible
-        code = self._get_error_code(error, shape, is_query_compatible)
+        # if the operation is query compatible, we need to add to use shape name
+        if is_query_compatible:
+            if shape:
+                code = shape.name
+            else:
+                # if the shape is not defined, we are using the Exception named to derive the `Code`, like you would
+                # from the shape. This allows us to have Exception that are valid in multi-protocols by defining its
+                # code and its name to be different
+                code = error.__class__.__name__
+        else:
+            code = error.code
 
         response.headers["X-Amzn-Errortype"] = code
 
@@ -1503,44 +1523,6 @@ class JSONResponseSerializer(ResponseSerializer):
             response, operation_model, request_id
         )
         return response
-
-    def _get_error_code(
-        self,
-        error: ServiceException,
-        shape: StructureShape | None = None,
-        is_query_compatible: bool = False,
-    ) -> str:
-        # TODO: explain
-        if is_query_compatible:
-            if shape:
-                code = shape.name
-            else:
-                code = error.__class__.__name__
-        else:
-            code = error.code
-
-        return code
-
-    def _get_error_status_code(
-        self, error: ServiceException, headers: Headers, service_model: ServiceModel
-    ) -> int:
-        # by default, `json` services might not define exception status code, so they are not defined in the exception
-        # object and will use the default value of `400`
-        # But Query compatible service always do define them, so we get the wrong code for service that are
-        # multi-protocols like CloudWatch
-        # we need to verify if the service is compatible, and if the client has requested the query compatible error
-        # code
-        if not service_model.is_query_compatible:
-            return error.status_code
-
-        if self._is_request_query_compatible(headers):
-            return error.status_code
-
-        # we only want to override status code 4XX
-        if 400 < error.status_code <= 499:
-            return 400
-
-        return error.status_code
 
 
 class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSerializer):
@@ -1987,7 +1969,17 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
         # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
         # Type information is always serialized in the payload. This is different from the `json` protocol
         is_query_compatible = operation_model.service_model.is_query_compatible
-        code = self._get_error_code(error, shape, is_query_compatible)
+        # if the operation is query compatible, we need to add to use shape name
+        if is_query_compatible:
+            if shape:
+                code = shape.name
+            else:
+                # if the shape is not defined, we are using the Exception named to derive the `Code`, like you would
+                # from the shape. This allows us to have Exception that are valid in multi-protocols by defining its
+                # code and its name to be different
+                code = error.__class__.__name__
+        else:
+            code = error.code
 
         if not shape:
             shape_copy = DEFAULT_ERROR_STRUCTURE_SHAPE
@@ -2033,44 +2025,6 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
             response, operation_model, request_id
         )
         return response
-
-    def _get_error_code(
-        self,
-        error: ServiceException,
-        shape: StructureShape | None = None,
-        is_query_compatible: bool = False,
-    ) -> str:
-        # TODO: explain
-        if is_query_compatible:
-            if shape:
-                code = shape.name
-            else:
-                code = error.__class__.__name__
-        else:
-            code = error.code
-
-        return code
-
-    def _get_error_status_code(
-        self, error: ServiceException, headers: Headers, service_model: ServiceModel
-    ) -> int:
-        # by default, `json` services might not define exception status code, so they are not defined in the exception
-        # object and will use the default value of `400`
-        # But Query compatible service always do define them, so we get the wrong code for service that are
-        # multi-protocols like CloudWatch
-        # we need to verify if the service is compatible, and if the client has requested the query compatible error
-        # code
-        if not service_model.is_query_compatible:
-            return error.status_code
-
-        if self._is_request_query_compatible(headers):
-            return error.status_code
-
-        # we only want to override status code 4XX
-        if 400 < error.status_code <= 499:
-            return 400
-
-        return error.status_code
 
 
 class S3ResponseSerializer(RestXMLResponseSerializer):
