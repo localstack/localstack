@@ -20,6 +20,7 @@ class AwsCatalogLoaderException(Exception):
 
 
 class RemoteCatalogLoader:
+    supported_schema_version = "v1"
     api_endpoint_catalog = f"{constants.API_ENDPOINT}/license/catalog"
     catalog_file_path = Path(config.dirs.cache) / AWS_CATALOG_FILE_NAME
 
@@ -53,7 +54,7 @@ class RemoteCatalogLoader:
         catalog_doc.update(catalog.model_dump())
         catalog_doc.save()
 
-    def _get_catalog_from_platform(self) -> AwsRemoteCatalog | None:
+    def _get_catalog_from_platform(self) -> AwsRemoteCatalog:
         import requests
 
         from localstack.utils.http import get_proxies
@@ -80,9 +81,9 @@ class RemoteCatalogLoader:
         except JSONDecodeError as e:
             raise AwsCatalogLoaderException(f"Could not de-serialize json catalog: {e}") from e
         remote_catalog = AwsRemoteCatalog(**catalog_json)
-        if remote_catalog.schema_version != "v1":
+        if remote_catalog.schema_version != self.supported_schema_version:
             raise AwsCatalogLoaderException(
-                f"Unsupported schema version: {remote_catalog.schema_versio}"
+                f"Unsupported schema version: '{remote_catalog.schema_version}'. Only '{self.supported_schema_version}' is supported"
             )
         return remote_catalog
 
