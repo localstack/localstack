@@ -1174,6 +1174,17 @@ class BaseCBORRequestParser(RequestParser, ABC):
             return node
         return super()._parse_timestamp(_, shape, node, ___)
 
+    @_text_content
+    def _parse_boolean(self, _, __, node: str | bool, ___) -> bool:
+        if isinstance(node, str):
+            value = node.lower()
+            if value == "true":
+                return True
+            if value == "false":
+                return False
+            raise ValueError(f"cannot parse boolean value {node}")
+        return node
+
     # This helper method is intended for use when parsing indefinite length items.
     # It does nothing if the next byte is not the break code.  If the next byte is
     # the break code, it advances past that byte and returns True so the calling
