@@ -194,7 +194,7 @@ def _botocore_error_serializer_integration_test(
     type = parsed_response["Error"].get("Type")
     if is_sender_fault:
         assert type == "Sender"
-    elif service_protocol == "smithy-rpc-v2-cbor":
+    elif service_protocol == "smithy-rpc-v2-cbor" and service.is_query_compatible:
         assert type == "Receiver"
     else:
         assert type is None
@@ -895,7 +895,9 @@ def test_rpc_v2_cbor_protocol_error_serialization():
 
 def test_rpc_v2_cbor_protocol_custom_error_serialization():
     # CBOR needs a shape for the error, and we have to implement a custom way to serialize user defined exception
-    exception = CommonServiceException("UserDefinedException", "Parameter x was invalid!")
+    exception = CommonServiceException(
+        "UserDefinedException", "Parameter x was invalid!", sender_fault=True
+    )
     _botocore_error_serializer_integration_test(
         "cloudwatch",
         "SetAlarmState",
@@ -904,6 +906,7 @@ def test_rpc_v2_cbor_protocol_custom_error_serialization():
         400,
         "Parameter x was invalid!",
         protocol="smithy-rpc-v2-cbor",
+        is_sender_fault=True,
     )
 
 
