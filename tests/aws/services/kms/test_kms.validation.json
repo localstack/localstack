@@ -69,12 +69,12 @@
     "last_validated_date": "2024-04-11T15:53:18+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "last_validated_date": "2025-09-22T16:41:18+00:00",
+    "last_validated_date": "2025-09-22T21:45:01+00:00",
     "durations_in_seconds": {
-      "setup": 0.47,
-      "call": 0.93,
-      "teardown": 0.13,
-      "total": 1.53
+      "setup": 0.45,
+      "call": 0.99,
+      "teardown": 0.12,
+      "total": 1.56
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_validate_plaintext_size_per_key_type[RSA_2048-RSAES_OAEP_SHA_1]": {

@@ -2056,6 +2056,7 @@ class TestKMS:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(paths=["$..KeyMaterialId"])
     def test_encrypt_decrypt_encryption_context(self, kms_create_key, snapshot, aws_client):
+        snapshot.add_transformer(snapshot.transform.key_value("KeyMaterialId"))
         key_id = kms_create_key()["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
         encryption_context = {"context-key": "context-value"}

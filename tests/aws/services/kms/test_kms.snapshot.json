@@ -1565,7 +1565,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_encrypt_decrypt_encryption_context": {
-    "recorded-date": "22-09-2025, 16:41:18",
+    "recorded-date": "22-09-2025, 21:45:01",
     "recorded-content": {
       "encrypt_response": {
         "CiphertextBlob": "ciphertext-blob",
@@ -1579,7 +1579,7 @@
       "decrypt_response_with_encryption_context": {
         "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
         "KeyId": "<key-id:1>",
-        "KeyMaterialId": "43d71366b52c0dddc21719cdd087369c1fd3cdd3a7075e33e1db6f5e60d6d30e",
+        "KeyMaterialId": "<key-material-id:1>",
         "Plaintext": "plaintext",
         "ResponseMetadata": {
           "HTTPHeaders": {},
