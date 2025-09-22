@@ -240,7 +240,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         results: list[MetricDataResult] = []
         limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
-        nxt = None
+        nxt: str | None = None
         label_additions = []
 
         for diff in LABEL_DIFFERENTIATORS:
@@ -281,7 +281,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
 
             pagination = PaginatedList(timestamp_value_dicts)
             timestamp_page, nxt = pagination.get_page(
-                lambda item: item.get("Timestamp"),
+                lambda item: str(item.get("Timestamp")),
                 next_token=next_token,
                 page_size=limit,
             )
