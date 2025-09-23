@@ -463,6 +463,7 @@ class TestStacksApi:
         assert len(updated_resources) == length_expected
 
     @markers.aws.only_localstack
+    @markers.requires_in_process
     def test_create_stack_with_custom_id(
         self, aws_client, cleanups, account_id, region_name, set_resource_custom_id
     ):
