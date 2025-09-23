@@ -7,7 +7,7 @@ from typing import Any, Final, TypedDict
 
 import boto3
 import jsonpath_ng
-from botocore.exceptions import ClientError, ParamValidationError
+from botocore.exceptions import ClientError
 from samtranslator.translator.transform import transform as transform_sam
 
 from localstack.aws.connect import connect_to
@@ -25,10 +25,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     Maybe,
     NodeForEach,
     NodeGlobalTransform,
-    NodeIntrinsicFunction,
     NodeIntrinsicFunctionFnTransform,
     NodeProperties,
-    NodeProperty,
     NodeResource,
     NodeResources,
     NodeTransform,
@@ -499,47 +497,6 @@ class ChangeSetModelTransform(ChangeSetModelStaticPreproc):
             )
 
         return result.get("fragment")
-
-    def visit_node_intrinsic_function_fn_get_att(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        try:
-            return super().visit_node_intrinsic_function_fn_get_att(node_intrinsic_function)
-        except RuntimeError:
-            return self.visit(node_intrinsic_function.arguments)
-
-    def visit_node_intrinsic_function_fn_sub(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        try:
-            # If an argument is a Parameter it should be resolved, any other case, ignore it
-            return super().visit_node_intrinsic_function_fn_sub(node_intrinsic_function)
-        except RuntimeError:
-            return self.visit(node_intrinsic_function.arguments)
-
-    def visit_node_intrinsic_function_fn_split(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        try:
-            # If an argument is a Parameter it should be resolved, any other case, ignore it
-            return super().visit_node_intrinsic_function_fn_split(node_intrinsic_function)
-        except RuntimeError:
-            return self.visit(node_intrinsic_function.arguments)
-
-    def visit_node_intrinsic_function_fn_select(
-        self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
-        try:
-            # If an argument is a Parameter it should be resolved, any other case, ignore it
-            return super().visit_node_intrinsic_function_fn_select(node_intrinsic_function)
-        except RuntimeError:
-            return self.visit(node_intrinsic_function.arguments)
-
-    def visit_node_property(self, node_property: NodeProperty) -> PreprocEntityDelta:
-        try:
-            return super().visit_node_property(node_property)
-        except ParamValidationError:
-            return self.visit(node_property.value)
 
     # ignore errors from dynamic replacements
     def _maybe_perform_dynamic_replacements(self, delta: PreprocEntityDelta) -> PreprocEntityDelta:
