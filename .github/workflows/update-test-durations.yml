@@ -29,6 +29,7 @@ jobs:
       branch: main
       eventFilter: schedule
       platform: amd64
+      path: localstack
       outPath: .test_durations
       publishMethod: ${{ inputs.publishMethod }}
     secrets:
