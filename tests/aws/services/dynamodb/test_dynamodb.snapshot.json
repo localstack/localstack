@@ -1870,5 +1870,18 @@
         }
       }
     }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_describe_contributor_insights": {
+    "recorded-date": "23-09-2025, 13:34:50",
+    "recorded-content": {
+      "describe-contributor-insights-disabled": {
+        "ContributorInsightsStatus": "DISABLED",
+        "TableName": "test-table-5f3f1046",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
