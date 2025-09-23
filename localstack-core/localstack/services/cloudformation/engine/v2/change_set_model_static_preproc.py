@@ -637,6 +637,10 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
                     pseudo_parameter_name=template_variable_name
                 )
 
+            elif "." in template_variable_name:
+                # we know this is uncomputable as it is accessing a resource property
+                return UnComputable
+
             # Try to resolve the variable name as an entry to the defined parameters.
             elif template_variable_name in sub_parameters:
                 template_variable_value = sub_parameters[template_variable_name]
