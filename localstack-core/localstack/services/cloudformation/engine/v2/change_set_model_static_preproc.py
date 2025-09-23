@@ -91,7 +91,15 @@ UnComputable = UnComputableType()
 
 
 def is_computable(value: Any) -> bool:
-    return value is not UnComputable
+    if value is UnComputable:
+        return False
+    elif isinstance(value, PreprocEntityDelta):
+        return is_computable(value.before) and is_computable(value.after)
+    elif isinstance(value, (list, set)) and any(not is_computable(every) for every in value):
+        return False
+    elif isinstance(value, dict) and not is_computable(list(value.values())):
+        return False
+    return True
 
 
 class PreprocEntityDelta(Generic[TBefore, TAfter]):
