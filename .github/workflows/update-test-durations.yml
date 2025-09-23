@@ -32,5 +32,5 @@ jobs:
       outPath: .test_durations
       publishMethod: ${{ inputs.publishMethod }}
     secrets:
-      ghToken: ${{ secrets.GITHUB_TOKEN }}
-      # prToken: ${{ secrets.PRO_ACCESS_TOKEN }}  # optional; omit to use GITHUB_TOKEN
+      gh-token: ${{ secrets.GITHUB_TOKEN }}
+      # pr-token: ${{ secrets.PRO_ACCESS_TOKEN }}  # optional; omit to use GITHUB_TOKEN
