@@ -112,6 +112,7 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
 
 
 @markers.aws.validated
+@markers.requires_in_process
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         # TODO: not returned by LS
@@ -150,7 +151,7 @@ def test_cfn_apigateway_swagger_import(
     # invoke API endpoint, assert results
     def _invoke():
         _result = requests.post(url, data="test 123")
-        assert _result.ok
+        _result.raise_for_status()
         return _result
 
     if is_aws_cloud():
