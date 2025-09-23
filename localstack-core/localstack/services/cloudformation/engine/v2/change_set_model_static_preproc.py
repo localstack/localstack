@@ -31,7 +31,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeProperty,
     NodeResource,
     Nothing,
-    NothingType,
     Scope,
     TerminalValue,
     TerminalValueCreated,
@@ -402,7 +401,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
 
     def _cached_apply(
         self, scope: Scope, arguments_delta: PreprocEntityDelta, resolver: Callable[[Any], Any]
-    ) -> PreprocEntityDelta:
+    ) -> MaybeComputable[PreprocEntityDelta]:
         """
         Applies the resolver function to the given input delta if and only if the required
         values are not already present in the runtime caches. This function handles both
@@ -430,6 +429,9 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         # TODO: Update all visit_* methods in this class and its subclasses to use this function.
         #       This ensures maximal reuse of precomputed 'before' (and 'after') values from
         #       prior runtimes on the change sets template, thus avoiding unnecessary recomputation.
+
+        if not is_computable(arguments_delta):
+            return UnComputable
 
         arguments_before = arguments_delta.before
         arguments_after = arguments_delta.after
@@ -482,12 +484,15 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         after_delta = self.visit(node_divergence.divergence)
         return PreprocEntityDelta(before=before_delta.before, after=after_delta.after)
 
-    def visit_node_object(self, node_object: NodeObject) -> PreprocEntityDelta:
+    def visit_node_object(self, node_object: NodeObject) -> MaybeComputable[PreprocEntityDelta]:
         node_change_type = node_object.change_type
         before = {} if node_change_type != ChangeType.CREATED else Nothing
         after = {} if node_change_type != ChangeType.REMOVED else Nothing
         for name, change_set_entity in node_object.bindings.items():
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
+            if not is_computable(delta):
+                return UnComputable
+
             delta_before = delta.before
             delta_after = delta.after
             if not is_nothing(before) and not is_nothing(delta_before):
@@ -495,6 +500,12 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             if not is_nothing(after) and not is_nothing(delta_after):
                 after[name] = delta_after
         return PreprocEntityDelta(before=before, after=after)
+
+    def visit_node_intrinsic_function_fn_get_att(
+        self, node_intrinsic_function: NodeIntrinsicFunction
+    ) -> MaybeComputable[PreprocEntityDelta]:
+        # this method is always uncomputable since it access resource properties
+        return UnComputable
 
     def visit_node_intrinsic_function_fn_equals(
         self, node_intrinsic_function: NodeIntrinsicFunction
@@ -595,9 +606,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         )
         return delta
 
-    def _compute_sub(
-        self, args: str | list[Any], select_before: bool
-    ) -> MaybeComputable[PreprocEntityDelta]:
+    def _compute_sub(self, args: str | list[Any], select_before: bool) -> MaybeComputable[str]:
         # TODO: add further schema validation.
         string_template: str
         sub_parameters: dict
@@ -677,8 +686,11 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
 
     def visit_node_intrinsic_function_fn_sub(
         self, node_intrinsic_function: NodeIntrinsicFunction
-    ) -> PreprocEntityDelta:
+    ) -> MaybeComputable[PreprocEntityDelta]:
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+        if not is_computable(arguments_delta):
+            return UnComputable
+
         arguments_before = arguments_delta.before
         arguments_after = arguments_delta.after
         before = self._before_cache.get(node_intrinsic_function.scope, Nothing)
@@ -694,7 +706,7 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     ) -> PreprocEntityDelta:
         # TODO: add support for schema validation.
         # TODO: add tests for joining non string values.
-        def _compute_fn_join(args: list[Any]) -> str | NothingType:
+        def _compute_fn_join(args: list[Any]):
             if not (isinstance(args, list) and len(args) == 2):
                 return Nothing
             delimiter: str = str(args[0])
@@ -934,25 +946,28 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     def _after_resource_physical_id(self, resource_logical_id: str) -> str:
         return self._before_resource_physical_id(resource_logical_id=resource_logical_id)
 
+    def _compute_fn_ref(self, logical_id: str) -> MaybeComputable[PreprocEntityDelta]:
+        if logical_id == "AWS::NoValue":
+            return Nothing
+
+        reference_delta: PreprocEntityDelta = self._resolve_reference(logical_id=logical_id)
+        if not is_computable(reference_delta):
+            return UnComputable
+
+        if isinstance(before := reference_delta.before, PreprocResource):
+            reference_delta.before = before.physical_resource_id
+        if isinstance(after := reference_delta.after, PreprocResource):
+            reference_delta.after = after.physical_resource_id
+        return reference_delta
+
     def visit_node_intrinsic_function_ref(
         self, node_intrinsic_function: NodeIntrinsicFunction
     ) -> PreprocEntityDelta:
-        def _compute_fn_ref(logical_id: str) -> PreprocEntityDelta:
-            if logical_id == "AWS::NoValue":
-                return Nothing
-
-            reference_delta: PreprocEntityDelta = self._resolve_reference(logical_id=logical_id)
-            if isinstance(before := reference_delta.before, PreprocResource):
-                reference_delta.before = before.physical_resource_id
-            if isinstance(after := reference_delta.after, PreprocResource):
-                reference_delta.after = after.physical_resource_id
-            return reference_delta
-
         arguments_delta = self.visit(node_intrinsic_function.arguments)
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,
-            resolver=_compute_fn_ref,
+            resolver=self._compute_fn_ref,
         )
         return delta
 
@@ -975,12 +990,15 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         )
         return delta
 
-    def visit_node_array(self, node_array: NodeArray) -> PreprocEntityDelta:
+    def visit_node_array(self, node_array: NodeArray) -> MaybeComputable[PreprocEntityDelta]:
         node_change_type = node_array.change_type
         before = [] if node_change_type != ChangeType.CREATED else Nothing
         after = [] if node_change_type != ChangeType.REMOVED else Nothing
         for change_set_entity in node_array.array:
             delta: PreprocEntityDelta = self.visit(change_set_entity=change_set_entity)
+            if not is_computable(delta):
+                return UnComputable
+
             delta_before = delta.before
             delta_after = delta.after
             if not is_nothing(before) and not is_nothing(delta_before):
@@ -998,18 +1016,22 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         for node_property in node_properties.properties:
             property_name = node_property.name
             delta = self.visit(node_property)
+            if not is_computable(delta):
+                continue
             delta_before = delta.before
             delta_after = delta.after
             if (
                 not is_nothing(before_bindings)
                 and not is_nothing(delta_before)
                 and delta_before is not None
+                and is_computable(delta_before)
             ):
                 before_bindings[property_name] = delta_before
             if (
                 not is_nothing(after_bindings)
                 and not is_nothing(delta_after)
                 and delta_after is not None
+                and is_computable(delta_after)
             ):
                 after_bindings[property_name] = delta_after
         before = Nothing
