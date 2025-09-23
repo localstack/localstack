@@ -55,3 +55,4 @@ class CloudFormationResourcesSupportInLatest(StrEnum):
 
 class CloudFormationResourcesSupportAtRuntime(StrEnum):
     AVAILABLE = "AVAILABLE"
+    NOT_IMPLEMENTED = "NOT_IMPLEMENTED"

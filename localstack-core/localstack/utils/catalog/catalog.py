@@ -60,7 +60,7 @@ class CatalogPlugin(Plugin):
 
     @abstractmethod
     def get_cloudformation_resource_status(
-        self, resource_name: str, service_name: str
+        self, resource_name: str, service_name: str, is_pro_resource: bool = False
     ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         pass
 
@@ -74,7 +74,7 @@ class AwsCatalogRuntimePlugin(CatalogPlugin):
         return None
 
     def get_cloudformation_resource_status(
-        self, resource_name: str, service_name: str
+        self, resource_name: str, service_name: str, is_pro_resource: bool = False
     ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         return None
 
