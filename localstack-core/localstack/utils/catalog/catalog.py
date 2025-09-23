@@ -49,7 +49,7 @@ class CatalogPlugin(Plugin):
         return SERVICE_PLUGINS.list_available()
 
     @staticmethod
-    def _get_cfn_resources_available_at_runtime():
+    def get_cfn_resources_available_at_runtime():
         return set(cfn_plugin_manager.list_names())
 
     @abstractmethod
