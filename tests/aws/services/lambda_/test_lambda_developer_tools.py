@@ -74,7 +74,7 @@ class TestHotReloading:
 
         get_function_response = aws_client.lambda_.get_function(FunctionName=function_name)
         code_location_path = Path.from_uri(get_function_response["Code"]["Location"])
-        assert str(code_location_path) == hot_reloading_dir_path
+        assert str(code_location_path) == mount_path
 
         response = aws_client.lambda_.invoke(FunctionName=function_name, Payload=b"{}")
         response_dict = json.load(response["Payload"])
