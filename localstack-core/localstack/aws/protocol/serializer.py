@@ -1338,7 +1338,7 @@ class JSONResponseSerializer(QueryCompatibleProtocolMixin, ResponseSerializer):
                 else:
                     continue
 
-                if value:
+                if value or (member in shape.required_members and value is not None):
                     remaining_params[member] = value
 
             self._serialize(body, remaining_params, shape, None, mime_type)
@@ -1845,7 +1845,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
             else:
                 continue
 
-            if value:
+            if value or (member in shape.required_members and value is not None):
                 params[member] = value
 
         self._serialize_type_structure(body, params, shape, None, shape_members=shape_members)

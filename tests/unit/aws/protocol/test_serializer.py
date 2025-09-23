@@ -764,6 +764,54 @@ def test_json_protocol_error_serialization_with_shaped_default_members_on_root()
     assert "message" not in parsed_body
 
 
+def test_json_protocol_error_serialization_empty_message():
+    exception = TransactionCanceledException()
+
+    response = _botocore_error_serializer_integration_test(
+        "dynamodb",
+        "ExecuteTransaction",
+        exception,
+        "TransactionCanceledException",
+        400,
+        "",
+    )
+    assert "message" not in response
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_json_protocol_error_serialization_with_empty_required_members(empty_value):
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = False
+        status_code: int = 404
+        resourceId: str
+        resourceType: str
+
+    resource_type = "test"
+    exception = _ResourceNotFoundException(
+        "Exception message!",
+        resourceType=resource_type,
+        resourceId=empty_value,
+    )
+    expected_exception_values = {
+        "resourceType": resource_type,
+    }
+    # if the value is None, it is not serialized, even if required
+    # but if it is an empty string, it will be
+    if empty_value is not None:
+        expected_exception_values["resourceId"] = ""
+
+    _botocore_error_serializer_integration_test(
+        "verifiedpermissions",
+        "IsAuthorizedWithToken",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Exception message!",
+        **expected_exception_values,
+    )
+
+
 def test_rest_json_protocol_error_serialization_with_additional_members():
     class NotFoundException(ServiceException):
         code: str = "NotFoundException"
@@ -927,6 +975,25 @@ def test_rpc_v2_cbor_protocol_error_serialization_default_headers():
     )
     assert serialized_response.headers["Content-Type"] == APPLICATION_CBOR
     assert serialized_response.headers["Smithy-Protocol"] == "rpc-v2-cbor"
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_rpc_v2_cbor_protocol_error_serialization_with_empty_required_members(empty_value):
+    class AccessDeniedException(ServiceException):
+        code: str = "AccessDeniedException"
+        sender_fault: bool = True
+        status_code: int = 403
+
+    exception = AccessDeniedException("")
+
+    _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ApprovePlanExecutionStep",
+        exception,
+        "AccessDeniedException",
+        403,
+        "",
+    )
 
 
 def test_json_protocol_content_type_1_0():
