@@ -42,6 +42,11 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 from localstack.services.cloudformation.engine.v2.change_set_model_visitor import (
     ChangeSetModelVisitor,
 )
+from localstack.services.cloudformation.engine.v2.constants import (
+    AWS_URL_SUFFIX,
+    PSEUDO_PARAMETERS,
+    REGEX_OUTPUT_APIGATEWAY,
+)
 from localstack.services.cloudformation.engine.v2.resolving import (
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
@@ -57,29 +62,9 @@ from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
 from localstack.utils.urls import localstack_host
 
-_AWS_URL_SUFFIX = localstack_host().host  # The value in AWS is "amazonaws.com"
-
-_PSEUDO_PARAMETERS: Final[set[str]] = {
-    "AWS::Partition",
-    "AWS::AccountId",
-    "AWS::Region",
-    "AWS::StackName",
-    "AWS::StackId",
-    "AWS::URLSuffix",
-    "AWS::NoValue",
-    "AWS::NotificationARNs",
-}
-
 TBefore = TypeVar("TBefore")
 TAfter = TypeVar("TAfter")
 _T = TypeVar("_T")
-
-REGEX_OUTPUT_APIGATEWAY = re.compile(
-    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
-)
-MOCKED_REFERENCE = "unknown"
-
-VALID_LOGICAL_RESOURCE_ID_RE = re.compile(r"^[A-Za-z0-9]+$")
 
 
 class UnComputableType:
@@ -148,7 +133,7 @@ class PreprocResource:
     def __init__(
         self,
         logical_id: str,
-        physical_resource_id: str,
+        physical_resource_id: str | None,
         condition: bool | None,
         resource_type: str,
         properties: PreprocProperties,
@@ -302,14 +287,14 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             case "AWS::StackId":
                 return self._change_set.stack.stack_id
             case "AWS::URLSuffix":
-                return _AWS_URL_SUFFIX
+                return AWS_URL_SUFFIX
             case "AWS::NoValue":
                 return None
             case _:
                 raise RuntimeError(f"The use of '{pseudo_parameter_name}' is currently unsupported")
 
     def _resolve_reference(self, logical_id: str) -> MaybeComputable[PreprocEntityDelta]:
-        if logical_id in _PSEUDO_PARAMETERS:
+        if logical_id in PSEUDO_PARAMETERS:
             pseudo_parameter_value = self._resolve_pseudo_parameter(
                 pseudo_parameter_name=logical_id
             )
@@ -552,8 +537,14 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             condition_value = self.visit(node_condition).after
             if condition_value:
                 arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+                if not is_computable(arg_delta):
+                    # the conditions may refer to resources
+                    return UnComputable
             else:
                 arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+                if not is_computable(arg_delta):
+                    # the conditions may refer to resources
+                    return UnComputable
             if_delta.after = arg_delta.after
 
         return if_delta
@@ -629,10 +620,8 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         sub_string = string_template
         template_variable_names = re.findall("\\${([^}]+)}", string_template)
         for template_variable_name in template_variable_names:
-            template_variable_value = Nothing
-
             # Try to resolve the variable name as pseudo parameter.
-            if template_variable_name in _PSEUDO_PARAMETERS:
+            if template_variable_name in PSEUDO_PARAMETERS:
                 template_variable_value = self._resolve_pseudo_parameter(
                     pseudo_parameter_name=template_variable_name
                 )
@@ -890,10 +879,6 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
         return PreprocEntityDelta(before=before_parameters, after=after_parameters)
 
     def visit_node_parameter(self, node_parameter: NodeParameter) -> PreprocEntityDelta:
-        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_parameter.name):
-            raise ValidationError(
-                f"Template format error: Parameter name {node_parameter.name} is non alphanumeric."
-            )
         dynamic_value = node_parameter.dynamic_value
         dynamic_delta = self.visit(dynamic_value)
 
@@ -1063,10 +1048,6 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
-        if not VALID_LOGICAL_RESOURCE_ID_RE.match(node_resource.name):
-            raise ValidationError(
-                f"Template format error: Resource name {node_resource.name} is non alphanumeric."
-            )
         change_type = node_resource.change_type
         condition_before = Nothing
         condition_after = Nothing
@@ -1091,8 +1072,8 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
 
         before = Nothing
         after = Nothing
+        logical_resource_id = node_resource.name
         if change_type != ChangeType.CREATED and is_nothing(condition_before) or condition_before:
-            logical_resource_id = node_resource.name
             before_physical_resource_id = self._before_resource_physical_id(
                 resource_logical_id=logical_resource_id
             )
@@ -1106,13 +1087,13 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
                 requires_replacement=False,
             )
         if change_type != ChangeType.REMOVED and is_nothing(condition_after) or condition_after:
-            logical_resource_id = node_resource.name
             try:
                 after_physical_resource_id = self._after_resource_physical_id(
-                    resource_logical_id=logical_resource_id
+                    resource_logical_id=logical_resource_id,
                 )
             except RuntimeError:
                 after_physical_resource_id = None
+
             after = PreprocResource(
                 logical_id=logical_resource_id,
                 physical_resource_id=after_physical_resource_id,

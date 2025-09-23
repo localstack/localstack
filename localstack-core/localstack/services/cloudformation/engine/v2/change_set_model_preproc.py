@@ -14,9 +14,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_static_preproc import (
-    _AWS_URL_SUFFIX,
-    _PSEUDO_PARAMETERS,
-    MOCKED_REFERENCE,
     ChangeSetModelStaticPreproc,
     PreprocEntityDelta,
     PreprocOutput,
@@ -26,8 +23,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model_static_prepro
 )
 
 __all__ = [
-    "_AWS_URL_SUFFIX",
-    "_PSEUDO_PARAMETERS",
+    "AWS_URL_SUFFIX",
+    "PSEUDO_PARAMETERS",
     "ChangeSetModelPreproc",
     "PreprocEntityDelta",
     "PreprocOutput",
@@ -35,6 +32,11 @@ __all__ = [
     "PreprocResource",
     "MOCKED_REFERENCE",
 ]
+from localstack.services.cloudformation.engine.v2.constants import (
+    AWS_URL_SUFFIX,
+    MOCKED_REFERENCE,
+    PSEUDO_PARAMETERS,
+)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.utils.objects import get_value_from_path
 
@@ -197,7 +199,7 @@ class ChangeSetModelPreproc(ChangeSetModelStaticPreproc):
             template_variable_value = Nothing
 
             # Try to resolve the variable name as pseudo parameter.
-            if template_variable_name in _PSEUDO_PARAMETERS:
+            if template_variable_name in PSEUDO_PARAMETERS:
                 template_variable_value = self._resolve_pseudo_parameter(
                     pseudo_parameter_name=template_variable_name
                 )

@@ -9,6 +9,8 @@ from typing import Any, Final, TypedDict, cast
 from typing_extensions import TypeVar
 
 from localstack.aws.api.cloudformation import ChangeAction
+from localstack.services.cloudformation.engine.v2.constants import VALID_LOGICAL_RESOURCE_ID_RE
+from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.resource_provider import ResourceProviderExecutor
 from localstack.services.cloudformation.v2.types import (
     EngineParameter,
@@ -499,8 +501,8 @@ class NodeForEach(ChangeSetNode):
     def __init__(
         self,
         scope: Scope,
-        change_type: Final[ChangeType],
-        arguments: Final[ChangeSetEntity],
+        change_type: ChangeType,
+        arguments: ChangeSetEntity,
     ):
         super().__init__(
             scope=scope,
@@ -752,7 +754,7 @@ class ChangeSetModel:
         logical_name_of_resource_entity = arguments.array[0]
         if not isinstance(logical_name_of_resource_entity, TerminalValue):
             raise RuntimeError()
-        logical_name_of_resource: str = logical_name_of_resource_entity.value
+        logical_name_of_resource = logical_name_of_resource_entity.value
         if not isinstance(logical_name_of_resource, str):
             raise RuntimeError()
         node_resource: NodeResource = self._retrieve_or_visit_resource(
@@ -846,7 +848,7 @@ class ChangeSetModel:
         logical_name_of_condition_entity = arguments.array[0]
         if not isinstance(logical_name_of_condition_entity, TerminalValue):
             raise RuntimeError()
-        logical_name_of_condition: str = logical_name_of_condition_entity.value
+        logical_name_of_condition = logical_name_of_condition_entity.value
         if not isinstance(logical_name_of_condition, str):
             raise RuntimeError()
 
@@ -1076,6 +1078,11 @@ class ChangeSetModel:
         if isinstance(node_resource, NodeResource):
             return node_resource
 
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(resource_name):
+            raise ValidationError(
+                f"Template format error: Resource name {resource_name} is non alphanumeric."
+            )
+
         scope_type, (before_type, after_type) = self._safe_access_in(
             scope, TypeKey, before_resource, after_resource
         )
@@ -1286,6 +1293,10 @@ class ChangeSetModel:
         before_parameter: Maybe[dict],
         after_parameter: Maybe[dict],
     ) -> NodeParameter:
+        if not VALID_LOGICAL_RESOURCE_ID_RE.match(parameter_name):
+            raise ValidationError(
+                f"Template format error: Parameter name {parameter_name} is non alphanumeric."
+            )
         node_parameter = self._visited_scopes.get(scope)
         if isinstance(node_parameter, NodeParameter):
             return node_parameter
@@ -1336,7 +1347,7 @@ class ChangeSetModel:
         return node_parameters
 
     @staticmethod
-    def _normalise_depends_on_value(value: Maybe[str | list[str]]) -> Maybe[list[str]]:
+    def _normalise_depends_on_value(value: Maybe[Any]) -> Maybe[list[str]]:
         # To simplify downstream logics, reduce the type options to array of strings.
         # TODO: Add integrations tests for DependsOn validations (invalid types, duplicate identifiers, etc.)
         if isinstance(value, NothingType):
@@ -1479,7 +1490,9 @@ class ChangeSetModel:
         return NodeGlobalTransform(scope=scope, name=name, parameters=parameters)
 
     @staticmethod
-    def _normalise_transformer_value(value: Maybe[str | list[Any]]) -> Maybe[list[Any]]:
+    def _normalise_transformer_value(
+        value: Maybe[str | list[Any] | dict[str, Any]],
+    ) -> Maybe[list[Any]]:
         # To simplify downstream logics, reduce the type options to array of transformations.
         # TODO: add further validation logic
         # TODO: should we sort to avoid detecting user-side ordering changes as template changes?
