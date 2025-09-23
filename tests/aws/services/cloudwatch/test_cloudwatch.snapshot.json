@@ -1158,32 +1158,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input": {
-    "recorded-date": "24-11-2023, 12:23:16",
-    "recorded-content": {
-      "error-invalid-state": {
-        "Error": {
-          "Code": "ValidationError",
-          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 400
-        }
-      },
-      "error-resource-not-found": {
-        "Error": {
-          "Code": "ResourceNotFound",
-          "Type": "Sender"
-        },
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 404
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_get_metric_data_for_multiple_metrics": {
     "recorded-date": "23-11-2023, 14:39:07",
     "recorded-content": {
@@ -1833,95 +1807,6 @@
       }
     }
   },
-  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm": {
-    "recorded-date": "19-01-2024, 15:29:42",
-    "recorded-content": {
-      "triggered-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "i-0317828c84edbe100"
-              }
-            ],
-            "EvaluationPeriods": 2,
-            "InsufficientDataActions": [],
-            "MetricName": "CPUUtilization-3",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "<topic_ok>"
-            ],
-            "Period": 300,
-            "StateReason": "testing alarm",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "ALARM",
-            "Statistic": "Average",
-            "Threshold": 50.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Percent"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "reset-alarm": {
-        "CompositeAlarms": [],
-        "MetricAlarms": [
-          {
-            "ActionsEnabled": true,
-            "AlarmActions": [
-              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
-            ],
-            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
-            "AlarmConfigurationUpdatedTimestamp": "timestamp",
-            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
-            "AlarmName": "<alarm-name:1>",
-            "ComparisonOperator": "GreaterThanThreshold",
-            "Dimensions": [
-              {
-                "Name": "InstanceId",
-                "Value": "i-0317828c84edbe100"
-              }
-            ],
-            "EvaluationPeriods": 2,
-            "InsufficientDataActions": [],
-            "MetricName": "CPUUtilization-3",
-            "Namespace": "<namespace:1>",
-            "OKActions": [
-              "<topic_ok>"
-            ],
-            "Period": 300,
-            "StateReason": "resetting alarm",
-            "StateTransitionedTimestamp": "timestamp",
-            "StateUpdatedTimestamp": "timestamp",
-            "StateValue": "OK",
-            "Statistic": "Average",
-            "Threshold": 50.0,
-            "TreatMissingData": "ignore",
-            "Unit": "Percent"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
-  },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_delete_alarm": {
     "recorded-date": "12-01-2024, 14:06:14",
     "recorded-content": {
@@ -2540,6 +2425,423 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm[query]": {
+    "recorded-date": "22-09-2025, 19:14:19",
+    "recorded-content": {
+      "triggered-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "testing alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "resetting alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm[json]": {
+    "recorded-date": "22-09-2025, 19:14:26",
+    "recorded-content": {
+      "triggered-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "testing alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "resetting alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm[smithy-rpc-v2-cbor]": {
+    "recorded-date": "22-09-2025, 19:14:33",
+    "recorded-content": {
+      "triggered-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "testing alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "ALARM",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "reset-alarm": {
+        "CompositeAlarms": [],
+        "MetricAlarms": [
+          {
+            "ActionsEnabled": true,
+            "AlarmActions": [
+              "arn:<partition>:sns:<region>:111111111111:<topic_alarm>"
+            ],
+            "AlarmArn": "arn:<partition>:cloudwatch:<region>:111111111111:alarm:<alarm-name:1>",
+            "AlarmConfigurationUpdatedTimestamp": "timestamp",
+            "AlarmDescription": "Test Alarm when CPU exceeds 50 percent",
+            "AlarmName": "<alarm-name:1>",
+            "ComparisonOperator": "GreaterThanThreshold",
+            "Dimensions": [
+              {
+                "Name": "InstanceId",
+                "Value": "i-0317828c84edbe100"
+              }
+            ],
+            "EvaluationPeriods": 2,
+            "InsufficientDataActions": [],
+            "MetricName": "CPUUtilization-3",
+            "Namespace": "<namespace:1>",
+            "OKActions": [
+              "<topic_ok>"
+            ],
+            "Period": 300,
+            "StateReason": "resetting alarm",
+            "StateTransitionedTimestamp": "timestamp",
+            "StateUpdatedTimestamp": "timestamp",
+            "StateValue": "OK",
+            "Statistic": "Average",
+            "Threshold": 50.0,
+            "TreatMissingData": "ignore",
+            "Unit": "Percent"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[query]": {
+    "recorded-date": "22-09-2025, 19:16:47",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[json]": {
+    "recorded-date": "22-09-2025, 19:16:48",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "QueryErrorCode": "ValidationException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Message": "",
+          "QueryErrorCode": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_set_alarm_invalid_input[smithy-rpc-v2-cbor]": {
+    "recorded-date": "22-09-2025, 19:16:48",
+    "recorded-content": {
+      "error-invalid-state": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+          "QueryErrorCode": "ValidationException",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "error-resource-not-found": {
+        "Error": {
+          "Code": "ResourceNotFound",
+          "Message": "",
+          "QueryErrorCode": "ResourceNotFound",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[json]": {
+    "recorded-date": "22-09-2025, 19:17:52",
+    "recorded-content": {
+      "invalid-value-response": {
+        "__type": "com.amazon.coral.validate#ValidationException",
+        "message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
+      },
+      "not-found-response": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      },
+      "not-found-response-query-mode-true": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[smithy-rpc-v2-cbor]": {
+    "recorded-date": "22-09-2025, 19:17:53",
+    "recorded-content": {
+      "invalid-value-response": {
+        "__type": "com.amazon.coral.validate#ValidationException",
+        "message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
+      },
+      "not-found-response": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      },
+      "not-found-response-query-mode-true": {
+        "__type": "com.amazonaws.cloudwatch.v2010_08_01#ResourceNotFound"
+      }
+    }
+  },
+  "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_exception_serializing_with_no_shape_in_spec[query]": {
+    "recorded-date": "22-09-2025, 19:17:54",
+    "recorded-content": {
+      "invalid-value-response": {
+        "ErrorResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "Error": {
+            "Code": "ValidationError",
+            "Message": "1 validation error detected: Value 'INVALID' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]",
+            "Type": "Sender"
+          },
+          "RequestId": "<uuid:1>"
+        }
+      },
+      "not-found-response": {
+        "ErrorResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "Error": {
+            "Code": "ResourceNotFound",
+            "Type": "Sender"
+          },
+          "RequestId": "<uuid:2>"
+        }
+      },
+      "not-found-response-query-mode-true": {
+        "ErrorResponse": {
+          "@xmlns": "http://monitoring.amazonaws.com/doc/2010-08-01/",
+          "Error": {
+            "Code": "ResourceNotFound",
+            "Type": "Sender"
+          },
+          "RequestId": "<uuid:3>"
         }
       }
     }

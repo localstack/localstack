@@ -40,7 +40,7 @@ class BaseCloudWatchHttpClient(abc.ABC):
     def _deserialize_response(self, response: Response) -> Any: ...
 
     @abc.abstractmethod
-    def _build_headers(self, operation: str) -> dict: ...
+    def _build_headers(self, operation: str, query_mode: bool = False) -> dict: ...
 
     def _serialize_body(self, body: dict, operation: str) -> str | bytes:
         # here we use the Botocore serializer directly, since it has some complex behavior,
@@ -61,27 +61,30 @@ class BaseCloudWatchHttpClient(abc.ABC):
     def _build_endpoint(self, operation: str) -> str:
         return f"https://{self.host}"
 
-    def post_raw(self, operation: str, payload: dict, **kwargs) -> Response:
+    def post_raw(
+        self, operation: str, payload: dict, query_mode: bool = False, **kwargs
+    ) -> Response:
         """
-        Perform a kinesis operation, encoding the request payload with CBOR and returning the raw
-        response without any processing or checks.
+        Perform a CloudWatch operation, encoding the request payload based on the `_serialize_body` and returning
+        the raw response without any processing or checks.
         """
         response = self._client.post(
             self._build_endpoint(operation),
             data=self._serialize_body(payload, operation),
-            headers=self._build_headers(operation),
+            headers=self._build_headers(operation, query_mode),
             **kwargs,
         )
         return response
 
-    def post(self, operation: str, payload: dict) -> Any:
+    def post(
+        self, operation: str, payload: dict, status_code: int = 200, query_mode: bool = False
+    ) -> Any:
         """
-        Perform a kinesis operation, encoding the request payload with CBOR, checking the response status code
-         and decoding the response with CBOR.
+        Perform a CloudWatch operation and decode it based on the `_deserialize_response` implementation
         """
-        response = self.post_raw(operation, payload)
+        response = self.post_raw(operation, payload, query_mode=query_mode)
         response_body = self._deserialize_response(response)
-        if response.status_code != 200:
+        if response.status_code != status_code:
             raise ValueError(f"Bad status: {response.status_code}, response body: {response_body}")
         return response_body
 
@@ -94,13 +97,17 @@ class CloudWatchCBORHTTPClient(BaseCloudWatchHttpClient):
             return cbor2_loads(response.content)
         return {}
 
-    def _build_headers(self, operation: str) -> dict:
-        return {
+    def _build_headers(self, operation: str, query_mode: bool = False) -> dict:
+        headers = {
             "content-type": constants.APPLICATION_CBOR,
             "accept": constants.APPLICATION_CBOR,
             "host": self.host,
             "Smithy-Protocol": "rpc-v2-cbor",
         }
+        if query_mode:
+            headers["x-amzn-query-mode"] = "true"
+
+        return headers
 
     def _build_endpoint(self, operation: str) -> str:
         return f"https://{self.host}/service/{self.target_prefix}/operation/{operation}"
@@ -114,13 +121,17 @@ class CloudWatchJSONHTTPClient(BaseCloudWatchHttpClient):
             return json.loads(response.content)
         return {}
 
-    def _build_headers(self, operation: str) -> dict:
-        return {
+    def _build_headers(self, operation: str, query_mode: bool = False) -> dict:
+        headers = {
             "Content-Type": constants.APPLICATION_AMZ_JSON_1_0,
             "X-Amz-Target": f"{self.target_prefix}.{operation}",
             "Host": self.host,
-            "x-amzn-query-mode": "true",
+            "x-amzn-query-mode": "true" if query_mode else "false",
         }
+        if query_mode:
+            headers["x-amzn-query-mode"] = "true"
+
+        return headers
 
 
 class CloudWatchQueryHTTPClient(BaseCloudWatchHttpClient):
@@ -146,7 +157,7 @@ class CloudWatchQueryHTTPClient(BaseCloudWatchHttpClient):
         else:
             return response.content
 
-    def _build_headers(self, operation: str) -> dict:
+    def _build_headers(self, operation: str, query_mode: bool = False) -> dict:
         return {
             "content-type": constants.APPLICATION_X_WWW_FORM_URLENCODED,
             "host": self.host,

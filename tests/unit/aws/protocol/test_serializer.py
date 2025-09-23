@@ -128,6 +128,7 @@ def _botocore_error_serializer_integration_test(
     status_code: int,
     message: str | None,
     is_sender_fault: bool = False,
+    protocol: str | None = None,
     **additional_error_fields: Any,
 ) -> dict:
     """
@@ -153,11 +154,12 @@ def _botocore_error_serializer_integration_test(
 
     # Load the appropriate service
     service = load_service(service_model_name)
+    service_protocol = protocol or service.protocol
 
     # Use our serializer to serialize the response
-    response_serializer = create_serializer(service)
+    response_serializer = create_serializer(service, service_protocol)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model(action), None, long_uid()
+        exception, service.operation_model(action), {}, long_uid()
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -167,7 +169,7 @@ def _botocore_error_serializer_integration_test(
     # f.e. needed for x-amzn-errortype
     response_dict["headers"] = HeadersDict(response_dict["headers"])
 
-    response_parser: ResponseParser = create_parser(service.protocol)
+    response_parser: ResponseParser = create_parser(service_protocol)
     parsed_response = response_parser.parse(
         response_dict,
         service.operation_model(action).output_shape,
@@ -192,6 +194,8 @@ def _botocore_error_serializer_integration_test(
     type = parsed_response["Error"].get("Type")
     if is_sender_fault:
         assert type == "Sender"
+    elif service_protocol == "smithy-rpc-v2-cbor" and service.is_query_compatible:
+        assert type == "Receiver"
     else:
         assert type is None
     if additional_error_fields:
@@ -886,6 +890,23 @@ def test_rpc_v2_cbor_protocol_error_serialization():
         "ResourceNotFoundException",
         404,
         "Not Found!",
+    )
+
+
+def test_rpc_v2_cbor_protocol_custom_error_serialization():
+    # CBOR needs a shape for the error, and we have to implement a custom way to serialize user defined exception
+    exception = CommonServiceException(
+        "UserDefinedException", "Parameter x was invalid!", sender_fault=True
+    )
+    _botocore_error_serializer_integration_test(
+        "cloudwatch",
+        "SetAlarmState",
+        exception,
+        "UserDefinedException",
+        400,
+        "Parameter x was invalid!",
+        protocol="smithy-rpc-v2-cbor",
+        is_sender_fault=True,
     )
 
 

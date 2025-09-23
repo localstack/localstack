@@ -94,7 +94,6 @@ be sent back to the calling client.
 
 import abc
 import base64
-import copy
 import datetime
 import functools
 import json
@@ -117,6 +116,7 @@ from botocore.model import (
     OperationModel,
     ServiceModel,
     Shape,
+    ShapeResolver,
     StringShape,
     StructureShape,
 )
@@ -293,7 +293,11 @@ class ResponseSerializer(abc.ABC):
                 f"Error to serialize ({error.__class__.__name__ if error else None}) is not a ServiceException."
             )
         shape = operation_model.service_model.shape_for_error_code(error.code)
-        serialized_response.status_code = error.status_code
+        serialized_response.status_code = self._get_error_status_code(
+            error=error,
+            headers=headers,
+            service_model=operation_model.service_model,
+        )
 
         self._serialize_error(
             error, serialized_response, shape, operation_model, mime_type, request_id
@@ -614,6 +618,34 @@ class ResponseSerializer(abc.ABC):
     def _get_error_message(self, error: Exception) -> str | None:
         return str(error) if error is not None and str(error) != "None" else None
 
+    def _get_error_status_code(
+        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+    ) -> int:
+        return error.status_code
+
+
+class QueryCompatibleProtocolMixin:
+    def _get_error_status_code(
+        self, error: ServiceException, headers: dict | Headers | None, service_model: ServiceModel
+    ) -> int:
+        # by default, some protocols (namely `json` and `smithy-rpc-v2-cbor`) might not define exception status code in
+        # their specs, so they are not defined in the `ServiceException` object and will use the default value of `400`
+        # But Query compatible service always do define them, so we get the wrong code for service that are
+        # multi-protocols like CloudWatch
+        # we need to verify if the service is compatible, and if the client has requested the query compatible error
+        # code to return the right value
+        if not service_model.is_query_compatible:
+            return error.status_code
+
+        if headers and headers.get("x-amzn-query-mode") == "true":
+            return error.status_code
+
+        # we only want to override status code 4XX
+        if 400 < error.status_code <= 499:
+            return 400
+
+        return error.status_code
+
     def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
         """
         Add an `x-amzn-query-error` header for client to  translate errors codes from former `query` services
@@ -622,6 +654,23 @@ class ResponseSerializer(abc.ABC):
 
         sender_fault = "Sender" if error.sender_fault else "Receiver"
         response.headers["x-amzn-query-error"] = f"{error.code};{sender_fault}"
+
+    def _get_error_code(
+        self, is_query_compatible: bool, error: ServiceException, shape: Shape | None = None
+    ):
+        # if the operation is query compatible, we need to add to use shape name
+        if is_query_compatible:
+            if shape:
+                code = shape.name
+            else:
+                # if the shape is not defined, we are using the Exception named to derive the `Code`, like you would
+                # from the shape. This allows us to have Exception that are valid in multi-protocols by defining its
+                # code and its name to be different
+                code = error.__class__.__name__
+        else:
+            code = error.code
+
+        return code
 
 
 class BaseXMLResponseSerializer(ResponseSerializer):
@@ -1236,7 +1285,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         request_id_element.text = request_id
 
 
-class JSONResponseSerializer(ResponseSerializer):
+class JSONResponseSerializer(QueryCompatibleProtocolMixin, ResponseSerializer):
     """
     The ``JSONResponseSerializer`` is responsible for the serialization of responses from services with the ``json``
     protocol. It implements the JSON response body serialization, which is also used by the
@@ -1267,15 +1316,12 @@ class JSONResponseSerializer(ResponseSerializer):
         # com.amazon.coral.service#ExceptionName
         # if json-1.1, it should only be the name
 
-        # if the operation is query compatible, we need to add to use shape name
-        # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
-        # as the exception code.
-        if shape and operation_model.service_model.is_query_compatible:
-            code = shape.name
-        else:
-            code = error.code
+        is_query_compatible = operation_model.service_model.is_query_compatible
+        code = self._get_error_code(is_query_compatible, error, shape)
 
         response.headers["X-Amzn-Errortype"] = code
+
+        # the `__type` field is not defined in default botocore error shapes
         body["__type"] = code
 
         if shape:
@@ -1283,17 +1329,25 @@ class JSONResponseSerializer(ResponseSerializer):
             # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
             for member in shape.members:
                 if hasattr(error, member):
-                    remaining_params[member] = getattr(error, member)
+                    value = getattr(error, member)
+
                 # Default error message fields can sometimes have different casing in the specs
                 elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                    remaining_params[member] = getattr(error, member.lower())
+                    value = getattr(error, member.lower())
+
+                else:
+                    continue
+
+                if value:
+                    remaining_params[member] = value
+
             self._serialize(body, remaining_params, shape, None, mime_type)
 
-        # Only set the message if it has not been set with the shape members
+        # this is a workaround, some Error Shape do not define a `Message` field, but it is always returned
+        # this could be solved at the same time as the `__type` field
         if "message" not in body and "Message" not in body:
-            message = self._get_error_message(error)
-            if message is not None:
-                body["message"] = message
+            if error_message := self._get_error_message(error):
+                body["message"] = error_message
 
         if mime_type in self.CBOR_TYPES:
             response.set_response(cbor2_dumps(body, datetime_as_timestamp=True))
@@ -1301,7 +1355,7 @@ class JSONResponseSerializer(ResponseSerializer):
         else:
             response.set_json(body)
 
-        if operation_model.service_model.is_query_compatible:
+        if is_query_compatible:
             self._add_query_compatible_error_header(response, error)
 
     def _serialize_response(
@@ -1476,6 +1530,11 @@ class BaseCBORResponseSerializer(ResponseSerializer):
     required at the end.
     AWS, for both Kinesis and `smithy-rpc-v2-cbor` services, is using indefinite data structures when returning
     responses.
+
+    The CBOR serializer cannot serialize an exception if it is not defined in our specs.
+    LocalStack defines a way to have user-defined exception by subclassing `CommonServiceException`, so it needs to be
+     able to encode those, as well as InternalError
+    We are creating a default botocore structure shape (`_DEFAULT_ERROR_STRUCTURE_SHAPE`) to be used in such cases.
     """
 
     SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
@@ -1492,6 +1551,27 @@ class BaseCBORResponseSerializer(ResponseSerializer):
     INDEFINITE_ITEM_ADDITIONAL_INFO = 31
     BREAK_CODE = b"\xff"
     USE_INDEFINITE_DATA_STRUCTURE = True
+
+    _ERROR_TYPE_SHAPE = StringShape(shape_name="__type", shape_model={"type": "string"})
+
+    _DEFAULT_ERROR_STRUCTURE_SHAPE = StructureShape(
+        shape_name="DefaultErrorStructure",
+        shape_model={
+            "type": "structure",
+            "members": {
+                "message": {"shape": "ErrorMessage"},
+                "__type": {"shape": "ErrorType"},
+            },
+            "error": {"code": "DefaultErrorStructure", "httpStatusCode": 400, "senderFault": True},
+            "exception": True,
+        },
+        shape_resolver=ShapeResolver(
+            shape_map={
+                "ErrorMessage": {"type": "string"},
+                "ErrorType": {"type": "string"},
+            },
+        ),
+    )
 
     def _serialize_data_item(
         self, serialized: bytearray, value: Any, shape: Shape | None, name: str | None = None
@@ -1590,8 +1670,18 @@ class BaseCBORResponseSerializer(ResponseSerializer):
             serialized.extend(closing_bytes)
 
     def _serialize_type_structure(
-        self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
+        self,
+        serialized: bytearray,
+        value: dict,
+        shape: Shape | None,
+        name: str | None = None,
+        shape_members: dict[str, Shape] | None = None,
     ) -> None:
+        # `_serialize_type_structure` has a different signature other `_serialize_type_*` methods as it accepts
+        # `shape_members`. This is because sometimes, the `StructureShape` does not have some members defined in the
+        # specs, and we want to be able to pass arbitrary members to serialize undocumented members.
+        # see `_serialize_error_structure` for its specific usage
+
         if name is not None:
             # For nested structures, we need to serialize the key first
             self._serialize_data_item(serialized, name, shape.key_shape)
@@ -1603,8 +1693,7 @@ class BaseCBORResponseSerializer(ResponseSerializer):
             value, self.MAP_MAJOR_TYPE
         )
         serialized.extend(initial_bytes)
-
-        members = shape.members
+        members = shape_members or shape.members
         for member_key, member_value in value.items():
             member_shape = members[member_key]
             if "name" in member_shape.serialization:
@@ -1729,6 +1818,38 @@ class BaseCBORResponseSerializer(ResponseSerializer):
 
             return initial_byte, None
 
+    def _serialize_error_structure(
+        self, body: bytearray, shape: Shape | None, error: ServiceException, code: str
+    ):
+        if not shape:
+            shape = self._DEFAULT_ERROR_STRUCTURE_SHAPE
+            shape_members = shape.members
+        else:
+            # we need to manually add the `__type` field to the shape members as it is not part of the specs
+            # we do a shallow copy of the shape members
+            shape_members = shape.members.copy()
+            shape_members["__type"] = self._ERROR_TYPE_SHAPE
+
+        # Error responses in the rpcv2Cbor protocol MUST be serialized identically to standard responses with one
+        # additional component to distinguish which error is contained: a body field named __type.
+        params = {"__type": code}
+
+        for member in shape_members:
+            if hasattr(error, member):
+                value = getattr(error, member)
+
+            # Default error message fields can sometimes have different casing in the specs
+            elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
+                value = getattr(error, member.lower())
+
+            else:
+                continue
+
+            if value:
+                params[member] = value
+
+        self._serialize_type_structure(body, params, shape, None, shape_members=shape_members)
+
 
 class CBORResponseSerializer(BaseCBORResponseSerializer):
     """
@@ -1752,25 +1873,7 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
         response.content_type = mime_type
         response.headers["X-Amzn-Errortype"] = error.code
 
-        if shape:
-            # FIXME: we need to manually add the `__type` field to the shape as it is not part of the specs
-            #  think about a better way, this is very hacky
-            shape_copy = copy.deepcopy(shape)
-            shape_copy.members["__type"] = StringShape(
-                shape_name="__type", shape_model={"type": "string"}
-            )
-            remaining_params = {"__type": error.code}
-
-            for member_name in shape_copy.members:
-                if hasattr(error, member_name):
-                    remaining_params[member_name] = getattr(error, member_name)
-                # Default error message fields can sometimes have different casing in the specs
-                elif member_name.lower() in ["code", "message"] and hasattr(
-                    error, member_name.lower()
-                ):
-                    remaining_params[member_name] = getattr(error, member_name.lower())
-
-            self._serialize_data_item(body, remaining_params, shape_copy, None)
+        self._serialize_error_structure(body, shape, error, code=error.code)
 
         response.set_response(bytes(body))
 
@@ -1846,7 +1949,9 @@ class BaseRpcV2ResponseSerializer(ResponseSerializer):
         raise NotImplementedError
 
 
-class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseSerializer):
+class RpcV2CBORResponseSerializer(
+    QueryCompatibleProtocolMixin, BaseRpcV2ResponseSerializer, BaseCBORResponseSerializer
+):
     """
     The RpcV2CBORResponseSerializer implements the CBOR body serialization part for the RPC v2 protocol, and implements the
     specific exception serialization.
@@ -1885,40 +1990,14 @@ class RpcV2CBORResponseSerializer(BaseRpcV2ResponseSerializer, BaseCBORResponseS
 
         # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
         # Type information is always serialized in the payload. This is different from the `json` protocol
+        is_query_compatible = operation_model.service_model.is_query_compatible
+        code = self._get_error_code(is_query_compatible, error, shape)
 
-        # if the operation is query compatible, we need to add to use shape name
-        # when we create `CommonServiceException` and they don't exist in the spec, we give already give the error name
-        # as the exception code.
-        if shape and operation_model.service_model.is_query_compatible:
-            code = shape.name
-        else:
-            code = error.code
-
-        if shape:
-            # FIXME: we need to manually add the `__type` field to the shape as it is not part of the specs
-            #  think about a better way, this is very hacky
-            # Error responses in the rpcv2Cbor protocol MUST be serialized identically to standard responses with one
-            # additional component to distinguish which error is contained: a body field named __type.
-            shape_copy = copy.deepcopy(shape)
-            shape_copy.members["__type"] = StringShape(
-                shape_name="__type", shape_model={"type": "string"}
-            )
-            remaining_params = {"__type": code}
-
-            for member_name in shape_copy.members:
-                if hasattr(error, member_name):
-                    remaining_params[member_name] = getattr(error, member_name)
-                # Default error message fields can sometimes have different casing in the specs
-                elif member_name.lower() in ["code", "message"] and hasattr(
-                    error, member_name.lower()
-                ):
-                    remaining_params[member_name] = getattr(error, member_name.lower())
-
-            self._serialize_data_item(body, remaining_params, shape_copy, None)
+        self._serialize_error_structure(body, shape, error, code=code)
 
         response.set_response(bytes(body))
 
-        if operation_model.service_model.is_query_compatible:
+        if is_query_compatible:
             self._add_query_compatible_error_header(response, error)
 
     def _prepare_additional_traits_in_response(
