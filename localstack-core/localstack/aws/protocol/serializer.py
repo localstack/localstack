@@ -1677,6 +1677,11 @@ class BaseCBORResponseSerializer(ResponseSerializer):
         name: str | None = None,
         shape_members: dict[str, Shape] | None = None,
     ) -> None:
+        # `_serialize_type_structure` has a different signature other `_serialize_type_*` methods as it accepts
+        # `shape_members`. This is because sometimes, the `StructureShape` does not have some members defined in the
+        # specs, and we want to be able to pass arbitrary members to serialize undocumented members.
+        # see `_serialize_error_structure` for its specific usage
+
         if name is not None:
             # For nested structures, we need to serialize the key first
             self._serialize_data_item(serialized, name, shape.key_shape)
