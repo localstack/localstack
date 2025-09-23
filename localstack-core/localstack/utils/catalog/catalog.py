@@ -35,7 +35,7 @@ class CatalogPlugin(Plugin):
     namespace = "localstack.utils.catalog"
 
     @staticmethod
-    def get_cfn_resources_catalog(cloudformation_resources: dict):
+    def _get_cfn_resources_catalog(cloudformation_resources: dict):
         cfn_resources_catalog = {}
         for emulator_type, resources in cloudformation_resources.items():
             for resource_name, resource in resources.items():
@@ -43,13 +43,13 @@ class CatalogPlugin(Plugin):
         return cfn_resources_catalog
 
     @staticmethod
-    def get_aws_services_at_runtime():
+    def _get_services_at_runtime():
         from localstack.services.plugins import SERVICE_PLUGINS
 
-        return SERVICE_PLUGINS.list_available()
+        return set(SERVICE_PLUGINS.list_available())
 
     @staticmethod
-    def get_cfn_resources_available_at_runtime():
+    def _get_cfn_resources_available_at_runtime():
         return set(cfn_plugin_manager.list_names())
 
     @abstractmethod
@@ -98,11 +98,11 @@ class AwsCatalogRemoteStatePlugin(CatalogPlugin):
                     service_provider.operations
                 )
 
-        self.cfn_resources_in_latest = self.get_cfn_resources_catalog(
+        self.cfn_resources_in_latest = self._get_cfn_resources_catalog(
             remote_catalog.cloudformation_resources
         )
         self.cfn_resources_at_runtime = self._get_cfn_resources_available_at_runtime()
-        self.services_at_runtime = self.get_aws_services_at_runtime()
+        self.services_at_runtime = self._get_services_at_runtime()
 
     def get_aws_service_status(
         self, service_name: str, operation_name: str | None = None
