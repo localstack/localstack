@@ -1,6 +1,9 @@
 """Handlers for logging."""
 
+import contextlib
+import importlib
 import logging
+import types
 from functools import cached_property
 
 from localstack.aws.api import RequestContext, ServiceException
@@ -21,6 +24,12 @@ class ExceptionLogger(ExceptionHandler):
     def __init__(self, logger=None):
         self.logger = logger or LOG
 
+        self._moto_service_exception = types.EllipsisType
+        with contextlib.suppress(ModuleNotFoundError, AttributeError):
+            self._moto_service_exception = importlib.import_module(
+                "moto.core.exceptions"
+            ).ServiceException
+
     def __call__(
         self,
         chain: HandlerChain,
@@ -28,7 +37,7 @@ class ExceptionLogger(ExceptionHandler):
         context: RequestContext,
         response: Response,
     ):
-        if isinstance(exception, ServiceException):
+        if isinstance(exception, (ServiceException, self._moto_service_exception)):
             # We do not want to log an error/stacktrace if the handler is working as expected, but chooses to throw
             # a service exception
             return
