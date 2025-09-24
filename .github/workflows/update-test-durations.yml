@@ -25,7 +25,6 @@ jobs:
     uses: localstack/meta/.github/workflows/update-test-durations.yml@update-test-durations-action
     with:
       repo: localstack/localstack
-      workflowName: "AWS / Build, Test, Push"
       branch: main
       eventFilter: schedule
       platform: amd64
@@ -34,4 +33,4 @@ jobs:
       publishMethod: ${{ inputs.publishMethod }}
     secrets:
       gh-token: ${{ secrets.GITHUB_TOKEN }}
-      # pr-token: ${{ secrets.PRO_ACCESS_TOKEN }}  # optional; omit to use GITHUB_TOKEN
+      pr-token: ${{ secrets.PRO_ACCESS_TOKEN }}
