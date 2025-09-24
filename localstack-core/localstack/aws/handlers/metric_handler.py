@@ -1,9 +1,15 @@
+import csv
 import logging
+import os
+from datetime import datetime
+from pathlib import Path
 
 from localstack import config
 from localstack.aws.api import RequestContext
 from localstack.aws.chain import HandlerChain
+from localstack.constants import ENV_INTERNAL_TEST_STORE_METRICS_PATH
 from localstack.http import Response
+from localstack.utils.strings import short_uid
 
 LOG = logging.getLogger(__name__)
 
@@ -137,6 +143,26 @@ class MetricHandler:
 
     def __init__(self) -> None:
         self.metrics_handler_items = {}
+        if self.should_store_metric_locally():
+            folder = Path(
+                os.environ.get(ENV_INTERNAL_TEST_STORE_METRICS_PATH, "/tmp/localstack-metrics")
+            )
+            if not folder.exists():
+                folder.mkdir(parents=True, exist_ok=True)
+            LOG.debug("Metric reports will be stored in %s", folder)
+            self.local_filename = (
+                folder
+                / f"metric-report-raw-data-{datetime.utcnow().strftime('%Y-%m-%d__%H_%M_%S')}-{short_uid()}.csv"
+            )
+            with open(self.local_filename, "w") as fd:
+                LOG.debug("Creating new metric data file %s", self.local_filename)
+                writer = csv.writer(fd)
+                writer.writerow(Metric.RAW_DATA_HEADER)
+        else:
+            self.local_filename = None
+
+    def should_store_metric_locally(self) -> bool:
+        return config.is_collect_metrics_mode() and config.store_test_metrics_in_local_filesystem()
 
     def create_metric_handler_item(
         self, chain: HandlerChain, context: RequestContext, response: Response
@@ -194,7 +220,12 @@ class MetricHandler:
         )
         # refrain from adding duplicates
         if metric not in MetricHandler.metric_data:
-            MetricHandler.metric_data.append(metric)
+            if self.should_store_metric_locally():
+                with open(self.local_filename, "a") as fd:
+                    writer = csv.writer(fd)
+                    writer.writerow(metric)
+            else:
+                MetricHandler.metric_data.append(metric)
 
         # cleanup
         del self.metrics_handler_items[context]
