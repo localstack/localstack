@@ -55,6 +55,6 @@ jobs:
           commit-message: "chore: update CloudFormation resource metadata"
           author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
           committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
-          labels: "area: cloudformation, semver: patch, skip-docs"
+          labels: "area: cloudformation, semver: patch, docs: skip, notes: skip"
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           signoff: true
