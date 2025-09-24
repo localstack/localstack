@@ -1279,7 +1279,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm_escape_character[query]": {
-    "recorded-date": "19-09-2025, 20:51:19",
+    "recorded-date": "24-09-2025, 15:16:44",
     "recorded-content": {
       "describe-alarms-escaped-character": {
         "CompositeAlarms": [],
@@ -1317,7 +1317,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm_escape_character[json]": {
-    "recorded-date": "19-09-2025, 20:51:19",
+    "recorded-date": "24-09-2025, 15:16:45",
     "recorded-content": {
       "describe-alarms-escaped-character": {
         "CompositeAlarms": [],
@@ -1355,7 +1355,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudwatch::test_put_metric_alarm_escape_character[smithy-rpc-v2-cbor]": {
-    "recorded-date": "19-09-2025, 20:51:20",
+    "recorded-date": "24-09-2025, 15:16:46",
     "recorded-content": {
       "describe-alarms-escaped-character": {
         "CompositeAlarms": [],
