@@ -9,7 +9,7 @@ from localstack.aws.connect import connect_to
 
 LOG = logging.getLogger(__name__)
 
-REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):(.+)}}")
+REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):([a-zA-Z0-9_.\-/]+)}}")
 
 
 @dataclass
