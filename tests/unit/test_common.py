@@ -5,7 +5,7 @@ import os
 import threading
 import time
 import zipfile
-from datetime import UTC, date, datetime
+from datetime import UTC, date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -45,6 +45,23 @@ class TestCommon:
     def test_isoformat_milliseconds(self):
         env = common.isoformat_milliseconds(datetime(2010, 3, 20, 7, 24, 00, 0))
         assert env == "2010-03-20T07:24:00.000"
+
+    @pytest.mark.parametrize(
+        "str_format",
+        [
+            "2025-09-18T14:07:30",
+            "2025-09-18T14:07:30Z",
+            "2025-09-18T14:07:30.70300Z",
+            "18/Sep/2025:14:07:30 +0000",
+        ],
+    )
+    def test_parse_timestamp_timezone_aware(self, str_format):
+        datetime_obj = common.parse_timestamp(str_format)
+        # we cannot assert that tzinfo is `datetime.UTC` because it is only supported starting Python 3.11
+        # so we assert manually that the returned `tzinfo` is UTC
+        # we are using ZoneInfo("UTC")  in the `parse_timestamp` utility as it is in the import path of the CLI
+        assert datetime_obj.tzinfo is not None
+        assert datetime_obj.utcoffset() == timedelta(0)
 
     def test_base64_to_hex(self):
         env = common.base64_to_hex("Zm9vIGJhcg ==")

@@ -20,7 +20,7 @@ def test_call_with_sqs_creates_state_correctly():
     qname = f"queue-{short_uid()}"
 
     response = moto.call_moto(
-        moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname}),
+        moto.create_aws_request_context("sqs", "CreateQueue", "json", {"QueueName": qname}),
         include_response_metadata=True,
     )
     url = response["QueueUrl"]
@@ -29,12 +29,14 @@ def test_call_with_sqs_creates_state_correctly():
         assert response["ResponseMetadata"]["HTTPStatusCode"] == 200
         assert response["QueueUrl"].endswith(f"/{qname}")
 
-        response = moto.call_moto(moto.create_aws_request_context("sqs", "ListQueues"))
+        response = moto.call_moto(moto.create_aws_request_context("sqs", "ListQueues", "json"))
         assert url in response["QueueUrls"]
     finally:
-        moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
+        moto.call_moto(
+            moto.create_aws_request_context("sqs", "DeleteQueue", "json", {"QueueUrl": url})
+        )
 
-    response = moto.call_moto(moto.create_aws_request_context("sqs", "ListQueues"))
+    response = moto.call_moto(moto.create_aws_request_context("sqs", "ListQueues", "json"))
     assert url not in response.get("QueueUrls", [])
 
 
@@ -45,6 +47,7 @@ def test_call_sqs_invalid_call_raises_http_exception():
             moto.create_aws_request_context(
                 "sqs",
                 "DeleteQueue",
+                "json",
                 {
                     "QueueUrl": "http://0.0.0.0/nonexistingqueue",
                 },
@@ -58,7 +61,7 @@ def test_call_non_implemented_operation():
     with pytest.raises(NotImplementedError):
         # we'll need to keep finding methods that moto doesn't implement ;-)
         moto.call_moto(
-            moto.create_aws_request_context("athena", "DeleteDataCatalog", {"Name": "foo"})
+            moto.create_aws_request_context("athena", "DeleteDataCatalog", "json", {"Name": "foo"})
         )
 
 
@@ -70,11 +73,11 @@ def test_call_with_sqs_modifies_state_in_moto_backend():
     qname = f"queue-{short_uid()}"
 
     response = moto.call_moto(
-        moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
+        moto.create_aws_request_context("sqs", "CreateQueue", "json", {"QueueName": qname})
     )
     url = response["QueueUrl"]
     assert qname in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
-    moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
+    moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", "json", {"QueueUrl": url}))
     assert qname not in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
 
 
@@ -93,17 +96,21 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     key_name = f"key-{short_uid()}"
 
     # create the bucket
-    moto.call_moto(moto.create_aws_request_context("s3", "CreateBucket", {"Bucket": bucket_name}))
+    moto.call_moto(
+        moto.create_aws_request_context("s3", "CreateBucket", "rest-xml", {"Bucket": bucket_name})
+    )
 
     moto.call_moto(
         moto.create_aws_request_context(
-            "s3", "PutObject", {"Bucket": bucket_name, "Key": key_name, "Body": payload}
+            "s3", "PutObject", "rest-xml", {"Bucket": bucket_name, "Key": key_name, "Body": payload}
         )
     )
 
     # check whether it was created/received correctly
     response = moto.call_moto(
-        moto.create_aws_request_context("s3", "GetObject", {"Bucket": bucket_name, "Key": key_name})
+        moto.create_aws_request_context(
+            "s3", "GetObject", "rest-xml", {"Bucket": bucket_name, "Key": key_name}
+        )
     )
     assert hasattr(response["Body"], "read"), (
         f"expected Body to be readable, was {type(response['Body'])}"
@@ -113,15 +120,17 @@ def test_call_s3_with_streaming_trait(payload, monkeypatch):
     # cleanup
     moto.call_moto(
         moto.create_aws_request_context(
-            "s3", "DeleteObject", {"Bucket": bucket_name, "Key": key_name}
+            "s3", "DeleteObject", "rest-xml", {"Bucket": bucket_name, "Key": key_name}
         )
     )
-    moto.call_moto(moto.create_aws_request_context("s3", "DeleteBucket", {"Bucket": bucket_name}))
+    moto.call_moto(
+        moto.create_aws_request_context("s3", "DeleteBucket", "rest-xml", {"Bucket": bucket_name})
+    )
 
 
 @markers.aws.only_localstack
 def test_call_include_response_metadata():
-    ctx = moto.create_aws_request_context("sqs", "ListQueues")
+    ctx = moto.create_aws_request_context("sqs", "ListQueues", "json")
 
     response = moto.call_moto(ctx)
     assert "ResponseMetadata" not in response
@@ -137,14 +146,14 @@ def test_call_with_modified_request():
     qname1 = f"queue-{short_uid()}"
     qname2 = f"queue-{short_uid()}"
 
-    context = moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname1})
+    context = moto.create_aws_request_context("sqs", "CreateQueue", "json", {"QueueName": qname1})
     response = moto.call_moto_with_request(context, {"QueueName": qname2})  # overwrite old request
 
     url = response["QueueUrl"]
     assert qname2 in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
     assert qname1 not in sqs_backends[DEFAULT_MOTO_ACCOUNT_ID][AWS_REGION_US_EAST_1].queues
 
-    moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", {"QueueUrl": url}))
+    moto.call_moto(moto.create_aws_request_context("sqs", "DeleteQueue", "json", {"QueueUrl": url}))
 
 
 @markers.aws.only_localstack
@@ -154,6 +163,7 @@ def test_call_with_es_creates_state_correctly():
         moto.create_aws_request_context(
             "es",
             "CreateElasticsearchDomain",
+            "rest-json",
             {
                 "DomainName": domain_name,
                 "ElasticsearchVersion": "7.10",
@@ -169,7 +179,7 @@ def test_call_with_es_creates_state_correctly():
     finally:
         response = moto.call_moto(
             moto.create_aws_request_context(
-                "es", "DeleteElasticsearchDomain", {"DomainName": domain_name}
+                "es", "DeleteElasticsearchDomain", "rest-json", {"DomainName": domain_name}
             ),
             include_response_metadata=True,
         )
@@ -185,12 +195,12 @@ def test_call_multi_region_backends():
 
     moto.call_moto(
         moto.create_aws_request_context(
-            "sqs", "CreateQueue", {"QueueName": qname_us}, region="us-east-1"
+            "sqs", "CreateQueue", "json", {"QueueName": qname_us}, region="us-east-1"
         )
     )
     moto.call_moto(
         moto.create_aws_request_context(
-            "sqs", "CreateQueue", {"QueueName": qname_eu}, region="eu-central-1"
+            "sqs", "CreateQueue", "json", {"QueueName": qname_eu}, region="eu-central-1"
         )
     )
 
@@ -211,6 +221,7 @@ def test_call_with_sqs_invalid_call_raises_exception():
             moto.create_aws_request_context(
                 "sqs",
                 "DeleteQueue",
+                "json",
                 {
                     "QueueUrl": "http://0.0.0.0/nonexistingqueue",
                 },
@@ -223,7 +234,7 @@ def test_call_with_sqs_returns_service_response():
     qname = f"queue-{short_uid()}"
 
     create_queue_response = moto.call_moto(
-        moto.create_aws_request_context("sqs", "CreateQueue", {"QueueName": qname})
+        moto.create_aws_request_context("sqs", "CreateQueue", "json", {"QueueName": qname})
     )
 
     assert "QueueUrl" in create_queue_response
@@ -247,6 +258,7 @@ def test_call_with_sns_with_full_uri():
     sns_service = load_service("sns")
     context = RequestContext(sns_request)
     context.account = "test"
+    context.protocol = "query"
     context.region = "us-west-1"
     context.service = sns_service
     context.operation = sns_service.operation_model("CreateTopic")
@@ -286,7 +298,7 @@ def test_moto_fallback_dispatcher():
     assert "CreateQueue" in dispatcher
 
     def _dispatch(action, params):
-        context = moto.create_aws_request_context("sqs", action, params)
+        context = moto.create_aws_request_context("sqs", action, "json", params)
         return dispatcher[action](context, params)
 
     qname = f"queue-{short_uid()}"
@@ -346,7 +358,7 @@ def test_moto_fallback_dispatcher_error_handling(monkeypatch):
     dispatcher = MotoFallbackDispatcher(provider)
 
     def _dispatch(action, params):
-        context = moto.create_aws_request_context("s3", action, params)
+        context = moto.create_aws_request_context("s3", action, "rest-xml", params)
         return dispatcher[action](context, params)
 
     bucket_name = f"bucket-{short_uid()}"
@@ -375,7 +387,7 @@ def test_request_with_response_header_location_fields():
     # CreateHostedZoneResponse has a member "Location" that's located in the headers
     zone_name = f"zone-{short_uid()}.com"
     request = moto.create_aws_request_context(
-        "route53", "CreateHostedZone", {"Name": zone_name, "CallerReference": "test"}
+        "route53", "CreateHostedZone", "rest-xml", {"Name": zone_name, "CallerReference": "test"}
     )
     response = moto.call_moto(request, include_response_metadata=True)
     # assert response["Location"]  # FIXME: this is required according to the spec, but not returned by moto
@@ -384,6 +396,14 @@ def test_request_with_response_header_location_fields():
     # clean up
     moto.call_moto(
         moto.create_aws_request_context(
-            "route53", "DeleteHostedZone", {"Id": response["HostedZone"]["Id"]}
+            "route53", "DeleteHostedZone", "rest-xml", {"Id": response["HostedZone"]["Id"]}
         )
     )
+
+
+@markers.aws.only_localstack
+@pytest.mark.skip(reason="json protocol for CloudWatch is not yet supported by Moto")
+def test_request_with_multi_protocol_non_default_protocol():
+    request = moto.create_aws_request_context("cloudwatch", "DescribeAlarms", "json")
+    response = moto.call_moto(request)
+    assert "CompositeAlarms" in response

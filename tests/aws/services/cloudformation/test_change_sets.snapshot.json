@@ -5927,5 +5927,28 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_sets.py::test_list_change_sets": {
+    "recorded-date": "16-09-2025, 14:49:32",
+    "recorded-content": {
+      "change-sets": {
+        "Summaries": [
+          {
+            "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
+            "ChangeSetName": "<change-set-name:1>",
+            "CreationTime": "datetime",
+            "ExecutionStatus": "AVAILABLE",
+            "IncludeNestedStacks": false,
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
+            "StackName": "<stack-name:1>",
+            "Status": "CREATE_COMPLETE"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -979,3 +979,59 @@ def test_describe_failed_change_set(aws_client: ServiceLevelClientFactory, snaps
 
     describe = aws_client.cloudformation.describe_change_set(ChangeSetName=res["Id"])
     snapshot.match("describe", describe)
+
+
+@skip_if_legacy_engine()
+@markers.aws.validated
+def test_list_change_sets(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+    template = {
+        "Resources": {
+            "MyParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    "Value": short_uid(),
+                },
+            },
+        },
+    }
+
+    # first create an executed change set
+    stack = deploy_cfn_template(template=json.dumps(template))
+    stack_id = stack.stack_id
+
+    # now create a non-executed change set
+    template2 = copy.deepcopy(template)
+    template2["Resources"]["MyParameter"]["Properties"]["Value"] = short_uid()
+
+    non_executed_change_set_name = f"cs-{short_uid()}"
+    non_executed_change_set_id = aws_client.cloudformation.create_change_set(
+        ChangeSetName=non_executed_change_set_name,
+        StackName=stack.stack_id,
+        ChangeSetType="UPDATE",
+        TemplateBody=json.dumps(template2),
+    )["Id"]
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=non_executed_change_set_id
+    )
+
+    # now create and delete a change set
+    template3 = copy.deepcopy(template)
+    template3["Resources"]["MyParameter"]["Properties"]["Value"] = short_uid()
+
+    deleted_change_set_name = f"cs-{short_uid()}"
+    deleted_change_set_id = aws_client.cloudformation.create_change_set(
+        ChangeSetName=deleted_change_set_name,
+        StackName=stack.stack_id,
+        ChangeSetType="UPDATE",
+        TemplateBody=json.dumps(template3),
+    )["Id"]
+    aws_client.cloudformation.get_waiter("change_set_create_complete").wait(
+        ChangeSetName=deleted_change_set_id
+    )
+
+    aws_client.cloudformation.delete_change_set(ChangeSetName=deleted_change_set_id)
+
+    change_sets = aws_client.cloudformation.list_change_sets(StackName=stack_id)
+    snapshot.match("change-sets", change_sets)

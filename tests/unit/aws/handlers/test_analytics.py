@@ -23,13 +23,13 @@ class TestServiceRequestCounter:
         counter = ServiceRequestCounter(service_request_aggregator=aggregator)
         aggregator.start.assert_not_called()
 
-        context = create_aws_request_context("s3", "ListBuckets")
+        context = create_aws_request_context("s3", "ListBuckets", "rest-xml")
         chain = HandlerChain([counter])
         chain.handle(context, Response())
 
         aggregator.start.assert_called_once()
 
-        context = create_aws_request_context("s3", "ListBuckets")
+        context = create_aws_request_context("s3", "ListBuckets", "rest-xml")
         chain = HandlerChain([counter])
         chain.handle(context, Response())
 
@@ -53,7 +53,7 @@ class TestServiceRequestCounter:
 
         chain = HandlerChain([counter])
         chain.handle(
-            create_aws_request_context("s3", "ListBuckets"),
+            create_aws_request_context("s3", "ListBuckets", "rest-xml"),
             Response(),
         )
 
@@ -66,12 +66,12 @@ class TestServiceRequestCounter:
 
         chain = HandlerChain([counter])
         chain.handle(
-            create_aws_request_context("s3", "ListBuckets"),
+            create_aws_request_context("s3", "ListBuckets", "rest-xml"),
             Response(),
         )
         counter(
             chain,
-            create_aws_request_context("s3", "HeadBucket", {"Bucket": "foobar"}),
+            create_aws_request_context("s3", "HeadBucket", "rest-xml", {"Bucket": "foobar"}),
             Response(),
         )
 
@@ -88,7 +88,9 @@ class TestServiceRequestCounter:
 
         chain = HandlerChain([counter])
         chain.handle(
-            create_aws_request_context("opensearch", "DescribeDomain", {"DomainName": "foobar"}),
+            create_aws_request_context(
+                "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
+            ),
             Response(
                 b'{"__type": "ResourceNotFoundException", "message": "Domain not found: foobar"}',
                 404,
@@ -111,7 +113,9 @@ class TestServiceRequestCounter:
 
         chain = HandlerChain([counter])
         chain.handle(
-            create_aws_request_context("opensearch", "DescribeDomain", {"DomainName": "foobar"}),
+            create_aws_request_context(
+                "opensearch", "DescribeDomain", "rest-json", {"DomainName": "foobar"}
+            ),
             Response(b'{"__type": "ResourceN}', 404),
         )
 

@@ -209,23 +209,18 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version-file: 'localstack/.python-version'
 
       - name: Set up Node 22.x
         uses: actions/setup-node@v5
         with:
           node-version: 22.x
 
-      - name: Set up JDK 11
+      - name: Set up JDK 21
         uses: actions/setup-java@v5
         with:
-          java-version: '11'
+          java-version: '21'
           distribution: 'temurin'
-
-      - name: Set up Terraform
-        uses: hashicorp/setup-terraform@v3
-        with:
-          terraform_version: 0.13.7
 
       - name: Install OS packages
         run: |

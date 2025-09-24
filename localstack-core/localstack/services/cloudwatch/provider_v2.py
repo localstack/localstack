@@ -108,15 +108,9 @@ _STORE_LOCK = threading.RLock()
 AWS_MAX_DATAPOINTS_ACCEPTED: int = 1440
 
 
-class ValidationError(CommonServiceException):
-    # TODO: check this error against AWS (doesn't exist in the API)
+class ValidationException(CommonServiceException):
     def __init__(self, message: str):
         super().__init__("ValidationError", message, 400, True)
-
-
-class InvalidParameterCombination(CommonServiceException):
-    def __init__(self, message: str):
-        super().__init__("InvalidParameterCombination", message, 400, True)
 
 
 def _validate_parameters_for_put_metric_data(metric_data: MetricData) -> None:
@@ -246,7 +240,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         results: list[MetricDataResult] = []
         limit = max_datapoints or 100_800
         messages: MetricDataResultMessages = []
-        nxt = None
+        nxt: str | None = None
         label_additions = []
 
         for diff in LABEL_DIFFERENTIATORS:
@@ -280,14 +274,14 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             timestamp_value_dicts = [
                 {
                     "Timestamp": timestamp,
-                    "Value": value,
+                    "Value": float(value),
                 }
                 for timestamp, value in zip(timestamps, values, strict=False)
             ]
 
             pagination = PaginatedList(timestamp_value_dicts)
             timestamp_page, nxt = pagination.get_page(
-                lambda item: item.get("Timestamp"),
+                lambda item: str(item.get("Timestamp")),
                 next_token=next_token,
                 page_size=limit,
             )
@@ -315,6 +309,11 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         state_reason_data: StateReasonData = None,
         **kwargs,
     ) -> None:
+        if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
+            raise ValidationException(
+                f"1 validation error detected: Value '{state_value}' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
+            )
+
         try:
             if state_reason_data:
                 state_reason_data = json.loads(state_reason_data)
@@ -333,10 +332,6 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 raise ResourceNotFound()
 
             old_state = alarm.alarm["StateValue"]
-            if state_value not in ("OK", "ALARM", "INSUFFICIENT_DATA"):
-                raise ValidationError(
-                    f"1 validation error detected: Value '{state_value}' at 'stateValue' failed to satisfy constraint: Member must satisfy enum value set: [INSUFFICIENT_DATA, ALARM, OK]"
-                )
 
             old_state_reason = alarm.alarm["StateReason"]
             old_state_update_timestamp = alarm.alarm["StateUpdatedTimestamp"]
@@ -416,7 +411,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "ignore",
             "missing",
         ]:
-            raise ValidationError(
+            raise ValidationException(
                 f"The value {request['TreatMissingData']} is not supported for TreatMissingData parameter. Supported values are [breaching, notBreaching, ignore, missing]."
             )
             # do some sanity checks:
@@ -425,7 +420,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             value = request.get("Period")
             if value not in (10, 30):
                 if value % 60 != 0:
-                    raise ValidationError("Period must be 10, 30 or a multiple of 60")
+                    raise ValidationException("Period must be 10, 30 or a multiple of 60")
         if request.get("Statistic"):
             if request.get("Statistic") not in [
                 "SampleCount",
@@ -434,7 +429,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 "Minimum",
                 "Maximum",
             ]:
-                raise ValidationError(
+                raise ValidationException(
                     f"Value '{request.get('Statistic')}' at 'statistic' failed to satisfy constraint: Member must satisfy enum value set: [Maximum, SampleCount, Sum, Minimum, Average]"
                 )
 
@@ -448,7 +443,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
             "evaluate",
             "ignore",
         ):
-            raise ValidationError(
+            raise ValidationException(
                 f"Option {evaluate_low_sample_count_percentile} is not supported. "
                 "Supported options for parameter EvaluateLowSampleCountPercentile are evaluate and ignore."
             )
@@ -691,7 +686,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
         expected_datapoints = (end_time_unix - start_time_unix) / period
 
         if expected_datapoints > AWS_MAX_DATAPOINTS_ACCEPTED:
-            raise InvalidParameterCombination(
+            raise InvalidParameterCombinationException(
                 f"You have requested up to {int(expected_datapoints)} datapoints, which exceeds the limit of {AWS_MAX_DATAPOINTS_ACCEPTED}. "
                 f"You may reduce the datapoints requested by increasing Period, or decreasing the time range."
             )
@@ -738,7 +733,7 @@ class CloudwatchProvider(CloudwatchApi, ServiceLifecycleHook):
                 for i, timestamp in enumerate(timestamps):
                     stat_datapoints.setdefault(selected_unit, {})
                     stat_datapoints[selected_unit].setdefault(timestamp, {})
-                    stat_datapoints[selected_unit][timestamp][stat] = values[i]
+                    stat_datapoints[selected_unit][timestamp][stat] = float(values[i])
                     stat_datapoints[selected_unit][timestamp]["Unit"] = selected_unit
 
         datapoints: list[Datapoint] = []

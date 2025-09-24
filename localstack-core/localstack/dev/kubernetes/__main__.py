@@ -32,7 +32,7 @@ def generate_mount_points(
 
     # container paths
     target_path = "/opt/code/localstack/"
-    venv_path = os.path.join(target_path, ".venv", "lib", "python3.11", "site-packages")
+    venv_path = os.path.join(target_path, ".venv", "lib", "python3.13", "site-packages")
 
     # Community code
     if pro:

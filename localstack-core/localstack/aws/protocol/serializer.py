@@ -14,27 +14,34 @@ The different protocols have many similarities. The class hierarchy is
 designed such that the serializers share as much logic as possible.
 The class hierarchy looks as follows:
 ::
-                                      ┌───────────────────┐
-                                      │ResponseSerializer │
-                                      └───────────────────┘
-                                          ▲    ▲      ▲
-                   ┌──────────────────────┘    │      └──────────────────┐
-      ┌────────────┴────────────┐ ┌────────────┴─────────────┐ ┌─────────┴────────────┐
-      │BaseXMLResponseSerializer│ │BaseRestResponseSerializer│ │JSONResponseSerializer│
-      └─────────────────────────┘ └──────────────────────────┘ └──────────────────────┘
-                         ▲    ▲             ▲             ▲              ▲
-  ┌──────────────────────┴─┐ ┌┴─────────────┴──────────┐ ┌┴──────────────┴──────────┐
-  │QueryResponseSerializer │ │RestXMLResponseSerializer│ │RestJSONResponseSerializer│
-  └────────────────────────┘ └─────────────────────────┘ └──────────────────────────┘
-              ▲
-   ┌──────────┴──────────┐
+                                     ┌────────────────────┐
+                                     │ ResponseSerializer │
+                                     └────────────────────┘
+                                           ▲    ▲    ▲
+                 ┌─────────────────┬───────┘    │    └──────────────┬──────────────────────┐
+    ┌────────────┴────────────┐    │    ┌───────┴──────────────┐    │         ┌────────────┴─────────────┐
+    │BaseXMLResponseSerializer│    │    │JSONResponseSerializer│    │         │BaseCBORResponseSerializer│
+    └─────────────────────────┘    │    └──────────────────────┘    │         └──────────────────────────┘
+       ▲    ▲        ┌─────────────┴────────────┐     ▲       ┌─────┴─────────────────────┐  ▲         ▲
+       │    │        │BaseRestResponseSerializer│     │       │BaseRpcV2ResponseSerializer│  │         │
+       │    │        └──────────────────────────┘     │       └───────────────────────────┘  │         │
+       │    │              ▲              ▲           │                          ▲           │         │
+       │    │              │              │           │                          │           │         │
+       │  ┌─┴──────────────┴────────┐  ┌──┴───────────┴───────────┐   ┌──────────┴───────────┴────┐    │
+       │  │RestXMLResponseSerializer│  │RestJSONResponseSerializer│   │RpcV2CBORResponseSerializer│    │
+       │  └─────────────────────────┘  └──────────────────────────┘   └───────────────────────────┘    │
+ ┌─────┴──────────────────┐                                                                 ┌──────────┴─────────────┐
+ │QueryResponseSerializer │                                                                 │ CBORResponseSerializer │
+ └────────────────────────┘                                                                 └────────────────────────┘
+             ▲
+   ┌─────────┴───────────┐
    │EC2ResponseSerializer│
    └─────────────────────┘
 ::
 
 The ``ResponseSerializer`` contains the logic that is used among all the
-different protocols (``query``, ``json``, ``rest-json``, ``rest-xml``, and
-``ec2``).
+different protocols (``query``, ``json``, ``rest-json``, ``rest-xml``, ``cbor``
+and ``ec2``).
 The protocols relate to each other in the following ways:
 
 * The ``query`` and the ``rest-xml`` protocols both have XML bodies in their
@@ -42,10 +49,14 @@ The protocols relate to each other in the following ways:
   type).
 * The ``json`` and the ``rest-json`` protocols both have JSON bodies in their
   responses which are serialized the same way.
+* The ``cbor`` protocol is not properly defined in the spec, but mirrors the
+  ``json`` protocol.
 * The ``rest-json`` and ``rest-xml`` protocols serialize some metadata in
-  the HTTP response's header fields
+  the HTTP response's header fields.
 * The ``ec2`` protocol is basically similar to the ``query`` protocol with a
   specific error response formatting.
+* The ``smithy-rpc-v2-cbor`` protocol defines a specific way to route request
+  to services via the RPC v2 trait, and encodes its body with the CBOR format.
 
 The serializer classes in this module correspond directly to the different
 protocols. ``#create_serializer`` shows the explicit mapping between the
@@ -54,13 +65,23 @@ The classes are structured as follows:
 
 * The ``ResponseSerializer`` contains all the basic logic for the
   serialization which is shared among all different protocols.
-* The ``BaseXMLResponseSerializer`` and the ``JSONResponseSerializer``
-  contain the logic for the XML and the JSON serialization respectively.
+* The ``BaseXMLResponseSerializer``, ``JSONResponseSerializer`` and
+  ``BaseCBORResponseSerializer`` contain the logic for the XML, JSON
+  and the CBOR serialization respectively.
 * The ``BaseRestResponseSerializer`` contains the logic for the REST
   protocol specifics (i.e. specific HTTP header serializations).
+* The ``BaseRpcV2ResponseSerializer`` contains the logic for the RPC v2
+  protocol specifics (i.e. pretty bare, does not has any specific
+  about body serialization).
 * The ``RestXMLResponseSerializer`` and the ``RestJSONResponseSerializer``
   inherit the ReST specific logic from the ``BaseRestResponseSerializer``
   and the XML / JSON body serialization from their second super class.
+* The ``RpcV2CBORResponseSerializer`` inherits the RPC v2 specific logic
+  from the ``BaseRpcV2ResponseSerializer`` and the CBOR body serialization
+  from its second super class.
+* The ``CBORResponseSerializer`` contains the logic specific to the
+  non-official ``cbor`` protocol, mirroring the ``json`` protocol but
+  with CBOR encoded body
 
 The services and their protocols are defined by using AWS's Smithy
 (a language to define services in a - somewhat - protocol-agnostic
@@ -73,21 +94,32 @@ be sent back to the calling client.
 
 import abc
 import base64
+import datetime
 import functools
 import json
 import logging
+import math
 import string
+import struct
 from abc import ABC
 from binascii import crc32
 from collections.abc import Iterable, Iterator
-from datetime import datetime
 from email.utils import formatdate
 from struct import pack
-from typing import Any
+from typing import IO, Any
 from xml.etree import ElementTree as ETree
 
 import xmltodict
-from botocore.model import ListShape, MapShape, OperationModel, ServiceModel, Shape, StructureShape
+from botocore.model import (
+    ListShape,
+    MapShape,
+    OperationModel,
+    ServiceModel,
+    Shape,
+    ShapeResolver,
+    StringShape,
+    StructureShape,
+)
 from botocore.serialize import ISO8601, ISO8601_MICRO
 from botocore.utils import calculate_md5, is_json_value_header, parse_to_aware_datetime
 
@@ -261,7 +293,11 @@ class ResponseSerializer(abc.ABC):
                 f"Error to serialize ({error.__class__.__name__ if error else None}) is not a ServiceException."
             )
         shape = operation_model.service_model.shape_for_error_code(error.code)
-        serialized_response.status_code = error.status_code
+        serialized_response.status_code = self._get_error_status_code(
+            error=error,
+            headers=headers,
+            service_model=operation_model.service_model,
+        )
 
         self._serialize_error(
             error, serialized_response, shape, operation_model, mime_type, request_id
@@ -506,7 +542,7 @@ class ResponseSerializer(abc.ABC):
     # Some extra utility methods subclasses can use.
 
     @staticmethod
-    def _timestamp_iso8601(value: datetime) -> str:
+    def _timestamp_iso8601(value: datetime.datetime) -> str:
         if value.microsecond > 0:
             timestamp_format = ISO8601_MICRO
         else:
@@ -514,15 +550,17 @@ class ResponseSerializer(abc.ABC):
         return value.strftime(timestamp_format)
 
     @staticmethod
-    def _timestamp_unixtimestamp(value: datetime) -> float:
+    def _timestamp_unixtimestamp(value: datetime.datetime) -> float:
         return value.timestamp()
 
-    def _timestamp_rfc822(self, value: datetime) -> str:
-        if isinstance(value, datetime):
+    def _timestamp_rfc822(self, value: datetime.datetime) -> str:
+        if isinstance(value, datetime.datetime):
             value = self._timestamp_unixtimestamp(value)
         return formatdate(value, usegmt=True)
 
-    def _convert_timestamp_to_str(self, value: int | str | datetime, timestamp_format=None) -> str:
+    def _convert_timestamp_to_str(
+        self, value: int | str | datetime.datetime, timestamp_format=None
+    ) -> str:
         if timestamp_format is None:
             timestamp_format = self.TIMESTAMP_FORMAT
         timestamp_format = timestamp_format.lower()
@@ -579,6 +617,60 @@ class ResponseSerializer(abc.ABC):
 
     def _get_error_message(self, error: Exception) -> str | None:
         return str(error) if error is not None and str(error) != "None" else None
+
+    def _get_error_status_code(
+        self, error: ServiceException, headers: Headers, service_model: ServiceModel
+    ) -> int:
+        return error.status_code
+
+
+class QueryCompatibleProtocolMixin:
+    def _get_error_status_code(
+        self, error: ServiceException, headers: dict | Headers | None, service_model: ServiceModel
+    ) -> int:
+        # by default, some protocols (namely `json` and `smithy-rpc-v2-cbor`) might not define exception status code in
+        # their specs, so they are not defined in the `ServiceException` object and will use the default value of `400`
+        # But Query compatible service always do define them, so we get the wrong code for service that are
+        # multi-protocols like CloudWatch
+        # we need to verify if the service is compatible, and if the client has requested the query compatible error
+        # code to return the right value
+        if not service_model.is_query_compatible:
+            return error.status_code
+
+        if headers and headers.get("x-amzn-query-mode") == "true":
+            return error.status_code
+
+        # we only want to override status code 4XX
+        if 400 < error.status_code <= 499:
+            return 400
+
+        return error.status_code
+
+    def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
+        """
+        Add an `x-amzn-query-error` header for client to  translate errors codes from former `query` services
+        into other protocols.
+        """
+
+        sender_fault = "Sender" if error.sender_fault else "Receiver"
+        response.headers["x-amzn-query-error"] = f"{error.code};{sender_fault}"
+
+    def _get_error_code(
+        self, is_query_compatible: bool, error: ServiceException, shape: Shape | None = None
+    ):
+        # if the operation is query compatible, we need to add to use shape name
+        if is_query_compatible:
+            if shape:
+                code = shape.name
+            else:
+                # if the shape is not defined, we are using the Exception named to derive the `Code`, like you would
+                # from the shape. This allows us to have Exception that are valid in multi-protocols by defining its
+                # code and its name to be different
+                code = error.__class__.__name__
+        else:
+            code = error.code
+
+        return code
 
 
 class BaseXMLResponseSerializer(ResponseSerializer):
@@ -1193,7 +1285,7 @@ class EC2ResponseSerializer(QueryResponseSerializer):
         request_id_element.text = request_id
 
 
-class JSONResponseSerializer(ResponseSerializer):
+class JSONResponseSerializer(QueryCompatibleProtocolMixin, ResponseSerializer):
     """
     The ``JSONResponseSerializer`` is responsible for the serialization of responses from services with the ``json``
     protocol. It implements the JSON response body serialization, which is also used by the
@@ -1220,31 +1312,57 @@ class JSONResponseSerializer(ResponseSerializer):
         # TODO implement different service-specific serializer configurations
         #   - currently we set both, the `__type` member as well as the `X-Amzn-Errortype` header
         #   - the specification defines that it's either the __type field OR the header
-        response.headers["X-Amzn-Errortype"] = error.code
-        body["__type"] = error.code
+        # this depends on the JSON protocol version as well. If json-1.0 the Error should be the full shape ID, like
+        # com.amazon.coral.service#ExceptionName
+        # if json-1.1, it should only be the name
+
+        is_query_compatible = operation_model.service_model.is_query_compatible
+        code = self._get_error_code(is_query_compatible, error, shape)
+
+        response.headers["X-Amzn-Errortype"] = code
+
+        # the `__type` field is not defined in default botocore error shapes
+        body["__type"] = code
 
         if shape:
             remaining_params = {}
             # TODO add a possibility to serialize simple non-modelled errors (like S3 NoSuchBucket#BucketName)
             for member in shape.members:
                 if hasattr(error, member):
-                    remaining_params[member] = getattr(error, member)
+                    value = getattr(error, member)
+
                 # Default error message fields can sometimes have different casing in the specs
                 elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
-                    remaining_params[member] = getattr(error, member.lower())
+                    value = getattr(error, member.lower())
+
+                else:
+                    continue
+
+                if value is None:
+                    # do not serialize a value that is set to `None`
+                    continue
+
+                # if the value is falsy (empty string, empty list) and not in the Shape required members, AWS will
+                # not serialize it, and it will not be part of the response body.
+                if value or member in shape.required_members:
+                    remaining_params[member] = value
+
             self._serialize(body, remaining_params, shape, None, mime_type)
 
-        # Only set the message if it has not been set with the shape members
+        # this is a workaround, some Error Shape do not define a `Message` field, but it is always returned
+        # this could be solved at the same time as the `__type` field
         if "message" not in body and "Message" not in body:
-            message = self._get_error_message(error)
-            if message is not None:
-                body["message"] = message
+            if error_message := self._get_error_message(error):
+                body["message"] = error_message
 
         if mime_type in self.CBOR_TYPES:
             response.set_response(cbor2_dumps(body, datetime_as_timestamp=True))
             response.content_type = mime_type
         else:
             response.set_json(body)
+
+        if is_query_compatible:
+            self._add_query_compatible_error_header(response, error)
 
     def _serialize_response(
         self,
@@ -1405,6 +1523,504 @@ class RestJSONResponseSerializer(BaseRestResponseSerializer, JSONResponseSeriali
         has_content_type = self._has_header("Content-Type", serialized.headers)
         if has_body and not has_content_type:
             serialized.headers["Content-Type"] = mime_type
+
+
+class BaseCBORResponseSerializer(ResponseSerializer):
+    """
+    The ``BaseCBORResponseSerializer`` performs the basic logic for the CBOR response serialization.
+
+    There are two types of map/list in CBOR, indefinite length types and "defined" ones:
+    You can use the `\xbf` byte marker to indicate a map with indefinite length, then `\xff` to indicate the end
+     of the map.
+    You can also use, for example, `\xa4` to indicate a map with exactly 4 things in it, so `\xff` is not
+    required at the end.
+    AWS, for both Kinesis and `smithy-rpc-v2-cbor` services, is using indefinite data structures when returning
+    responses.
+
+    The CBOR serializer cannot serialize an exception if it is not defined in our specs.
+    LocalStack defines a way to have user-defined exception by subclassing `CommonServiceException`, so it needs to be
+     able to encode those, as well as InternalError
+    We are creating a default botocore structure shape (`_DEFAULT_ERROR_STRUCTURE_SHAPE`) to be used in such cases.
+    """
+
+    SUPPORTED_MIME_TYPES = [APPLICATION_CBOR, APPLICATION_AMZ_CBOR_1_1]
+
+    UNSIGNED_INT_MAJOR_TYPE = 0
+    NEGATIVE_INT_MAJOR_TYPE = 1
+    BLOB_MAJOR_TYPE = 2
+    STRING_MAJOR_TYPE = 3
+    LIST_MAJOR_TYPE = 4
+    MAP_MAJOR_TYPE = 5
+    TAG_MAJOR_TYPE = 6
+    FLOAT_AND_SIMPLE_MAJOR_TYPE = 7
+
+    INDEFINITE_ITEM_ADDITIONAL_INFO = 31
+    BREAK_CODE = b"\xff"
+    USE_INDEFINITE_DATA_STRUCTURE = True
+
+    _ERROR_TYPE_SHAPE = StringShape(shape_name="__type", shape_model={"type": "string"})
+
+    _DEFAULT_ERROR_STRUCTURE_SHAPE = StructureShape(
+        shape_name="DefaultErrorStructure",
+        shape_model={
+            "type": "structure",
+            "members": {
+                "message": {"shape": "ErrorMessage"},
+                "__type": {"shape": "ErrorType"},
+            },
+            "error": {"code": "DefaultErrorStructure", "httpStatusCode": 400, "senderFault": True},
+            "exception": True,
+        },
+        shape_resolver=ShapeResolver(
+            shape_map={
+                "ErrorMessage": {"type": "string"},
+                "ErrorType": {"type": "string"},
+            },
+        ),
+    )
+
+    def _serialize_data_item(
+        self, serialized: bytearray, value: Any, shape: Shape | None, name: str | None = None
+    ) -> None:
+        method = getattr(self, f"_serialize_type_{shape.type_name}")
+        if method is None:
+            raise ValueError(
+                f"Unrecognized C2J type: {shape.type_name}, unable to serialize request"
+            )
+        method(serialized, value, shape, name)
+
+    def _serialize_type_integer(
+        self, serialized: bytearray, value: int, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if value >= 0:
+            major_type = self.UNSIGNED_INT_MAJOR_TYPE
+        else:
+            major_type = self.NEGATIVE_INT_MAJOR_TYPE
+            # The only differences in serializing negative and positive integers is
+            # that for negative, we set the major type to 1 and set the value to -1
+            # minus the value
+            value = -1 - value
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(value)
+        initial_byte = self._get_initial_byte(major_type, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + value.to_bytes(num_bytes, "big"))
+
+    def _serialize_type_long(
+        self, serialized: bytearray, value: int, shape: Shape, name: str | None = None
+    ) -> None:
+        self._serialize_type_integer(serialized, value, shape, name)
+
+    def _serialize_type_blob(
+        self,
+        serialized: bytearray,
+        value: str | bytes | IO[bytes],
+        shape: Shape | None,
+        name: str | None = None,
+    ) -> None:
+        if isinstance(value, str):
+            value = value.encode("utf-8")
+        elif not isinstance(value, (bytes, bytearray)):
+            # We support file-like objects for blobs; these already have been
+            # validated to ensure they have a read method
+            value = value.read()
+        length = len(value)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+        initial_byte = self._get_initial_byte(self.BLOB_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte)
+        else:
+            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big"))
+        serialized.extend(value)
+
+    def _serialize_type_string(
+        self, serialized: bytearray, value: str, shape: Shape | None, name: str | None = None
+    ) -> None:
+        encoded = value.encode("utf-8")
+        length = len(encoded)
+        additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+        initial_byte = self._get_initial_byte(self.STRING_MAJOR_TYPE, additional_info)
+        if num_bytes == 0:
+            serialized.extend(initial_byte + encoded)
+        else:
+            serialized.extend(initial_byte + length.to_bytes(num_bytes, "big") + encoded)
+
+    def _serialize_type_list(
+        self, serialized: bytearray, value: list, shape: Shape | None, name: str | None = None
+    ) -> None:
+        initial_bytes, closing_bytes = self._get_bytes_for_data_structure(
+            value, self.LIST_MAJOR_TYPE
+        )
+        serialized.extend(initial_bytes)
+
+        for item in value:
+            self._serialize_data_item(serialized, item, shape.member)
+
+        if closing_bytes is not None:
+            serialized.extend(closing_bytes)
+
+    def _serialize_type_map(
+        self, serialized: bytearray, value: dict, shape: Shape | None, name: str | None = None
+    ) -> None:
+        initial_bytes, closing_bytes = self._get_bytes_for_data_structure(
+            value, self.MAP_MAJOR_TYPE
+        )
+        serialized.extend(initial_bytes)
+
+        for key_item, item in value.items():
+            self._serialize_data_item(serialized, key_item, shape.key)
+            self._serialize_data_item(serialized, item, shape.value)
+
+        if closing_bytes is not None:
+            serialized.extend(closing_bytes)
+
+    def _serialize_type_structure(
+        self,
+        serialized: bytearray,
+        value: dict,
+        shape: Shape | None,
+        name: str | None = None,
+        shape_members: dict[str, Shape] | None = None,
+    ) -> None:
+        # `_serialize_type_structure` has a different signature other `_serialize_type_*` methods as it accepts
+        # `shape_members`. This is because sometimes, the `StructureShape` does not have some members defined in the
+        # specs, and we want to be able to pass arbitrary members to serialize undocumented members.
+        # see `_serialize_error_structure` for its specific usage
+
+        if name is not None:
+            # For nested structures, we need to serialize the key first
+            self._serialize_data_item(serialized, name, shape.key_shape)
+
+        # Remove `None` values from the dictionary
+        value = {k: v for k, v in value.items() if v is not None}
+
+        initial_bytes, closing_bytes = self._get_bytes_for_data_structure(
+            value, self.MAP_MAJOR_TYPE
+        )
+        serialized.extend(initial_bytes)
+        members = shape_members or shape.members
+        for member_key, member_value in value.items():
+            member_shape = members[member_key]
+            if "name" in member_shape.serialization:
+                member_key = member_shape.serialization["name"]
+            if member_value is not None:
+                self._serialize_type_string(serialized, member_key, None, None)
+                self._serialize_data_item(serialized, member_value, member_shape)
+
+        if closing_bytes is not None:
+            serialized.extend(closing_bytes)
+
+    def _serialize_type_timestamp(
+        self,
+        serialized: bytearray,
+        value: int | str | datetime.datetime,
+        shape: Shape | None,
+        name: str | None = None,
+    ) -> None:
+        # https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html#timestamp-type-serialization
+        tag = 1  # Use tag 1 for unix timestamp
+        initial_byte = self._get_initial_byte(self.TAG_MAJOR_TYPE, tag)
+        serialized.extend(initial_byte)  # Tagging the timestamp
+
+        # we encode the timestamp as a double, like the Go SDK
+        # https://github.com/aws/aws-sdk-go-v2/blob/5d7c17325a2581afae4455c150549174ebfd9428/internal/protocoltest/smithyrpcv2cbor/serializers.go#L664-L669
+        # Currently, the Botocore serializer using unsigned integers, but it does not conform to the Smithy specs:
+        # > This protocol uses epoch-seconds, also known as Unix timestamps, with millisecond
+        # > (1/1000th of a second) resolution.
+        timestamp = float(self._convert_timestamp_to_str(value))
+        initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, 27)
+        serialized.extend(initial_byte + struct.pack(">d", timestamp))
+
+    def _serialize_type_float(
+        self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if self._is_special_number(value):
+            serialized.extend(
+                self._get_bytes_for_special_numbers(value)
+            )  # Handle special values like NaN or Infinity
+        else:
+            initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, 26)
+            serialized.extend(initial_byte + struct.pack(">f", value))
+
+    def _serialize_type_double(
+        self, serialized: bytearray, value: float, shape: Shape | None, name: str | None = None
+    ) -> None:
+        if self._is_special_number(value):
+            serialized.extend(
+                self._get_bytes_for_special_numbers(value)
+            )  # Handle special values like NaN or Infinity
+        else:
+            initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, 27)
+            serialized.extend(initial_byte + struct.pack(">d", value))
+
+    def _serialize_type_boolean(
+        self, serialized: bytearray, value: bool, shape: Shape | None, name: str | None = None
+    ) -> None:
+        additional_info = 21 if value else 20
+        serialized.extend(self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, additional_info))
+
+    @staticmethod
+    def _get_additional_info_and_num_bytes(value: int) -> tuple[int, int]:
+        # Values under 24 can be stored in the initial byte and don't need further
+        # encoding
+        if value < 24:
+            return value, 0
+        # Values between 24 and 255 (inclusive) can be stored in 1 byte and
+        # correspond to additional info 24
+        elif value < 256:
+            return 24, 1
+        # Values up to 65535 can be stored in two bytes and correspond to additional
+        # info 25
+        elif value < 65536:
+            return 25, 2
+        # Values up to 4294967296 can be stored in four bytes and correspond to
+        # additional info 26
+        elif value < 4294967296:
+            return 26, 4
+        # The maximum number of bytes in a definite length data items is 8 which
+        # to additional info 27
+        else:
+            return 27, 8
+
+    def _get_initial_byte(self, major_type: int, additional_info: int) -> bytes:
+        # The highest order three bits are the major type, so we need to bitshift the
+        # major type by 5
+        major_type_bytes = major_type << 5
+        return (major_type_bytes | additional_info).to_bytes(1, "big")
+
+    @staticmethod
+    def _is_special_number(value: int | float) -> bool:
+        return any(
+            [
+                value == float("inf"),
+                value == float("-inf"),
+                math.isnan(value),
+            ]
+        )
+
+    def _get_bytes_for_special_numbers(self, value: int | float) -> bytes:
+        additional_info = 25
+        initial_byte = self._get_initial_byte(self.FLOAT_AND_SIMPLE_MAJOR_TYPE, additional_info)
+        if value == float("inf"):
+            return initial_byte + struct.pack(">H", 0x7C00)
+        elif value == float("-inf"):
+            return initial_byte + struct.pack(">H", 0xFC00)
+        elif math.isnan(value):
+            return initial_byte + struct.pack(">H", 0x7E00)
+
+    def _get_bytes_for_data_structure(
+        self, value: list | dict, major_type: int
+    ) -> tuple[bytes, bytes | None]:
+        if self.USE_INDEFINITE_DATA_STRUCTURE:
+            additional_info = self.INDEFINITE_ITEM_ADDITIONAL_INFO
+            return self._get_initial_byte(major_type, additional_info), self.BREAK_CODE
+        else:
+            length = len(value)
+            additional_info, num_bytes = self._get_additional_info_and_num_bytes(length)
+            initial_byte = self._get_initial_byte(major_type, additional_info)
+            if num_bytes != 0:
+                initial_byte = initial_byte + length.to_bytes(num_bytes, "big")
+
+            return initial_byte, None
+
+    def _serialize_error_structure(
+        self, body: bytearray, shape: Shape | None, error: ServiceException, code: str
+    ):
+        if not shape:
+            shape = self._DEFAULT_ERROR_STRUCTURE_SHAPE
+            shape_members = shape.members
+        else:
+            # we need to manually add the `__type` field to the shape members as it is not part of the specs
+            # we do a shallow copy of the shape members
+            shape_members = shape.members.copy()
+            shape_members["__type"] = self._ERROR_TYPE_SHAPE
+
+        # Error responses in the rpcv2Cbor protocol MUST be serialized identically to standard responses with one
+        # additional component to distinguish which error is contained: a body field named __type.
+        params = {"__type": code}
+
+        for member in shape_members:
+            if hasattr(error, member):
+                value = getattr(error, member)
+
+            # Default error message fields can sometimes have different casing in the specs
+            elif member.lower() in ["code", "message"] and hasattr(error, member.lower()):
+                value = getattr(error, member.lower())
+
+            else:
+                continue
+
+            if value is None:
+                # do not serialize a value that is set to `None`
+                continue
+
+            # if the value is falsy (empty string, empty list) and not in the Shape required members, AWS will
+            # not serialize it, and it will not be part of the response body.
+            if value or member in shape.required_members:
+                params[member] = value
+
+        self._serialize_type_structure(body, params, shape, None, shape_members=shape_members)
+
+
+class CBORResponseSerializer(BaseCBORResponseSerializer):
+    """
+    The ``CBORResponseSerializer`` is responsible for the serialization of responses from services with the ``cbor``
+    protocol. It implements the CBOR response body serialization, which is only currently used by Kinesis and is derived
+    conceptually from the ``JSONResponseSerializer``
+    """
+
+    TIMESTAMP_FORMAT = "unixtimestamp"
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: Response,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        body = bytearray()
+        response.content_type = mime_type
+        response.headers["X-Amzn-Errortype"] = error.code
+
+        self._serialize_error_structure(body, shape, error, code=error.code)
+
+        response.set_response(bytes(body))
+
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: Response,
+        shape: Shape | None,
+        shape_members: dict,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        response.content_type = mime_type
+        response.set_response(
+            self._serialize_body_params(parameters, shape, operation_model, mime_type, request_id)
+        )
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> bytes | None:
+        if shape is None:
+            return b""
+        body = bytearray()
+        self._serialize_data_item(body, params, shape)
+        return bytes(body)
+
+    def _prepare_additional_traits_in_response(
+        self, response: Response, operation_model: OperationModel, request_id: str
+    ) -> Response:
+        response.headers["x-amzn-requestid"] = request_id
+        response = super()._prepare_additional_traits_in_response(
+            response, operation_model, request_id
+        )
+        return response
+
+
+class BaseRpcV2ResponseSerializer(ResponseSerializer):
+    """
+    The BaseRpcV2ResponseSerializer performs the basic logic for the RPC V2 response serialization.
+    The only variance between the various RPCv2 protocols is the way the body is serialized for regular responses,
+    and the way they will encode exceptions.
+    """
+
+    def _serialize_response(
+        self,
+        parameters: dict,
+        response: Response,
+        shape: Shape | None,
+        shape_members: dict,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        response.content_type = mime_type
+        response.set_response(
+            self._serialize_body_params(parameters, shape, operation_model, mime_type, request_id)
+        )
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> bytes | None:
+        raise NotImplementedError
+
+
+class RpcV2CBORResponseSerializer(
+    QueryCompatibleProtocolMixin, BaseRpcV2ResponseSerializer, BaseCBORResponseSerializer
+):
+    """
+    The RpcV2CBORResponseSerializer implements the CBOR body serialization part for the RPC v2 protocol, and implements the
+    specific exception serialization.
+    https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+    """
+
+    # the Smithy spec defines that only `application/cbor` is supported for RPC v2 CBOR
+    SUPPORTED_MIME_TYPES = [APPLICATION_CBOR]
+    TIMESTAMP_FORMAT = "unixtimestamp"
+
+    def _serialize_body_params(
+        self,
+        params: dict,
+        shape: Shape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> bytes | None:
+        if shape is None:
+            return b""
+        body = bytearray()
+        self._serialize_data_item(body, params, shape)
+        return bytes(body)
+
+    def _serialize_error(
+        self,
+        error: ServiceException,
+        response: Response,
+        shape: StructureShape,
+        operation_model: OperationModel,
+        mime_type: str,
+        request_id: str,
+    ) -> None:
+        body = bytearray()
+        response.content_type = mime_type  # can only be 'application/cbor'
+
+        # Responses for the rpcv2Cbor protocol SHOULD NOT contain the X-Amzn-ErrorType header.
+        # Type information is always serialized in the payload. This is different from the `json` protocol
+        is_query_compatible = operation_model.service_model.is_query_compatible
+        code = self._get_error_code(is_query_compatible, error, shape)
+
+        self._serialize_error_structure(body, shape, error, code=code)
+
+        response.set_response(bytes(body))
+
+        if is_query_compatible:
+            self._add_query_compatible_error_header(response, error)
+
+    def _prepare_additional_traits_in_response(
+        self, response: Response, operation_model: OperationModel, request_id: str
+    ):
+        response.headers["x-amzn-requestid"] = request_id
+        response.headers["Smithy-Protocol"] = "rpc-v2-cbor"
+        response = super()._prepare_additional_traits_in_response(
+            response, operation_model, request_id
+        )
+        return response
 
 
 class S3ResponseSerializer(RestXMLResponseSerializer):
@@ -1573,7 +2189,7 @@ class S3ResponseSerializer(RestXMLResponseSerializer):
         root.attrib["xmlns"] = self.XML_NAMESPACE
 
     @staticmethod
-    def _timestamp_iso8601(value: datetime) -> str:
+    def _timestamp_iso8601(value: datetime.datetime) -> str:
         """
         This is very specific to S3, S3 returns an ISO8601 timestamp but with milliseconds always set to 000
         Some SDKs are very picky about the length
@@ -1700,26 +2316,12 @@ class SqsJsonResponseSerializer(JSONResponseSerializer):
         "QueueNameExists": "QueueAlreadyExists",
     }
 
-    def _serialize_error(
-        self,
-        error: ServiceException,
-        response: Response,
-        shape: StructureShape,
-        operation_model: OperationModel,
-        mime_type: str,
-        request_id: str,
-    ) -> None:
-        """
-        Overrides _serialize_error as SQS has a special header for query API legacy reason: 'x-amzn-query-error',
-        which contained the exception code as well as a Sender field.
-        Ex: 'x-amzn-query-error': 'InvalidParameterValue;Sender'
-        """
-        # TODO: for body["__type"] = error.code, it seems AWS differs from what we send for SQS
-        # AWS: "com.amazon.coral.service#InvalidParameterValueException"
-        # or AWS: "com.amazonaws.sqs#BatchRequestTooLong"
-        # LocalStack: "InvalidParameterValue"
-        super()._serialize_error(error, response, shape, operation_model, mime_type, request_id)
-        # We need to add a prefix to certain errors, as they have been deleted in the specs. These will not change
+    # TODO: on body error serialization (body["__type"]),it seems AWS differs from what we send for SQS
+    #  AWS: "com.amazon.coral.service#InvalidParameterValueException"
+    #  or AWS: "com.amazonaws.sqs#BatchRequestTooLong"
+    #  LocalStack: "InvalidParameterValue"
+
+    def _add_query_compatible_error_header(self, response: Response, error: ServiceException):
         if error.code in self.JSON_TO_QUERY_ERROR_CODES:
             code = self.JSON_TO_QUERY_ERROR_CODES[error.code]
         elif error.code in self.QUERY_PREFIXED_ERRORS:
@@ -1727,6 +2329,7 @@ class SqsJsonResponseSerializer(JSONResponseSerializer):
         else:
             code = error.code
 
+        # SQS exceptions all have sender fault set to False, so we hardcode it to `Sender`
         response.headers["x-amzn-query-error"] = f"{code};Sender"
 
 
@@ -1744,11 +2347,14 @@ def gen_amzn_requestid():
 
 
 @functools.cache
-def create_serializer(service: ServiceModel) -> ResponseSerializer:
+def create_serializer(
+    service: ServiceModel, protocol: ProtocolName | None = None
+) -> ResponseSerializer:
     """
     Creates the right serializer for the given service model.
 
     :param service: to create the serializer for
+    :param protocol: the protocol for the serializer. If not provided, fallback to the service's default protocol
     :return: ResponseSerializer which can handle the protocol of the service
     """
 
@@ -1768,17 +2374,22 @@ def create_serializer(service: ServiceModel) -> ResponseSerializer:
         "rest-json": RestJSONResponseSerializer,
         "rest-xml": RestXMLResponseSerializer,
         "ec2": EC2ResponseSerializer,
+        "smithy-rpc-v2-cbor": RpcV2CBORResponseSerializer,
+        # TODO: implement multi-protocol support for Kinesis, so that it can uses the `cbor` protocol and remove
+        #  CBOR handling from JSONResponseParser
+        # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
+    service_protocol = protocol or service.protocol
 
     # Try to select a service- and protocol-specific serializer implementation
     if (
         service.service_name in service_specific_serializers
-        and service.protocol in service_specific_serializers[service.service_name]
+        and service_protocol in service_specific_serializers[service.service_name]
     ):
-        return service_specific_serializers[service.service_name][service.protocol]()
+        return service_specific_serializers[service.service_name][service_protocol]()
     else:
         # Otherwise, pick the protocol-specific serializer for the protocol of the service
-        return protocol_specific_serializers[service.protocol]()
+        return protocol_specific_serializers[service_protocol]()
 
 
 def aws_response_serializer(
@@ -1809,7 +2420,7 @@ def aws_response_serializer(
     def _decorate(fn):
         service_model = load_service(service_name, protocol=protocol)
         operation_model = service_model.operation_model(operation)
-        serializer = create_serializer(service_model)
+        serializer = create_serializer(service_model, protocol=protocol)
 
         def _proxy(*args, **kwargs) -> WerkzeugResponse:
             # extract request from function invocation (decorator can be used for methods as well as for functions).

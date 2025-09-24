@@ -57,6 +57,7 @@ Field = str
 FieldDelimiter = str
 FieldHeader = str
 FieldIndexName = str
+FieldSelectionCriteria = str
 FilterCount = int
 FilterName = str
 FilterPattern = str
@@ -137,6 +138,7 @@ SplitStringDelimiter = str
 StartFromHead = bool
 StatsValue = float
 Success = bool
+SystemField = str
 TagKey = str
 TagValue = str
 Target = str
@@ -1139,6 +1141,7 @@ class DescribeMetricFiltersRequest(ServiceRequest):
     metricNamespace: Optional[MetricNamespace]
 
 
+EmitSystemFields = List[SystemField]
 Dimensions = Dict[DimensionsKey, DimensionsValue]
 
 
@@ -1161,6 +1164,8 @@ class MetricFilter(TypedDict, total=False):
     creationTime: Optional[Timestamp]
     logGroupName: Optional[LogGroupName]
     applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
+    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
+    emitSystemFieldDimensions: Optional[EmitSystemFields]
 
 
 MetricFilters = List[MetricFilter]
@@ -1263,6 +1268,8 @@ class SubscriptionFilter(TypedDict, total=False):
     distribution: Optional[Distribution]
     applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
     creationTime: Optional[Timestamp]
+    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
+    emitSystemFields: Optional[EmitSystemFields]
 
 
 SubscriptionFilters = List[SubscriptionFilter]
@@ -2032,6 +2039,8 @@ class PutMetricFilterRequest(ServiceRequest):
     filterPattern: FilterPattern
     metricTransformations: MetricTransformations
     applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
+    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
+    emitSystemFieldDimensions: Optional[EmitSystemFields]
 
 
 class PutQueryDefinitionRequest(ServiceRequest):
@@ -2072,6 +2081,8 @@ class PutSubscriptionFilterRequest(ServiceRequest):
     roleArn: Optional[RoleArn]
     distribution: Optional[Distribution]
     applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
+    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
+    emitSystemFields: Optional[EmitSystemFields]
 
 
 class PutTransformerRequest(ServiceRequest):
@@ -2929,6 +2940,8 @@ class LogsApi:
         filter_pattern: FilterPattern,
         metric_transformations: MetricTransformations,
         apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
+        field_selection_criteria: FieldSelectionCriteria | None = None,
+        emit_system_field_dimensions: EmitSystemFields | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -2980,6 +2993,8 @@ class LogsApi:
         role_arn: RoleArn | None = None,
         distribution: Distribution | None = None,
         apply_on_transformed_logs: ApplyOnTransformedLogs | None = None,
+        field_selection_criteria: FieldSelectionCriteria | None = None,
+        emit_system_fields: EmitSystemFields | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError

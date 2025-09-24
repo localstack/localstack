@@ -183,6 +183,8 @@ class SesProvider(SesApi, ServiceLifecycleHook):
     #
 
     def on_after_init(self):
+        self._apply_patches()
+
         # Allow sent emails to be retrieved from the SES emails endpoint
         register_ses_api_resource()
 
@@ -197,6 +199,12 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             if "From:" in entity:
                 return entity.replace("From:", "").strip()
         return None
+
+    def _apply_patches(self) -> None:
+        # Suppress Moto's validation of receipt rule actions. These validations use Moto's implementation of S3, Lambda
+        # and SQS, which fail because these services have been internalised in LocalStack.
+        # Besides, AWS does not run the same validations as evidenced by our AWS-validated tests.
+        SESBackend._validate_receipt_rule_actions = lambda *_: None
 
     #
     # Implementations for SES operations
@@ -518,8 +526,10 @@ class SesProvider(SesApi, ServiceLifecycleHook):
         backend.create_receipt_rule_set(rule_set_name)
         original_rule_set = backend.describe_receipt_rule_set(original_rule_set_name)
 
+        after = None
         for rule in original_rule_set.rules:
-            backend.create_receipt_rule(rule_set_name, rule)
+            backend.create_receipt_rule(rule_set_name, rule, after)
+            after = rule["Name"]
 
         return CloneReceiptRuleSetResponse()
 

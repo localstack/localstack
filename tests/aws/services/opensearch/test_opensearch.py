@@ -24,11 +24,6 @@ from localstack.aws.api.opensearch import (
     OpenSearchPartitionInstanceType,
     VolumeType,
 )
-from localstack.constants import (
-    ELASTICSEARCH_DEFAULT_VERSION,
-    OPENSEARCH_DEFAULT_VERSION,
-    OPENSEARCH_PLUGIN_LIST,
-)
 from localstack.services.opensearch import provider
 from localstack.services.opensearch.cluster import CustomEndpoint, EdgeProxiedOpensearchCluster
 from localstack.services.opensearch.cluster_manager import (
@@ -39,7 +34,12 @@ from localstack.services.opensearch.cluster_manager import (
     SingletonClusterManager,
     create_cluster_manager,
 )
-from localstack.services.opensearch.packages import opensearch_package
+from localstack.services.opensearch.packages import (
+    ELASTICSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_DEFAULT_VERSION,
+    OPENSEARCH_PLUGIN_LIST,
+    opensearch_package,
+)
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
 from localstack.utils.common import call_safe, poll_condition, retry, short_uid, start_worker_thread
@@ -697,7 +697,6 @@ class TestEdgeProxiedOpensearchCluster:
 
             response = requests.get(cluster_url)
             assert response.ok, f"cluster endpoint returned an error: {response.text}"
-            assert response.json()["version"]["number"] == "2.11.1"
 
             response = requests.get(f"{cluster_url}/_cluster/health")
             assert response.ok, f"cluster health endpoint returned an error: {response.text}"

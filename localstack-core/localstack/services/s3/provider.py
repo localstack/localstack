@@ -3298,7 +3298,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         s3_object = s3_bucket.get_object(key=key, version_id=version_id, http_method="DELETE")
 
-        store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+        store.TAGS.tags.pop(get_unique_key_id(bucket, key, s3_object.version_id), None)
         response = DeleteObjectTaggingOutput()
         if s3_object.version_id:
             response["VersionId"] = s3_object.version_id
@@ -3859,7 +3859,9 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         if retention and retention["RetainUntilDate"] < datetime.datetime.now(datetime.UTC):
             # weirdly, this date is format as following: Tue Dec 31 16:00:00 PST 2019
             # it contains the timezone as PST, even if you target a bucket in Europe or Asia
-            pst_datetime = retention["RetainUntilDate"].astimezone(tz=ZoneInfo("US/Pacific"))
+            pst_datetime = retention["RetainUntilDate"].astimezone(
+                tz=ZoneInfo("America/Los_Angeles")
+            )
             raise InvalidArgument(
                 "The retain until date must be in the future!",
                 ArgumentName="RetainUntilDate",
