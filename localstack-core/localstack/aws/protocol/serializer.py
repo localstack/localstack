@@ -1338,7 +1338,13 @@ class JSONResponseSerializer(QueryCompatibleProtocolMixin, ResponseSerializer):
                 else:
                     continue
 
-                if value:
+                if value is None:
+                    # do not serialize a value that is set to `None`
+                    continue
+
+                # if the value is falsy (empty string, empty list) and not in the Shape required members, AWS will
+                # not serialize it, and it will not be part of the response body.
+                if value or member in shape.required_members:
                     remaining_params[member] = value
 
             self._serialize(body, remaining_params, shape, None, mime_type)
@@ -1845,7 +1851,13 @@ class BaseCBORResponseSerializer(ResponseSerializer):
             else:
                 continue
 
-            if value:
+            if value is None:
+                # do not serialize a value that is set to `None`
+                continue
+
+            # if the value is falsy (empty string, empty list) and not in the Shape required members, AWS will
+            # not serialize it, and it will not be part of the response body.
+            if value or member in shape.required_members:
                 params[member] = value
 
         self._serialize_type_structure(body, params, shape, None, shape_members=shape_members)
