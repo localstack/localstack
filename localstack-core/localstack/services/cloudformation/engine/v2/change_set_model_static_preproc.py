@@ -534,8 +534,14 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
             condition_value = self.visit(node_condition).before
             if condition_value:
                 arg_delta = self.visit(node_intrinsic_function.arguments.array[1])
+                if not is_computable(arg_delta):
+                    # the conditions may refer to resources
+                    return UnComputable
             else:
                 arg_delta = self.visit(node_intrinsic_function.arguments.array[2])
+                if not is_computable(arg_delta):
+                    # the conditions may refer to resources
+                    return UnComputable
             if_delta.before = arg_delta.before
 
         if not is_nothing(condition_delta.after):
