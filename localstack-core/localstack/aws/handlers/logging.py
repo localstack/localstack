@@ -24,6 +24,7 @@ class ExceptionLogger(ExceptionHandler):
     def __init__(self, logger=None):
         self.logger = logger or LOG
 
+        # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
         self._moto_service_exception = types.EllipsisType
         with contextlib.suppress(ModuleNotFoundError, AttributeError):
             self._moto_service_exception = importlib.import_module(
@@ -39,7 +40,8 @@ class ExceptionLogger(ExceptionHandler):
     ):
         if isinstance(exception, (ServiceException, self._moto_service_exception)):
             # We do not want to log an error/stacktrace if the handler is working as expected, but chooses to throw
-            # a service exception
+            # a service exception. It may also throw a Moto ServiceException, which should not be logged either
+            # because ServiceExceptionHandler understands it.
             return
         if self.logger.isEnabledFor(level=logging.DEBUG):
             self.logger.exception("exception during call chain", exc_info=exception)

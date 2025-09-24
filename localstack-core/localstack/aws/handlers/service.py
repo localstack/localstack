@@ -158,6 +158,7 @@ class ServiceExceptionSerializer(ExceptionHandler):
     def __init__(self):
         self.handle_internal_failures = True
 
+        # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
         self._moto_service_exception = types.EllipsisType
         try:
             self._moto_service_exception = importlib.import_module(
@@ -193,9 +194,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
             LOG.info(message)
 
         elif isinstance(exception, self._moto_service_exception):
-            # Parse Moto ServiceException to native ServiceException if Moto is available.
+            # Translate Moto ServiceException to native ServiceException if Moto is available.
             # This allows handler chain to gracefully handles Moto errors when provider handlers invoke Moto methods directly.
-            # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
             error = CommonServiceException(
                 code=exception.code,
                 message=exception.message,
