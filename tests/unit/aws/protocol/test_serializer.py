@@ -765,7 +765,8 @@ def test_json_protocol_error_serialization_with_shaped_default_members_on_root()
 
 
 def test_json_protocol_error_serialization_empty_message():
-    # if the exception message is not passed, an empty message will be passed as an empty string `""`
+    # if the exception message is not passed when instantiating the exception, the message attribute will be set to
+    # an empty string "". This is not serialized if the message field is not a required member
     exception = TransactionCanceledException()
 
     response = _botocore_error_serializer_integration_test(
