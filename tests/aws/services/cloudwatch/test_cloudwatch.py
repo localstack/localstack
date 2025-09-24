@@ -837,7 +837,9 @@ class TestCloudwatch:
     @markers.snapshot.skip_snapshot_verify(
         condition=is_old_provider, paths=["$..MetricAlarms..StateTransitionedTimestamp"]
     )
-    def test_put_metric_alarm_escape_character(self, cleanups, aws_cloudwatch_client, snapshot):
+    def test_put_metric_alarm_escape_character(
+        self, cleanups, aws_cloudwatch_client, snapshot, region_name
+    ):
         snapshot.add_transformers_list(
             [
                 snapshot.transform.key_value("AlarmName"),
@@ -856,7 +858,7 @@ class TestCloudwatch:
             Threshold=1,
             ComparisonOperator="GreaterThanThreshold",
             EvaluationPeriods=1,
-            AlarmActions=["arn:aws:sns:us-east-1:111122223333:MyTopic"],
+            AlarmActions=[f"arn:aws:sns:{region_name}:111122223333:MyTopic"],
         )
         cleanups.append(lambda: aws_cloudwatch_client.delete_alarms(AlarmNames=["cpu-mon"]))
 
