@@ -765,6 +765,7 @@ def test_json_protocol_error_serialization_with_shaped_default_members_on_root()
 
 
 def test_json_protocol_error_serialization_empty_message():
+    # if the exception message is not passed, an empty message will be passed as an empty string `""`
     exception = TransactionCanceledException()
 
     response = _botocore_error_serializer_integration_test(
@@ -776,6 +777,45 @@ def test_json_protocol_error_serialization_empty_message():
         "",
     )
     assert "message" not in response
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_json_protocol_error_serialization_with_empty_non_required_members(empty_value):
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = True
+        status_code: int = 404
+        ResourceType: str | None
+        ResourceId: str | None
+
+    exception = _ResourceNotFoundException("Not Found", ResourceType="")
+
+    response = _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ApprovePlanExecutionStep",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Not Found",
+        protocol="json",
+    )
+    assert "ResourceType" not in response
+
+
+def test_json_protocol_error_serialization_falsy_non_required_members():
+    # if the exception message is not passed, an empty message will be passed as an empty string `""`
+    exception = TransactionCanceledException("Exception message!", CancellationReasons=[])
+
+    response = _botocore_error_serializer_integration_test(
+        "dynamodb",
+        "ExecuteTransaction",
+        exception,
+        "TransactionCanceledException",
+        400,
+        "Exception message!",
+        Message="Exception message!",
+    )
+    assert "CancellationReasons" not in response
 
 
 @pytest.mark.parametrize("empty_value", ("", None))
@@ -801,7 +841,7 @@ def test_json_protocol_error_serialization_with_empty_required_members(empty_val
     if empty_value is not None:
         expected_exception_values["resourceId"] = ""
 
-    _botocore_error_serializer_integration_test(
+    response = _botocore_error_serializer_integration_test(
         "verifiedpermissions",
         "IsAuthorizedWithToken",
         exception,
@@ -810,6 +850,7 @@ def test_json_protocol_error_serialization_with_empty_required_members(empty_val
         "Exception message!",
         **expected_exception_values,
     )
+    assert "" not in response
 
 
 def test_rest_json_protocol_error_serialization_with_additional_members():
@@ -994,6 +1035,29 @@ def test_rpc_v2_cbor_protocol_error_serialization_with_empty_required_members(em
         403,
         "",
     )
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_rpc_v2_cbor_protocol_error_serialization_with_empty_non_required_members(empty_value):
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = True
+        status_code: int = 404
+        ResourceType: str | None
+        ResourceId: str | None
+
+    exception = _ResourceNotFoundException("Not Found", ResourceType="")
+
+    response = _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ApprovePlanExecutionStep",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Not Found",
+        protocol="smithy-rpc-v2-cbor",
+    )
+    assert "ResourceType" not in response
 
 
 def test_json_protocol_content_type_1_0():
