@@ -285,20 +285,16 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                     except Exception as e:
                         # we could not find the parameter however CDK provides the resolved value rather than the
                         # parameter name again so try to look up the value in the previous parameters
-                        found = False
-                        if before_param := before_parameters.get(name):
-                            # the type should be an EngineParameter from before so try this
-                            if isinstance(before_param, dict):
-                                if resolved_value := before_param.get("resolved_value"):
-                                    LOG.debug(
-                                        "Parameter %s could not be resolved, using previous value of %s",
-                                        name,
-                                        resolved_value,
-                                    )
-                                    resolved_parameter["resolved_value"] = resolved_value
-                                    found = True
-
-                        if not found:
+                        if given_value:
+                            LOG.debug(
+                                "Parameter %s could not be resolved, using given value of %s",
+                                name,
+                                given_value,
+                                exc_info=LOG.isEnabledFor(logging.DEBUG)
+                                and config.CFN_VERBOSE_ERRORS,
+                            )
+                            resolved_parameter["resolved_value"] = given_value
+                        else:
                             raise ValidationError(
                                 f"Parameter {name} should either have input value or default value"
                             ) from e
