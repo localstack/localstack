@@ -147,3 +147,19 @@ def test_aws_novalue(deploy_cfn_template, parameter_value):
             assert outputs["BucketName"] != fallback_bucket_name
         case other:
             pytest.fail(f"Test setup error, unexpected parameter value: {other}")
+
+
+@markers.aws.validated
+class TestPseudoParameters:
+    def test_stack_id(self, deploy_cfn_template, snapshot):
+        template_path = os.path.join(
+            os.path.dirname(__file__),
+            "../../../templates/stack-id-validation.yaml",
+        )
+        stack = deploy_cfn_template(template_path=template_path)
+
+        random_component = stack.stack_id.split("-")[-1]
+        snapshot.add_transformer(snapshot.transform.regex(random_component, "<random>"))
+        snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+
+        snapshot.match("parameter-value", stack.outputs["ParameterValue"])

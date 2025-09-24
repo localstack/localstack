@@ -25,7 +25,7 @@ from localstack.aws.api.cloudformation import (
     Parameter as ApiParameter,
 )
 from localstack.services.cloudformation.engine.entities import (
-    StackIdentifier,
+    StackIdentifierV2,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
@@ -88,7 +88,7 @@ class Stack:
         self.parameters = request_payload.get("Parameters", [])
         self.stack_id = arns.cloudformation_stack_arn(
             self.stack_name,
-            stack_id=StackIdentifier(
+            stack_id=StackIdentifierV2(
                 account_id=self.account_id, region=self.region_name, stack_name=self.stack_name
             ).generate(tags=request_payload.get("Tags")),
             account_id=self.account_id,

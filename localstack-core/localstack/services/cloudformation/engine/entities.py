@@ -14,7 +14,13 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
 )
 from localstack.utils.aws import arns
 from localstack.utils.collections import select_attributes
-from localstack.utils.id_generator import ExistingIds, ResourceIdentifier, Tags, generate_short_uid
+from localstack.utils.id_generator import (
+    ExistingIds,
+    ResourceIdentifier,
+    Tags,
+    generate_short_uid,
+    generate_uid,
+)
 from localstack.utils.json import clone_safe
 from localstack.utils.objects import recurse_object
 from localstack.utils.strings import long_uid, short_uid
@@ -73,6 +79,11 @@ class StackIdentifier(ResourceIdentifier):
 
     def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
         return generate_short_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
+
+
+class StackIdentifierV2(StackIdentifier):
+    def generate(self, existing_ids: ExistingIds = None, tags: Tags = None) -> str:
+        return generate_uid(resource_identifier=self, existing_ids=existing_ids, tags=tags)
 
 
 # TODO: remove metadata (flatten into individual fields)
