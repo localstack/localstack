@@ -349,20 +349,20 @@ class TestSsmParameters:
         )
 
     @markers.aws.validated
-    def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
+    def test_resolve_ssm(self, create_parameter, deploy_cfn_template, snapshot):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(parameter_value, "<parameter-value>"))
         create_parameter(Name=parameter_key, Value=parameter_value, Type="String")
 
         result = deploy_cfn_template(
-            parameters={"DynamicParameter": parameter_key},
+            parameters={"DynamicParameter": parameter_key, "ParameterName": parameter_key},
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/resolve_ssm.yaml"
             ),
         )
 
-        topic_name = result.outputs["TopicName"]
-        assert topic_name == parameter_value
+        snapshot.match("results", result.outputs)
 
     @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):

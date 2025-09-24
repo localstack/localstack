@@ -45,7 +45,8 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
     ChangeSetModelVisitor,
 )
 from localstack.services.cloudformation.engine.v2.resolving import (
-    extract_dynamic_reference,
+    REGEX_DYNAMIC_REF,
+    DynamicReference,
     perform_dynamic_reference_lookup,
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
@@ -432,14 +433,21 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _perform_dynamic_replacements(self, value: _T) -> _T:
         if not isinstance(value, str):
             return value
-        if dynamic_ref := extract_dynamic_reference(value):
-            new_value = perform_dynamic_reference_lookup(
-                reference=dynamic_ref,
-                account_id=self._change_set.account_id,
-                region_name=self._change_set.region_name,
-            )
-            if new_value:
-                return new_value
+        if isinstance(value, str) and (dynamic_ref_match := REGEX_DYNAMIC_REF.search(value)):
+            ref = DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2])
+            try:
+                new_value = perform_dynamic_reference_lookup(
+                    reference=ref,
+                    account_id=self._change_set.account_id,
+                    region_name=self._change_set.region_name,
+                )
+                if new_value:
+                    return REGEX_DYNAMIC_REF.sub(new_value, value)
+            except Exception:
+                # we cannot look this reference up right now, however that might be because we
+                # are visiting the arguments to an intrinsic function that will eventually create
+                # a full reference.
+                pass
 
         return value
 
