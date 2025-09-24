@@ -243,7 +243,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
     @staticmethod
     def _resolve_parameters(
-        template: dict | None, parameters: dict | None, account_id: str, region_name: str
+        template: dict | None,
+        parameters: dict | None,
+        account_id: str,
+        region_name: str,
+        before_parameters: dict | None,
     ) -> dict[str, EngineParameter]:
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
@@ -278,10 +282,26 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                         resolved_parameter["resolved_value"] = resolve_ssm_parameter(
                             account_id, region_name, given_value or default_value
                         )
-                    except Exception:
-                        raise ValidationError(
-                            f"Parameter {name} should either have input value or default value"
-                        )
+                    except Exception as e:
+                        # we could not find the parameter however CDK provides the resolved value rather than the
+                        # parameter name again so try to look up the value in the previous parameters
+                        found = False
+                        if before_param := before_parameters.get(name):
+                            # the type should be an EngineParameter from before so try this
+                            if isinstance(before_param, dict):
+                                if resolved_value := before_param.get("resolved_value"):
+                                    LOG.debug(
+                                        "Parameter %s could not be resolved, using previous value of %s",
+                                        name,
+                                        resolved_value,
+                                    )
+                                    resolved_parameter["resolved_value"] = resolved_value
+                                    found = True
+
+                        if not found:
+                            raise ValidationError(
+                                f"Parameter {name} should either have input value or default value"
+                            ) from e
             elif given_value is None and default_value is None:
                 invalid_parameters.append(name)
                 continue
@@ -320,6 +340,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 after_parameters,
                 change_set.stack.account_id,
                 change_set.stack.region_name,
+                before_parameters,
             )
 
         change_set.resolved_parameters = resolved_parameters
