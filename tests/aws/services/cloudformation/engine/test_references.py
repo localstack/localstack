@@ -3,6 +3,7 @@ import os
 
 import pytest
 from botocore.exceptions import ClientError
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.aws.util import is_aws_cloud
 from localstack.testing.pytest import markers
@@ -150,6 +151,7 @@ def test_aws_novalue(deploy_cfn_template, parameter_value):
 
 
 @markers.aws.validated
+@skip_if_legacy_engine()
 class TestPseudoParameters:
     def test_stack_id(self, deploy_cfn_template, snapshot):
         template_path = os.path.join(
