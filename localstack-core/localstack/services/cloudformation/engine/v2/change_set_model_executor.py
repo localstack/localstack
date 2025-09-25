@@ -25,7 +25,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     is_nothing,
 )
 from localstack.services.cloudformation.engine.v2.change_set_model_preproc import (
-    _AWS_URL_SUFFIX,
+    AWS_URL_SUFFIX,
     MOCKED_REFERENCE,
     ChangeSetModelPreproc,
     PreprocEntityDelta,
@@ -47,7 +47,7 @@ LOG = logging.getLogger(__name__)
 EventOperationFromAction = {"Add": "CREATE", "Modify": "UPDATE", "Remove": "DELETE"}
 
 REGEX_OUTPUT_APIGATEWAY = re.compile(
-    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{_AWS_URL_SUFFIX})/?(.*)$"
+    rf"^(https?://.+\.execute-api\.)(?:[^-]+-){{2,3}}\d\.(amazonaws\.com|{AWS_URL_SUFFIX})/?(.*)$"
 )
 
 _T = TypeVar("_T")
