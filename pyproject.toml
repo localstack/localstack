@@ -12,7 +12,6 @@ description = "The core library and runtime of LocalStack"
 license = "Apache-2.0"
 requires-python = ">=3.10"
 dependencies = [
-    "build",
     "click>=7.1",
     "cachetools>=5.0",
     "cryptography",
@@ -26,7 +25,6 @@ dependencies = [
     "rich>=12.3.0",
     "requests>=2.20.0",
     "semver>=2.10",
-    "tailer>=0.4.1",
 ]
 dynamic = ["version"]
 classifiers = [
@@ -56,17 +54,22 @@ base-runtime = [
     "boto3==1.40.51",
     # pinned / updated by ASF update action
     "botocore==1.40.51",
+    # transitive dependency of botocore, added to avoid specific version
     "awscrt>=0.13.14,!=0.27.1",
     "cbor2>=5.5.0",
     "dnspython>=1.16.0",
     "docker>=6.1.1",
     "jsonpatch>=1.24",
+    "jsonpointer>=3.0.0",
+    "jsonschema>=4.25.1",
     "hypercorn>=0.14.4",
     "localstack-twisted>=23.0",
     "openapi-core>=0.19.2",
     "pyopenssl>=23.0.0",
+    "python-dateutil>=2.9.0",
     "readerwriterlock>=1.0.7",
     "requests-aws4auth>=1.0",
+    "typing-extensions>=4.15.0",
     # explicitly set urllib3 to force its usage / ensure compatibility
     "urllib3>=2.0.7",
     "Werkzeug>=3.1.3",
@@ -80,23 +83,25 @@ runtime = [
     # pinned / updated by ASF update action
     "awscli==1.42.51",
     "airspeed-ext>=0.6.3",
-    # version that has a built wheel
-    "kclpy-ext>=3.0.0",
     # antlr4-python3-runtime: exact pin because antlr4 runtime is tightly coupled to the generated parser code
     "antlr4-python3-runtime==4.13.2",
     "apispec>=5.1.1",
     "aws-sam-translator>=1.15.1",
     "crontab>=0.22.6",
     "cryptography>=41.0.5",
+    "jinja2>=3.1.6",
     # allow Python programs full access to Java class libraries. Used for stepfunctions jsonata support
     "jpype1>=1.6.0",
-    "json5>=0.9.11",
     "jsonpath-ng>=1.6.1",
     "jsonpath-rw>=1.4.0",
+    # version that has a built wheel
+    "kclpy-ext>=3.0.0",
     "moto-ext[all]>=5.1.12.post22",
     "opensearch-py>=2.4.1",
+    "pydantic>=2.11.9",
     "pymongo>=4.2.0",
     "pyopenssl>=23.0.0",
+    "responses>=0.25.8",
 ]
 
 # for running tests and coverage analysis
@@ -104,8 +109,8 @@ test = [
     # runtime dependencies are required for running the tests
     "localstack-core[runtime]",
     "coverage[toml]>=5.5",
-    "deepdiff>=6.4.1",
     "httpx[http2]>=0.25",
+    "json5>=0.12.1",
     "pluggy>=1.3.0",
     "pytest>=7.4.2",
     "pytest-split>=0.8.0",
@@ -122,6 +127,7 @@ dev = [
     # test dependencies are required for developing localstack
     "localstack-core[test]",
     "coveralls>=3.3.1",
+    "deptry>=0.13.0",
     "Cython",
     "networkx>=2.8.4",
     "openapi-spec-validator>=0.7.1",
@@ -202,6 +208,34 @@ exclude = [
 "localstack-core/localstack/utils/**" = "py310"  # imported by CLI tests
 "localstack-core/localstack/testing/pytest/**" = "py310" # imported by CLI tests
 
+[tool.deptry]
+known_first_party = [
+    "vosk", # managed by localstack package manager
+    "debugpy", # managed by localstack package manager
+]
+extend_exclude = [
+    "scripts/**", # dependencies not handled by pyproject.toml
+    "localstack-core/localstack/testing/**", # utilities for testing
+    "localstack-core/localstack/aws/mocking.py", # not used at runtime
+    "localstack-core/localstack/aws/scaffold.py", # not used at runtime
+    "localstack-core/localstack/dev/**", # internal dev tooling
+    "localstack-core/localstack/services/stepfunctions/asl/antlr/runtime/**" # generated code
+]
+pep621_dev_dependency_groups = ["dev", "typehint", "test"]
+
+[tool.deptry.package_module_name_map]
+"localstack-core" = ["localstack"]
+
+[tool.deptry.per_rule_ignores]
+DEP001 = [
+    "com", # This appears in jpype code and imports actual java packages like com.fasterxml.jackson.databind
+    "stevedore", # used for CLI plugin debugging - TODO move this debugging CLI into plux
+]
+DEP002 = [
+    "awscli", # necessary for python init scripts - TODO deprecate python init scripts and remove this
+    "awscrt", # defined to ignore a specific version - TODO evaluate and clean up
+]
+
 [tool.ruff.lint]
 ignore = [
     "B007", # TODO Loop control variable x not used within loop body
@@ -219,8 +253,8 @@ ignore = [
 ]
 select = ["B", "C", "E", "F", "I", "W", "T", "B9", "G", "UP"]
 extend-safe-fixes = [
-    "UP006",    # unsafe-fix for py39
-    "UP035",    # unsafe-fix for py39
+    "UP006", # unsafe-fix for py39
+    "UP035", # unsafe-fix for py39
 ]
 
 # The rules below fill fix the code in a way that leaves multiple unused imports.

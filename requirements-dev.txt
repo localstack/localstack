@@ -29,9 +29,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.14.0
+aws-cdk-cloud-assembly-schema==48.15.0
     # via aws-cdk-lib
-aws-cdk-lib==2.219.0
+aws-cdk-lib==2.220.0
     # via localstack-core
 aws-sam-translator==1.101.0
     # via
@@ -41,7 +41,7 @@ aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.42.51
     # via localstack-core
-awscrt==0.28.1
+awscrt==0.28.2
     # via localstack-core
 boto3==1.40.51
     # via
@@ -57,10 +57,6 @@ botocore==1.40.51
     #   localstack-core
     #   moto-ext
     #   s3transfer
-build==1.3.0
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 cachetools==6.2.1
     # via
     #   airspeed-ext
@@ -80,12 +76,13 @@ cffi==2.0.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.40.1
+cfn-lint==1.40.2
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
 click==8.3.0
     # via
+    #   deptry
     #   localstack-core
     #   localstack-core (pyproject.toml)
 colorama==0.4.6
@@ -114,9 +111,9 @@ cython==3.1.4
 decorator==5.2.1
     # via jsonpath-rw
 deepdiff==8.6.1
-    # via
-    #   localstack-core
-    #   localstack-snapshot
+    # via localstack-snapshot
+deptry==0.23.1
+    # via localstack-core (pyproject.toml)
 dill==0.3.6
     # via
     #   localstack-core
@@ -186,7 +183,9 @@ iniconfig==2.1.0
 isodate==0.7.2
     # via openapi-core
 jinja2==3.1.6
-    # via moto-ext
+    # via
+    #   localstack-core
+    #   moto-ext
 jmespath==1.0.1
     # via
     #   boto3
@@ -195,7 +194,7 @@ joserfc==1.4.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.115.0
+jsii==1.116.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -216,10 +215,13 @@ jsonpath-ng==1.7.0
 jsonpath-rw==1.4.0
     # via localstack-core
 jsonpointer==3.0.0
-    # via jsonpatch
+    # via
+    #   jsonpatch
+    #   localstack-core
 jsonschema==4.25.1
     # via
     #   aws-sam-translator
+    #   localstack-core
     #   moto-ext
     #   openapi-core
     #   openapi-schema-validator
@@ -284,10 +286,11 @@ orderly-set==5.5.0
 packaging==25.0
     # via
     #   apispec
-    #   build
+    #   deptry
     #   jpype1
     #   pytest
     #   pytest-rerunfailures
+    #   requirements-parser
 pandoc==2.4
     # via localstack-core (pyproject.toml)
 parse==1.20.2
@@ -337,9 +340,11 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.12.1
-    # via aws-sam-translator
-pydantic-core==2.41.3
+pydantic==2.12.2
+    # via
+    #   aws-sam-translator
+    #   localstack-core
+pydantic-core==2.41.4
     # via pydantic
 pygments==2.19.2
     # via
@@ -355,8 +360,6 @@ pypandoc==1.15
     # via localstack-core (pyproject.toml)
 pyparsing==3.2.5
     # via moto-ext
-pyproject-hooks==1.2.0
-    # via build
 pytest==8.4.2
     # via
     #   localstack-core
@@ -375,6 +378,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   jsii
+    #   localstack-core
     #   moto-ext
     #   opensearch-py
 python-dotenv==1.1.1
@@ -415,8 +419,12 @@ requests==2.32.5
     #   rolo
 requests-aws4auth==1.3.1
     # via localstack-core
+requirements-parser==0.13.0
+    # via deptry
 responses==0.25.8
-    # via moto-ext
+    # via
+    #   localstack-core
+    #   moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==14.2.0
@@ -453,10 +461,6 @@ sniffio==1.3.1
     # via anyio
 sympy==1.14.0
     # via cfn-lint
-tailer==0.4.1
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 typeguard==2.13.3
     # via
     #   aws-cdk-asset-awscli-v1
@@ -471,6 +475,7 @@ typing-extensions==4.15.0
     #   cattrs
     #   cfn-lint
     #   jsii
+    #   localstack-core
     #   localstack-twisted
     #   mypy
     #   pydantic

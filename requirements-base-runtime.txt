@@ -9,7 +9,7 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.28.1
+awscrt==0.28.2
     # via localstack-core (pyproject.toml)
 boto3==1.40.51
     # via localstack-core (pyproject.toml)
@@ -18,8 +18,6 @@ botocore==1.40.51
     #   boto3
     #   localstack-core (pyproject.toml)
     #   s3transfer
-build==1.3.0
-    # via localstack-core (pyproject.toml)
 cachetools==6.2.1
     # via localstack-core (pyproject.toml)
 cbor2==5.7.0
@@ -78,9 +76,12 @@ jmespath==1.0.1
 jsonpatch==1.33
     # via localstack-core (pyproject.toml)
 jsonpointer==3.0.0
-    # via jsonpatch
+    # via
+    #   jsonpatch
+    #   localstack-core (pyproject.toml)
 jsonschema==4.25.1
     # via
+    #   localstack-core (pyproject.toml)
     #   openapi-core
     #   openapi-schema-validator
     #   openapi-spec-validator
@@ -112,8 +113,6 @@ openapi-schema-validator==0.6.3
     #   openapi-spec-validator
 openapi-spec-validator==0.7.2
     # via openapi-core
-packaging==25.0
-    # via build
 parse==1.20.2
     # via openapi-core
 pathable==0.4.4
@@ -134,10 +133,10 @@ pyopenssl==25.3.0
     # via
     #   localstack-core (pyproject.toml)
     #   localstack-twisted
-pyproject-hooks==1.2.0
-    # via build
 python-dateutil==2.9.0.post0
-    # via botocore
+    # via
+    #   botocore
+    #   localstack-core (pyproject.toml)
 python-dotenv==1.1.1
     # via localstack-core (pyproject.toml)
 pyyaml==6.0.3
@@ -178,10 +177,9 @@ six==1.17.0
     # via
     #   python-dateutil
     #   rfc3339-validator
-tailer==0.4.1
-    # via localstack-core (pyproject.toml)
 typing-extensions==4.15.0
     # via
+    #   localstack-core (pyproject.toml)
     #   localstack-twisted
     #   readerwriterlock
 urllib3==2.5.0
