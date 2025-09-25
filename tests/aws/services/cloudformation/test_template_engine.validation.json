@@ -110,15 +110,6 @@
       "total": 61.74
     }
   },
-  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_resolve_ssm": {
-    "last_validated_date": "2025-09-24T22:07:22+00:00",
-    "durations_in_seconds": {
-      "setup": 0.95,
-      "call": 10.67,
-      "teardown": 50.0,
-      "total": 61.62
-    }
-  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_resolve_ssm_missing_parameter": {
     "last_validated_date": "2025-08-06T09:34:07+00:00",
     "durations_in_seconds": {

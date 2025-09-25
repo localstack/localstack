@@ -691,14 +691,5 @@
     "recorded-content": {
       "error-response": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Parameter InputValue should either have input value or default value"
     }
-  },
-  "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_resolve_ssm": {
-    "recorded-date": "24-09-2025, 22:06:32",
-    "recorded-content": {
-      "results": {
-        "ParameterValue": "abc:<parameter-value>",
-        "TopicName": "<parameter-value>"
-      }
-    }
   }
 }

@@ -349,21 +349,20 @@ class TestSsmParameters:
         )
 
     @markers.aws.validated
-    @skip_if_legacy_engine()
-    def test_resolve_ssm(self, create_parameter, deploy_cfn_template, snapshot):
+    def test_resolve_ssm(self, create_parameter, deploy_cfn_template):
         parameter_key = f"param-key-{short_uid()}"
         parameter_value = f"param-value-{short_uid()}"
-        snapshot.add_transformer(snapshot.transform.regex(parameter_value, "<parameter-value>"))
         create_parameter(Name=parameter_key, Value=parameter_value, Type="String")
 
         result = deploy_cfn_template(
-            parameters={"DynamicParameter": parameter_key, "ParameterName": parameter_key},
+            parameters={"DynamicParameter": parameter_key},
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/resolve_ssm.yaml"
             ),
         )
 
-        snapshot.match("results", result.outputs)
+        topic_name = result.outputs["TopicName"]
+        assert topic_name == parameter_value
 
     @markers.aws.validated
     def test_resolve_ssm_with_version(self, create_parameter, deploy_cfn_template, aws_client):
@@ -381,12 +380,8 @@ class TestSsmParameters:
             Name=parameter_key, Overwrite=True, Type="String", Value=parameter_value_v2
         )
 
-        versioned_parameter_reference = f"{parameter_key}:{v1['Version']}"
         result = deploy_cfn_template(
-            parameters={
-                "DynamicParameter": versioned_parameter_reference,
-                "ParameterName": versioned_parameter_reference,
-            },
+            parameters={"DynamicParameter": f"{parameter_key}:{v1['Version']}"},
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/resolve_ssm.yaml"
             ),
@@ -520,7 +515,7 @@ class TestSecretsManagerParameters:
         create_secret(Name=parameter_key, SecretString=parameter_value)
 
         result = deploy_cfn_template(
-            parameters={"DynamicParameter": parameter_key},
+            parameters={"DynamicParameter": f"{parameter_key}"},
             template_path=os.path.join(
                 os.path.dirname(__file__),
                 "../../templates",

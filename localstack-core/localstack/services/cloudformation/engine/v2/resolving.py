@@ -10,9 +10,7 @@ from localstack.aws.connect import connect_to
 
 LOG = logging.getLogger(__name__)
 
-# CloudFormation allows using dynamic references in `Fn::Sub` expressions, so we must make sure
-# we don't capture the parameter usage by excluding ${} characters
-REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):([^${}]+)}}")
+REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):(.+)}}")
 
 
 @dataclass
@@ -23,7 +21,7 @@ class DynamicReference:
 
 def extract_dynamic_reference(value: Any) -> DynamicReference | None:
     if isinstance(value, str):
-        if dynamic_ref_match := REGEX_DYNAMIC_REF.search(value):
+        if dynamic_ref_match := REGEX_DYNAMIC_REF.match(value):
             return DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2])
     return None
 
