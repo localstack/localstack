@@ -92,9 +92,9 @@ def perform_dynamic_reference_lookup(
                 raise RuntimeError(
                     f"JSON value for {reference.service_name}.{reference.reference_key} not present"
                 )
-            return json_secret[json_key]
+            return str(json_secret[json_key])
         else:
-            return secret_value
+            return str(secret_value)
 
     LOG.warning(
         "Unsupported service for dynamic parameter: service_name=%s", reference.service_name
