@@ -381,8 +381,12 @@ class TestSsmParameters:
             Name=parameter_key, Overwrite=True, Type="String", Value=parameter_value_v2
         )
 
+        versioned_parameter_reference = f"{parameter_key}:{v1['Version']}"
         result = deploy_cfn_template(
-            parameters={"DynamicParameter": f"{parameter_key}:{v1['Version']}"},
+            parameters={
+                "DynamicParameter": versioned_parameter_reference,
+                "ParameterName": versioned_parameter_reference,
+            },
             template_path=os.path.join(
                 os.path.dirname(__file__), "../../templates/resolve_ssm.yaml"
             ),
