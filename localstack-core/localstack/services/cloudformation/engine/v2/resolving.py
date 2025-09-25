@@ -2,6 +2,7 @@ import json
 import logging
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from botocore.exceptions import ClientError
 
@@ -18,6 +19,13 @@ REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):([^${}]+)}}")
 class DynamicReference:
     service_name: str
     reference_key: str
+
+
+def extract_dynamic_reference(value: Any) -> DynamicReference | None:
+    if isinstance(value, str):
+        if dynamic_ref_match := REGEX_DYNAMIC_REF.search(value):
+            return DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2])
+    return None
 
 
 def perform_dynamic_reference_lookup(

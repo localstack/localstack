@@ -46,7 +46,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
 )
 from localstack.services.cloudformation.engine.v2.resolving import (
     REGEX_DYNAMIC_REF,
-    DynamicReference,
+    extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
 from localstack.services.cloudformation.engine.validations import ValidationError
@@ -433,11 +433,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _perform_dynamic_replacements(self, value: _T) -> _T:
         if not isinstance(value, str):
             return value
-        if isinstance(value, str) and (dynamic_ref_match := REGEX_DYNAMIC_REF.search(value)):
-            ref = DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2])
+
+        if dynamic_ref := extract_dynamic_reference(value):
             try:
                 new_value = perform_dynamic_reference_lookup(
-                    reference=ref,
+                    reference=dynamic_ref,
                     account_id=self._change_set.account_id,
                     region_name=self._change_set.region_name,
                 )
