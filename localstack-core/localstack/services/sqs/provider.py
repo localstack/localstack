@@ -775,7 +775,16 @@ class SqsDeveloperEndpoints:
         if isinstance(queue, StandardQueue):
             sqs_messages.extend(queue.visible.queue)
         elif isinstance(queue, FifoQueue):
-            for message_group in queue.message_groups.values():
+            if show_invisible:
+                for inflight_group in queue.inflight_groups:
+                    # messages that have been received are held in ``queue.inflight``, even for FIFO queues. however,
+                    # for fifo queues, messages that are in the same message group as messages that have been
+                    # received, are also considered invisible, and are held here in ``inflight_group.messages``.
+                    for sqs_message in inflight_group.messages:
+                        sqs_messages.append(sqs_message)
+
+            for message_group in queue.message_group_queue.queue:
+                # these are all messages of message groups that are visible
                 for sqs_message in message_group.messages:
                     sqs_messages.append(sqs_message)
         else:
