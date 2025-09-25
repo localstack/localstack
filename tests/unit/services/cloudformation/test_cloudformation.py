@@ -1,9 +1,12 @@
+import pytest
+
 from localstack.services.cloudformation.api_utils import is_local_service_url
 from localstack.services.cloudformation.deployment_utils import (
     PLACEHOLDER_AWS_NO_VALUE,
     remove_none_values,
 )
 from localstack.services.cloudformation.engine.template_deployer import order_resources
+from localstack.services.cloudformation.engine.v2.resolving import REGEX_DYNAMIC_REF
 
 
 def test_is_local_service_url():
@@ -60,3 +63,28 @@ def test_order_resources():
     )
 
     assert list(sorted_resources.keys()) == ["A", "B"]
+
+
+class TestDynamicResolving:
+    @pytest.mark.parametrize(
+        "value,matches",
+        [
+            pytest.param("{{resolve:ssm:abc123}}", True, id="ssm-basic"),
+            pytest.param("abc:{{resolve:ssm:abc123}}:foo", True, id="ssm-with-surrounding"),
+            pytest.param("{{resolve:ssm:${ParameterName}}}", False, id="ssm-in-sub"),
+            pytest.param("{{resolve:secretsmanager:foo}}", True, id="secrets-basic"),
+            pytest.param(
+                "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:000000000000:secret:foo:SecretString:}}",
+                True,
+                id="secrets-partial",
+            ),
+            pytest.param(
+                "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:000000000000:secret:foo:SecretString:::}}",
+                True,
+                id="secrets-full",
+            ),
+            pytest.param("{{resolve:secretsmanager:${SecretName}}}", False, id="secrets-in-sub"),
+        ],
+    )
+    def test_dynamic_ref_regex_matches(self, value, matches):
+        assert bool(REGEX_DYNAMIC_REF.search(value)) == matches

@@ -2,14 +2,25 @@ Parameters:
   DynamicParameter:
     Type: String
 
+  ParameterName:
+    Type: String
+
 Resources:
   topic69831491:
     Type: AWS::SNS::Topic
     Properties:
-      TopicName: !Join [ "", [ "{{resolve:ssm:", !Ref DynamicParameter, "}}"  ] ]
+      TopicName: !Join [ "", [ "{{resolve:ssm:", !Ref DynamicParameter, "}}" ] ]
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Sub "abc:{{resolve:ssm:${ParameterName}}}"
 Outputs:
   TopicName:
     Value:
       Fn::GetAtt:
         - topic69831491
         - TopicName
+
+  ParameterValue:
+    Value: !GetAtt MyParameter.Value
