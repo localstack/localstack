@@ -435,19 +435,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return value
 
         if dynamic_ref := extract_dynamic_reference(value):
-            try:
-                new_value = perform_dynamic_reference_lookup(
-                    reference=dynamic_ref,
-                    account_id=self._change_set.account_id,
-                    region_name=self._change_set.region_name,
-                )
-                if new_value:
-                    return REGEX_DYNAMIC_REF.sub(new_value, value)
-            except Exception:
-                # we cannot look this reference up right now, however that might be because we
-                # are visiting the arguments to an intrinsic function that will eventually create
-                # a full reference.
-                pass
+            new_value = perform_dynamic_reference_lookup(
+                reference=dynamic_ref,
+                account_id=self._change_set.account_id,
+                region_name=self._change_set.region_name,
+            )
+            if new_value:
+                return REGEX_DYNAMIC_REF.sub(new_value, value)
 
         return value
 
