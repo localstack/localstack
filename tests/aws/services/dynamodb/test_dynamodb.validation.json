@@ -30,12 +30,12 @@
     "last_validated_date": "2024-01-10T12:59:50+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_describe_contributor_insights": {
-    "last_validated_date": "2025-09-24T15:40:22+00:00",
+    "last_validated_date": "2025-09-25T23:34:13+00:00",
     "durations_in_seconds": {
-      "setup": 0.96,
-      "call": 8.99,
+      "setup": 0.91,
+      "call": 7.47,
       "teardown": 0.43,
-      "total": 10.38
+      "total": 8.81
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_statement_empy_parameter": {

@@ -63,6 +63,7 @@ from localstack.aws.api.dynamodb import (
     GetItemOutput,
     GlobalTableAlreadyExistsException,
     GlobalTableNotFoundException,
+    IndexName,
     KinesisStreamingDestinationOutput,
     ListGlobalTablesOutput,
     ListTablesInputLimit,
@@ -964,11 +965,12 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     def describe_contributor_insights(
         self,
         context: RequestContext,
-        table_name: TableName,
+        table_name: TableArn,
+        index_name: IndexName | None = None,
         **kwargs,
     ) -> DescribeContributorInsightsOutput:
         return DescribeContributorInsightsOutput(
-            TableName=table_name, ContributorInsightsStatus="DISABLED"
+            TableName=table_name, IndexName=index_name, ContributorInsightsStatus="DISABLED"
         )
 
     #
