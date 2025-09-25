@@ -1,0 +1,22 @@
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Join
+        - "-"
+        - - !Ref AWS::StackName
+          - "s3logs"
+          - Fn::Select:
+              - 4
+              - Fn::Split:
+                  - '-'
+                  - Fn::Select:
+                      - 2
+                      - Fn::Split:
+                          - /
+                          - Ref: AWS::StackId
+
+Outputs:
+  ParameterValue:
+    Value: !GetAtt MyParameter.Value

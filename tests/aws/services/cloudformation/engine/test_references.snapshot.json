@@ -80,5 +80,12 @@
         "Version": 1
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_references.py::TestPseudoParameters::test_stack_id": {
+    "recorded-date": "24-09-2025, 09:53:55",
+    "recorded-content": {
+      "parameter-value": "<stack-name>-s3logs-<random>",
+      "stack-id": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name>/5dd694c0-992c-11f0-9d8f-<random>"
+    }
   }
 }
