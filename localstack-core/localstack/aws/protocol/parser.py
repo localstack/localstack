@@ -359,13 +359,11 @@ class RequestParser(abc.ABC):
 
     @staticmethod
     def _timestamp_unixtimestamp(timestamp_string: str) -> datetime.datetime:
-        dt = datetime.datetime.fromtimestamp(int(timestamp_string), tz=datetime.UTC)
-        return dt.replace(tzinfo=None)
+        return datetime.datetime.fromtimestamp(int(timestamp_string), tz=datetime.UTC)
 
     @staticmethod
     def _timestamp_unixtimestampmillis(timestamp_string: str) -> datetime.datetime:
-        dt = datetime.datetime.fromtimestamp(float(timestamp_string) / 1000, tz=datetime.UTC)
-        return dt.replace(tzinfo=None)
+        return datetime.datetime.fromtimestamp(float(timestamp_string) / 1000, tz=datetime.UTC)
 
     @staticmethod
     def _timestamp_rfc822(datetime_string: str) -> datetime.datetime:
@@ -1168,6 +1166,25 @@ class BaseCBORRequestParser(RequestParser, ABC):
     def _parse_blob(self, _, __, node: bytes, ___) -> bytes:
         return node
 
+    @_text_content
+    def _parse_timestamp(
+        self, _, shape: Shape, node: datetime.datetime | str, ___
+    ) -> datetime.datetime:
+        if isinstance(node, datetime.datetime):
+            return node
+        return super()._parse_timestamp(_, shape, node, ___)
+
+    @_text_content
+    def _parse_boolean(self, _, __, node: str | bool, ___) -> bool:
+        if isinstance(node, str):
+            value = node.lower()
+            if value == "true":
+                return True
+            if value == "false":
+                return False
+            raise ValueError(f"cannot parse boolean value {node}")
+        return node
+
     # This helper method is intended for use when parsing indefinite length items.
     # It does nothing if the next byte is not the break code.  If the next byte is
     # the break code, it advances past that byte and returns True so the calling
@@ -1266,8 +1283,6 @@ class BaseRpcV2RequestParser(RequestParser):
                 "RPC v2 does not accept 'X-Amz-Target' or 'X-Amzn-Target'. "
                 "Such requests are rejected for security reasons."
             )
-        # TODO: add this special path handling to the ServiceNameParser to allow RPC v2 service to be properly extracted
-        #  path = '/service/{service_name}/operation/{operation_name}'
         # The Smithy RPCv2 CBOR protocol will only use the last four segments of the URL when routing requests.
         rpc_v2_params = request.path.lstrip("/").split("/")
         if len(rpc_v2_params) < 4 or not (
@@ -1580,8 +1595,6 @@ def create_parser(service: ServiceModel, protocol: ProtocolName | None = None) -
         # this is not an "official" protocol defined from the spec, but is derived from ``json``
     }
 
-    # TODO: do we want to add a check if the user-defined protocol is part of the available ones in the ServiceModel?
-    #  or should it be checked once
     service_protocol = protocol or service.protocol
 
     # Try to select a service- and protocol-specific parser implementation

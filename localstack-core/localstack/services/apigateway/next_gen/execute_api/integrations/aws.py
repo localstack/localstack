@@ -211,6 +211,9 @@ class RestApiAwsIntegration(RestApiIntegration):
             action = parsed_uri["path"]
 
             if target := self.get_action_service_target(service_name, action):
+                # TODO: properly implement the auto-`Content-Type` headers depending on the service protocol
+                #  e.g. `x-amz-json-1.0` for DynamoDB
+                #  this is needed to properly support multi-protocol
                 headers["X-Amz-Target"] = target
 
             query_params["Action"] = action

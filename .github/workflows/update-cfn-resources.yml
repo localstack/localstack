@@ -1,0 +1,60 @@
+name: Update CloudFormation Resources
+
+on:
+  schedule:
+    - cron: '0 6 * * TUE'
+  workflow_dispatch:
+
+jobs:
+  update-cfn-resources:
+    name: Update CloudFormation resources metadata
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Determine boto dependency pins
+        id: boto_versions
+        run: |
+          BOTO3_VERSION=$(grep '^boto3==' requirements-base-runtime.txt | head -n1 | sed 's/^boto3==//')
+          BOTOCORE_VERSION=$(grep '^botocore==' requirements-base-runtime.txt | head -n1 | sed 's/^botocore==//')
+          echo "boto3_version=$BOTO3_VERSION" >> "$GITHUB_OUTPUT"
+          echo "botocore_version=$BOTOCORE_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Run CloudFormation resource updater
+        id: run-script
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: us-east-1
+        run: |
+          uv run --no-project --no-config \
+            --with boto3==${{ steps.boto_versions.outputs.boto3_version }} \
+            --with botocore==${{ steps.boto_versions.outputs.botocore_version }} \
+            python scripts/update_cfn_resources.py --resource-file localstack-core/localstack/services/cloudformation/resources.py
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          title: "Update CloudFormation resource availability"
+          body: "Automated update of CloudFormation resource metadata."
+          branch: "bot/update-cfn-resources"
+          commit-message: "chore: update CloudFormation resource metadata"
+          author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
+          committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
+          labels: "area: cloudformation, semver: patch, docs: skip, notes: skip"
+          token: ${{ secrets.PRO_ACCESS_TOKEN }}
+          signoff: true

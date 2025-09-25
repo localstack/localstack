@@ -1613,32 +1613,44 @@ class TestS3BucketObjectTagging:
         tag_set_2 = {"TagSet": [{"Key": "tag3", "Value": "tag3"}]}
 
         # test without specifying a VersionId
-        put_bucket_tags = aws_client.s3.put_object_tagging(
+        put_object_tags = aws_client.s3.put_object_tagging(
             Bucket=s3_bucket, Key=object_key, Tagging=tag_set_2
         )
-        snapshot.match("put-object-tags-current-version", put_bucket_tags)
-        assert put_bucket_tags["VersionId"] == version_id_2
+        snapshot.match("put-object-tags-current-version", put_object_tags)
+        assert put_object_tags["VersionId"] == version_id_2
 
-        get_bucket_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
-        snapshot.match("get-object-tags-current-version", get_bucket_tags)
+        put_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-current-version", put_object_tags)
 
-        get_bucket_tags = aws_client.s3.get_object_tagging(
+        put_object_tags = aws_client.s3.get_object_tagging(
             Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
         )
-        snapshot.match("get-object-tags-previous-version", get_bucket_tags)
+        snapshot.match("get-object-tags-previous-version", put_object_tags)
 
         tag_set_2 = {"TagSet": [{"Key": "tag1", "Value": "tag1"}]}
         # test by specifying a VersionId to Version1
-        put_bucket_tags = aws_client.s3.put_object_tagging(
+        put_object_tags = aws_client.s3.put_object_tagging(
             Bucket=s3_bucket, Key=object_key, VersionId=version_id_1, Tagging=tag_set_2
         )
-        snapshot.match("put-object-tags-previous-version", put_bucket_tags)
-        assert put_bucket_tags["VersionId"] == version_id_1
+        snapshot.match("put-object-tags-previous-version", put_object_tags)
+        assert put_object_tags["VersionId"] == version_id_1
 
-        get_bucket_tags = aws_client.s3.get_object_tagging(
+        get_object_tags = aws_client.s3.get_object_tagging(
             Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
         )
-        snapshot.match("get-object-tags-previous-version-again", get_bucket_tags)
+        snapshot.match("get-object-tags-previous-version-again", get_object_tags)
+
+        # delete tagging on current object
+        aws_client.s3.delete_object_tagging(Bucket=s3_bucket, Key=object_key)
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-deleted-current", get_object_tags)
+
+        # delete object tagging on previous version too
+        aws_client.s3.delete_object_tagging(
+            Bucket=s3_bucket, Key=object_key, VersionId=version_id_1
+        )
+        get_object_tags = aws_client.s3.get_object_tagging(Bucket=s3_bucket, Key=object_key)
+        snapshot.match("get-object-tags-previous-version-deleted", get_object_tags)
 
         # Put a DeleteMarker on top of the stack
         delete_current = aws_client.s3.delete_object(Bucket=s3_bucket, Key=object_key)

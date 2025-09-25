@@ -6,9 +6,11 @@ from werkzeug.exceptions import RequestEntityTooLarge
 from werkzeug.http import parse_dict_header
 
 from localstack.aws.spec import (
+    ProtocolName,
     ServiceCatalog,
     ServiceModelIdentifier,
     get_service_catalog,
+    is_protocol_in_service_model_identifier,
 )
 from localstack.http import Request
 from localstack.services.s3.utils import uses_host_addressing
@@ -16,6 +18,23 @@ from localstack.services.sqs.utils import is_sqs_queue_url
 from localstack.utils.strings import to_bytes
 
 LOG = logging.getLogger(__name__)
+
+_PROTOCOL_DETECTION_PRIORITY: list[ProtocolName] = [
+    "smithy-rpc-v2-cbor",
+    "json",
+    "query",
+    "ec2",
+    "rest-json",
+    "rest-xml",
+]
+
+
+class ProtocolError(Exception):
+    """
+    Error which is thrown if we cannot detect the protocol for the request.
+    """
+
+    pass
 
 
 class _ServiceIndicators(NamedTuple):
@@ -43,6 +62,7 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
     """Extracts all different fields that might indicate which service a request is targeting."""
     x_amz_target = request.headers.get("x-amz-target")
     authorization = request.headers.get("authorization")
+    is_rpc_v2 = "rpc-v2-cbor" in request.headers.get("Smithy-Protocol", "")
 
     signing_name = None
     if authorization:
@@ -55,7 +75,15 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
         except (ValueError, KeyError):
             LOG.debug("auth header could not be parsed for service routing: %s", authorization)
             pass
-    if x_amz_target:
+    if is_rpc_v2:
+        # https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html#requests
+        rpc_v2_params = request.path.lstrip("/").split("/")
+        if len(rpc_v2_params) >= 4:
+            *_, service_shape_name, __, operation = rpc_v2_params
+            target_prefix = service_shape_name.split("#")[-1]
+        else:
+            target_prefix, operation = None, None
+    elif x_amz_target:
         if "." in x_amz_target:
             target_prefix, operation = x_amz_target.split(".", 1)
         else:
@@ -65,6 +93,48 @@ def _extract_service_indicators(request: Request) -> _ServiceIndicators:
         target_prefix, operation = None, None
 
     return _ServiceIndicators(signing_name, target_prefix, operation, request.host, request.path)
+
+
+def _matches_protocol(request: Request, protocol: ProtocolName) -> bool:
+    headers = request.headers
+    mimetype = request.mimetype.lower()
+    match protocol:
+        case "smithy-rpc-v2-cbor":
+            # Every request for the rpcv2Cbor protocol MUST contain a `Smithy-Protocol` header with the value
+            # of `rpc-v2-cbor`.
+            # https://smithy.io/2.0/additional-specs/protocols/smithy-rpc-v2.html
+            return headers.get("Smithy-Protocol", "") == "rpc-v2-cbor"
+        case "json":
+            return mimetype.startswith("application/x-amz-json")
+        case "query" | "ec2":
+            # https://smithy.io/2.0/aws/protocols/aws-query-protocol.html#request-serialization
+            return (
+                mimetype.startswith("application/x-www-form-urlencoded") or "Action" in request.args
+            )
+        case "rest-xml" | "rest-json":
+            # `rest-json` and `rest-xml` can accept any kind of Content-Type, and it can be configured on the operation
+            # level.
+            # https://smithy.io/2.0/aws/protocols/aws-restjson1-protocol.html
+            return True
+        case _:
+            return False
+
+
+def match_available_protocols(
+    request: Request, available_protocols: list[ProtocolName]
+) -> ProtocolName | None:
+    """
+    Tries to match the current request and determine the protocol used amongst the available protocols given.
+    We use a priority order to try to determine the protocol, as some protocols are more permissive that others.
+    :param request: the incoming request
+    :param available_protocols: the available protocols of the Service the request is directed to
+    :return: the protocol matched, if any
+    """
+    for protocol in _PROTOCOL_DETECTION_PRIORITY:
+        if protocol in available_protocols and _matches_protocol(request, protocol):
+            return protocol
+
+    return None
 
 
 signing_name_path_prefix_rules = {
@@ -248,10 +318,10 @@ def resolve_conflicts(
         # The `application/x-amz-json-1.0` header is mandatory for requests targeting SQS with the `json` protocol. We
         # can safely route them to the `sqs` JSON parser/serializer. If not present, route the request to the
         # sqs-query protocol.
-        content_type = request.headers.get("Content-Type")
+        protocol = match_available_protocols(request, available_protocols=["json", "query"])
         return (
             ServiceModelIdentifier("sqs")
-            if content_type == "application/x-amz-json-1.0"
+            if protocol == "json"
             else ServiceModelIdentifier("sqs", "query")
         )
 
@@ -266,7 +336,25 @@ def determine_aws_service_model_for_data_plane(
     custom_host_match = custom_host_addressing_rules(request.host)
     if custom_host_match:
         services = services or get_service_catalog()
-        return services.get(*custom_host_match)
+        return services.get(custom_host_match.name, custom_host_match.protocol)
+
+
+def determine_aws_protocol(request: Request, service_model: ServiceModel) -> ProtocolName:
+    if not (protocols := service_model.metadata.get("protocols")):
+        # if the service does not define multiple protocols, return the `protocol` defined for the service
+        return service_model.protocol
+
+    if len(protocols) == 1:
+        return protocols[0]
+
+    if protocol := match_available_protocols(request, available_protocols=protocols):
+        return protocol
+
+    raise ProtocolError(
+        f"Could not determine the protocol for the request: "
+        f"{request.method} {request.path} for the service '{service_model.service_name}' "
+        f"(available protocols: {protocols})"
+    )
 
 
 def determine_aws_service_model(
@@ -287,12 +375,13 @@ def determine_aws_service_model(
         signing_name_candidates = services.by_signing_name(signing_name)
         if len(signing_name_candidates) == 1:
             # a unique signing-name -> service name mapping is the case for ~75% of service operations
-            return services.get(*signing_name_candidates[0])
+            candidate = signing_name_candidates[0]
+            return services.get(candidate.name, candidate.protocol)
 
         # try to find a match with the custom signing name rules
         custom_match = custom_signing_name_rules(signing_name, path)
         if custom_match:
-            return services.get(*custom_match)
+            return services.get(custom_match.name, custom_match.protocol)
 
         # still ambiguous - add the services to the list of candidates
         candidates.update(signing_name_candidates)
@@ -302,33 +391,34 @@ def determine_aws_service_model(
         target_candidates = services.by_target_prefix(target_prefix)
         if len(target_candidates) == 1:
             # a unique target prefix
-            return services.get(*target_candidates[0])
+            candidate = target_candidates[0]
+            return services.get(candidate.name, candidate.protocol)
 
         # still ambiguous - add the services to the list of candidates
         candidates.update(target_candidates)
 
         # exclude services where the operation is not contained in the service spec
         for service_identifier in list(candidates):
-            service = services.get(*service_identifier)
+            service = services.get(service_identifier.name, service_identifier.protocol)
             if operation not in service.operation_names:
                 candidates.remove(service_identifier)
     else:
         # exclude services which have a target prefix (the current request does not have one)
         for service_identifier in list(candidates):
-            service = services.get(*service_identifier)
+            service = services.get(service_identifier.name, service_identifier.protocol)
             if service.metadata.get("targetPrefix") is not None:
                 candidates.remove(service_identifier)
 
     if len(candidates) == 1:
         service_identifier = candidates.pop()
-        return services.get(*service_identifier)
+        return services.get(service_identifier.name, service_identifier.protocol)
 
     # 3. check the path if it is set and not a trivial root path
     if path and path != "/":
         # try to find a match with the custom path rules
         custom_path_match = custom_path_addressing_rules(path)
         if custom_path_match:
-            return services.get(*custom_path_match)
+            return services.get(custom_path_match.name, custom_path_match.protocol)
 
     # 4. check the host (custom host addressing rules)
     if host:
@@ -337,12 +427,14 @@ def determine_aws_service_model(
             # this prevents a virtual host addressed bucket to be wrongly recognized
             if host.startswith(f"{prefix}.") and ".s3." not in host:
                 if len(services_per_prefix) == 1:
-                    return services.get(*services_per_prefix[0])
+                    candidate = services_per_prefix[0]
+                    return services.get(candidate.name, candidate.protocol)
                 candidates.update(services_per_prefix)
 
         custom_host_match = custom_host_addressing_rules(host)
         if custom_host_match:
-            return services.get(*custom_host_match)
+            candidate = custom_host_match[0]
+            return services.get(candidate.name, candidate.protocol)
 
     if request.shallow:
         # from here on we would need access to the request body, which doesn't exist for shallow requests like
@@ -357,21 +449,28 @@ def determine_aws_service_model(
             query_candidates = [
                 service
                 for service in services.by_operation(values["Action"])
-                if service.protocol in ("ec2", "query")
+                if any(
+                    is_protocol_in_service_model_identifier(protocol, service)
+                    for protocol in ("ec2", "query")
+                )
             ]
 
             if len(query_candidates) == 1:
-                return services.get(*query_candidates[0])
+                candidate = query_candidates[0]
+                return services.get(candidate.name, candidate.protocol)
 
             if "Version" in values:
                 for service_identifier in list(query_candidates):
-                    service_model = services.get(*service_identifier)
+                    service_model = services.get(
+                        service_identifier.name, service_identifier.protocol
+                    )
                     if values["Version"] != service_model.api_version:
                         # the combination of Version and Action is not unique, add matches to the candidates
                         query_candidates.remove(service_identifier)
 
             if len(query_candidates) == 1:
-                return services.get(*query_candidates[0])
+                candidate = query_candidates[0]
+                return services.get(candidate.name, candidate.protocol)
 
             candidates.update(query_candidates)
 
@@ -387,15 +486,16 @@ def determine_aws_service_model(
     # 6. resolve service spec conflicts
     resolved_conflict = resolve_conflicts(candidates, request)
     if resolved_conflict:
-        return services.get(*resolved_conflict)
+        return services.get(resolved_conflict.name, resolved_conflict.protocol)
 
     # 7. check the legacy S3 rules in the end
     legacy_match = legacy_s3_rules(request)
     if legacy_match:
-        return services.get(*legacy_match)
+        return services.get(legacy_match.name, legacy_match.protocol)
 
     if signing_name:
         return services.get(name=signing_name)
     if candidates:
-        return services.get(*candidates.pop())
+        candidate = candidates.pop()
+        return services.get(candidate.name, candidate.protocol)
     return None

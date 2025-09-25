@@ -10,7 +10,9 @@ from localstack.aws.connect import connect_to
 
 LOG = logging.getLogger(__name__)
 
-REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):(.+)}}")
+# CloudFormation allows using dynamic references in `Fn::Sub` expressions, so we must make sure
+# we don't capture the parameter usage by excluding ${} characters
+REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):([^${}]+)}}")
 
 
 @dataclass
@@ -21,7 +23,7 @@ class DynamicReference:
 
 def extract_dynamic_reference(value: Any) -> DynamicReference | None:
     if isinstance(value, str):
-        if dynamic_ref_match := REGEX_DYNAMIC_REF.match(value):
+        if dynamic_ref_match := REGEX_DYNAMIC_REF.search(value):
             return DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2])
     return None
 
@@ -90,9 +92,9 @@ def perform_dynamic_reference_lookup(
                 raise RuntimeError(
                     f"JSON value for {reference.service_name}.{reference.reference_key} not present"
                 )
-            return json_secret[json_key]
+            return str(json_secret[json_key])
         else:
-            return secret_value
+            return str(secret_value)
 
     LOG.warning(
         "Unsupported service for dynamic parameter: service_name=%s", reference.service_name

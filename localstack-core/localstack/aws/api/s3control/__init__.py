@@ -65,6 +65,7 @@ MultiRegionAccessPointClientToken = str
 MultiRegionAccessPointId = str
 MultiRegionAccessPointName = str
 NoSuchPublicAccessBlockConfigurationMessage = str
+NonEmptyKmsKeyArnString = str
 NonEmptyMaxLength1024String = str
 NonEmptyMaxLength2048String = str
 NonEmptyMaxLength256String = str
@@ -902,6 +903,36 @@ class CreateBucketResult(TypedDict, total=False):
     BucketArn: Optional[S3RegionalBucketArn]
 
 
+class NotSSEFilter(TypedDict, total=False):
+    pass
+
+
+class SSECFilter(TypedDict, total=False):
+    pass
+
+
+class DSSEKMSFilter(TypedDict, total=False):
+    KmsKeyArn: Optional[NonEmptyKmsKeyArnString]
+
+
+class SSEKMSFilter(TypedDict, total=False):
+    KmsKeyArn: Optional[NonEmptyKmsKeyArnString]
+    BucketKeyEnabled: Optional[Boolean]
+
+
+class SSES3Filter(TypedDict, total=False):
+    pass
+
+
+class ObjectEncryptionFilter(TypedDict, total=False):
+    SSES3: Optional[SSES3Filter]
+    SSEKMS: Optional[SSEKMSFilter]
+    DSSEKMS: Optional[DSSEKMSFilter]
+    SSEC: Optional[SSECFilter]
+    NOTSSE: Optional[NotSSEFilter]
+
+
+ObjectEncryptionFilterList = List[ObjectEncryptionFilter]
 StorageClassList = List[S3StorageClass]
 ObjectSizeLessThanBytes = int
 ObjectSizeGreaterThanBytes = int
@@ -927,6 +958,7 @@ class JobManifestGeneratorFilter(TypedDict, total=False):
     ObjectSizeGreaterThanBytes: Optional[ObjectSizeGreaterThanBytes]
     ObjectSizeLessThanBytes: Optional[ObjectSizeLessThanBytes]
     MatchAnyStorageClass: Optional[StorageClassList]
+    MatchAnyObjectEncryption: Optional[ObjectEncryptionFilterList]
 
 
 class SSEKMSEncryption(TypedDict, total=False):

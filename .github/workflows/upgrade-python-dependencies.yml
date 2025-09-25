@@ -12,4 +12,4 @@ jobs:
     secrets:
       github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
     with:
-      labels: "area: dependencies, semver: patch, skip-docs"
+      labels: "area: dependencies, semver: patch, docs: skip, notes: skip"

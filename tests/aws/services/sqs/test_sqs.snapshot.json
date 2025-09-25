@@ -3757,7 +3757,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs]": {
-    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-date": "22-09-2025, 16:21:08",
     "recorded-content": {
       "send_empty_message": {
         "Error": {
@@ -3774,7 +3774,7 @@
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_send_empty_message[sqs_query]": {
-    "recorded-date": "05-03-2025, 19:25:09",
+    "recorded-date": "22-09-2025, 16:21:09",
     "recorded-content": {
       "send_empty_message": {
         "Error": {

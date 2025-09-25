@@ -235,9 +235,9 @@
 /tests/unit/services/sqs/ @thrau @baermat @gregfurman
 
 # ssm
-/localstack-core/localstack/aws/api/ssm/ @dominikschubert
-/localstack-core/localstack/services/ssm/ @dominikschubert
-/tests/aws/services/ssm/ @dominikschubert
+/localstack-core/localstack/aws/api/ssm/ @viren-nadkarni @dominikschubert
+/localstack-core/localstack/services/ssm/ @viren-nadkarni @dominikschubert
+/tests/aws/services/ssm/ @viren-nadkarni @dominikschubert
 
 # stepfunctions
 /localstack-core/localstack/aws/api/stepfunctions/ @dominikschubert @joe4dev @gregfurman

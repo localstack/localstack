@@ -45,6 +45,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_visitor impor
     ChangeSetModelVisitor,
 )
 from localstack.services.cloudformation.engine.v2.resolving import (
+    REGEX_DYNAMIC_REF,
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
@@ -432,6 +433,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def _perform_dynamic_replacements(self, value: _T) -> _T:
         if not isinstance(value, str):
             return value
+
         if dynamic_ref := extract_dynamic_reference(value):
             new_value = perform_dynamic_reference_lookup(
                 reference=dynamic_ref,
@@ -439,7 +441,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 region_name=self._change_set.region_name,
             )
             if new_value:
-                return new_value
+                return REGEX_DYNAMIC_REF.sub(new_value, value)
 
         return value
 

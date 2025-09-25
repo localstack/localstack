@@ -55,7 +55,7 @@ def test_get_mocking_skeleton():
     skeleton = get_mocking_skeleton("sqs")
 
     request = {"QueueName": "my-queue-name"}
-    context = create_aws_request_context("sqs", "CreateQueue", request)
+    context = create_aws_request_context("sqs", "CreateQueue", "json", request)
     response = skeleton.invoke(context)
     # just a smoke test
     assert b"QueueUrl" in response.data

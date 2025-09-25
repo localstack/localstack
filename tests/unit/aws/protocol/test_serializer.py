@@ -128,6 +128,7 @@ def _botocore_error_serializer_integration_test(
     status_code: int,
     message: str | None,
     is_sender_fault: bool = False,
+    protocol: str | None = None,
     **additional_error_fields: Any,
 ) -> dict:
     """
@@ -153,11 +154,12 @@ def _botocore_error_serializer_integration_test(
 
     # Load the appropriate service
     service = load_service(service_model_name)
+    service_protocol = protocol or service.protocol
 
     # Use our serializer to serialize the response
-    response_serializer = create_serializer(service)
+    response_serializer = create_serializer(service, service_protocol)
     serialized_response = response_serializer.serialize_error_to_response(
-        exception, service.operation_model(action), None, long_uid()
+        exception, service.operation_model(action), {}, long_uid()
     )
 
     # Use the parser from botocore to parse the serialized response
@@ -167,7 +169,7 @@ def _botocore_error_serializer_integration_test(
     # f.e. needed for x-amzn-errortype
     response_dict["headers"] = HeadersDict(response_dict["headers"])
 
-    response_parser: ResponseParser = create_parser(service.protocol)
+    response_parser: ResponseParser = create_parser(service_protocol)
     parsed_response = response_parser.parse(
         response_dict,
         service.operation_model(action).output_shape,
@@ -192,6 +194,8 @@ def _botocore_error_serializer_integration_test(
     type = parsed_response["Error"].get("Type")
     if is_sender_fault:
         assert type == "Sender"
+    elif service_protocol == "smithy-rpc-v2-cbor" and service.is_query_compatible:
+        assert type == "Receiver"
     else:
         assert type is None
     if additional_error_fields:
@@ -760,6 +764,96 @@ def test_json_protocol_error_serialization_with_shaped_default_members_on_root()
     assert "message" not in parsed_body
 
 
+def test_json_protocol_error_serialization_empty_message():
+    # if the exception message is not passed when instantiating the exception, the message attribute will be set to
+    # an empty string "". This is not serialized if the message field is not a required member
+    exception = TransactionCanceledException()
+
+    response = _botocore_error_serializer_integration_test(
+        "dynamodb",
+        "ExecuteTransaction",
+        exception,
+        "TransactionCanceledException",
+        400,
+        "",
+    )
+    assert "message" not in response
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_json_protocol_error_serialization_with_empty_non_required_members(empty_value):
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = True
+        status_code: int = 404
+        ResourceType: str | None
+        ResourceId: str | None
+
+    exception = _ResourceNotFoundException("Not Found", ResourceType="")
+
+    response = _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ApprovePlanExecutionStep",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Not Found",
+        protocol="json",
+    )
+    assert "ResourceType" not in response
+
+
+def test_json_protocol_error_serialization_falsy_non_required_members():
+    # if the exception message is not passed, an empty message will be passed as an empty string `""`
+    exception = TransactionCanceledException("Exception message!", CancellationReasons=[])
+
+    response = _botocore_error_serializer_integration_test(
+        "dynamodb",
+        "ExecuteTransaction",
+        exception,
+        "TransactionCanceledException",
+        400,
+        "Exception message!",
+        Message="Exception message!",
+    )
+    assert "CancellationReasons" not in response
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_json_protocol_error_serialization_with_empty_required_members(empty_value):
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = False
+        status_code: int = 404
+        resourceId: str
+        resourceType: str
+
+    resource_type = "test"
+    exception = _ResourceNotFoundException(
+        "Exception message!",
+        resourceType=resource_type,
+        resourceId=empty_value,
+    )
+    expected_exception_values = {
+        "resourceType": resource_type,
+    }
+    # if the value is None, it is not serialized, even if required
+    # but if it is an empty string, it will be
+    if empty_value is not None:
+        expected_exception_values["resourceId"] = ""
+
+    response = _botocore_error_serializer_integration_test(
+        "verifiedpermissions",
+        "IsAuthorizedWithToken",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Exception message!",
+        **expected_exception_values,
+    )
+    assert "" not in response
+
+
 def test_rest_json_protocol_error_serialization_with_additional_members():
     class NotFoundException(ServiceException):
         code: str = "NotFoundException"
@@ -889,6 +983,23 @@ def test_rpc_v2_cbor_protocol_error_serialization():
     )
 
 
+def test_rpc_v2_cbor_protocol_custom_error_serialization():
+    # CBOR needs a shape for the error, and we have to implement a custom way to serialize user defined exception
+    exception = CommonServiceException(
+        "UserDefinedException", "Parameter x was invalid!", sender_fault=True
+    )
+    _botocore_error_serializer_integration_test(
+        "cloudwatch",
+        "SetAlarmState",
+        exception,
+        "UserDefinedException",
+        400,
+        "Parameter x was invalid!",
+        protocol="smithy-rpc-v2-cbor",
+        is_sender_fault=True,
+    )
+
+
 def test_rpc_v2_cbor_protocol_error_serialization_default_headers():
     class _ResourceNotFoundException(ServiceException):
         code: str = "ResourceNotFoundException"
@@ -906,6 +1017,48 @@ def test_rpc_v2_cbor_protocol_error_serialization_default_headers():
     )
     assert serialized_response.headers["Content-Type"] == APPLICATION_CBOR
     assert serialized_response.headers["Smithy-Protocol"] == "rpc-v2-cbor"
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_rpc_v2_cbor_protocol_error_serialization_with_empty_required_members(empty_value):
+    class AccessDeniedException(ServiceException):
+        code: str = "AccessDeniedException"
+        sender_fault: bool = True
+        status_code: int = 403
+
+    exception = AccessDeniedException("")
+
+    _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ApprovePlanExecutionStep",
+        exception,
+        "AccessDeniedException",
+        403,
+        "",
+    )
+
+
+@pytest.mark.parametrize("empty_value", ("", None))
+def test_rpc_v2_cbor_protocol_error_serialization_with_empty_non_required_members(empty_value):
+    class _ResourceNotFoundException(ServiceException):
+        code: str = "ResourceNotFoundException"
+        sender_fault: bool = True
+        status_code: int = 404
+        ResourceType: str | None
+        ResourceId: str | None
+
+    exception = _ResourceNotFoundException("Not Found", ResourceType="")
+
+    response = _botocore_error_serializer_integration_test(
+        "arc-region-switch",
+        "ApprovePlanExecutionStep",
+        exception,
+        "ResourceNotFoundException",
+        404,
+        "Not Found",
+        protocol="smithy-rpc-v2-cbor",
+    )
+    assert "ResourceType" not in response
 
 
 def test_json_protocol_content_type_1_0():
