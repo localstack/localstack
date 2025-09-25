@@ -434,7 +434,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         if not isinstance(value, str):
             return value
         if isinstance(value, str) and (dynamic_ref_match := REGEX_DYNAMIC_REF.search(value)):
-            ref = DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2], dynamic_ref_match[3])
+            ref = DynamicReference(dynamic_ref_match[1], dynamic_ref_match[2])
             try:
                 new_value = perform_dynamic_reference_lookup(
                     reference=ref,

@@ -520,7 +520,7 @@ class TestSecretsManagerParameters:
         create_secret(Name=parameter_key, SecretString=parameter_value)
 
         result = deploy_cfn_template(
-            parameters={"DynamicParameter": f"{parameter_key}"},
+            parameters={"DynamicParameter": parameter_key},
             template_path=os.path.join(
                 os.path.dirname(__file__),
                 "../../templates",

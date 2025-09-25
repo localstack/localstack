@@ -9,21 +9,15 @@ from localstack.aws.connect import connect_to
 
 LOG = logging.getLogger(__name__)
 
-REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):([a-zA-Z0-9_.\-/]+)(?::(\d+))?}}")
+# CloudFormation allows using dynamic references in `Fn::Sub` expressions, so we must make sure
+# we don't capture the parameter usage by excluding ${} characters
+REGEX_DYNAMIC_REF = re.compile(r"{{resolve:([^:]+):([^${}]+)}}")
 
 
 @dataclass
 class DynamicReference:
     service_name: str
     reference_key: str
-    version: str | None = None
-
-    @property
-    def versioned_name(self) -> str:
-        if self.version:
-            return f"{self.reference_key}:{self.version}"
-        else:
-            return self.reference_key
 
 
 def perform_dynamic_reference_lookup(
@@ -38,7 +32,7 @@ def perform_dynamic_reference_lookup(
     if reference.service_name == "ssm":
         ssm_client = connect_to(aws_access_key_id=account_id, region_name=region_name).ssm
         try:
-            return ssm_client.get_parameter(Name=reference.versioned_name)["Parameter"]["Value"]
+            return ssm_client.get_parameter(Name=reference.reference_key)["Parameter"]["Value"]
         except ClientError as e:
             LOG.error("client error accessing SSM parameter '%s': %s", reference.reference_key, e)
             raise

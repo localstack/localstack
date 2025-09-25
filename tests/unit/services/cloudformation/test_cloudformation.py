@@ -69,9 +69,21 @@ class TestDynamicResolving:
     @pytest.mark.parametrize(
         "value,matches",
         [
-            pytest.param("{{resolve:ssm:abc123}}", True, id="basic"),
-            pytest.param("abc:{{resolve:ssm:abc123}}:foo", True, id="with-surrounding"),
-            pytest.param("{{resolve:ssm:${ParameterName}}}", False, id="in-sub"),
+            pytest.param("{{resolve:ssm:abc123}}", True, id="ssm-basic"),
+            pytest.param("abc:{{resolve:ssm:abc123}}:foo", True, id="ssm-with-surrounding"),
+            pytest.param("{{resolve:ssm:${ParameterName}}}", False, id="ssm-in-sub"),
+            pytest.param("{{resolve:secretsmanager:foo}}", True, id="secrets-basic"),
+            pytest.param(
+                "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:000000000000:secret:foo:SecretString:}}",
+                True,
+                id="secrets-partial",
+            ),
+            pytest.param(
+                "{{resolve:secretsmanager:arn:aws:secretsmanager:us-east-1:000000000000:secret:foo:SecretString:::}}",
+                True,
+                id="secrets-full",
+            ),
+            pytest.param("{{resolve:secretsmanager:${SecretName}}}", False, id="secrets-in-sub"),
         ],
     )
     def test_dynamic_ref_regex_matches(self, value, matches):
