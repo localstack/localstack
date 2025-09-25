@@ -153,7 +153,7 @@ class SqsMessage:
         """
         Returns false if the message has a visibility deadline that is in the future.
 
-        :return: whether the message is visibile or not.
+        :return: whether the message is visible or not.
         """
         if self.visibility_deadline is None:
             return True
