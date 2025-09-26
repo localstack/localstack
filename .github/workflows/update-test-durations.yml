@@ -16,13 +16,10 @@ on:
 env:
   # Take test durations only for this platform
   PLATFORM: "amd64"
-permissions:
-  actions: read
-  contents: write
 
 jobs:
   update:
-    uses: localstack/meta/.github/workflows/update-test-durations.yml@update-test-durations-action
+    uses: localstack/meta/.github/workflows/update-test-durations.yml@main
     with:
       repo: localstack/localstack
       branch: main
