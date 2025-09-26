@@ -30,7 +30,7 @@ _opensearch_install_versions = {
 }
 # Internal representation of the Elasticsearch versions (without the "Elasticsearch_" prefix)
 _elasticsearch_install_versions = {
-    "7.10": "7.10.0",
+    "7.10": "7.10.2",
     "7.9": "7.9.3",
     "7.8": "7.8.1",
     "7.7": "7.7.1",
