@@ -19,7 +19,7 @@ env:
 
 jobs:
   update:
-    uses: localstack/meta/.github/workflows/update-test-durations.yml@update-test-durations-action
+    uses: localstack/meta/.github/workflows/update-test-durations.yml@main
     with:
       repo: localstack/localstack
       branch: main
