@@ -29,6 +29,15 @@
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_record_lifecycle_data_integrity": {
     "last_validated_date": "2022-08-25T10:39:44+00:00"
   },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_resource_policy_crud": {
+    "last_validated_date": "2025-08-05T15:23:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.63,
+      "call": 6.43,
+      "teardown": 0.08,
+      "total": 7.14
+    }
+  },
   "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_stream_consumers": {
     "last_validated_date": "2022-08-26T08:23:46+00:00"
   },
