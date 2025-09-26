@@ -12,7 +12,7 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.10.0
+anyio==4.11.0
     # via httpx
 apispec==6.8.4
     # via localstack-core
@@ -29,9 +29,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.10.0
+aws-cdk-cloud-assembly-schema==48.11.0
     # via aws-cdk-lib
-aws-cdk-lib==2.216.0
+aws-cdk-lib==2.217.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.100.0
     # via
@@ -40,8 +40,6 @@ aws-sam-translator==1.100.0
 aws-xray-sdk==2.14.0
     # via moto-ext
 awscli==1.42.35
-    # via localstack-core
-awscrt==0.28.1
     # via localstack-core
 boto3==1.40.35
     # via
@@ -57,10 +55,6 @@ botocore==1.40.35
     #   localstack-core
     #   moto-ext
     #   s3transfer
-build==1.3.0
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 cachetools==6.2.0
     # via
     #   airspeed-ext
@@ -170,7 +164,9 @@ iniconfig==2.1.0
 isodate==0.7.2
     # via openapi-core
 jinja2==3.1.6
-    # via moto-ext
+    # via
+    #   localstack-core
+    #   moto-ext
 jmespath==1.0.1
     # via
     #   boto3
@@ -187,7 +183,7 @@ jsii==1.114.1
     #   aws-cdk-lib
     #   constructs
 json5==0.12.1
-    # via localstack-core
+    # via localstack-core (pyproject.toml)
 jsonpatch==1.33
     # via
     #   cfn-lint
@@ -200,10 +196,13 @@ jsonpath-ng==1.7.0
 jsonpath-rw==1.4.0
     # via localstack-core
 jsonpointer==3.0.0
-    # via jsonpatch
+    # via
+    #   jsonpatch
+    #   localstack-core
 jsonschema==4.25.1
     # via
     #   aws-sam-translator
+    #   localstack-core
     #   moto-ext
     #   openapi-core
     #   openapi-schema-validator
@@ -259,7 +258,6 @@ orderly-set==5.5.0
 packaging==25.0
     # via
     #   apispec
-    #   build
     #   jpype1
     #   pytest
     #   pytest-rerunfailures
@@ -302,7 +300,9 @@ pyasn1==0.6.1
 pycparser==2.23
     # via cffi
 pydantic==2.11.9
-    # via aws-sam-translator
+    # via
+    #   aws-sam-translator
+    #   localstack-core
 pydantic-core==2.33.2
     # via pydantic
 pygments==2.19.2
@@ -317,8 +317,6 @@ pyopenssl==25.3.0
     #   localstack-twisted
 pyparsing==3.2.5
     # via moto-ext
-pyproject-hooks==1.2.0
-    # via build
 pytest==8.4.2
     # via
     #   localstack-core (pyproject.toml)
@@ -337,6 +335,7 @@ python-dateutil==2.9.0.post0
     # via
     #   botocore
     #   jsii
+    #   localstack-core
     #   moto-ext
     #   opensearch-py
 python-dotenv==1.1.1
@@ -376,7 +375,9 @@ requests==2.32.5
 requests-aws4auth==1.3.1
     # via localstack-core
 responses==0.25.8
-    # via moto-ext
+    # via
+    #   localstack-core
+    #   moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
 rich==14.1.0
@@ -409,10 +410,6 @@ sniffio==1.3.1
     # via anyio
 sympy==1.14.0
     # via cfn-lint
-tailer==0.4.1
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 typeguard==2.13.3
     # via
     #   aws-cdk-asset-awscli-v1
@@ -427,6 +424,7 @@ typing-extensions==4.15.0
     #   cattrs
     #   cfn-lint
     #   jsii
+    #   localstack-core
     #   localstack-twisted
     #   pydantic
     #   pydantic-core
@@ -459,7 +457,7 @@ xmltodict==1.0.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==8.0
+zope-interface==8.0.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
