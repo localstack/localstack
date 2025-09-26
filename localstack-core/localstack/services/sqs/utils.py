@@ -1,12 +1,20 @@
 import base64
+import hashlib
 import itertools
 import json
 import re
+import struct
 import time
-from typing import Literal, NamedTuple
+from typing import Any, Literal, NamedTuple
 from urllib.parse import urlparse
 
-from localstack.aws.api.sqs import QueueAttributeName, ReceiptHandleIsInvalid
+from localstack.aws.api.sqs import (
+    AttributeNameList,
+    Message,
+    MessageAttributeNameList,
+    QueueAttributeName,
+    ReceiptHandleIsInvalid,
+)
 from localstack.services.sqs.constants import (
     DOMAIN_STRATEGY_URL_REGEX,
     LEGACY_STRATEGY_URL_REGEX,
@@ -21,6 +29,11 @@ STANDARD_ENDPOINT = re.compile(STANDARD_STRATEGY_URL_REGEX)
 DOMAIN_ENDPOINT = re.compile(DOMAIN_STRATEGY_URL_REGEX)
 PATH_ENDPOINT = re.compile(PATH_STRATEGY_URL_REGEX)
 LEGACY_ENDPOINT = re.compile(LEGACY_STRATEGY_URL_REGEX)
+
+STRING_TYPE_FIELD_INDEX = 1
+BINARY_TYPE_FIELD_INDEX = 2
+STRING_LIST_TYPE_FIELD_INDEX = 3
+BINARY_LIST_TYPE_FIELD_INDEX = 4
 
 
 def is_sqs_queue_url(url: str) -> bool:
@@ -184,3 +197,109 @@ def global_message_sequence():
 
 def generate_message_id():
     return long_uid()
+
+
+def message_filter_attributes(message: Message, names: AttributeNameList | None):
+    """
+    Utility function filter from the given message (in-place) the system attributes from the given list. It will
+    apply all rules according to:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message.
+
+    :param message: The message to filter (it will be modified)
+    :param names: the attributes names/filters
+    """
+    if "Attributes" not in message:
+        return
+
+    if not names:
+        del message["Attributes"]
+        return
+
+    if QueueAttributeName.All in names:
+        return
+
+    for k in list(message["Attributes"].keys()):
+        if k not in names:
+            del message["Attributes"][k]
+
+
+def message_filter_message_attributes(message: Message, names: MessageAttributeNameList | None):
+    """
+    Utility function filter from the given message (in-place) the message attributes from the given list. It will
+    apply all rules according to:
+    https://boto3.amazonaws.com/v1/documentation/api/latest/reference/services/sqs.html#SQS.Client.receive_message.
+
+    :param message: The message to filter (it will be modified)
+    :param names: the attributes names/filters (can be 'All', '.*', '*' or prefix filters like 'Foo.*')
+    """
+    if not message.get("MessageAttributes"):
+        return
+
+    if not names:
+        del message["MessageAttributes"]
+        return
+
+    if "All" in names or ".*" in names or "*" in names:
+        return
+
+    attributes = message["MessageAttributes"]
+    matched = []
+
+    keys = [name for name in names if ".*" not in name]
+    prefixes = [name.split(".*")[0] for name in names if ".*" in name]
+
+    # match prefix filters
+    for k in attributes:
+        if k in keys:
+            matched.append(k)
+            continue
+
+        for prefix in prefixes:
+            if k.startswith(prefix):
+                matched.append(k)
+            break
+    if matched:
+        message["MessageAttributes"] = {k: attributes[k] for k in matched}
+    else:
+        message.pop("MessageAttributes")
+
+
+def _utf8(value: Any) -> bytes:  # type: ignore[misc]
+    if isinstance(value, str):
+        return value.encode("utf-8")
+    return value
+
+
+def _update_binary_length_and_value(md5: Any, value: bytes) -> None:  # type: ignore[misc]
+    length_bytes = struct.pack("!I".encode("ascii"), len(value))
+    md5.update(length_bytes)
+    md5.update(value)
+
+
+def create_message_attribute_hash(message_attributes) -> str | None:
+    """
+    Method from moto's attribute_md5 of moto/sqs/models.py, separated from the Message Object.
+    """
+    # To avoid the need to check for dict conformity everytime we invoke this function
+    if not isinstance(message_attributes, dict):
+        return
+
+    hash = hashlib.md5()
+
+    for attrName in sorted(message_attributes.keys()):
+        attr_value = message_attributes[attrName]
+        # Encode name
+        _update_binary_length_and_value(hash, _utf8(attrName))
+        # Encode data type
+        _update_binary_length_and_value(hash, _utf8(attr_value["DataType"]))
+        # Encode transport type and value
+        if attr_value.get("StringValue"):
+            hash.update(bytearray([STRING_TYPE_FIELD_INDEX]))
+            _update_binary_length_and_value(hash, _utf8(attr_value.get("StringValue")))
+        elif attr_value.get("BinaryValue"):
+            hash.update(bytearray([BINARY_TYPE_FIELD_INDEX]))
+            decoded_binary_value = attr_value.get("BinaryValue")
+            _update_binary_length_and_value(hash, decoded_binary_value)
+        # string_list_value, binary_list_value type is not implemented, reserved for the future use.
+        # See https://docs.aws.amazon.com/AWSSimpleQueueService/latest/APIReference/API_MessageAttributeValue.html
+    return hash.hexdigest()

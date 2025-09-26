@@ -19,13 +19,9 @@ from localstack.aws.api.sqs import (
     String,
     TagMap,
 )
-from localstack.services.sqs.models import SqsQueue, StandardQueue
-from localstack.services.sqs.provider import (
-    QueueUpdateWorker,
-    _create_message_attribute_hash,
-    to_sqs_api_message,
-)
-from localstack.services.sqs.utils import generate_message_id
+from localstack.services.sqs.models import SqsQueue, StandardQueue, to_sqs_api_message
+from localstack.services.sqs.provider import QueueUpdateWorker
+from localstack.services.sqs.utils import create_message_attribute_hash, generate_message_id
 from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import md5
 from localstack.utils.time import now
@@ -189,7 +185,7 @@ class FakeSqsClient:
             MD5OfBody=md5(MessageBody),
             Body=MessageBody,
             Attributes=self._create_message_attributes(MessageSystemAttributes),
-            MD5OfMessageAttributes=_create_message_attribute_hash(MessageAttributes),
+            MD5OfMessageAttributes=create_message_attribute_hash(MessageAttributes),
             MessageAttributes=MessageAttributes,
         )
         queue_item = queue.put(
@@ -204,7 +200,7 @@ class FakeSqsClient:
             "MD5OfMessageBody": message["MD5OfBody"],
             "MD5OfMessageAttributes": message.get("MD5OfMessageAttributes"),
             "SequenceNumber": queue_item.sequence_number,
-            "MD5OfMessageSystemAttributes": _create_message_attribute_hash(MessageSystemAttributes),
+            "MD5OfMessageSystemAttributes": create_message_attribute_hash(MessageSystemAttributes),
         }
 
 

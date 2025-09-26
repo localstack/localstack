@@ -1,3 +1,4 @@
+import copy
 import hashlib
 import heapq
 import inspect
@@ -15,6 +16,7 @@ from localstack.aws.api.sqs import (
     AttributeNameList,
     InvalidAttributeName,
     Message,
+    MessageAttributeNameList,
     MessageSystemAttributeName,
     QueueAttributeMap,
     QueueAttributeName,
@@ -29,12 +31,15 @@ from localstack.services.sqs.exceptions import (
 )
 from localstack.services.sqs.queue import InterruptiblePriorityQueue, InterruptibleQueue
 from localstack.services.sqs.utils import (
+    create_message_attribute_hash,
     encode_move_task_handle,
     encode_receipt_handle,
     extract_receipt_handle_info,
     global_message_sequence,
     guess_endpoint_strategy_and_host,
     is_message_deduplication_id_required,
+    message_filter_attributes,
+    message_filter_message_attributes,
 )
 from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
 from localstack.utils.aws.arns import get_partition
@@ -188,6 +193,41 @@ class SqsMessage:
 
     def __repr__(self):
         return f"SqsMessage(id={self.message_id},group={self.message_group_id})"
+
+
+def to_sqs_api_message(
+    standard_message: SqsMessage,
+    attribute_names: AttributeNameList = None,
+    message_attribute_names: MessageAttributeNameList = None,
+) -> Message:
+    """
+    Utility function to convert an SQS message from LocalStack's internal representation to the AWS API
+    concept 'Message', which is the format returned by the ``ReceiveMessage`` operation.
+
+    :param standard_message: A LocalStack SQS message
+    :param attribute_names: the attribute name list to filter
+    :param message_attribute_names: the message attribute names to filter
+    :return: a copy of the original Message with updated message attributes and MD5 attribute hash sums
+    """
+    # prepare message for receiver
+    message = copy.deepcopy(standard_message.message)
+
+    # update system attributes of the message copy
+    message["Attributes"][MessageSystemAttributeName.ApproximateFirstReceiveTimestamp] = str(
+        int((standard_message.first_received or 0) * 1000)
+    )
+
+    # filter attributes for receiver
+    message_filter_attributes(message, attribute_names)
+    message_filter_message_attributes(message, message_attribute_names)
+    if message.get("MessageAttributes"):
+        message["MD5OfMessageAttributes"] = create_message_attribute_hash(
+            message["MessageAttributes"]
+        )
+    else:
+        # delete the value that was computed when creating the message
+        message.pop("MD5OfMessageAttributes", None)
+    return message
 
 
 class ReceiveMessageResult:

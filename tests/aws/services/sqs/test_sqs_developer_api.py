@@ -35,7 +35,7 @@ def _parse_attribute_map(json_message: dict) -> dict[str, str]:
 
 
 # @pytest.mark.usefixtures("openapi_validate")
-class TestSqsDeveloperEndpoints:
+class TestSqsDeveloperApi:
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain", "path"])
     def test_list_messages_has_no_side_effects(
