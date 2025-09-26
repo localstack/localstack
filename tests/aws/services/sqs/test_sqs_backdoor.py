@@ -282,6 +282,7 @@ class TestSqsDeveloperEndpoints:
         messages: list[dict] = doc["ReceiveMessageResponse"]["ReceiveMessageResult"]["Message"]
         assert len(messages) == 4
         # there are no clear sorting rules in this scenario (fifo queues, invisible, + the way messages are collected)
+        messages.sort(key=lambda k: k["Body"])
         assert messages[0]["Body"] == "message-1"
         assert messages[1]["Body"] == "message-2"
         assert messages[2]["Body"] == "message-3"
