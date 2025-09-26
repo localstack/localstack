@@ -5,6 +5,6 @@ on:
 
 jobs:
   labels:
-    uses: localstack/meta/.github/workflows/pr-enforce-labels.yml@notes-labels
+    uses: localstack/meta/.github/workflows/pr-enforce-labels.yml@main
     secrets:
       github-token: ${{ secrets.PRO_ACCESS_TOKEN }}
