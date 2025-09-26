@@ -1099,25 +1099,24 @@ class TestSqsProvider:
         # receive 1 message (from message group 1), now 5 messages should be visible
         aws_sqs_client.receive_message(QueueUrl=queue_url, MaxNumberOfMessages=1)
 
-        if is_aws_cloud():
-            # wait for aws to propagate the attributes
-            time.sleep(45)
+        def _assert_attributes_before_visibility_timeout():
+            _result = aws_sqs_client.get_queue_attributes(
+                QueueUrl=queue_url,
+                AttributeNames=[
+                    "ApproximateNumberOfMessages",
+                    "ApproximateNumberOfMessagesNotVisible",
+                    "ApproximateNumberOfMessagesDelayed",
+                ],
+            )
+            assert _result["Attributes"] == {
+                "ApproximateNumberOfMessages": "5",
+                "ApproximateNumberOfMessagesNotVisible": "1",
+                "ApproximateNumberOfMessagesDelayed": "0",
+            }
 
-        result = aws_sqs_client.get_queue_attributes(
-            QueueUrl=queue_url,
-            AttributeNames=[
-                "ApproximateNumberOfMessages",
-                "ApproximateNumberOfMessagesNotVisible",
-                "ApproximateNumberOfMessagesDelayed",
-            ],
-        )
-        assert result["Attributes"] == {
-            "ApproximateNumberOfMessages": "5",
-            "ApproximateNumberOfMessagesNotVisible": "1",
-            "ApproximateNumberOfMessagesDelayed": "0",
-        }
+        retry(_assert_attributes_before_visibility_timeout, retries=60, sleep=1)
 
-        def _assert_after():
+        def _assert_after_visibility_timeout():
             _result = aws_sqs_client.get_queue_attributes(
                 QueueUrl=queue_url,
                 AttributeNames=[
@@ -1132,7 +1131,7 @@ class TestSqsProvider:
                 "ApproximateNumberOfMessagesDelayed": "0",
             }
 
-        retry(_assert_after, retries=15, sleep=1, sleep_before=15 if is_aws_cloud() else 0)
+        retry(_assert_after_visibility_timeout, retries=60, sleep=1)
 
     @markers.aws.validated
     def test_fifo_approximate_number_of_messages_not_visible(
@@ -1172,25 +1171,24 @@ class TestSqsProvider:
         assert message_1["Messages"][0]["Attributes"]["MessageGroupId"] == "1"
         assert message_2["Messages"][0]["Attributes"]["MessageGroupId"] == "2"
 
-        if is_aws_cloud():
-            # wait for aws to propagate the attributes
-            time.sleep(45)
+        def _assert_attributes_before_visibility_timeout():
+            _result = aws_sqs_client.get_queue_attributes(
+                QueueUrl=queue_url,
+                AttributeNames=[
+                    "ApproximateNumberOfMessages",
+                    "ApproximateNumberOfMessagesNotVisible",
+                    "ApproximateNumberOfMessagesDelayed",
+                ],
+            )
+            assert _result["Attributes"] == {
+                "ApproximateNumberOfMessages": "4",
+                "ApproximateNumberOfMessagesNotVisible": "2",
+                "ApproximateNumberOfMessagesDelayed": "0",
+            }
 
-        result = aws_sqs_client.get_queue_attributes(
-            QueueUrl=queue_url,
-            AttributeNames=[
-                "ApproximateNumberOfMessages",
-                "ApproximateNumberOfMessagesNotVisible",
-                "ApproximateNumberOfMessagesDelayed",
-            ],
-        )
-        assert result["Attributes"] == {
-            "ApproximateNumberOfMessages": "4",
-            "ApproximateNumberOfMessagesNotVisible": "2",
-            "ApproximateNumberOfMessagesDelayed": "0",
-        }
+        retry(_assert_attributes_before_visibility_timeout, retries=60, sleep=1)
 
-        def _assert_after():
+        def _assert_after_visibility_timeout():
             _result = aws_sqs_client.get_queue_attributes(
                 QueueUrl=queue_url,
                 AttributeNames=[
@@ -1205,7 +1203,7 @@ class TestSqsProvider:
                 "ApproximateNumberOfMessagesDelayed": "0",
             }
 
-        retry(_assert_after, retries=15, sleep=1, sleep_before=15 if is_aws_cloud() else 0)
+        retry(_assert_after_visibility_timeout, retries=60, sleep=1)
 
     @markers.aws.validated
     def test_receive_after_visibility_timeout(self, sqs_create_queue, aws_sqs_client):
