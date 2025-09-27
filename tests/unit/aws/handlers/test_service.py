@@ -1,4 +1,5 @@
 import pytest
+from moto.ses.exceptions import MessageRejectedError
 
 from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.chain import HandlerChain
@@ -198,3 +199,25 @@ class TestServiceExceptionSerializer:
         assert err_context.service_exception.__traceback__
         assert err_context.service_exception.__traceback__ == raised_exception.__traceback__
         assert err_context.service_exception.status_code == 500
+
+    def test_moto_exception_is_parsed(self, service_response_handler_chain):
+        context = create_aws_request_context(
+            "ses",
+            "SendRawEmail",
+            "query",
+            {
+                "Destinations": ["invalid@example.com"],
+                "RawMessage": {
+                    "Data": b"From: origin@example.com\nTo: destination@example.com\nSubject: sub\n\nbody\n\n"
+                },
+            },
+        )
+        msg = "Did not have authority to send email"
+        moto_exception = MessageRejectedError(msg)
+
+        ServiceExceptionSerializer().create_exception_response(moto_exception, context)
+
+        assert msg in context.service_exception.message
+        assert context.service_exception.code == "MessageRejected"
+        assert not context.service_exception.sender_fault
+        assert context.service_exception.status_code == 400
