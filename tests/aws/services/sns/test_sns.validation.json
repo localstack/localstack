@@ -273,7 +273,13 @@
     "last_validated_date": "2023-08-24T20:30:48+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_test_arn": {
-    "last_validated_date": "2023-08-24T20:30:45+00:00"
+    "last_validated_date": "2025-09-29T09:32:56+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 2.33,
+      "teardown": 0.2,
+      "total": 3.6
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_with_attributes": {
     "last_validated_date": "2025-09-25T07:41:34+00:00",

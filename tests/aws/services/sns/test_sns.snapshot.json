@@ -146,7 +146,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_test_arn": {
-    "recorded-date": "24-08-2023, 22:30:45",
+    "recorded-date": "29-09-2025, 09:32:56",
     "recorded-content": {
       "create-topic": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",

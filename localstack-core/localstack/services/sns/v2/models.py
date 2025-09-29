@@ -35,21 +35,27 @@ class Topic:
         self.name = name
         self.arn = arn
         self.attributes = self.default_attributes()
-        self.attributes.update(attributes)
+        self.attributes.update(attributes or {})
 
     def default_attributes(self) -> TopicAttributesMap:
-        return {
-            "ContentBasedDeduplication": "false",
-            "DisplayName": self.name,
-            "FifoTopic": "false",
+        default_attributes = {
+            "DisplayName": "",
             "Owner": self.account_id,
             "Policy": self.create_default_topic_policy(),
-            "SignatureVersion": "2",
             "SubscriptionsConfirmed": "0",
             "SubscriptionsDeleted": "0",
             "SubscriptionsPending": "0",
             "TopicArn": self.arn,
         }
+        if self.name.endswith(".fifo"):
+            default_attributes.update(
+                {
+                    "ContentBasedDeduplication": "false",
+                    "FifoTopic": "false",
+                    "SignatureVersion": "2",
+                }
+            )
+        return default_attributes
 
     def create_default_topic_policy(self) -> str:  # Dict[str, Any]:
         return json.dumps(
