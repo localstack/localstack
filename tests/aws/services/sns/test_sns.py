@@ -93,12 +93,12 @@ class TestSNSTopicCrud:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",
+            # "$.get-topic-attrs.Attributes.DeliveryPolicy",
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
-            "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
+            # "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
         create_topic = sns_create_topic(
             Name="topictest.fifo",
