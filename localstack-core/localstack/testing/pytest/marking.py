@@ -228,3 +228,7 @@ def pytest_configure(config):
         "markers",
         "requires_in_process: mark the test as requiring the test to run inside the same process as LocalStack - will not work if tests are run against a running LS container.",
     )
+    config.addinivalue_line(
+        "markers",
+        "k8s_always_run: mark the test to always run in k8s environment. This allows us to run tests that would otherwise be skipped, such as localstack_only tests.",
+    )
