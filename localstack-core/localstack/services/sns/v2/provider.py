@@ -60,6 +60,7 @@ class SnsProvider(SnsApi):
         if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
             fifo_match = re.match(SNS_TOPIC_NAME_PATTERN_FIFO, name)
             if not fifo_match:
+                # TODO: check this with a separate test
                 raise InvalidParameterException(
                     "Fifo Topic names must end with .fifo and must be made up of only uppercase and lowercase ASCII letters, numbers, underscores, and hyphens, and must be between 1 and 256 characters long."
                 )
