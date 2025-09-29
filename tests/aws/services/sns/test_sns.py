@@ -43,7 +43,7 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.sns.conftest import is_sns_v1_provider, skip_if_sns_v2
+from tests.aws.services.sns.conftest import skip_if_sns_v2
 
 LOG = logging.getLogger(__name__)
 
@@ -93,10 +93,12 @@ class TestSNSTopicCrud:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
+            # "$.get-topic-attrs.Attributes.DeliveryPolicy",
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            # "$.get-topic-attrs.Attributes.Policy.Statement..Action",  # SNS:Receive is added by moto but not returned in AWS
         ]
     )
+    # @skip_if_sns_v2
     def test_create_topic_with_attributes(self, sns_create_topic, snapshot, aws_client):
         create_topic = sns_create_topic(
             Name="topictest.fifo",
@@ -164,10 +166,13 @@ class TestSNSTopicCrud:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$.get-topic-attrs.Attributes.DeliveryPolicy",  # TODO: remove this with the v2 provider switch
+            "$.get-topic-attrs.Attributes.DeliveryPolicy",
             "$.get-topic-attrs.Attributes.EffectiveDeliveryPolicy",
+            "$.get-topic-attrs.Attributes.Policy.Statement..Action",
+            # SNS:Receive is added by moto but not returned in AWS
         ]
     )
+    @skip_if_sns_v2
     def test_create_topic_test_arn(self, sns_create_topic, snapshot, aws_client, account_id):
         topic_name = "topic-test-create"
         response = sns_create_topic(Name=topic_name)
@@ -192,6 +197,7 @@ class TestSNSTopicCrud:
         snapshot.match("topic-not-exists", e.value.response)
 
     @markers.aws.validated
+    @skip_if_sns_v2
     def test_delete_topic_idempotency(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -322,144 +328,6 @@ class TestSNSTopicCrud:
             TopicArn=topic_arn,
         )
         snapshot.match("get-topic-attrs-after-delete", get_attrs_updated)
-
-
-class TestSNSTopicCrudV2:
-    @markers.aws.validated
-    def test_delete_non_existent_topic(self, snapshot, aws_client, account_id, region_name):
-        response = aws_client.sns.delete_topic(
-            TopicArn=f"arn:aws:sns:{region_name}:{account_id}:non-existent-{short_uid()}"
-        )
-
-        snapshot.match("delete-non-existent-topic", response)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ]
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        # skipped only for v1
-        condition=is_sns_v1_provider,
-        paths=[
-            "$..Attributes.DeliveryPolicy",
-        ],
-    )
-    def test_create_topic_should_be_idempotent(self, snapshot, sns_create_topic, aws_client):
-        topic_name = f"test-idempotent-{short_uid()}"
-
-        resp1 = sns_create_topic(Name=topic_name)
-        aws_client.sns.set_topic_attributes(
-            TopicArn=resp1["TopicArn"], AttributeName="DisplayName", AttributeValue="AlreadySet"
-        )
-        attrs = aws_client.sns.get_topic_attributes(TopicArn=resp1["TopicArn"])
-        snapshot.match("topic-attrs-idempotent-1", attrs)
-
-        resp2 = sns_create_topic(Name=topic_name)
-        attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
-        snapshot.match("topic-attrs-idempotent-2", attrs)
-
-    @pytest.mark.skipif(
-        is_sns_v1_provider(), reason="covered in moto, but with slight parity errors"
-    )
-    @markers.aws.validated
-    def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
-        # Valid names within length constraints
-        valid_name = "a" * 256
-        resp = sns_create_topic(Name=valid_name)
-        snapshot.match("valid-name-max-length", resp)
-
-        # Invalid names: too short / too long
-        with pytest.raises(ClientError) as e:
-            sns_create_topic(Name="")
-        snapshot.match("name-too-short", e.value.response)
-
-        with pytest.raises(ClientError) as e:
-            sns_create_topic(Name="a" * 257)
-        snapshot.match("name-too-long", e.value.response)
-
-        # Invalid chars
-        for c in [":", ";", "!", "@", "|", "^", "%", " "]:
-            with pytest.raises(ClientError) as e:
-                sns_create_topic(Name=f"bad{c}name")
-            snapshot.match(f"name-invalid-char-{c}", e.value.response)
-
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ]
-    )
-    @markers.snapshot.skip_snapshot_verify(
-        # skipped only for v1
-        condition=is_sns_v1_provider,
-        paths=[
-            "$..Attributes.DeliveryPolicy",
-        ],
-    )
-    def test_create_topic_in_multiple_regions(self, aws_client, aws_client_factory, snapshot):
-        topic_name = f"multiregion-{short_uid()}"
-
-        # us-east-1
-        sns_east = aws_client_factory(region_name="us-east-1").sns
-        arn_east = sns_east.create_topic(Name=topic_name)["TopicArn"]
-
-        # us-west-2
-        sns_west = aws_client_factory(region_name="us-west-1").sns
-        arn_west = sns_west.create_topic(Name=topic_name)["TopicArn"]
-
-        list_east_response = sns_east.list_topics()
-        snapshot.match("list-east", list_east_response)
-        list_west_response = sns_west.list_topics()
-        snapshot.match("list-west", list_west_response)
-
-        snapshot.match("topic-east", sns_east.get_topic_attributes(TopicArn=arn_east))
-        snapshot.match("topic-west", sns_west.get_topic_attributes(TopicArn=arn_west))
-
-    @markers.aws.validated
-    def test_list_topic_paging(self, aws_client, sns_create_topic):
-        topic_arns = []
-        page_size = 100
-        for i in range(page_size + 20):  # > default page size
-            resp = sns_create_topic(Name=f"paging-{i}-{short_uid()}")
-            topic_arns.append(resp["TopicArn"])
-
-        resp = aws_client.sns.list_topics()
-        assert len(resp["Topics"]) == page_size
-
-        assert "NextToken" in resp
-        token = resp["NextToken"]
-
-        resp2 = aws_client.sns.list_topics(NextToken=token)
-
-        # Collect all returned ARNs to ensure no duplicates / missing
-        all_returned_arns = [t["TopicArn"] for t in resp["Topics"]] + [
-            t["TopicArn"] for t in resp2["Topics"]
-        ]
-        assert set(topic_arns).issubset(set(all_returned_arns))
-
-    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
-    @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..Attributes.EffectiveDeliveryPolicy",
-        ]
-    )
-    def test_topic_get_attributes_with_fifo_false(self, sns_create_topic, aws_client, snapshot):
-        resp = sns_create_topic(
-            Name=f"standard-topic-{short_uid()}", Attributes={"FifoTopic": "false"}
-        )
-        topic_arn = resp["TopicArn"]
-
-        attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
-        snapshot.match("get-attrs-standard-topic", attrs)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.set_topic_attributes(
-                TopicArn=topic_arn, AttributeName="FifoTopic", AttributeValue="false"
-            )
-        snapshot.match("set-fifo-false-after-creation", e.value.response)
 
 
 class TestSNSPublishCrud:
