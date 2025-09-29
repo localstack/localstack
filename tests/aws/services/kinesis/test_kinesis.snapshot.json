@@ -235,5 +235,85 @@
         "message": "Stream wrong-stream-name under account 111111111111 not found."
       }
     }
+  },
+  "tests/aws/services/kinesis/test_kinesis.py::TestKinesis::test_resource_policy_crud": {
+    "recorded-date": "01-08-2025, 13:00:05",
+    "recorded-content": {
+      "default_policy_if_not_set": {
+        "Policy": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "put_resource_policy_if_not_set": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_resource_policy_after_set": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "AllowCrossAccountWrite",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::111111111111:root"
+              },
+              "Action": "kinesis:PutRecord",
+              "Resource": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update_resource_policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_resource_policy_after_update": {
+        "Policy": {
+          "Version": "2012-10-17",
+          "Statement": [
+            {
+              "Sid": "AllowCrossAccountReadWrite",
+              "Effect": "Allow",
+              "Principal": {
+                "AWS": "arn:<partition>:iam::111111111111:root"
+              },
+              "Action": [
+                "kinesis:PutRecord",
+                "kinesis:GetRecords"
+              ],
+              "Resource": "arn:<partition>:kinesis:<region>:111111111111:<stream-name>"
+            }
+          ]
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_resource_policy": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_resource_policy_after_delete": {
+        "Policy": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

@@ -135,6 +135,95 @@ class TestKinesis:
         snapshot.match("Shards", shards)
 
     @markers.aws.validated
+    def test_resource_policy_crud(
+        self,
+        account_id,
+        kinesis_create_stream,
+        wait_for_stream_ready,
+        aws_client,
+        snapshot,
+    ):
+        """Test complete CRUD cycle for Kinesis resource policies"""
+
+        stream_name = kinesis_create_stream()
+        wait_for_stream_ready(stream_name)
+        describe_stream = aws_client.kinesis.describe_stream(StreamName=stream_name)
+        resource_arn = describe_stream["StreamDescription"]["StreamARN"]
+        principal_arn = f"arn:aws:iam::{account_id}:root"
+
+        # retrieve, no policy yet
+        resp = aws_client.kinesis.get_resource_policy(ResourceARN=resource_arn)
+        snapshot.match("default_policy_if_not_set", resp)
+
+        # put
+        policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowCrossAccountWrite",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": principal_arn},
+                    "Action": "kinesis:PutRecord",
+                    "Resource": resource_arn,
+                }
+            ],
+        }
+        resp = aws_client.kinesis.put_resource_policy(
+            ResourceARN=resource_arn, Policy=json.dumps(policy)
+        )
+        snapshot.match("put_resource_policy_if_not_set", resp)
+
+        # retrieve
+        resp = aws_client.kinesis.get_resource_policy(ResourceARN=resource_arn)
+        snapshot.match("get_resource_policy_after_set", resp)
+
+        # update
+        updated_policy = {
+            "Version": "2012-10-17",
+            "Statement": [
+                {
+                    "Sid": "AllowCrossAccountReadWrite",
+                    "Effect": "Allow",
+                    "Principal": {"AWS": principal_arn},
+                    "Action": ["kinesis:PutRecord", "kinesis:GetRecords"],
+                    "Resource": resource_arn,
+                }
+            ],
+        }
+        resp = aws_client.kinesis.put_resource_policy(
+            ResourceARN=resource_arn, Policy=json.dumps(updated_policy)
+        )
+        snapshot.match("update_resource_policy", resp)
+
+        # get the right policy after updating
+        resp = aws_client.kinesis.get_resource_policy(ResourceARN=resource_arn)
+        snapshot.match("get_resource_policy_after_update", resp)
+
+        # delete it
+        resp = aws_client.kinesis.delete_resource_policy(ResourceARN=resource_arn)
+        snapshot.match("delete_resource_policy", resp)
+
+        # get, policy should no longer exist
+        resp = aws_client.kinesis.get_resource_policy(ResourceARN=resource_arn)
+        snapshot.match("get_resource_policy_after_delete", resp)
+
+        # deleting non existent policy for a valid arn
+        with pytest.raises(ClientError):
+            aws_client.kinesis.delete_resource_policy(ResourceARN=resource_arn)
+
+        # put a policy for a non-existent stream
+        not_existent_arn = "arn:aws:kinesis:us-east-1:000000000000:stream/non-existent-xxxxxx"
+        policy["Statement"][0]["Resource"] = not_existent_arn
+        with pytest.raises(ClientError):
+            aws_client.kinesis.put_resource_policy(
+                ResourceARN=not_existent_arn, Policy=json.dumps(policy)
+            )
+
+        # TODO put a policy for an invalid stream arn, but it behaves differently
+        # on localstack and AWS, as the later triggers end-point-resolution in botocore
+        # and fails client side
+
+    @markers.aws.validated
     def test_stream_consumers(
         self,
         kinesis_create_stream,
