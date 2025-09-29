@@ -24,6 +24,10 @@ def is_sns_v2_provider():
     return os.environ.get("PROVIDER_OVERRIDE_SNS") == "v2" and not is_aws_cloud()
 
 
+def is_sns_v1_provider():
+    return not os.environ.get("PROVIDER_OVERRIDE_SNS") == "v2" and not is_aws_cloud()
+
+
 skip_if_sns_v2 = pytest.mark.skipif(
     is_sns_v2_provider(),
     reason="Skipping test for v2 provider as it contains operations not yet supported",

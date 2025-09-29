@@ -14,6 +14,7 @@ from localstack.aws.api.sns import (
     SnsApi,
     TagList,
     TopicAttributesMap,
+    attributeName,
     attributeValue,
     nextToken,
     topicARN,
@@ -40,11 +41,20 @@ class SnsProvider(SnsApi):
         **kwargs,
     ) -> CreateTopicResponse:
         store = self.get_store(context.account_id, context.region)
-
-        topicARN = sns_topic_arn(
+        topic_ARN = sns_topic_arn(
             topic_name=name, region_name=context.region, account_id=context.account_id
         )
-        topic = Topic(name=name, attributes=attributes, arn=topicARN, context=context)
+        topic: Topic = store.topics.get(topic_ARN)
+        attributes = attributes or {}
+        if topic:
+            attrs = topic.attributes
+            for k, v in attributes.values():
+                if not attrs.get(k) or not attrs.get(k) == v:
+                    # TODO:
+                    raise InvalidParameterException("Fix this Exception message and type")
+            return CreateTopicResponse(TopicArn=topic_ARN)
+
+        topic = Topic(name=name, attributes=attributes, arn=topic_ARN, context=context)
 
         if attributes is None:
             attributes = {}
@@ -64,10 +74,10 @@ class SnsProvider(SnsApi):
         # if attributes:
         # self.set_topic_defaults(topic, context)
         # topic["attributes"] = attributes
-        store.topics[topicARN] = topic
+        store.topics[topic_ARN] = topic
         # todo: tags
 
-        return CreateTopicResponse(TopicArn=topicARN)
+        return CreateTopicResponse(TopicArn=topic_ARN)
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN, **kwargs
@@ -92,19 +102,16 @@ class SnsProvider(SnsApi):
 
         return ListTopicsResponse(Topics=[t.arn for t in store.topics.values()])
 
-    @staticmethod
-    def set_topic_defaults(topic: Topic, context: RequestContext):
-        attributes = {}
-        attributes["FifoTopic"] = False
-        attributes["ContentBasedDeduplication"] = False
-        attributes["Owner"] = context.account_id
-        attributes["Resource"] = topic["arn"]
-        attributes["SubscriptionsConfirmed"] = 0
-        attributes["SubscriptionsDeleted"] = 0
-
-        attributes.update(topic["attributes"])
-
-        topic["attributes"] = attributes
+    def set_topic_attributes(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        attribute_name: attributeName,
+        attribute_value: attributeValue | None = None,
+        **kwargs,
+    ) -> None:
+        topic: Topic = self._get_topic(arn=topic_arn, context=context)
+        topic.attributes[attribute_name] = attribute_value
 
     @staticmethod
     def get_store(account_id: str, region: str) -> SnsStore:
