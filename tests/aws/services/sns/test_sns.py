@@ -43,7 +43,7 @@ from localstack.utils.sync import poll_condition, retry
 from localstack.utils.testutil import check_expected_lambda_log_events_length
 from tests.aws.services.lambda_.functions import lambda_integration
 from tests.aws.services.lambda_.test_lambda import TEST_LAMBDA_PYTHON, TEST_LAMBDA_PYTHON_ECHO
-from tests.aws.services.sns.conftest import skip_if_sns_v2
+from tests.aws.services.sns.conftest import is_sns_v1_provider, skip_if_sns_v2
 
 LOG = logging.getLogger(__name__)
 
@@ -322,6 +322,106 @@ class TestSNSTopicCrud:
             TopicArn=topic_arn,
         )
         snapshot.match("get-topic-attrs-after-delete", get_attrs_updated)
+
+
+@pytest.mark.skipif(is_sns_v1_provider(), reason="covered in moto")
+class TestSNSTopicCrudV2:
+    @markers.aws.validated
+    def test_delete_non_existent_topic(self, snapshot, aws_client, account_id, region_name):
+        response = aws_client.sns.delete_topic(
+            TopicArn=f"arn:aws:sns:{region_name}:{account_id}:non-existent-{short_uid()}"
+        )
+
+        snapshot.match("delete-non-existent-topic", response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Attributes.EffectiveDeliveryPolicy",
+        ]
+    )
+    def test_create_topic_should_be_idempotent(self, snapshot, sns_create_topic, aws_client):
+        topic_name = f"test-idempotent-{short_uid()}"
+
+        resp1 = sns_create_topic(Name=topic_name)
+        aws_client.sns.set_topic_attributes(
+            TopicArn=resp1["TopicArn"], AttributeName="DisplayName", AttributeValue="AlreadySet"
+        )
+        attrs = aws_client.sns.get_topic_attributes(TopicArn=resp1["TopicArn"])
+        snapshot.match("topic-attrs-idempotent-1", attrs)
+
+        resp2 = sns_create_topic(Name=topic_name)
+        attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
+        snapshot.match("topic-attrs-idempotent-2", attrs)
+
+    def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
+        # Valid names within length constraints
+        valid_name = "a" * 256
+        resp = sns_create_topic(Name=valid_name)
+        snapshot.match("valid-name-max-length", resp)
+
+        # Invalid names: too short / too long
+        with pytest.raises(ClientError) as e:
+            sns_create_topic(Name="")
+        snapshot.match("name-too-short", e.value.response)
+
+        with pytest.raises(ClientError) as e:
+            sns_create_topic(Name="a" * 257)
+        snapshot.match("name-too-long", e.value.response)
+
+        # Invalid chars
+        for c in [":", ";", "!", "@", "|", "^", "%", " "]:
+            with pytest.raises(ClientError) as e:
+                sns_create_topic(Name=f"bad{c}name")
+            snapshot.match(f"name-invalid-char-{c}", e.value.response)
+
+    def test_create_topic_in_multiple_regions(self, aws_client, sns_client_factory, snapshot):
+        topic_name = f"multiregion-{short_uid()}"
+
+        # us-east-1
+        client_east = sns_client_factory("us-east-1")
+        arn_east = client_east.create_topic(Name=topic_name)["TopicArn"]
+
+        # us-west-2
+        client_west = sns_client_factory("us-west-2")
+        arn_west = client_west.create_topic(Name=topic_name)["TopicArn"]
+
+        assert arn_east != arn_west
+
+        snapshot.match("topic-east", client_east.get_topic_attributes(TopicArn=arn_east))
+        snapshot.match("topic-west", client_west.get_topic_attributes(TopicArn=arn_west))
+
+    def test_list_topic_paging(self, aws_client, sns_create_topic, snapshot):
+        topic_arns = []
+        for i in range(120):  # > default page size
+            resp = sns_create_topic(Name=f"paging-{i}-{short_uid()}")
+            topic_arns.append(resp["TopicArn"])
+
+        resp = aws_client.sns.list_topics()
+        snapshot.match("list-topics-first-page", resp)
+
+        assert "NextToken" in resp
+        token = resp["NextToken"]
+
+        resp2 = aws_client.sns.list_topics(NextToken=token)
+        snapshot.match("list-topics-second-page", resp2)
+
+        # Collect all returned ARNs to ensure no duplicates / missing
+        all_returned_arns = [t["TopicArn"] for t in resp["Topics"]] + [
+            t["TopicArn"] for t in resp2["Topics"]
+        ]
+        assert set(topic_arns).issubset(set(all_returned_arns))
+
+    def test_topic_get_attributes_with_fifo_false(self, sns_create_topic, aws_client, snapshot):
+        resp = sns_create_topic(
+            Name=f"standard-topic-{short_uid()}", Attributes={"FifoTopic": "false"}
+        )
+        topic_arn = resp["TopicArn"]
+
+        attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
+        assert attrs["Attributes"]["FifoTopic"] == "false"
+
+        snapshot.match("get-attrs-standard-topic", attrs)
 
 
 class TestSNSPublishCrud:
