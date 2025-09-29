@@ -1,12 +1,36 @@
+<<<<<<< HEAD
 from typing import TypedDict
 
 from localstack.aws.api.sns import TopicAttributesMap
+=======
+import itertools
+import json
+import time
+from dataclasses import dataclass, field
+from enum import StrEnum
+from typing import Literal, TypedDict
+
+from localstack.aws.api import RequestContext
+from localstack.aws.api.sns import (
+    MessageAttributeMap,
+    PublishBatchRequestEntry,
+    TopicAttributesMap,
+    subscriptionARN,
+    topicARN,
+)
+>>>>>>> a7c19bd6d (merge existing PR with topic migration)
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
     CrossRegionAttribute,
     LocalAttribute,
 )
+<<<<<<< HEAD
+=======
+from localstack.utils.aws.arns import sns_topic_arn
+from localstack.utils.objects import singleton_factory
+from localstack.utils.strings import long_uid
+>>>>>>> a7c19bd6d (merge existing PR with topic migration)
 from localstack.utils.tagging import TaggingService
 
 
@@ -16,6 +40,178 @@ class Topic(TypedDict, total=True):
     attributes: TopicAttributesMap
 
 
+<<<<<<< HEAD
+=======
+def create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
+    topic_arn = sns_topic_arn(
+        topic_name=name, region_name=context.region, account_id=context.account_id
+    )
+    topic: Topic = {
+        "name": name,
+        "arn": topic_arn,
+        "region": context.region,
+        "account_id": context.account_id,
+        "attributes": {},
+    }
+    attrs = default_attributes(topic)
+    attrs.update(attributes or {})
+    topic["attributes"] = attrs
+
+    return topic
+
+
+def default_attributes(topic: Topic) -> TopicAttributesMap:
+    default_attributes = {
+        "DisplayName": "",
+        "Owner": topic["account_id"],
+        "Policy": create_default_topic_policy(topic),
+        "SubscriptionsConfirmed": "0",
+        "SubscriptionsDeleted": "0",
+        "SubscriptionsPending": "0",
+        "TopicArn": topic["arn"],
+    }
+    if topic["name"].endswith(".fifo"):
+        default_attributes.update(
+            {
+                "ContentBasedDeduplication": "false",
+                "FifoTopic": "false",
+                "SignatureVersion": "2",
+            }
+        )
+    return default_attributes
+
+
+def create_default_topic_policy(topic: Topic) -> str:
+    return json.dumps(
+        {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Sid": "__default_statement_ID",
+                    "Principal": {"AWS": "*"},
+                    "Action": [
+                        "SNS:GetTopicAttributes",
+                        "SNS:SetTopicAttributes",
+                        "SNS:AddPermission",
+                        "SNS:RemovePermission",
+                        "SNS:DeleteTopic",
+                        "SNS:Subscribe",
+                        "SNS:ListSubscriptionsByTopic",
+                        "SNS:Publish",
+                    ],
+                    "Resource": topic["arn"],
+                    "Condition": {"StringEquals": {"AWS:SourceOwner": topic["account_id"]}},
+                }
+            ],
+        }
+    )
+
+
+SnsProtocols = Literal[
+    "http", "https", "email", "email-json", "sms", "sqs", "application", "lambda", "firehose"
+]
+
+SnsApplicationPlatforms = Literal[
+    "APNS", "APNS_SANDBOX", "ADM", "FCM", "Baidu", "GCM", "MPNS", "WNS"
+]
+SnsMessageProtocols = Literal[SnsProtocols, SnsApplicationPlatforms]
+
+
+class SnsSubscription(TypedDict, total=False):
+    """
+    In SNS, Subscription can be represented with only TopicArn, Endpoint, Protocol, SubscriptionArn and Owner, for
+    example in ListSubscriptions. However, when getting a subscription with GetSubscriptionAttributes, it will return
+    the Subscription object merged with its own attributes.
+    This represents this merged object, for internal use and in GetSubscriptionAttributes
+    https://docs.aws.amazon.com/cli/latest/reference/sns/get-subscription-attributes.html
+    """
+
+    TopicArn: topicARN
+    Endpoint: str
+    Protocol: SnsProtocols
+    SubscriptionArn: subscriptionARN
+    PendingConfirmation: Literal["true", "false"]
+    Owner: str | None
+    SubscriptionPrincipal: str | None
+    FilterPolicy: str | None
+    FilterPolicyScope: Literal["MessageAttributes", "MessageBody"]
+    RawMessageDelivery: Literal["true", "false"]
+    ConfirmationWasAuthenticated: Literal["true", "false"]
+    SubscriptionRoleArn: str | None
+    DeliveryPolicy: str | None
+
+
+@singleton_factory
+def global_sns_message_sequence():
+    # creates a 20-digit number used as the start for the global sequence, adds 100 for it to be different from SQS's
+    # mostly for testing purpose, both global sequence would be initialized at the same and be identical
+    start = int(time.time() + 100) << 33
+    # itertools.count is thread safe over the GIL since its getAndIncrement operation is a single python bytecode op
+    return itertools.count(start)
+
+
+def get_next_sequence_number():
+    return next(global_sns_message_sequence())
+
+
+class SnsMessageType(StrEnum):
+    Notification = "Notification"
+    SubscriptionConfirmation = "SubscriptionConfirmation"
+    UnsubscribeConfirmation = "UnsubscribeConfirmation"
+
+
+@dataclass
+class SnsMessage:
+    type: SnsMessageType
+    message: (
+        str | dict
+    )  # can be Dict if after being JSON decoded for validation if structure is `json`
+    message_attributes: MessageAttributeMap | None = None
+    message_structure: str | None = None
+    subject: str | None = None
+    message_deduplication_id: str | None = None
+    message_group_id: str | None = None
+    token: str | None = None
+    message_id: str = field(default_factory=long_uid)
+    is_fifo: bool | None = False
+    sequencer_number: str | None = None
+
+    def __post_init__(self):
+        if self.message_attributes is None:
+            self.message_attributes = {}
+        if self.is_fifo:
+            self.sequencer_number = str(get_next_sequence_number())
+
+    def message_content(self, protocol: SnsMessageProtocols) -> str:
+        """
+        Helper function to retrieve the message content for the right protocol if the StructureMessage is `json`
+        See https://docs.aws.amazon.com/sns/latest/dg/sns-send-custom-platform-specific-payloads-mobile-devices.html
+        https://docs.aws.amazon.com/sns/latest/dg/example_sns_Publish_section.html
+        :param protocol:
+        :return: message content as string
+        """
+        if self.message_structure == "json":
+            return self.message.get(protocol, self.message.get("default"))
+
+        return self.message
+
+    @classmethod
+    def from_batch_entry(cls, entry: PublishBatchRequestEntry, is_fifo=False) -> "SnsMessage":
+        return cls(
+            type=SnsMessageType.Notification,
+            message=entry["Message"],
+            subject=entry.get("Subject"),
+            message_structure=entry.get("MessageStructure"),
+            message_attributes=entry.get("MessageAttributes"),
+            message_deduplication_id=entry.get("MessageDeduplicationId"),
+            message_group_id=entry.get("MessageGroupId"),
+            is_fifo=is_fifo,
+        )
+
+
+>>>>>>> a7c19bd6d (merge existing PR with topic migration)
 class SnsStore(BaseStore):
     topics: dict[str, Topic] = LocalAttribute(default=dict)
 
