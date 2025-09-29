@@ -8,7 +8,6 @@ from localstack.aws.api.sns import (
     CreateTopicResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
-    InvalidParameterValueException,
     ListTopicsResponse,
     NotFoundException,
     SnsApi,
@@ -22,6 +21,7 @@ from localstack.aws.api.sns import (
 )
 from localstack.services.sns.v2.models import SnsStore, Topic, sns_stores
 from localstack.utils.aws.arns import ArnData, parse_arn, sns_topic_arn
+from localstack.utils.collections import PaginatedList
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -56,20 +56,23 @@ class SnsProvider(SnsApi):
 
         topic = Topic(name=name, attributes=attributes, arn=topic_ARN, context=context)
 
-        if attributes is None:
-            attributes = {}
+        attributes = attributes or {}
         if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
             fifo_match = re.match(SNS_TOPIC_NAME_PATTERN_FIFO, name)
             if not fifo_match:
-                raise InvalidParameterValueException(
+                raise InvalidParameterException(
                     "Fifo Topic names must end with .fifo and must be made up of only uppercase and lowercase ASCII letters, numbers, underscores, and hyphens, and must be between 1 and 256 characters long."
                 )
         else:
+            # AWS does not seem to save explicit settings of fifo = false
+            try:
+                if topic.attributes["FifoTopic"]:
+                    del topic.attributes["FifoTopic"]
+            except KeyError:
+                pass
             name_match = re.match(SNS_TOPIC_NAME_PATTERN, name)
             if not name_match:
-                raise InvalidParameterValueException(
-                    "Topic names must be made up of only uppercase and lowercase ASCII letters, numbers, underscores, and hyphens, and must be between 1 and 256 characters long."
-                )
+                raise InvalidParameterException("Invalid parameter: Topic Name")
 
         # if attributes:
         # self.set_topic_defaults(topic, context)
@@ -99,8 +102,13 @@ class SnsProvider(SnsApi):
         self, context: RequestContext, next_token: nextToken | None = None, **kwargs
     ) -> ListTopicsResponse:
         store = self.get_store(context.account_id, context.region)
-
-        return ListTopicsResponse(Topics=[t.arn for t in store.topics.values()])
+        topics = {"Topics": [{"TopicArn": t.arn} for t in store.topics.values()]}
+        topics = PaginatedList(topics["Topics"])
+        page, nxt = topics.get_page(
+            lambda topic: topic["TopicArn"], next_token=next_token, page_size=100
+        )
+        topics = {"Topics": page, "NextToken": nxt}
+        return ListTopicsResponse(**topics)
 
     def set_topic_attributes(
         self,
@@ -111,6 +119,8 @@ class SnsProvider(SnsApi):
         **kwargs,
     ) -> None:
         topic: Topic = self._get_topic(arn=topic_arn, context=context)
+        if attribute_name == "FifoTopic":
+            raise InvalidParameterException("Invalid parameter: AttributeName")
         topic.attributes[attribute_name] = attribute_value
 
     @staticmethod

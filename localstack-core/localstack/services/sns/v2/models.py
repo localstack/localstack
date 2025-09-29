@@ -6,8 +6,10 @@ from localstack.aws.api.sns import TopicAttributesMap
 from localstack.services.stores import (
     AccountRegionBundle,
     BaseStore,
+    CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.tagging import TaggingService
 
 
 class TopicAttributes(TypedDict, total=False):
@@ -88,7 +90,7 @@ class Topic:
 class SnsStore(BaseStore):
     topics: dict[str, Topic] = LocalAttribute(default=dict)
 
-    # TAGS: TaggingService = CrossRegionAttribute()# TODO
+    TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)
