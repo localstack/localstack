@@ -1985,6 +1985,9 @@ class CreateIntegrationMessage(ServiceRequest):
     Description: Optional[IntegrationDescription]
 
 
+TagKeyList = List[String]
+
+
 class ReadWriteAccess(TypedDict, total=False):
     Authorization: ServiceAuthorization
 
@@ -2023,6 +2026,8 @@ class CreateRedshiftIdcApplicationMessage(ServiceRequest):
     IamRoleArn: String
     AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
     ServiceIntegrations: Optional[ServiceIntegrationList]
+    Tags: Optional[TagList]
+    SsoTagKeys: Optional[TagKeyList]
 
 
 class RedshiftIdcApplication(TypedDict, total=False):
@@ -2036,6 +2041,8 @@ class RedshiftIdcApplication(TypedDict, total=False):
     IdcOnboardStatus: Optional[String]
     AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
     ServiceIntegrations: Optional[ServiceIntegrationList]
+    Tags: Optional[TagList]
+    SsoTagKeys: Optional[TagKeyList]
 
 
 class CreateRedshiftIdcApplicationResult(TypedDict, total=False):
@@ -2245,9 +2252,6 @@ class DeleteSnapshotCopyGrantMessage(ServiceRequest):
 
 class DeleteSnapshotScheduleMessage(ServiceRequest):
     ScheduleIdentifier: String
-
-
-TagKeyList = List[String]
 
 
 class DeleteTagsMessage(ServiceRequest):
@@ -3914,6 +3918,8 @@ class RedshiftApi:
         identity_namespace: IdentityNamespaceString | None = None,
         authorized_token_issuer_list: AuthorizedTokenIssuerList | None = None,
         service_integrations: ServiceIntegrationList | None = None,
+        tags: TagList | None = None,
+        sso_tag_keys: TagKeyList | None = None,
         **kwargs,
     ) -> CreateRedshiftIdcApplicationResult:
         raise NotImplementedError
