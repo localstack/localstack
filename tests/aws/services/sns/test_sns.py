@@ -354,6 +354,7 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
+    @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
         valid_name = "a" * 256
@@ -375,36 +376,46 @@ class TestSNSTopicCrudV2:
                 sns_create_topic(Name=f"bad{c}name")
             snapshot.match(f"name-invalid-char-{c}", e.value.response)
 
-    def test_create_topic_in_multiple_regions(self, aws_client, sns_client_factory, snapshot):
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Attributes.EffectiveDeliveryPolicy",
+        ]
+    )
+    def test_create_topic_in_multiple_regions(self, aws_client, aws_client_factory, snapshot):
         topic_name = f"multiregion-{short_uid()}"
 
         # us-east-1
-        client_east = sns_client_factory("us-east-1")
-        arn_east = client_east.create_topic(Name=topic_name)["TopicArn"]
+        sns_east = aws_client_factory(region_name="us-east-1").sns
+        arn_east = sns_east.create_topic(Name=topic_name)["TopicArn"]
 
         # us-west-2
-        client_west = sns_client_factory("us-west-2")
-        arn_west = client_west.create_topic(Name=topic_name)["TopicArn"]
+        sns_west = aws_client_factory(region_name="us-west-1").sns
+        arn_west = sns_west.create_topic(Name=topic_name)["TopicArn"]
 
-        assert arn_east != arn_west
+        list_east_response = sns_east.list_topics()
+        snapshot.match("list-east", list_east_response)
+        list_west_response = sns_west.list_topics()
+        snapshot.match("list-west", list_west_response)
 
-        snapshot.match("topic-east", client_east.get_topic_attributes(TopicArn=arn_east))
-        snapshot.match("topic-west", client_west.get_topic_attributes(TopicArn=arn_west))
+        snapshot.match("topic-east", sns_east.get_topic_attributes(TopicArn=arn_east))
+        snapshot.match("topic-west", sns_west.get_topic_attributes(TopicArn=arn_west))
 
-    def test_list_topic_paging(self, aws_client, sns_create_topic, snapshot):
+    @markers.aws.unknown
+    def test_list_topic_paging(self, aws_client, sns_create_topic):
         topic_arns = []
-        for i in range(120):  # > default page size
+        page_size = 100
+        for i in range(page_size + 20):  # > default page size
             resp = sns_create_topic(Name=f"paging-{i}-{short_uid()}")
             topic_arns.append(resp["TopicArn"])
 
         resp = aws_client.sns.list_topics()
-        snapshot.match("list-topics-first-page", resp)
+        assert len(resp["Topics"]) == page_size
 
         assert "NextToken" in resp
         token = resp["NextToken"]
 
         resp2 = aws_client.sns.list_topics(NextToken=token)
-        snapshot.match("list-topics-second-page", resp2)
 
         # Collect all returned ARNs to ensure no duplicates / missing
         all_returned_arns = [t["TopicArn"] for t in resp["Topics"]] + [
@@ -412,6 +423,12 @@ class TestSNSTopicCrudV2:
         ]
         assert set(topic_arns).issubset(set(all_returned_arns))
 
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..Attributes.EffectiveDeliveryPolicy",
+        ]
+    )
     def test_topic_get_attributes_with_fifo_false(self, sns_create_topic, aws_client, snapshot):
         resp = sns_create_topic(
             Name=f"standard-topic-{short_uid()}", Attributes={"FifoTopic": "false"}
@@ -419,9 +436,13 @@ class TestSNSTopicCrudV2:
         topic_arn = resp["TopicArn"]
 
         attrs = aws_client.sns.get_topic_attributes(TopicArn=topic_arn)
-        assert attrs["Attributes"]["FifoTopic"] == "false"
-
         snapshot.match("get-attrs-standard-topic", attrs)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_topic_attributes(
+                TopicArn=topic_arn, AttributeName="FifoTopic", AttributeValue="false"
+            )
+        snapshot.match("set-fifo-false-after-creation", e.value.response)
 
 
 class TestSNSPublishCrud:
