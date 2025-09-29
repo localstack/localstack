@@ -192,7 +192,6 @@ class TestSNSTopicCrud:
         snapshot.match("topic-not-exists", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_delete_topic_idempotency(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 

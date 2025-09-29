@@ -5208,7 +5208,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_delete_topic_idempotency": {
-    "recorded-date": "28-05-2025, 10:08:38",
+    "recorded-date": "29-09-2025, 09:46:20",
     "recorded-content": {
       "delete-topic": {
         "ResponseMetadata": {
