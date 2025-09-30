@@ -759,5 +759,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_get_att": {
+    "recorded-date": "30-09-2025, 19:25:10",
+    "recorded-content": {
+      "dependent_ref_exc": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: Unresolved resource dependencies [MyTopic] in the Resources block of the template",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

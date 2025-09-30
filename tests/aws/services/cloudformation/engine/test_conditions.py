@@ -126,6 +126,35 @@ class TestCloudFormationConditions:
         snapshot.match("dependent_ref_exc", e.value.response)
 
     @markers.aws.validated
+    def test_dependent_get_att(self, aws_client, snapshot):
+        """
+        Tests behavior of a stack with 2 resources where one depends on the other.
+        The referenced resource won't be deployed due to its condition evaluating to false, so the ref can't be resolved.
+
+        This immediately leads to an error.
+        """
+        topic_name = f"test-topic-{short_uid()}"
+        ssm_param_name = f"test-param-{short_uid()}"
+
+        stack_name = f"test-condition-ref-stack-{short_uid()}"
+        changeset_name = "initial"
+        with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=changeset_name,
+                ChangeSetType="CREATE",
+                TemplateBody=load_file(
+                    os.path.join(THIS_DIR, "../../../templates/conditions/get-att-condition.yml")
+                ),
+                Parameters=[
+                    {"ParameterKey": "TopicName", "ParameterValue": topic_name},
+                    {"ParameterKey": "SsmParamName", "ParameterValue": ssm_param_name},
+                    {"ParameterKey": "OptionParameter", "ParameterValue": "option-b"},
+                ],
+            )
+        snapshot.match("dependent_ref_exc", e.value.response)
+
+    @markers.aws.validated
     @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
     def test_dependent_ref_intrinsic_fn_condition(self, aws_client, deploy_cfn_template):
         """
