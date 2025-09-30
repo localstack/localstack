@@ -110,7 +110,9 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         if not is_valid_kinesis_arn(resource_arn):
             raise ValidationException(f"invalid kinesis arn {resource_arn}")
 
-        kinesis = connect_to().kinesis
+        kinesis = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).kinesis
         try:
             kinesis.describe_stream_summary(StreamARN=resource_arn)
         except kinesis.exceptions.ResourceNotFoundException:
@@ -128,7 +130,9 @@ class KinesisProvider(KinesisApi, ServiceLifecycleHook):
         if not is_valid_kinesis_arn(resource_arn):
             raise ValidationException(f"invalid kinesis arn {resource_arn}")
 
-        kinesis = connect_to().kinesis
+        kinesis = connect_to(
+            aws_access_key_id=context.account_id, region_name=context.region
+        ).kinesis
         try:
             kinesis.describe_stream_summary(StreamARN=resource_arn)
         except kinesis.exceptions.ResourceNotFoundException:
