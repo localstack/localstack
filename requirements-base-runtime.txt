@@ -178,8 +178,6 @@ six==1.17.0
     # via
     #   python-dateutil
     #   rfc3339-validator
-tailer==0.4.1
-    # via localstack-core (pyproject.toml)
 typing-extensions==4.15.0
     # via
     #   localstack-twisted

@@ -26,7 +26,6 @@ dependencies = [
     "rich>=12.3.0",
     "requests>=2.20.0",
     "semver>=2.10",
-    "tailer>=0.4.1",
 ]
 dynamic = ["version"]
 classifiers = [
@@ -104,7 +103,6 @@ test = [
     # runtime dependencies are required for running the tests
     "localstack-core[runtime]",
     "coverage[toml]>=5.5",
-    "deepdiff>=6.4.1",
     "httpx[http2]>=0.25",
     "pluggy>=1.3.0",
     "pytest>=7.4.2",
