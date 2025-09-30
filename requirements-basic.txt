@@ -44,7 +44,7 @@ pyproject-hooks==1.2.0
     # via build
 python-dotenv==1.1.1
     # via localstack-core (pyproject.toml)
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via localstack-core (pyproject.toml)
 requests==2.32.5
     # via localstack-core (pyproject.toml)
