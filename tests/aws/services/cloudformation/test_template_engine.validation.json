@@ -98,6 +98,15 @@
   "tests/aws/services/cloudformation/test_template_engine.py::TestPseudoParameters::test_stack_id": {
     "last_validated_date": "2024-07-18T08:56:47+00:00"
   },
+  "tests/aws/services/cloudformation/test_template_engine.py::TestSecretsManagerParameters::test_resolve_secretsmanager_with_backslashes": {
+    "last_validated_date": "2025-09-30T15:36:21+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 11.22,
+      "teardown": 4.49,
+      "total": 15.72
+    }
+  },
   "tests/aws/services/cloudformation/test_template_engine.py::TestSsmParameters::test_create_change_set_with_ssm_parameter_list": {
     "last_validated_date": "2024-08-08T21:21:23+00:00"
   },

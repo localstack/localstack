@@ -236,7 +236,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         issue_url = "?".join([base, urlencode(query_args)])
         LOG.info(
             "You have opted in to the new CloudFormation deployment engine. "
-            "You can opt in to using the old engine by setting PROVIDER_OVERRIDE_CLOUDFORMATION=legacy. "
+            "You can opt in to using the old engine by setting PROVIDER_OVERRIDE_CLOUDFORMATION=engine-legacy. "
             "If you experience issues, please submit a bug report at this URL: %s",
             issue_url,
         )
