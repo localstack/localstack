@@ -441,7 +441,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 region_name=self._change_set.region_name,
             )
             if new_value:
-                return REGEX_DYNAMIC_REF.sub(new_value, value)
+                # We need to use a function here, to avoid backslash processing by regex.
+                # From the regex sub documentation:
+                # repl can be a string or a function; if it is a string, any backslash escapes in it are processed.
+                # Using a function, we can avoid this processing.
+                return REGEX_DYNAMIC_REF.sub(lambda _: new_value, value)
 
         return value
 
