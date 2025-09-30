@@ -17,7 +17,8 @@ from localstack.utils.run import run
 DDB_AGENT_JAR_URL = f"{ARTIFACTS_REPO}/raw/e4e8c8e294b1fcda90c678ff6af5d5ebe1f091eb/dynamodb-local-patch/target/ddb-local-loader-0.2.jar"
 JAVASSIST_JAR_URL = f"{MAVEN_REPO_URL}/org/javassist/javassist/3.30.2-GA/javassist-3.30.2-GA.jar"
 
-DDBLOCAL_URL = "https://d1ni2b6xgvw0s0.cloudfront.net/v3.x/dynamodb_local_latest.zip"
+# URL points to 2.x here - however the latest 3.x builds are available under this URL
+DDBLOCAL_URL = "https://d1ni2b6xgvw0s0.cloudfront.net/v2.x/dynamodb_local_latest.zip"
 
 
 class DynamoDBLocalPackage(Package):
