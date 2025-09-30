@@ -1872,7 +1872,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_describe_contributor_insights": {
-    "recorded-date": "25-09-2025, 23:34:13",
+    "recorded-date": "30-09-2025, 20:00:00",
     "recorded-content": {
       "describe-contributor-insights-disabled": {
         "ContributorInsightsStatus": "DISABLED",

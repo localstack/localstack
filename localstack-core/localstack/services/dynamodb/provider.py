@@ -47,6 +47,7 @@ from localstack.aws.api.dynamodb import (
     DeleteRequest,
     DeleteTableOutput,
     DescribeContinuousBackupsOutput,
+    DescribeContributorInsightsInput,
     DescribeContributorInsightsOutput,
     DescribeGlobalTableOutput,
     DescribeKinesisStreamingDestinationOutput,
@@ -63,7 +64,6 @@ from localstack.aws.api.dynamodb import (
     GetItemOutput,
     GlobalTableAlreadyExistsException,
     GlobalTableNotFoundException,
-    IndexName,
     KinesisStreamingDestinationOutput,
     ListGlobalTablesOutput,
     ListTablesInputLimit,
@@ -961,16 +961,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
     # Contributor Insights
     #
 
-    @handler("DescribeContributorInsights")
+    @handler("DescribeContributorInsights", expand=False)
     def describe_contributor_insights(
         self,
         context: RequestContext,
-        table_name: TableArn,
-        index_name: IndexName | None = None,
-        **kwargs,
+        describe_contributor_insights_input: DescribeContributorInsightsInput,
     ) -> DescribeContributorInsightsOutput:
         return DescribeContributorInsightsOutput(
-            TableName=table_name, IndexName=index_name, ContributorInsightsStatus="DISABLED"
+            TableName=describe_contributor_insights_input["TableName"],
+            IndexName=describe_contributor_insights_input.get("IndexName"),
+            ContributorInsightsStatus="DISABLED",
         )
 
     #
