@@ -1,6 +1,174 @@
 {
+  "tests/aws/services/scheduler/test_scheduler.py::test_untag_resource": {
+    "recorded-date": "23-07-2025, 09:21:31",
+    "recorded-content": {
+      "list-untagged-schedule": {
+        "Tags": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-False-True]": {
+    "recorded-date": "23-07-2025, 09:29:46",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_valid_schedule_expression": {
+    "recorded-date": "23-07-2025, 09:21:55",
+    "recorded-content": {
+      "valid-schedule-expression": {
+        "ScheduleArn": "<schedule-arn:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-False-False]": {
+    "recorded-date": "23-07-2025, 09:30:10",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
   "tests/aws/services/scheduler/test_scheduler.py::test_tag_resource": {
-    "recorded-date": "04-12-2024, 10:07:28",
+    "recorded-date": "23-07-2025, 09:21:17",
     "recorded-content": {
       "list-tagged-schedule": {
         "Tags": [
@@ -16,11 +184,34 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::test_untag_resource": {
-    "recorded-date": "04-12-2024, 10:08:11",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-True-True]": {
+    "recorded-date": "23-07-2025, 09:22:07",
     "recorded-content": {
-      "list-untagged-schedule": {
-        "Tags": [],
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
@@ -28,8 +219,3522 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 1 * * * *)]": {
-    "recorded-date": "26-01-2025, 15:45:53",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-True-False]": {
+    "recorded-date": "23-07-2025, 09:22:19",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-True-True]": {
+    "recorded-date": "23-07-2025, 09:30:33",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-False-True]": {
+    "recorded-date": "23-07-2025, 09:22:31",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-NONE-False-False]": {
+    "recorded-date": "23-07-2025, 09:22:43",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-True-False]": {
+    "recorded-date": "23-07-2025, 09:30:57",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-True-True]": {
+    "recorded-date": "23-07-2025, 09:22:56",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-True-False]": {
+    "recorded-date": "23-07-2025, 09:23:08",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-False-True]": {
+    "recorded-date": "23-07-2025, 09:31:21",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-False-True]": {
+    "recorded-date": "23-07-2025, 09:23:20",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-ENABLED-DELETE-False-False]": {
+    "recorded-date": "23-07-2025, 09:23:32",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion1-False-False]": {
+    "recorded-date": "23-07-2025, 09:31:44",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-True-True]": {
+    "recorded-date": "23-07-2025, 09:23:44",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-True-False]": {
+    "recorded-date": "23-07-2025, 09:23:56",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-True-True]": {
+    "recorded-date": "23-07-2025, 09:32:08",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-False-True]": {
+    "recorded-date": "23-07-2025, 09:24:08",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-NONE-False-False]": {
+    "recorded-date": "23-07-2025, 09:24:20",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-True-False]": {
+    "recorded-date": "23-07-2025, 09:32:32",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-True-True]": {
+    "recorded-date": "23-07-2025, 09:24:32",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-True-False]": {
+    "recorded-date": "23-07-2025, 09:24:44",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-False-True]": {
+    "recorded-date": "23-07-2025, 09:32:55",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-False-True]": {
+    "recorded-date": "23-07-2025, 09:24:57",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[OFF-DISABLED-DELETE-False-False]": {
+    "recorded-date": "23-07-2025, 09:25:09",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion0-False-False]": {
+    "recorded-date": "23-07-2025, 09:33:19",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-True-True]": {
+    "recorded-date": "23-07-2025, 09:25:21",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-True-False]": {
+    "recorded-date": "23-07-2025, 09:25:33",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-True-True]": {
+    "recorded-date": "23-07-2025, 09:33:43",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-False-True]": {
+    "recorded-date": "23-07-2025, 09:25:46",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-NONE-False-False]": {
+    "recorded-date": "23-07-2025, 09:25:58",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-True-False]": {
+    "recorded-date": "23-07-2025, 09:34:07",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-True-True]": {
+    "recorded-date": "23-07-2025, 09:26:10",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-True-False]": {
+    "recorded-date": "23-07-2025, 09:26:22",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-False-True]": {
+    "recorded-date": "23-07-2025, 09:34:31",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-False-True]": {
+    "recorded-date": "23-07-2025, 09:26:34",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-ENABLED-DELETE-False-False]": {
+    "recorded-date": "23-07-2025, 09:26:46",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state1-combinations_action_after_completion1-False-False]": {
+    "recorded-date": "23-07-2025, 09:34:55",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-True-True]": {
+    "recorded-date": "23-07-2025, 09:26:58",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-True-False]": {
+    "recorded-date": "23-07-2025, 09:27:11",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-True-True]": {
+    "recorded-date": "23-07-2025, 09:35:18",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-False-True]": {
+    "recorded-date": "23-07-2025, 09:27:23",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-NONE-False-False]": {
+    "recorded-date": "23-07-2025, 09:27:35",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-True-False]": {
+    "recorded-date": "23-07-2025, 09:35:42",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-True-True]": {
+    "recorded-date": "23-07-2025, 09:27:47",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-True-False]": {
+    "recorded-date": "23-07-2025, 09:27:59",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-False-True]": {
+    "recorded-date": "23-07-2025, 09:36:06",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-False-True]": {
+    "recorded-date": "23-07-2025, 09:28:11",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule[FLEXIBLE-DISABLED-DELETE-False-False]": {
+    "recorded-date": "23-07-2025, 09:28:23",
+    "recorded-content": {
+      "get-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion0-False-False]": {
+    "recorded-date": "23-07-2025, 09:36:30",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_get_schedule_not_found": {
+    "recorded-date": "23-07-2025, 09:28:24",
+    "recorded-content": {
+      "get-schedule-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Schedule not-existing-schedule-name does not exist."
+        },
+        "Message": "Schedule not-existing-schedule-name does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules": {
+    "recorded-date": "23-07-2025, 09:28:35",
+    "recorded-content": {
+      "list-schedules": {
+        "Schedules": [
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<schedule-one-name>",
+            "CreationDate": "<datetime>",
+            "GroupName": "default",
+            "LastModificationDate": "<datetime>",
+            "Name": "<schedule-one-name>",
+            "State": "ENABLED",
+            "Target": {
+              "Arn": "<target-sqs-queue-arn>"
+            }
+          },
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<schedule-two-name>",
+            "CreationDate": "<datetime>",
+            "GroupName": "default",
+            "LastModificationDate": "<datetime>",
+            "Name": "<schedule-two-name>",
+            "State": "ENABLED",
+            "Target": {
+              "Arn": "<target-sqs-queue-arn>"
+            }
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_list_schedules_non": {
+    "recorded-date": "23-07-2025, 09:28:36",
+    "recorded-content": {
+      "list-schedules-non": {
+        "Schedules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-True-True]": {
+    "recorded-date": "23-07-2025, 09:36:53",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-True-True]": {
+    "recorded-date": "23-07-2025, 09:28:59",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-True-False]": {
+    "recorded-date": "23-07-2025, 09:37:18",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[OFF-combinations_state0-combinations_action_after_completion0-True-False]": {
+    "recorded-date": "23-07-2025, 09:29:22",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-False-True]": {
+    "recorded-date": "23-07-2025, 09:37:42",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state0-combinations_action_after_completion1-False-False]": {
+    "recorded-date": "23-07-2025, 09:38:06",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-True-True]": {
+    "recorded-date": "23-07-2025, 09:38:30",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-True-False]": {
+    "recorded-date": "23-07-2025, 09:38:53",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-False-True]": {
+    "recorded-date": "23-07-2025, 09:39:17",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion0-False-False]": {
+    "recorded-date": "23-07-2025, 09:39:41",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-True-True]": {
+    "recorded-date": "23-07-2025, 09:40:05",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-True-False]": {
+    "recorded-date": "23-07-2025, 09:40:31",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-False-True]": {
+    "recorded-date": "23-07-2025, 09:40:54",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_update_schedule[FLEXIBLE-combinations_state1-combinations_action_after_completion1-False-False]": {
+    "recorded-date": "23-07-2025, 09:41:18",
+    "recorded-content": {
+      "initial-schedule": {
+        "ActionAfterCompletion": "NONE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "FlexibleTimeWindow": {
+          "MaximumWindowInMinutes": 60,
+          "Mode": "FLEXIBLE"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(1 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "ENABLED",
+        "Target": {
+          "Arn": "<initial-target-queue-arn>",
+          "Input": {
+            "key": "value"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<initial-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-schedule": {
+        "ScheduleArn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "updated-schedule": {
+        "ActionAfterCompletion": "DELETE",
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule/default/<name>",
+        "CreationDate": "<datetime>",
+        "Description": "Test description",
+        "FlexibleTimeWindow": {
+          "Mode": "OFF"
+        },
+        "GroupName": "default",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "ScheduleExpression": "rate(2 minute)",
+        "ScheduleExpressionTimezone": "UTC",
+        "State": "DISABLED",
+        "Target": {
+          "Arn": "<update-target-queue-arn>",
+          "Input": {
+            "otherkey": "othervalue"
+          },
+          "RetryPolicy": {
+            "MaximumEventAgeInSeconds": 86400,
+            "MaximumRetryAttempts": 185
+          },
+          "RoleArn": "<update-target-role-arn>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_delete_schedule": {
+    "recorded-date": "23-07-2025, 09:41:31",
+    "recorded-content": {
+      "delete-schedule": {
+        "Schedules": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::test_delete_schedule_not_found": {
+    "recorded-date": "23-07-2025, 09:41:32",
+    "recorded-content": {
+      "delete-schedule-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Schedule not-existing-schedule-name does not exist."
+        },
+        "Message": "Schedule not-existing-schedule-name does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-True]": {
+    "recorded-date": "23-07-2025, 10:25:21",
+    "recorded-content": {
+      "create-schedule-group": {
+        "ScheduleGroupArn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[True-False]": {
+    "recorded-date": "23-07-2025, 10:25:34",
+    "recorded-content": {
+      "create-schedule-group": {
+        "ScheduleGroupArn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-True]": {
+    "recorded-date": "23-07-2025, 10:25:47",
+    "recorded-content": {
+      "create-schedule-group": {
+        "ScheduleGroupArn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_create_schedule_group[False-False]": {
+    "recorded-date": "23-07-2025, 10:26:00",
+    "recorded-content": {
+      "create-schedule-group": {
+        "ScheduleGroupArn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[True]": {
+    "recorded-date": "23-07-2025, 10:26:14",
+    "recorded-content": {
+      "get-schedule-group": {
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name>",
+        "CreationDate": "<datetime>",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "State": "ACTIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group[False]": {
+    "recorded-date": "23-07-2025, 10:26:27",
+    "recorded-content": {
+      "get-schedule-group": {
+        "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name>",
+        "CreationDate": "<datetime>",
+        "LastModificationDate": "<datetime>",
+        "Name": "<name>",
+        "State": "ACTIVE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_get_schedule_group_not_found": {
+    "recorded-date": "23-07-2025, 10:26:40",
+    "recorded-content": {
+      "get-schedule-group-not-found": {
+        "Error": {
+          "Code": "ResourceNotFoundException",
+          "Message": "Schedule group not-existing-name does not exist."
+        },
+        "Message": "Schedule group not-existing-name does not exist.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups[True]": {
+    "recorded-date": "23-07-2025, 10:26:41",
+    "recorded-content": {
+      "list-schedule-groups": {
+        "ScheduleGroups": [
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/default",
+            "Name": "default",
+            "State": "ACTIVE"
+          },
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name-groupe-one>",
+            "CreationDate": "<datetime>",
+            "LastModificationDate": "<datetime>",
+            "Name": "<name-groupe-one>",
+            "State": "ACTIVE"
+          },
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name-groupe-two>",
+            "CreationDate": "<datetime>",
+            "LastModificationDate": "<datetime>",
+            "Name": "<name-groupe-two>",
+            "State": "ACTIVE"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups[False]": {
+    "recorded-date": "23-07-2025, 10:27:07",
+    "recorded-content": {
+      "list-schedule-groups": {
+        "ScheduleGroups": [
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/default",
+            "Name": "default",
+            "State": "ACTIVE"
+          },
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name-groupe-one>",
+            "CreationDate": "<datetime>",
+            "LastModificationDate": "<datetime>",
+            "Name": "<name-groupe-one>",
+            "State": "ACTIVE"
+          },
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/<name-groupe-two>",
+            "CreationDate": "<datetime>",
+            "LastModificationDate": "<datetime>",
+            "Name": "<name-groupe-two>",
+            "State": "ACTIVE"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestScheduleGroupe::test_list_schedule_groups_not_found": {
+    "recorded-date": "23-07-2025, 10:27:34",
+    "recorded-content": {
+      "list-schedule-groups-not-found": {
+        "ScheduleGroups": [
+          {
+            "Arn": "arn:<partition>:scheduler:<region>:111111111111:schedule-group/default",
+            "Name": "default",
+            "State": "ACTIVE"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(0 1 * * * *)]": {
+    "recorded-date": "23-07-2025, 09:41:32",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -44,8 +3749,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(7 20 * * NOT *)]": {
-    "recorded-date": "26-01-2025, 15:45:53",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(7 20 * * NOT *)]": {
+    "recorded-date": "23-07-2025, 09:41:32",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -60,8 +3765,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(INVALID)]": {
-    "recorded-date": "26-01-2025, 15:45:54",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(INVALID)]": {
+    "recorded-date": "23-07-2025, 09:41:33",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -76,8 +3781,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(0 dummy ? * MON-FRI *)]": {
-    "recorded-date": "26-01-2025, 15:45:54",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(0 dummy ? * MON-FRI *)]": {
+    "recorded-date": "23-07-2025, 09:41:33",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -92,8 +3797,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron(71 8 1 * ? *)]": {
-    "recorded-date": "26-01-2025, 15:45:54",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron(71 8 1 * ? *)]": {
+    "recorded-date": "23-07-2025, 09:41:33",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -108,8 +3813,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[cron()]": {
-    "recorded-date": "26-01-2025, 15:45:55",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[cron()]": {
+    "recorded-date": "23-07-2025, 09:41:34",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -124,8 +3829,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 seconds)]": {
-    "recorded-date": "26-01-2025, 15:45:55",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10 seconds)]": {
+    "recorded-date": "23-07-2025, 09:41:34",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -140,8 +3845,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 years)]": {
-    "recorded-date": "26-01-2025, 15:45:56",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10 years)]": {
+    "recorded-date": "23-07-2025, 09:41:35",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -156,8 +3861,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate()]": {
-    "recorded-date": "26-01-2025, 15:45:56",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate()]": {
+    "recorded-date": "23-07-2025, 09:41:35",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -172,8 +3877,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10)]": {
-    "recorded-date": "26-01-2025, 15:45:56",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10)]": {
+    "recorded-date": "23-07-2025, 09:41:36",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -188,8 +3893,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(10 minutess)]": {
-    "recorded-date": "26-01-2025, 15:45:57",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(10 minutess)]": {
+    "recorded-date": "23-07-2025, 09:41:36",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -204,8 +3909,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
-    "recorded-date": "26-01-2025, 15:45:57",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(foo minutes)]": {
+    "recorded-date": "23-07-2025, 09:41:36",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -220,8 +3925,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate(-10 minutes)]": {
-    "recorded-date": "26-01-2025, 15:45:57",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate(-10 minutes)]": {
+    "recorded-date": "23-07-2025, 09:41:37",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -236,8 +3941,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[rate( 10 minutes )]": {
-    "recorded-date": "26-01-2025, 15:45:58",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[rate( 10 minutes )]": {
+    "recorded-date": "23-07-2025, 09:41:37",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -252,8 +3957,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[ rate(10 minutes)]": {
-    "recorded-date": "26-01-2025, 15:45:58",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[ rate(10 minutes)]": {
+    "recorded-date": "23-07-2025, 09:41:38",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -268,8 +3973,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31T23:59:59Z)]": {
-    "recorded-date": "26-01-2025, 15:45:59",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31T23:59:59Z)]": {
+    "recorded-date": "23-07-2025, 09:41:38",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -284,8 +3989,8 @@
       }
     }
   },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31)]": {
-    "recorded-date": "26-01-2025, 15:45:59",
+  "tests/aws/services/scheduler/test_scheduler.py::TestSchedule::tests_create_schedule_with_invalid_schedule_expression[at(2021-12-31)]": {
+    "recorded-date": "23-07-2025, 09:41:38",
     "recorded-content": {
       "invalid-schedule-expression": {
         "Error": {
@@ -296,18 +4001,6 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
-        }
-      }
-    }
-  },
-  "tests/aws/services/scheduler/test_scheduler.py::tests_create_schedule_with_valid_schedule_expression": {
-    "recorded-date": "02-02-2025, 00:22:13",
-    "recorded-content": {
-      "valid-schedule-expression": {
-        "ScheduleArn": "<schedule-arn:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
         }
       }
     }
