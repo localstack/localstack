@@ -62,6 +62,17 @@ TEST_INVOKE_TEMPLATE_MOCK = """Execution log for request {request_id}
 {formatted_date} : Method completed with status: {method_response_status}
 """
 
+TEST_INVOKE_TEMPLATE_FAILED = """Execution log for request {request_id}
+{formatted_date} : Starting execution for request: {request_id}
+{formatted_date} : HTTP Method: {request_method}, Resource Path: {resource_path}
+{formatted_date} : Method request path: {method_request_path_parameters}
+{formatted_date} : Method request query string: {method_request_query_string}
+{formatted_date} : Method request headers: {method_request_headers}
+{formatted_date} : Method request body before transformations: {method_request_body}
+{formatted_date} : Execution failed due to {error_type}: {error_message}
+{formatted_date} : Method completed with status: {method_response_status}
+"""
+
 
 def _dump_headers(headers: Headers) -> str:
     if not headers:
@@ -80,9 +91,9 @@ def log_template(invocation_context: RestApiInvocationContext, response_headers:
     formatted_date = datetime.datetime.now(tz=datetime.UTC).strftime("%a %b %d %H:%M:%S %Z %Y")
     request = invocation_context.invocation_request
     context_var = invocation_context.context_variables
-    integration_req = invocation_context.integration_request
-    endpoint_resp = invocation_context.endpoint_response
-    method_resp = invocation_context.invocation_response
+    integration_req = invocation_context.integration_request or {}
+    endpoint_resp = invocation_context.endpoint_response or {}
+    method_resp = invocation_context.invocation_response or {}
     # TODO: if endpoint_uri is an ARN, it means it's an AWS_PROXY integration
     #  this should be transformed to the true URL of a lambda invoke call
     endpoint_uri = integration_req.get("uri", "")
@@ -116,7 +127,7 @@ def log_mock_template(
     formatted_date = datetime.datetime.now(tz=datetime.UTC).strftime("%a %b %d %H:%M:%S %Z %Y")
     request = invocation_context.invocation_request
     context_var = invocation_context.context_variables
-    method_resp = invocation_context.invocation_response
+    method_resp = invocation_context.invocation_response or {}
 
     return TEST_INVOKE_TEMPLATE_MOCK.format(
         formatted_date=formatted_date,
@@ -130,6 +141,29 @@ def log_mock_template(
         method_response_status=method_resp.get("status_code"),
         method_response_body=to_str(method_resp.get("body", "")),
         method_response_headers=_dump_headers(response_headers),
+    )
+
+
+def log_failed_template(
+    invocation_context: RestApiInvocationContext, response_status_code: int
+) -> str:
+    formatted_date = datetime.datetime.now(tz=datetime.UTC).strftime("%a %b %d %H:%M:%S %Z %Y")
+    request = invocation_context.invocation_request
+    context_var = invocation_context.context_variables
+
+    return TEST_INVOKE_TEMPLATE_FAILED.format(
+        formatted_date=formatted_date,
+        request_id=context_var["requestId"],
+        resource_path=request["path"],
+        request_method=request["http_method"],
+        method_request_path_parameters=dict_to_string(request["path_parameters"]),
+        method_request_query_string=dict_to_string(request["query_string_parameters"]),
+        method_request_headers=_dump_headers(request.get("headers")),
+        method_request_body=to_str(request.get("body", "")),
+        method_response_status=response_status_code,
+        # TODO: fix the error message
+        error_type="",
+        error_message="",
     )
 
 
@@ -216,7 +250,9 @@ def create_test_invocation_context(
         responseOverride=ContextVarsResponseOverride(header={}, status=0),
     )
     invocation_context.trace_id = parse_handler.populate_trace_id({})
-    resource_method = resource["resourceMethods"][http_method]
+    resource_method = (
+        resource["resourceMethods"].get(http_method) or resource["resourceMethods"]["ANY"]
+    )
     invocation_context.resource = resource
     invocation_context.resource_method = resource_method
     invocation_context.integration = resource_method["methodIntegration"]
@@ -256,7 +292,15 @@ def run_test_invocation(
     # AWS does not return the Content-Length for TestInvokeMethod
     response_headers.remove("Content-Length")
 
-    if is_mock_integration:
+    if not invocation_context.invocation_response:
+        # TODO: this is an heuristic to guess if we encounter an exception in the call
+        #  in the future, we should attach the exception to the context so we could act on it and properly
+        #  log as we go through the invocation, so that if we have an error we stop logging at the right moment
+        for header in ("Content-Type", "X-Amzn-Trace-Id"):
+            response_headers.remove(header)
+        log = log_failed_template(invocation_context, test_response.status_code)
+
+    elif is_mock_integration:
         # TODO: revisit how we're building the logs
         log = log_mock_template(invocation_context, response_headers)
     else:
