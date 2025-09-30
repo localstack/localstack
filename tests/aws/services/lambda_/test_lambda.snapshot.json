@@ -206,7 +206,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_with_timeout": {
-    "recorded-date": "08-04-2024, 16:56:05",
+    "recorded-date": "03-06-2025, 22:24:28",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -233,7 +233,7 @@
           },
           "MemorySize": 128,
           "PackageType": "Zip",
-          "RevisionId": "<uuid:1>",
+          "RevisionId": "<request-id>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
           "Runtime": "python3.12",
           "RuntimeVersionConfig": {
@@ -260,15 +260,23 @@
       "invoke-result": {
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
+        "LogResult": "log-result",
         "Payload": {
-          "errorMessage": "date <timeout_error_msg> Task timed out after 1.00 seconds"
+          "errorType": "Sandbox.Timedout",
+          "errorMessage": "RequestId: <request-id> Error: Task timed out after <duration> seconds"
         },
         "StatusCode": 200,
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      }
+      },
+      "log-events": [
+        "START RequestId: <request-id> Version: $LATEST\n",
+        "starting wait\n",
+        "END RequestId: <request-id>\n",
+        "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\tInit Duration: <duration> ms\tStatus: timeout\n"
+      ]
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_invoke_no_timeout": {
@@ -840,7 +848,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaFeatures::test_lambda_with_context": {
-    "recorded-date": "09-09-2022, 20:19:33",
+    "recorded-date": "02-06-2025, 09:19:52",
     "recorded-content": {
       "creation": {
         "CreateEventSourceMappingResponse": null,
@@ -861,11 +869,22 @@
           "FunctionName": "<function-name:1>",
           "Handler": "lambda_integration.handler",
           "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
           "MemorySize": 128,
           "PackageType": "Zip",
           "RevisionId": "<uuid:1>",
           "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
-          "Runtime": "nodejs16.x",
+          "Runtime": "nodejs20.x",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
           "State": "Pending",
           "StateReason": "The function is being created.",
           "StateReasonCode": "Creating",
@@ -2733,7 +2752,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_arm": {
-    "recorded-date": "08-04-2024, 16:55:44",
+    "recorded-date": "04-06-2025, 11:25:26",
     "recorded-content": {
       "invoke_runtime_arm_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2746,22 +2765,23 @@
           "pwd": "/var/task",
           "paths": {
             "_var_task_mode": "drwxr-xr-x",
-            "_var_task_uid": 998,
-            "_var_task_owner": "slicer",
-            "_var_task_gid": 995,
+            "_var_task_uid": 0,
+            "_var_task_owner": "root",
+            "_var_task_gid": 0,
             "_opt_mode": "drwxr-xr-x",
             "_opt_uid": 0,
             "_opt_owner": "root",
             "_opt_gid": 0,
-            "_tmp_mode": "drwx------",
-            "_tmp_uid": 993,
-            "_tmp_owner": "sbx_user1051",
-            "_tmp_gid": 990,
+            "_tmp_mode": "drwxrwxrwt",
+            "_tmp_uid": 0,
+            "_tmp_owner": "root",
+            "_tmp_gid": 0,
             "_lambda-entrypoint.sh_mode": "-rwxr-xr-x",
             "_lambda-entrypoint.sh_uid": 0,
             "_lambda-entrypoint.sh_owner": "root",
             "_lambda-entrypoint.sh_gid": 0
-          }
+          },
+          "recursion_limit": 1000
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -2772,7 +2792,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_runtime_introspection_x86": {
-    "recorded-date": "08-04-2024, 16:55:41",
+    "recorded-date": "04-06-2025, 11:10:08",
     "recorded-content": {
       "invoke_runtime_x86_introspection": {
         "ExecutedVersion": "$LATEST",
@@ -2785,22 +2805,23 @@
           "pwd": "/var/task",
           "paths": {
             "_var_task_mode": "drwxr-xr-x",
-            "_var_task_uid": 998,
-            "_var_task_owner": "slicer",
-            "_var_task_gid": 995,
+            "_var_task_uid": 0,
+            "_var_task_owner": "root",
+            "_var_task_gid": 0,
             "_opt_mode": "drwxr-xr-x",
             "_opt_uid": 0,
             "_opt_owner": "root",
             "_opt_gid": 0,
-            "_tmp_mode": "drwx------",
-            "_tmp_uid": 993,
-            "_tmp_owner": "sbx_user1051",
-            "_tmp_gid": 990,
+            "_tmp_mode": "drwxrwxrwt",
+            "_tmp_uid": 0,
+            "_tmp_owner": "root",
+            "_tmp_gid": 0,
             "_lambda-entrypoint.sh_mode": "-rwxr-xr-x",
             "_lambda-entrypoint.sh_uid": 0,
             "_lambda-entrypoint.sh_owner": "root",
             "_lambda-entrypoint.sh_gid": 0
-          }
+          },
+          "recursion_limit": 1000
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -3234,7 +3255,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_invoke": {
-    "recorded-date": "08-04-2024, 17:11:26",
+    "recorded-date": "27-05-2025, 23:40:24",
     "recorded-content": {
       "invoke_result": {
         "ExecutedVersion": "$LATEST",
@@ -3256,7 +3277,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestRequestIdHandling::test_request_id_async_invoke_with_retry": {
-    "recorded-date": "08-04-2024, 17:13:39",
+    "recorded-date": "05-06-2025, 16:22:37",
     "recorded-content": {
       "invoke_result": {
         "Payload": "",
@@ -3333,7 +3354,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_error": {
-    "recorded-date": "24-02-2025, 16:26:37",
+    "recorded-date": "26-05-2025, 15:12:16",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
@@ -3348,7 +3369,7 @@
             "  File \"<frozen importlib._bootstrap>\", line 1360, in _find_and_load\n",
             "  File \"<frozen importlib._bootstrap>\", line 1331, in _find_and_load_unlocked\n",
             "  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n",
-            "  File \"<frozen importlib._bootstrap_external>\", line 1022, in exec_module\n",
+            "  File \"<frozen importlib._bootstrap_external>\", line 1026, in exec_module\n",
             "  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n",
             "  File \"/var/task/lambda_runtime_error.py\", line 1, in <module>\n    raise Exception(\"Runtime startup fails\")\n"
           ]
@@ -3455,13 +3476,30 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaErrors::test_lambda_runtime_exit_segfault": {
-    "recorded-date": "08-04-2024, 16:59:20",
+    "recorded-date": "04-06-2025, 14:20:16",
     "recorded-content": {
       "invocation_error": {
         "ExecutedVersion": "$LATEST",
         "FunctionError": "Unhandled",
         "Payload": {
-          "errorMessage": "date <uuid> Task timed out after 30.13 seconds"
+          "errorMessage": "maximum recursion depth exceeded",
+          "errorType": "RecursionError",
+          "requestId": "",
+          "stackTrace": [
+            "  File \"/var/lang/lib/python3.12/importlib/__init__.py\", line 90, in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1387, in _gcd_import\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1360, in _find_and_load\n",
+            "  File \"<frozen importlib._bootstrap>\", line 1331, in _find_and_load_unlocked\n",
+            "  File \"<frozen importlib._bootstrap>\", line 935, in _load_unlocked\n",
+            "  File \"<frozen importlib._bootstrap_external>\", line 999, in exec_module\n",
+            "  File \"<frozen importlib._bootstrap>\", line 488, in _call_with_frames_removed\n",
+            "  File \"/var/task/lambda_runtime_exit_segfault.py\", line 15, in <module>\n    recursion(1)\n",
+            "  File \"/var/task/lambda_runtime_exit_segfault.py\", line 12, in recursion\n    recursion(n + 1)\n",
+            "  File \"/var/task/lambda_runtime_exit_segfault.py\", line 12, in recursion\n    recursion(n + 1)\n",
+            "  File \"/var/task/lambda_runtime_exit_segfault.py\", line 12, in recursion\n    recursion(n + 1)\n",
+            "  [Previous line repeated 9983 more times]\n",
+            "  File \"/var/task/lambda_runtime_exit_segfault.py\", line 11, in recursion\n    print(f\"In recursion {n}\")\n"
+          ]
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -3506,7 +3544,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBaseFeatures::test_assume_role[1]": {
-    "recorded-date": "08-04-2024, 16:55:26",
+    "recorded-date": "04-06-2025, 16:06:44",
     "recorded-content": {
       "invoke-result-assumed-role-arn": "arn:<partition>:sts::111111111111:assumed-role/lambda-autogenerated-<lambda-autogenerated-role-prefix>/<function-name>@lambda_function"
     }
@@ -3639,7 +3677,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_init_environment": {
-    "recorded-date": "08-04-2024, 16:56:25",
+    "recorded-date": "09-06-2025, 14:31:29",
     "recorded-content": {
       "create-result": {
         "CreateEventSourceMappingResponse": null,
@@ -3692,38 +3730,14 @@
       },
       "lambda-init-inspection": {
         "ExecutedVersion": "$LATEST",
+        "FunctionError": "Unhandled",
         "Payload": {
-          "environment": {
-            "PATH": "/var/lang/bin:/usr/local/bin:/usr/bin/:/bin:/opt/bin",
-            "LD_LIBRARY_PATH": "/var/lang/lib:/lib64:/usr/lib64:/var/runtime:/var/runtime/lib:/var/task:/var/task/lib:/opt/lib",
-            "_LAMBDA_TELEMETRY_API_PASSPHRASE": "<telemetry-passphrase:1>",
-            "LANG": "en_US.UTF-8",
-            "TZ": ":UTC",
-            "_HANDLER": "handler.handler",
-            "_LAMBDA_DIRECT_INVOKE_SOCKET": "9",
-            "_LAMBDA_CONTROL_SOCKET": "11",
-            "_LAMBDA_CONSOLE_SOCKET": "12",
-            "LAMBDA_TASK_ROOT": "/var/task",
-            "LAMBDA_RUNTIME_DIR": "/var/runtime",
-            "_LAMBDA_LOG_FD": "18",
-            "_LAMBDA_SB_ID": "0",
-            "_LAMBDA_SHARED_MEM_FD": "8",
-            "AWS_REGION": "<region>",
-            "AWS_DEFAULT_REGION": "<region>",
-            "AWS_LAMBDA_LOG_GROUP_NAME": "/aws/lambda/<function-name:1>",
-            "AWS_LAMBDA_LOG_STREAM_NAME": "<log-stream-name:1>",
-            "AWS_LAMBDA_FUNCTION_NAME": "<function-name:1>",
-            "AWS_LAMBDA_FUNCTION_MEMORY_SIZE": "128",
-            "AWS_LAMBDA_FUNCTION_VERSION": "$LATEST",
-            "_AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129",
-            "_AWS_XRAY_DAEMON_PORT": "2000",
-            "AWS_XRAY_DAEMON_ADDRESS": "169.254.79.129:2000",
-            "AWS_XRAY_CONTEXT_MISSING": "LOG_ERROR",
-            "_X_AMZN_TRACE_ID": "<xray-trace-id:1>",
-            "AWS_EXECUTION_ENV": "AWS_Lambda_rapid",
-            "AWS_LAMBDA_INITIALIZATION_TYPE": "on-demand",
-            "_LAMBDA_RUNTIME_LOAD_TIME": "<runtime-load-time:1>"
-          }
+          "errorMessage": "[Errno 13] Permission denied: '/proc/1/environ'",
+          "errorType": "PermissionError",
+          "requestId": "<uuid:2>",
+          "stackTrace": [
+            "  File \"/var/task/handler.py\", line 3, in handler\n    with open(f\"/proc/{pid}/environ\", mode=\"rt\") as f:\n"
+          ]
         },
         "StatusCode": 200,
         "ResponseMetadata": {
@@ -4603,6 +4617,78 @@
           "HTTPStatusCode": 200
         }
       }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda.py::TestLambdaBehavior::test_lambda_timeout_init_phase": {
+    "recorded-date": "26-06-2025, 15:43:47",
+    "recorded-content": {
+      "create-result": {
+        "CreateEventSourceMappingResponse": null,
+        "CreateFunctionResponse": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "code-sha256",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "Environment": {
+            "Variables": {}
+          },
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "handler.handler",
+          "LastModified": "date",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 128,
+          "PackageType": "Zip",
+          "RevisionId": "<request-id>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "Runtime": "python3.12",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Pending",
+          "StateReason": "The function is being created.",
+          "StateReasonCode": "Creating",
+          "Timeout": 30,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST",
+          "ResponseMetadata": {
+            "HTTPHeaders": {},
+            "HTTPStatusCode": 201
+          }
+        }
+      },
+      "invoke-result": {
+        "ExecutedVersion": "$LATEST",
+        "LogResult": "log-result",
+        "Payload": "null",
+        "StatusCode": 200,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "log-events": [
+        "INIT_REPORT Init Duration: <duration> ms\tPhase: init\tStatus: timeout\n",
+        "START RequestId: <request-id> Version: $LATEST\n",
+        "starting wait\n",
+        "done waiting\n",
+        "END RequestId: <request-id>\n",
+        "REPORT RequestId: <request-id>\tDuration: <duration> ms\tBilled Duration: <duration> ms\tMemory Size: 128 MB\tMax Memory Used: <memory> MB\t\n"
+      ]
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaURL::test_function_url_with_response_streaming": {
