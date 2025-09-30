@@ -4263,25 +4263,19 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_async_invoke_queue_upon_function_update": {
-    "recorded-date": "15-05-2024, 17:38:05",
+    "recorded-date": "26-03-2025, 15:48:55",
     "recorded-content": {
-      "async_invoke_history_sorted": [
-        "01-sleep--variant-1",
-        "02-before--variant-2",
-        "03-before--variant-2",
-        "04-before--variant-2",
-        "05-before--variant-2",
-        "06-before--variant-2",
-        "07-before--variant-2",
-        "08-before--variant-2",
-        "09-before--variant-2",
-        "10-before--variant-2",
-        "11-after--variant-2",
-        "12-after--variant-2",
-        "13-after--variant-2",
-        "14-after--variant-2",
-        "15-after--variant-2"
-      ]
+      "01-sleep": "variant-one",
+      "02-before-update": "variant-two",
+      "03-before-update": "variant-two",
+      "04-before-update": "variant-two",
+      "05-before-update": "variant-two",
+      "06-before-update": "variant-two",
+      "07-after-update": "variant-two",
+      "08-after-update": "variant-two",
+      "09-after-update": "variant-two",
+      "10-after-update": "variant-two",
+      "11-after-update": "variant-two"
     }
   },
   "tests/aws/services/lambda_/test_lambda.py::TestLambdaVersions::test_function_update_during_invoke": {
