@@ -1,6 +1,7 @@
 import os.path
 
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
@@ -126,6 +127,7 @@ class TestCloudFormationConditions:
         snapshot.match("dependent_ref_exc", e.value.response)
 
     @markers.aws.validated
+    @skip_if_legacy_engine
     def test_dependent_get_att(self, aws_client, snapshot):
         """
         Tests behavior of a stack with 2 resources where one depends on the other.
