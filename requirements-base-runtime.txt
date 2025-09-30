@@ -98,7 +98,7 @@ localstack-twisted==24.3.0
     # via localstack-core (pyproject.toml)
 markdown-it-py==4.0.0
     # via rich
-markupsafe==3.0.2
+markupsafe==3.0.3
     # via werkzeug
 mdurl==0.1.2
     # via markdown-it-py
@@ -140,7 +140,7 @@ python-dateutil==2.9.0.post0
     # via botocore
 python-dotenv==1.1.1
     # via localstack-core (pyproject.toml)
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via
     #   jsonschema-path
     #   localstack-core (pyproject.toml)
@@ -199,7 +199,7 @@ wsproto==1.2.0
     # via hypercorn
 xmltodict==1.0.2
     # via localstack-core (pyproject.toml)
-zope-interface==8.0
+zope-interface==8.0.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

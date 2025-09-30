@@ -62,7 +62,7 @@ certifi==2025.8.3
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.39.1
+cfn-lint==1.40.0
     # via moto-ext
 charset-normalizer==3.4.3
     # via requests
@@ -180,7 +180,7 @@ localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==4.0.0
     # via rich
-markupsafe==3.0.2
+markupsafe==3.0.3
     # via
     #   jinja2
     #   werkzeug
@@ -188,7 +188,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.13.post7
+moto-ext==5.1.13.post18
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -265,7 +265,7 @@ python-dotenv==1.1.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via
     #   awscli
     #   cfn-lint
@@ -365,7 +365,7 @@ xmltodict==1.0.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==8.0
+zope-interface==8.0.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
