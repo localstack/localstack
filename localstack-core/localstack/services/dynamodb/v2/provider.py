@@ -40,6 +40,8 @@ from localstack.aws.api.dynamodb import (
     DeleteRequest,
     DeleteTableOutput,
     DescribeContinuousBackupsOutput,
+    DescribeContributorInsightsInput,
+    DescribeContributorInsightsOutput,
     DescribeGlobalTableOutput,
     DescribeKinesisStreamingDestinationOutput,
     DescribeTableOutput,
@@ -756,6 +758,22 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     response["TableNames"].append(replicated_table)
 
         return response
+    
+    #
+    # Contributor Insights
+    #
+
+    @handler("DescribeContributorInsights", expand=False)
+    def describe_contributor_insights(
+        self,
+        context: RequestContext,
+        describe_contributor_insights_input: DescribeContributorInsightsInput,
+    ) -> DescribeContributorInsightsOutput:
+        return DescribeContributorInsightsOutput(
+            TableName=describe_contributor_insights_input["TableName"],
+            IndexName=describe_contributor_insights_input.get("IndexName"),
+            ContributorInsightsStatus="DISABLED",
+        )
 
     #
     # Item ops
