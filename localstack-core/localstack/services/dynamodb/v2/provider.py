@@ -758,7 +758,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                     response["TableNames"].append(replicated_table)
 
         return response
-    
+
     #
     # Contributor Insights
     #
