@@ -1,6 +1,8 @@
+import json
 import os.path
 
 import pytest
+from botocore.exceptions import ClientError
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
@@ -488,3 +490,28 @@ class TestCloudFormationConditions:
         assert aws_client.s3.head_bucket(Bucket=bucket_1)
         with pytest.raises(aws_client.s3.exceptions.ClientError):
             aws_client.s3.head_bucket(Bucket=bucket_2)
+
+
+class TestValidateConditions:
+    @markers.aws.validated
+    def test_validate_equals_args_len(self, aws_client, snapshot):
+        template = {
+            "Conditions": {"ShouldDeploy": {"Fn::Equals": ["a"]}},
+            "Resources": {
+                "Topic1": {
+                    "Type": "AWS::SNS::Topic",
+                },
+            },
+        }
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"ch-{short_uid()}"
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                ChangeSetType="CREATE",
+                TemplateBody=json.dumps(template),
+            )
+
+        snapshot.match("error", ex.value.response)
