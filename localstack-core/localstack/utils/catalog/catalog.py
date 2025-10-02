@@ -27,6 +27,7 @@ AwsServicesSupportStatus = (
 CfnResourceSupportStatus = (
     CloudFormationResourcesSupportInLatest | CloudFormationResourcesSupportAtRuntime
 )
+CfnResourceCatalog = dict[LocalstackEmulatorType, dict[CfnResourceName, set[CfnResourceMethodName]]]
 
 LOG = logging.getLogger(__name__)
 
@@ -35,18 +36,23 @@ class CatalogPlugin(Plugin):
     namespace = "localstack.utils.catalog"
 
     @staticmethod
-    def get_cfn_resources_catalog(cloudformation_resources: dict):
+    def _get_cfn_resources_catalog(cloudformation_resources: dict) -> CfnResourceCatalog:
         cfn_resources_catalog = {}
         for emulator_type, resources in cloudformation_resources.items():
+            cfn_resources_catalog[emulator_type] = {}
             for resource_name, resource in resources.items():
-                cfn_resources_catalog[emulator_type] = {resource_name: set(resource.methods)}
+                cfn_resources_catalog[emulator_type][resource_name] = set(resource.methods)
         return cfn_resources_catalog
 
     @staticmethod
-    def get_aws_services_at_runtime():
+    def _get_services_at_runtime() -> set[ServiceName]:
         from localstack.services.plugins import SERVICE_PLUGINS
 
-        return SERVICE_PLUGINS.list_available()
+        return set(SERVICE_PLUGINS.list_available())
+
+    @staticmethod
+    def _get_cfn_resources_available_at_runtime() -> set[CfnResourceName]:
+        return set(cfn_plugin_manager.list_names())
 
     @abstractmethod
     def get_aws_service_status(
@@ -56,7 +62,7 @@ class CatalogPlugin(Plugin):
 
     @abstractmethod
     def get_cloudformation_resource_status(
-        self, resource_name: str, service_name: str
+        self, resource_name: str, service_name: str, is_pro_resource: bool = False
     ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         pass
 
@@ -70,7 +76,7 @@ class AwsCatalogRuntimePlugin(CatalogPlugin):
         return None
 
     def get_cloudformation_resource_status(
-        self, resource_name: str, service_name: str
+        self, resource_name: str, service_name: str, is_pro_resource: bool = False
     ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         return None
 
@@ -80,9 +86,7 @@ class AwsCatalogRemoteStatePlugin(CatalogPlugin):
     current_emulator_type: LocalstackEmulatorType = LocalstackEmulatorType.COMMUNITY
     services_in_latest: dict[ServiceName, dict[LocalstackEmulatorType, ServiceOperations]] = {}
     services_at_runtime: set[ServiceName] = set()
-    cfn_resources_in_latest: dict[
-        LocalstackEmulatorType, dict[CfnResourceName, set[CfnResourceMethodName]]
-    ] = {}
+    cfn_resources_in_latest: CfnResourceCatalog = {}
     cfn_resources_at_runtime: set[CfnResourceName] = set()
 
     def __init__(self, remote_catalog_loader: RemoteCatalogLoader | None = None) -> None:
@@ -94,11 +98,11 @@ class AwsCatalogRemoteStatePlugin(CatalogPlugin):
                     service_provider.operations
                 )
 
-        self.cfn_resources_in_latest = self.get_cfn_resources_catalog(
+        self.cfn_resources_in_latest = self._get_cfn_resources_catalog(
             remote_catalog.cloudformation_resources
         )
-        self.cfn_resources_at_runtime = set(cfn_plugin_manager.list_names())
-        self.services_at_runtime = self.get_aws_services_at_runtime()
+        self.cfn_resources_at_runtime = self._get_cfn_resources_available_at_runtime()
+        self.services_at_runtime = self._get_services_at_runtime()
 
     def get_aws_service_status(
         self, service_name: str, operation_name: str | None = None
@@ -121,7 +125,7 @@ class AwsCatalogRemoteStatePlugin(CatalogPlugin):
         return AwsServiceOperationsSupportInLatest.NOT_SUPPORTED
 
     def get_cloudformation_resource_status(
-        self, resource_name: str, service_name: str
+        self, resource_name: str, service_name: str, is_pro_resource: bool = False
     ) -> CfnResourceSupportStatus | AwsServicesSupportInLatest | None:
         if resource_name in self.cfn_resources_at_runtime:
             return CloudFormationResourcesSupportAtRuntime.AVAILABLE
