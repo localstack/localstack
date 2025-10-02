@@ -131,12 +131,10 @@ class TestCloudFormationConditions:
     def test_dependent_get_att(self, aws_client, snapshot):
         """
         Tests behavior of a stack with 2 resources where one depends on the other.
-        The referenced resource won't be deployed due to its condition evaluating to false, so the ref can't be resolved.
+        The referenced resource won't be deployed due to its condition evaluating to false, so the GetAtt can't be resolved.
 
         This immediately leads to an error.
         """
-        topic_name = f"test-topic-{short_uid()}"
-        ssm_param_name = f"test-param-{short_uid()}"
 
         stack_name = f"test-condition-ref-stack-{short_uid()}"
         changeset_name = "initial"
@@ -149,8 +147,6 @@ class TestCloudFormationConditions:
                     os.path.join(THIS_DIR, "../../../templates/conditions/get-att-condition.yml")
                 ),
                 Parameters=[
-                    {"ParameterKey": "TopicName", "ParameterValue": topic_name},
-                    {"ParameterKey": "SsmParamName", "ParameterValue": ssm_param_name},
                     {"ParameterKey": "OptionParameter", "ParameterValue": "option-b"},
                 ],
             )
