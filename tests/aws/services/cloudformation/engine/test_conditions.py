@@ -1,6 +1,8 @@
+import json
 import os.path
 
 import pytest
+from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
@@ -550,3 +552,28 @@ class TestCloudFormationConditions:
             StackName=stack.stack_id
         )
         snapshot.match("resources-description", describe_resources)
+
+
+class TestValidateConditions:
+    @markers.aws.validated
+    def test_validate_equals_args_len(self, aws_client, snapshot):
+        template = {
+            "Conditions": {"ShouldDeploy": {"Fn::Equals": ["a"]}},
+            "Resources": {
+                "Topic1": {
+                    "Type": "AWS::SNS::Topic",
+                },
+            },
+        }
+
+        stack_name = f"stack-{short_uid()}"
+        change_set_name = f"ch-{short_uid()}"
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=change_set_name,
+                ChangeSetType="CREATE",
+                TemplateBody=json.dumps(template),
+            )
+
+        snapshot.match("error", ex.value.response)
