@@ -1,6 +1,21 @@
 {
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_get_att": {
+    "last_validated_date": "2025-09-30T19:25:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.23,
+      "call": 0.36,
+      "teardown": 0.0,
+      "total": 0.59
+    }
+  },
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_dependent_ref": {
-    "last_validated_date": "2023-06-26T12:18:26+00:00"
+    "last_validated_date": "2025-09-30T19:03:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.27,
+      "call": 0.34,
+      "teardown": 0.0,
+      "total": 0.61
+    }
   },
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_nested_conditions[prod-bucket-policy]": {
     "last_validated_date": "2023-06-26T12:24:03+00:00"

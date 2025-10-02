@@ -1,6 +1,7 @@
 import os.path
 
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
 from localstack.testing.aws.util import is_aws_cloud
@@ -120,6 +121,32 @@ class TestCloudFormationConditions:
                 Parameters=[
                     {"ParameterKey": "TopicName", "ParameterValue": topic_name},
                     {"ParameterKey": "SsmParamName", "ParameterValue": ssm_param_name},
+                    {"ParameterKey": "OptionParameter", "ParameterValue": "option-b"},
+                ],
+            )
+        snapshot.match("dependent_ref_exc", e.value.response)
+
+    @markers.aws.validated
+    @skip_if_legacy_engine
+    def test_dependent_get_att(self, aws_client, snapshot):
+        """
+        Tests behavior of a stack with 2 resources where one depends on the other.
+        The referenced resource won't be deployed due to its condition evaluating to false, so the GetAtt can't be resolved.
+
+        This immediately leads to an error.
+        """
+
+        stack_name = f"test-condition-ref-stack-{short_uid()}"
+        changeset_name = "initial"
+        with pytest.raises(aws_client.cloudformation.exceptions.ClientError) as e:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=changeset_name,
+                ChangeSetType="CREATE",
+                TemplateBody=load_file(
+                    os.path.join(THIS_DIR, "../../../templates/conditions/get-att-condition.yml")
+                ),
+                Parameters=[
                     {"ParameterKey": "OptionParameter", "ParameterValue": "option-b"},
                 ],
             )

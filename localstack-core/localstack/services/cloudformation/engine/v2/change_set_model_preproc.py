@@ -572,6 +572,21 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             resource_name=logical_name_of_resource,
             node_template=self._change_set.update_model.node_template,
         )
+
+        if not is_nothing(node_resource.condition_reference):
+            condition = self._get_node_condition_if_exists(node_resource.condition_reference.value)
+            evaluation_result = self._resolve_condition(condition.name)
+
+            if select_before and not evaluation_result.before:
+                raise ValidationError(
+                    f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
+                )
+
+            if not select_before and not evaluation_result.after:
+                raise ValidationError(
+                    f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
+                )
+
         node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )
