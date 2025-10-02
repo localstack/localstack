@@ -275,9 +275,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         if property_value:
             if not isinstance(property_value, (str, list, dict)):
-                # TODO: is this correct? If there is a bug in the logic here, it's probably
-                #  better to know about it with a clear error message than to receive some form
-                #  of message about trying to use a dictionary in place of a string
+                # Str: Standard expected type. TODO validate bools and numbers
+                # List: Multiple resource types can return a list of values e.g. AWS::EC2::VPC.
+                # Dict: Custom resources in CloudFormation can return arbitrary data structures.
                 raise RuntimeError(
                     f"Accessing property '{property_name}' from '{resource_logical_id}' resulted in a non-string value nor list"
                 )
