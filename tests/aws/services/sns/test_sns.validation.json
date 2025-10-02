@@ -273,18 +273,90 @@
     "last_validated_date": "2023-08-24T20:30:48+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_test_arn": {
-    "last_validated_date": "2023-08-24T20:30:45+00:00"
+    "last_validated_date": "2025-09-29T09:32:56+00:00",
+    "durations_in_seconds": {
+      "setup": 1.07,
+      "call": 2.33,
+      "teardown": 0.2,
+      "total": 3.6
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_with_attributes": {
-    "last_validated_date": "2023-10-06T18:11:02+00:00"
+    "last_validated_date": "2025-09-25T07:41:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.87,
+      "call": 2.31,
+      "teardown": 0.3,
+      "total": 3.48
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_delete_topic_idempotency": {
-    "last_validated_date": "2025-05-28T10:08:38+00:00"
+    "last_validated_date": "2025-09-29T09:46:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.95,
+      "call": 1.72,
+      "teardown": 0.15,
+      "total": 2.82
+    }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_tags": {
     "last_validated_date": "2023-08-24T20:30:44+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_topic_delivery_policy_crud": {
     "last_validated_date": "2024-10-03T21:46:17+00:00"
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_in_multiple_regions": {
+    "last_validated_date": "2025-09-29T11:34:38+00:00",
+    "durations_in_seconds": {
+      "setup": 1.06,
+      "call": 3.66,
+      "teardown": 0.01,
+      "total": 4.73
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
+    "last_validated_date": "2025-09-29T10:46:44+00:00",
+    "durations_in_seconds": {
+      "setup": 1.38,
+      "call": 4.19,
+      "teardown": 0.31,
+      "total": 5.88
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_should_be_idempotent": {
+    "last_validated_date": "2025-09-29T10:40:50+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 1.89,
+      "teardown": 0.47,
+      "total": 3.5
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_delete_non_existent_topic": {
+    "last_validated_date": "2025-09-29T10:10:56+00:00",
+    "durations_in_seconds": {
+      "setup": 1.16,
+      "call": 1.4,
+      "teardown": 0.02,
+      "total": 2.58
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_list_topic_paging": {
+    "last_validated_date": "2025-09-29T11:39:42+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 38.91,
+      "teardown": 37.48,
+      "total": 77.53
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_topic_get_attributes_with_fifo_false": {
+    "last_validated_date": "2025-09-29T11:10:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.94,
+      "call": 1.77,
+      "teardown": 0.31,
+      "total": 3.02
+    }
   }
 }
