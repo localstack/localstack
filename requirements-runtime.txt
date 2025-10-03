@@ -328,10 +328,6 @@ six==1.17.0
     #   rfc3339-validator
 sympy==1.14.0
     # via cfn-lint
-tailer==0.4.1
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 typing-extensions==4.15.0
     # via
     #   aws-sam-translator
