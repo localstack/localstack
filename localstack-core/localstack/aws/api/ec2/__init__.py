@@ -2447,6 +2447,18 @@ class InstanceType(StrEnum):
     i8ge_metal_48xl = "i8ge.metal-48xl"
     mac_m4_metal = "mac-m4.metal"
     mac_m4pro_metal = "mac-m4pro.metal"
+    r8gn_medium = "r8gn.medium"
+    r8gn_large = "r8gn.large"
+    r8gn_xlarge = "r8gn.xlarge"
+    r8gn_2xlarge = "r8gn.2xlarge"
+    r8gn_4xlarge = "r8gn.4xlarge"
+    r8gn_8xlarge = "r8gn.8xlarge"
+    r8gn_12xlarge = "r8gn.12xlarge"
+    r8gn_16xlarge = "r8gn.16xlarge"
+    r8gn_24xlarge = "r8gn.24xlarge"
+    r8gn_48xlarge = "r8gn.48xlarge"
+    r8gn_metal_24xl = "r8gn.metal-24xl"
+    r8gn_metal_48xl = "r8gn.metal-48xl"
 
 
 class InstanceTypeHypervisor(StrEnum):

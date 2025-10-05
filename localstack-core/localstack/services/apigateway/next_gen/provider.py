@@ -429,6 +429,11 @@ class ApigatewayNextGenProvider(ApigatewayProvider):
         if not resource:
             raise NotFoundException("Invalid Resource identifier specified")
 
+        resource_methods = resource.resource_methods
+
+        if request["httpMethod"] not in resource_methods and "ANY" not in resource_methods:
+            raise NotFoundException("Invalid Method identifier specified")
+
         # test httpMethod
 
         rest_api_container = get_rest_api_container(context, rest_api_id=rest_api_id)

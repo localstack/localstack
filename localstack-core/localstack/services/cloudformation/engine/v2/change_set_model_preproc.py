@@ -441,7 +441,11 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 region_name=self._change_set.region_name,
             )
             if new_value:
-                return REGEX_DYNAMIC_REF.sub(new_value, value)
+                # We need to use a function here, to avoid backslash processing by regex.
+                # From the regex sub documentation:
+                # repl can be a string or a function; if it is a string, any backslash escapes in it are processed.
+                # Using a function, we can avoid this processing.
+                return REGEX_DYNAMIC_REF.sub(lambda _: new_value, value)
 
         return value
 
@@ -568,6 +572,21 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             resource_name=logical_name_of_resource,
             node_template=self._change_set.update_model.node_template,
         )
+
+        if not is_nothing(node_resource.condition_reference):
+            condition = self._get_node_condition_if_exists(node_resource.condition_reference.value)
+            evaluation_result = self._resolve_condition(condition.name)
+
+            if select_before and not evaluation_result.before:
+                raise ValidationError(
+                    f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
+                )
+
+            if not select_before and not evaluation_result.after:
+                raise ValidationError(
+                    f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
+                )
+
         node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )

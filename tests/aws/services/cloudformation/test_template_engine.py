@@ -531,6 +531,23 @@ class TestSecretsManagerParameters:
         topic_name = result.outputs["TopicName"]
         assert topic_name == parameter_value
 
+    @markers.aws.validated
+    def test_resolve_secretsmanager_with_backslashes(self, create_secret, deploy_cfn_template):
+        parameter_key = f"param-key-{short_uid()}"
+        secret_value = json.dumps({"password": r"p\\30\asw\\\ord"})
+
+        create_secret(Name=parameter_key, SecretString=secret_value)
+
+        result = deploy_cfn_template(
+            parameters={"DynamicParameter": parameter_key},
+            template_path=os.path.join(
+                os.path.dirname(__file__),
+                "../../templates/resolve_secretsmanager_with_backslashes.yaml",
+            ),
+        )
+
+        assert secret_value == result.outputs["ParameterValue"]
+
 
 class TestPreviousValues:
     @pytest.mark.skip(reason="outputs don't behave well in combination with conditions")

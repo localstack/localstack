@@ -4203,5 +4203,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_approximate_number_of_messages_not_visible[sqs]": {
+    "recorded-date": "25-09-2025, 21:46:19",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_approximate_number_of_messages_not_visible[sqs_query]": {
+    "recorded-date": "25-09-2025, 21:47:19",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approximate_number_of_messages_not_visible[sqs]": {
+    "recorded-date": "25-09-2025, 21:53:42",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approximate_number_of_messages_not_visible[sqs_query]": {
+    "recorded-date": "25-09-2025, 21:54:43",
+    "recorded-content": {}
   }
 }

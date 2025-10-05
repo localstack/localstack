@@ -1,9 +1,11 @@
 import os
 
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.services.cloudformation.engine.template_deployer import MOCK_REFERENCE
 from localstack.testing.pytest import markers
+from localstack.utils import testutil
 from localstack.utils.strings import short_uid
 
 
@@ -103,3 +105,110 @@ def test_reference_unsupported_resource(deploy_cfn_template, aws_client):
     value_of_unsupported = deployment.outputs["parameter"]
     assert ref_of_unsupported == MOCK_REFERENCE
     assert value_of_unsupported == f"The value of the attribute is: {MOCK_REFERENCE}"
+
+
+@markers.aws.validated
+@skip_if_legacy_engine()
+def test_redeploy_cdk_with_reference(
+    aws_client, account_id, create_lambda_function, deploy_cfn_template, snapshot, cleanups
+):
+    """
+    Test a user scenario with a lambda function that fails to redeploy
+
+    """
+    # perform cdk bootstrap
+    template_file = os.path.join(
+        os.path.dirname(__file__), "../../../templates/cdk_bootstrap_v28.yaml"
+    )
+    qualifier = short_uid()
+    bootstrap_stack = deploy_cfn_template(
+        template_path=template_file,
+        parameters={
+            "CloudFormationExecutionPolicies": "",
+            "FileAssetsBucketKmsKeyId": "AWS_MANAGED_KEY",
+            "PublicAccessBlockConfiguration": "true",
+            "TrustedAccounts": "",
+            "TrustedAccountsForLookup": "",
+            "Qualifier": qualifier,
+        },
+    )
+
+    lambda_bucket = bootstrap_stack.outputs["BucketName"]
+
+    # upload the lambda function
+    lambda_src_1 = """
+    def handler(event, context):
+        return {"status": "ok"}
+    """
+    lambda_src_2 = """
+    def handler(event, context):
+        return {"status": "foo"}
+    """
+
+    function_name = f"function-{short_uid()}"
+    cleanups.append(lambda: aws_client.lambda_.delete_function(FunctionName=function_name))
+
+    def deploy_or_update_lambda(content: str, lambda_key: str):
+        archive = testutil.create_lambda_archive(content)
+        with open(archive, "rb") as infile:
+            aws_client.s3.put_object(Bucket=lambda_bucket, Key=lambda_key, Body=infile)
+
+        lambda_exists = False
+        try:
+            aws_client.lambda_.get_function(FunctionName=function_name)
+            lambda_exists = True
+        except Exception:
+            # TODO: work out the proper exception
+            pass
+
+        if lambda_exists:
+            aws_client.lambda_.update_function_code(
+                FunctionName=function_name,
+                S3Bucket=lambda_bucket,
+                S3Key=lambda_key,
+            )
+        else:
+            aws_client.lambda_.create_function(
+                FunctionName=function_name,
+                Runtime="python3.12",
+                Handler="handler",
+                Code={
+                    "S3Bucket": lambda_bucket,
+                    "S3Key": lambda_key,
+                },
+                # The role does not matter
+                Role=f"arn:aws:iam::{account_id}:role/LambdaExecutionRole",
+            )
+        aws_client.lambda_.get_waiter("function_active_v2").wait(FunctionName=function_name)
+
+    lambda_key_1 = f"{short_uid()}.zip"
+    deploy_or_update_lambda(lambda_src_1, lambda_key_1)
+
+    # deploy the template the first time
+    stack = deploy_cfn_template(
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cdk-lambda-redeploy.json"
+        ),
+        parameters={
+            "DeployBucket": lambda_bucket,
+            "DeployKey": lambda_key_1,
+            "BootstrapVersion": f"/cdk-bootstrap/{qualifier}/version",
+        },
+    )
+
+    lambda_key_2 = f"{short_uid()}.zip"
+    deploy_or_update_lambda(lambda_src_2, lambda_key_2)
+
+    # deploy the template the second time
+    deploy_cfn_template(
+        stack_name=stack.stack_id,
+        template_path=os.path.join(
+            os.path.dirname(__file__), "../../../templates/cdk-lambda-redeploy.json"
+        ),
+        is_update=True,
+        parameters={
+            "DeployBucket": lambda_bucket,
+            "DeployKey": lambda_key_2,
+            "BootstrapVersion": "28",
+        },
+    )
