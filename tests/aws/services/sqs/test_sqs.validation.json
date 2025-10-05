@@ -248,6 +248,24 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout[sqs_query]": {
     "last_validated_date": "2025-03-28T13:37:13+00:00"
   },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout_extended[sqs]": {
+    "last_validated_date": "2025-10-05T14:42:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.23,
+      "call": 2.01,
+      "teardown": 0.09,
+      "total": 2.33
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout_extended[sqs_query]": {
+    "last_validated_date": "2025-10-05T14:42:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.0,
+      "teardown": 0.1,
+      "total": 2.1
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_empty_message_groups_added_back_to_queue[sqs]": {
     "last_validated_date": "2024-04-30T13:46:32+00:00"
   },
