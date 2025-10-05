@@ -1053,8 +1053,7 @@ class FifoQueue(SqsQueue):
             message.delay_seconds = value
 
     def _pre_delete_checks(self, message: SqsMessage, receipt_handle: str) -> None:
-        _, _, _, last_received = extract_receipt_handle_info(receipt_handle)
-        if time.time() - float(last_received) > message.visibility_timeout:
+        if not message.is_visible:
             raise InvalidParameterValueException(
                 f"Value {receipt_handle} for parameter ReceiptHandle is invalid. Reason: The receipt handle has expired."
             )
