@@ -111,6 +111,7 @@ def test_cfn_apigateway_aws_integration(deploy_cfn_template, aws_client):
     assert mappings[0] == "(none)"
 
 
+@markers.requires_in_process  # uses pytest httpserver
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
