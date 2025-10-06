@@ -878,7 +878,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("exception", e.value.response)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_unsubscribe_from_non_existing_subscription(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -891,7 +890,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("empty-unsubscribe", response)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_create_subscriptions_with_attributes(
         self,
         sns_create_topic,
@@ -944,7 +942,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("get-attrs-nonexistent-sub", e.value.response)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_not_found_error_on_set_subscription_attributes(
         self,
         sns_create_topic,

@@ -1,3 +1,4 @@
+import base64
 import json
 from uuid import uuid4
 
@@ -6,7 +7,7 @@ from botocore.utils import InvalidArnException
 from localstack.aws.api.sns import InvalidParameterException
 from localstack.services.sns.constants import E164_REGEX, VALID_SUBSCRIPTION_ATTR_NAME
 from localstack.utils.aws.arns import ArnData, parse_arn
-from localstack.utils.strings import short_uid
+from localstack.utils.strings import short_uid, to_bytes, to_str
 
 
 def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
@@ -101,3 +102,7 @@ def encode_subscription_token_with_region(region: str) -> str:
     :return: a subscription token with the region encoded
     """
     return ((region.encode() + b"/").hex() + short_uid() * 8)[:64]
+
+
+def get_next_page_token_from_arn(resource_arn: str) -> str:
+    return to_str(base64.b64encode(to_bytes(resource_arn)))

@@ -12,10 +12,13 @@ from localstack.aws.api.sns import (
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    ListSubscriptionsByTopicResponse,
+    ListSubscriptionsResponse,
     ListTopicsResponse,
     NotFoundException,
     SnsApi,
     SubscribeResponse,
+    Subscription,
     SubscriptionAttributesMap,
     TagList,
     TopicAttributesMap,
@@ -48,6 +51,7 @@ from localstack.services.sns.v2.models import create_topic, sns_stores
 from localstack.services.sns.v2.utils import (
     create_subscription_arn,
     encode_subscription_token_with_region,
+    get_next_page_token_from_arn,
     is_valid_e164_number,
     parse_and_validate_topic_arn,
     validate_subscription_attribute,
@@ -55,7 +59,7 @@ from localstack.services.sns.v2.utils import (
 from localstack.utils.aws.arns import get_partition, parse_arn, sns_topic_arn
 from localstack.services.sns.v2.models import SnsStore, Topic, sns_stores
 from localstack.utils.aws.arns import ArnData, parse_arn, sns_topic_arn
-from localstack.utils.collections import PaginatedList
+from localstack.utils.collections import PaginatedList, select_from_typed_dict
 
 # set up logger
 LOG = logging.getLogger(__name__)
@@ -82,10 +86,10 @@ class SnsProvider(SnsApi):
         **kwargs,
     ) -> CreateTopicResponse:
         store = self.get_store(context.account_id, context.region)
-        topic_arn = sns_topic_arn(
+        topic_ARN = sns_topic_arn(
             topic_name=name, region_name=context.region, account_id=context.account_id
         )
-        topic: Topic = store.topics.get(topic_arn)
+        topic: Topic = store.topics.get(topic_ARN)
         attributes = attributes or {}
         if topic:
             attrs = topic["attributes"]
@@ -93,7 +97,7 @@ class SnsProvider(SnsApi):
                 if not attrs.get(k) or not attrs.get(k) == v:
                     # TODO:
                     raise InvalidParameterException("Fix this Exception message and type")
-            return CreateTopicResponse(TopicArn=topic_arn)
+            return CreateTopicResponse(TopicArn=topic_ARN)
 
         attributes = attributes or {}
         if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
@@ -105,18 +109,21 @@ class SnsProvider(SnsApi):
                 )
         else:
             # AWS does not seem to save explicit settings of fifo = false
-            attributes.pop("FifoTopic", None)
+            try:
+                attributes.pop("FifoTopic", None)
+            except KeyError:
+                pass
             name_match = re.match(SNS_TOPIC_NAME_PATTERN, name)
             if not name_match:
                 raise InvalidParameterException("Invalid parameter: Topic Name")
 
-        topic = _create_topic(name=name, attributes=attributes, context=context)
-        store.topics[topic_arn] = topic
+        topic = create_topic(name=name, attributes=attributes, context=context)
+        store.topics[topic_ARN] = topic
         # todo: tags
 
-        store.topic_subscriptions.setdefault(topic_arn, [])
+        store.topic_subscriptions.setdefault(topic_ARN, [])
 
-        return CreateTopicResponse(TopicArn=topic_arn)
+        return CreateTopicResponse(TopicArn=topic_ARN)
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN, **kwargs
@@ -395,6 +402,62 @@ class SnsProvider(SnsApi):
 
         attributes = {k: v for k, v in sub.items() if k not in removed_attrs}
         return GetSubscriptionAttributesResponse(Attributes=attributes)
+
+    def set_subscription_attributes(
+        self,
+        context: RequestContext,
+        subscription_arn: subscriptionARN,
+        attribute_name: attributeName,
+        attribute_value: attributeValue = None,
+        **kwargs,
+    ) -> None:
+        store = self.get_store(account_id=context.account_id, region=context.region)
+        sub = store.subscriptions.get(subscription_arn)
+        if not sub:
+            raise NotFoundException("Subscription does not exist")
+
+        validate_subscription_attribute(
+            attribute_name=attribute_name,
+            attribute_value=attribute_value,
+            topic_arn=sub["TopicArn"],
+            endpoint=sub["Endpoint"],
+        )
+        if attribute_name == "RawMessageDelivery":
+            attribute_value = attribute_value.lower()
+
+        elif attribute_name == "FilterPolicy":
+            filter_policy = json.loads(attribute_value) if attribute_value else None
+            if filter_policy:
+                validator = FilterPolicyValidator(
+                    scope=sub.get("FilterPolicyScope", "MessageAttributes"),
+                    is_subscribe_call=False,
+                )
+                validator.validate_filter_policy(filter_policy)
+
+            store.subscription_filter_policy[subscription_arn] = filter_policy
+
+        sub[attribute_name] = attribute_value
+
+    def list_subscriptions_by_topic(
+        self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
+    ) -> ListSubscriptionsByTopicResponse:
+        self._get_topic(topic_arn, context)
+        parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
+        store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
+        sns_subscriptions = store.get_topic_subscriptions(topic_arn)
+        subscriptions = [select_from_typed_dict(Subscription, sub) for sub in sns_subscriptions]
+
+        paginated_subscriptions = PaginatedList(subscriptions)
+        page, next_token = paginated_subscriptions.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x["SubscriptionArn"]),
+            page_size=100,
+            next_token=next_token,
+        )
+
+        response = ListSubscriptionsResponse(Subscriptions=page)
+        if next_token:
+            response["NextToken"] = next_token
+        return response
 
     @staticmethod
     def get_store(account_id: str, region: str) -> SnsStore:
