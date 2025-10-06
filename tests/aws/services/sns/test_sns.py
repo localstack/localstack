@@ -996,7 +996,6 @@ class TestSNSSubscriptionCrud:
             "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS, assert instead
         ]
     )
-    # @skip_if_sns_v2
     def test_validate_set_sub_attributes(
         self,
         sns_create_topic,
