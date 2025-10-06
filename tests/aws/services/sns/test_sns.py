@@ -1274,7 +1274,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("unsubscribe-2", unsubscribe_2)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client_factory, region_name):
         sns_client = aws_client_factory(
             region_name=region_name, config=Config(parameter_validation=False)
@@ -1301,7 +1300,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("invalid-unsubscribe-arn-4", e.value.response)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_subscribe_with_invalid_topic(self, sns_create_topic, sns_subscription, snapshot):
         with pytest.raises(ClientError) as e:
             sns_subscription(
