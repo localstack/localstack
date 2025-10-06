@@ -324,7 +324,6 @@ class TestSNSTopicCrud:
         snapshot.match("get-topic-attrs-after-delete", get_attrs_updated)
 
 
-@pytest.mark.skipif(is_sns_v1_provider(), reason="covered in moto")
 class TestSNSTopicCrudV2:
     @markers.aws.validated
     def test_delete_non_existent_topic(self, snapshot, aws_client, account_id, region_name):
@@ -340,6 +339,13 @@ class TestSNSTopicCrudV2:
             "$..Attributes.EffectiveDeliveryPolicy",
         ]
     )
+    @markers.snapshot.skip_snapshot_verify(
+        # skipped only for v1
+        condition=is_sns_v1_provider,
+        paths=[
+            "$..Attributes.DeliveryPolicy",
+        ],
+    )
     def test_create_topic_should_be_idempotent(self, snapshot, sns_create_topic, aws_client):
         topic_name = f"test-idempotent-{short_uid()}"
 
@@ -354,6 +360,9 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
+    @pytest.mark.skipif(
+        is_sns_v1_provider(), reason="covered in moto, but with slight parity errors"
+    )
     @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
@@ -382,6 +391,13 @@ class TestSNSTopicCrudV2:
             "$..Attributes.EffectiveDeliveryPolicy",
         ]
     )
+    @markers.snapshot.skip_snapshot_verify(
+        # skipped only for v1
+        condition=is_sns_v1_provider,
+        paths=[
+            "$..Attributes.DeliveryPolicy",
+        ],
+    )
     def test_create_topic_in_multiple_regions(self, aws_client, aws_client_factory, snapshot):
         topic_name = f"multiregion-{short_uid()}"
 
@@ -401,7 +417,7 @@ class TestSNSTopicCrudV2:
         snapshot.match("topic-east", sns_east.get_topic_attributes(TopicArn=arn_east))
         snapshot.match("topic-west", sns_west.get_topic_attributes(TopicArn=arn_west))
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_list_topic_paging(self, aws_client, sns_create_topic):
         topic_arns = []
         page_size = 100
@@ -423,6 +439,7 @@ class TestSNSTopicCrudV2:
         ]
         assert set(topic_arns).issubset(set(all_returned_arns))
 
+    @pytest.mark.skipif(is_sns_v1_provider(), reason="not covered in v1")
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[

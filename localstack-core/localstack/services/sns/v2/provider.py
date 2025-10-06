@@ -19,7 +19,7 @@ from localstack.aws.api.sns import (
     topicARN,
     topicName,
 )
-from localstack.services.sns.v2.models import SnsStore, Topic, sns_stores
+from localstack.services.sns.v2.models import SnsStore, Topic, create_topic, sns_stores
 from localstack.utils.aws.arns import ArnData, parse_arn, sns_topic_arn
 from localstack.utils.collections import PaginatedList
 
@@ -47,14 +47,12 @@ class SnsProvider(SnsApi):
         topic: Topic = store.topics.get(topic_ARN)
         attributes = attributes or {}
         if topic:
-            attrs = topic.attributes
+            attrs = topic["attributes"]
             for k, v in attributes.values():
                 if not attrs.get(k) or not attrs.get(k) == v:
                     # TODO:
                     raise InvalidParameterException("Fix this Exception message and type")
             return CreateTopicResponse(TopicArn=topic_ARN)
-
-        topic = Topic(name=name, attributes=attributes, arn=topic_ARN, context=context)
 
         attributes = attributes or {}
         if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
@@ -67,17 +65,14 @@ class SnsProvider(SnsApi):
         else:
             # AWS does not seem to save explicit settings of fifo = false
             try:
-                if topic.attributes["FifoTopic"]:
-                    del topic.attributes["FifoTopic"]
+                attributes.pop("FifoTopic", None)
             except KeyError:
                 pass
             name_match = re.match(SNS_TOPIC_NAME_PATTERN, name)
             if not name_match:
                 raise InvalidParameterException("Invalid parameter: Topic Name")
 
-        # if attributes:
-        # self.set_topic_defaults(topic, context)
-        # topic["attributes"] = attributes
+        topic = create_topic(name=name, attributes=attributes, context=context)
         store.topics[topic_ARN] = topic
         # todo: tags
 
@@ -88,7 +83,7 @@ class SnsProvider(SnsApi):
     ) -> GetTopicAttributesResponse:
         topic: Topic = self._get_topic(arn=topic_arn, context=context)
         if topic:
-            attributes = topic.attributes
+            attributes = topic["attributes"]
             return GetTopicAttributesResponse(Attributes=attributes)
         else:
             raise NotFoundException("Topic does not exist")
@@ -96,15 +91,14 @@ class SnsProvider(SnsApi):
     def delete_topic(self, context: RequestContext, topic_arn: topicARN, **kwargs) -> None:
         store = self.get_store(context.account_id, context.region)
 
-        if store.topics.get(topic_arn):
-            del store.topics[topic_arn]
+        store.topics.pop(topic_arn, None)
 
     def list_topics(
         self, context: RequestContext, next_token: nextToken | None = None, **kwargs
     ) -> ListTopicsResponse:
         store = self.get_store(context.account_id, context.region)
-        topics = {"Topics": [{"TopicArn": t.arn} for t in store.topics.values()]}
-        topics = PaginatedList(topics["Topics"])
+        topics = [{"TopicArn": t["arn"]} for t in list(store.topics.values())]
+        topics = PaginatedList(topics)
         page, nxt = topics.get_page(
             lambda topic: topic["TopicArn"], next_token=next_token, page_size=100
         )
@@ -122,7 +116,7 @@ class SnsProvider(SnsApi):
         topic: Topic = self._get_topic(arn=topic_arn, context=context)
         if attribute_name == "FifoTopic":
             raise InvalidParameterException("Invalid parameter: AttributeName")
-        topic.attributes[attribute_name] = attribute_value
+        topic["attributes"][attribute_name] = attribute_value
 
     @staticmethod
     def get_store(account_id: str, region: str) -> SnsStore:
@@ -133,8 +127,6 @@ class SnsProvider(SnsApi):
         """
         :param arn: the Topic ARN
         :param context: the RequestContext of the request
-        :param multiregion: if the request can fetch the topic across regions or not (ex. Publish cannot publish to a
-        topic in a different region than the request)
         :return: the Moto model Topic
         """
         arn_data = parse_and_validate_topic_arn(arn)

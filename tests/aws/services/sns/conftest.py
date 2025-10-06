@@ -24,7 +24,7 @@ def is_sns_v2_provider():
     return os.environ.get("PROVIDER_OVERRIDE_SNS") == "v2" and not is_aws_cloud()
 
 
-def is_sns_v1_provider():
+def is_sns_v1_provider() -> bool:
     return not os.environ.get("PROVIDER_OVERRIDE_SNS") == "v2" and not is_aws_cloud()
 
 
