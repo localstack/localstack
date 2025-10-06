@@ -886,7 +886,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_python_lambda_subscribe_sns_topic": {
-    "recorded-date": "24-08-2023, 23:28:59",
+    "recorded-date": "06-10-2025, 11:08:48",
     "recorded-content": {
       "notification": {
         "Message": "Hello world.",
@@ -5757,6 +5757,1130 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sms": {
+    "recorded-date": "06-10-2025, 11:39:50",
+    "recorded-content": {
+      "subscribe-sms-1": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_unknown_topic": {
+    "recorded-date": "06-10-2025, 11:43:45",
+    "recorded-content": {
+      "subscribe-unknown-topic": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_unknown_sqs_queue": {
+    "recorded-date": "06-10-2025, 12:03:29",
+    "recorded-content": {
+      "subscribe-unknown-sqs": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-unknown-sqs-invalid_arn": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SQS endpoint ARN",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sqs_queue_url": {
+    "recorded-date": "06-10-2025, 11:56:36",
+    "recorded-content": {
+      "subscribe-sqs-via-url-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SQS endpoint ARN",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_double_subscription": {
+    "recorded-date": "06-10-2025, 11:39:56",
+    "recorded-content": {
+      "double-subscription-first": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:double-sub-befdfdff:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "double-subscription-second": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:double-sub-befdfdff:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_bad_sms": {
+    "recorded-date": "06-10-2025, 11:39:57",
+    "recorded-content": {
+      "subscribe-bad-sms": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: invalid-number",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription": {
+    "recorded-date": "06-10-2025, 11:39:58",
+    "recorded-content": {
+      "create-subscription": {
+        "SubscriptionArn": "pending confirmation",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_unsubscribe_from_deleted_topic": {
+    "recorded-date": "06-10-2025, 11:39:59",
+    "recorded-content": {
+      "unsubscribe-deleted-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_getting_subscriptions_by_topic": {
+    "recorded-date": "06-10-2025, 11:40:01",
+    "recorded-content": {
+      "list-subscriptions-by-topic": {
+        "Subscriptions": [
+          {
+            "Endpoint": "test@example.com",
+            "Owner": "096845016391",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:aws:sns:us-east-1:096845016391:get-subs-40eeab74"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "632",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 11:40:00 GMT",
+            "x-amzn-requestid": "8dcb390f-9f01-55ee-aa77-585233d14179"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "8dcb390f-9f01-55ee-aa77-585233d14179",
+          "RetryAttempts": 0
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscription_paging": {
+    "recorded-date": "06-10-2025, 11:40:41",
+    "recorded-content": {
+      "subscription-paging-first-page": {
+        "NextToken": "AAHrokS2B2V0PGIaX/pqx/9+0pHV1+5YQl4a3nOvPI7q5A==",
+        "Subscriptions": [
+          {
+            "Endpoint": "user80@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user48@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user89@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user72@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user33@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user102@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user94@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user5@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user95@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user13@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user97@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user55@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user82@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user42@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user40@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user117@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user19@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user58@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user4@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user50@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user32@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user93@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user36@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user83@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user7@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user34@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user8@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user10@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user47@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user66@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user67@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user18@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user0@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user110@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user31@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user92@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user75@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user71@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user77@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user107@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user52@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user20@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user68@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user41@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user76@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user116@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user114@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user113@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user84@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user43@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user44@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user12@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user59@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user16@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user49@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user108@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user87@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user46@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user27@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user96@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user73@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user111@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user64@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user39@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user38@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user112@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user17@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user65@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user105@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user118@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user29@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user22@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user99@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user23@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user11@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user119@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user28@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user88@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user74@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user91@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user56@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user51@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user3@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user9@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user24@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user25@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user45@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user14@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user115@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user57@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user62@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user37@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user109@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user53@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user60@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user15@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user103@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user54@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user61@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user26@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscription-paging-second-page": {
+        "Subscriptions": [
+          {
+            "Endpoint": "user79@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user30@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user70@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user86@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user98@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user63@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user101@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user85@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user90@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user1@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user104@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user69@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user100@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user6@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user106@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user2@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user35@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user21@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user81@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          },
+          {
+            "Endpoint": "user78@example.com",
+            "Owner": "111111111111",
+            "Protocol": "email",
+            "SubscriptionArn": "PendingConfirmation",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sms_obscure_phone_number": {
+    "recorded-date": "06-10-2025, 11:39:51",
+    "recorded-content": {
+      "subscribe-sms-2": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_attributes": {
+    "recorded-date": "06-10-2025, 11:40:42",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
+    "recorded-date": "06-10-2025, 11:40:44",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
+    "recorded-date": "06-10-2025, 11:40:45",
+    "recorded-content": {
+      "get-sub-after-topic-delete": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_set_subscription_attributes": {
+    "recorded-date": "06-10-2025, 11:40:47",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_filter_policy": {
+    "recorded-date": "06-10-2025, 11:40:48",
+    "recorded-content": {
+      "subscribe-invalid-filter-policy": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: failed to parse JSON. Unrecognized token 'invalid': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 8]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_not_opted_out": {
+    "recorded-date": "06-10-2025, 11:40:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_opted_out": {
+    "recorded-date": "06-10-2025, 11:40:49",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_opted_out_invalid": {
+    "recorded-date": "06-10-2025, 11:40:49",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_list_opted_out": {
+    "recorded-date": "06-10-2025, 11:40:50",
+    "recorded-content": {
+      "list-opted-out": {
+        "phoneNumbers": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_opt_in": {
+    "recorded-date": "06-10-2025, 11:40:50",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_confirm_subscription": {
+    "recorded-date": "06-10-2025, 11:40:51",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_get_subscription_attributes_error_not_exists": {
+    "recorded-date": "06-10-2025, 11:40:51",
+    "recorded-content": {
+      "get-sub-attrs-nonexistent": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionId",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
