@@ -8,6 +8,7 @@ from botocore.utils import InvalidArnException
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
+    ConfirmSubscriptionResponse,
     CreateTopicResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
@@ -17,6 +18,7 @@ from localstack.aws.api.sns import (
     ListTopicsResponse,
     NotFoundException,
     SnsApi,
+    String,
     SubscribeResponse,
     Subscription,
     SubscriptionAttributesMap,
@@ -24,6 +26,7 @@ from localstack.aws.api.sns import (
     TopicAttributesMap,
     attributeName,
     attributeValue,
+    authenticateOnUnsubscribe,
     endpoint,
     nextToken,
     protocol,
@@ -52,6 +55,7 @@ from localstack.services.sns.v2.utils import (
     create_subscription_arn,
     encode_subscription_token_with_region,
     get_next_page_token_from_arn,
+    get_region_from_subscription_token,
     is_valid_e164_number,
     parse_and_validate_topic_arn,
     validate_subscription_attribute,
@@ -437,6 +441,47 @@ class SnsProvider(SnsApi):
             store.subscription_filter_policy[subscription_arn] = filter_policy
 
         sub[attribute_name] = attribute_value
+
+    def confirm_subscription(
+        self,
+        context: RequestContext,
+        topic_arn: topicARN,
+        token: String,
+        authenticate_on_unsubscribe: authenticateOnUnsubscribe = None,
+        **kwargs,
+    ) -> ConfirmSubscriptionResponse:
+        # TODO: validate format on the token (seems to be 288 hex chars)
+        # this request can come from any http client, it might not be signed (we would need to implement
+        # `authenticate_on_unsubscribe` to force a signing client to do this request.
+        # so, the region and account_id might not be in the request. Use the ones from the topic_arn
+        try:
+            parsed_arn = parse_arn(topic_arn)
+        except InvalidArnException:
+            raise InvalidParameterException("Invalid parameter: Topic")
+
+        store = self.get_store(account_id=parsed_arn["account"], region=parsed_arn["region"])
+
+        # it seems SNS is able to know what the region of the topic should be, even though a wrong topic is accepted
+        if parsed_arn["region"] != get_region_from_subscription_token(token):
+            raise InvalidParameterException("Invalid parameter: Topic")
+
+        subscription_arn = store.subscription_tokens.get(token)
+        if not subscription_arn:
+            raise InvalidParameterException("Invalid parameter: Token")
+
+        subscription = store.subscriptions.get(subscription_arn)
+        if not subscription:
+            # subscription could have been deleted in the meantime
+            raise InvalidParameterException("Invalid parameter: Token")
+
+        # ConfirmSubscription is idempotent
+        if subscription.get("PendingConfirmation") == "false":
+            return ConfirmSubscriptionResponse(SubscriptionArn=subscription_arn)
+
+        subscription["PendingConfirmation"] = "false"
+        subscription["ConfirmationWasAuthenticated"] = "true"
+
+        return ConfirmSubscriptionResponse(SubscriptionArn=subscription_arn)
 
     def list_subscriptions_by_topic(
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs

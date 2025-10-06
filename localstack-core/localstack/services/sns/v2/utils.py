@@ -106,3 +106,17 @@ def encode_subscription_token_with_region(region: str) -> str:
 
 def get_next_page_token_from_arn(resource_arn: str) -> str:
     return to_str(base64.b64encode(to_bytes(resource_arn)))
+
+
+def get_region_from_subscription_token(token: str) -> str:
+    """
+    Try to decode and return the region from a subscription token
+    :param token:
+    :return: the region if able to decode it
+    :raises: InvalidParameterException if the token is invalid
+    """
+    try:
+        region = token.split("2f", maxsplit=1)[0]
+        return bytes.fromhex(region).decode("utf-8")
+    except (IndexError, ValueError, TypeError, UnicodeDecodeError):
+        raise InvalidParameterException("Invalid parameter: Token")
