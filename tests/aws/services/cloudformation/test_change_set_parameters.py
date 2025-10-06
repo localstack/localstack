@@ -1,3 +1,4 @@
+import copy
 import json
 
 import pytest
@@ -126,6 +127,33 @@ class TestChangeSetParameters:
         }
         capture_update_process(
             snapshot, template_1, template_2, p1={"TopicName": name1}, p2={"TopicName": name2}
+        )
+
+    @markers.aws.validated
+    def test_parameter_type_change(self, snapshot, capture_update_process):
+        snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+
+        template1 = {
+            "Parameters": {
+                "Value": {
+                    "Type": "Number",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "Value"},
+                    },
+                },
+            },
+        }
+        template2 = copy.deepcopy(template1)
+        template2["Parameters"]["Value"]["Type"] = "String"
+
+        capture_update_process(
+            snapshot, template1, template2, p1={"Value": "123"}, p2={"Value": "456"}
         )
 
     @markers.aws.validated
