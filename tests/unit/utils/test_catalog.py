@@ -4,10 +4,13 @@ from localstack.utils.catalog.catalog import AwsCatalogRemoteStatePlugin
 from localstack.utils.catalog.catalog_loader import RemoteCatalogLoader
 from localstack.utils.catalog.common import (
     AwsRemoteCatalog,
+    AwsServiceCatalog,
     AwsServiceOperationsSupportInLatest,
     AwsServicesSupportInLatest,
+    CloudFormationResource,
     CloudFormationResourcesSupportAtRuntime,
     CloudFormationResourcesSupportInLatest,
+    LocalstackEmulatorType,
     LocalStackMetadata,
 )
 
@@ -25,35 +28,42 @@ CATALOG = AwsRemoteCatalog(
     localstack=LocalStackMetadata(version="4.7"),
     services={
         "athena": {
-            "pro": {
-                "provider": "athena:pro",
-                "operations": ["StartQueryExecution", "GetQueryExecution"],
-                "plans": ["ultimate", "enterprise"],
-            }
+            "pro": AwsServiceCatalog(
+                provider="athena:pro",
+                operations=["StartQueryExecution", "GetQueryExecution"],
+                plans=["ultimate", "enterprise"],
+            )
         },
         "s3": {
-            "community": {
-                "provider": "s3:default",
-                "operations": ["CreateBucket"],
-                "plans": ["free", "base", "ultimate", "enterprise"],
-            },
-            "pro": {
-                "provider": "s3:pro",
-                "operations": ["SelectObjectContent"],
-                "plans": ["base", "ultimate", "enterprise"],
-            },
+            "community": AwsServiceCatalog(
+                provider="s3:default",
+                operations=["CreateBucket"],
+                plans=["free", "base", "ultimate", "enterprise"],
+            ),
+            "pro": AwsServiceCatalog(
+                provider="s3:pro",
+                operations=["SelectObjectContent"],
+                plans=["base", "ultimate", "enterprise"],
+            ),
         },
         "kms": {
-            "community": {
-                "provider": "kms:default",
-                "operations": ["ListKeys"],
-                "plans": ["free", "base", "ultimate", "enterprise"],
-            }
+            "community": AwsServiceCatalog(
+                provider="kms:default",
+                operations=["ListKeys"],
+                plans=["free", "base", "ultimate", "enterprise"],
+            )
         },
     },
     cloudformation_resources={
-        "community": {"AWS::S3::Bucket": {"methods": ["Create", "Delete"]}},
-        "pro": {"AWS::Athena::CapacitiesReservation": {"methods": ["Create", "Update", "Delete"]}},
+        "community": {
+            "AWS::S3::Bucket": CloudFormationResource(methods=["Create", "Delete"]),
+            "AWS::KMS::Key": CloudFormationResource(methods=["Create", "Delete"]),
+        },
+        "pro": {
+            "AWS::Athena::CapacitiesReservation": CloudFormationResource(
+                methods=["Create", "Update", "Delete"]
+            ),
+        },
     },
 )
 
@@ -129,3 +139,10 @@ class TestAwsCatalog:
     ):
         result = aws_catalog.get_cloudformation_resource_status(resource_name, service_name)
         assert result == expected_status
+
+    def test_build_cfn_catalog_resources(self, aws_catalog):
+        community_resources = aws_catalog.cfn_resources_in_latest[LocalstackEmulatorType.COMMUNITY]
+        assert set(community_resources) == {"AWS::S3::Bucket", "AWS::KMS::Key"}
+
+        pro_resources = aws_catalog.cfn_resources_in_latest[LocalstackEmulatorType.PRO]
+        assert set(pro_resources) == {"AWS::Athena::CapacitiesReservation"}
