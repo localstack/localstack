@@ -1258,7 +1258,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("subscribe-diff-attributes", e.value.response)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_unsubscribe_idempotency(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
