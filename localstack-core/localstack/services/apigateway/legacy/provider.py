@@ -2054,6 +2054,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             for integration_response in integration_responses.values():
                 remove_empty_attributes_from_integration_response(integration_response)
 
+        if response.get("connectionType") == "VPC_LINK":
+            # FIXME: this is hacky to workaround moto not saving the VPC Link `connectionId`
+            # only do this internal check of Moto if the integration is of VPC_LINK type
+            moto_rest_api = get_moto_rest_api(context=context, rest_api_id=rest_api_id)
+            try:
+                method = moto_rest_api.resources[resource_id].resource_methods[http_method]
+                integration = method.method_integration
+                if connection_id := getattr(integration, "connection_id", None):
+                    response["connectionId"] = connection_id
+
+            except (AttributeError, KeyError):
+                # this error should have been caught by `call_moto`
+                pass
+
         return response
 
     def put_integration(
@@ -2108,12 +2122,20 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         moto_request.setdefault("timeoutInMillis", 29000)
         if integration_type in (IntegrationType.HTTP, IntegrationType.HTTP_PROXY):
             moto_request.setdefault("connectionType", ConnectionType.INTERNET)
+
         response = call_moto_with_request(context, moto_request)
         remove_empty_attributes_from_integration(integration=response)
 
         # TODO: should fix fundamentally once we move away from moto
         if integration_type == "MOCK":
             response.pop("uri", None)
+
+        # TODO: moto does not save the connection_id
+        elif moto_request.get("connectionType") == "VPC_LINK":
+            connection_id = moto_request.get("connectionId", "")
+            # attach the connection id to the moto object
+            method.method_integration.connection_id = connection_id
+            response["connectionId"] = connection_id
 
         return response
 

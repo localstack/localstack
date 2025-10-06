@@ -4098,3 +4098,42 @@ class TestApigatewayIntegration:
             statusCode="200",
         )
         snapshot.match("delete-method-response", delete_response)
+
+    @markers.aws.validated
+    def test_create_integration_with_vpc_link(
+        self, create_rest_apigw, aws_client, snapshot, region_name
+    ):
+        """
+        We cannot properly validate the CRUD logic of creating VPC Link, as they require an ELB Network Load Balancer
+        which are not implemented yet. But we can use stage variables to delay the evaluation of the real connection id
+        """
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        rest_api_id, _, root_resource_id = create_rest_apigw(name="test vpc link")
+
+        aws_client.apigateway.put_method(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
+        # see example here:
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-api-with-vpclink-cli.html
+        put_integration = aws_client.apigateway.put_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="HTTP_PROXY",
+            uri=f"http://my-vpclink-test-nlb-1234567890abcdef.{region_name}.amazonaws.com",
+            integrationHttpMethod="GET",
+            connectionType="VPC_LINK",
+            connectionId="${stageVariables.vpcLinkId}",
+        )
+        snapshot.match("put-integration-vpc-link", put_integration)
+
+        get_integration = aws_client.apigateway.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-integration-vpc-link", get_integration)
