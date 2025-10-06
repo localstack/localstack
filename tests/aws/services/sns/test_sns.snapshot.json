@@ -637,7 +637,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_protocol": {
-    "recorded-date": "24-08-2023, 23:27:50",
+    "recorded-date": "06-10-2025, 10:25:11",
     "recorded-content": {
       "exception": {
         "Error": {
@@ -653,7 +653,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_from_non_existing_subscription": {
-    "recorded-date": "24-08-2023, 23:27:52",
+    "recorded-date": "06-10-2025, 10:25:16",
     "recorded-content": {
       "empty-unsubscribe": {
         "ResponseMetadata": {
@@ -664,7 +664,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_create_subscriptions_with_attributes": {
-    "recorded-date": "29-03-2024, 19:44:43",
+    "recorded-date": "06-10-2025, 10:25:19",
     "recorded-content": {
       "subscribe-wrong-attr": {
         "Error": {
@@ -715,7 +715,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_not_found_error_on_set_subscription_attributes": {
-    "recorded-date": "24-08-2023, 23:27:55",
+    "recorded-date": "06-10-2025, 10:25:23",
     "recorded-content": {
       "sub": {
         "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:1>",
@@ -777,7 +777,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_validate_set_sub_attributes": {
-    "recorded-date": "29-03-2024, 19:30:24",
+    "recorded-date": "06-10-2025, 10:25:27",
     "recorded-content": {
       "fake-attribute": {
         "Error": {
@@ -826,7 +826,7 @@
       "invalid-json-redrive-policy": {
         "Error": {
           "Code": "InvalidParameter",
-          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@469cc9aa; line: 1, column: 3]",
+          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -837,7 +837,7 @@
       "invalid-json-filter-policy": {
         "Error": {
           "Code": "InvalidParameter",
-          "Message": "Invalid parameter: FilterPolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: (String)\"{invalidjson}\"; line: 1, column: 3]",
+          "Message": "Invalid parameter: FilterPolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -848,7 +848,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_sns_confirm_subscription_wrong_token": {
-    "recorded-date": "24-08-2023, 23:27:58",
+    "recorded-date": "06-10-2025, 10:25:28",
     "recorded-content": {
       "topic-not-exists": {
         "Error": {
@@ -3599,118 +3599,132 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions": {
-    "recorded-date": "25-08-2023, 16:23:53",
+    "recorded-date": "06-10-2025, 10:25:38",
     "recorded-content": {
       "create-topic-1": {
-        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+        "TopicArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "326",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:28 GMT",
+            "x-amzn-requestid": "ac4ced28-6d5a-5160-8e58-8c75f6028746"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "ac4ced28-6d5a-5160-8e58-8c75f6028746",
+          "RetryAttempts": 0
         }
       },
       "create-topic-2": {
-        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
+        "TopicArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "326",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:28 GMT",
+            "x-amzn-requestid": "2629b8a0-1a97-55be-9c18-d9fd81cff398"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "2629b8a0-1a97-55be-9c18-d9fd81cff398",
+          "RetryAttempts": 0
         }
       },
       "sub-topic-1-0": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
+        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a:771920b9-536f-4e68-94a9-da9503001cf6",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "369",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:29 GMT",
+            "x-amzn-requestid": "53c4ad86-ed00-5ec5-8674-ccdb765938e3"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "53c4ad86-ed00-5ec5-8674-ccdb765938e3",
+          "RetryAttempts": 0
         }
       },
       "sub-topic-1-1": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:4>",
+        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a:b7e16d2f-8012-4428-a6b8-1f15f4aabbdb",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "369",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:30 GMT",
+            "x-amzn-requestid": "37744d36-a52a-5fa6-a094-2c6b3e703980"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "37744d36-a52a-5fa6-a094-2c6b3e703980",
+          "RetryAttempts": 0
         }
       },
       "sub-topic-1-2": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:5>",
+        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a:5fa2721a-94d9-4455-89b1-6d2dea8543f3",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "369",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:31 GMT",
+            "x-amzn-requestid": "70ae09ed-4d5e-5114-9be7-68b0d6056732"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "70ae09ed-4d5e-5114-9be7-68b0d6056732",
+          "RetryAttempts": 0
         }
       },
       "sub-topic-2-0": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:6>",
+        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060:63dabae3-6de1-42c1-9485-ecb8618b5537",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "369",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:31 GMT",
+            "x-amzn-requestid": "33fc5954-0619-542d-b71b-38099d42220b"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "33fc5954-0619-542d-b71b-38099d42220b",
+          "RetryAttempts": 0
         }
       },
       "sub-topic-2-1": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:7>",
+        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060:39b1372b-4b60-4651-bad4-556baae7e0f5",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "369",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:32 GMT",
+            "x-amzn-requestid": "4ad4b4aa-bbb0-5220-b732-d5f720ec1406"
+          },
+          "HTTPStatusCode": 200,
+          "RequestId": "4ad4b4aa-bbb0-5220-b732-d5f720ec1406",
+          "RetryAttempts": 0
         }
       },
       "sub-topic-2-2": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:8>",
+        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060:ce2ab5a2-4f3d-4d60-be26-b61603047341",
         "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-subscriptions-aggregated": {
-        "Subscriptions": [
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:9>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          "HTTPHeaders": {
+            "connection": "keep-alive",
+            "content-length": "369",
+            "content-type": "text/xml",
+            "date": "Mon, 06 Oct 2025 10:25:33 GMT",
+            "x-amzn-requestid": "9d64a103-47c0-5e01-9acc-c05edc9de827"
           },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:10>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:4>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:11>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:5>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:12>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:6>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:13>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:7>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:14>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:8>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
+          "HTTPStatusCode": 200,
+          "RequestId": "9d64a103-47c0-5e01-9acc-c05edc9de827",
+          "RetryAttempts": 0
         }
       }
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_idempotency": {
-    "recorded-date": "20-03-2025, 17:16:39",
+    "recorded-date": "06-10-2025, 10:26:46",
     "recorded-content": {
       "subscribe": {
         "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:1>",
@@ -4021,7 +4035,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
-    "recorded-date": "02-09-2025, 20:17:36",
+    "recorded-date": "06-10-2025, 10:26:51",
     "recorded-content": {
       "invalid-unsubscribe-arn-1": {
         "Error": {
@@ -4070,7 +4084,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_idempotency": {
-    "recorded-date": "07-11-2023, 00:36:06",
+    "recorded-date": "06-10-2025, 10:26:49",
     "recorded-content": {
       "unsubscribe-1": {
         "ResponseMetadata": {
@@ -4239,7 +4253,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions_by_topic_pagination": {
-    "recorded-date": "16-05-2024, 10:32:16",
+    "recorded-date": "06-10-2025, 10:26:42",
     "recorded-content": {
       "list-sub-per-topic-page-2": {
         "Subscriptions": [
@@ -4951,7 +4965,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_topic": {
-    "recorded-date": "23-01-2025, 22:38:17",
+    "recorded-date": "06-10-2025, 10:26:53",
     "recorded-content": {
       "invalid-subscribe-arn-1": {
         "Error": {

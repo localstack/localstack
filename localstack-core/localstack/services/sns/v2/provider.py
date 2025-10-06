@@ -31,8 +31,14 @@ from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.certificate import SNS_SERVER_CERT
 from localstack.services.sns.constants import DUMMY_SUBSCRIPTION_PRINCIPAL
 from localstack.services.sns.filter import FilterPolicyValidator
-from localstack.services.sns.models import (
+from localstack.services.sns.publisher import PublishDispatcher, SnsPublishContext
+from localstack.services.sns.v2.models import (
+    SnsMessage,
+    SnsMessageType,
     SnsStore,
+    SnsSubscription,
+    Topic,
+    create_topic,
     sns_stores,
 )
 from localstack.services.sns.publisher import PublishDispatcher, SnsPublishContext
@@ -107,6 +113,8 @@ class SnsProvider(SnsApi):
         store.topics[topic_arn] = topic
         # todo: tags
 
+        store.topic_subscriptions.setdefault(topic_arn, [])
+
         return CreateTopicResponse(TopicArn=topic_arn)
 
     def get_topic_attributes(
@@ -165,7 +173,7 @@ class SnsProvider(SnsApi):
         if context.region != parsed_topic_arn["region"]:
             raise InvalidParameterException("Invalid parameter: TopicArn")
 
-        store = self.get_store(account_id=parsed_topic_arn["account"], region_name=context.region)
+        store = self.get_store(account_id=parsed_topic_arn["account"], region=context.region)
 
         if topic_arn not in store.topic_subscriptions:
             raise NotFoundException("Topic does not exist")
@@ -327,7 +335,7 @@ class SnsProvider(SnsApi):
         account_id = parsed_arn["account"]
         region_name = parsed_arn["region"]
 
-        store = self.get_store(account_id=account_id, region_name=region_name)
+        store = self.get_store(account_id=account_id, region=region_name)
         if count == 6 and subscription_arn not in store.subscriptions:
             raise InvalidParameterException("Invalid parameter: SubscriptionId")
 

@@ -215,6 +215,18 @@ class SnsMessage:
 class SnsStore(BaseStore):
     topics: dict[str, Topic] = LocalAttribute(default=dict)
 
+    # maps topic ARN to subscriptions ARN
+    topic_subscriptions: dict[str, list[str]] = LocalAttribute(default=dict)
+
+    # maps subscription ARN to SnsSubscription
+    subscriptions: dict[str, SnsSubscription] = LocalAttribute(default=dict)
+
+    # filter policy are stored as JSON string in subscriptions, store the decoded result Dict
+    subscription_filter_policy: dict[subscriptionARN, dict] = LocalAttribute(default=dict)
+
+    # maps confirmation token to subscription ARN
+    subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
+
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 
 

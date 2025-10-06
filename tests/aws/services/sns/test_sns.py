@@ -867,7 +867,7 @@ class TestSNSPublishCrud:
 
 class TestSNSSubscriptionCrud:
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_subscribe_with_invalid_protocol(self, sns_create_topic, sns_subscription, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -879,7 +879,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("exception", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_unsubscribe_from_non_existing_subscription(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -892,7 +892,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("empty-unsubscribe", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_create_subscriptions_with_attributes(
         self,
         sns_create_topic,
@@ -945,7 +945,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("get-attrs-nonexistent-sub", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_not_found_error_on_set_subscription_attributes(
         self,
         sns_create_topic,
@@ -1000,7 +1000,7 @@ class TestSNSSubscriptionCrud:
             "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS, assert instead
         ]
     )
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_validate_set_sub_attributes(
         self,
         sns_create_topic,
@@ -1074,7 +1074,7 @@ class TestSNSSubscriptionCrud:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$.invalid-token.Error.Message"]  # validate the token shape
     )
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_sns_confirm_subscription_wrong_token(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -1105,7 +1105,7 @@ class TestSNSSubscriptionCrud:
         paths=["$.list-subscriptions.Subscriptions"],
         # there could be cleanup issues and don't want to flake, manually assert
     )
-    @skip_if_sns_v2
+    @skip_if_sns_v2  # TODO: base test fails against AWS
     def test_list_subscriptions(
         self,
         sns_create_topic,
@@ -1152,7 +1152,7 @@ class TestSNSSubscriptionCrud:
         assert all((sub["TopicArn"], sub["Endpoint"]) in sorting_list for sub in all_subs)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_list_subscriptions_by_topic_pagination(
         self, sns_create_topic, sns_subscription, snapshot, aws_client
     ):
@@ -1194,7 +1194,7 @@ class TestSNSSubscriptionCrud:
         assert len(response["Subscriptions"]) <= 100
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_subscribe_idempotency(
         self, aws_client, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, snapshot
     ):
@@ -1266,7 +1266,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("subscribe-diff-attributes", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_unsubscribe_idempotency(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1283,7 +1283,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("unsubscribe-2", unsubscribe_2)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client_factory, region_name):
         sns_client = aws_client_factory(
             region_name=region_name, config=Config(parameter_validation=False)
@@ -1310,7 +1310,7 @@ class TestSNSSubscriptionCrud:
         snapshot.match("invalid-unsubscribe-arn-4", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
+    # @skip_if_sns_v2
     def test_subscribe_with_invalid_topic(self, sns_create_topic, sns_subscription, snapshot):
         with pytest.raises(ClientError) as e:
             sns_subscription(
