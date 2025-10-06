@@ -43,7 +43,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[json]": {
-    "recorded-date": "18-09-2025, 13:56:03",
+    "recorded-date": "06-10-2025, 14:45:54",
     "recorded-content": {
       "describe-alarms": {
         "CompositeAlarms": [],
@@ -76,7 +76,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[smithy-rpc-v2-cbor]": {
-    "recorded-date": "18-09-2025, 13:56:06",
+    "recorded-date": "06-10-2025, 14:45:56",
     "recorded-content": {
       "describe-alarms": {
         "CompositeAlarms": [],
@@ -109,7 +109,7 @@
     }
   },
   "tests/aws/services/cloudwatch/test_cloudwatch.py::TestCloudWatchMultiProtocol::test_basic_operations_multiple_protocols[query]": {
-    "recorded-date": "18-09-2025, 13:56:09",
+    "recorded-date": "06-10-2025, 14:45:59",
     "recorded-content": {
       "describe-alarms": {
         "DescribeAlarmsResponse": {
