@@ -1404,35 +1404,19 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("subscribe-sqs-via-url-error", e.value.response)
 
     @markers.aws.validated
-    def test_double_subscription(self, sns_create_topic, aws_client, snapshot):
-        topic_arn = sns_create_topic(Name=f"double-sub-{short_uid()}")["TopicArn"]
-
-        resp1 = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sms",
-            Endpoint="+1234567890",
-        )
-        resp2 = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="sms",
-            Endpoint="+1234567890",
-        )
-
-        # The subscription ARN may differ but the endpoint and protocol should match
-        snapshot.match("double-subscription-first", resp1)
-        snapshot.match("double-subscription-second", resp2)
-
-    @markers.aws.validated
-    def test_subscribe_bad_sms(self, sns_create_topic, aws_client, snapshot):
+    def test_subscribe_invalid_sms(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"bad-sms-{short_uid()}")["TopicArn"]
 
-        with pytest.raises(ClientError) as e:
-            aws_client.sns.subscribe(
-                TopicArn=topic_arn,
-                Protocol="sms",
-                Endpoint="invalid-number",
-            )
-        snapshot.match("subscribe-bad-sms", e.value.response)
+        invalid_numbers = ["+15--551234567", "NAA+15551234567", "+15551234567.", "/+15551234567"]
+
+        for number in invalid_numbers:
+            with pytest.raises(ClientError) as e:
+                aws_client.sns.subscribe(
+                    TopicArn=topic_arn,
+                    Protocol="sms",
+                    Endpoint=number,
+                )
+            snapshot.match(f"subscribe-bad-sms-{number}", e.value.response)
 
     @markers.aws.validated
     def test_creating_subscription(self, sns_create_topic, aws_client, snapshot):

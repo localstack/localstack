@@ -6884,5 +6884,54 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_sms": {
+    "recorded-date": "06-10-2025, 12:09:25",
+    "recorded-content": {
+      "subscribe-bad-sms-+15--551234567": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: +15--551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-bad-sms-NAA+15551234567": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: NAA+15551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-bad-sms-+15551234567.": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: +15551234567.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-bad-sms-/+15551234567": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: /+15551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

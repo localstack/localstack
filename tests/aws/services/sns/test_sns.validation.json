@@ -224,6 +224,15 @@
       "total": 0.91
     }
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_sms": {
+    "last_validated_date": "2025-10-06T12:09:25+00:00",
+    "durations_in_seconds": {
+      "setup": 1.35,
+      "call": 2.17,
+      "teardown": 0.39,
+      "total": 3.91
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sms": {
     "last_validated_date": "2025-10-06T11:39:50+00:00",
     "durations_in_seconds": {
