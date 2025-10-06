@@ -1504,7 +1504,7 @@ class JSONResponseSerializer(QueryCompatibleProtocolMixin, ResponseSerializer):
     def _prepare_additional_traits_in_response(
         self, response: Response, operation_model: OperationModel, request_id: str
     ):
-        response.headers["x-amzn-RequestId"] = request_id
+        response.headers.setdefault("x-amzn-RequestId", request_id)
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id
         )
