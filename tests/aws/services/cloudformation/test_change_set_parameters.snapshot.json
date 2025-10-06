@@ -1926,5 +1926,21 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_invalid_parameter_type": {
+    "recorded-date": "06-10-2025, 20:45:59",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Parameter 'Value' must be a number.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

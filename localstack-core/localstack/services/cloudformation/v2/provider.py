@@ -120,9 +120,10 @@ from localstack.services.cloudformation.v2.entities import (
     StackInstance,
     StackSet,
 )
-from localstack.services.cloudformation.v2.types import EngineParameter
+from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import select_attributes
+from localstack.utils.numbers import is_number
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
 
@@ -261,6 +262,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 default_value=default_value,
                 no_echo=parameter.get("NoEcho"),
             )
+
+            # validate the type
+            if parameter["Type"] == "Number" and not is_number(
+                engine_parameter_value(resolved_parameter)
+            ):
+                raise ValidationError(f"Parameter '{name}' must be a number.")
 
             # TODO: support other parameter types
             if match := SSM_PARAMETER_TYPE_RE.match(parameter["Type"]):
