@@ -1,5 +1,5 @@
 import json
-from typing import Any, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import TopicAttributesMap
@@ -9,82 +9,83 @@ from localstack.services.stores import (
     CrossRegionAttribute,
     LocalAttribute,
 )
+from localstack.utils.aws.arns import sns_topic_arn
 from localstack.utils.tagging import TaggingService
 
 
-class TopicAttributes(TypedDict, total=False):
-    contentBasedDeduplication: bool
-    displayName: str
-    fifoTopic: bool
-    owner: str
-    policy: dict[str, Any]
-    subscriptionsConfirmed: int
-    subscriptionsDeleted: int
-    subscriptionsPending: int
-    topicArn: str
-
-
-class Topic:
+class Topic(TypedDict, total=True):
     arn: str
     name: str
     region: str
     account_id: str
-    attributes: dict[str, Any]
+    attributes: TopicAttributesMap
 
-    def __init__(self, name, arn, attributes: dict, context: RequestContext):
-        self.account_id = context.account_id
-        self.region = context.region
-        self.name = name
-        self.arn = arn
-        self.attributes = self.default_attributes()
-        self.attributes.update(attributes or {})
 
-    def default_attributes(self) -> TopicAttributesMap:
-        default_attributes = {
-            "DisplayName": "",
-            "Owner": self.account_id,
-            "Policy": self.create_default_topic_policy(),
-            "SubscriptionsConfirmed": "0",
-            "SubscriptionsDeleted": "0",
-            "SubscriptionsPending": "0",
-            "TopicArn": self.arn,
-        }
-        if self.name.endswith(".fifo"):
-            default_attributes.update(
-                {
-                    "ContentBasedDeduplication": "false",
-                    "FifoTopic": "false",
-                    "SignatureVersion": "2",
-                }
-            )
-        return default_attributes
+def create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
+    topic_arn = sns_topic_arn(
+        topic_name=name, region_name=context.region, account_id=context.account_id
+    )
+    topic: Topic = {
+        "name": name,
+        "arn": topic_arn,
+        "region": context.region,
+        "account_id": context.account_id,
+        "attributes": {},
+    }
+    attrs = default_attributes(topic)
+    attrs.update(attributes or {})
+    topic["attributes"] = attrs
 
-    def create_default_topic_policy(self) -> str:  # Dict[str, Any]:
-        return json.dumps(
+    return topic
+
+
+def default_attributes(topic: Topic) -> TopicAttributesMap:
+    default_attributes = {
+        "DisplayName": "",
+        "Owner": topic["account_id"],
+        "Policy": create_default_topic_policy(topic),
+        "SubscriptionsConfirmed": "0",
+        "SubscriptionsDeleted": "0",
+        "SubscriptionsPending": "0",
+        "TopicArn": topic["arn"],
+    }
+    if topic["name"].endswith(".fifo"):
+        default_attributes.update(
             {
-                "Version": "2008-10-17",
-                "Id": "__default_policy_ID",
-                "Statement": [
-                    {
-                        "Effect": "Allow",
-                        "Sid": "__default_statement_ID",
-                        "Principal": {"AWS": "*"},
-                        "Action": [
-                            "SNS:GetTopicAttributes",
-                            "SNS:SetTopicAttributes",
-                            "SNS:AddPermission",
-                            "SNS:RemovePermission",
-                            "SNS:DeleteTopic",
-                            "SNS:Subscribe",
-                            "SNS:ListSubscriptionsByTopic",
-                            "SNS:Publish",
-                        ],
-                        "Resource": self.arn,
-                        "Condition": {"StringEquals": {"AWS:SourceOwner": self.account_id}},
-                    }
-                ],
+                "ContentBasedDeduplication": "false",
+                "FifoTopic": "false",
+                "SignatureVersion": "2",
             }
         )
+    return default_attributes
+
+
+def create_default_topic_policy(topic: Topic) -> str:
+    return json.dumps(
+        {
+            "Version": "2008-10-17",
+            "Id": "__default_policy_ID",
+            "Statement": [
+                {
+                    "Effect": "Allow",
+                    "Sid": "__default_statement_ID",
+                    "Principal": {"AWS": "*"},
+                    "Action": [
+                        "SNS:GetTopicAttributes",
+                        "SNS:SetTopicAttributes",
+                        "SNS:AddPermission",
+                        "SNS:RemovePermission",
+                        "SNS:DeleteTopic",
+                        "SNS:Subscribe",
+                        "SNS:ListSubscriptionsByTopic",
+                        "SNS:Publish",
+                    ],
+                    "Resource": topic["arn"],
+                    "Condition": {"StringEquals": {"AWS:SourceOwner": topic["account_id"]}},
+                }
+            ],
+        }
+    )
 
 
 class SnsStore(BaseStore):
