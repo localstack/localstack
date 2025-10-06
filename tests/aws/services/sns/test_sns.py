@@ -1146,7 +1146,6 @@ class TestSNSSubscriptionCrud:
         assert all((sub["TopicArn"], sub["Endpoint"]) in sorting_list for sub in all_subs)
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_list_subscriptions_by_topic_pagination(
         self, sns_create_topic, sns_subscription, snapshot, aws_client
     ):
@@ -1188,7 +1187,6 @@ class TestSNSSubscriptionCrud:
         assert len(response["Subscriptions"]) <= 100
 
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_subscribe_idempotency(
         self, aws_client, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, snapshot
     ):
