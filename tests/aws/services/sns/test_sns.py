@@ -867,7 +867,6 @@ class TestSNSPublishCrud:
 
 class TestSNSSubscriptionCrud:
     @markers.aws.validated
-    # @skip_if_sns_v2
     def test_subscribe_with_invalid_protocol(self, sns_create_topic, sns_subscription, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
