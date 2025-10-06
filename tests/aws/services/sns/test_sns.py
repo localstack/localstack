@@ -1069,7 +1069,6 @@ class TestSNSSubscriptionCrud:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$.invalid-token.Error.Message"]  # validate the token shape
     )
-    # @skip_if_sns_v2
     def test_sns_confirm_subscription_wrong_token(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
 

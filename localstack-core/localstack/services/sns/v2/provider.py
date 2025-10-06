@@ -483,6 +483,25 @@ class SnsProvider(SnsApi):
 
         return ConfirmSubscriptionResponse(SubscriptionArn=subscription_arn)
 
+    def list_subscriptions(
+        self, context: RequestContext, next_token: nextToken = None, **kwargs
+    ) -> ListSubscriptionsResponse:
+        store = self.get_store(context.account_id, context.region)
+        subscriptions = [
+            select_from_typed_dict(Subscription, sub) for sub in list(store.subscriptions.values())
+        ]
+        paginated_subscriptions = PaginatedList(subscriptions)
+        page, next_token = paginated_subscriptions.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x["SubscriptionArn"]),
+            page_size=100,
+            next_token=next_token,
+        )
+
+        response = ListSubscriptionsResponse(Subscriptions=page)
+        if next_token:
+            response["NextToken"] = next_token
+        return response
+
     def list_subscriptions_by_topic(
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsByTopicResponse:
