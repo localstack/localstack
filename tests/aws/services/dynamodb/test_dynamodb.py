@@ -2696,3 +2696,22 @@ class TestDynamoDB:
 
         describe_table = aws_client.dynamodb.describe_table(TableName=table_name)
         snapshot.match("describe-table", describe_table)
+
+    @markers.aws.validated
+    def test_dynamodb_describe_contributor_insights(
+        self, dynamodb_create_table, snapshot, aws_client
+    ):
+        table_name = f"test-ddb-table-{short_uid()}"
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("TableName"),
+            ]
+        )
+
+        dynamodb_create_table(
+            table_name=table_name,
+            partition_key=PARTITION_KEY,
+        )
+        result = aws_client.dynamodb.describe_contributor_insights(TableName=table_name)
+        snapshot.match("describe-contributor-insights-disabled", result)
