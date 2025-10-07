@@ -344,6 +344,8 @@ class TransformerUtility:
         :return: array with Transformers, for dynamodb api.
         """
         return [
+            TransformerUtility.key_value("TableName"),
+            TransformerUtility.key_value("TableArn"),
             RegexTransformer(
                 r"([a-zA-Z0-9-_.]*)?test_table_([a-zA-Z0-9-_.]*)?", replacement="<test-table>"
             ),

@@ -95,6 +95,24 @@
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_streams_on_global_tables": {
     "last_validated_date": "2025-05-22T12:44:55+00:00"
   },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_table_crud": {
+    "last_validated_date": "2025-10-07T12:46:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.95,
+      "call": 7.17,
+      "teardown": 0.2,
+      "total": 8.32
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_table_warm_throughput": {
+    "last_validated_date": "2025-10-07T13:09:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.88,
+      "call": 6.25,
+      "teardown": 0.66,
+      "total": 7.79
+    }
+  },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
     "last_validated_date": "2023-08-23T14:33:37+00:00"
   },
