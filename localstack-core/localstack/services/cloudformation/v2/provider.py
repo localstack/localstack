@@ -1421,6 +1421,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template = template_preparer.parse_template(template_body)
 
         id_summaries = defaultdict(list)
+        if "Resources" not in template:
+            raise ValidationError(
+                "Template format error: At least one Resources member must be defined."
+            )
+
         for resource_id, resource in template["Resources"].items():
             res_type = resource["Type"]
             id_summaries[res_type].append(resource_id)

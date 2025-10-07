@@ -69,6 +69,14 @@ def test_get_template_summary_non_executed_change_set(aws_client, snapshot, clea
 
 
 @markers.aws.validated
+@skip_if_legacy_engine()
+def test_get_template_summary_no_resources(aws_client, snapshot):
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template_summary(TemplateBody="{}")
+    snapshot.match("error", exc_info.value.response)
+
+
+@markers.aws.validated
 @pytest.mark.parametrize("url_style", ["s3_url", "http_path", "http_host", "http_invalid"])
 def test_create_stack_from_s3_template_url(
     url_style, snapshot, s3_create_bucket, aws_client, cleanups

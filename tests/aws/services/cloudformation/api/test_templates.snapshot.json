@@ -200,5 +200,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary_no_resources": {
+    "recorded-date": "07-10-2025, 22:28:52",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template format error: At least one Resources member must be defined.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
