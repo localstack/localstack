@@ -288,12 +288,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscription_paging": {
-    "last_validated_date": "2025-10-06T11:40:41+00:00",
+    "last_validated_date": "2025-10-07T14:33:46+00:00",
     "durations_in_seconds": {
-      "setup": 0.0,
-      "call": 39.7,
-      "teardown": 0.31,
-      "total": 40.01
+      "setup": 0.78,
+      "call": 39.01,
+      "teardown": 0.2,
+      "total": 39.99
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_unsubscribe_from_deleted_topic": {
