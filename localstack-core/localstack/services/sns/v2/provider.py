@@ -48,9 +48,6 @@ from localstack.services.sns.v2.models import (
     create_topic,
     sns_stores,
 )
-from localstack.services.sns.publisher import PublishDispatcher, SnsPublishContext
-from localstack.services.sns.v2.models import SnsMessage, SnsMessageType, SnsSubscription, Topic
-from localstack.services.sns.v2.models import create_topic, sns_stores
 from localstack.services.sns.v2.utils import (
     create_subscription_arn,
     encode_subscription_token_with_region,
@@ -61,8 +58,6 @@ from localstack.services.sns.v2.utils import (
     validate_subscription_attribute,
 )
 from localstack.utils.aws.arns import get_partition, parse_arn, sns_topic_arn
-from localstack.services.sns.v2.models import SnsStore, Topic, sns_stores
-from localstack.utils.aws.arns import ArnData, parse_arn, sns_topic_arn
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 
 # set up logger
@@ -90,10 +85,10 @@ class SnsProvider(SnsApi):
         **kwargs,
     ) -> CreateTopicResponse:
         store = self.get_store(context.account_id, context.region)
-        topic_ARN = sns_topic_arn(
+        topic_arn = sns_topic_arn(
             topic_name=name, region_name=context.region, account_id=context.account_id
         )
-        topic: Topic = store.topics.get(topic_ARN)
+        topic: Topic = store.topics.get(topic_arn)
         attributes = attributes or {}
         if topic:
             attrs = topic["attributes"]
@@ -101,7 +96,7 @@ class SnsProvider(SnsApi):
                 if not attrs.get(k) or not attrs.get(k) == v:
                     # TODO:
                     raise InvalidParameterException("Fix this Exception message and type")
-            return CreateTopicResponse(TopicArn=topic_ARN)
+            return CreateTopicResponse(TopicArn=topic_arn)
 
         attributes = attributes or {}
         if attributes.get("FifoTopic") and attributes["FifoTopic"].lower() == "true":
@@ -122,12 +117,12 @@ class SnsProvider(SnsApi):
                 raise InvalidParameterException("Invalid parameter: Topic Name")
 
         topic = create_topic(name=name, attributes=attributes, context=context)
-        store.topics[topic_ARN] = topic
+        store.topics[topic_arn] = topic
         # todo: tags
 
-        store.topic_subscriptions.setdefault(topic_ARN, [])
+        store.topic_subscriptions.setdefault(topic_arn, [])
 
-        return CreateTopicResponse(TopicArn=topic_ARN)
+        return CreateTopicResponse(TopicArn=topic_arn)
 
     def get_topic_attributes(
         self, context: RequestContext, topic_arn: topicARN, **kwargs
@@ -543,17 +538,6 @@ class SnsProvider(SnsApi):
             return store.topics[arn]
         except KeyError:
             raise NotFoundException("Topic does not exist")
-
-
-def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
-    topic_arn = topic_arn or ""
-    try:
-        return parse_arn(topic_arn)
-    except InvalidArnException:
-        count = len(topic_arn.split(":"))
-        raise InvalidParameterException(
-            f"Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not {count}"
-        )
 
 
 def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
