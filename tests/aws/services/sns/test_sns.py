@@ -1418,14 +1418,13 @@ class TestSNSSubscriptionCrudV2:
                 )
             snapshot.match(f"subscribe-bad-sms-{number}", e.value.response)
 
+    # TODO: Parametrize for email protocol as well
     @markers.aws.validated
     def test_creating_subscription(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"create-sub-{short_uid()}")["TopicArn"]
 
         resp = aws_client.sns.subscribe(
-            TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
+            TopicArn=topic_arn, Protocol="http", Endpoint="http://example.com/"
         )
         snapshot.match("create-subscription", resp)
 

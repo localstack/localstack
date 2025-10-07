@@ -5864,7 +5864,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription": {
-    "recorded-date": "06-10-2025, 11:39:58",
+    "recorded-date": "07-10-2025, 07:40:45",
     "recorded-content": {
       "create-subscription": {
         "SubscriptionArn": "pending confirmation",
