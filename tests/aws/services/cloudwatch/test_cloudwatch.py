@@ -2975,6 +2975,8 @@ class TestCloudWatchMultiProtocol:
                 payload=input_values,
             )
             assert response.status_code == 200
+            # Check if x-amzn-RequestId is in the response headers - case-sensitive check
+            assert "x-amzn-RequestId" in dict(response.headers)
 
         get_metric_input = {
             "MetricDataQueries": [
