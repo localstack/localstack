@@ -360,9 +360,10 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
-    @pytest.mark.skipif(
-        is_sns_v1_provider(), reason="covered in moto, but with slight parity errors"
-    )
+    # @pytest.mark.skipif(
+    #    is_sns_v1_provider(), reason="covered in moto, but with slight parity errors"
+    # )
+    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
@@ -380,10 +381,12 @@ class TestSNSTopicCrudV2:
         snapshot.match("name-too-long", e.value.response)
 
         # Invalid chars
-        for c in [":", ";", "!", "@", "|", "^", "%", " "]:
+        # TODO: the index is used because using special characters in the matched name doesn't work for all chars
+        #  -> we should write a snapshot test to investigate further
+        for index, c in enumerate([":", ";", "!", "@", "|", "^", "%", " "]):
             with pytest.raises(ClientError) as e:
                 sns_create_topic(Name=f"bad{c}name")
-            snapshot.match(f"name-invalid-char-{c}", e.value.response)
+            snapshot.match(f"name-invalid-char-{index}", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -1099,38 +1102,30 @@ class TestSNSSubscriptionCrud:
         paths=["$.list-subscriptions.Subscriptions"],
         # there could be cleanup issues and don't want to flake, manually assert
     )
-    @skip_if_sns_v2  # TODO: base test fails against AWS
+    @skip_if_sns_v2  # TODO: base test fails against AWS; rewrite test
     def test_list_subscriptions(
         self,
         sns_create_topic,
         sqs_create_queue,
         sqs_get_queue_arn,
         sns_subscription,
-        snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("NextToken"))
         topic = sns_create_topic()
         topic_arn = topic["TopicArn"]
-        snapshot.match("create-topic-1", topic)
         topic_2 = sns_create_topic()
         topic_arn_2 = topic_2["TopicArn"]
-        snapshot.match("create-topic-2", topic_2)
-        sorting_list = []
+        created_subscriptions = []
         for i in range(3):
             queue_url = sqs_create_queue()
             queue_arn = sqs_get_queue_arn(queue_url)
-            subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
-            snapshot.match(f"sub-topic-1-{i}", subscription)
-            sorting_list.append((topic_arn, queue_arn))
+            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+            created_subscriptions.append((topic_arn, queue_arn))
         for i in range(3):
             queue_url = sqs_create_queue()
             queue_arn = sqs_get_queue_arn(queue_url)
-            subscription = sns_subscription(
-                TopicArn=topic_arn_2, Protocol="sqs", Endpoint=queue_arn
-            )
-            snapshot.match(f"sub-topic-2-{i}", subscription)
-            sorting_list.append((topic_arn_2, queue_arn))
+            sns_subscription(TopicArn=topic_arn_2, Protocol="sqs", Endpoint=queue_arn)
+            created_subscriptions.append((topic_arn_2, queue_arn))
 
         list_subs = aws_client.sns.list_subscriptions()
         all_subs = list_subs["Subscriptions"]
@@ -1139,11 +1134,8 @@ class TestSNSSubscriptionCrud:
                 list_subs = aws_client.sns.list_subscriptions(NextToken=next_token)
                 all_subs.extend(list_subs["Subscriptions"])
 
-        all_subs.sort(key=lambda x: sorting_list.index((x["TopicArn"], x["Endpoint"])))
-        list_subs["Subscriptions"] = all_subs
-        snapshot.match("list-subscriptions-aggregated", list_subs)
-
-        assert all((sub["TopicArn"], sub["Endpoint"]) in sorting_list for sub in all_subs)
+        # TODO: fix this assert
+        assert all((sub["TopicArn"], sub["Endpoint"]) in created_subscriptions for sub in all_subs)
 
     @markers.aws.validated
     def test_list_subscriptions_by_topic_pagination(

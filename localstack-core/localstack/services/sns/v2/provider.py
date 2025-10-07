@@ -144,7 +144,9 @@ class SnsProvider(SnsApi):
         topics = [{"TopicArn": t["arn"]} for t in list(store.topics.values())]
         topics = PaginatedList(topics)
         page, nxt = topics.get_page(
-            lambda topic: topic["TopicArn"], next_token=next_token, page_size=100
+            token_generator=lambda x: get_next_page_token_from_arn(x["SubscriptionArn"]),
+            next_token=next_token,
+            page_size=100,
         )
         topics = {"Topics": page, "NextToken": nxt}
         return ListTopicsResponse(**topics)

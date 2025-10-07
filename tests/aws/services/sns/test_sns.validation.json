@@ -525,12 +525,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
-    "last_validated_date": "2025-09-29T10:46:44+00:00",
+    "last_validated_date": "2025-10-07T09:49:48+00:00",
     "durations_in_seconds": {
-      "setup": 1.38,
-      "call": 4.19,
-      "teardown": 0.31,
-      "total": 5.88
+      "setup": 1.02,
+      "call": 2.27,
+      "teardown": 0.26,
+      "total": 3.55
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_should_be_idempotent": {

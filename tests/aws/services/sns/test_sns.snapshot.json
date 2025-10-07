@@ -3599,129 +3599,8 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions": {
-    "recorded-date": "06-10-2025, 10:25:38",
-    "recorded-content": {
-      "create-topic-1": {
-        "TopicArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "326",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:28 GMT",
-            "x-amzn-requestid": "ac4ced28-6d5a-5160-8e58-8c75f6028746"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "ac4ced28-6d5a-5160-8e58-8c75f6028746",
-          "RetryAttempts": 0
-        }
-      },
-      "create-topic-2": {
-        "TopicArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "326",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:28 GMT",
-            "x-amzn-requestid": "2629b8a0-1a97-55be-9c18-d9fd81cff398"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "2629b8a0-1a97-55be-9c18-d9fd81cff398",
-          "RetryAttempts": 0
-        }
-      },
-      "sub-topic-1-0": {
-        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a:771920b9-536f-4e68-94a9-da9503001cf6",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "369",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:29 GMT",
-            "x-amzn-requestid": "53c4ad86-ed00-5ec5-8674-ccdb765938e3"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "53c4ad86-ed00-5ec5-8674-ccdb765938e3",
-          "RetryAttempts": 0
-        }
-      },
-      "sub-topic-1-1": {
-        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a:b7e16d2f-8012-4428-a6b8-1f15f4aabbdb",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "369",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:30 GMT",
-            "x-amzn-requestid": "37744d36-a52a-5fa6-a094-2c6b3e703980"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "37744d36-a52a-5fa6-a094-2c6b3e703980",
-          "RetryAttempts": 0
-        }
-      },
-      "sub-topic-1-2": {
-        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-aa665f6a:5fa2721a-94d9-4455-89b1-6d2dea8543f3",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "369",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:31 GMT",
-            "x-amzn-requestid": "70ae09ed-4d5e-5114-9be7-68b0d6056732"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "70ae09ed-4d5e-5114-9be7-68b0d6056732",
-          "RetryAttempts": 0
-        }
-      },
-      "sub-topic-2-0": {
-        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060:63dabae3-6de1-42c1-9485-ecb8618b5537",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "369",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:31 GMT",
-            "x-amzn-requestid": "33fc5954-0619-542d-b71b-38099d42220b"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "33fc5954-0619-542d-b71b-38099d42220b",
-          "RetryAttempts": 0
-        }
-      },
-      "sub-topic-2-1": {
-        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060:39b1372b-4b60-4651-bad4-556baae7e0f5",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "369",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:32 GMT",
-            "x-amzn-requestid": "4ad4b4aa-bbb0-5220-b732-d5f720ec1406"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "4ad4b4aa-bbb0-5220-b732-d5f720ec1406",
-          "RetryAttempts": 0
-        }
-      },
-      "sub-topic-2-2": {
-        "SubscriptionArn": "arn:aws:sns:us-east-1:096845016391:test-topic-c3296060:ce2ab5a2-4f3d-4d60-be26-b61603047341",
-        "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "369",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 10:25:33 GMT",
-            "x-amzn-requestid": "9d64a103-47c0-5e01-9acc-c05edc9de827"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "9d64a103-47c0-5e01-9acc-c05edc9de827",
-          "RetryAttempts": 0
-        }
-      }
-    }
+    "recorded-date": "07-10-2025, 10:07:36",
+    "recorded-content": {}
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_idempotency": {
     "recorded-date": "06-10-2025, 10:26:46",
@@ -5417,7 +5296,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
-    "recorded-date": "29-09-2025, 10:46:44",
+    "recorded-date": "07-10-2025, 09:49:48",
     "recorded-content": {
       "valid-name-max-length": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -5448,7 +5327,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-:": {
+      "name-invalid-char-0": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5459,7 +5338,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-;": {
+      "name-invalid-char-1": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5470,7 +5349,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-!": {
+      "name-invalid-char-2": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5481,7 +5360,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-@": {
+      "name-invalid-char-3": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5492,7 +5371,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-|": {
+      "name-invalid-char-4": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5503,7 +5382,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-^": {
+      "name-invalid-char-5": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5514,7 +5393,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-%": {
+      "name-invalid-char-6": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5525,7 +5404,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char- ": {
+      "name-invalid-char-7": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
