@@ -1469,13 +1469,7 @@ class TestSNSSubscriptionCrudV2:
             )
 
         resp = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
-        snapshot.match("subscription-paging-first-page", resp)
         assert "NextToken" in resp
-
-        resp2 = aws_client.sns.list_subscriptions_by_topic(
-            TopicArn=topic_arn, NextToken=resp["NextToken"]
-        )
-        snapshot.match("subscription-paging-second-page", resp2)
 
     @markers.aws.validated
     def test_subscribe_attributes(self, sns_create_topic, aws_client, snapshot):

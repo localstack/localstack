@@ -144,15 +144,6 @@ class SnsStore(BaseStore):
     subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
 
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
-    #
-    # def get_topic_subscriptions(self, topic_arn: str) -> list[SnsSubscription]:
-    #     topic_subscriptions = self.topic_subscriptions.get(topic_arn, [])
-    #     subscriptions = [
-    #         subscription
-    #         for subscription_arn in topic_subscriptions
-    #         if (subscription := self.subscriptions.get(subscription_arn))
-    #     ]
-    #     return subscriptions
 
 
 sns_stores = AccountRegionBundle("sns", SnsStore)
