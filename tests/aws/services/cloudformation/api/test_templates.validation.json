@@ -50,6 +50,15 @@
   "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary": {
     "last_validated_date": "2023-05-24T13:05:00+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary_failed_stack": {
+    "last_validated_date": "2025-10-07T22:44:53+00:00",
+    "durations_in_seconds": {
+      "setup": 1.0,
+      "call": 134.39,
+      "teardown": 0.0,
+      "total": 135.39
+    }
+  },
   "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary_no_resources": {
     "last_validated_date": "2025-10-07T22:28:52+00:00",
     "durations_in_seconds": {

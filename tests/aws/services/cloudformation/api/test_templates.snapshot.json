@@ -216,5 +216,32 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_templates.py::test_get_template_summary_failed_stack": {
+    "recorded-date": "07-10-2025, 22:44:53",
+    "recorded-content": {
+      "template-summary": {
+        "Parameters": [],
+        "ResourceIdentifierSummaries": [
+          {
+            "LogicalResourceIds": [
+              "MyParameter"
+            ],
+            "ResourceIdentifiers": [
+              "Name"
+            ],
+            "ResourceType": "AWS::SSM::Parameter"
+          }
+        ],
+        "ResourceTypes": [
+          "AWS::SSM::Parameter"
+        ],
+        "Version": "2010-09-09",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
