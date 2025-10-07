@@ -259,7 +259,11 @@ class TestOpensearchProvider:
             plugins_response = http_client.get(plugins_url, headers={"Accept": "application/json"})
         else:
             # TODO fix ssl validation error when using the signed request for the elastic search domain
-            plugins_response = requests.get(plugins_url, headers={"Accept": "application/json"})
+            plugins_response = requests.get(
+                plugins_url,
+                headers={"Accept": "application/json"},
+                verify=False,
+            )
 
         installed_plugins = {plugin["component"] for plugin in plugins_response.json()}
         requested_plugins = set(OPENSEARCH_PLUGIN_LIST)
