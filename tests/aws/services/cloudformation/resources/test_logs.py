@@ -1,6 +1,7 @@
 import os.path
 
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.fixtures import StackDeployError
@@ -54,6 +55,7 @@ def test_cfn_handle_log_group_resource(deploy_cfn_template, aws_client, snapshot
 
 
 @markers.aws.validated
+@skip_if_legacy_engine()
 def test_handle_existing_log_group(deploy_cfn_template, aws_client, snapshot, cleanups):
     snapshot.add_transformer(snapshot.transform.cloudformation_api())
     snapshot.add_transformer(snapshot.transform.key_value("ParameterValue"))
