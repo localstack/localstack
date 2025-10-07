@@ -180,11 +180,10 @@ class SnsProvider(SnsApi):
 
         store = self.get_store(account_id=parsed_topic_arn["account"], region=context.region)
 
-        topic: Topic = store.topics.get(topic_arn)
-
-        if not topic:
+        if topic_arn not in store.topics:
             raise NotFoundException("Topic does not exist")
 
+        topic_subscriptions = store.topics[topic_arn]["subscriptions"]
         if not endpoint:
             # TODO: check AWS behaviour (because endpoint is optional)
             raise NotFoundException("Endpoint not specified in subscription")
@@ -231,7 +230,7 @@ class SnsProvider(SnsApi):
 
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent), except if its attributes are different.
-        for existing_topic_subscription in topic["subscriptions"]:
+        for existing_topic_subscription in topic_subscriptions:
             sub = store.subscriptions.get(existing_topic_subscription, {})
             if sub.get("Endpoint") == endpoint:
                 if sub_attributes:
@@ -279,7 +278,6 @@ class SnsProvider(SnsApi):
 
         store.subscriptions[subscription_arn] = subscription
 
-        topic_subscriptions = topic["subscriptions"]
         topic_subscriptions.append(subscription_arn)
 
         # store the token and subscription arn
@@ -380,7 +378,7 @@ class SnsProvider(SnsApi):
                 subscription_arn=subscription_arn,
             )
 
-        with contextlib.suppress(ValueError):
+        with contextlib.suppress(KeyError):
             store.topics[subscription["TopicArn"]]["subscriptions"].remove(subscription_arn)
         store.subscription_filter_policy.pop(subscription_arn, None)
         store.subscriptions.pop(subscription_arn, None)
@@ -500,11 +498,11 @@ class SnsProvider(SnsApi):
     def list_subscriptions_by_topic(
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsByTopicResponse:
-        self._get_topic(topic_arn, context)
+        topic: Topic = self._get_topic(topic_arn, context)
         parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
         store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
-        sns_subscriptions = store.topics["subscriptions"]
-        subscriptions = [select_from_typed_dict(Subscription, sub) for sub in sns_subscriptions]
+        sub_arns: list[str] = topic.get("subscriptions", [])
+        subscriptions = [store.subscriptions[k] for k in sub_arns if k in store.subscriptions]
 
         paginated_subscriptions = PaginatedList(subscriptions)
         page, next_token = paginated_subscriptions.get_page(

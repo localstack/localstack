@@ -1428,14 +1428,15 @@ class TestSNSSubscriptionCrudV2:
         )
         snapshot.match("create-subscription", resp)
 
+    # TODO: parametrize for email protocol
     @markers.aws.validated
     def test_unsubscribe_from_deleted_topic(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"del-topic-sub-{short_uid()}")["TopicArn"]
 
         sub_arn = aws_client.sns.subscribe(
             TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
+            Protocol="http",
+            Endpoint="http://example.com/",
         )["SubscriptionArn"]
 
         aws_client.sns.delete_topic(TopicArn=topic_arn)
@@ -1444,15 +1445,19 @@ class TestSNSSubscriptionCrudV2:
             aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
         snapshot.match("unsubscribe-deleted-topic", e.value.response)
 
+    # TODO: parametrize for http and email protocol
     @markers.aws.validated
-    def test_getting_subscriptions_by_topic(self, sns_create_topic, aws_client, snapshot):
+    def test_getting_subscriptions_by_topic(
+        self, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+    ):
         topic_arn = sns_create_topic(Name=f"get-subs-{short_uid()}")["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
 
         aws_client.sns.subscribe(
             TopicArn=topic_arn,
-            Protocol="email",
-            Endpoint="test@example.com",
-        )["SubscriptionArn"]
+            Protocol="sqs",
+            Endpoint=sqs_get_queue_arn(queue_url),
+        )
 
         resp = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
         snapshot.match("list-subscriptions-by-topic", resp)

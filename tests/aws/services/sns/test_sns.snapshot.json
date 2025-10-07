@@ -5876,7 +5876,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_unsubscribe_from_deleted_topic": {
-    "recorded-date": "06-10-2025, 11:39:59",
+    "recorded-date": "07-10-2025, 07:46:56",
     "recorded-content": {
       "unsubscribe-deleted-topic": {
         "Error": {
@@ -5892,29 +5892,21 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_getting_subscriptions_by_topic": {
-    "recorded-date": "06-10-2025, 11:40:01",
+    "recorded-date": "07-10-2025, 08:29:43",
     "recorded-content": {
       "list-subscriptions-by-topic": {
         "Subscriptions": [
           {
-            "Endpoint": "test@example.com",
-            "Owner": "096845016391",
-            "Protocol": "email",
-            "SubscriptionArn": "PendingConfirmation",
-            "TopicArn": "arn:aws:sns:us-east-1:096845016391:get-subs-40eeab74"
+            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "sqs",
+            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
           }
         ],
         "ResponseMetadata": {
-          "HTTPHeaders": {
-            "connection": "keep-alive",
-            "content-length": "632",
-            "content-type": "text/xml",
-            "date": "Mon, 06 Oct 2025 11:40:00 GMT",
-            "x-amzn-requestid": "8dcb390f-9f01-55ee-aa77-585233d14179"
-          },
-          "HTTPStatusCode": 200,
-          "RequestId": "8dcb390f-9f01-55ee-aa77-585233d14179",
-          "RetryAttempts": 0
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }
