@@ -4,14 +4,21 @@ from json import JSONDecodeError
 from pathlib import Path
 
 import requests
+from pydantic import BaseModel
 
 from localstack import config, constants
 from localstack.utils.catalog.common import AwsRemoteCatalog
+from localstack.utils.http import get_proxies
 from localstack.utils.json import FileMappedDocument
 
 LOG = logging.getLogger(__name__)
 
 AWS_CATALOG_FILE_NAME = "aws_catalog.json"
+
+
+class RemoteCatalogVersionResponse(BaseModel):
+    emulator_type: str
+    version: str
 
 
 class AwsCatalogLoaderException(Exception):
@@ -36,7 +43,20 @@ class RemoteCatalogLoader:
         return catalog
 
     def _get_latest_localstack_version(self) -> str:
-        pass
+        try:
+            proxies = get_proxies()
+            response = requests.get(
+                f"{self.api_endpoint_catalog}/aws/version",
+                verify=not config.is_env_true("SSL_NO_VERIFY"),
+                proxies=proxies,
+            )
+            if response.ok:
+                return RemoteCatalogVersionResponse.model_validate(response.content).version
+            self._raise_server_error(response)
+        except requests.exceptions.RequestException as e:
+            raise AwsCatalogLoaderException(
+                f"An unexpected network error occurred when trying to fetch latest localstack version: {e}"
+            ) from e
 
     def _should_update_cached_catalog(self, current_catalog_version: str) -> bool:
         try:
@@ -55,10 +75,6 @@ class RemoteCatalogLoader:
         catalog_doc.save()
 
     def _get_catalog_from_platform(self) -> AwsRemoteCatalog:
-        import requests
-
-        from localstack.utils.http import get_proxies
-
         try:
             proxies = get_proxies()
             response = requests.post(
@@ -80,7 +96,7 @@ class RemoteCatalogLoader:
             catalog_json = json.loads(document)
         except JSONDecodeError as e:
             raise AwsCatalogLoaderException(f"Could not de-serialize json catalog: {e}") from e
-        remote_catalog = AwsRemoteCatalog(**catalog_json)
+        remote_catalog = AwsRemoteCatalog.model_validate(catalog_json)
         if remote_catalog.schema_version != self.supported_schema_version:
             raise AwsCatalogLoaderException(
                 f"Unsupported schema version: '{remote_catalog.schema_version}'. Only '{self.supported_schema_version}' is supported"
@@ -90,15 +106,14 @@ class RemoteCatalogLoader:
     def _raise_server_error(self, response: requests.Response):
         try:
             server_error = response.json()
-            if not server_error.get("message"):
+            if error_message := server_error.get("message"):
                 raise AwsCatalogLoaderException(
                     f"Unexpected AWS catalog server error: {response.text}"
                 )
-            message = server_error["message"]
             raise AwsCatalogLoaderException(
-                f"An unexpected server error occurred when trying to fetch remote catalog: {message}"
+                f"A server error occurred while calling remote catalog API (HTTP {response.status_code}): {error_message}"
             )
         except Exception:
             raise AwsCatalogLoaderException(
-                f"An unexpected server error occurred when trying to fetch remote catalog: {response.text}"
+                f"An unexpected server error occurred while calling remote catalog API (HTTP {response.status_code}): {response.text}"
             )

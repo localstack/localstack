@@ -1,6 +1,6 @@
 import json
 
-import pydantic_core
+import pydantic
 import pytest
 
 from localstack.utils.catalog.catalog_loader import AwsCatalogLoaderException, RemoteCatalogLoader
@@ -16,9 +16,10 @@ class TestCatalogLoader:
 
     def test_parse_catalog_with_missing_key(self):
         catalog_loader = RemoteCatalogLoader()
-        invalid_catalog = CATALOG.dict().pop("localstack")
-        with pytest.raises(pydantic_core._pydantic_core.ValidationError):
-            catalog_loader._parse_catalog(json.dumps(invalid_catalog).encode())
+        catalog = CATALOG.dict()
+        catalog.pop("localstack")
+        with pytest.raises(pydantic.ValidationError):
+            catalog_loader._parse_catalog(json.dumps(catalog).encode())
 
     def test_parse_catalog_with_invalid_json(self):
         with pytest.raises(AwsCatalogLoaderException, match="Could not de-serialize json catalog"):
