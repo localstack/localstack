@@ -30,6 +30,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     NodeProperties,
     NodeProperty,
     NodeResource,
+    NodeResources,
     NodeTemplate,
     Nothing,
     NothingType,
@@ -1170,6 +1171,20 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             after = after_delta.after
         return PreprocEntityDelta(before=before, after=after)
 
+    def visit_node_resources(self, node_resources: NodeResources):
+        """
+        Skip resources where they conditionally evaluate to False
+        """
+        for node_resource in node_resources.resources:
+            if not is_nothing(node_resource.condition_reference):
+                condition_delta = self._resolve_resource_condition_reference(
+                    node_resource.condition_reference
+                )
+                condition_after = condition_delta.after
+                if condition_after is False:
+                    continue
+            self.visit(node_resource)
+
     def visit_node_resource(
         self, node_resource: NodeResource
     ) -> PreprocEntityDelta[PreprocResource, PreprocResource]:
@@ -1280,6 +1295,14 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
         before: list[PreprocOutput] = []
         after: list[PreprocOutput] = []
         for node_output in node_outputs.outputs:
+            if not is_nothing(node_output.condition_reference):
+                condition_delta = self._resolve_resource_condition_reference(
+                    node_output.condition_reference
+                )
+                condition_after = condition_delta.after
+                if condition_after is False:
+                    continue
+
             output_delta: PreprocEntityDelta[PreprocOutput, PreprocOutput] = self.visit(node_output)
             output_before = output_delta.before
             output_after = output_delta.after
