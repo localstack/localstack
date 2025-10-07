@@ -1,6 +1,7 @@
 import os.path
 
 import pytest
+from localstack_snapshot.snapshots.transformer import SortingTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.services.cloudformation.v2.utils import is_v2_engine
@@ -153,7 +154,7 @@ class TestCloudFormationConditions:
         snapshot.match("dependent_ref_exc", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skipif(condition=not is_aws_cloud(), reason="not supported yet")
+    @skip_if_legacy_engine()
     def test_dependent_ref_intrinsic_fn_condition(self, aws_client, deploy_cfn_template):
         """
         Checks behavior of un-refable resources
@@ -515,3 +516,37 @@ class TestCloudFormationConditions:
         assert aws_client.s3.head_bucket(Bucket=bucket_1)
         with pytest.raises(aws_client.s3.exceptions.ClientError):
             aws_client.s3.head_bucket(Bucket=bucket_2)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize("should_deploy", ["yes", "no"])
+    @skip_if_legacy_engine()
+    def test_references_to_disabled_resources(
+        self, deploy_cfn_template, aws_client, should_deploy, snapshot
+    ):
+        snapshot.add_transformer(
+            SortingTransformer("StackResources", lambda e: e["LogicalResourceId"])
+        )
+        snapshot.add_transformer(SortingTransformer("Parameters", lambda e: e["ParameterKey"]))
+        snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+        snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+        parameter_value = short_uid()
+        snapshot.add_transformer(snapshot.transform.regex(parameter_value, "<parameter-value>"))
+
+        stack = deploy_cfn_template(
+            template_path=os.path.join(
+                os.path.dirname(__file__), "../../../templates/references_to_conditions.yml"
+            ),
+            parameters={
+                "Toggle": should_deploy,
+                "ParameterValue": parameter_value,
+            },
+        )
+
+        describe_stack_res = aws_client.cloudformation.describe_stacks(StackName=stack.stack_id)
+        snapshot.match("stack-description", describe_stack_res)
+
+        describe_resources = aws_client.cloudformation.describe_stack_resources(
+            StackName=stack.stack_id
+        )
+        snapshot.match("resources-description", describe_resources)
