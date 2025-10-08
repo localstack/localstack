@@ -306,12 +306,12 @@
     "last_validated_date": "2024-10-03T21:46:17+00:00"
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_in_multiple_regions": {
-    "last_validated_date": "2025-09-29T11:34:38+00:00",
+    "last_validated_date": "2025-10-08T08:54:10+00:00",
     "durations_in_seconds": {
-      "setup": 1.06,
-      "call": 3.66,
+      "setup": 1.29,
+      "call": 5.7,
       "teardown": 0.01,
-      "total": 4.73
+      "total": 7.0
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {

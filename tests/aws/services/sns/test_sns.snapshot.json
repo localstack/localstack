@@ -5601,12 +5601,12 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_in_multiple_regions": {
-    "recorded-date": "29-09-2025, 11:34:38",
+    "recorded-date": "08-10-2025, 08:54:10",
     "recorded-content": {
-      "list-east": {
+      "list-primary": {
         "Topics": [
           {
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+            "TopicArn": "arn:<partition>:sns:<region-primary>:111111111111:<resource:1>"
           }
         ],
         "ResponseMetadata": {
@@ -5614,10 +5614,10 @@
           "HTTPStatusCode": 200
         }
       },
-      "list-west": {
+      "list-secondary": {
         "Topics": [
           {
-            "TopicArn": "arn:<partition>:sns:us-west-1:111111111111:<resource:1>"
+            "TopicArn": "arn:<partition>:sns:<region-secondary>:111111111111:<resource:1>"
           }
         ],
         "ResponseMetadata": {
@@ -5666,7 +5666,7 @@
                   "SNS:ListSubscriptionsByTopic",
                   "SNS:Publish"
                 ],
-                "Resource": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
+                "Resource": "arn:<partition>:sns:<region-primary>:111111111111:<resource:1>",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceOwner": "111111111111"
@@ -5678,7 +5678,7 @@
           "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
-          "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
+          "TopicArn": "arn:<partition>:sns:<region-primary>:111111111111:<resource:1>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -5726,7 +5726,7 @@
                   "SNS:ListSubscriptionsByTopic",
                   "SNS:Publish"
                 ],
-                "Resource": "arn:<partition>:sns:us-west-1:111111111111:<resource:1>",
+                "Resource": "arn:<partition>:sns:<region-secondary>:111111111111:<resource:1>",
                 "Condition": {
                   "StringEquals": {
                     "AWS:SourceOwner": "111111111111"
@@ -5738,7 +5738,7 @@
           "SubscriptionsConfirmed": "0",
           "SubscriptionsDeleted": "0",
           "SubscriptionsPending": "0",
-          "TopicArn": "arn:<partition>:sns:us-west-1:111111111111:<resource:1>"
+          "TopicArn": "arn:<partition>:sns:<region-secondary>:111111111111:<resource:1>"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
