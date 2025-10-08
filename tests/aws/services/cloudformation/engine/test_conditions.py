@@ -556,6 +556,7 @@ class TestCloudFormationConditions:
 
 class TestValidateConditions:
     @markers.aws.validated
+    @skip_if_legacy_engine
     def test_validate_equals_args_len(self, aws_client, snapshot):
         template = {
             "Conditions": {"ShouldDeploy": {"Fn::Equals": ["a"]}},
