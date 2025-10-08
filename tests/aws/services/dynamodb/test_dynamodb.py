@@ -2020,6 +2020,8 @@ class TestDynamoDB:
     def test_dynamodb_create_table_with_partial_sse_specification(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
+        snapshot.add_transformer(TransformerUtility.key_value("CurrentKeyMaterialId"))
+
         table_name = f"test_table_{short_uid()}"
         sse_specification = {"Enabled": True}
 
@@ -2052,6 +2054,8 @@ class TestDynamoDB:
     def test_dynamodb_update_table_without_sse_specification_change(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
+        snapshot.add_transformer(TransformerUtility.key_value("CurrentKeyMaterialId"))
+
         table_name = f"test_table_{short_uid()}"
 
         sse_specification = {"Enabled": True}
@@ -2354,6 +2358,7 @@ class TestDynamoDB:
         paths=[
             "$..PointInTimeRecoveryDescription..EarliestRestorableDateTime",
             "$..PointInTimeRecoveryDescription..LatestRestorableDateTime",
+            "$..ContinuousBackupsDescription.PointInTimeRecoveryDescription.RecoveryPeriodInDays",
         ]
     )
     @markers.aws.validated
@@ -2708,6 +2713,8 @@ class TestDynamoDB:
     @pytest.mark.parametrize("billing_mode", ["PAY_PER_REQUEST", "PROVISIONED"])
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # Warm throughput for GSI is not implemented in LS. DDB Local doesn't support it either.
+            "$..Table.GlobalSecondaryIndexes..WarmThroughput",
             # LS returns those and not AWS, probably because no changes happened there yet
             "$..ProvisionedThroughput.LastDecreaseDateTime",
             "$..ProvisionedThroughput.LastIncreaseDateTime",

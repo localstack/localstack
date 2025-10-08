@@ -265,7 +265,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
-    "recorded-date": "08-10-2025, 12:36:26",
+    "recorded-date": "08-10-2025, 14:03:41",
     "recorded-content": {
       "SSEDescription": {
         "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -277,7 +277,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
-          "CurrentKeyMaterialId": "1b4269cfeeadcdb4e8151d806b48655732cec33e3b85bbaf8f0941c15dd2f1e7",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my DynamoDB data when no other key is defined",
           "Enabled": true,
@@ -1422,7 +1422,7 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_update_table_without_sse_specification_change": {
-    "recorded-date": "08-10-2025, 12:37:15",
+    "recorded-date": "08-10-2025, 14:06:57",
     "recorded-content": {
       "create_table_sse_description": {
         "KMSMasterKeyArn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1434,7 +1434,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
-          "CurrentKeyMaterialId": "1b4269cfeeadcdb4e8151d806b48655732cec33e3b85bbaf8f0941c15dd2f1e7",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my DynamoDB data when no other key is defined",
           "Enabled": true,
