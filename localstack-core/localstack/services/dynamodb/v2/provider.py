@@ -560,6 +560,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
             if "NumberOfDecreasesToday" not in table_description["ProvisionedThroughput"]:
                 table_description["ProvisionedThroughput"]["NumberOfDecreasesToday"] = 0
 
+        if "WarmThroughput" in table_description:
+            table_description["WarmThroughput"]["Status"] = "UPDATING"
+
         tags = table_definitions.pop("Tags", [])
         if tags:
             get_store(context.account_id, context.region).TABLE_TAGS[table_arn] = {
@@ -576,6 +579,13 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
         self, context: RequestContext, table_name: TableName, **kwargs
     ) -> DeleteTableOutput:
         global_table_region = self.get_global_table_region(context, table_name)
+
+        self.ensure_table_exists(
+            context.account_id,
+            global_table_region,
+            table_name,
+            error_message=f"Requested resource not found: Table: {table_name} not found",
+        )
 
         # Limitation note: On AWS, for a replicated table, if the source table is deleted, the replicated tables continue to exist.
         # This is not the case for LocalStack, where all replicated tables will also be removed if source is deleted.
@@ -636,6 +646,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 table_description["TableClassSummary"] = {
                     "TableClass": table_definitions["TableClass"]
                 }
+            if warm_throughput := table_definitions.get("WarmThroughput"):
+                table_description["WarmThroughput"] = warm_throughput.copy()
+                table_description["WarmThroughput"].setdefault("Status", "ACTIVE")
 
         if "GlobalSecondaryIndexes" in table_description:
             for gsi in table_description["GlobalSecondaryIndexes"]:
@@ -647,6 +660,16 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 # even if the billing mode is PAY_PER_REQUEST, AWS returns the Read and Write Capacity Units
                 # Terraform depends on this parity for update operations
                 gsi["ProvisionedThroughput"] = default_values | gsi.get("ProvisionedThroughput", {})
+
+        # Set defaults for warm throughput
+        if "WarmThroughput" not in table_description:
+            table_description["WarmThroughput"] = {
+                "ReadUnitsPerSecond": 5,
+                "WriteUnitsPerSecond": 5,
+            }
+        table_description["WarmThroughput"]["Status"] = (
+            table_description.get("TableStatus") or "ACTIVE"
+        )
 
         return DescribeTableOutput(
             Table=select_from_typed_dict(TableDescription, table_description)
