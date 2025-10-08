@@ -4137,3 +4137,24 @@ class TestApigatewayIntegration:
             httpMethod="GET",
         )
         snapshot.match("get-integration-vpc-link", get_integration)
+
+        update_integration = aws_client.apigateway.update_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/connectionId",
+                    "value": "${stageVariables.vpcLinkIdBeta}",
+                }
+            ],
+        )
+        snapshot.match("update-integration-vpc-link", update_integration)
+
+        get_integration_update = aws_client.apigateway.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-integration-update-vpc-link", get_integration_update)

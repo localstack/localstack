@@ -246,12 +246,12 @@
     "last_validated_date": "2024-04-15T20:47:11+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_create_integration_with_vpc_link": {
-    "last_validated_date": "2025-10-06T18:07:40+00:00",
+    "last_validated_date": "2025-10-08T09:05:56+00:00",
     "durations_in_seconds": {
-      "setup": 0.82,
-      "call": 1.1,
-      "teardown": 0.68,
-      "total": 2.6
+      "setup": 0.84,
+      "call": 1.59,
+      "teardown": 0.63,
+      "total": 3.06
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_delete_integration_response_errors": {

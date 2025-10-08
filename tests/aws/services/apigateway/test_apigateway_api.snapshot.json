@@ -4910,7 +4910,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_create_integration_with_vpc_link": {
-    "recorded-date": "06-10-2025, 18:07:40",
+    "recorded-date": "08-10-2025, 09:05:56",
     "recorded-content": {
       "put-integration-vpc-link": {
         "cacheKeyParameters": [],
@@ -4931,6 +4931,36 @@
         "cacheKeyParameters": [],
         "cacheNamespace": "<cache-namespace:1>",
         "connectionId": "${stageVariables.vpcLinkId}",
+        "connectionType": "VPC_LINK",
+        "httpMethod": "GET",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://my-vpclink-test-nlb-1234567890abcdef.<region>.amazonaws.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-integration-vpc-link": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionId": "${stageVariables.vpcLinkIdBeta}",
+        "connectionType": "VPC_LINK",
+        "httpMethod": "GET",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://my-vpclink-test-nlb-1234567890abcdef.<region>.amazonaws.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-integration-update-vpc-link": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionId": "${stageVariables.vpcLinkIdBeta}",
         "connectionType": "VPC_LINK",
         "httpMethod": "GET",
         "passthroughBehavior": "WHEN_NO_MATCH",

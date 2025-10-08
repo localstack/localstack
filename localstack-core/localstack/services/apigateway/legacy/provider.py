@@ -2158,6 +2158,7 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             raise NotFoundException("Invalid Integration identifier specified")
 
         integration = method.method_integration
+        # TODO: validate the patch operations
         patch_api_gateway_entity(integration, patch_operations)
 
         # fix data types
@@ -2166,8 +2167,12 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if skip_verification := (integration.tls_config or {}).get("insecureSkipVerification"):
             integration.tls_config["insecureSkipVerification"] = str_to_bool(skip_verification)
 
-        integration_dict: Integration = integration.to_json()
-        return integration_dict
+        response: Integration = integration.to_json()
+
+        if connection_id := getattr(integration, "connection_id", None):
+            response["connectionId"] = connection_id
+
+        return response
 
     def delete_integration(
         self,
