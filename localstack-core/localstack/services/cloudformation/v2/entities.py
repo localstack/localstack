@@ -1,6 +1,8 @@
+import logging
 from datetime import UTC, datetime
 from typing import NotRequired, TypedDict
 
+from localstack import config
 from localstack.aws.api.cloudformation import (
     Capability,
     ChangeSetStatus,
@@ -31,9 +33,15 @@ from localstack.services.cloudformation.engine.v2.change_set_model import (
     ChangeType,
     UpdateModel,
 )
-from localstack.services.cloudformation.v2.types import EngineParameter, ResolvedResource
+from localstack.services.cloudformation.v2.types import (
+    ChangeSetModelExecutorResult,
+    EngineParameter,
+    ResolvedResource,
+)
 from localstack.utils.aws import arns
 from localstack.utils.strings import long_uid, short_uid
+
+LOG = logging.getLogger(__name__)
 
 
 class Stack:
@@ -252,6 +260,47 @@ class ChangeSet:
     @property
     def region_name(self) -> str:
         return self.stack.region_name
+
+    def propagate_to_stack(self, result: ChangeSetModelExecutorResult):
+        """
+        Propagate change set details to the stack after execution
+        """
+        self.stack.status_reason = None
+        self.stack.resolved_parameters = self.resolved_parameters
+        self.stack.resolved_resources = result.resources
+        if not result.failure_message:
+            new_stack_status = StackStatus.UPDATE_COMPLETE
+            if self.change_set_type == ChangeSetType.CREATE:
+                new_stack_status = StackStatus.CREATE_COMPLETE
+            self.stack.set_stack_status(new_stack_status)
+            self.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
+            self.stack.resolved_outputs = result.outputs
+
+            self.stack.resolved_exports = {}
+            for output in result.outputs:
+                if export_name := output.get("ExportName"):
+                    self.stack.resolved_exports[export_name] = output["OutputValue"]
+
+            # if the deployment succeeded, update the stack's template representation to that
+            # which was just deployed
+            self.stack.template = self.template
+            self.stack.description = self.template.get("Description")
+            self.stack.processed_template = self.processed_template
+            self.stack.template_body = self.template_body
+        else:
+            LOG.error(
+                "Execute change set failed: %s",
+                result.failure_message,
+                exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
+            )
+            # stack status is taken care of in the executor
+            self.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
+
+            self.stack.set_stack_status(
+                StackStatus.UPDATE_FAILED
+                if self.change_set_type == ChangeSetType.UPDATE
+                else StackStatus.CREATE_FAILED
+            )
 
 
 class StackInstance:

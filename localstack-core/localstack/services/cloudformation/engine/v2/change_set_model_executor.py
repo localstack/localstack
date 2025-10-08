@@ -41,6 +41,7 @@ from localstack.services.cloudformation.resource_provider import (
     ResourceProviderPayload,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet, ResolvedResource
+from localstack.services.cloudformation.v2.types import ChangeSetModelExecutorResult
 
 LOG = logging.getLogger(__name__)
 
@@ -51,13 +52,6 @@ REGEX_OUTPUT_APIGATEWAY = re.compile(
 )
 
 _T = TypeVar("_T")
-
-
-@dataclass
-class ChangeSetModelExecutorResult:
-    resources: dict[str, ResolvedResource]
-    outputs: list[Output]
-    failure_message: str | None = None
 
 
 class DeferredAction(Protocol):

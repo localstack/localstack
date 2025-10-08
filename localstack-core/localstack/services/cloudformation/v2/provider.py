@@ -55,7 +55,6 @@ from localstack.aws.api.cloudformation import (
     NextToken,
     Parameter,
     PhysicalResourceId,
-    ResourceStatus,
     RetainExceptOnCreate,
     RetainResources,
     RoleARN,
@@ -619,41 +618,10 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         )
 
         def _run(*args):
-            # TODO: should this be cleared before or after execution?
-            change_set.stack.status_reason = None
             result = change_set_executor.execute()
-            change_set.stack.resolved_parameters = change_set.resolved_parameters
-            change_set.stack.resolved_resources = result.resources
+            change_set.propagate_to_stack(result)
             if not result.failure_message:
-                new_stack_status = StackStatus.UPDATE_COMPLETE
-                if change_set.change_set_type == ChangeSetType.CREATE:
-                    new_stack_status = StackStatus.CREATE_COMPLETE
-                change_set.stack.set_stack_status(new_stack_status)
-                change_set.set_execution_status(ExecutionStatus.EXECUTE_COMPLETE)
-                change_set.stack.resolved_outputs = result.outputs
-
-                change_set.stack.resolved_exports = {}
-                for output in result.outputs:
-                    if export_name := output.get("ExportName"):
-                        change_set.stack.resolved_exports[export_name] = output["OutputValue"]
-
                 change_set.stack.change_set_id = change_set.change_set_id
-
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                change_set.stack.template = change_set.template
-                change_set.stack.description = change_set.template.get("Description")
-                change_set.stack.processed_template = change_set.processed_template
-                change_set.stack.template_body = change_set.template_body
-            else:
-                LOG.error(
-                    "Execute change set failed: %s",
-                    result.failure_message,
-                    exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
-                )
-                # stack status is taken care of in the executor
-                change_set.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
-                change_set.stack.deletion_time = datetime.now(tz=UTC)
 
         start_worker_thread(_run)
 
@@ -927,35 +895,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
-                stack.resolved_resources = result.resources
-                stack.resolved_outputs = result.outputs
-                if all(
-                    resource["ResourceStatus"] == ResourceStatus.CREATE_COMPLETE
-                    for resource in stack.resolved_resources.values()
-                ):
-                    stack.set_stack_status(StackStatus.CREATE_COMPLETE)
-                else:
-                    stack.set_stack_status(StackStatus.CREATE_FAILED)
-
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                stack.template = change_set.template
-                stack.template_body = change_set.template_body
-                stack.processed_template = change_set.processed_template
-                stack.resolved_parameters = change_set.resolved_parameters
-                stack.resolved_exports = {}
-                for output in result.outputs:
-                    if export_name := output.get("ExportName"):
-                        stack.resolved_exports[export_name] = output["OutputValue"]
-            except Exception as e:
-                LOG.error(
-                    "Create Stack set failed: %s",
-                    e,
-                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
-                )
-                stack.set_stack_status(StackStatus.CREATE_FAILED)
+            result = change_set_executor.execute()
+            change_set.propagate_to_stack(result)
 
         start_worker_thread(_run)
 
@@ -1551,7 +1492,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         change_set = ChangeSet(
             stack,
-            {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.CREATE},
+            {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.UPDATE},
             template_body=template_body,
             template=after_template,
         )
@@ -1574,27 +1515,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
-            try:
-                result = change_set_executor.execute()
-                stack.set_stack_status(StackStatus.UPDATE_COMPLETE)
-                stack.resolved_resources = result.resources
-                stack.resolved_outputs = result.outputs
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                stack.template = change_set.template
-                stack.template_body = change_set.template_body
-                stack.resolved_parameters = change_set.resolved_parameters
-                stack.resolved_exports = {}
-                for output in result.outputs:
-                    if export_name := output.get("ExportName"):
-                        stack.resolved_exports[export_name] = output["OutputValue"]
-            except Exception as e:
-                LOG.error(
-                    "Update Stack failed: %s",
-                    e,
-                    exc_info=LOG.isEnabledFor(logging.WARNING) and config.CFN_VERBOSE_ERRORS,
-                )
-                stack.set_stack_status(StackStatus.UPDATE_FAILED)
+            result = change_set_executor.execute()
+            change_set.propagate_to_stack(result)
 
         start_worker_thread(_run)
 
@@ -1664,15 +1586,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
-            try:
-                change_set_executor.execute()
+            result = change_set_executor.execute()
+            stack.deletion_time = datetime.now(tz=UTC)
+            if not result.failure_message:
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
-                stack.deletion_time = datetime.now(tz=UTC)
-            except Exception as e:
+            else:
                 LOG.warning(
-                    "Failed to delete stack '%s': %s",
+                    "Failed to delete stack '%s'",
                     stack.stack_name,
-                    e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
