@@ -1,11 +1,16 @@
+Parameters:
+  LogGroupName:
+    Type: String
+    Default: AWS::NoValue
+
 Resources:
   logGroup68A52FBE:
     Type: AWS::Logs::LogGroup
     Properties:
+      LogGroupName: !Ref LogGroupName
       RetentionInDays: 731
 
 Outputs:
   LogGroupNameOutput:
     Value:
       Ref: logGroup68A52FBE
-

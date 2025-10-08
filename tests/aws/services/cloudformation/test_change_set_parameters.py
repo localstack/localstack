@@ -1,8 +1,13 @@
+import copy
+import json
+
+import pytest
+from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 @skip_if_legacy_engine()
@@ -123,3 +128,64 @@ class TestChangeSetParameters:
         capture_update_process(
             snapshot, template_1, template_2, p1={"TopicName": name1}, p2={"TopicName": name2}
         )
+
+    @markers.aws.validated
+    def test_parameter_type_change(self, snapshot, capture_update_process):
+        snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+
+        template1 = {
+            "Parameters": {
+                "Value": {
+                    "Type": "Number",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Ref": "Value"},
+                    },
+                },
+            },
+        }
+        template2 = copy.deepcopy(template1)
+        template2["Parameters"]["Value"]["Type"] = "String"
+
+        capture_update_process(
+            snapshot, template1, template2, p1={"Value": "123"}, p2={"Value": "456"}
+        )
+
+    @markers.aws.validated
+    def test_invalid_parameter_type(self, snapshot, aws_client):
+        template = {
+            "Parameters": {
+                "Value": {
+                    "Type": "Number",
+                },
+            },
+            "Resources": {
+                "MyParameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": short_uid(),
+                    },
+                },
+            },
+        }
+
+        stack_name = f"stack-{short_uid()}"
+        cs_name = f"cs-{short_uid()}"
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                ChangeSetName=cs_name,
+                StackName=stack_name,
+                ChangeSetType="CREATE",
+                TemplateBody=json.dumps(template),
+                Parameters=[
+                    {"ParameterKey": "Value", "ParameterValue": "not-a-number"},
+                ],
+            )
+
+        snapshot.match("error", exc_info.value.response)

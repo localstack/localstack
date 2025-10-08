@@ -56,6 +56,7 @@ from localstack.services.cloudformation.stores import (
 from localstack.services.cloudformation.v2.entities import ChangeSet
 from localstack.services.cloudformation.v2.types import ResolvedResource
 from localstack.utils.aws.arns import get_partition
+from localstack.utils.numbers import to_number
 from localstack.utils.objects import get_value_from_path
 from localstack.utils.run import to_str
 from localstack.utils.strings import to_bytes
@@ -1029,6 +1030,9 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             match type_:
                 case "List<String>" | "CommaDelimitedList":
                     return [item.strip() for item in value.split(",")]
+                case "Number":
+                    # TODO: validate the parameter type at template parse time (or whatever is in parity with AWS) so we know this cannot fail
+                    return to_number(value)
             return value
 
         if not is_nothing(after):

@@ -20,6 +20,7 @@ from localstack.services.cloudformation.engine.v2.change_set_model_preproc impor
     PreprocResource,
 )
 from localstack.services.cloudformation.v2.entities import ChangeSet
+from localstack.utils.numbers import is_number
 
 CHANGESET_KNOWN_AFTER_APPLY: Final[str] = "{{changeSet:KNOWN_AFTER_APPLY}}"
 
@@ -95,6 +96,19 @@ class ChangeSetModelDescriber(ChangeSetModelPreproc):
                 value = CHANGESET_KNOWN_AFTER_APPLY
 
         return value
+
+    def visit_node_intrinsic_function(self, node_intrinsic_function: NodeIntrinsicFunction):
+        """
+        Intrinsic function results are always strings when referring to the describe output
+        """
+        # TODO: what about other places?
+        # TODO: should this be put in the preproc?
+        delta = super().visit_node_intrinsic_function(node_intrinsic_function)
+        if is_number(delta.before):
+            delta.before = str(delta.before)
+        if is_number(delta.after):
+            delta.after = str(delta.after)
+        return delta
 
     def visit_node_intrinsic_function_fn_join(
         self, node_intrinsic_function: NodeIntrinsicFunction
