@@ -1,0 +1,10 @@
+Parameters:
+  MyParameterValue:
+    Type: String
+
+Resources:
+  MyParameter:
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Select [ 0, !Split [ "-", !GetAtt [ !Ref MyParameterValue ] ] ]

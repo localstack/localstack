@@ -11,6 +11,24 @@
   "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_immutable_property_update_causes_resource_replacement": {
     "last_validated_date": "2025-04-08T12:17:00+00:00"
   },
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_invalid_structure[getatt_validation.yml]": {
+    "last_validated_date": "2025-10-08T12:13:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.96,
+      "call": 0.31,
+      "teardown": 0.0,
+      "total": 1.27
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_invalid_structure[getatt_validation2.yml]": {
+    "last_validated_date": "2025-10-08T12:13:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.15,
+      "teardown": 0.0,
+      "total": 0.15
+    }
+  },
   "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_resource_addition": {
     "last_validated_date": "2025-04-08T12:33:53+00:00"
   },
