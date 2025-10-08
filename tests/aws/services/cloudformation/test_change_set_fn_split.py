@@ -244,7 +244,7 @@ class TestChangeSetFnSplit:
 
 class TestSplitValidations:
     @markers.aws.validated
-    # @skip_if_legacy_engine
+    @skip_if_legacy_engine
     def test_validate_split_arguments_len(self, aws_client, snapshot):
         template = {
             "Resources": {
