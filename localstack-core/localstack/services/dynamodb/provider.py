@@ -749,7 +749,7 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 table_description["ProvisionedThroughput"]["NumberOfDecreasesToday"] = 0
 
         if "WarmThroughput" in table_description:
-            table_description["WarmThroughput"] = "UPDATING"
+            table_description["WarmThroughput"]["Status"] = "UPDATING"
 
         tags = table_definitions.pop("Tags", [])
         if tags:
@@ -856,7 +856,9 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
                 "ReadUnitsPerSecond": 5,
                 "WriteUnitsPerSecond": 5,
             }
-        table_description["Status"] = table_description.get("TableStatus") or "ACTIVE"
+        table_description["WarmThroughput"]["Status"] = (
+            table_description.get("TableStatus") or "ACTIVE"
+        )
 
         return DescribeTableOutput(
             Table=select_from_typed_dict(TableDescription, table_description)
