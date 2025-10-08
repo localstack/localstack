@@ -3016,5 +3016,21 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_get_attr.py::TestChangeSetFnGetAttr::test_invalid_structure": {
+    "recorded-date": "08-10-2025, 12:01:24",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: every Fn::GetAtt object requires two non-empty parameters, the resource name and the resource attribute",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

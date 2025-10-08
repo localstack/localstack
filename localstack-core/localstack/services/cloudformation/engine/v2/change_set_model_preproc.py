@@ -567,6 +567,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             arguments_list = arguments.split(".")
         else:
             arguments_list = arguments
+
+        if len(arguments_list) != 2:
+            raise ValidationError(
+                "Template error: every Fn::GetAtt object requires two non-empty parameters, the resource name and the resource attribute"
+            )
+
         logical_name_of_resource = arguments_list[0]
         attribute_name = arguments_list[1]
 
