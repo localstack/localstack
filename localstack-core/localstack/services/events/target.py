@@ -94,13 +94,14 @@ def replace_template_placeholders(template: str, replacements: dict[str, Any]) -
     """
     Replaces placeholders in an EventBridge-style InputTemplate string.
 
-    Args:
-        template: The template string containing placeholders like <$.foo.bar>.
-        replacements: A dict providing values to fill in.
-
-    Returns:
-        The transformed string with placeholders replaced by values from `replacements`.
+    :param template: The template string containing placeholders like ``<$.foo.bar>``.
+    :type template: str
+    :param replacements: A dictionary providing values to fill in.
+    :type replacements: dict
+    :returns: The transformed string with placeholders replaced by values from ``replacements``.
+    :rtype: str
     """
+
     ...
     is_json_template = template.strip().startswith("{")
 
