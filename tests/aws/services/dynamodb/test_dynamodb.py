@@ -11,6 +11,7 @@ from boto3.dynamodb.types import STRING
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from localstack_snapshot.snapshots.transformer_utility import TransformerUtility
 
 from localstack import config
 from localstack.aws.api.dynamodb import (
@@ -1506,6 +1507,13 @@ class TestDynamoDB:
         ]
     )
     def test_table_crud(self, aws_client, cleanups, snapshot, dynamodb_wait_for_table_active):
+        snapshot.add_transformer(
+            [
+                TransformerUtility.key_value("TableName"),
+                TransformerUtility.key_value("TableArn"),
+            ]
+        )
+
         table_name = f"test-ddb-table-{short_uid()}"
 
         # CreateTable
@@ -1554,7 +1562,16 @@ class TestDynamoDB:
     def test_table_warm_throughput(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
-        # Ensure that WarmThroughput params provided to CreateTable are reflected in DescribeTable
+        """
+        This test ensures that WarmThroughput params provided to CreateTable are reflected in DescribeTable
+        """
+
+        snapshot.add_transformer(
+            [
+                TransformerUtility.key_value("TableName"),
+                TransformerUtility.key_value("TableArn"),
+            ]
+        )
 
         table_name = f"test-ddb-table-{short_uid()}"
 
