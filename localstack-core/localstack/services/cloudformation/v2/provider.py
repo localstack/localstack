@@ -1490,7 +1490,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         change_set = ChangeSet(
             stack,
-            {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.CREATE},
+            {"ChangeSetName": f"cs-{stack_name}-create", "ChangeSetType": ChangeSetType.UPDATE},
             template_body=template_body,
             template=after_template,
         )
