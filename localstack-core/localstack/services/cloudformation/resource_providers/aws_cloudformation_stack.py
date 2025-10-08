@@ -126,6 +126,7 @@ class CloudFormationStackProvider(ResourceProvider[CloudFormationStackProperties
                     status=OperationStatus.FAILED,
                     resource_model=model,
                     custom_context=request.custom_context,
+                    message=f"Deployment of child stack '{request.logical_resource_id}' failed",
                 )
             case _:
                 raise Exception(f"Unexpected status: {stack['StackStatus']}")
