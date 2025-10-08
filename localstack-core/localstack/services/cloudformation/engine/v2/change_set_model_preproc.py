@@ -928,12 +928,6 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
 
-        # Split args must be 2: delimiter and source_string
-        if isinstance(arguments_delta.after, list) and len(arguments_delta.after) != 2:
-            raise ValidationError(
-                "Template error: every Fn::Split object requires two parameters, (1) a string delimiter and (2) a string to be split or a function that returns a string to be split."
-            )
-
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,

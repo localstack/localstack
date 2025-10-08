@@ -1,12 +1,8 @@
-import json
-
-import pytest
-from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import long_uid, short_uid
+from localstack.utils.strings import long_uid
 
 
 @skip_if_legacy_engine()
@@ -240,28 +236,3 @@ class TestChangeSetFnSplit:
         }
 
         capture_update_process(snapshot, template_1, template_2)
-
-
-class TestValidations:
-    @markers.aws.validated
-    def test_validate_args_len(self, aws_client, snapshot):
-        template = {
-            "Resources": {
-                "Topic1": {
-                    "Type": "AWS::SNS::Topic",
-                    "Properties": {"DisplayName": {"Fn::Split": ["-"]}},
-                },
-            }
-        }
-
-        stack_name = f"stack-{short_uid()}"
-        change_set_name = f"ch-{short_uid()}"
-        with pytest.raises(ClientError) as ex:
-            aws_client.cloudformation.create_change_set(
-                StackName=stack_name,
-                ChangeSetName=change_set_name,
-                ChangeSetType="CREATE",
-                TemplateBody=json.dumps(template),
-            )
-
-        snapshot.match("error", ex.value.response)
