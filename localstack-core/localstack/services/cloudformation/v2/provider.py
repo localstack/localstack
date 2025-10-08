@@ -1584,15 +1584,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         change_set_executor = ChangeSetModelExecutor(change_set)
 
         def _run(*args):
-            try:
-                change_set_executor.execute()
+            result = change_set_executor.execute()
+            stack.deletion_time = datetime.now(tz=UTC)
+            if not result.failure_message:
                 stack.set_stack_status(StackStatus.DELETE_COMPLETE)
-                stack.deletion_time = datetime.now(tz=UTC)
-            except Exception as e:
+            else:
                 LOG.warning(
-                    "Failed to delete stack '%s': %s",
+                    "Failed to delete stack '%s'",
                     stack.stack_name,
-                    e,
                     exc_info=LOG.isEnabledFor(logging.DEBUG) and config.CFN_VERBOSE_ERRORS,
                 )
                 stack.set_stack_status(StackStatus.DELETE_FAILED)

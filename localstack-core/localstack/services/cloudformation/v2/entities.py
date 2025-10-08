@@ -297,8 +297,6 @@ class ChangeSet:
             )
             # stack status is taken care of in the executor
             self.set_execution_status(ExecutionStatus.EXECUTE_FAILED)
-            # TODO: what is this doing?
-            self.stack.deletion_time = datetime.now(tz=UTC)
 
             self.stack.set_stack_status(
                 StackStatus.UPDATE_FAILED
