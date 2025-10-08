@@ -1,7 +1,8 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import NotRequired, TypedDict
 
-from localstack.aws.api.cloudformation import ResourceStatus
+from localstack.aws.api.cloudformation import Output, ResourceStatus
 
 
 class EngineParameter(TypedDict):
@@ -36,3 +37,10 @@ class ResolvedResource(TypedDict):
     ResourceStatus: NotRequired[ResourceStatus]
     PhysicalResourceId: NotRequired[str]
     ResourceStatusReason: NotRequired[str]
+
+
+@dataclass
+class ChangeSetModelExecutorResult:
+    resources: dict[str, ResolvedResource]
+    outputs: list[Output]
+    failure_message: str | None = None
