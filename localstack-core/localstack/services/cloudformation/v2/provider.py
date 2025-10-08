@@ -624,6 +624,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             result = change_set_executor.execute()
             change_set.stack.resolved_parameters = change_set.resolved_parameters
             change_set.stack.resolved_resources = result.resources
+            change_set.stack.template = change_set.template
+            change_set.stack.processed_template = change_set.processed_template
+            change_set.stack.template_body = change_set.template_body
+            change_set.stack.description = change_set.template.get("Description")
+
             if not result.failure_message:
                 new_stack_status = StackStatus.UPDATE_COMPLETE
                 if change_set.change_set_type == ChangeSetType.CREATE:
@@ -638,13 +643,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                         change_set.stack.resolved_exports[export_name] = output["OutputValue"]
 
                 change_set.stack.change_set_id = change_set.change_set_id
-
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                change_set.stack.template = change_set.template
-                change_set.stack.description = change_set.template.get("Description")
-                change_set.stack.processed_template = change_set.processed_template
-                change_set.stack.template_body = change_set.template_body
             else:
                 LOG.error(
                     "Execute change set failed: %s",
@@ -1428,6 +1426,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template = template_preparer.parse_template(template_body)
 
         id_summaries = defaultdict(list)
+        if "Resources" not in template:
+            raise ValidationError(
+                "Template format error: At least one Resources member must be defined."
+            )
+
         for resource_id, resource in template["Resources"].items():
             res_type = resource["Type"]
             id_summaries[res_type].append(resource_id)

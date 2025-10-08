@@ -8,6 +8,7 @@ from botocore.exceptions import ClientError
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.common import load_file
 from localstack.utils.strings import short_uid, to_bytes
 
@@ -66,6 +67,42 @@ def test_get_template_summary_non_executed_change_set(aws_client, snapshot, clea
         aws_client.cloudformation.get_template_summary(StackName=stack_name)
 
     snapshot.match("error", exc_info.value.response)
+
+
+@markers.aws.validated
+@skip_if_legacy_engine()
+def test_get_template_summary_no_resources(aws_client, snapshot):
+    with pytest.raises(ClientError) as exc_info:
+        aws_client.cloudformation.get_template_summary(TemplateBody="{}")
+    snapshot.match("error", exc_info.value.response)
+
+
+@markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(
+    paths=["$..ResourceIdentifierSummaries..ResourceIdentifiers"]
+)
+@skip_if_legacy_engine()
+def test_get_template_summary_failed_stack(deploy_cfn_template, aws_client, snapshot):
+    snapshot.add_transformer(snapshot.transform.cloudformation_api())
+
+    template = {
+        "Resources": {
+            "MyParameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {
+                    "Type": "String",
+                    # Note: missing Value parameter so the resource provider should fail
+                },
+            },
+        },
+    }
+
+    stack_name = f"stack-{short_uid()}"
+    with pytest.raises(StackDeployError):
+        deploy_cfn_template(template=json.dumps(template), stack_name=stack_name)
+
+    summary = aws_client.cloudformation.get_template_summary(StackName=stack_name)
+    snapshot.match("template-summary", summary)
 
 
 @markers.aws.validated
