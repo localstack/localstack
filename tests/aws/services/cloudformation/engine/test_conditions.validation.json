@@ -32,6 +32,24 @@
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_output_reference_to_skipped_resource": {
     "last_validated_date": "2023-06-26T22:43:18+00:00"
   },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_references_to_disabled_resources[no]": {
+    "last_validated_date": "2025-10-07T21:21:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.01,
+      "teardown": 4.39,
+      "total": 11.4
+    }
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_references_to_disabled_resources[yes]": {
+    "last_validated_date": "2025-10-07T21:21:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.89,
+      "call": 10.41,
+      "teardown": 6.43,
+      "total": 17.73
+    }
+  },
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_update_conditions": {
     "last_validated_date": "2024-06-18T19:43:43+00:00"
   }

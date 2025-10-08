@@ -1,0 +1,39 @@
+Parameters:
+  Toggle:
+    Type: String
+
+  ParameterValue:
+    Type: String
+
+Conditions:
+  ShouldDeploy:
+    Fn::Equals:
+      - !Ref Toggle
+      - "yes"
+
+Resources:
+  BaseParameter:
+    # We need a single resource to deploy
+    Type: AWS::SSM::Parameter
+    Properties:
+      Type: String
+      Value: !Ref ParameterValue
+
+  ConditionalParameter:
+    Type: AWS::SSM::Parameter
+    Condition: ShouldDeploy
+    Properties:
+      Type: String
+      Value: !Ref ParameterValue
+
+  AnotherResource:
+    Type: AWS::SSM::Parameter
+    Condition: ShouldDeploy
+    Properties:
+      Type: String
+      Value: !GetAtt ConditionalParameter.Value
+
+Outputs:
+  ConditionalParameterValue:
+    Condition: ShouldDeploy
+    Value: !GetAtt ConditionalParameter.Value
