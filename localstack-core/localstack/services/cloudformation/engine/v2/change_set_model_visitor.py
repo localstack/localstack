@@ -54,6 +54,7 @@ class ChangeSetModelVisitor(abc.ABC):
         # entities (parameters, mappings, conditions, etc.). Then compute the output fields; computing
         # only the output fields would only result in the deployment logic of the referenced outputs
         # being evaluated, hence enforce the visiting of all the resources first.
+        self.visit(node_template.conditions)
         self.visit(node_template.resources)
         self.visit(node_template.outputs)
 

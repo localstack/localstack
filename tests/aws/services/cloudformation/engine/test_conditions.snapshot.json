@@ -933,5 +933,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestValidateConditions::test_validate_equals_args_len": {
+    "recorded-date": "08-10-2025, 18:18:14",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: every Fn::Equals object requires a list of 2 string parameters.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
