@@ -620,6 +620,8 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         def _run(*args):
             result = change_set_executor.execute()
             change_set.propagate_to_stack(result)
+            if not result.failure_message:
+                change_set.stack.change_set_id = change_set.change_set_id
 
         start_worker_thread(_run)
 

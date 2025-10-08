@@ -281,8 +281,6 @@ class ChangeSet:
                 if export_name := output.get("ExportName"):
                     self.stack.resolved_exports[export_name] = output["OutputValue"]
 
-            self.stack.change_set_id = self.change_set_id
-
             # if the deployment succeeded, update the stack's template representation to that
             # which was just deployed
             self.stack.template = self.template
