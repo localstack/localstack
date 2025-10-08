@@ -1,104 +1,275 @@
 {
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path": {
-    "last_validated_date": "2024-05-13T12:27:07+00:00"
+    "last_validated_date": "2025-10-08T11:09:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.27,
+      "teardown": 1.23,
+      "total": 2.5
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_max_level_depth": {
-    "last_validated_date": "2024-05-13T12:27:13+00:00"
+    "last_validated_date": "2025-10-08T11:10:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.25,
+      "teardown": 1.03,
+      "total": 2.28
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_multiple_targets": {
-    "last_validated_date": "2024-05-13T12:27:16+00:00"
+    "last_validated_date": "2025-10-08T11:10:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.95,
+      "teardown": 1.43,
+      "total": 3.38
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail0]": {
-    "last_validated_date": "2024-05-13T12:27:09+00:00"
+    "last_validated_date": "2025-10-08T11:09:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.27,
+      "teardown": 1.01,
+      "total": 2.28
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputPath::test_put_events_with_input_path_nested[event_detail1]": {
-    "last_validated_date": "2024-05-13T12:27:11+00:00"
+    "last_validated_date": "2025-10-08T11:09:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.24,
+      "teardown": 1.01,
+      "total": 2.25
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement": {
     "last_validated_date": "2024-12-06T11:07:17+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listmulti> multiple list items\"]": {
-    "last_validated_date": "2024-12-13T18:03:28+00:00"
+    "last_validated_date": "2025-10-08T11:10:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.3,
+      "teardown": 1.06,
+      "total": 2.36
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item <listmulti> multiple list items <systemstring> system account id <payload> payload <userId> user id\"]": {
-    "last_validated_date": "2024-12-13T18:03:32+00:00"
+    "last_validated_date": "2025-10-08T11:10:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.28,
+      "teardown": 1.05,
+      "total": 2.33
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item\"\\n\"<listmulti> multiple list items\"\\n\"<systemstring> system account id\"\\n\"<payload> payload\"\\n\"<userId> user id\"]": {
     "last_validated_date": "2024-12-13T17:27:50+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"<listsingle> single list item\"]": {
-    "last_validated_date": "2024-12-13T18:03:25+00:00"
+    "last_validated_date": "2025-10-08T11:10:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.29,
+      "teardown": 1.05,
+      "total": 2.34
+    }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Command is <valid>!\"]": {
+    "last_validated_date": "2025-10-08T11:11:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.28,
+      "teardown": 1.14,
+      "total": 2.42
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId> and <userId>\"]": {
-    "last_validated_date": "2024-12-13T18:03:14+00:00"
+    "last_validated_date": "2025-10-08T11:10:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.26,
+      "teardown": 1.16,
+      "total": 2.42
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Payload of <payload> with path users-service/users/<userId>\"]": {
     "last_validated_date": "2024-12-13T13:20:30+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : \"<userId>\"}]": {
-    "last_validated_date": "2024-12-16T12:26:02+00:00"
+    "last_validated_date": "2025-10-08T11:10:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.24,
+      "teardown": 1.08,
+      "total": 2.32
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\" : <userId>}]": {
-    "last_validated_date": "2024-12-13T18:03:16+00:00"
+    "last_validated_date": "2025-10-08T11:10:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.28,
+      "teardown": 1.03,
+      "total": 2.31
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"id\": <userId>}]": {
     "last_validated_date": "2024-12-13T14:56:24+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"nested\": {\"level1\": {\"level2\": {\"level3\": \"users-service/users/<userId>\"} } }, \"bod\": \"<userId>\"}]": {
-    "last_validated_date": "2024-12-13T18:03:23+00:00"
+    "last_validated_date": "2025-10-08T11:10:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.38,
+      "teardown": 1.04,
+      "total": 2.42
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": \"<userId>\"}]": {
     "last_validated_date": "2024-12-13T13:20:32+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": <payload>}]": {
-    "last_validated_date": "2024-12-13T18:03:12+00:00"
+    "last_validated_date": "2025-10-08T11:10:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.46,
+      "teardown": 1.06,
+      "total": 2.52
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"bod\": [<userId>, \"hardcoded\"]}]": {
-    "last_validated_date": "2024-12-13T18:03:21+00:00"
+    "last_validated_date": "2025-10-08T11:10:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.47,
+      "teardown": 1.53,
+      "total": 3.0
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"id\": \"<userId>\", \"body\": <payload>}]": {
     "last_validated_date": "2024-12-13T14:54:39+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"method\": \"PUT\", \"path\": \"users-service/users/<userId>\", \"id\": <userId>, \"body\": <payload>}]": {
-    "last_validated_date": "2024-12-13T18:03:18+00:00"
+    "last_validated_date": "2025-10-08T11:10:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.28,
+      "teardown": 1.02,
+      "total": 2.3
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"multi_replacement\": \"users/<userId>/second/<userId>\"}]": {
-    "last_validated_date": "2024-12-13T18:03:35+00:00"
+    "last_validated_date": "2025-10-08T11:10:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.92,
+      "teardown": 1.05,
+      "total": 2.97
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[{\"singlelistitem\": <listsingle>}]": {
-    "last_validated_date": "2024-12-13T18:03:30+00:00"
+    "last_validated_date": "2025-10-08T11:10:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.28,
+      "teardown": 1.17,
+      "total": 2.45
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement_not_valid[{\"not_valid\": \"users-service/users/<payload>\", \"bod\": <payload>}]": {
-    "last_validated_date": "2024-12-13T14:55:05+00:00"
+    "last_validated_date": "2025-10-08T11:11:07+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.22,
+      "teardown": 1.08,
+      "total": 7.3
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement_not_valid[{\"payload\": \"<payload>\"}]": {
-    "last_validated_date": "2024-12-13T14:55:13+00:00"
+    "last_validated_date": "2025-10-08T11:11:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.17,
+      "teardown": 1.06,
+      "total": 7.23
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement_not_valid[{\"singlelistitem\": \"<listsingle>\"}]": {
-    "last_validated_date": "2024-12-13T17:19:20+00:00"
+    "last_validated_date": "2025-10-08T11:11:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.17,
+      "teardown": 1.52,
+      "total": 7.69
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[\"Message containing all pre defined variables <aws.events.rule-arn> <aws.events.rule-name> <aws.events.event.ingestion-time>\"]": {
-    "last_validated_date": "2024-06-11T08:33:10+00:00"
+    "last_validated_date": "2025-10-08T11:10:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.71,
+      "teardown": 1.15,
+      "total": 2.86
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_predefined_variables[{\"originalEvent\": <aws.events.event>, \"originalEventJson\": <aws.events.event.json>}]": {
-    "last_validated_date": "2024-06-11T08:33:13+00:00"
+    "last_validated_date": "2025-10-08T11:10:27+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.34,
+      "teardown": 1.02,
+      "total": 2.36
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_json": {
-    "last_validated_date": "2024-06-11T08:33:04+00:00"
+    "last_validated_date": "2025-10-08T11:10:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.1,
+      "teardown": 2.07,
+      "total": 5.17
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string": {
     "last_validated_date": "2024-05-13T12:27:20+00:00"
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"Event of <detail-type> type, at time <timestamp>, info extracted from detail <command>\"]": {
-    "last_validated_date": "2024-06-11T08:32:56+00:00"
+    "last_validated_date": "2025-10-08T11:10:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.6,
+      "teardown": 2.31,
+      "total": 4.91
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_input_template_string[\"{[/Check with special starting characters for event of <detail-type> type\"]": {
-    "last_validated_date": "2024-06-11T08:33:00+00:00"
+    "last_validated_date": "2025-10-08T11:10:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 2.76,
+      "teardown": 2.05,
+      "total": 4.81
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_put_events_with_input_transformer_missing_keys": {
-    "last_validated_date": "2025-03-12T10:19:13+00:00"
+    "last_validated_date": "2025-10-08T11:10:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.3,
+      "teardown": 0.91,
+      "total": 2.21
+    }
   },
   "tests/aws/services/events/test_events_inputs.py::test_put_event_input_path_and_input_transformer": {
-    "last_validated_date": "2025-03-12T10:19:01+00:00"
+    "last_validated_date": "2025-10-08T11:09:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.58,
+      "call": 1.76,
+      "teardown": 1.39,
+      "total": 3.73
+    }
   }
 }

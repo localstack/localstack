@@ -40,6 +40,7 @@ SPECIAL_EVENT_DETAIL = {
     "payload": {"acc_id": "0a787ecb-4015", "sf_id": "baz"},
     "listsingle": ["HIGH"],
     "listmulti": ["ACTIVE", "INACTIVE"],
+    "valid": True,
 }
 
 TEST_EVENT_DETAIL = {
