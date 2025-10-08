@@ -17,6 +17,7 @@ from botocore.exceptions import ClientError
 from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import padding
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 from pytest_httpserver import HTTPServer
 from werkzeug import Response
 
@@ -398,24 +399,31 @@ class TestSNSTopicCrudV2:
             "$..Attributes.DeliveryPolicy",
         ],
     )
-    def test_create_topic_in_multiple_regions(self, aws_client, aws_client_factory, snapshot):
+    def test_create_topic_in_multiple_regions(
+        self, aws_client, aws_client_factory, snapshot, region_name, secondary_region_name
+    ):
         topic_name = f"multiregion-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(region_name, "<region-primary>"))
+        snapshot.add_transformer(RegexTransformer(secondary_region_name, "<region-secondary>"))
 
-        # us-east-1
-        sns_east = aws_client_factory(region_name="us-east-1").sns
-        arn_east = sns_east.create_topic(Name=topic_name)["TopicArn"]
+        sns_primary_region = aws_client_factory(region_name=region_name).sns
+        topic_arn_primary_region = sns_primary_region.create_topic(Name=topic_name)["TopicArn"]
 
-        # us-west-2
-        sns_west = aws_client_factory(region_name="us-west-1").sns
-        arn_west = sns_west.create_topic(Name=topic_name)["TopicArn"]
+        sns_secondary_region = aws_client_factory(region_name=secondary_region_name).sns
+        topic_arn_secondary_region = sns_secondary_region.create_topic(Name=topic_name)["TopicArn"]
 
-        list_east_response = sns_east.list_topics()
-        snapshot.match("list-east", list_east_response)
-        list_west_response = sns_west.list_topics()
-        snapshot.match("list-west", list_west_response)
+        list_topics_primary = sns_primary_region.list_topics()
+        snapshot.match("list-primary", list_topics_primary)
+        list_topics_secondary = sns_secondary_region.list_topics()
+        snapshot.match("list-secondary", list_topics_secondary)
 
-        snapshot.match("topic-east", sns_east.get_topic_attributes(TopicArn=arn_east))
-        snapshot.match("topic-west", sns_west.get_topic_attributes(TopicArn=arn_west))
+        snapshot.match(
+            "topic-east", sns_primary_region.get_topic_attributes(TopicArn=topic_arn_primary_region)
+        )
+        snapshot.match(
+            "topic-west",
+            sns_secondary_region.get_topic_attributes(TopicArn=topic_arn_secondary_region),
+        )
 
     @markers.aws.validated
     def test_list_topic_paging(self, aws_client, sns_create_topic):
