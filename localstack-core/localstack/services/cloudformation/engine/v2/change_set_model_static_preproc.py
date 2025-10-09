@@ -48,6 +48,7 @@ from localstack.services.cloudformation.engine.v2.constants import (
     REGEX_OUTPUT_APIGATEWAY,
 )
 from localstack.services.cloudformation.engine.v2.resolving import (
+    REGEX_DYNAMIC_REF,
     extract_dynamic_reference,
     perform_dynamic_reference_lookup,
 )
@@ -375,7 +376,11 @@ class ChangeSetModelStaticPreproc(ChangeSetModelVisitor):
                 region_name=self._change_set.region_name,
             )
             if new_value:
-                return new_value
+                # We need to use a function here, to avoid backslash processing by regex.
+                # From the regex sub documentation:
+                # repl can be a string or a function; if it is a string, any backslash escapes in it are processed.
+                # Using a function, we can avoid this processing.
+                return REGEX_DYNAMIC_REF.sub(lambda _: new_value, value)
 
         return value
 
