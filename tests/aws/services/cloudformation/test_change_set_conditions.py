@@ -1,8 +1,12 @@
+import json
+
+import pytest
+from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 @skip_if_legacy_engine()
@@ -166,3 +170,33 @@ class TestChangeSetConditions:
             },
         }
         capture_update_process(snapshot, template_1, template_2)
+
+    @markers.aws.validated
+    def test_missing_condition(self, snapshot, aws_client):
+        template = {
+            "Resources": {
+                "MyVpc": {
+                    "Type": "AWS::EC2::VPC",
+                    "Properties": {
+                        "CidrBlock": "10.0.0.0/24",
+                        "Tags": [
+                            {
+                                "Fn::If": ["MissingCondition", "AWS::NoValue", "AWS::NoValue"],
+                            },
+                        ],
+                    },
+                },
+            }
+        }
+
+        cs_name = f"cs-{short_uid()}"
+        stack_name = f"stack-{short_uid()}"
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.cloudformation.create_change_set(
+                StackName=stack_name,
+                ChangeSetName=cs_name,
+                ChangeSetType="CREATE",
+                TemplateBody=json.dumps(template),
+            )
+
+        snapshot.match("error", exc_info.value.response)
