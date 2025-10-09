@@ -13,7 +13,7 @@ SNS_PROTOCOLS = [
     "firehose",
 ]
 
-VALID_SUBSCRIPTION_ATTR_NAME = [
+VALID_SUBSCRIPTION_ATTR_NAME: list[str] = [
     "DeliveryPolicy",
     "FilterPolicy",
     "FilterPolicyScope",
@@ -39,3 +39,4 @@ SUBSCRIPTION_TOKENS_ENDPOINT = "/_aws/sns/subscription-tokens"
 SNS_CERT_ENDPOINT = "/_aws/sns/SimpleNotificationService-6c6f63616c737461636b69736e696365.pem"
 
 DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:{partition}:iam::{account_id}:user/DummySNSPrincipal"
+E164_REGEX = re.compile(r"^\+?[1-9]\d{1,14}$")
