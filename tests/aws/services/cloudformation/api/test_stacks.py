@@ -1267,3 +1267,32 @@ def test_blank_parameter_value(aws_client: ServiceLevelClientFactory, cleanups):
     cleanups.append(lambda: aws_client.cloudformation.delete_stack(StackName=stack_id))
 
     aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_id)
+
+
+@markers.aws.needs_fixing
+def test_duplication_exception(aws_client, deploy_cfn_template):
+    parameter_resource_body = {
+        "Type": "AWS::SSM::Parameter",
+        "Properties": {"Type": "String", "Value": "Test"},
+    }
+    long_template = {"Resources": {f"Parameter{i}": parameter_resource_body for i in range(100)}}
+    short_template = {"Resources": {f"Parameter{i}": parameter_resource_body for i in range(1)}}
+
+    stack = deploy_cfn_template(template=json.dumps(long_template))
+
+    stack.destroy()
+
+    aws_client.cloudformation.create_change_set(
+        StackName=stack.stack_name,
+        ChangeSetName="test",
+        TemplateBody=json.dumps(short_template),
+        ChangeSetType="CREATE",
+    )
+    aws_client.cloudformation.create_change_set(
+        StackName=stack.stack_id,
+        ChangeSetName="test",
+        TemplateBody=json.dumps(short_template),
+        ChangeSetType="UPDATE",
+    )
+
+    aws_client.cloudformation.describe_stacks(StackName=stack.stack_name)
