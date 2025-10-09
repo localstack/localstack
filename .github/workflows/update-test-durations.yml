@@ -6,71 +6,21 @@ on:
     - cron: 0 4 5 * *
   workflow_dispatch:
     inputs:
-      publishMethod:
-        description: 'Select how to publish the workflow result'
+      publish-method:
+        description: "Method to publish the test duration update results"
         type: choice
         options:
           - UPLOAD_ARTIFACT
           - CREATE_PR
         default: UPLOAD_ARTIFACT
 
-env:
-  # Take test durations only for this platform
-  PLATFORM: "amd64"
-
 jobs:
-  report:
-    name: "Download, merge and create PR with test durations"
-    runs-on: ubuntu-latest
-    steps:
-        - uses: actions/checkout@v5
-          with:
-            path: localstack
-
-        - name: Latest run-id from community repository
-          run: |
-            latest_workflow_id=$(curl -s https://api.github.com/repos/localstack/localstack/actions/workflows \
-              | jq '.workflows[] | select(.path==".github/workflows/aws-main.yml").id')
-            latest_run_id=$(curl -s \
-              "https://api.github.com/repos/localstack/localstack/actions/workflows/${latest_workflow_id}/runs?branch=main&status=success&per_page=30" \
-                | jq '[.workflow_runs[] | select(.event == "schedule")][0].id')
-            echo "Latest run: https://github.com/localstack/localstack/actions/runs/${latest_run_id}"
-            echo "AWS_MAIN_LATEST_SCHEDULED_RUN_ID=${latest_run_id}" >> $GITHUB_ENV
-
-        - name: Load test durations
-          uses: actions/download-artifact@v5
-          with:
-            pattern: pytest-split-durations-${{ env.PLATFORM }}-*
-            path: artifacts-test-durations
-            merge-multiple: true
-            run-id: ${{ env.AWS_MAIN_LATEST_SCHEDULED_RUN_ID }}
-            github-token: ${{ secrets.GITHUB_TOKEN }}  # PAT with access to artifacts from GH Actions
-
-        - name: Merge test durations files
-          shell: bash
-          run: |
-            jq -s 'add | to_entries | sort_by(.key) | from_entries' artifacts-test-durations/.test_durations-${{ env.PLATFORM }}*  > localstack/.test_durations || echo "::warning::Test durations were not merged"
-
-        - name: Upload artifact with merged test durations
-          uses: actions/upload-artifact@v4
-          if: ${{ success() && inputs.publishMethod == 'UPLOAD_ARTIFACT' }}
-          with:
-            name: merged-test-durations
-            path: localstack/.test_durations
-            include-hidden-files: true
-            if-no-files-found: error
-
-        - name: Create PR
-          uses: peter-evans/create-pull-request@v7
-          if: ${{ success() && inputs.publishMethod != 'UPLOAD_ARTIFACT' }}
-          with:
-            title: "[Testing] Update test durations"
-            body: "This PR includes an updated `.test_durations` file, generated based on latest test durations from main"
-            branch: "test-durations-auto-updates"
-            author: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
-            committer: "LocalStack Bot <localstack-bot@users.noreply.github.com>"
-            commit-message: "CI: update .test_durations to latest version"
-            path: localstack
-            add-paths: .test_durations
-            labels: "semver: patch, area: testing, area: ci, docs: skip, notes: skip"
-            token: ${{ secrets.PRO_ACCESS_TOKEN }}
+  update-test-durations:
+    uses: localstack/meta/.github/workflows/update-test-durations.yml@main
+    with:
+      repository-name: localstack
+      test-durations-file-path: .test_durations
+      publish-method: ${{ inputs.publish-method || 'CREATE_PR' }}
+    secrets:
+      gh-token: ${{ secrets.GITHUB_TOKEN }}
+      pr-token: ${{ secrets.PRO_ACCESS_TOKEN }}
