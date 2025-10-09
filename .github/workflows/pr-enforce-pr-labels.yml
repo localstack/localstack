@@ -1,11 +1,10 @@
-name: Enforce PR Labels
-
+name: Enforce Labels
 on:
   pull_request_target:
-    types: [labeled, unlabeled, opened, edited, synchronize]
+    types: [labeled, unlabeled, opened]
 
 jobs:
-  enforce-semver-labels:
-    uses: localstack/meta/.github/workflows/pr-enforce-semver-labels.yml@main
+  labels:
+    uses: localstack/meta/.github/workflows/pr-enforce-labels.yml@main
     secrets:
       github-token: ${{ secrets.PRO_ACCESS_TOKEN }}

@@ -802,15 +802,14 @@ class TestApiGatewayImportRestApi:
 
             url_error = api_invoke_url(api_id=rest_api_id, stage="v2", path="/path1")
 
-            def call_api_error():
+            def call_api_error() -> requests.Response:
                 res = requests.get(url_error)
                 assert res.status_code == 500
-                return res.json()
+                return res
 
             resp = retry(call_api_error, retries=5, sleep=2)
-            # we remove the headers from the response, not really needed for this test
-            resp.pop("headers", None)
-            snapshot.match("get-error-resp-from-http", resp)
+            error = {"body": resp.json(), "errorType": resp.headers.get("x-amzn-ErrorType")}
+            snapshot.match("get-error-resp-from-http", error)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(

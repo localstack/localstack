@@ -1228,6 +1228,15 @@ class QueryResponseSerializer(BaseXMLResponseSerializer):
         request_id_element = ETree.SubElement(response_metadata, "RequestId")
         request_id_element.text = request_id
 
+    def _prepare_additional_traits_in_response(
+        self, response: Response, operation_model: OperationModel, request_id: str
+    ):
+        response.headers["x-amzn-RequestId"] = request_id
+        response = super()._prepare_additional_traits_in_response(
+            response, operation_model, request_id
+        )
+        return response
+
 
 class EC2ResponseSerializer(QueryResponseSerializer):
     """
@@ -1495,7 +1504,7 @@ class JSONResponseSerializer(QueryCompatibleProtocolMixin, ResponseSerializer):
     def _prepare_additional_traits_in_response(
         self, response: Response, operation_model: OperationModel, request_id: str
     ):
-        response.headers["x-amzn-requestid"] = request_id
+        response.headers.setdefault("x-amzn-RequestId", request_id)
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id
         )
@@ -1921,7 +1930,7 @@ class CBORResponseSerializer(BaseCBORResponseSerializer):
     def _prepare_additional_traits_in_response(
         self, response: Response, operation_model: OperationModel, request_id: str
     ) -> Response:
-        response.headers["x-amzn-requestid"] = request_id
+        response.headers["x-amzn-RequestId"] = request_id
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id
         )
@@ -2015,7 +2024,7 @@ class RpcV2CBORResponseSerializer(
     def _prepare_additional_traits_in_response(
         self, response: Response, operation_model: OperationModel, request_id: str
     ):
-        response.headers["x-amzn-requestid"] = request_id
+        response.headers["x-amzn-RequestId"] = request_id
         response.headers["Smithy-Protocol"] = "rpc-v2-cbor"
         response = super()._prepare_additional_traits_in_response(
             response, operation_model, request_id

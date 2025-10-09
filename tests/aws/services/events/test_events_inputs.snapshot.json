@@ -511,5 +511,18 @@
         }
       ]
     }
+  },
+  "tests/aws/services/events/test_events_inputs.py::TestInputTransformer::test_input_transformer_nested_keys_replacement[\"Command is <valid>!\"]": {
+    "recorded-date": "08-10-2025, 09:20:09",
+    "recorded-content": {
+      "input-transformed-messages": [
+        {
+          "MessageId": "<uuid:1>",
+          "ReceiptHandle": "<receipt-handle:1>",
+          "MD5OfBody": "<m-d5-of-body:1>",
+          "Body": "\"Command is true!\""
+        }
+      ]
+    }
   }
 }

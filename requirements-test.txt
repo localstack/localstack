@@ -12,13 +12,13 @@ antlr4-python3-runtime==4.13.2
     # via
     #   localstack-core
     #   moto-ext
-anyio==4.10.0
+anyio==4.11.0
     # via httpx
 apispec==6.8.4
     # via localstack-core
 argparse==1.4.0
     # via kclpy-ext
-attrs==25.3.0
+attrs==25.4.0
     # via
     #   cattrs
     #   jsii
@@ -29,9 +29,9 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.10.0
+aws-cdk-cloud-assembly-schema==48.12.0
     # via aws-cdk-lib
-aws-cdk-lib==2.216.0
+aws-cdk-lib==2.219.0
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.100.0
     # via
@@ -39,17 +39,17 @@ aws-sam-translator==1.100.0
     #   localstack-core
 aws-xray-sdk==2.14.0
     # via moto-ext
-awscli==1.42.35
+awscli==1.42.45
     # via localstack-core
 awscrt==0.28.1
     # via localstack-core
-boto3==1.40.35
+boto3==1.40.45
     # via
     #   aws-sam-translator
     #   kclpy-ext
     #   localstack-core
     #   moto-ext
-botocore==1.40.35
+botocore==1.40.45
     # via
     #   aws-xray-sdk
     #   awscli
@@ -70,7 +70,7 @@ cattrs==25.2.0
     # via jsii
 cbor2==5.7.0
     # via localstack-core
-certifi==2025.8.3
+certifi==2025.10.5
     # via
     #   httpcore
     #   httpx
@@ -78,7 +78,7 @@ certifi==2025.8.3
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.39.1
+cfn-lint==1.40.0
     # via moto-ext
 charset-normalizer==3.4.3
     # via requests
@@ -96,7 +96,7 @@ coverage==7.10.7
     # via localstack-core (pyproject.toml)
 crontab==1.0.5
     # via localstack-core
-cryptography==46.0.1
+cryptography==46.0.2
     # via
     #   joserfc
     #   localstack-core
@@ -179,7 +179,7 @@ joserfc==1.3.4
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.114.1
+jsii==1.115.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -226,7 +226,7 @@ localstack-twisted==24.3.0
     # via localstack-core
 markdown-it-py==4.0.0
     # via rich
-markupsafe==3.0.2
+markupsafe==3.0.3
     # via
     #   jinja2
     #   werkzeug
@@ -234,7 +234,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.13.post7
+moto-ext==5.1.14.post7
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -301,7 +301,7 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.11.9
+pydantic==2.11.10
     # via aws-sam-translator
 pydantic-core==2.33.2
     # via pydantic
@@ -309,7 +309,7 @@ pygments==2.19.2
     # via
     #   pytest
     #   rich
-pymongo==4.15.1
+pymongo==4.15.2
     # via localstack-core
 pyopenssl==25.3.0
     # via
@@ -343,7 +343,7 @@ python-dotenv==1.1.1
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-pyyaml==6.0.2
+pyyaml==6.0.3
     # via
     #   awscli
     #   cfn-lint
@@ -432,7 +432,7 @@ typing-extensions==4.15.0
     #   pydantic-core
     #   readerwriterlock
     #   typing-inspection
-typing-inspection==0.4.1
+typing-inspection==0.4.2
     # via pydantic
 urllib3==2.5.0
     # via
@@ -459,7 +459,7 @@ xmltodict==1.0.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==8.0
+zope-interface==8.0.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

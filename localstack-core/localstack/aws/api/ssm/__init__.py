@@ -4426,6 +4426,7 @@ class GetDeployablePatchSnapshotForInstanceRequest(ServiceRequest):
     InstanceId: InstanceId
     SnapshotId: SnapshotId
     BaselineOverride: Optional[BaselineOverride]
+    UseS3DualStackEndpoint: Optional[Boolean]
 
 
 class GetDeployablePatchSnapshotForInstanceResult(TypedDict, total=False):
@@ -6749,6 +6750,7 @@ class SsmApi:
         instance_id: InstanceId,
         snapshot_id: SnapshotId,
         baseline_override: BaselineOverride | None = None,
+        use_s3_dual_stack_endpoint: Boolean | None = None,
         **kwargs,
     ) -> GetDeployablePatchSnapshotForInstanceResult:
         raise NotImplementedError

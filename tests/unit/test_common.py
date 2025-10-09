@@ -95,8 +95,20 @@ class TestCommon:
         test = datetime.now(UTC).timestamp()
         assert test == pytest.approx(env, 1)
 
-    def test_is_number(self):
-        assert common.is_number(5)
+    @pytest.mark.parametrize(
+        "value,is_number",
+        [
+            (5, True),
+            (-12.1, True),
+            (2e15, True),
+            ("test", False),
+            (False, False),
+            (True, False),
+            (None, False),
+        ],
+    )
+    def test_is_number(self, value, is_number):
+        assert common.is_number(value) == is_number
 
     def test_is_ip_address(self):
         assert common.is_ip_address("10.0.0.1")

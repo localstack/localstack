@@ -144,12 +144,12 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_import_with_stage_variables": {
-    "last_validated_date": "2025-07-02T16:31:50+00:00",
+    "last_validated_date": "2025-09-29T20:07:21+00:00",
     "durations_in_seconds": {
-      "setup": 0.11,
-      "call": 5.83,
-      "teardown": 69.73,
-      "total": 75.67
+      "setup": 11.64,
+      "call": 11.14,
+      "teardown": 2.26,
+      "total": 25.04
     }
   },
   "tests/aws/services/apigateway/test_apigateway_import.py::TestApiGatewayImportRestApi::test_put_rest_api_mode_binary_media_types[merge]": {

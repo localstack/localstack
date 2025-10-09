@@ -120,9 +120,10 @@ from localstack.services.cloudformation.v2.entities import (
     StackInstance,
     StackSet,
 )
-from localstack.services.cloudformation.v2.types import EngineParameter
+from localstack.services.cloudformation.v2.types import EngineParameter, engine_parameter_value
 from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.collections import select_attributes
+from localstack.utils.numbers import is_number
 from localstack.utils.strings import short_uid
 from localstack.utils.threads import start_worker_thread
 
@@ -236,14 +237,18 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         issue_url = "?".join([base, urlencode(query_args)])
         LOG.info(
             "You have opted in to the new CloudFormation deployment engine. "
-            "You can opt in to using the old engine by setting PROVIDER_OVERRIDE_CLOUDFORMATION=legacy. "
+            "You can opt in to using the old engine by setting PROVIDER_OVERRIDE_CLOUDFORMATION=engine-legacy. "
             "If you experience issues, please submit a bug report at this URL: %s",
             issue_url,
         )
 
     @staticmethod
     def _resolve_parameters(
-        template: dict | None, parameters: dict | None, account_id: str, region_name: str
+        template: dict | None,
+        parameters: dict | None,
+        account_id: str,
+        region_name: str,
+        before_parameters: dict | None,
     ) -> dict[str, EngineParameter]:
         template_parameters = template.get("Parameters", {})
         resolved_parameters = {}
@@ -257,6 +262,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 default_value=default_value,
                 no_echo=parameter.get("NoEcho"),
             )
+
+            # validate the type
+            if parameter["Type"] == "Number" and not is_number(
+                engine_parameter_value(resolved_parameter)
+            ):
+                raise ValidationError(f"Parameter '{name}' must be a number.")
 
             # TODO: support other parameter types
             if match := SSM_PARAMETER_TYPE_RE.match(parameter["Type"]):
@@ -278,10 +289,25 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                         resolved_parameter["resolved_value"] = resolve_ssm_parameter(
                             account_id, region_name, given_value or default_value
                         )
-                    except Exception:
-                        raise ValidationError(
-                            f"Parameter {name} should either have input value or default value"
-                        )
+                    except Exception as e:
+                        # we could not find the parameter however CDK provides the resolved value rather than the
+                        # parameter name again so try to look up the value in the previous parameters
+                        if (
+                            before_parameters
+                            and (before_param := before_parameters.get(name))
+                            and isinstance(before_param, dict)
+                            and (resolved_value := before_param.get("resolved_value"))
+                        ):
+                            LOG.debug(
+                                "Parameter %s could not be resolved, using previous value of %s",
+                                name,
+                                resolved_value,
+                            )
+                            resolved_parameter["resolved_value"] = resolved_value
+                        else:
+                            raise ValidationError(
+                                f"Parameter {name} should either have input value or default value"
+                            ) from e
             elif given_value is None and default_value is None:
                 invalid_parameters.append(name)
                 continue
@@ -320,6 +346,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 after_parameters,
                 change_set.stack.account_id,
                 change_set.stack.region_name,
+                before_parameters,
             )
 
         change_set.resolved_parameters = resolved_parameters
@@ -597,6 +624,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             result = change_set_executor.execute()
             change_set.stack.resolved_parameters = change_set.resolved_parameters
             change_set.stack.resolved_resources = result.resources
+            change_set.stack.template = change_set.template
+            change_set.stack.processed_template = change_set.processed_template
+            change_set.stack.template_body = change_set.template_body
+            change_set.stack.description = change_set.template.get("Description")
+
             if not result.failure_message:
                 new_stack_status = StackStatus.UPDATE_COMPLETE
                 if change_set.change_set_type == ChangeSetType.CREATE:
@@ -611,13 +643,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                         change_set.stack.resolved_exports[export_name] = output["OutputValue"]
 
                 change_set.stack.change_set_id = change_set.change_set_id
-
-                # if the deployment succeeded, update the stack's template representation to that
-                # which was just deployed
-                change_set.stack.template = change_set.template
-                change_set.stack.description = change_set.template.get("Description")
-                change_set.stack.processed_template = change_set.processed_template
-                change_set.stack.template_body = change_set.template_body
             else:
                 LOG.error(
                     "Execute change set failed: %s",
@@ -1401,6 +1426,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             template = template_preparer.parse_template(template_body)
 
         id_summaries = defaultdict(list)
+        if "Resources" not in template:
+            raise ValidationError(
+                "Template format error: At least one Resources member must be defined."
+            )
+
         for resource_id, resource in template["Resources"].items():
             res_type = resource["Type"]
             id_summaries[res_type].append(resource_id)

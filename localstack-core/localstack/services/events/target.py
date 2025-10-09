@@ -90,11 +90,20 @@ def get_template_replacements(
     return template_replacements
 
 
-def replace_template_placeholders(
-    template: str, replacements: dict[str, Any], is_json_template: bool
-) -> TransformedEvent:
-    """Replace placeholders defined by <key> in the template with the values from the replacements dict.
-    Can handle single template string or template dict."""
+def replace_template_placeholders(template: str, replacements: dict[str, Any]) -> TransformedEvent:
+    """
+    Replaces placeholders in an EventBridge-style InputTemplate string.
+
+    :param template: The template string containing placeholders like ``<$.foo.bar>``.
+    :type template: str
+    :param replacements: A dictionary providing values to fill in.
+    :type replacements: dict
+    :returns: The transformed string with placeholders replaced by values from ``replacements``.
+    :rtype: str
+    """
+
+    ...
+    is_json_template = template.strip().startswith("{")
 
     def replace_placeholder(match):
         key = match.group(1)
@@ -110,6 +119,8 @@ def replace_template_placeholders(
             if is_json_template:
                 return json.dumps(value)
             return f"[{','.join(value)}]"
+        if isinstance(value, bool):
+            return json.dumps(value)
         if is_nested_in_string(template, match):
             return value
         if is_json_template:
@@ -222,10 +233,7 @@ class TargetSender(ABC):
         predefined_template_replacements = self._get_predefined_template_replacements(event)
         template_replacements.update(predefined_template_replacements)
 
-        is_json_template = input_template.strip().startswith("{")
-        populated_template = replace_template_placeholders(
-            input_template, template_replacements, is_json_template
-        )
+        populated_template = replace_template_placeholders(input_template, template_replacements)
 
         return populated_template
 

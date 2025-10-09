@@ -1,4 +1,22 @@
 {
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_invalid_parameter_type": {
+    "last_validated_date": "2025-10-06T20:45:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.92,
+      "call": 0.33,
+      "teardown": 0.01,
+      "total": 1.26
+    }
+  },
+  "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_parameter_type_change": {
+    "last_validated_date": "2025-10-06T20:55:52+00:00",
+    "durations_in_seconds": {
+      "setup": 0.99,
+      "call": 27.31,
+      "teardown": 0.17,
+      "total": 28.47
+    }
+  },
   "tests/aws/services/cloudformation/test_change_set_parameters.py::TestChangeSetParameters::test_update_parameter_default_value": {
     "last_validated_date": "2025-04-17T15:35:43+00:00"
   },

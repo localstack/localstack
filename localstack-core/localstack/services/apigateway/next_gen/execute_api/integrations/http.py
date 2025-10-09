@@ -8,7 +8,7 @@ from werkzeug.datastructures import Headers
 from localstack.aws.api.apigateway import Integration
 
 from ..context import EndpointResponse, IntegrationRequest, RestApiInvocationContext
-from ..gateway_response import ApiConfigurationError, IntegrationFailureError
+from ..gateway_response import ApiConfigurationError, IntegrationFailureError, InternalServerError
 from ..header_utils import build_multi_value_headers
 from .core import RestApiIntegration
 
@@ -72,7 +72,7 @@ class RestApiHttpIntegration(BaseRestApiHttpIntegration):
         except (requests.exceptions.InvalidURL, requests.exceptions.InvalidSchema) as e:
             LOG.warning("Execution failed due to configuration error: Invalid endpoint address")
             LOG.debug("The URI specified for the HTTP/HTTP_PROXY integration is invalid: %s", uri)
-            raise ApiConfigurationError("Internal server error") from e
+            raise InternalServerError("Internal server error") from e
 
         except (requests.exceptions.Timeout, requests.exceptions.SSLError) as e:
             # TODO make the exception catching more fine grained
@@ -127,7 +127,7 @@ class RestApiHttpProxyIntegration(BaseRestApiHttpIntegration):
         except (requests.exceptions.InvalidURL, requests.exceptions.InvalidSchema) as e:
             LOG.warning("Execution failed due to configuration error: Invalid endpoint address")
             LOG.debug("The URI specified for the HTTP/HTTP_PROXY integration is invalid: %s", uri)
-            raise ApiConfigurationError("Internal server error") from e
+            raise InternalServerError("Internal server error") from e
 
         except (requests.exceptions.Timeout, requests.exceptions.SSLError):
             # TODO make the exception catching more fine grained

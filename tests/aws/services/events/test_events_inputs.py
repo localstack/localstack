@@ -500,6 +500,7 @@ class TestInputTransformer:
             '{"multi_replacement": "users/<userId>/second/<userId>"}',
             # TODO known limitation due to sqs message handling sting with new line
             # '"<listsingle> single list item\n<listmulti> multiple list items"',
+            '"Command is <valid>!"',
         ],
     )
     def test_input_transformer_nested_keys_replacement(
@@ -529,6 +530,7 @@ class TestInputTransformer:
             "systemstring": "$.detail.awsAccountId",  # with resolve to empty value
             "listsingle": "$.detail.listsingle",
             "listmulti": "$.detail.listmulti",
+            "valid": "$.detail.valid",
         }
         input_transformer = {
             "InputPathsMap": input_path_map,

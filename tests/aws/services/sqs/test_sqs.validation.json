@@ -1,4 +1,22 @@
 {
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_approximate_number_of_messages_not_visible[sqs]": {
+    "last_validated_date": "2025-09-26T16:41:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.19,
+      "call": 61.13,
+      "teardown": 0.07,
+      "total": 61.39
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_approximate_number_of_messages_not_visible[sqs_query]": {
+    "last_validated_date": "2025-09-26T16:42:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 61.63,
+      "teardown": 0.09,
+      "total": 61.72
+    }
+  },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_aws_trace_header_propagation[sqs]": {
     "last_validated_date": "2025-06-27T10:55:55+00:00",
     "durations_in_seconds": {
@@ -144,6 +162,24 @@
       "call": 0.56,
       "teardown": 0.16,
       "total": 0.86
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approximate_number_of_messages_not_visible[sqs]": {
+    "last_validated_date": "2025-09-26T16:46:35+00:00",
+    "durations_in_seconds": {
+      "setup": 5.18,
+      "call": 62.17,
+      "teardown": 0.08,
+      "total": 67.43
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approximate_number_of_messages_not_visible[sqs_query]": {
+    "last_validated_date": "2025-09-26T16:47:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 62.34,
+      "teardown": 0.07,
+      "total": 62.41
     }
   },
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_change_to_high_throughput_after_creation[sqs]": {

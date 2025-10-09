@@ -2884,7 +2884,18 @@ class TestApigatewayTestInvoke:
             apigw_test_invoke_response_formatter(response),
         )
 
-        # assert resource and rest api doesn't exist
+        # assert method doesn't exist
+        with pytest.raises(ClientError) as ex:
+            aws_client.apigateway.test_invoke_method(
+                restApiId=rest_api_id,
+                resourceId=resource_id,
+                httpMethod="HEAD",
+                pathWithQueryString="/pets/123",
+                body=json.dumps({"foo": "bar"}),
+            )
+        snapshot.match("resource-method-not-found", ex.value.response)
+
+        # assert resource doesn't exist
         with pytest.raises(ClientError) as ex:
             aws_client.apigateway.test_invoke_method(
                 restApiId=rest_api_id,
@@ -2895,6 +2906,7 @@ class TestApigatewayTestInvoke:
             )
         snapshot.match("resource-id-not-found", ex.value.response)
 
+        # assert API doesn't exist
         with pytest.raises(ClientError) as ex:
             aws_client.apigateway.test_invoke_method(
                 restApiId=rest_api_id,
@@ -2904,6 +2916,69 @@ class TestApigatewayTestInvoke:
                 body=json.dumps({"foo": "bar"}),
             )
         snapshot.match("rest-api-not-found", ex.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        # TODO: our way of handling logs for TestInvokeMethod is too naive to properly handle all
+        #  type of exceptions (we'll need to build logs as we progress through the invocation)
+        paths=[
+            "$..log.line07",
+        ]
+    )
+    def test_failed_invoke_test_method(
+        self, create_rest_apigw, snapshot, aws_client, apigw_test_invoke_response_formatter
+    ):
+        rest_api_id, _, root_resource_id = create_rest_apigw(name="test failed invoke")
+
+        aws_client.apigateway.put_method(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="ANY",
+            authorizationType="NONE",
+        )
+
+        aws_client.apigateway.put_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="ANY",
+            type="HTTP_PROXY",
+            uri="https://${stageVariables.testHost}",
+            integrationHttpMethod="ANY",
+        )
+        # we are going to not declare this stage variable on purpose to make the call fail
+
+        def invoke_method(
+            api_id: str,
+            target_resource_id: str,
+            method: str,
+            path_with_query_string: str | None = None,
+            body: str = "",
+        ):
+            kwargs = {}
+            if path_with_query_string is not None:
+                kwargs["pathWithQueryString"] = path_with_query_string
+            res = aws_client.apigateway.test_invoke_method(
+                restApiId=api_id,
+                resourceId=target_resource_id,
+                httpMethod=method,
+                body=body,
+                **kwargs,
+            )
+            assert res.get("status") == 500
+            return res
+
+        response = retry(
+            invoke_method,
+            retries=10,
+            sleep=5,
+            api_id=rest_api_id,
+            target_resource_id=root_resource_id,
+            method="GET",
+        )
+        snapshot.match(
+            "test-invoke-failure",
+            apigw_test_invoke_response_formatter(response),
+        )
 
 
 class TestApigatewayIntegration:
@@ -4023,3 +4098,63 @@ class TestApigatewayIntegration:
             statusCode="200",
         )
         snapshot.match("delete-method-response", delete_response)
+
+    @markers.aws.validated
+    def test_create_integration_with_vpc_link(
+        self, create_rest_apigw, aws_client, snapshot, region_name
+    ):
+        """
+        We cannot properly validate the CRUD logic of creating VPC Link, as they require an ELB Network Load Balancer
+        which are not implemented yet. But we can use stage variables to delay the evaluation of the real connection id
+        """
+        snapshot.add_transformer(snapshot.transform.key_value("cacheNamespace"))
+        rest_api_id, _, root_resource_id = create_rest_apigw(name="test vpc link")
+
+        aws_client.apigateway.put_method(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            authorizationType="NONE",
+        )
+
+        # see example here:
+        # https://docs.aws.amazon.com/apigateway/latest/developerguide/set-up-api-with-vpclink-cli.html
+        put_integration = aws_client.apigateway.put_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            type="HTTP_PROXY",
+            uri=f"http://my-vpclink-test-nlb-1234567890abcdef.{region_name}.amazonaws.com",
+            integrationHttpMethod="GET",
+            connectionType="VPC_LINK",
+            connectionId="${stageVariables.vpcLinkId}",
+        )
+        snapshot.match("put-integration-vpc-link", put_integration)
+
+        get_integration = aws_client.apigateway.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-integration-vpc-link", get_integration)
+
+        update_integration = aws_client.apigateway.update_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+            patchOperations=[
+                {
+                    "op": "replace",
+                    "path": "/connectionId",
+                    "value": "${stageVariables.vpcLinkIdBeta}",
+                }
+            ],
+        )
+        snapshot.match("update-integration-vpc-link", update_integration)
+
+        get_integration_update = aws_client.apigateway.get_integration(
+            restApiId=rest_api_id,
+            resourceId=root_resource_id,
+            httpMethod="GET",
+        )
+        snapshot.match("get-integration-update-vpc-link", get_integration_update)

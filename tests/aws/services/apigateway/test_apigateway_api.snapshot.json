@@ -2813,7 +2813,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayTestInvoke::test_invoke_test_method": {
-    "recorded-date": "19-08-2025, 17:20:41",
+    "recorded-date": "29-09-2025, 19:28:50",
     "recorded-content": {
       "test-invoke-method-get-pets": {
         "body": {
@@ -3044,6 +3044,17 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      },
+      "resource-method-not-found": {
+        "Error": {
+          "Code": "NotFoundException",
+          "Message": "Invalid Method identifier specified"
+        },
+        "message": "Invalid Method identifier specified",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
         }
       },
       "resource-id-not-found": {
@@ -4858,6 +4869,107 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayTestInvoke::test_failed_invoke_test_method": {
+    "recorded-date": "29-09-2025, 19:44:14",
+    "recorded-content": {
+      "test-invoke-failure": {
+        "body": {
+          "message": "Internal server error"
+        },
+        "headers": {
+          "x-amzn-ErrorType": "InternalServerErrorException"
+        },
+        "latency": "<latency>",
+        "log": {
+          "line00": "Execution log for request <request-id-1>",
+          "line01": "DDD MMM dd hh:mm:ss UTC yyyy : Starting execution for request: <request-id-1>",
+          "line02": "DDD MMM dd hh:mm:ss UTC yyyy : HTTP Method: GET, Resource Path: /",
+          "line03": "DDD MMM dd hh:mm:ss UTC yyyy : Method request path: {}",
+          "line04": "DDD MMM dd hh:mm:ss UTC yyyy : Method request query string: {}",
+          "line05": "DDD MMM dd hh:mm:ss UTC yyyy : Method request headers: {}",
+          "line06": "DDD MMM dd hh:mm:ss UTC yyyy : Method request body before transformations: ",
+          "line07": "DDD MMM dd hh:mm:ss UTC yyyy : Execution failed due to configuration error: Invalid endpoint address",
+          "line08": "DDD MMM dd hh:mm:ss UTC yyyy : Method completed with status: 500",
+          "line09": ""
+        },
+        "multiValueHeaders": {
+          "x-amzn-ErrorType": [
+            "InternalServerErrorException"
+          ]
+        },
+        "status": 500,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_api.py::TestApigatewayIntegration::test_create_integration_with_vpc_link": {
+    "recorded-date": "08-10-2025, 09:05:56",
+    "recorded-content": {
+      "put-integration-vpc-link": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionId": "${stageVariables.vpcLinkId}",
+        "connectionType": "VPC_LINK",
+        "httpMethod": "GET",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://my-vpclink-test-nlb-1234567890abcdef.<region>.amazonaws.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get-integration-vpc-link": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionId": "${stageVariables.vpcLinkId}",
+        "connectionType": "VPC_LINK",
+        "httpMethod": "GET",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://my-vpclink-test-nlb-1234567890abcdef.<region>.amazonaws.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "update-integration-vpc-link": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionId": "${stageVariables.vpcLinkIdBeta}",
+        "connectionType": "VPC_LINK",
+        "httpMethod": "GET",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://my-vpclink-test-nlb-1234567890abcdef.<region>.amazonaws.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-integration-update-vpc-link": {
+        "cacheKeyParameters": [],
+        "cacheNamespace": "<cache-namespace:1>",
+        "connectionId": "${stageVariables.vpcLinkIdBeta}",
+        "connectionType": "VPC_LINK",
+        "httpMethod": "GET",
+        "passthroughBehavior": "WHEN_NO_MATCH",
+        "timeoutInMillis": 29000,
+        "type": "HTTP_PROXY",
+        "uri": "http://my-vpclink-test-nlb-1234567890abcdef.<region>.amazonaws.com",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       }
     }

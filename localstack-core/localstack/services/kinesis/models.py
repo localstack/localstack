@@ -1,7 +1,18 @@
 from collections import defaultdict
 
-from localstack.aws.api.kinesis import ConsumerDescription, MetricsName, StreamName
-from localstack.services.stores import AccountRegionBundle, BaseStore, LocalAttribute
+from localstack.aws.api.kinesis import (
+    ConsumerDescription,
+    MetricsName,
+    Policy,
+    ResourceARN,
+    StreamName,
+)
+from localstack.services.stores import (
+    AccountRegionBundle,
+    BaseStore,
+    CrossAccountAttribute,
+    LocalAttribute,
+)
 
 
 class KinesisStore(BaseStore):
@@ -12,6 +23,8 @@ class KinesisStore(BaseStore):
     enhanced_metrics: dict[StreamName, set[MetricsName]] = LocalAttribute(
         default=lambda: defaultdict(set)
     )
+
+    resource_policies: dict[ResourceARN, Policy] = CrossAccountAttribute(default=dict)
 
 
 kinesis_stores = AccountRegionBundle("kinesis", KinesisStore)

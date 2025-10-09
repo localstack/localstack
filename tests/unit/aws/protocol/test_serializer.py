@@ -97,8 +97,11 @@ def _botocore_serializer_integration_test(
 
     # Use the parser from botocore to parse the serialized response
     response_parser = create_parser(service_protocol)
+    # Properly use HeadersDict from botocore to properly parse headers
+    response_dict = serialized_response.to_readonly_response_dict()
+    response_dict["headers"] = HeadersDict(response_dict.get("headers", {}))
     parsed_response = response_parser.parse(
-        serialized_response.to_readonly_response_dict(),
+        response_dict,
         service.operation_model(action).output_shape,
     )
 

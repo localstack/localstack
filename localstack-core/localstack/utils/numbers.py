@@ -11,6 +11,13 @@ def format_number(number: float, decimals: int = 2):
 
 
 def is_number(s: Any) -> bool:
+    # booleans inherit from int
+    #
+    # >>> a.__class__.__mro__
+    # (<class 'bool'>, <class 'int'>, <class 'object'>)
+    if s is False or s is True:
+        return False
+
     try:
         float(s)  # for int, long and float
         return True
