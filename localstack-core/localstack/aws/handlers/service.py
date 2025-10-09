@@ -2,6 +2,7 @@
 
 import logging
 import traceback
+import types
 from collections import defaultdict
 from typing import Any
 
@@ -156,6 +157,15 @@ class ServiceExceptionSerializer(ExceptionHandler):
     def __init__(self):
         self.handle_internal_failures = True
 
+        try:
+            import moto.core.exceptions
+
+            self._moto_service_exception = moto.core.exceptions.ServiceException
+        except (ModuleNotFoundError, AttributeError) as exc:
+            # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
+            LOG.debug("Unable to set up Moto ServiceException translation: %s", exc)
+            self._moto_service_exception = types.EllipsisType
+
     def __call__(
         self,
         chain: HandlerChain,
@@ -181,7 +191,14 @@ class ServiceExceptionSerializer(ExceptionHandler):
             message = exception_message or get_coverage_link_for_service(service_name, action_name)
             error = CommonServiceException("InternalFailure", message, status_code=501)
             LOG.info(message)
-            context.service_exception = error
+
+        elif isinstance(exception, self._moto_service_exception):
+            # Translate Moto ServiceException to native ServiceException if Moto is available.
+            # This allows handler chain to gracefully handles Moto errors when provider handlers invoke Moto methods directly.
+            error = CommonServiceException(
+                code=exception.code,
+                message=exception.message,
+            )
 
         elif not isinstance(exception, ServiceException):
             if not self.handle_internal_failures:
@@ -210,7 +227,8 @@ class ServiceExceptionSerializer(ExceptionHandler):
             error = CommonServiceException(
                 "InternalError", msg, status_code=status_code
             ).with_traceback(exception.__traceback__)
-            context.service_exception = error
+
+        context.service_exception = error
 
         serializer = create_serializer(context.service, context.protocol)
         return serializer.serialize_error_to_response(
