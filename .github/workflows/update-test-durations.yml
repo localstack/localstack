@@ -16,7 +16,7 @@ on:
 
 jobs:
   update-test-durations:
-    uses: localstack/meta/.github/workflows/update-test-durations.yml@test-durations-wf-artifact-prefix
+    uses: localstack/meta/.github/workflows/update-test-durations.yml@main
     with:
       repository-name: localstack
       test-durations-file-path: .test_durations
