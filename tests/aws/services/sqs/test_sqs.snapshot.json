@@ -4219,5 +4219,55 @@
   "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_approximate_number_of_messages_not_visible[sqs_query]": {
     "recorded-date": "25-09-2025, 21:54:43",
     "recorded-content": {}
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout_extended[sqs]": {
+    "recorded-date": "05-10-2025, 14:42:35",
+    "recorded-content": {
+      "received_sqs_message": {
+        "Messages": [
+          {
+            "Body": "foobar",
+            "MD5OfBody": "3858f62230ac3c915f300c664312c63f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_after_timeout_fifo_extended": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sqs/test_sqs.py::TestSqsProvider::test_fifo_delete_after_visibility_timeout_extended[sqs_query]": {
+    "recorded-date": "05-10-2025, 14:42:37",
+    "recorded-content": {
+      "received_sqs_message": {
+        "Messages": [
+          {
+            "Body": "foobar",
+            "MD5OfBody": "3858f62230ac3c915f300c664312c63f",
+            "MessageId": "<uuid:1>",
+            "ReceiptHandle": "<receipt-handle:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete_after_timeout_fifo_extended": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

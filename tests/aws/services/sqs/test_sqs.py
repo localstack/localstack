@@ -1277,6 +1277,40 @@ class TestSqsProvider:
         snapshot.match("delete_after_timeout_fifo", e.value.response)
 
     @markers.aws.validated
+    def test_fifo_delete_after_visibility_timeout_extended(
+        self, sqs_create_queue, aws_sqs_client, snapshot
+    ):
+        timeout = 1
+        queue_url = sqs_create_queue(
+            QueueName=f"test-{short_uid()}.fifo",
+            Attributes={
+                "VisibilityTimeout": f"{timeout}",
+                "FifoQueue": "True",
+                "ContentBasedDeduplication": "True",
+            },
+        )
+
+        aws_sqs_client.send_message(QueueUrl=queue_url, MessageBody="foobar", MessageGroupId="1")
+        # receive the message
+        initial_receive = aws_sqs_client.receive_message(QueueUrl=queue_url, WaitTimeSeconds=5)
+        snapshot.match("received_sqs_message", initial_receive)
+        receipt_handle = initial_receive["Messages"][0]["ReceiptHandle"]
+
+        # extend the visibility timeout window
+        aws_sqs_client.change_message_visibility(
+            QueueUrl=queue_url, ReceiptHandle=receipt_handle, VisibilityTimeout=5
+        )
+
+        # exceed the original visibility timeout window but not the extended one
+        time.sleep(timeout + 0.5)
+        aws_sqs_client.delete_message(QueueUrl=queue_url, ReceiptHandle=receipt_handle)
+
+        snapshot.match(
+            "delete_after_timeout_fifo_extended",
+            aws_sqs_client.receive_message(QueueUrl=queue_url),
+        )
+
+    @markers.aws.validated
     def test_receive_terminate_visibility_timeout(self, sqs_queue, aws_sqs_client):
         queue_url = sqs_queue
 
