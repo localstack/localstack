@@ -1,7 +1,5 @@
 """Handlers for logging."""
 
-import contextlib
-import importlib
 import logging
 import types
 from functools import cached_property
@@ -24,12 +22,13 @@ class ExceptionLogger(ExceptionHandler):
     def __init__(self, logger=None):
         self.logger = logger or LOG
 
-        # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
-        self._moto_service_exception = types.EllipsisType
-        with contextlib.suppress(ModuleNotFoundError, AttributeError):
-            self._moto_service_exception = importlib.import_module(
-                "moto.core.exceptions"
-            ).ServiceException
+        try:
+            import moto.core.exceptions
+
+            self._moto_service_exception = moto.core.exceptions.ServiceException
+        except (ModuleNotFoundError, AttributeError):
+            # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
+            self._moto_service_exception = types.EllipsisType
 
     def __call__(
         self,

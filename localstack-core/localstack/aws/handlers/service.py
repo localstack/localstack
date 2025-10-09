@@ -1,6 +1,5 @@
 """A set of common handlers to parse and route AWS service requests."""
 
-import importlib
 import logging
 import traceback
 import types
@@ -158,14 +157,14 @@ class ServiceExceptionSerializer(ExceptionHandler):
     def __init__(self):
         self.handle_internal_failures = True
 
-        # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
-        self._moto_service_exception = types.EllipsisType
         try:
-            self._moto_service_exception = importlib.import_module(
-                "moto.core.exceptions"
-            ).ServiceException
+            import moto.core.exceptions
+
+            self._moto_service_exception = moto.core.exceptions.ServiceException
         except (ModuleNotFoundError, AttributeError) as exc:
+            # Moto may not be available in stripped-down versions of LocalStack, like LocalStack S3 image.
             LOG.debug("Unable to set up Moto ServiceException translation: %s", exc)
+            self._moto_service_exception = types.EllipsisType
 
     def __call__(
         self,
