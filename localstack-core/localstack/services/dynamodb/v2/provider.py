@@ -663,9 +663,10 @@ class DynamoDBProvider(DynamodbApi, ServiceLifecycleHook):
 
         # Set defaults for warm throughput
         if "WarmThroughput" not in table_description:
+            billing_mode = table_definitions.get("BillingMode") if table_definitions else None
             table_description["WarmThroughput"] = {
-                "ReadUnitsPerSecond": 5,
-                "WriteUnitsPerSecond": 5,
+                "ReadUnitsPerSecond": 12000 if billing_mode == "PAY_PER_REQUEST" else 5,
+                "WriteUnitsPerSecond": 4000 if billing_mode == "PAY_PER_REQUEST" else 5,
             }
         table_description["WarmThroughput"]["Status"] = (
             table_description.get("TableStatus") or "ACTIVE"

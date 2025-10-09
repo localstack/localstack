@@ -2017,6 +2017,9 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..KeyMetadata.CurrentKeyMaterialId"]  # Not supported by LS
+    )
     def test_dynamodb_create_table_with_partial_sse_specification(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
@@ -2051,6 +2054,9 @@ class TestDynamoDB:
         assert "SSESpecification" not in result["Table"]
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..KeyMetadata.CurrentKeyMaterialId"]  # Not supported by LS
+    )
     def test_dynamodb_update_table_without_sse_specification_change(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
