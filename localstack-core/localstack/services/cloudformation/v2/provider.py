@@ -100,9 +100,6 @@ from localstack.services.cloudformation.engine.v2.change_set_model_executor impo
 from localstack.services.cloudformation.engine.v2.change_set_model_transform import (
     ChangeSetModelTransform,
 )
-from localstack.services.cloudformation.engine.v2.change_set_model_validator import (
-    ChangeSetModelValidator,
-)
 from localstack.services.cloudformation.engine.validations import ValidationError
 from localstack.services.cloudformation.provider import (
     ARN_CHANGESET_REGEX,
@@ -403,12 +400,6 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
         update_model.before_runtime_cache.update(raw_update_model.before_runtime_cache)
         update_model.after_runtime_cache.update(raw_update_model.after_runtime_cache)
         change_set.set_update_model(update_model)
-
-        # perform validations
-        validator = ChangeSetModelValidator(
-            change_set=change_set,
-        )
-        validator.validate()
 
         # hacky
         if transform := raw_update_model.node_template.transform:
