@@ -10,7 +10,7 @@ authors = [
 ]
 description = "The core library and runtime of LocalStack"
 license = "Apache-2.0"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 dependencies = [
     "build",
     "click>=7.1",
@@ -195,12 +195,12 @@ exclude = [
 
 [tool.ruff.per-file-target-version]
 # Only allow minimum version for code used in the CLI
-"localstack-core/localstack/cli/**" = "py39"
-"localstack-core/localstack/packages/**" = "py39"
-"localstack-core/localstack/config.py" = "py39"
-"localstack-core/localstack/constants.py" = "py39"
-"localstack-core/localstack/utils/**" = "py39"  # imported by CLI tests
-"localstack-core/localstack/testing/pytest/**" = "py39" # imported by CLI tests
+"localstack-core/localstack/cli/**" = "py310"
+"localstack-core/localstack/packages/**" = "py310"
+"localstack-core/localstack/config.py" = "py310"
+"localstack-core/localstack/constants.py" = "py310"
+"localstack-core/localstack/utils/**" = "py310"  # imported by CLI tests
+"localstack-core/localstack/testing/pytest/**" = "py310" # imported by CLI tests
 
 [tool.ruff.lint]
 ignore = [
