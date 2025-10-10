@@ -227,6 +227,8 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
     def process(self) -> None:
         self._setup_runtime_cache()
         node_template = self._change_set.update_model.node_template
+        node_conditions = self._change_set.update_model.node_template.conditions
+        self.visit(node_conditions)
         self.visit(node_template)
         self._save_runtime_cache()
 
@@ -643,6 +645,12 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return args[0] == args[1]
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+
+        if isinstance(arguments_delta.after, list) and len(arguments_delta.after) != 2:
+            raise ValidationError(
+                "Template error: every Fn::Equals object requires a list of 2 string parameters."
+            )
+
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,
@@ -919,6 +927,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
             return split_string
 
         arguments_delta = self.visit(node_intrinsic_function.arguments)
+
         delta = self._cached_apply(
             scope=node_intrinsic_function.scope,
             arguments_delta=arguments_delta,

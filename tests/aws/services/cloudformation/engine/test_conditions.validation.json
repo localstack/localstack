@@ -52,5 +52,14 @@
   },
   "tests/aws/services/cloudformation/engine/test_conditions.py::TestCloudFormationConditions::test_update_conditions": {
     "last_validated_date": "2024-06-18T19:43:43+00:00"
+  },
+  "tests/aws/services/cloudformation/engine/test_conditions.py::TestValidateConditions::test_validate_equals_args_len": {
+    "last_validated_date": "2025-10-08T18:18:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.25,
+      "call": 0.36,
+      "teardown": 0.0,
+      "total": 0.61
+    }
   }
 }
