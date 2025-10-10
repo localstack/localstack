@@ -4,7 +4,6 @@ import logging
 import threading
 import time
 from queue import Full, Queue
-from typing import Optional
 
 from localstack import config
 from localstack.utils.threads import start_thread, start_worker_thread
@@ -93,7 +92,7 @@ class PublisherBuffer(EventHandler):
         self._stopping.set()
         self._command_queue.put(self._cmd_stop)
 
-    def close_sync(self, timeout: Optional[float] = None):
+    def close_sync(self, timeout: float | None = None):
         self.close()
         return self._stopped.wait(timeout)
 

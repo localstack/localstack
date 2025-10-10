@@ -9,7 +9,6 @@ import datetime
 import json
 import os
 from pathlib import Path
-from typing import Optional
 
 import pytest
 from pluggy import Result
@@ -28,7 +27,7 @@ Stores information from call execution phase about whether the test failed.
 """
 
 
-def find_validation_data_for_item(item: pytest.Item) -> Optional[dict]:
+def find_validation_data_for_item(item: pytest.Item) -> dict | None:
     base_path = os.path.join(item.fspath.dirname, item.fspath.purebasename)
     snapshot_path = f"{base_path}.validation.json"
 

@@ -5,10 +5,9 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-from collections.abc import Iterable, Iterator, Mapping, Sized
+from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
 from typing import (
     Any,
-    Callable,
     Optional,
     TypedDict,
     TypeVar,
@@ -116,7 +115,7 @@ class PaginatedList(list[_ListType]):
         next_token: str = None,
         page_size: int = None,
         filter_function: Callable[[_ListType], bool] = None,
-    ) -> tuple[list[_ListType], Optional[str]]:
+    ) -> tuple[list[_ListType], str | None]:
         if filter_function is not None:
             result_list = list(filter(filter_function, self))
         else:
@@ -148,7 +147,7 @@ class PaginatedList(list[_ListType]):
 class CustomExpiryTTLCache(cachetools.TTLCache):
     """TTLCache that allows to set custom expiry times for individual keys."""
 
-    def set_expiry(self, key: Any, ttl: Union[float, int]) -> float:
+    def set_expiry(self, key: Any, ttl: float | int) -> float:
         """Set the expiry of the given key in a TTLCache to (<current_time> + <ttl>)"""
         with self.timer as time:
             # note: need to access the internal dunder API here
@@ -315,7 +314,7 @@ def is_list_or_tuple(obj) -> bool:
     return isinstance(obj, (list, tuple))
 
 
-def ensure_list(obj: Any, wrap_none=False) -> Optional[list]:
+def ensure_list(obj: Any, wrap_none=False) -> list | None:
     """Wrap the given object in a list, or return the object itself if it already is a list."""
     if obj is None and not wrap_none:
         return obj
@@ -414,7 +413,7 @@ def items_equivalent(list1, list2, comparator):
     return True
 
 
-def is_none_or_empty(obj: Union[Optional[str], Optional[list]]) -> bool:
+def is_none_or_empty(obj: str | None | list | None) -> bool:
     return (
         obj is None
         or (isinstance(obj, str) and obj.strip() == "")
@@ -475,7 +474,7 @@ def convert_to_typed_dict(typed_dict: type[T], obj: dict, strict: bool = False) 
     return result
 
 
-def dict_multi_values(elements: Union[list, dict]) -> dict[str, list[Any]]:
+def dict_multi_values(elements: list | dict) -> dict[str, list[Any]]:
     """
     Return a dictionary with the original keys from the list of dictionary and the
     values are the list of values of the original dictionary.
@@ -516,7 +515,7 @@ def split_list_by(
     return truthy, falsy
 
 
-def is_comma_delimited_list(string: str, item_regex: Optional[str] = None) -> bool:
+def is_comma_delimited_list(string: str, item_regex: str | None = None) -> bool:
     """
     Checks if the given string is a comma-delimited list of items.
     The optional `item_regex` parameter specifies the regex pattern for each item in the list.

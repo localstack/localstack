@@ -4,7 +4,7 @@ import re
 from abc import ABC
 from functools import lru_cache
 from sys import version_info
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -238,7 +238,7 @@ class NodePackageInstaller(ExecutableInstaller):
         self,
         package_name: str,
         version: str,
-        package_spec: Optional[str] = None,
+        package_spec: str | None = None,
         main_module: str = "main.js",
     ):
         """

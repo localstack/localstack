@@ -1,7 +1,7 @@
 import os
 import pwd
+from collections.abc import Callable
 from multiprocessing import Process, ProcessError
-from typing import Callable
 
 
 def run_as_os_user(target: Callable, uid: str | int, gid: str | int = None):

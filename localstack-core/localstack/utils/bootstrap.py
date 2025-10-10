@@ -9,9 +9,9 @@ import shlex
 import signal
 import threading
 import time
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from functools import wraps
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 from localstack import config, constants
 from localstack.config import (
@@ -175,7 +175,7 @@ def get_docker_image_details(image_name: str = None) -> dict[str, str]:
     return result
 
 
-def get_image_environment_variable(env_name: str) -> Optional[str]:
+def get_image_environment_variable(env_name: str) -> str | None:
     image_name = get_docker_image_to_start()
     image_info = DOCKER_CLIENT.inspect_image(image_name)
     image_envs = image_info["Config"]["Env"]
@@ -544,7 +544,7 @@ class ContainerConfigurators:
 
     @staticmethod
     def gateway_listen(
-        port: Union[int, Iterable[int], HostAndPort, Iterable[HostAndPort]],
+        port: int | Iterable[int] | HostAndPort | Iterable[HostAndPort],
     ):
         """
         Uses the given ports to configure GATEWAY_LISTEN. For instance, ``gateway_listen([4566, 443])`` would
@@ -1000,7 +1000,7 @@ class RunningContainer:
                     return
                 raise
 
-    def inspect(self) -> dict[str, Union[dict, str]]:
+    def inspect(self) -> dict[str, dict | str]:
         return self.container_client.inspect_container(container_name_or_id=self.id)
 
     def attach(self):
@@ -1028,7 +1028,7 @@ class ContainerLogPrinter:
         self.callback = callback
 
         self._closed = threading.Event()
-        self._stream: Optional[CancellableStream] = None
+        self._stream: CancellableStream | None = None
 
     def _can_start_streaming(self):
         if self._closed.is_set():
@@ -1338,7 +1338,7 @@ def start_infra_in_docker_detached(console, cli_params: dict[str, Any] = None):
     console.log("detaching")
 
 
-def wait_container_is_ready(timeout: Optional[float] = None):
+def wait_container_is_ready(timeout: float | None = None):
     """Blocks until the localstack main container is running and the ready marker has been printed."""
     container_name = config.MAIN_CONTAINER_NAME
     started = time.time()

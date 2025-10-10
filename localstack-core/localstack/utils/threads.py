@@ -3,9 +3,9 @@ import inspect
 import logging
 import threading
 import traceback
+from collections.abc import Callable
 from concurrent.futures import Future
 from multiprocessing.dummy import Pool
-from typing import Callable, Optional
 
 LOG = logging.getLogger(__name__)
 
@@ -26,7 +26,7 @@ class FuncThread(threading.Thread):
         params=None,
         quiet=False,
         on_stop: Callable[["FuncThread"], None] = None,
-        name: Optional[str] = None,
+        name: str | None = None,
         daemon=True,
     ):
         global counter

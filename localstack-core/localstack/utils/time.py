@@ -1,6 +1,5 @@
 import time
 from datetime import date, datetime, timezone, tzinfo
-from typing import Optional
 from zoneinfo import ZoneInfo
 
 TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%S"
@@ -64,7 +63,7 @@ def parse_timestamp(ts_str: str) -> datetime:
     raise Exception(f"Unable to parse timestamp string with any known formats: {ts_str}")
 
 
-def now(millis: bool = False, tz: Optional[tzinfo] = None) -> int:
+def now(millis: bool = False, tz: tzinfo | None = None) -> int:
     return mktime(datetime.now(tz=tz), millis=millis)
 
 

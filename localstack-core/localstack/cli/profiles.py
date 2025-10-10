@@ -1,7 +1,6 @@
 import argparse
 import os
 import sys
-from typing import Optional
 
 # important: this needs to be free of localstack imports
 
@@ -44,7 +43,7 @@ def set_and_remove_profile_from_sys_argv():
         os.environ["CONFIG_PROFILE"] = profile.strip()
 
 
-def parse_p_argument(args) -> Optional[str]:
+def parse_p_argument(args) -> str | None:
     """
     Lightweight arg parsing to find the first occurrence of ``-p <config>``, or ``-p=<config>`` and return the value of
     ``<config>`` from the given arguments.

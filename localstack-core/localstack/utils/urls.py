@@ -1,5 +1,3 @@
-from typing import Optional
-
 from localstack import config
 from localstack.config import HostAndPort
 
@@ -12,7 +10,7 @@ def hostname_from_url(url: str) -> str:
     return url.split("://")[-1].split("/")[0].split(":")[0]
 
 
-def localstack_host(custom_port: Optional[int] = None) -> HostAndPort:
+def localstack_host(custom_port: int | None = None) -> HostAndPort:
     """
     Determine the host and port to return to the user based on:
     - the user's configuration (e.g environment variable overrides)

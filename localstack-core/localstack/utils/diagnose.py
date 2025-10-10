@@ -3,7 +3,6 @@
 import inspect
 import os
 import socket
-from typing import Optional, Union
 
 from localstack import config
 from localstack.constants import DEFAULT_VOLUME_DIR
@@ -77,14 +76,14 @@ def get_localstack_config() -> dict:
     return result
 
 
-def inspect_main_container() -> Union[str, dict]:
+def inspect_main_container() -> str | dict:
     try:
         return DOCKER_CLIENT.inspect_container(get_main_container_name())
     except Exception as e:
         return f"inspect failed: {e}"
 
 
-def get_localstack_version() -> dict[str, Optional[str]]:
+def get_localstack_version() -> dict[str, str | None]:
     return {
         "build-date": os.environ.get("LOCALSTACK_BUILD_DATE"),
         "build-git-hash": os.environ.get("LOCALSTACK_BUILD_GIT_HASH"),

@@ -3,7 +3,8 @@ Custom pytest mark typings
 """
 
 import os
-from typing import TYPE_CHECKING, Callable, Optional
+from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 from _pytest.config import PytestPluginManager
@@ -36,13 +37,13 @@ class SkipSnapshotVerifyMarker:
     def __call__(
         self,
         *,
-        paths: "Optional[list[str]]" = None,
-        condition: "Optional[Callable[[...], bool]]" = None,
+        paths: "list[str] | None" = None,
+        condition: "Callable[[...], bool] | None" = None,
     ): ...
 
 
 class MultiRuntimeMarker:
-    def __call__(self, *, scenario: str, runtimes: Optional[list[str]] = None): ...
+    def __call__(self, *, scenario: str, runtimes: list[str] | None = None): ...
 
 
 class SnapshotMarkers:
