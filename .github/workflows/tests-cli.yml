@@ -85,17 +85,20 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v5
+
       - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
+
       - name: Install CLI test dependencies
         run: |
           make venv
           source .venv/bin/activate
           pip install -e .
           pip install pytest pytest-tinybird
+
       - name: Run CLI tests
         env:
           PYTEST_ADDOPTS: "${{ env.TINYBIRD_PYTEST_ARGS }}-p no:localstack.testing.pytest.fixtures -p no:localstack_snapshot.pytest.snapshot -p no:localstack.testing.pytest.filters -p no:localstack.testing.pytest.fixture_conflicts -p no:localstack.testing.pytest.validation_tracking -p no:localstack.testing.pytest.path_filter -p no:tests.fixtures -p no:localstack.testing.pytest.stepfunctions.fixtures -p no:localstack.testing.pytest.cloudformation.fixtures -s"
