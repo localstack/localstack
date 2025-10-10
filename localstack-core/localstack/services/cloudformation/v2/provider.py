@@ -497,6 +497,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 f"Stack [{stack_name}] already exists and cannot be created again with the changeSet [{change_set_name}]."
             )
 
+        if change_set_type == ChangeSetType.UPDATE and (
+            stack.status == StackStatus.DELETE_COMPLETE
+            or stack.status == StackStatus.DELETE_IN_PROGRESS
+        ):
+            raise ValidationError(
+                f"Stack:{stack.stack_id} is in {stack.status} state and can not be updated."
+            )
+
         before_parameters: dict[str, Parameter] | None = None
         match change_set_type:
             case ChangeSetType.UPDATE:
@@ -1681,6 +1689,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 stack.set_stack_status(StackStatus.DELETE_FAILED)
 
         start_worker_thread(_run)
+        return ExecuteChangeSetOutput()
 
     @handler("ListExports")
     def list_exports(
