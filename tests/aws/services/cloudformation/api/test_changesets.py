@@ -1487,3 +1487,31 @@ def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
             {"ParameterKey": "FallbackBucketName", "ParameterValue": fallback_bucket},
         ],
     )
+
+
+@markers.aws.validated
+def test_changeset_for_deleted_stack(aws_client, deploy_cfn_template, snapshot):
+    template = json.dumps(
+        {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Type": "String", "Value": "Test"},
+                }
+            }
+        }
+    )
+
+    stack = deploy_cfn_template(template=template)
+    stack.destroy()
+
+    with pytest.raises(ClientError) as ex:
+        aws_client.cloudformation.create_change_set(
+            StackName=stack.stack_id,
+            ChangeSetName="test",
+            TemplateBody=template,
+            ChangeSetType="UPDATE",
+        )
+
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+    snapshot.match("Error", ex.value.response)

@@ -47,6 +47,15 @@
   "tests/aws/services/cloudformation/api/test_changesets.py::TestUpdates::test_simple_update_two_resources": {
     "last_validated_date": "2025-04-02T10:05:26+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_changeset_for_deleted_stack": {
+    "last_validated_date": "2025-10-10T18:08:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.27,
+      "call": 15.12,
+      "teardown": 0.12,
+      "total": 15.51
+    }
+  },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_and_then_update_refreshes_template_metadata": {
     "last_validated_date": "2025-08-20T22:17:01+00:00",
     "durations_in_seconds": {
@@ -76,6 +85,15 @@
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_change_set_update_without_parameters": {
     "last_validated_date": "2022-05-31T07:32:02+00:00"
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_changeset_for_deleted_stack": {
+    "last_validated_date": "2025-10-10T18:02:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.27,
+      "call": 16.63,
+      "teardown": 0.13,
+      "total": 17.03
+    }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_changeset_with_stack_id": {
     "last_validated_date": "2023-11-28T06:48:23+00:00"
