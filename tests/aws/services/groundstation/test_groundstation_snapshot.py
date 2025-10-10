@@ -95,7 +95,7 @@ class TestGroundStationSnapshots:
         snapshot_response = {
             "configList": [
                 {"configId": config1["configId"], "configType": "tracking", "name": "config-1"},
-                {"configId": config2["configId"], "configType": "tracking", "name": "config-2"}
+                {"configId": config2["configId"], "configType": "tracking", "name": "config-2"},
             ]
         }
 
@@ -107,9 +107,7 @@ class TestGroundStationSnapshots:
         response = aws_client.groundstation.list_satellites()
 
         # Sort for deterministic snapshot
-        response["satellites"] = sorted(
-            response["satellites"], key=lambda x: x["noradSatelliteID"]
-        )
+        response["satellites"] = sorted(response["satellites"], key=lambda x: x["noradSatelliteID"])
 
         snapshot.match("list-satellites", response)
 
@@ -188,7 +186,10 @@ class TestGroundStationSnapshots:
         end_time = start_time + timedelta(hours=2)
 
         # Extract mission profile ARN - the response contains missionProfileId and missionProfileArn
-        mp_arn = mp.get("missionProfileArn") or f"arn:aws:groundstation:us-east-1:000000000000:mission-profile/{mp['missionProfileId']}"
+        mp_arn = (
+            mp.get("missionProfileArn")
+            or f"arn:aws:groundstation:us-east-1:000000000000:mission-profile/{mp['missionProfileId']}"
+        )
 
         response = aws_client.groundstation.reserve_contact(
             missionProfileArn=mp_arn,
@@ -202,7 +203,11 @@ class TestGroundStationSnapshots:
         snapshot.match("reserve-contact", response)
 
     @markers.snapshot.skip_snapshot_verify(
-        paths=["$..estimatedMinutesRemaining", "$..totalScheduledMinutes", "$..upcomingMinutesScheduled"]
+        paths=[
+            "$..estimatedMinutesRemaining",
+            "$..totalScheduledMinutes",
+            "$..upcomingMinutesScheduled",
+        ]
     )
     def test_get_minute_usage(self, aws_client, snapshot):
         """Test getting minute usage."""
@@ -226,9 +231,7 @@ class TestGroundStationSnapshots:
         }
 
         with pytest.raises(Exception) as exc_info:
-            aws_client.groundstation.create_config(
-                name="invalid-config", configData=config_data
-            )
+            aws_client.groundstation.create_config(name="invalid-config", configData=config_data)
 
         snapshot.match("invalid-frequency-error", {"error": str(exc_info.value)})
 
@@ -277,9 +280,7 @@ class TestGroundStationTaggingSnapshots:
             resourceArn=config["configArn"], tags={"Additional": "Tag"}
         )
 
-        response = aws_client.groundstation.list_tags_for_resource(
-            resourceArn=config["configArn"]
-        )
+        response = aws_client.groundstation.list_tags_for_resource(resourceArn=config["configArn"])
 
         # Sort tags for deterministic snapshot
         if "tags" in response:

@@ -6,10 +6,12 @@ This module provides validation functions for:
 - Contact time validation
 - Parameter ranges and constraints
 - IAM role ARN validation
+- Config data validation (enum values, required fields)
 """
 
 import re
 from datetime import UTC, datetime
+from typing import Any
 
 from localstack.aws.api.groundstation import InvalidParameterException
 
@@ -263,3 +265,64 @@ def validate_security_group_ids(security_group_ids: list[str]) -> None:
             raise InvalidParameterException(
                 f"Invalid security group ID format: {sg_id}. Expected format: sg-XXXXXXXX"
             )
+
+
+def validate_config_data(config_data: dict[str, Any]) -> None:
+    """Validate config data structure and enum values.
+
+    Args:
+        config_data: Configuration data dictionary
+
+    Raises:
+        InvalidParameterException: If enum values are invalid or required fields are missing
+    """
+    # Tracking config validation
+    if "trackingConfig" in config_data:
+        tracking = config_data["trackingConfig"]
+        if "autotrack" in tracking:
+            valid_autotrack = ["REQUIRED", "PREFERRED", "REMOVED"]
+            if tracking["autotrack"] not in valid_autotrack:
+                raise InvalidParameterException(
+                    f"Invalid autotrack value: {tracking['autotrack']}. "
+                    f"Must be one of: {', '.join(valid_autotrack)}"
+                )
+
+    # Antenna uplink config validation
+    if "antennaUplinkConfig" in config_data:
+        uplink = config_data["antennaUplinkConfig"]
+        if "spectrumConfig" in uplink:
+            spectrum = uplink["spectrumConfig"]
+            if "polarization" in spectrum:
+                valid_polarization = ["LEFT_HAND", "RIGHT_HAND", "NONE"]
+                if spectrum["polarization"] not in valid_polarization:
+                    raise InvalidParameterException(
+                        f"Invalid polarization value: {spectrum['polarization']}. "
+                        f"Must be one of: {', '.join(valid_polarization)}"
+                    )
+
+    # Dataflow endpoint config validation
+    if "dataflowEndpointConfig" in config_data:
+        dataflow = config_data["dataflowEndpointConfig"]
+        if "dataflowEndpointRegion" in dataflow:
+            # Valid AWS regions
+            valid_regions = [
+                "us-east-1",
+                "us-east-2",
+                "us-west-1",
+                "us-west-2",
+                "eu-west-1",
+                "eu-central-1",
+                "eu-north-1",
+                "ap-southeast-1",
+                "ap-southeast-2",
+                "ap-northeast-1",
+                "ap-northeast-2",
+                "sa-east-1",
+                "af-south-1",
+                "me-south-1",
+            ]
+            if dataflow["dataflowEndpointRegion"] not in valid_regions:
+                raise InvalidParameterException(
+                    f"Invalid region: {dataflow['dataflowEndpointRegion']}. "
+                    "Must be a valid AWS region."
+                )

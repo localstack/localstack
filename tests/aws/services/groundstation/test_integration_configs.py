@@ -4,7 +4,7 @@ Tests multi-account isolation, cross-region configs, config lifecycle,
 and all 6 config type validations.
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from botocore.exceptions import ClientError
@@ -20,6 +20,13 @@ class TestMultiAccountConfigIsolation:
         """Test that configs are isolated per account."""
         config_data = {"trackingConfig": {"autotrack": "REQUIRED"}}
 
+        # Get initial state
+        primary_list_before = aws_client.groundstation.list_configs()
+        primary_ids_before = {c["configId"] for c in primary_list_before["configList"]}
+
+        secondary_list_before = secondary_aws_client.groundstation.list_configs()
+        secondary_ids_before = {c["configId"] for c in secondary_list_before["configList"]}
+
         # Create config in primary account
         primary_response = aws_client.groundstation.create_config(
             name="primary-account-config", configData=config_data
@@ -30,19 +37,23 @@ class TestMultiAccountConfigIsolation:
             name="secondary-account-config", configData=config_data
         )
 
-        # List configs in primary account
-        primary_list = aws_client.groundstation.list_configs()
-        primary_ids = [c["configId"] for c in primary_list["configList"]]
+        # List configs in primary account after creation
+        primary_list_after = aws_client.groundstation.list_configs()
+        primary_ids_after = {c["configId"] for c in primary_list_after["configList"]}
 
-        # List configs in secondary account
-        secondary_list = secondary_aws_client.groundstation.list_configs()
-        secondary_ids = [c["configId"] for c in secondary_list["configList"]]
+        # List configs in secondary account after creation
+        secondary_list_after = secondary_aws_client.groundstation.list_configs()
+        secondary_ids_after = {c["configId"] for c in secondary_list_after["configList"]}
 
-        # Verify isolation
-        assert primary_response["configId"] in primary_ids
-        assert primary_response["configId"] not in secondary_ids
-        assert secondary_response["configId"] in secondary_ids
-        assert secondary_response["configId"] not in primary_ids
+        # Verify isolation - new config should appear only in its own account
+        assert primary_response["configId"] in primary_ids_after
+        assert primary_response["configId"] not in secondary_ids_after
+        assert secondary_response["configId"] in secondary_ids_after
+        assert secondary_response["configId"] not in primary_ids_after
+
+        # Verify the new configs weren't in the other account before
+        assert primary_response["configId"] not in secondary_ids_before
+        assert secondary_response["configId"] not in primary_ids_before
 
     def test_config_not_accessible_across_accounts(self, aws_client, secondary_aws_client):
         """Test that configs from one account cannot be accessed by another."""
@@ -273,7 +284,7 @@ class TestConfigTypeValidations:
                 name="tracking-invalid",
                 configData={"trackingConfig": {"autotrack": "INVALID"}},
             )
-        assert exc.value.response["Error"]["Code"] == "ValidationException"
+        assert exc.value.response["Error"]["Code"] == "InvalidParameterException"
 
     def test_uplink_echo_config_requires_uplink_arn(self, aws_client):
         """Test that uplink echo config requires valid uplink config ARN."""
@@ -430,7 +441,7 @@ class TestConfigIntegrationScenarios:
         assert "missionProfileId" in mp_response
 
         # Step 5: Verify can reserve contact with this mission profile
-        start_time = datetime.utcnow() + timedelta(hours=1)
+        start_time = datetime.now(UTC) + timedelta(hours=1)
         end_time = start_time + timedelta(minutes=10)
 
         contact_response = aws_client.groundstation.reserve_contact(

@@ -61,6 +61,7 @@ from .utils import (
     get_satellite_by_id,
 )
 from .validation import (
+    validate_config_data,
     validate_contact_times,
     validate_dataflow_edge,
     validate_duration_range,
@@ -73,6 +74,21 @@ from .validation import (
 )
 
 LOG = logging.getLogger(__name__)
+
+
+def _check_resource_access(account_id: str, resource_arn: str, resource_id: str) -> None:
+    """Validate that the account has access to the resource.
+
+    Args:
+        account_id: The requesting account ID
+        resource_arn: The resource ARN to check
+        resource_id: The resource ID for error message
+
+    Raises:
+        ResourceNotFoundException: If the account doesn't own the resource
+    """
+    if account_id not in resource_arn:
+        raise ResourceNotFoundException(f"Resource {resource_id} not found")
 
 
 class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
@@ -97,6 +113,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
         """Create a configuration."""
         store = groundstation_stores
         tags = tags or {}
+
+        # Validate config data (enum values, etc.)
+        validate_config_data(config_data)
 
         # Validate tags
         if tags:
@@ -183,6 +202,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
 
         config = store.configs[config_id]
 
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, config.config_arn, config_id)
+
         return GetConfigResponse(
             configId=config.config_id,
             configArn=config.config_arn,
@@ -200,8 +222,10 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
     ) -> ListConfigsResponse:
         """List configurations."""
         store = groundstation_stores
+        account_id = context.account_id
 
-        configs_list = list(store.configs.values())
+        # Filter configs by account (LocalAttribute only isolates by region, not account)
+        configs_list = [c for c in store.configs.values() if account_id in c.config_arn]
         config_list = [
             {
                 "configId": c.config_id,
@@ -239,6 +263,12 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(f"Config {config_id} not found")
 
         config = store.configs[config_id]
+
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, config.config_arn, config_id)
+
+        # Validate config data (enum values, etc.)
+        validate_config_data(config_data)
         config.name = name
         config.config_data = config_data
         config.updated_at = datetime.now(UTC)
@@ -262,6 +292,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(f"Config {config_id} not found")
 
         config = store.configs[config_id]
+
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, config.config_arn, config_id)
 
         # Check if config is used by any mission profile
         for mp in store.mission_profiles.values():
@@ -365,6 +398,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
 
         mp = store.mission_profiles[mission_profile_id]
 
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, mp.mission_profile_arn, mission_profile_id)
+
         return GetMissionProfileResponse(
             missionProfileId=mp.mission_profile_id,
             missionProfileArn=mp.mission_profile_arn,
@@ -386,8 +422,10 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
     ) -> ListMissionProfilesResponse:
         """List mission profiles."""
         store = groundstation_stores
+        account_id = context.account_id
 
-        mps = list(store.mission_profiles.values())
+        # Filter mission profiles by account
+        mps = [mp for mp in store.mission_profiles.values() if account_id in mp.mission_profile_arn]
         mp_list = [
             {
                 "missionProfileId": mp.mission_profile_id,
@@ -429,6 +467,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
 
         mp = store.mission_profiles[mission_profile_id]
 
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, mp.mission_profile_arn, mission_profile_id)
+
         if name:
             mp.name = name
         if contact_pre_pass_duration_seconds is not None:
@@ -460,6 +501,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(f"Mission profile {mission_profile_id} not found")
 
         mp = store.mission_profiles[mission_profile_id]
+
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, mp.mission_profile_arn, mission_profile_id)
 
         # Check if used by any contacts
         for contact in store.contacts.values():
@@ -564,6 +608,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
 
         contact = store.contacts[contact_id]
 
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, contact.contact_arn, contact_id)
+
         # Update contact status based on current time (simplified state machine)
         now = datetime.now(UTC)
         # Make times timezone-aware if they aren't already
@@ -614,6 +661,7 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
     ) -> ListContactsResponse:
         """List contacts."""
         store = groundstation_stores
+        account_id = context.account_id
 
         # Make filter times timezone-aware if they aren't already
         filter_start_time = (
@@ -621,9 +669,11 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
         )
         filter_end_time = end_time.replace(tzinfo=UTC) if end_time.tzinfo is None else end_time
 
-        # Filter contacts
+        # Filter contacts by account first
+        account_contacts = [c for c in store.contacts.values() if account_id in c.contact_arn]
+
         contacts_list = []
-        for contact in store.contacts.values():
+        for contact in account_contacts:
             # Update status first
             now = datetime.now(UTC)
             # Make times timezone-aware if they aren't already
@@ -693,6 +743,9 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
             raise ResourceNotFoundException(f"Contact {contact_id} not found")
 
         contact = store.contacts[contact_id]
+
+        # Verify account owns this resource
+        _check_resource_access(context.account_id, contact.contact_arn, contact_id)
 
         # Can only cancel if not completed/failed/already cancelled
         if contact.contact_status in [
@@ -778,6 +831,11 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
 
         deg = store.dataflow_endpoint_groups[dataflow_endpoint_group_id]
 
+        # Verify account owns this resource
+        _check_resource_access(
+            context.account_id, deg.dataflow_endpoint_group_arn, dataflow_endpoint_group_id
+        )
+
         return GetDataflowEndpointGroupResponse(
             dataflowEndpointGroupId=deg.dataflow_endpoint_group_id,
             dataflowEndpointGroupArn=deg.dataflow_endpoint_group_arn,
@@ -793,8 +851,14 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
     ) -> ListDataflowEndpointGroupsResponse:
         """List dataflow endpoint groups."""
         store = groundstation_stores
+        account_id = context.account_id
 
-        degs = list(store.dataflow_endpoint_groups.values())
+        # Filter dataflow endpoint groups by account (LocalAttribute only isolates by region, not account)
+        degs = [
+            deg
+            for deg in store.dataflow_endpoint_groups.values()
+            if account_id in deg.dataflow_endpoint_group_arn
+        ]
         deg_list = [
             {
                 "dataflowEndpointGroupId": deg.dataflow_endpoint_group_id,
@@ -828,6 +892,11 @@ class GroundStationProvider(GroundstationApi, ServiceLifecycleHook):
             )
 
         deg = store.dataflow_endpoint_groups[dataflow_endpoint_group_id]
+
+        # Verify account owns this resource
+        _check_resource_access(
+            context.account_id, deg.dataflow_endpoint_group_arn, dataflow_endpoint_group_id
+        )
 
         # Check if used by mission profiles or contacts
         for mp in store.mission_profiles.values():
