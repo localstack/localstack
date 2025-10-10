@@ -18281,5 +18281,51 @@
         }
       }
     }
+  },
+  "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_aws_global": {
+    "recorded-date": "10-10-2025, 16:48:02",
+    "recorded-content": {
+      "xml-error": {
+        "Error": {
+          "Code": "AuthorizationHeaderMalformed",
+          "HostId": "<host-id:1>",
+          "Message": "The authorization header is malformed; the region 'aws-global' is wrong; expecting '<us_east_1_region>'",
+          "Region": "<us_east_1_region>",
+          "RequestId": "<request-id:1>"
+        }
+      },
+      "create-bucket-global": {
+        "Location": "/<bucket-name-1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-location-1": {
+        "LocationConstraint": null,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-buckets": {
+        "Buckets": [
+          {
+            "BucketRegion": "<us_east_1_region>",
+            "CreationDate": "datetime",
+            "Name": "<bucket-name-1>"
+          }
+        ],
+        "Owner": {
+          "DisplayName": "<display-name:1>",
+          "ID": "<i-d:1>"
+        },
+        "Prefix": "<bucket-prefix>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

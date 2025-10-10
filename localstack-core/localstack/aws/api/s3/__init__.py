@@ -1061,6 +1061,14 @@ class BadDigest(ServiceException):
     CalculatedDigest: Optional[ContentMD5]
 
 
+class AuthorizationHeaderMalformed(ServiceException):
+    code: str = "AuthorizationHeaderMalformed"
+    sender_fault: bool = False
+    status_code: int = 400
+    Region: Optional[BucketRegion]
+    HostId: Optional[HostId]
+
+
 AbortDate = datetime
 
 

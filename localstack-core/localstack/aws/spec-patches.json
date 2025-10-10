@@ -1329,6 +1329,26 @@
         "documentation": "<p>The Content-MD5 you specified did not match what we received.</p>",
         "exception": true
       }
+    },
+    {
+      "op": "add",
+      "path": "/shapes/AuthorizationHeaderMalformed",
+      "value": {
+        "type": "structure",
+        "members": {
+          "Region": {
+            "shape": "BucketRegion"
+          },
+          "HostId": {
+            "shape": "HostId"
+          }
+        },
+        "error": {
+          "httpStatusCode": 400
+        },
+        "documentation": "<p>The authorization header is malformed.</p>",
+        "exception": true
+      }
     }
   ],
   "apigatewayv2/2018-11-29/service-2": [
