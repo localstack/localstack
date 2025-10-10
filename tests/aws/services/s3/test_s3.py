@@ -4151,6 +4151,7 @@ class TestS3:
         assert response.history[0].status_code == 307
 
     @markers.aws.validated
+    @markers.requires_in_process  # we're monkeypatching the handler chain
     def test_create_bucket_aws_global(
         self,
         aws_client_factory,
@@ -4158,6 +4159,7 @@ class TestS3:
         aws_client,
         snapshot,
         aws_http_client_factory,
+        monkeypatch,
     ):
         """
         Some tools use the `aws-global` region instead of `us-east-1` when no region are defined. It is considered
@@ -4168,6 +4170,12 @@ class TestS3:
         they are supposed to sign with `us-east-1` if you override the endpoint url and skip the endpoint
         resolving part, which is how we end up with those kind of requests.
         """
+        # we need to patch the `DefaultRegionRewriterStrategy` as it wil replace `aws-global` by `us-east-1`, which
+        # is its default region
+        from localstack.aws.handlers.region import DefaultRegionRewriterStrategy
+
+        monkeypatch.setattr(DefaultRegionRewriterStrategy, "apply", lambda *_, **__: None)
+
         global_region = "aws-global"
         bucket_prefix = f"global-bucket-{short_uid()}"
         bucket_name_1 = f"{bucket_prefix}-{short_uid()}"
