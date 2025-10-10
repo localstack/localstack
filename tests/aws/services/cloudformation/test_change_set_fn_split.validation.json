@@ -16,14 +16,5 @@
   },
   "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestChangeSetFnSplit::test_fn_split_with_ref_as_string_source": {
     "last_validated_date": "2025-06-02T11:23:28+00:00"
-  },
-  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestValidations::test_validate_args_len": {
-    "last_validated_date": "2025-10-02T20:16:50+00:00",
-    "durations_in_seconds": {
-      "setup": 0.25,
-      "call": 0.35,
-      "teardown": 0.0,
-      "total": 0.6
-    }
   }
 }
