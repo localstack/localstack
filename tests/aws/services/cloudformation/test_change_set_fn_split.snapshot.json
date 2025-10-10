@@ -2451,5 +2451,21 @@
         "Tags": []
       }
     }
+  },
+  "tests/aws/services/cloudformation/test_change_set_fn_split.py::TestSplitValidations::test_validate_split_arguments_len": {
+    "recorded-date": "08-10-2025, 20:08:15",
+    "recorded-content": {
+      "validation": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Template error: every Fn::Split object requires two parameters, (1) a string delimiter and (2) a string to be split or a function that returns a string to be split.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
