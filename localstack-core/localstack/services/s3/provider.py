@@ -23,6 +23,7 @@ from localstack.aws.api.s3 import (
     AccountId,
     AnalyticsConfiguration,
     AnalyticsId,
+    AuthorizationHeaderMalformed,
     BadDigest,
     Body,
     Bucket,
@@ -470,6 +471,15 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         context: RequestContext,
         request: CreateBucketRequest,
     ) -> CreateBucketOutput:
+        if context.region == "aws-global":
+            # TODO: extend this logic to probably all the provider, and maybe all services. S3 is the most impacted
+            #  right now so this will help users to properly set a region in their config
+            raise AuthorizationHeaderMalformed(
+                f"The authorization header is malformed; the region 'aws-global' is wrong; expecting '{AWS_REGION_US_EAST_1}'",
+                HostId="9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg=",
+                Region=AWS_REGION_US_EAST_1,
+            )
+
         bucket_name = request["Bucket"]
 
         if not is_bucket_name_valid(bucket_name):

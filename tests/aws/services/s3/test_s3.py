@@ -4151,6 +4151,69 @@ class TestS3:
         assert response.history[0].status_code == 307
 
     @markers.aws.validated
+    def test_create_bucket_aws_global(
+        self,
+        aws_client_factory,
+        cleanups,
+        aws_client,
+        snapshot,
+        aws_http_client_factory,
+    ):
+        """
+        Some tools use the `aws-global` region instead of `us-east-1` when no region are defined. It is considered
+        a valid region by Botocore too when creating the client, as it is a pseudo-region used for endpoint resolving.
+        The client is however supposed to then use `us-east-1` to sign the request, not `aws-global`.
+        Using `aws-global` to sign the request results in an error in AWS.
+        It seems some tools like the Go SDK used by Terraform might have the wrong logic, and skip the part where
+        they are supposed to sign with `us-east-1` if you override the endpoint url and skip the endpoint
+        resolving part, which is how we end up with those kind of requests.
+        """
+        global_region = "aws-global"
+        bucket_prefix = f"global-bucket-{short_uid()}"
+        bucket_name_1 = f"{bucket_prefix}-{short_uid()}"
+        headers = {"x-amz-content-sha256": "UNSIGNED-PAYLOAD"}
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.regex(bucket_name_1, "<bucket-name-1>"),
+                snapshot.transform.regex(bucket_prefix, "<bucket-prefix>"),
+                snapshot.transform.regex(AWS_REGION_US_EAST_1, "<us_east_1_region>"),
+                snapshot.transform.key_value("DisplayName"),
+                snapshot.transform.key_value("ID"),
+                snapshot.transform.key_value("HostId"),
+                snapshot.transform.key_value("RequestId"),
+            ]
+        )
+        http_client = aws_http_client_factory(
+            service="s3", signer_factory=SigV4Auth, region=global_region
+        )
+        # use the global endpoint with no region
+        base_endpoint = _endpoint_url(region=AWS_REGION_US_EAST_1)
+        response = http_client.put(f"{base_endpoint}/{bucket_name_1}", headers=headers)
+        if response.ok:
+            # we still clean up even if we expect it to fail, just in case it doesn't fail in AWS
+            cleanups.append(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name_1))
+
+        assert response.status_code == 400
+        xml_error = xmltodict.parse(response.content)
+        snapshot.match("xml-error", xml_error)
+
+        # botocore is automatically signing the request with `us-east-1`, so we don't have issues
+        s3_client = aws_client_factory(region_name=global_region).s3
+        create_bucket = s3_client.create_bucket(Bucket=bucket_name_1)
+        cleanups.append(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name_1))
+        snapshot.match("create-bucket-global", create_bucket)
+
+        get_location_1 = aws_client.s3.get_bucket_location(Bucket=bucket_name_1)
+        # verify that the bucket 1 is created in `us-east-1`
+        snapshot.match("get-location-1", get_location_1)
+
+        list_buckets_per_region = aws_client.s3.list_buckets(
+            BucketRegion=AWS_REGION_US_EAST_1, Prefix=bucket_prefix
+        )
+        snapshot.match("list-buckets", list_buckets_per_region)
+
+    @markers.aws.validated
     def test_bucket_does_not_exist(self, s3_vhost_client, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.s3_api())
         bucket_name = f"bucket-does-not-exist-{short_uid()}"
