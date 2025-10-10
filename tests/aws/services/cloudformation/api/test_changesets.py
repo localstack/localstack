@@ -1490,6 +1490,7 @@ def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
 
 
 @markers.aws.validated
+@skip_if_legacy_engine
 def test_changeset_for_deleted_stack(aws_client, deploy_cfn_template, snapshot):
     parameter_resource_body = {
         "Type": "AWS::SSM::Parameter",
