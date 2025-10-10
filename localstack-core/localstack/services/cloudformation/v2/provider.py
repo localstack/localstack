@@ -1542,6 +1542,14 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 raise RuntimeError("Multiple stacks matched, update matching logic")
             stack = active_stack_candidates[0]
 
+        if (
+            stack.status == StackStatus.DELETE_COMPLETE
+            or stack.status == StackStatus.DELETE_IN_PROGRESS
+        ):
+            raise ValidationError(
+                f"Stack:{stack.stack_id} is in {stack.status} state and can not be updated."
+            )
+
         # TODO: proper status modeling
         before_parameters = stack.resolved_parameters
         # TODO: reconsider the way parameters are modelled in the update graph process.
