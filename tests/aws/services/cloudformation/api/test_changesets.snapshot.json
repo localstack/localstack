@@ -684,9 +684,20 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_changeset_for_deleted_stack": {
-    "recorded-date": "10-10-2025, 18:08:12",
+    "recorded-date": "10-10-2025, 18:49:37",
     "recorded-content": {
-      "Error": {
+      "ErrorForInProgress": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack:<stack-id> is in DELETE_IN_PROGRESS state and can not be updated.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "ErrorForComplete": {
         "Error": {
           "Code": "ValidationError",
           "Message": "Stack:<stack-id> is in DELETE_COMPLETE state and can not be updated.",

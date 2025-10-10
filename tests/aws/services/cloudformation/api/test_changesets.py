@@ -1491,21 +1491,28 @@ def test_update_change_set_with_aws_novalue_repro(aws_client, cleanups):
 
 @markers.aws.validated
 def test_changeset_for_deleted_stack(aws_client, deploy_cfn_template, snapshot):
+    parameter_resource_body = {
+        "Type": "AWS::SSM::Parameter",
+        "Properties": {"Type": "String", "Value": "Test"},
+    }
     template = json.dumps(
-        {
-            "Resources": {
-                "Parameter": {
-                    "Type": "AWS::SSM::Parameter",
-                    "Properties": {"Type": "String", "Value": "Test"},
-                }
-            }
-        }
+        {"Resources": {f"Parameter{i}": parameter_resource_body for i in range(5)}}
     )
 
     stack = deploy_cfn_template(template=template)
-    stack.destroy()
+    aws_client.cloudformation.delete_stack(StackName=stack.stack_id)
 
-    with pytest.raises(ClientError) as ex:
+    with pytest.raises(ClientError) as in_progress_ex:
+        aws_client.cloudformation.create_change_set(
+            StackName=stack.stack_id,
+            ChangeSetName="test",
+            TemplateBody=template,
+            ChangeSetType="UPDATE",
+        )
+
+    aws_client.cloudformation.get_waiter("stack_delete_complete").wait(StackName=stack.stack_id)
+
+    with pytest.raises(ClientError) as complete_ex:
         aws_client.cloudformation.create_change_set(
             StackName=stack.stack_id,
             ChangeSetName="test",
@@ -1514,4 +1521,5 @@ def test_changeset_for_deleted_stack(aws_client, deploy_cfn_template, snapshot):
         )
 
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
-    snapshot.match("Error", ex.value.response)
+    snapshot.match("ErrorForInProgress", in_progress_ex.value.response)
+    snapshot.match("ErrorForComplete", complete_ex.value.response)

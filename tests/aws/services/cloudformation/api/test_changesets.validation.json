@@ -48,12 +48,12 @@
     "last_validated_date": "2025-04-02T10:05:26+00:00"
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_changeset_for_deleted_stack": {
-    "last_validated_date": "2025-10-10T18:08:12+00:00",
+    "last_validated_date": "2025-10-10T19:59:52+00:00",
     "durations_in_seconds": {
-      "setup": 0.27,
-      "call": 15.12,
+      "setup": 0.25,
+      "call": 15.15,
       "teardown": 0.12,
-      "total": 15.51
+      "total": 15.52
     }
   },
   "tests/aws/services/cloudformation/api/test_changesets.py::test_create_and_then_update_refreshes_template_metadata": {
