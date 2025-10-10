@@ -171,6 +171,11 @@ def extract_jsonpath(value, path):
 
 def assign_to_path(target, path: str, value, delimiter: str = "."):
     parts = path.strip(delimiter).split(delimiter)
+
+    if len(parts) == 1:
+        target[parts[0]] = value
+        return target
+
     path_to_parent = delimiter.join(parts[:-1])
     parent = extract_from_jsonpointer_path(target, path_to_parent, auto_create=True)
     if not isinstance(parent, dict):
