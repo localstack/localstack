@@ -1,6 +1,3 @@
-from typing import Optional
-
-
 class TaggingService:
     key_field: str
     value_field: str
@@ -17,7 +14,7 @@ class TaggingService:
 
         self.tags = {}
 
-    def list_tags_for_resource(self, arn: str, root_name: Optional[str] = None):
+    def list_tags_for_resource(self, arn: str, root_name: str | None = None):
         root_name = root_name or "Tags"
 
         result = []

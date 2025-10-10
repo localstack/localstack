@@ -2,7 +2,7 @@ import datetime
 import logging
 import threading
 from collections import Counter
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 from localstack import config
 from localstack.runtime.shutdown import SHUTDOWN_HANDLERS
@@ -20,7 +20,7 @@ class ServiceRequestInfo(NamedTuple):
     service: str
     operation: str
     status_code: int
-    err_type: Optional[str] = None
+    err_type: str | None = None
 
 
 class ServiceRequestAggregator:

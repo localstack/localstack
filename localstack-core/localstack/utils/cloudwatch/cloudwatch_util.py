@@ -2,7 +2,7 @@ import logging
 import time
 from datetime import datetime, timezone
 from itertools import islice
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from werkzeug import Response as WerkzeugResponse
 
@@ -20,8 +20,8 @@ LOG = logging.getLogger(__name__)
 class SqsMetricBatchData(TypedDict, total=False):
     MetricName: str
     QueueName: str
-    Value: Optional[int]
-    Unit: Optional[str]
+    Value: int | None
+    Unit: str | None
 
 
 def dimension_lambda(kwargs):
@@ -30,7 +30,7 @@ def dimension_lambda(kwargs):
 
 
 def publish_lambda_metric(
-    metric, value, kwargs, account_id: Optional[str] = None, region_name: Optional[str] = None
+    metric, value, kwargs, account_id: str | None = None, region_name: str | None = None
 ):
     # publish metric only if CloudWatch service is available
     if not is_api_enabled("cloudwatch"):
@@ -155,7 +155,7 @@ def store_cloudwatch_logs(
     log_stream_name,
     log_output,
     start_time=None,
-    auto_create_group: Optional[bool] = True,
+    auto_create_group: bool | None = True,
 ):
     if not is_api_enabled("logs"):
         return

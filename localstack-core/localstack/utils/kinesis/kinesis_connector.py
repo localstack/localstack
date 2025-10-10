@@ -6,7 +6,8 @@ import re
 import socket
 import tempfile
 import threading
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 from amazon_kclpy import kcl
 from amazon_kclpy.v2 import processor

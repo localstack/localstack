@@ -1,7 +1,6 @@
 import itertools
 import logging
 from multiprocessing.pool import ThreadPool
-from typing import Optional
 
 import click
 from rich.console import Console
@@ -75,9 +74,9 @@ def _do_install_package(package: Package, version: str = None, target: InstallTa
 )
 def install(
     package: list[str],
-    parallel: Optional[int] = 1,
-    version: Optional[str] = None,
-    target: Optional[str] = None,
+    parallel: int | None = 1,
+    version: str | None = None,
+    target: str | None = None,
 ):
     """Install one or more packages."""
     try:

@@ -2,7 +2,6 @@ import logging
 import os
 import re
 from functools import lru_cache
-from typing import Optional
 
 from localstack import config, constants
 from localstack.utils.container_utils.container_client import ContainerException
@@ -13,7 +12,7 @@ LOG = logging.getLogger(__name__)
 
 
 @lru_cache
-def get_main_container_network() -> Optional[str]:
+def get_main_container_network() -> str | None:
     """
     Gets the main network of the LocalStack container (if we run in one, bridge otherwise)
     If there are multiple networks connected to the LocalStack container, we choose the first as "main" network
@@ -50,7 +49,7 @@ def get_main_container_network() -> Optional[str]:
 
 
 @lru_cache
-def get_endpoint_for_network(network: Optional[str] = None) -> str:
+def get_endpoint_for_network(network: str | None = None) -> str:
     """
     Get the LocalStack endpoint (= IP address) on the given network.
     If a network is given, it will return the IP address/hostname of LocalStack on that network

@@ -1,6 +1,6 @@
 import copy
 import time
-from typing import Generic, Optional, TypeVar, overload
+from typing import Generic, TypeVar, overload
 
 from pydantic import Field
 from pydantic.dataclasses import dataclass
@@ -47,8 +47,8 @@ class Batcher(Generic[T]):
         assert batcher.flush() == ["item1", "item2", "item3", "item4"]
     """
 
-    max_count: Optional[int] = Field(default=None, description="Maximum number of items", ge=0)
-    max_window: Optional[float] = Field(
+    max_count: int | None = Field(default=None, description="Maximum number of items", ge=0)
+    max_window: float | None = Field(
         default=None, description="Maximum time window in seconds", ge=0
     )
 

@@ -4,7 +4,6 @@ This module has utilities relating to creating/parsing AWS requests.
 
 import logging
 import re
-from typing import Optional
 
 from rolo import Request as RoloRequest
 
@@ -30,7 +29,7 @@ def get_account_id_from_request(request: RoloRequest) -> str:
     return get_account_id_from_access_key_id(access_key_id)
 
 
-def extract_region_from_auth_header(headers) -> Optional[str]:
+def extract_region_from_auth_header(headers) -> str | None:
     auth = headers.get("Authorization") or ""
     region = re.sub(r".*Credential=[^/]+/[^/]+/([^/]+)/.*", r"\1", auth)
     if region == auth:
@@ -38,12 +37,12 @@ def extract_region_from_auth_header(headers) -> Optional[str]:
     return region
 
 
-def extract_account_id_from_auth_header(headers) -> Optional[str]:
+def extract_account_id_from_auth_header(headers) -> str | None:
     if access_key_id := extract_access_key_id_from_auth_header(headers):
         return get_account_id_from_access_key_id(access_key_id)
 
 
-def extract_access_key_id_from_auth_header(headers: dict[str, str]) -> Optional[str]:
+def extract_access_key_id_from_auth_header(headers: dict[str, str]) -> str | None:
     auth = headers.get("Authorization") or ""
 
     if auth.startswith("AWS4-"):
@@ -67,7 +66,7 @@ def extract_region_from_headers(headers) -> str:
     return extract_region_from_auth_header(headers) or AWS_REGION_US_EAST_1
 
 
-def extract_service_name_from_auth_header(headers: dict) -> Optional[str]:
+def extract_service_name_from_auth_header(headers: dict) -> str | None:
     try:
         auth_header = headers.get("authorization", "")
         credential_scope = auth_header.split(",")[0].split()[1]

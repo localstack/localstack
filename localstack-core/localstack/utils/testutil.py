@@ -7,7 +7,8 @@ import re
 import shutil
 import tempfile
 import time
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.connect import connect_externally_to, connect_to
@@ -20,7 +21,7 @@ from localstack.utils.urls import localstack_host
 try:
     from typing import Literal
 except ImportError:
-    from typing_extensions import Literal
+    from typing import Literal
 
 import boto3
 import requests
@@ -548,7 +549,7 @@ def list_all_log_events(log_group_name: str, logs_client=None) -> list[dict]:
 def get_lambda_log_events(
     function_name,
     delay_time=DEFAULT_GET_LOG_EVENTS_DELAY,
-    regex_filter: Optional[str] = None,
+    regex_filter: str | None = None,
     log_group=None,
     logs_client=None,
 ):
@@ -596,7 +597,7 @@ def list_all_resources(
     page_function: Callable[[dict], Any],
     last_token_attr_name: str,
     list_attr_name: str,
-    next_token_attr_name: Optional[str] = None,
+    next_token_attr_name: str | None = None,
 ) -> list:
     """
     List all available resources by loading all available pages using `page_function`.

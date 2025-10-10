@@ -2,8 +2,7 @@ import logging
 import os
 import shlex
 import threading
-from collections.abc import Generator
-from typing import Callable, Optional
+from collections.abc import Callable, Generator
 
 import pytest
 
@@ -38,8 +37,8 @@ class ContainerFactory:
         self,
         # convenience properties
         pro: bool = False,
-        publish: Optional[list[int]] = None,
-        configurators: Optional[list[ContainerConfigurator]] = None,
+        publish: list[int] | None = None,
+        configurators: list[ContainerConfigurator] | None = None,
         # ContainerConfig properties
         **kwargs,
     ) -> Container:
@@ -172,7 +171,7 @@ def container_factory() -> Generator[ContainerFactory, None, None]:
 
 @pytest.fixture(scope="session")
 def wait_for_localstack_ready():
-    def _wait_for(container: RunningContainer, timeout: Optional[float] = None):
+    def _wait_for(container: RunningContainer, timeout: float | None = None):
         container.wait_until_ready(timeout)
 
         poll_condition(

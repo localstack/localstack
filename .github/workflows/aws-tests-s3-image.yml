@@ -115,6 +115,8 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
 
       - name: Install docker build dependencies
         run: pip install --upgrade setuptools setuptools_scm
@@ -209,7 +211,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.11'
+          python-version-file: '.python-version'
 
       - name: Install docker build dependencies
         run: pip install --upgrade setuptools setuptools_scm

@@ -3,10 +3,11 @@ import functools
 import logging
 import os
 from collections import defaultdict
+from collections.abc import Callable
 from enum import Enum
 from inspect import getmodule
-from threading import RLock
-from typing import Any, Callable, Generic, Optional, ParamSpec, TypeVar
+from threading import Lock, RLock
+from typing import Any, Generic, ParamSpec, TypeVar
 
 from plux import Plugin, PluginManager, PluginSpec  # type: ignore
 
@@ -56,7 +57,7 @@ class PackageInstaller(abc.ABC):
     multiple versions).
     """
 
-    def __init__(self, name: str, version: str, install_lock: Optional[RLock] = None):
+    def __init__(self, name: str, version: str, install_lock: Lock | None = None):
         """
         :param name: technical package name, f.e. "opensearch"
         :param version: version of the package to install
@@ -70,7 +71,7 @@ class PackageInstaller(abc.ABC):
         self.install_lock = install_lock or RLock()
         self._setup_for_target: dict[InstallTarget, bool] = defaultdict(lambda: False)
 
-    def install(self, target: Optional[InstallTarget] = None) -> None:
+    def install(self, target: InstallTarget | None = None) -> None:
         """
         Performs the package installation.
 
@@ -210,7 +211,7 @@ class Package(abc.ABC, Generic[T]):
         """
         return self.get_installer(version).get_installed_dir()
 
-    def install(self, version: str | None = None, target: Optional[InstallTarget] = None) -> None:
+    def install(self, version: str | None = None, target: InstallTarget | None = None) -> None:
         """
         Installs the package in the given version in the preferred target location.
         :param version: version of the package to install. If None, the default version of the package will be used.
@@ -274,7 +275,7 @@ class MultiPackageInstaller(PackageInstaller):
         assert len(package_installer) > 0
         self.package_installer = package_installer
 
-    def install(self, target: Optional[InstallTarget] = None) -> None:
+    def install(self, target: InstallTarget | None = None) -> None:
         """
         Installs the different packages this installer is composed of.
 
@@ -356,7 +357,7 @@ class PackagesPluginManager(PluginManager[PackagesPlugin]):  # type: ignore[misc
         )
 
     def get_packages(
-        self, package_names: list[str], version: Optional[str] = None
+        self, package_names: list[str], version: str | None = None
     ) -> list[Package[PackageInstaller]]:
         # Plugin names are unique, but there could be multiple packages with the same name in different scopes
         plugin_specs_per_name = defaultdict(list)
@@ -390,7 +391,7 @@ T2 = TypeVar("T2")
 def package(
     name: str | None = None,
     scope: str = "community",
-    should_load: Optional[Callable[[], bool]] = None,
+    should_load: Callable[[], bool] | None = None,
 ) -> Callable[[Callable[[], Package[Any] | list[Package[Any]]]], PluginSpec]:
     """
     Decorator for marking methods that create Package instances as a PackagePlugin.

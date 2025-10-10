@@ -3,7 +3,8 @@
 import functools
 import inspect
 import logging
-from typing import Any, Callable, Optional
+from collections.abc import Callable
+from typing import Any
 
 LOG = logging.getLogger(__name__)
 
@@ -20,7 +21,7 @@ def run_safe(_python_lambda, *args, _default=None, **kwargs):
 
 def call_safe(
     func: Callable, args: tuple = None, kwargs: dict = None, exception_message: str = None
-) -> Optional[Any]:
+) -> Any | None:
     """
     Call the given function with the given arguments, and if it fails, log the given exception_message.
     If logging.DEBUG is set for the logger, then we also log the traceback.

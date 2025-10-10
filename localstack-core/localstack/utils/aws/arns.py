@@ -1,7 +1,7 @@
 import logging
 import re
 from functools import cache
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 from botocore.utils import ArnParser, InvalidArnException
 
@@ -27,7 +27,7 @@ PARTITION_NAMES = list(REGION_PREFIX_TO_PARTITION.values()) + [DEFAULT_PARTITION
 ARN_PARTITION_REGEX = r"^arn:(" + "|".join(sorted(PARTITION_NAMES)) + ")"
 
 
-def get_partition(region: Optional[str]) -> str:
+def get_partition(region: str | None) -> str:
     if not region:
         return DEFAULT_PARTITION
     if region in PARTITION_NAMES:
@@ -65,28 +65,28 @@ def parse_arn(arn: str) -> ArnData:
     return _arn_parser.parse_arn(arn)
 
 
-def extract_account_id_from_arn(arn: str) -> Optional[str]:
+def extract_account_id_from_arn(arn: str) -> str | None:
     try:
         return parse_arn(arn).get("account")
     except InvalidArnException:
         return None
 
 
-def extract_region_from_arn(arn: str) -> Optional[str]:
+def extract_region_from_arn(arn: str) -> str | None:
     try:
         return parse_arn(arn).get("region")
     except InvalidArnException:
         return None
 
 
-def extract_service_from_arn(arn: str) -> Optional[str]:
+def extract_service_from_arn(arn: str) -> str | None:
     try:
         return parse_arn(arn).get("service")
     except InvalidArnException:
         return None
 
 
-def extract_resource_from_arn(arn: str) -> Optional[str]:
+def extract_resource_from_arn(arn: str) -> str | None:
     try:
         return parse_arn(arn).get("resource")
     except InvalidArnException:
@@ -285,7 +285,7 @@ def lambda_event_source_mapping_arn(uuid: str, account_id: str, region_name: str
 def lambda_function_or_layer_arn(
     type: str,
     entity_name: str,
-    version: Optional[str],
+    version: str | None,
     account_id: str,
     region_name: str,
 ) -> str:

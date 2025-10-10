@@ -3,7 +3,7 @@ import datetime
 import json
 import re
 from binascii import crc32
-from typing import Any, Optional, Union
+from typing import Any
 from urllib.parse import parse_qs
 
 import xmltodict
@@ -36,10 +36,10 @@ def requests_error_response_json(message, code=500, error_type="InternalFailure"
 
 def requests_error_response_xml(
     message: str,
-    code: Optional[int] = 400,
-    code_string: Optional[str] = "InvalidParameter",
-    service: Optional[str] = None,
-    xmlns: Optional[str] = None,
+    code: int | None = 400,
+    code_string: str | None = "InvalidParameter",
+    service: str | None = None,
+    xmlns: str | None = None,
 ):
     response = RequestsResponse()
     xmlns = xmlns or f"http://{service}.amazonaws.com/doc/2010-03-31/"
@@ -100,7 +100,7 @@ def requests_error_response_xml_signature_calculation(
 
 def requests_error_response(
     req_headers: dict,
-    message: Union[str, bytes],
+    message: str | bytes,
     code: int = 500,
     error_type: str = "InternalFailure",
     service: str = None,
@@ -201,7 +201,7 @@ def parse_query_string(url_or_qs: str, multi_values=False) -> dict[str, str]:
     return result
 
 
-def calculate_crc32(content: Union[str, bytes]) -> int:
+def calculate_crc32(content: str | bytes) -> int:
     return crc32(to_bytes(content)) & 0xFFFFFFFF
 
 

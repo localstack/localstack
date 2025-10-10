@@ -1,7 +1,7 @@
 import threading
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Optional, Union
+from typing import Any
 
 from localstack import config
 
@@ -38,7 +38,7 @@ class LabeledCounterPayload:
     value: int
     type: str
     schema_version: int
-    labels: dict[str, Union[str, float]]
+    labels: dict[str, str | float]
 
     def as_dict(self) -> dict[str, Any]:
         payload_dict = {
@@ -140,10 +140,8 @@ class LabeledCounter(Metric):
 
     _type: str
     _labels: list[str]
-    _label_values: tuple[Optional[Union[str, float]], ...]
-    _counters_by_label_values: defaultdict[
-        tuple[Optional[Union[str, float]], ...], ThreadSafeCounter
-    ]
+    _label_values: tuple[str | float | None, ...]
+    _counters_by_label_values: defaultdict[tuple[str | float | None, ...], ThreadSafeCounter]
 
     def __init__(self, namespace: str, name: str, labels: list[str], schema_version: int = 1):
         super().__init__(namespace=namespace, name=name, schema_version=schema_version)
@@ -162,7 +160,7 @@ class LabeledCounter(Metric):
         self._counters_by_label_values = defaultdict(ThreadSafeCounter)
         MetricRegistry().register(self)
 
-    def labels(self, **kwargs: Union[str, float, None]) -> ThreadSafeCounter:
+    def labels(self, **kwargs: str | float | None) -> ThreadSafeCounter:
         """
         Create a scoped counter instance with specific label values.
 
@@ -198,7 +196,7 @@ class LabeledCounter(Metric):
                 )
 
             # Create labels dictionary
-            labels_dict = dict(zip(self._labels, label_values))
+            labels_dict = dict(zip(self._labels, label_values, strict=False))
 
             payload.append(
                 LabeledCounterPayload(

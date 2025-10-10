@@ -7,7 +7,6 @@ import re
 import string
 import uuid
 import zlib
-from typing import Union
 
 from localstack.config import DEFAULT_ENCODING
 
@@ -28,13 +27,13 @@ REGEX_UNPRINTABLE_CHARS = re.compile(
 )
 
 
-def to_str(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
+def to_str(obj: str | bytes, encoding: str = DEFAULT_ENCODING, errors="strict") -> str:
     """If ``obj`` is an instance of ``binary_type``, return
     ``obj.decode(encoding, errors)``, otherwise return ``obj``"""
     return obj.decode(encoding, errors) if isinstance(obj, bytes) else obj
 
 
-def to_bytes(obj: Union[str, bytes], encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
+def to_bytes(obj: str | bytes, encoding: str = DEFAULT_ENCODING, errors="strict") -> bytes:
     """If ``obj`` is an instance of ``text_type``, return
     ``obj.encode(encoding, errors)``, otherwise return ``obj``"""
     return obj.encode(encoding, errors) if isinstance(obj, str) else obj
@@ -86,7 +85,7 @@ def canonicalize_bool_to_str(val: bool) -> str:
     return "true" if str(val).lower() == "true" else "false"
 
 
-def convert_to_printable_chars(value: Union[list, dict, str]) -> str:
+def convert_to_printable_chars(value: list | dict | str) -> str:
     """Removes all unprintable characters from the given string."""
     from localstack.utils.objects import recurse_object
 
@@ -148,19 +147,19 @@ def long_uid() -> str:
     return str(uuid.uuid4())
 
 
-def md5(string: Union[str, bytes]) -> str:
+def md5(string: str | bytes) -> str:
     m = hashlib.md5()
     m.update(to_bytes(string))
     return m.hexdigest()
 
 
-def checksum_crc32(string: Union[str, bytes]) -> str:
+def checksum_crc32(string: str | bytes) -> str:
     bytes = to_bytes(string)
     checksum = zlib.crc32(bytes)
     return base64.b64encode(checksum.to_bytes(4, "big")).decode()
 
 
-def checksum_crc32c(string: Union[str, bytes]):
+def checksum_crc32c(string: str | bytes):
     # import botocore locally here to avoid a dependency of the CLI to botocore
     from botocore.httpchecksum import CrtCrc32cChecksum
 
@@ -169,7 +168,7 @@ def checksum_crc32c(string: Union[str, bytes]):
     return base64.b64encode(checksum.digest()).decode()
 
 
-def checksum_crc64nvme(string: Union[str, bytes]):
+def checksum_crc64nvme(string: str | bytes):
     # import botocore locally here to avoid a dependency of the CLI to botocore
     from botocore.httpchecksum import CrtCrc64NvmeChecksum
 
@@ -178,12 +177,12 @@ def checksum_crc64nvme(string: Union[str, bytes]):
     return base64.b64encode(checksum.digest()).decode()
 
 
-def hash_sha1(string: Union[str, bytes]) -> str:
+def hash_sha1(string: str | bytes) -> str:
     digest = hashlib.sha1(to_bytes(string)).digest()
     return base64.b64encode(digest).decode()
 
 
-def hash_sha256(string: Union[str, bytes]) -> str:
+def hash_sha256(string: str | bytes) -> str:
     digest = hashlib.sha256(to_bytes(string)).digest()
     return base64.b64encode(digest).decode()
 
@@ -192,7 +191,7 @@ def base64_to_hex(b64_string: str) -> bytes:
     return binascii.hexlify(base64.b64decode(b64_string))
 
 
-def base64_decode(data: Union[str, bytes]) -> bytes:
+def base64_decode(data: str | bytes) -> bytes:
     """Decode base64 data - with optional padding, and able to handle urlsafe encoding (containing -/_)."""
     data = to_str(data)
     missing_padding = len(data) % 4

@@ -105,6 +105,7 @@ jobs:
         - name: Set up Python
           uses: actions/setup-python@v6
           with:
+            python-version-file: '.python-version'
             cache: 'pip'
             cache-dependency-path: 'requirements-dev.txt'
 

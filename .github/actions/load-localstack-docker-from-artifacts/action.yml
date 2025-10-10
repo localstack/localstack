@@ -9,12 +9,12 @@ runs:
   using: "composite"
   steps:
     - name: Download Docker Image
-      uses: actions/download-artifact@v4
+      uses: actions/download-artifact@v5
       with:
         name: localstack-docker-image-${{ inputs.platform }}
 
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version-file: '.python-version'
         cache: 'pip'

@@ -1,6 +1,7 @@
 import json
 import logging
-from typing import Callable, Final, Optional
+from collections.abc import Callable
+from typing import Final
 
 from botocore.exceptions import ClientError
 from jsonpath_ng.ext import parse
@@ -402,8 +403,8 @@ def create_state_machine_with_iam_role(
     create_state_machine,
     snapshot,
     definition: Definition,
-    logging_configuration: Optional[LoggingConfiguration] = None,
-    state_machine_name: Optional[str] = None,
+    logging_configuration: LoggingConfiguration | None = None,
+    state_machine_name: str | None = None,
     state_machine_type: StateMachineType = StateMachineType.STANDARD,
 ):
     snf_role_arn = create_state_machine_iam_role(target_aws_client=target_aws_client)

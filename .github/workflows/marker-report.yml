@@ -45,6 +45,8 @@ jobs:
       - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
 
       - name: Cache LocalStack community dependencies (venv)
         uses: actions/cache@v4

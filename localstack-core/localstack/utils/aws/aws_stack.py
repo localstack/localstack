@@ -2,7 +2,6 @@ import logging
 import re
 import socket
 from functools import lru_cache
-from typing import Union
 
 import boto3
 
@@ -46,7 +45,7 @@ def get_boto3_region() -> str:
     return boto3.session.Session().region_name
 
 
-def get_local_service_url(service_name_or_port: Union[str, int]) -> str:
+def get_local_service_url(service_name_or_port: str | int) -> str:
     """Return the local service URL for the given service name or port."""
     # TODO(srw): we don't need to differentiate on service name any more, so remove the argument
     if isinstance(service_name_or_port, int):
@@ -68,7 +67,7 @@ def get_s3_hostname():
 
 
 def fix_account_id_in_arns(
-    response, replacement: str, colon_delimiter: str = ":", existing: Union[str, list[str]] = None
+    response, replacement: str, colon_delimiter: str = ":", existing: str | list[str] = None
 ):
     """Fix the account ID in the ARNs returned in the given Flask response or string"""
     from moto.core import DEFAULT_ACCOUNT_ID

@@ -19,7 +19,7 @@ runs:
   # This GH Action requires localstack repo in 'localstack' dir + full git history (fetch-depth: 0)
   steps:
     - name: Set up Python
-      uses: actions/setup-python@v5
+      uses: actions/setup-python@v6
       with:
         python-version-file: 'localstack/.python-version'
 

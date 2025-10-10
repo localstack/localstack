@@ -5,21 +5,17 @@ import logging
 import os
 import re
 import shlex
-import sys
 import tarfile
 import tempfile
 from abc import ABCMeta, abstractmethod
+from collections.abc import Callable
 from enum import Enum, unique
 from pathlib import Path
 from typing import (
-    Callable,
     Literal,
     NamedTuple,
-    Optional,
     Protocol,
     TypedDict,
-    Union,
-    get_args,
 )
 
 import dotenv
@@ -57,7 +53,7 @@ class DockerContainerStats(TypedDict):
     MemUsage: tuple[int, int]
     NetIO: tuple[int, int]
     PIDs: int
-    SDKStats: Optional[dict]
+    SDKStats: dict | None
 
 
 class ContainerException(Exception):
@@ -143,7 +139,7 @@ class Ulimit:
 
     name: str
     soft_limit: int
-    hard_limit: Optional[int] = None
+    hard_limit: int | None = None
 
     def __repr__(self):
         """Format: <type>=<soft limit>[:<hard limit>]"""
@@ -154,17 +150,9 @@ class Ulimit:
 
 
 # defines the type for port mappings (source->target port range)
-PortRange = Union[list, HashableList]
+PortRange = list | HashableList
 # defines the protocol for a port range ("tcp" or "udp")
 PortProtocol = str
-
-
-def isinstance_union(obj, class_or_tuple):
-    # that's some dirty hack
-    if sys.version_info < (3, 10):
-        return isinstance(obj, get_args(PortRange))
-    else:
-        return isinstance(obj, class_or_tuple)
 
 
 class PortMappings:
@@ -181,14 +169,14 @@ class PortMappings:
 
     def add(
         self,
-        port: Union[int, PortRange],
-        mapped: Union[int, PortRange] = None,
+        port: int | PortRange,
+        mapped: int | PortRange = None,
         protocol: PortProtocol = "tcp",
     ):
         mapped = mapped or port
-        if isinstance_union(port, PortRange):
+        if isinstance(port, PortRange):
             for i in range(port[1] - port[0] + 1):
-                if isinstance_union(mapped, PortRange):
+                if isinstance(mapped, PortRange):
                     self.add(port[0] + i, mapped[0] + i, protocol)
                 else:
                     self.add(port[0] + i, mapped, protocol)
@@ -266,7 +254,7 @@ class PortMappings:
 
         return [item for k, v in self.mappings.items() for item in entry(k, v)]
 
-    def to_dict(self) -> dict[str, Union[tuple[str, Union[int, list[int]]], int]]:
+    def to_dict(self) -> dict[str, tuple[str, int | list[int]] | int]:
         bind_address = self.bind_host or ""
 
         def bind_port(bind_address, host_port):
@@ -452,27 +440,23 @@ class VolumeDirMount:
 
 
 class VolumeMappings:
-    mappings: list[Union[SimpleVolumeBind, BindMount]]
+    mappings: list[SimpleVolumeBind | BindMount]
 
-    def __init__(self, mappings: list[Union[SimpleVolumeBind, BindMount, VolumeDirMount]] = None):
+    def __init__(self, mappings: list[SimpleVolumeBind | BindMount | VolumeDirMount] = None):
         self.mappings = mappings if mappings is not None else []
 
-    def add(self, mapping: Union[SimpleVolumeBind, BindMount, VolumeDirMount]):
+    def add(self, mapping: SimpleVolumeBind | BindMount | VolumeDirMount):
         self.append(mapping)
 
     def append(
         self,
-        mapping: Union[
-            SimpleVolumeBind,
-            BindMount,
-            VolumeDirMount,
-        ],
+        mapping: SimpleVolumeBind | BindMount | VolumeDirMount,
     ):
         self.mappings.append(mapping)
 
     def find_target_mapping(
         self, container_dir: str
-    ) -> Optional[Union[SimpleVolumeBind, BindMount, VolumeDirMount]]:
+    ) -> SimpleVolumeBind | BindMount | VolumeDirMount | None:
         """
         Looks through the volumes and returns the one where the container dir matches ``container_dir``.
         Returns None if there is no volume mapping to the given container directory.
@@ -511,8 +495,8 @@ class VolumeInfo(NamedTuple):
     mode: str
     rw: bool
     propagation: str
-    name: Optional[str] = None
-    driver: Optional[str] = None
+    name: str | None = None
+    driver: str | None = None
 
 
 @dataclasses.dataclass
@@ -524,13 +508,13 @@ class LogConfig:
 @dataclasses.dataclass
 class ContainerConfiguration:
     image_name: str
-    name: Optional[str] = None
+    name: str | None = None
     volumes: VolumeMappings = dataclasses.field(default_factory=VolumeMappings)
     ports: PortMappings = dataclasses.field(default_factory=PortMappings)
     exposed_ports: list[str] = dataclasses.field(default_factory=list)
-    entrypoint: Optional[Union[list[str], str]] = None
-    additional_flags: Optional[str] = None
-    command: Optional[list[str]] = None
+    entrypoint: list[str] | str | None = None
+    additional_flags: str | None = None
+    command: list[str] | None = None
     env_vars: dict[str, str] = dataclasses.field(default_factory=dict)
 
     privileged: bool = False
@@ -539,19 +523,19 @@ class ContainerConfiguration:
     tty: bool = False
     detach: bool = False
 
-    stdin: Optional[str] = None
-    user: Optional[str] = None
-    cap_add: Optional[list[str]] = None
-    cap_drop: Optional[list[str]] = None
-    security_opt: Optional[list[str]] = None
-    network: Optional[str] = None
-    dns: Optional[str] = None
-    workdir: Optional[str] = None
-    platform: Optional[str] = None
-    ulimits: Optional[list[Ulimit]] = None
-    labels: Optional[dict[str, str]] = None
-    init: Optional[bool] = None
-    log_config: Optional[LogConfig] = None
+    stdin: str | None = None
+    user: str | None = None
+    cap_add: list[str] | None = None
+    cap_drop: list[str] | None = None
+    security_opt: list[str] | None = None
+    network: str | None = None
+    dns: str | None = None
+    workdir: str | None = None
+    platform: str | None = None
+    ulimits: list[Ulimit] | None = None
+    labels: dict[str, str] | None = None
+    init: bool | None = None
+    log_config: LogConfig | None = None
 
 
 class ContainerConfigurator(Protocol):
@@ -574,17 +558,17 @@ class DockerRunFlags:
     create: https://docs.docker.com/engine/reference/commandline/create/
     """
 
-    env_vars: Optional[dict[str, str]]
-    extra_hosts: Optional[dict[str, str]]
-    labels: Optional[dict[str, str]]
-    volumes: Optional[list[SimpleVolumeBind]]
-    network: Optional[str]
-    platform: Optional[DockerPlatform]
-    privileged: Optional[bool]
-    ports: Optional[PortMappings]
-    ulimits: Optional[list[Ulimit]]
-    user: Optional[str]
-    dns: Optional[list[str]]
+    env_vars: dict[str, str] | None
+    extra_hosts: dict[str, str] | None
+    labels: dict[str, str] | None
+    volumes: list[SimpleVolumeBind] | None
+    network: str | None
+    platform: DockerPlatform | None
+    privileged: bool | None
+    ports: PortMappings | None
+    ulimits: list[Ulimit] | None
+    user: str | None
+    dns: list[str] | None
 
 
 class RegistryResolverStrategy(Protocol):
@@ -706,7 +690,7 @@ class ContainerClient(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def list_containers(self, filter: Union[list[str], str, None] = None, all=True) -> list[dict]:
+    def list_containers(self, filter: list[str] | str | None = None, all=True) -> list[dict]:
         """List all containers matching the given filters
 
         :return: A list of dicts with keys id, image, name, labels, status
@@ -729,7 +713,7 @@ class ContainerClient(metaclass=ABCMeta):
         container_name,
         file_contents: bytes,
         container_path: str,
-        chmod_mode: Optional[int] = None,
+        chmod_mode: int | None = None,
     ) -> None:
         """
         Create a file in container with the provided content. Provide the 'chmod_mode' argument if you want the file to have specific permissions.
@@ -761,8 +745,8 @@ class ContainerClient(metaclass=ABCMeta):
     def pull_image(
         self,
         docker_image: str,
-        platform: Optional[DockerPlatform] = None,
-        log_handler: Optional[Callable[[str], None]] = None,
+        platform: DockerPlatform | None = None,
+        log_handler: Callable[[str], None] | None = None,
     ) -> None:
         """
         Pulls an image with a given name from a Docker registry
@@ -780,7 +764,7 @@ class ContainerClient(metaclass=ABCMeta):
         dockerfile_path: str,
         image_name: str,
         context_path: str = None,
-        platform: Optional[DockerPlatform] = None,
+        platform: DockerPlatform | None = None,
     ) -> str:
         """Builds an image from the given Dockerfile
 
@@ -824,7 +808,7 @@ class ContainerClient(metaclass=ABCMeta):
         """Returns a blocking generator you can iterate over to retrieve log output as it happens."""
 
     @abstractmethod
-    def inspect_container(self, container_name_or_id: str) -> dict[str, Union[dict, str]]:
+    def inspect_container(self, container_name_or_id: str) -> dict[str, dict | str]:
         """Get detailed attributes of a container.
 
         :return: Dict containing docker attributes as returned by the daemon
@@ -845,7 +829,7 @@ class ContainerClient(metaclass=ABCMeta):
     @abstractmethod
     def inspect_image(
         self, image_name: str, pull: bool = True, strip_wellknown_repo_prefixes: bool = True
-    ) -> dict[str, Union[dict, list, str]]:
+    ) -> dict[str, dict | list | str]:
         """Get detailed attributes of an image.
 
         :param image_name: Image name to inspect
@@ -871,7 +855,7 @@ class ContainerClient(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def inspect_network(self, network_name: str) -> dict[str, Union[dict, str]]:
+    def inspect_network(self, network_name: str) -> dict[str, dict | str]:
         """Get detailed attributes of an network.
 
         :return: Dict containing docker attributes as returned by the daemon
@@ -882,7 +866,7 @@ class ContainerClient(metaclass=ABCMeta):
         self,
         network_name: str,
         container_name_or_id: str,
-        aliases: Optional[list] = None,
+        aliases: list | None = None,
         link_local_ips: list[str] = None,
     ) -> None:
         """
@@ -994,31 +978,31 @@ class ContainerClient(metaclass=ABCMeta):
         self,
         image_name: str,
         *,
-        name: Optional[str] = None,
-        entrypoint: Optional[Union[list[str], str]] = None,
+        name: str | None = None,
+        entrypoint: list[str] | str | None = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,
         detach: bool = False,
-        command: Optional[Union[list[str], str]] = None,
-        volumes: Optional[Union[VolumeMappings, list[SimpleVolumeBind]]] = None,
-        ports: Optional[PortMappings] = None,
-        exposed_ports: Optional[list[str]] = None,
-        env_vars: Optional[dict[str, str]] = None,
-        user: Optional[str] = None,
-        cap_add: Optional[list[str]] = None,
-        cap_drop: Optional[list[str]] = None,
-        security_opt: Optional[list[str]] = None,
-        network: Optional[str] = None,
-        dns: Optional[Union[str, list[str]]] = None,
-        additional_flags: Optional[str] = None,
-        workdir: Optional[str] = None,
-        privileged: Optional[bool] = None,
-        labels: Optional[dict[str, str]] = None,
-        platform: Optional[DockerPlatform] = None,
-        ulimits: Optional[list[Ulimit]] = None,
-        init: Optional[bool] = None,
-        log_config: Optional[LogConfig] = None,
+        command: list[str] | str | None = None,
+        volumes: VolumeMappings | list[SimpleVolumeBind] | None = None,
+        ports: PortMappings | None = None,
+        exposed_ports: list[str] | None = None,
+        env_vars: dict[str, str] | None = None,
+        user: str | None = None,
+        cap_add: list[str] | None = None,
+        cap_drop: list[str] | None = None,
+        security_opt: list[str] | None = None,
+        network: str | None = None,
+        dns: str | list[str] | None = None,
+        additional_flags: str | None = None,
+        workdir: str | None = None,
+        privileged: bool | None = None,
+        labels: dict[str, str] | None = None,
+        platform: DockerPlatform | None = None,
+        ulimits: list[Ulimit] | None = None,
+        init: bool | None = None,
+        log_config: LogConfig | None = None,
     ) -> str:
         """Creates a container with the given image
 
@@ -1031,31 +1015,31 @@ class ContainerClient(metaclass=ABCMeta):
         image_name: str,
         stdin: bytes = None,
         *,
-        name: Optional[str] = None,
-        entrypoint: Optional[str] = None,
+        name: str | None = None,
+        entrypoint: str | None = None,
         remove: bool = False,
         interactive: bool = False,
         tty: bool = False,
         detach: bool = False,
-        command: Optional[Union[list[str], str]] = None,
-        volumes: Optional[Union[VolumeMappings, list[SimpleVolumeBind]]] = None,
-        ports: Optional[PortMappings] = None,
-        exposed_ports: Optional[list[str]] = None,
-        env_vars: Optional[dict[str, str]] = None,
-        user: Optional[str] = None,
-        cap_add: Optional[list[str]] = None,
-        cap_drop: Optional[list[str]] = None,
-        security_opt: Optional[list[str]] = None,
-        network: Optional[str] = None,
-        dns: Optional[str] = None,
-        additional_flags: Optional[str] = None,
-        workdir: Optional[str] = None,
-        labels: Optional[dict[str, str]] = None,
-        platform: Optional[DockerPlatform] = None,
-        privileged: Optional[bool] = None,
-        ulimits: Optional[list[Ulimit]] = None,
-        init: Optional[bool] = None,
-        log_config: Optional[LogConfig] = None,
+        command: list[str] | str | None = None,
+        volumes: VolumeMappings | list[SimpleVolumeBind] | None = None,
+        ports: PortMappings | None = None,
+        exposed_ports: list[str] | None = None,
+        env_vars: dict[str, str] | None = None,
+        user: str | None = None,
+        cap_add: list[str] | None = None,
+        cap_drop: list[str] | None = None,
+        security_opt: list[str] | None = None,
+        network: str | None = None,
+        dns: str | None = None,
+        additional_flags: str | None = None,
+        workdir: str | None = None,
+        labels: dict[str, str] | None = None,
+        platform: DockerPlatform | None = None,
+        privileged: bool | None = None,
+        ulimits: list[Ulimit] | None = None,
+        init: bool | None = None,
+        log_config: LogConfig | None = None,
     ) -> tuple[bytes, bytes]:
         """Creates and runs a given docker container
 
@@ -1100,13 +1084,13 @@ class ContainerClient(metaclass=ABCMeta):
     def exec_in_container(
         self,
         container_name_or_id: str,
-        command: Union[list[str], str],
+        command: list[str] | str,
         interactive: bool = False,
         detach: bool = False,
-        env_vars: Optional[dict[str, Optional[str]]] = None,
-        stdin: Optional[bytes] = None,
-        user: Optional[str] = None,
-        workdir: Optional[str] = None,
+        env_vars: dict[str, str | None] | None = None,
+        stdin: bytes | None = None,
+        user: str | None = None,
+        workdir: str | None = None,
     ) -> tuple[bytes, bytes]:
         """Execute a given command in a container
 
@@ -1120,7 +1104,7 @@ class ContainerClient(metaclass=ABCMeta):
         stdin: bytes = None,
         interactive: bool = False,
         attach: bool = False,
-        flags: Optional[str] = None,
+        flags: str | None = None,
     ) -> tuple[bytes, bytes]:
         """Start a given, already created container
 
@@ -1134,7 +1118,7 @@ class ContainerClient(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def login(self, username: str, password: str, registry: Optional[str] = None) -> None:
+    def login(self, username: str, password: str, registry: str | None = None) -> None:
         """
         Login into an OCI registry
 
@@ -1153,13 +1137,13 @@ class Util:
     MAX_ENV_ARGS_LENGTH = 20000
 
     @staticmethod
-    def format_env_vars(key: str, value: Optional[str]):
+    def format_env_vars(key: str, value: str | None):
         if value is None:
             return key
         return f"{key}={value}"
 
     @classmethod
-    def create_env_vars_file_flag(cls, env_vars: dict) -> tuple[list[str], Optional[str]]:
+    def create_env_vars_file_flag(cls, env_vars: dict) -> tuple[list[str], str | None]:
         if not env_vars:
             return [], None
         result = []
@@ -1292,16 +1276,16 @@ class Util:
     @staticmethod
     def parse_additional_flags(
         additional_flags: str,
-        env_vars: Optional[dict[str, str]] = None,
-        labels: Optional[dict[str, str]] = None,
-        volumes: Optional[list[SimpleVolumeBind]] = None,
-        network: Optional[str] = None,
-        platform: Optional[DockerPlatform] = None,
-        ports: Optional[PortMappings] = None,
-        privileged: Optional[bool] = None,
-        user: Optional[str] = None,
-        ulimits: Optional[list[Ulimit]] = None,
-        dns: Optional[Union[str, list[str]]] = None,
+        env_vars: dict[str, str] | None = None,
+        labels: dict[str, str] | None = None,
+        volumes: list[SimpleVolumeBind] | None = None,
+        network: str | None = None,
+        platform: DockerPlatform | None = None,
+        ports: PortMappings | None = None,
+        privileged: bool | None = None,
+        user: str | None = None,
+        ulimits: list[Ulimit] | None = None,
+        dns: str | list[str] | None = None,
     ) -> DockerRunFlags:
         """Parses additional CLI-formatted Docker flags, which could overwrite provided defaults.
         :param additional_flags: String which contains the flag definitions inspired by the Docker CLI reference:
@@ -1522,7 +1506,7 @@ class Util:
 
     @staticmethod
     def convert_mount_list_to_dict(
-        volumes: Union[list[SimpleVolumeBind], VolumeMappings],
+        volumes: list[SimpleVolumeBind] | VolumeMappings,
     ) -> dict[str, dict[str, str]]:
         """Converts a List of (host_path, container_path) tuples to a Dict suitable as volume argument for docker sdk"""
 

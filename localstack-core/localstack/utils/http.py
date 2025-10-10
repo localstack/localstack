@@ -2,7 +2,6 @@ import logging
 import math
 import os
 import re
-from typing import Optional, Union
 from urllib.parse import parse_qs, parse_qsl, urlencode, urlparse, urlunparse
 
 import requests
@@ -54,7 +53,7 @@ def create_chunked_data(data, chunk_size: int = 80):
     return ret
 
 
-def canonicalize_headers(headers: Union[dict, CaseInsensitiveDict]) -> dict:
+def canonicalize_headers(headers: dict | CaseInsensitiveDict) -> dict:
     if not headers:
         return headers
 
@@ -103,7 +102,7 @@ def add_query_params_to_url(uri: str, query_params: dict) -> str:
 
 
 def make_http_request(
-    url: str, data: Union[bytes, str] = None, headers: dict[str, str] = None, method: str = "GET"
+    url: str, data: bytes | str = None, headers: dict[str, str] = None, method: str = "GET"
 ) -> Response:
     return requests.request(
         url=url, method=method, headers=headers, data=data, auth=NetrcBypassAuth(), verify=False
@@ -179,7 +178,7 @@ def download(
     path: str,
     verify_ssl: bool = True,
     timeout: float = None,
-    request_headers: Optional[dict] = None,
+    request_headers: dict | None = None,
     quiet: bool = False,
 ) -> None:
     """Downloads file at url to the given path. Raises TimeoutError if the optional timeout (in secs) is reached.
@@ -291,7 +290,7 @@ def download_github_artifact(url: str, target_file: str, timeout: int = None):
     Optionally allows to define a timeout in seconds."""
 
     def do_download(
-        download_url: str, request_headers: Optional[dict] = None, print_error: bool = False
+        download_url: str, request_headers: dict | None = None, print_error: bool = False
     ):
         try:
             download(download_url, target_file, timeout=timeout, request_headers=request_headers)

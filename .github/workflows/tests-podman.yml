@@ -41,6 +41,8 @@ jobs:
 
       - name: Set up Python
         uses: actions/setup-python@v6
+        with:
+          python-version-file: '.python-version'
 
       - name: Install podman and test dependencies
         run: |

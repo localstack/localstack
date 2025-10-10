@@ -1,7 +1,7 @@
 import json
 from collections import defaultdict
-from collections.abc import Generator
-from typing import Callable, Optional, TypedDict
+from collections.abc import Callable, Generator
+from typing import TypedDict
 
 import pytest
 from botocore.exceptions import WaiterError
@@ -13,7 +13,7 @@ from localstack.utils.strings import short_uid
 
 
 class NormalizedEvent(TypedDict):
-    PhysicalResourceId: Optional[str]
+    PhysicalResourceId: str | None
     LogicalResourceId: str
     ResourceType: str
     ResourceStatus: str

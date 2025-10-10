@@ -12,7 +12,7 @@ class CLIError(ClickException):
     def format_message(self) -> str:
         return click.style(f"❌ Error: {self.message}", fg="red")
 
-    def show(self, file: t.Optional[t.IO[t.Any]] = None) -> None:
+    def show(self, file: t.IO[t.Any] | None = None) -> None:
         if file is None:
             file = get_text_stderr()
 

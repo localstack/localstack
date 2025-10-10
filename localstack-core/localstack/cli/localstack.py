@@ -3,7 +3,7 @@ import logging
 import os
 import sys
 import traceback
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import click
 import requests
@@ -320,8 +320,8 @@ class DockerStatus(TypedDict, total=False):
     image_tag: str
     image_id: str
     image_created: str
-    container_name: Optional[str]
-    container_ip: Optional[str]
+    container_name: str | None
+    container_ip: str | None
 
 
 def _print_docker_status(format_: str) -> None:
@@ -699,7 +699,7 @@ def cmd_logs(follow: bool, tail: int) -> None:
     metavar="N",
 )
 @publish_invocation
-def cmd_wait(timeout: Optional[float] = None) -> None:
+def cmd_wait(timeout: float | None = None) -> None:
     """
     Wait for the LocalStack runtime to be up and running.
 
