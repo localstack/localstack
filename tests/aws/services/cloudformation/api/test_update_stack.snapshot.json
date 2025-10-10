@@ -186,5 +186,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_deleted_stack": {
+    "recorded-date": "10-10-2025, 21:42:05",
+    "recorded-content": {
+      "Error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack:<stack-id> is in DELETE_COMPLETE state and can not be updated.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
