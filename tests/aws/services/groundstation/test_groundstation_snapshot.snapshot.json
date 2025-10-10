@@ -1,0 +1,310 @@
+{
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_create_tracking_config": {
+    "recorded-date": "05-10-2025, 11:41:27",
+    "recorded-content": {
+      "create-tracking-config": {
+        "configArn": "arn:<partition>:groundstation:<region>:111111111111:config/tracking/<uuid:1>",
+        "configId": "<uuid:1>",
+        "configType": "tracking",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_create_downlink_config": {
+    "recorded-date": "05-10-2025, 11:41:27",
+    "recorded-content": {
+      "create-downlink-config": {
+        "configArn": "arn:<partition>:groundstation:<region>:111111111111:config/antenna-downlink/<uuid:1>",
+        "configId": "<uuid:1>",
+        "configType": "antenna-downlink",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_create_mission_profile": {
+    "recorded-date": "05-10-2025, 11:41:27",
+    "recorded-content": {
+      "create-mission-profile": {
+        "missionProfileId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_list_configs": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "list-configs": {
+        "configList": [
+          {
+            "configId": "<uuid:1>",
+            "configType": "tracking",
+            "name": "config-1"
+          },
+          {
+            "configId": "<uuid:2>",
+            "configType": "tracking",
+            "name": "config-2"
+          }
+        ]
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_list_satellites": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "list-satellites": {
+        "satellites": [
+          {
+            "groundStations": [
+              "Ohio Ground Station",
+              "Oregon Ground Station"
+            ],
+            "noradSatelliteID": 25338,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:1>",
+            "satelliteId": "<uuid:1>"
+          },
+          {
+            "groundStations": [
+              "Ohio Ground Station",
+              "Oregon Ground Station",
+              "Hawaii Ground Station"
+            ],
+            "noradSatelliteID": 25544,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:2>",
+            "satelliteId": "<uuid:2>"
+          },
+          {
+            "groundStations": [
+              "Hawaii Ground Station",
+              "Sweden Ground Station"
+            ],
+            "noradSatelliteID": 25994,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:3>",
+            "satelliteId": "<uuid:3>"
+          },
+          {
+            "groundStations": [
+              "Ohio Ground Station",
+              "Sweden Ground Station"
+            ],
+            "noradSatelliteID": 27424,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:4>",
+            "satelliteId": "<uuid:4>"
+          },
+          {
+            "groundStations": [
+              "Ohio Ground Station",
+              "Alaska Ground Station"
+            ],
+            "noradSatelliteID": 28654,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:5>",
+            "satelliteId": "<uuid:5>"
+          },
+          {
+            "groundStations": [
+              "Oregon Ground Station",
+              "Hawaii Ground Station"
+            ],
+            "noradSatelliteID": 33591,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:6>",
+            "satelliteId": "<uuid:6>"
+          },
+          {
+            "groundStations": [
+              "Alaska Ground Station",
+              "Sweden Ground Station"
+            ],
+            "noradSatelliteID": 37849,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:7>",
+            "satelliteId": "<uuid:7>"
+          },
+          {
+            "groundStations": [
+              "Alaska Ground Station",
+              "Hawaii Ground Station",
+              "Sweden Ground Station"
+            ],
+            "noradSatelliteID": 40069,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:8>",
+            "satelliteId": "<uuid:8>"
+          },
+          {
+            "groundStations": [
+              "Ohio Ground Station",
+              "Alaska Ground Station",
+              "Sweden Ground Station"
+            ],
+            "noradSatelliteID": 43013,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:9>",
+            "satelliteId": "<uuid:9>"
+          },
+          {
+            "groundStations": [
+              "Alaska Ground Station",
+              "Oregon Ground Station"
+            ],
+            "noradSatelliteID": 43226,
+            "satelliteArn": "arn:<partition>:groundstation:<region>:111111111111:satellite/<uuid:10>",
+            "satelliteId": "<uuid:10>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_list_ground_stations": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "list-ground-stations": {
+        "groundStationList": [
+          {
+            "groundStationId": "gs-us-west-2-alaska",
+            "groundStationName": "Alaska Ground Station",
+            "region": "us-west-2"
+          },
+          {
+            "groundStationId": "gs-ap-southeast-2-australia",
+            "groundStationName": "Australia Ground Station",
+            "region": "ap-southeast-2"
+          },
+          {
+            "groundStationId": "gs-me-south-1-bahrain",
+            "groundStationName": "Bahrain Ground Station",
+            "region": "me-south-1"
+          },
+          {
+            "groundStationId": "gs-sa-east-1-brazil",
+            "groundStationName": "Brazil Ground Station",
+            "region": "sa-east-1"
+          },
+          {
+            "groundStationId": "gs-af-south-1-capetown",
+            "groundStationName": "Cape Town Ground Station",
+            "region": "af-south-1"
+          },
+          {
+            "groundStationId": "gs-us-west-2-hawaii",
+            "groundStationName": "Hawaii Ground Station",
+            "region": "us-west-2"
+          },
+          {
+            "groundStationId": "gs-<region>-ohio",
+            "groundStationName": "Ohio Ground Station",
+            "region": "<region>"
+          },
+          {
+            "groundStationId": "gs-us-west-2-oregon",
+            "groundStationName": "Oregon Ground Station",
+            "region": "us-west-2"
+          },
+          {
+            "groundStationId": "gs-ap-northeast-2-seoul",
+            "groundStationName": "Seoul Ground Station",
+            "region": "ap-northeast-2"
+          },
+          {
+            "groundStationId": "gs-eu-north-1-sweden",
+            "groundStationName": "Sweden Ground Station",
+            "region": "eu-north-1"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_create_dataflow_endpoint_group": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "create-dataflow-endpoint-group": {
+        "dataflowEndpointGroupId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_reserve_contact": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "reserve-contact": {
+        "contactId": "<uuid:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_get_minute_usage": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "get-minute-usage": {
+        "estimatedMinutesRemaining": 1000000,
+        "totalScheduledMinutes": 376,
+        "upcomingMinutesScheduled": 366,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_invalid_frequency_error": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "invalid-frequency-error": {
+        "error": "An error occurred (InvalidParameterException) when calling the CreateConfig operation: Frequency 1000.0 MHz is outside valid ranges (S-band: 2-4 GHz, X-band: 8-12 GHz, Ka-band: 26-40 GHz)"
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationSnapshots::test_invalid_eirp_error": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "invalid-eirp-error": {
+        "error": "An error occurred (InvalidParameterException) when calling the CreateConfig operation: EIRP 100.0 dBW is outside valid range (-10 to 50 dBW)"
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationTaggingSnapshots::test_tag_resource": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "tag-resource": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/groundstation/test_groundstation_snapshot.py::TestGroundStationTaggingSnapshots::test_list_tags_for_resource": {
+    "recorded-date": "05-10-2025, 11:41:28",
+    "recorded-content": {
+      "list-tags": {
+        "tags": {
+          "Additional": "Tag",
+          "Initial": "Tag"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

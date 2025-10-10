@@ -159,6 +159,14 @@ def firehose():
 
 
 @aws_provider()
+def groundstation():
+    from localstack.services.groundstation.provider import GroundStationProvider
+
+    provider = GroundStationProvider()
+    return Service.for_provider(provider)
+
+
+@aws_provider()
 def iam():
     from localstack.services.iam.provider import IamProvider
     from localstack.services.moto import MotoFallbackDispatcher

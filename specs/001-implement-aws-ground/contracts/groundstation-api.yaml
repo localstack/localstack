@@ -1,0 +1,1153 @@
+openapi: 3.0.3
+info:
+  title: AWS Ground Station Service API
+  description: |
+    LocalStack implementation of AWS Ground Station service for local testing and development.
+    This API provides full CRUD operations for satellite communication resources including
+    configurations, mission profiles, contacts, and dataflow endpoint groups.
+  version: 1.0.0
+  contact:
+    name: LocalStack Ground Station Implementation
+    url: https://github.com/localstack/localstack
+
+servers:
+  - url: http://localhost:4566
+    description: LocalStack Ground Station endpoint
+
+paths:
+  /config:
+    post:
+      operationId: CreateConfig
+      summary: Create a configuration
+      description: Creates a new configuration for antenna downlink, uplink, tracking, or dataflow endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateConfigRequest'
+      responses:
+        '200':
+          description: Configuration created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateConfigResponse'
+        '400':
+          $ref: '#/components/responses/InvalidParameterException'
+        '422':
+          $ref: '#/components/responses/ValidationException'
+
+    get:
+      operationId: ListConfigs
+      summary: List configurations
+      description: Returns a list of configurations filtered by type with pagination support
+      parameters:
+        - name: configType
+          in: query
+          schema:
+            type: string
+            enum: [antenna-downlink, antenna-downlink-demod-decode, antenna-uplink, dataflow-endpoint, tracking, uplink-echo]
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/NextToken'
+      responses:
+        '200':
+          description: List of configurations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListConfigsResponse'
+
+  /config/{configType}/{configId}:
+    get:
+      operationId: GetConfig
+      summary: Get configuration details
+      description: Returns the details of a specific configuration by type and ID
+      parameters:
+        - name: configType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Configuration details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetConfigResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    put:
+      operationId: UpdateConfig
+      summary: Update a configuration
+      description: Updates an existing configuration
+      parameters:
+        - name: configType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateConfigRequest'
+      responses:
+        '200':
+          description: Configuration updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateConfigResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    delete:
+      operationId: DeleteConfig
+      summary: Delete a configuration
+      description: Deletes a configuration if not in use by any mission profile
+      parameters:
+        - name: configType
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: configId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Configuration deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteConfigResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+        '409':
+          $ref: '#/components/responses/DependencyException'
+
+  /missionprofile:
+    post:
+      operationId: CreateMissionProfile
+      summary: Create a mission profile
+      description: Creates a new mission profile with dataflow edges and contact parameters
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateMissionProfileRequest'
+      responses:
+        '200':
+          description: Mission profile created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateMissionProfileResponse'
+        '400':
+          $ref: '#/components/responses/InvalidParameterException'
+
+    get:
+      operationId: ListMissionProfiles
+      summary: List mission profiles
+      description: Returns a list of mission profiles with pagination support
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/NextToken'
+      responses:
+        '200':
+          description: List of mission profiles
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListMissionProfilesResponse'
+
+  /missionprofile/{missionProfileId}:
+    get:
+      operationId: GetMissionProfile
+      summary: Get mission profile details
+      description: Returns the details of a specific mission profile
+      parameters:
+        - name: missionProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Mission profile details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetMissionProfileResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    put:
+      operationId: UpdateMissionProfile
+      summary: Update a mission profile
+      description: Updates an existing mission profile
+      parameters:
+        - name: missionProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateMissionProfileRequest'
+      responses:
+        '200':
+          description: Mission profile updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UpdateMissionProfileResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    delete:
+      operationId: DeleteMissionProfile
+      summary: Delete a mission profile
+      description: Deletes a mission profile if not referenced by any active contacts
+      parameters:
+        - name: missionProfileId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Mission profile deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteMissionProfileResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+        '409':
+          $ref: '#/components/responses/DependencyException'
+
+  /contact:
+    post:
+      operationId: ReserveContact
+      summary: Reserve a contact
+      description: Reserves a satellite contact window with specified ground station and mission profile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReserveContactRequest'
+      responses:
+        '200':
+          description: Contact reserved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReserveContactResponse'
+        '400':
+          $ref: '#/components/responses/InvalidParameterException'
+
+    get:
+      operationId: ListContacts
+      summary: List contacts
+      description: Returns a list of contacts filtered by status and time with pagination support
+      parameters:
+        - name: statusList
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+              enum: [SCHEDULING, SCHEDULED, PASS, COMPLETED, FAILED, CANCELLED]
+        - name: startTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: endTime
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/NextToken'
+      responses:
+        '200':
+          description: List of contacts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListContactsResponse'
+
+  /contact/{contactId}:
+    get:
+      operationId: DescribeContact
+      summary: Get contact details
+      description: Returns the detailed information about a specific contact
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contact details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DescribeContactResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    delete:
+      operationId: CancelContact
+      summary: Cancel a contact
+      description: Cancels a scheduled or in-progress contact
+      parameters:
+        - name: contactId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Contact cancelled successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CancelContactResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+  /dataflowEndpointGroup:
+    post:
+      operationId: CreateDataflowEndpointGroup
+      summary: Create dataflow endpoint group
+      description: Creates a new dataflow endpoint group with multiple endpoints
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateDataflowEndpointGroupRequest'
+      responses:
+        '200':
+          description: Dataflow endpoint group created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateDataflowEndpointGroupResponse'
+        '422':
+          $ref: '#/components/responses/ValidationException'
+
+    get:
+      operationId: ListDataflowEndpointGroups
+      summary: List dataflow endpoint groups
+      description: Returns a list of dataflow endpoint groups with pagination support
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/NextToken'
+      responses:
+        '200':
+          description: List of dataflow endpoint groups
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListDataflowEndpointGroupsResponse'
+
+  /dataflowEndpointGroup/{dataflowEndpointGroupId}:
+    get:
+      operationId: GetDataflowEndpointGroup
+      summary: Get dataflow endpoint group details
+      description: Returns the details of a specific dataflow endpoint group
+      parameters:
+        - name: dataflowEndpointGroupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dataflow endpoint group details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetDataflowEndpointGroupResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    delete:
+      operationId: DeleteDataflowEndpointGroup
+      summary: Delete dataflow endpoint group
+      description: Deletes a dataflow endpoint group
+      parameters:
+        - name: dataflowEndpointGroupId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Dataflow endpoint group deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeleteDataflowEndpointGroupResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+  /satellite/{satelliteId}:
+    get:
+      operationId: GetSatellite
+      summary: Get satellite information
+      description: Returns satellite information from the mock catalog
+      parameters:
+        - name: satelliteId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Satellite information
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GetSatelliteResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+  /satellite:
+    get:
+      operationId: ListSatellites
+      summary: List satellites
+      description: Returns a list of available satellites from the mock catalog
+      parameters:
+        - $ref: '#/components/parameters/MaxResults'
+        - $ref: '#/components/parameters/NextToken'
+      responses:
+        '200':
+          description: List of satellites
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListSatellitesResponse'
+
+  /tags/{resourceArn}:
+    get:
+      operationId: ListTagsForResource
+      summary: List tags for a resource
+      description: Returns all tags associated with a resource ARN
+      parameters:
+        - name: resourceArn
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resource tags
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ListTagsForResourceResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    post:
+      operationId: TagResource
+      summary: Tag a resource
+      description: Adds or updates tags for a resource
+      parameters:
+        - name: resourceArn
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TagResourceRequest'
+      responses:
+        '200':
+          description: Resource tagged successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TagResourceResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+    delete:
+      operationId: UntagResource
+      summary: Untag a resource
+      description: Removes tags from a resource
+      parameters:
+        - name: resourceArn
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tagKeys
+          in: query
+          required: true
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Tags removed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UntagResourceResponse'
+        '404':
+          $ref: '#/components/responses/ResourceNotFoundException'
+
+components:
+  parameters:
+    MaxResults:
+      name: maxResults
+      in: query
+      description: Maximum number of results to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 10
+
+    NextToken:
+      name: nextToken
+      in: query
+      description: Pagination token for retrieving the next page
+      schema:
+        type: string
+
+  schemas:
+    CreateConfigRequest:
+      type: object
+      required:
+        - name
+        - configData
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 256
+        configData:
+          type: object
+          description: Type-specific configuration data
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    CreateConfigResponse:
+      type: object
+      required:
+        - configArn
+        - configId
+        - configType
+      properties:
+        configArn:
+          type: string
+        configId:
+          type: string
+          format: uuid
+        configType:
+          type: string
+
+    GetConfigResponse:
+      type: object
+      required:
+        - configArn
+        - configId
+        - configType
+        - name
+        - configData
+      properties:
+        configArn:
+          type: string
+        configId:
+          type: string
+          format: uuid
+        configType:
+          type: string
+        name:
+          type: string
+        configData:
+          type: object
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    ListConfigsResponse:
+      type: object
+      properties:
+        configList:
+          type: array
+          items:
+            type: object
+            properties:
+              configArn:
+                type: string
+              configId:
+                type: string
+                format: uuid
+              configType:
+                type: string
+              name:
+                type: string
+        nextToken:
+          type: string
+
+    UpdateConfigRequest:
+      type: object
+      required:
+        - name
+        - configData
+      properties:
+        name:
+          type: string
+        configData:
+          type: object
+
+    UpdateConfigResponse:
+      type: object
+      required:
+        - configArn
+        - configId
+        - configType
+      properties:
+        configArn:
+          type: string
+        configId:
+          type: string
+          format: uuid
+        configType:
+          type: string
+
+    DeleteConfigResponse:
+      type: object
+      required:
+        - configArn
+        - configId
+        - configType
+      properties:
+        configArn:
+          type: string
+        configId:
+          type: string
+          format: uuid
+        configType:
+          type: string
+
+    CreateMissionProfileRequest:
+      type: object
+      required:
+        - name
+        - dataflowEdges
+        - minimumViableContactDurationSeconds
+        - contactPrePassDurationSeconds
+        - contactPostPassDurationSeconds
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 256
+        dataflowEdges:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+            minItems: 2
+            maxItems: 2
+        minimumViableContactDurationSeconds:
+          type: integer
+          minimum: 1
+        contactPrePassDurationSeconds:
+          type: integer
+          minimum: 60
+          maximum: 7200
+        contactPostPassDurationSeconds:
+          type: integer
+          minimum: 60
+          maximum: 7200
+        trackingConfigArn:
+          type: string
+        streamsKmsKey:
+          type: object
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    CreateMissionProfileResponse:
+      type: object
+      required:
+        - missionProfileArn
+        - missionProfileId
+      properties:
+        missionProfileArn:
+          type: string
+        missionProfileId:
+          type: string
+          format: uuid
+
+    GetMissionProfileResponse:
+      type: object
+      required:
+        - missionProfileArn
+        - missionProfileId
+        - name
+        - dataflowEdges
+        - minimumViableContactDurationSeconds
+        - contactPrePassDurationSeconds
+        - contactPostPassDurationSeconds
+      properties:
+        missionProfileArn:
+          type: string
+        missionProfileId:
+          type: string
+          format: uuid
+        name:
+          type: string
+        dataflowEdges:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        minimumViableContactDurationSeconds:
+          type: integer
+        contactPrePassDurationSeconds:
+          type: integer
+        contactPostPassDurationSeconds:
+          type: integer
+        trackingConfigArn:
+          type: string
+        streamsKmsKey:
+          type: object
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    ListMissionProfilesResponse:
+      type: object
+      properties:
+        missionProfileList:
+          type: array
+          items:
+            type: object
+            properties:
+              missionProfileArn:
+                type: string
+              missionProfileId:
+                type: string
+                format: uuid
+              name:
+                type: string
+              region:
+                type: string
+        nextToken:
+          type: string
+
+    UpdateMissionProfileRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        dataflowEdges:
+          type: array
+          items:
+            type: array
+            items:
+              type: string
+        minimumViableContactDurationSeconds:
+          type: integer
+        contactPrePassDurationSeconds:
+          type: integer
+        contactPostPassDurationSeconds:
+          type: integer
+        trackingConfigArn:
+          type: string
+
+    UpdateMissionProfileResponse:
+      type: object
+      required:
+        - missionProfileArn
+        - missionProfileId
+      properties:
+        missionProfileArn:
+          type: string
+        missionProfileId:
+          type: string
+          format: uuid
+
+    DeleteMissionProfileResponse:
+      type: object
+      required:
+        - missionProfileArn
+        - missionProfileId
+      properties:
+        missionProfileArn:
+          type: string
+        missionProfileId:
+          type: string
+          format: uuid
+
+    ReserveContactRequest:
+      type: object
+      required:
+        - missionProfileArn
+        - satelliteArn
+        - startTime
+        - endTime
+        - groundStation
+      properties:
+        missionProfileArn:
+          type: string
+        satelliteArn:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        groundStation:
+          type: string
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    ReserveContactResponse:
+      type: object
+      required:
+        - contactId
+      properties:
+        contactId:
+          type: string
+          format: uuid
+
+    DescribeContactResponse:
+      type: object
+      required:
+        - contactId
+        - contactStatus
+        - missionProfileArn
+        - satelliteArn
+        - startTime
+        - endTime
+        - groundStation
+      properties:
+        contactId:
+          type: string
+          format: uuid
+        contactStatus:
+          type: string
+          enum: [SCHEDULING, SCHEDULED, PASS, COMPLETED, FAILED, CANCELLED]
+        contactArn:
+          type: string
+        missionProfileArn:
+          type: string
+        satelliteArn:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        groundStation:
+          type: string
+        errorMessage:
+          type: string
+        maximumElevation:
+          type: object
+        prePassStartTime:
+          type: string
+          format: date-time
+        postPassEndTime:
+          type: string
+          format: date-time
+        region:
+          type: string
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    ListContactsResponse:
+      type: object
+      properties:
+        contactList:
+          type: array
+          items:
+            type: object
+            properties:
+              contactId:
+                type: string
+                format: uuid
+              contactStatus:
+                type: string
+              missionProfileArn:
+                type: string
+              satelliteArn:
+                type: string
+              startTime:
+                type: string
+                format: date-time
+              endTime:
+                type: string
+                format: date-time
+              groundStation:
+                type: string
+        nextToken:
+          type: string
+
+    CancelContactResponse:
+      type: object
+      required:
+        - contactId
+      properties:
+        contactId:
+          type: string
+          format: uuid
+
+    CreateDataflowEndpointGroupRequest:
+      type: object
+      required:
+        - endpointsDetails
+      properties:
+        endpointsDetails:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required:
+              - endpoint
+            properties:
+              endpoint:
+                type: object
+                required:
+                  - name
+                  - address
+                properties:
+                  name:
+                    type: string
+                  address:
+                    type: object
+                    required:
+                      - name
+                      - port
+                    properties:
+                      name:
+                        type: string
+                      port:
+                        type: integer
+                        minimum: 1
+                        maximum: 65535
+                  mtu:
+                    type: integer
+                    minimum: 1
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    CreateDataflowEndpointGroupResponse:
+      type: object
+      required:
+        - dataflowEndpointGroupArn
+        - dataflowEndpointGroupId
+      properties:
+        dataflowEndpointGroupArn:
+          type: string
+        dataflowEndpointGroupId:
+          type: string
+          format: uuid
+
+    GetDataflowEndpointGroupResponse:
+      type: object
+      required:
+        - dataflowEndpointGroupArn
+        - dataflowEndpointGroupId
+        - endpointsDetails
+      properties:
+        dataflowEndpointGroupArn:
+          type: string
+        dataflowEndpointGroupId:
+          type: string
+          format: uuid
+        endpointsDetails:
+          type: array
+          items:
+            type: object
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    ListDataflowEndpointGroupsResponse:
+      type: object
+      properties:
+        dataflowEndpointGroupList:
+          type: array
+          items:
+            type: object
+            properties:
+              dataflowEndpointGroupArn:
+                type: string
+              dataflowEndpointGroupId:
+                type: string
+                format: uuid
+        nextToken:
+          type: string
+
+    DeleteDataflowEndpointGroupResponse:
+      type: object
+      required:
+        - dataflowEndpointGroupArn
+        - dataflowEndpointGroupId
+      properties:
+        dataflowEndpointGroupArn:
+          type: string
+        dataflowEndpointGroupId:
+          type: string
+          format: uuid
+
+    GetSatelliteResponse:
+      type: object
+      required:
+        - satelliteArn
+        - satelliteId
+        - noradSatelliteID
+      properties:
+        satelliteArn:
+          type: string
+        satelliteId:
+          type: string
+        noradSatelliteID:
+          type: integer
+        groundStations:
+          type: array
+          items:
+            type: string
+
+    ListSatellitesResponse:
+      type: object
+      properties:
+        satellites:
+          type: array
+          items:
+            type: object
+            properties:
+              satelliteArn:
+                type: string
+              satelliteId:
+                type: string
+              noradSatelliteID:
+                type: integer
+        nextToken:
+          type: string
+
+    TagResourceRequest:
+      type: object
+      required:
+        - tags
+      properties:
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    TagResourceResponse:
+      type: object
+
+    UntagResourceResponse:
+      type: object
+
+    ListTagsForResourceResponse:
+      type: object
+      properties:
+        tags:
+          $ref: '#/components/schemas/Tags'
+
+    Tags:
+      type: object
+      additionalProperties:
+        type: string
+      description: Key-value pairs for resource tags
+
+  responses:
+    ResourceNotFoundException:
+      description: The requested resource was not found
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+
+    InvalidParameterException:
+      description: One or more parameters are invalid
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+              parameterName:
+                type: string
+
+    ValidationException:
+      description: Request validation failed
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
+
+    DependencyException:
+      description: Resource is in use and cannot be deleted
+      content:
+        application/json:
+          schema:
+            type: object
+            required:
+              - message
+            properties:
+              message:
+                type: string
