@@ -560,10 +560,8 @@ class TestDynamoDBEventSourceMapping:
         messages = retry(verify_failure_received, retries=15, sleep=sleep, sleep_before=5)
         snapshot.match("destination_queue_messages", messages)
 
-    # FIXME UpdateTable is not returning a WarmThroughput property
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..TableDescription.WarmThroughput",
             "$..requestContext.requestId",  # TODO there is an extra uuid in the snapshot when run in CI on itest-ddb-v2-provider step, need to look why
         ],
     )
