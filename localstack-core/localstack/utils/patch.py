@@ -1,7 +1,8 @@
 import functools
 import inspect
 import types
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 
 def get_defining_object(method):

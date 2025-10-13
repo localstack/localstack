@@ -3,7 +3,6 @@ import json
 import logging
 import re
 import uuid
-from typing import Optional
 
 from moto.events.models import events_backends
 
@@ -214,7 +213,7 @@ def list_of_parameters_to_object(items):
     return {item.get("Key"): item.get("Value") for item in items}
 
 
-def send_event_to_api_destination(target_arn, event, http_parameters: Optional[dict] = None):
+def send_event_to_api_destination(target_arn, event, http_parameters: dict | None = None):
     """Send an event to an EventBridge API destination
     See https://docs.aws.amazon.com/eventbridge/latest/userguide/eb-api-destinations.html"""
 

@@ -5,7 +5,7 @@ import logging
 import os
 from datetime import date, datetime
 from json import JSONDecodeError
-from typing import Any, Union
+from typing import Any
 
 from localstack.config import HostAndPort
 
@@ -63,9 +63,9 @@ class FileMappedDocument(dict):
     concurrent writes, run load(). To save and overwrite the current document on disk, run save().
     """
 
-    path: Union[str, os.PathLike]
+    path: str | os.PathLike
 
-    def __init__(self, path: Union[str, os.PathLike], mode=0o664):
+    def __init__(self, path: str | os.PathLike, mode=0o664):
         super().__init__()
         self.path = path
         self.mode = mode

@@ -1,12 +1,13 @@
 import functools
 import re
 import threading
-from typing import Any, Callable, Generic, Optional, TypeVar, Union
+from collections.abc import Callable
+from typing import Any, Generic, TypeVar
 
 from .collections import ensure_list
 from .strings import first_char_to_lower, first_char_to_upper
 
-ComplexType = Union[list, dict, object]
+ComplexType = list | dict | object
 
 _T = TypeVar("_T")
 
@@ -16,7 +17,7 @@ class Value(Generic[_T]):
     Simple value container.
     """
 
-    value: Optional[_T]
+    value: _T | None
 
     def __init__(self, value: _T = None) -> None:
         self.value = value
@@ -30,7 +31,7 @@ class Value(Generic[_T]):
     def is_set(self) -> bool:
         return self.value is not None
 
-    def get(self) -> Optional[_T]:
+    def get(self) -> _T | None:
         return self.value
 
     def __bool__(self):
@@ -136,7 +137,7 @@ def fully_qualified_class_name(klass: type) -> str:
     return f"{klass.__module__}.{klass.__name__}"
 
 
-def not_none_or(value: Optional[Any], alternative: Any) -> Any:
+def not_none_or(value: Any | None, alternative: Any) -> Any:
     """Return 'value' if it is not None, or 'alternative' otherwise."""
     return value if value is not None else alternative
 

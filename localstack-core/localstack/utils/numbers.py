@@ -1,4 +1,4 @@
-from typing import Any, Union
+from typing import Any
 
 
 def format_number(number: float, decimals: int = 2):
@@ -25,7 +25,7 @@ def is_number(s: Any) -> bool:
         return False
 
 
-def to_number(s: Any) -> Union[int, float]:
+def to_number(s: Any) -> int | float:
     """Cast the string representation of the given object to a number (int or float), or raise ValueError."""
     try:
         return int(str(s))

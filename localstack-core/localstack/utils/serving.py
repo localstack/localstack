@@ -1,7 +1,6 @@
 import abc
 import logging
 import threading
-from typing import Optional
 
 from localstack.utils.net import is_port_open
 from localstack.utils.sync import poll_condition
@@ -21,7 +20,7 @@ class Server(abc.ABC):
 
     def __init__(self, port: int, host: str = "localhost") -> None:
         super().__init__()
-        self._thread: Optional[FuncThread] = None
+        self._thread: FuncThread | None = None
 
         self._lifecycle_lock = threading.RLock()
         self._stopped = threading.Event()
@@ -46,7 +45,7 @@ class Server(abc.ABC):
     def url(self):
         return f"{self.protocol}://{self.host}:{self.port}"
 
-    def get_error(self) -> Optional[Exception]:
+    def get_error(self) -> Exception | None:
         """
         If the thread running the server returned with an Exception, then this function will return that exception.
         """

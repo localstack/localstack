@@ -205,7 +205,7 @@ jobs:
           token: ${{ secrets.PRO_ACCESS_TOKEN }}
           path: localstack-pro
 
-      - name: Set up Python 3.11
+      - name: Set up Python
         id: setup-python
         uses: actions/setup-python@v6
         with:

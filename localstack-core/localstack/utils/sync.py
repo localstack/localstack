@@ -4,7 +4,8 @@ import functools
 import threading
 import time
 from collections import defaultdict
-from typing import Callable, Literal, TypeVar
+from collections.abc import Callable
+from typing import Literal, TypeVar
 
 
 class ShortCircuitWaitException(Exception):

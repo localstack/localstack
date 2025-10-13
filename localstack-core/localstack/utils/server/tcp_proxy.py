@@ -1,8 +1,8 @@
 import logging
 import select
 import socket
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
-from typing import Callable
 
 from localstack.utils.serving import Server
 
@@ -93,7 +93,7 @@ class TCPProxy(Server):
                 try:
                     src_socket, _ = self._server_socket.accept()
                     self._thread_pool.submit(self._handle_request, src_socket)
-                except socket.timeout:
+                except TimeoutError:
                     pass
                 except OSError as e:
                     # avoid creating an error message if OSError is thrown due to socket closing

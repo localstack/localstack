@@ -8,7 +8,7 @@ import tempfile
 import time
 import zipfile
 from subprocess import Popen
-from typing import IO, Literal, Optional, Union
+from typing import IO, Literal
 
 from localstack.constants import MAVEN_REPO_URL
 from localstack.utils.files import load_file, mkdir, new_tmp_file, rm_rf, save_file
@@ -22,7 +22,7 @@ from .strings import truncate
 LOG = logging.getLogger(__name__)
 
 
-StrPath = Union[str, os.PathLike]
+StrPath = str | os.PathLike
 
 
 def is_zip_file(content):
@@ -30,13 +30,13 @@ def is_zip_file(content):
     return zipfile.is_zipfile(stream)
 
 
-def get_unzipped_size(zip_file: Union[str, IO[bytes]]):
+def get_unzipped_size(zip_file: str | IO[bytes]):
     """Returns the size of the unzipped file."""
     with zipfile.ZipFile(zip_file, "r") as zip_ref:
         return sum(f.file_size for f in zip_ref.infolist())
 
 
-def unzip(path: str, target_dir: str, overwrite: bool = True) -> Optional[Union[str, Popen]]:
+def unzip(path: str, target_dir: str, overwrite: bool = True) -> str | Popen | None:
     from localstack.utils.platform import is_debian
 
     use_native_cmd = is_debian() or is_command_available("unzip")
@@ -99,7 +99,7 @@ def create_zip_file_python(
     base_dir: StrPath,
     zip_file: StrPath,
     mode: Literal["r", "w", "x", "a"] = "w",
-    content_root: Optional[str] = None,
+    content_root: str | None = None,
 ):
     with zipfile.ZipFile(zip_file, mode) as zip_file:
         for root, dirs, files in os.walk(base_dir):
@@ -122,7 +122,7 @@ def add_file_to_jar(class_file, class_url, target_jar, base_dir=None):
 
 
 def update_jar_manifest(
-    jar_file_name: str, parent_dir: str, search: Union[str, re.Pattern], replace: str
+    jar_file_name: str, parent_dir: str, search: str | re.Pattern, replace: str
 ):
     manifest_file_path = "META-INF/MANIFEST.MF"
     jar_path = os.path.join(parent_dir, jar_file_name)
@@ -174,10 +174,10 @@ def upgrade_jar_file(base_dir: str, file_glob: str, maven_asset: str):
 def download_and_extract(
     archive_url: str,
     target_dir: str,
-    retries: Optional[int] = 0,
-    sleep: Optional[int] = 3,
-    tmp_archive: Optional[str] = None,
-    checksum_url: Optional[str] = None,
+    retries: int | None = 0,
+    sleep: int | None = 3,
+    tmp_archive: str | None = None,
+    checksum_url: str | None = None,
 ) -> None:
     """
     Download and extract an archive to a target directory with optional checksum verification.
@@ -250,7 +250,7 @@ def download_and_extract_with_retry(
     archive_url,
     tmp_archive,
     target_dir,
-    checksum_url: Optional[str] = None,
+    checksum_url: str | None = None,
 ):
     try:
         download_and_extract(

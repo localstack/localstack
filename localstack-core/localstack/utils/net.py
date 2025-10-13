@@ -5,7 +5,7 @@ import socket
 import threading
 from collections.abc import MutableMapping
 from contextlib import closing
-from typing import Any, NamedTuple, Optional, Union
+from typing import Any, NamedTuple
 from urllib.parse import urlparse
 
 import dns.resolver
@@ -50,14 +50,14 @@ class Port(NamedTuple):
 
 
 # simple helper type to encapsulate int/Port argument types
-IntOrPort = Union[int, Port]
+IntOrPort = int | Port
 
 
 def is_port_open(
-    port_or_url: Union[int, str],
+    port_or_url: int | str,
     http_path: str = None,
     expect_success: bool = True,
-    protocols: Optional[Union[str, list[str]]] = None,
+    protocols: str | list[str] | None = None,
     quiet: bool = True,
 ):
     from localstack.utils.http import safe_requests
@@ -275,7 +275,7 @@ def get_free_tcp_port_range(num_ports: int, max_attempts: int = 50) -> "PortRang
     raise PortNotAvailableException("reached max_attempts when trying to find port range")
 
 
-def resolve_hostname(hostname: str) -> Optional[str]:
+def resolve_hostname(hostname: str) -> str | None:
     """Resolve the given hostname and return its IP address, or None if it cannot be resolved."""
     try:
         return socket.gethostbyname(hostname)
@@ -362,7 +362,7 @@ class PortRange:
         """
         return range(self.start, self.end + 1)
 
-    def reserve_port(self, port: Optional[IntOrPort] = None, duration: Optional[int] = None) -> int:
+    def reserve_port(self, port: IntOrPort | None = None, duration: int | None = None) -> int:
         """
         Reserves the given port (if it is still free). If the given port is None, it reserves a free port from the
         configured port range for external services. If a port is given, it has to be within the configured

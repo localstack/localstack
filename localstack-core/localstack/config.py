@@ -10,7 +10,7 @@ import time
 import warnings
 from collections import defaultdict
 from collections.abc import Mapping
-from typing import Any, Optional, TypeVar, Union
+from typing import Any, TypeVar
 
 from localstack import constants
 from localstack.constants import (
@@ -209,13 +209,13 @@ class Directories:
         return str(self.__dict__)
 
 
-def eval_log_type(env_var_name: str) -> Union[str, bool]:
+def eval_log_type(env_var_name: str) -> str | bool:
     """Get the log type from environment variable"""
     ls_log = os.environ.get(env_var_name, "").lower().strip()
     return ls_log if ls_log in LOG_LEVELS else False
 
 
-def parse_boolean_env(env_var_name: str) -> Optional[bool]:
+def parse_boolean_env(env_var_name: str) -> bool | None:
     """Parse the value of the given env variable and return True/False, or None if it is not a boolean value."""
     value = os.environ.get(env_var_name, "").lower().strip()
     if value in TRUE_STRINGS:
@@ -650,7 +650,7 @@ class UniqueHostAndPortList(list[HostAndPort]):
         - Identical identical hosts and ports are de-duped
     """
 
-    def __init__(self, iterable: Union[list[HostAndPort], None] = None):
+    def __init__(self, iterable: list[HostAndPort] | None = None):
         super().__init__(iterable or [])
         self._ensure_unique()
 
@@ -1509,10 +1509,10 @@ def get_protocol() -> str:
 
 
 def external_service_url(
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    protocol: Optional[str] = None,
-    subdomains: Optional[str] = None,
+    host: str | None = None,
+    port: int | None = None,
+    protocol: str | None = None,
+    subdomains: str | None = None,
 ) -> str:
     """Returns a service URL (e.g., SQS queue URL) to an external client (e.g., boto3) potentially running on another
     machine than LocalStack. The configurations LOCALSTACK_HOST and USE_SSL can customize these returned URLs.
@@ -1529,10 +1529,10 @@ def external_service_url(
 
 
 def internal_service_url(
-    host: Optional[str] = None,
-    port: Optional[int] = None,
-    protocol: Optional[str] = None,
-    subdomains: Optional[str] = None,
+    host: str | None = None,
+    port: int | None = None,
+    protocol: str | None = None,
+    subdomains: str | None = None,
 ) -> str:
     """Returns a service URL for internal use within LocalStack (i.e., same host).
     The configuration USE_SSL can customize these returned URLs but LOCALSTACK_HOST has no effect.

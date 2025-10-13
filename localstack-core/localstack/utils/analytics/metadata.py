@@ -2,7 +2,6 @@ import dataclasses
 import logging
 import os
 import platform
-from typing import Optional
 
 from localstack import config
 from localstack.constants import VERSION
@@ -201,7 +200,7 @@ def _generate_machine_id() -> str:
     return f"gen_{long_uid()[:12]}"
 
 
-def get_api_key_or_auth_token() -> Optional[str]:
+def get_api_key_or_auth_token() -> str | None:
     # TODO: this is duplicated code from ext, but should probably migrate that to localstack
     auth_token = os.environ.get("LOCALSTACK_AUTH_TOKEN", "").strip("'\" ")
     if auth_token:

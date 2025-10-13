@@ -1,9 +1,9 @@
 import queue
 import threading
 import time
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from concurrent.futures import Executor
-from typing import Any, Callable, Optional, Union
+from typing import Any
 
 
 class ScheduledTask:
@@ -14,12 +14,12 @@ class ScheduledTask:
     def __init__(
         self,
         task: Callable,
-        period: Optional[float] = None,
+        period: float | None = None,
         fixed_rate: bool = True,
-        start: Optional[float] = None,
+        start: float | None = None,
         on_error: Callable[[Exception], None] = None,
-        args: Optional[Union[tuple, list]] = None,
-        kwargs: Optional[Mapping[str, Any]] = None,
+        args: tuple | list | None = None,
+        kwargs: Mapping[str, Any] | None = None,
     ) -> None:
         super().__init__()
         self.task = task
@@ -76,7 +76,7 @@ class Scheduler:
 
     POISON = (-1, "__POISON__")
 
-    def __init__(self, executor: Optional[Executor] = None) -> None:
+    def __init__(self, executor: Executor | None = None) -> None:
         """
         Creates a new Scheduler. If an executor is passed, then that executor will be used to run the scheduled tasks
         asynchronously, otherwise they will be executed synchronously inside the event loop. Running tasks
@@ -94,12 +94,12 @@ class Scheduler:
     def schedule(
         self,
         func: Callable,
-        period: Optional[float] = None,
+        period: float | None = None,
         fixed_rate: bool = True,
-        start: Optional[float] = None,
+        start: float | None = None,
         on_error: Callable[[Exception], None] = None,
-        args: Optional[Union[tuple, list[Any]]] = None,
-        kwargs: Optional[Mapping[str, Any]] = None,
+        args: tuple | list[Any] | None = None,
+        kwargs: Mapping[str, Any] | None = None,
     ) -> ScheduledTask:
         """
         Schedules a given task (function call).

@@ -1,7 +1,7 @@
 import json
 import logging
 import re
-from typing import Callable
+from collections.abc import Callable
 
 from requests.models import Response
 
