@@ -1,20 +1,56 @@
 {
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_prefill_dynamodb_table": {
-    "last_validated_date": "2023-08-24T14:33:21+00:00"
+    "last_validated_date": "2025-10-13T18:54:57+00:00",
+    "durations_in_seconds": {
+      "setup": 64.27,
+      "call": 1.44,
+      "teardown": 0.0,
+      "total": 65.71
+    }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
-    "last_validated_date": "2023-08-02T09:58:05+00:00"
+    "last_validated_date": "2025-10-13T18:55:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 3.37,
+      "teardown": 0.0,
+      "total": 3.37
+    }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
-    "last_validated_date": "2023-08-02T09:58:07+00:00"
+    "last_validated_date": "2025-10-13T18:55:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.85,
+      "teardown": 0.0,
+      "total": 1.85
+    }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
-    "last_validated_date": "2023-08-02T09:58:10+00:00"
+    "last_validated_date": "2025-10-13T18:55:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.74,
+      "teardown": 0.0,
+      "total": 1.74
+    }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
-    "last_validated_date": "2023-08-02T09:58:10+00:00"
+    "last_validated_date": "2025-10-13T18:55:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.61,
+      "teardown": 0.0,
+      "total": 0.61
+    }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
-    "last_validated_date": "2023-08-02T09:58:13+00:00"
+    "last_validated_date": "2025-10-13T18:56:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.85,
+      "teardown": 96.39,
+      "total": 98.24
+    }
   }
 }

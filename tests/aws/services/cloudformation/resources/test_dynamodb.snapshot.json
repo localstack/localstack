@@ -1,6 +1,6 @@
 {
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
-    "recorded-date": "28-08-2023, 12:34:19",
+    "recorded-date": "13-10-2025, 18:57:55",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -28,7 +28,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 5,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 5
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -54,7 +59,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
-    "recorded-date": "28-08-2023, 12:34:41",
+    "recorded-date": "13-10-2025, 18:59:26",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -88,7 +93,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 5,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 5
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -98,7 +108,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
-    "recorded-date": "28-08-2023, 12:35:02",
+    "recorded-date": "13-10-2025, 19:00:03",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -136,7 +146,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -146,7 +161,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table": {
-    "recorded-date": "01-12-2023, 12:54:13",
+    "recorded-date": "13-10-2025, 19:01:29",
     "recorded-content": {
       "table_description": {
         "Table": {
@@ -178,7 +193,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
