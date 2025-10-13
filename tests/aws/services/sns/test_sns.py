@@ -1098,11 +1098,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("token-not-exists", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$.list-subscriptions.Subscriptions"],
-        # there could be cleanup issues and don't want to flake, manually assert
-    )
-    @skip_if_sns_v2  # TODO: base test fails against AWS; rewrite test
     def test_list_subscriptions(
         self,
         sns_create_topic,
@@ -1134,8 +1129,8 @@ class TestSNSSubscriptionCrud:
                 list_subs = aws_client.sns.list_subscriptions(NextToken=next_token)
                 all_subs.extend(list_subs["Subscriptions"])
 
-        # TODO: fix this assert
-        assert all((sub["TopicArn"], sub["Endpoint"]) in created_subscriptions for sub in all_subs)
+        all_sub_tuples = [(sub["TopicArn"], sub["Endpoint"]) for sub in all_subs]
+        assert all(sub in all_sub_tuples for sub in created_subscriptions)
 
     @markers.aws.validated
     def test_list_subscriptions_by_topic_pagination(
