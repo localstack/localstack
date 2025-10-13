@@ -1,8 +1,12 @@
+import json
+
+import pytest
+from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import RegexTransformer
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
-from localstack.utils.strings import long_uid
+from localstack.utils.strings import long_uid, short_uid
 
 
 @skip_if_legacy_engine()
@@ -236,3 +240,30 @@ class TestChangeSetFnSplit:
         }
 
         capture_update_process(snapshot, template_1, template_2)
+
+
+class TestSplitValidations:
+    @markers.aws.validated
+    @skip_if_legacy_engine
+    def test_validate_split_arguments_len(self, aws_client, snapshot):
+        template = {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {
+                        "Type": "String",
+                        "Value": {"Fn::Split": {"Ref": "AWS::Region"}},
+                    },
+                }
+            }
+        }
+
+        with pytest.raises(ClientError) as ex:
+            aws_client.cloudformation.create_change_set(
+                StackName=f"st-{short_uid()}",
+                ChangeSetName=f"ch-{short_uid()}",
+                ChangeSetType="CREATE",
+                TemplateBody=json.dumps(template),
+            )
+
+        snapshot.match("validation", ex.value.response)
