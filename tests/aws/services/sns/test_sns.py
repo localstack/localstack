@@ -126,7 +126,6 @@ class TestSNSTopicCrud:
         snapshot.match("get-attrs-malformed-topic", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_tags(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
         with pytest.raises(ClientError) as exc:
@@ -206,7 +205,6 @@ class TestSNSTopicCrud:
         snapshot.match("delete-topic-again", delete_topic)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_create_duplicate_topic_with_more_tags(self, sns_create_topic, snapshot, aws_client):
         topic_name = "test-duplicated-topic-more-tags"
         sns_create_topic(Name=topic_name)
@@ -217,7 +215,6 @@ class TestSNSTopicCrud:
         snapshot.match("exception-duplicate", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_create_duplicate_topic_check_idempotency(self, sns_create_topic, snapshot):
         topic_name = f"test-{short_uid()}"
         tags = [{"Key": "a", "Value": "1"}, {"Key": "b", "Value": "2"}]
@@ -237,7 +234,6 @@ class TestSNSTopicCrud:
             snapshot.match(f"response-same-arn-{index}", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_create_topic_after_delete_with_new_tags(self, sns_create_topic, snapshot, aws_client):
         topic_name = f"test-{short_uid()}"
         topic = sns_create_topic(Name=topic_name, Tags=[{"Key": "Name", "Value": "pqr"}])
