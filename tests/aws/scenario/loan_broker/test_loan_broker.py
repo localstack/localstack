@@ -82,10 +82,8 @@ class TestLoanBrokerScenario:
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..Table.DeletionProtectionEnabled",
             "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
             "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-            "$..Table.Replicas",
         ]
     )
     def test_prefill_dynamodb_table(self, aws_client, infrastructure, snapshot):
