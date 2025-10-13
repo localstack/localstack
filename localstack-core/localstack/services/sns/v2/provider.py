@@ -10,13 +10,17 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
     ConfirmSubscriptionResponse,
     CreateTopicResponse,
+    GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    ListString,
     ListSubscriptionsByTopicResponse,
     ListSubscriptionsResponse,
     ListTopicsResponse,
+    MapStringToString,
     NotFoundException,
+    SetSMSAttributesResponse,
     SnsApi,
     String,
     SubscribeResponse,
@@ -40,6 +44,9 @@ from localstack.services.sns.constants import DUMMY_SUBSCRIPTION_PRINCIPAL
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.publisher import PublishDispatcher, SnsPublishContext
 from localstack.services.sns.v2.models import (
+    SMS_ATTRIBUTE_NAMES,
+    SMS_DEFAULT_SENDER_REGEX,
+    SMS_TYPES,
     SnsMessage,
     SnsMessageType,
     SnsStore,
@@ -517,6 +524,28 @@ class SnsProvider(SnsApi):
             response["NextToken"] = next_token
         return response
 
+    def set_sms_attributes(
+        self, context: RequestContext, attributes: MapStringToString, **kwargs
+    ) -> SetSMSAttributesResponse:
+        store = self.get_store(context.account_id, context.region)
+        _validate_sms_attributes(attributes)
+        _set_sms_attribute_default(store)
+        store.sms_attributes.update(attributes or {})
+        return SetSMSAttributesResponse()
+
+    def get_sms_attributes(
+        self, context: RequestContext, attributes: ListString | None = None, **kwargs
+    ) -> GetSMSAttributesResponse:
+        store = self.get_store(context.account_id, context.region)
+        _set_sms_attribute_default(store)
+        store_attributes = store.sms_attributes
+        return_attributes = {}
+        for k, v in store_attributes.items():
+            if not attributes or k in attributes:
+                return_attributes[k] = store_attributes[k]
+
+        return GetSMSAttributesResponse(attributes=return_attributes)
+
     @staticmethod
     def get_store(account_id: str, region: str) -> SnsStore:
         return sns_stores[account_id][region]
@@ -603,3 +632,20 @@ def _create_default_topic_policy(topic: Topic, context: RequestContext) -> str:
             ],
         }
     )
+
+
+def _validate_sms_attributes(attributes: dict) -> None:
+    for k, v in attributes.items():
+        if k not in SMS_ATTRIBUTE_NAMES:
+            raise InvalidParameterException(f"{k} is not a valid attribute")
+    default_send_id = attributes.get("DefaultSendID")
+    if default_send_id and not re.match(SMS_DEFAULT_SENDER_REGEX, default_send_id):
+        raise InvalidParameterException("DefaultSendID is not a valid attribute")
+    sms_type = attributes.get("DefaultSMSType")
+    if sms_type and sms_type not in SMS_TYPES:
+        raise InvalidParameterException("DefaultSMSType is invalid")
+
+
+def _set_sms_attribute_default(store: SnsStore) -> None:
+    # TODO: don't call this on every sms attribute crud api call
+    store.sms_attributes.setdefault("MonthlySpendLimit", "1")
