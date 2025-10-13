@@ -360,9 +360,6 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
-    # @pytest.mark.skipif(
-    #    is_sns_v1_provider(), reason="covered in moto, but with slight parity errors"
-    # )
     @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
     @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
