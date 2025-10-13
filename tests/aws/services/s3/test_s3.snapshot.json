@@ -18283,9 +18283,9 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_aws_global": {
-    "recorded-date": "10-10-2025, 16:48:02",
+    "recorded-date": "13-10-2025, 14:05:41",
     "recorded-content": {
-      "xml-error": {
+      "xml-error-create-bucket": {
         "Error": {
           "Code": "AuthorizationHeaderMalformed",
           "HostId": "<host-id:1>",
@@ -18296,6 +18296,14 @@
       },
       "create-bucket-global": {
         "Location": "/<bucket-name-1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "head-bucket-global": {
+        "AccessPointAlias": false,
+        "BucketRegion": "<us_east_1_region>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200

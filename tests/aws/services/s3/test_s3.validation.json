@@ -30,12 +30,12 @@
     "last_validated_date": "2025-01-21T18:27:03+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_aws_global": {
-    "last_validated_date": "2025-10-10T16:48:03+00:00",
+    "last_validated_date": "2025-10-13T14:05:41+00:00",
     "durations_in_seconds": {
-      "setup": 0.48,
-      "call": 1.33,
-      "teardown": 0.61,
-      "total": 2.42
+      "setup": 0.46,
+      "call": 1.74,
+      "teardown": 0.51,
+      "total": 2.71
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_create_bucket_head_bucket": {

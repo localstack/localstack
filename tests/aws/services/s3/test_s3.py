@@ -4152,6 +4152,10 @@ class TestS3:
 
     @markers.aws.validated
     @markers.requires_in_process  # we're monkeypatching the handler chain
+    @markers.snapshot.skip_snapshot_verify(
+        # missing from `HeadBucket` call
+        paths=["$..AccessPointAlias"],
+    )
     def test_create_bucket_aws_global(
         self,
         aws_client_factory,
@@ -4204,13 +4208,16 @@ class TestS3:
 
         assert response.status_code == 400
         xml_error = xmltodict.parse(response.content)
-        snapshot.match("xml-error", xml_error)
+        snapshot.match("xml-error-create-bucket", xml_error)
 
         # botocore is automatically signing the request with `us-east-1`, so we don't have issues
         s3_client = aws_client_factory(region_name=global_region).s3
         create_bucket = s3_client.create_bucket(Bucket=bucket_name_1)
         cleanups.append(lambda: aws_client.s3.delete_bucket(Bucket=bucket_name_1))
         snapshot.match("create-bucket-global", create_bucket)
+
+        head_bucket = s3_client.head_bucket(Bucket=bucket_name_1)
+        snapshot.match("head-bucket-global", head_bucket)
 
         get_location_1 = aws_client.s3.get_bucket_location(Bucket=bucket_name_1)
         # verify that the bucket 1 is created in `us-east-1`
@@ -4220,6 +4227,12 @@ class TestS3:
             BucketRegion=AWS_REGION_US_EAST_1, Prefix=bucket_prefix
         )
         snapshot.match("list-buckets", list_buckets_per_region)
+
+        # test that HeadBucket also raises an exception
+        head_response = http_client.head(f"{base_endpoint}/{bucket_name_1}", headers=headers)
+
+        assert head_response.status_code == 400
+        assert not head_response.content
 
     @markers.aws.validated
     def test_bucket_does_not_exist(self, s3_vhost_client, snapshot, aws_client):

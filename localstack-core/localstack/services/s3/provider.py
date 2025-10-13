@@ -648,6 +648,16 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         expected_bucket_owner: AccountId = None,
         **kwargs,
     ) -> HeadBucketOutput:
+        if context.region == "aws-global":
+            # TODO: extend this logic to probably all the provider, and maybe all services. S3 is the most impacted
+            #  right now so this will help users to properly set a region in their config
+            # See the `TestS3.test_create_bucket_aws_global` test
+            raise AuthorizationHeaderMalformed(
+                f"The authorization header is malformed; the region 'aws-global' is wrong; expecting '{AWS_REGION_US_EAST_1}'",
+                HostId="9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg=",
+                Region=AWS_REGION_US_EAST_1,
+            )
+
         store = self.get_store(context.account_id, context.region)
         if not (s3_bucket := store.buckets.get(bucket)):
             if not (account_id := store.global_bucket_map.get(bucket)):
