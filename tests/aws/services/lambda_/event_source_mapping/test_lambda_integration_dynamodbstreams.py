@@ -371,12 +371,6 @@ class TestDynamoDBEventSourceMapping:
         list_esm = aws_client.lambda_.list_event_source_mappings(EventSourceArn=latest_stream_arn)
         snapshot.match("list_event_source_mapping_result", list_esm)
 
-    # TODO re-record snapshot, now TableId is returned but new WarmThroughput property is not
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..TableDescription.TableId",
-        ],
-    )
     @markers.aws.validated
     def test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config(
         self,
@@ -486,12 +480,6 @@ class TestDynamoDBEventSourceMapping:
 
         snapshot.match("failure_sns_message", failure_sns_message)
 
-    # TODO re-record snapshot, now TableId is returned but new WarmThroughput property is not
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            "$..TableDescription.TableId",
-        ],
-    )
     @markers.aws.validated
     def test_dynamodb_event_source_mapping_with_on_failure_destination_config(
         self,
@@ -948,7 +936,6 @@ class TestDynamoDBEventSourceMapping:
 
     @markers.snapshot.skip_snapshot_verify(
         paths=[
-            "$..TableDescription.TableId",
             "$..Records",  # TODO Figure out why there is an extra log record
         ],
     )

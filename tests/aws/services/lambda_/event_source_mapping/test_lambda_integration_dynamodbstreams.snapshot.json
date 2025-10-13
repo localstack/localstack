@@ -302,7 +302,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "recorded-date": "12-10-2024, 11:01:18",
+    "recorded-date": "13-10-2025, 19:19:23",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -376,7 +376,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "UPDATING"
+          "TableStatus": "UPDATING",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -1977,7 +1982,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config": {
-    "recorded-date": "12-10-2024, 10:59:12",
+    "recorded-date": "13-10-2025, 19:15:20",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -2051,7 +2056,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "UPDATING"
+          "TableStatus": "UPDATING",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -2123,7 +2133,7 @@
     }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failures": {
-    "recorded-date": "12-10-2024, 11:25:25",
+    "recorded-date": "13-10-2025, 19:22:57",
     "recorded-content": {
       "create_table_response": {
         "TableDescription": {
@@ -2197,7 +2207,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<resource:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "UPDATING"
+          "TableStatus": "UPDATING",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
