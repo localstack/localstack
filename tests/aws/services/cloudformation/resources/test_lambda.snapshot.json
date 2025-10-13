@@ -860,7 +860,7 @@
     }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "recorded-date": "12-10-2024, 10:46:17",
+    "recorded-date": "13-10-2025, 21:45:29",
     "recorded-content": {
       "stack_resources": {
         "StackResources": [
@@ -1069,7 +1069,12 @@
           "TableId": "<uuid:2>",
           "TableName": "<resource:7>",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 5,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 5
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

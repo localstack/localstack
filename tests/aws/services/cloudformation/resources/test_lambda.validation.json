@@ -3,7 +3,13 @@
     "last_validated_date": "2024-12-10T16:48:04+00:00"
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_dynamodb_source": {
-    "last_validated_date": "2024-10-12T10:46:17+00:00"
+    "last_validated_date": "2025-10-13T21:45:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.5,
+      "call": 142.89,
+      "teardown": 0.24,
+      "total": 143.63
+    }
   },
   "tests/aws/services/cloudformation/resources/test_lambda.py::TestCfnLambdaIntegrations::test_cfn_lambda_kinesis_source": {
     "last_validated_date": "2024-10-12T10:52:28+00:00"
