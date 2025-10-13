@@ -80,6 +80,10 @@ ENV_INTERNAL_TEST_RUN = "LOCALSTACK_INTERNAL_TEST_RUN"
 # environment variable name to tag collect metrics during a test run
 ENV_INTERNAL_TEST_COLLECT_METRIC = "LOCALSTACK_INTERNAL_TEST_COLLECT_METRIC"
 
+# environment variable name to indicate that metrics should be stored within the container
+ENV_INTERNAL_TEST_STORE_METRICS_IN_LOCALSTACK = "LOCALSTACK_INTERNAL_TEST_METRICS_IN_LOCALSTACK"
+ENV_INTERNAL_TEST_STORE_METRICS_PATH = "LOCALSTACK_INTERNAL_TEST_STORE_METRICS_PATH"
+
 # environment variable that flags whether pro was activated. do not use it for security purposes!
 ENV_PRO_ACTIVATED = "PRO_ACTIVATED"
 

@@ -19,6 +19,7 @@ from localstack.constants import (
     DEFAULT_VOLUME_DIR,
     ENV_INTERNAL_TEST_COLLECT_METRIC,
     ENV_INTERNAL_TEST_RUN,
+    ENV_INTERNAL_TEST_STORE_METRICS_IN_LOCALSTACK,
     FALSE_STRINGS,
     LOCALHOST,
     LOCALHOST_IP,
@@ -1449,6 +1450,11 @@ def is_local_test_mode() -> bool:
 def is_collect_metrics_mode() -> bool:
     """Returns True if metric collection is enabled."""
     return is_env_true(ENV_INTERNAL_TEST_COLLECT_METRIC)
+
+
+def store_test_metrics_in_local_filesystem() -> bool:
+    """Returns True if test metrics should be stored in the local filesystem (instead of the system that runs pytest)."""
+    return is_env_true(ENV_INTERNAL_TEST_STORE_METRICS_IN_LOCALSTACK)
 
 
 def collect_config_items() -> list[tuple[str, Any]]:
