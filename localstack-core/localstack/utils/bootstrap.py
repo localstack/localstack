@@ -57,7 +57,7 @@ LOG = logging.getLogger(__name__)
 API_DEPENDENCIES = {
     "dynamodb": ["dynamodbstreams"],
     # dynamodbstreams uses kinesis under the hood
-    "dynamodbstreams": ["kinesis", "dynamodb"],
+    "dynamodbstreams": ["kinesis"],
     # es forwards all requests to opensearch (basically an API deprecation path in AWS)
     "es": ["opensearch"],
     "cloudformation": ["s3", "sts"],
