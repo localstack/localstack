@@ -11,6 +11,7 @@ from boto3.dynamodb.types import STRING
 from botocore.config import Config
 from botocore.exceptions import ClientError
 from localstack_snapshot.snapshots.transformer import SortingTransformer
+from localstack_snapshot.snapshots.transformer_utility import TransformerUtility
 
 from localstack import config
 from localstack.aws.api.dynamodb import (
@@ -1490,32 +1491,101 @@ class TestDynamoDB:
             )
         snapshot.match("Error", ctx.value)
 
-    @markers.aws.only_localstack(
-        reason="timing issues - needs a check to see if table is successfully deleted"
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TableDescription.TableStatus",  # DDBLocal directly goes to ACTIVE status
+            "$..Table.ProvisionedThroughput.LastDecreaseDateTime",  # Not returned by DDBLocal
+            "$..Table.ProvisionedThroughput.LastIncreaseDateTime",  # Not returned by DDBLocal
+            # The following attributes (prefixed TableDescription) are returned by DDBLocal DeleteTable but not in parity with AWS
+            "$..TableDescription.AttributeDefinitions",
+            "$..TableDescription.CreationDateTime",
+            "$..TableDescription.KeySchema",
+            "$..TableDescription.ProvisionedThroughput.LastDecreaseDateTime",
+            "$..TableDescription.ProvisionedThroughput.LastIncreaseDateTime",
+            "$..TableDescription.TableId",
+        ]
     )
-    def test_delete_table(self, dynamodb_create_table, aws_client):
-        table_name = f"test-ddb-table-{short_uid()}"
-
-        tables_before = len(aws_client.dynamodb.list_tables()["TableNames"])
-
-        dynamodb_create_table(
-            table_name=table_name,
-            partition_key=PARTITION_KEY,
+    def test_table_crud(self, aws_client, cleanups, snapshot, dynamodb_wait_for_table_active):
+        snapshot.add_transformer(
+            [
+                TransformerUtility.key_value("TableName"),
+                TransformerUtility.key_value("TableArn"),
+            ]
         )
 
-        table_list = aws_client.dynamodb.list_tables()
-        # TODO: fix assertion, to enable parallel test execution!
-        assert tables_before + 1 == len(table_list["TableNames"])
-        assert table_name in table_list["TableNames"]
+        table_name = f"test-ddb-table-{short_uid()}"
 
-        aws_client.dynamodb.delete_table(TableName=table_name)
+        # CreateTable
+        response = aws_client.dynamodb.create_table(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+        )
+        cleanups.append(lambda: aws_client.dynamodb.delete_table(TableName=table_name))
+        snapshot.match("create-table", response)
 
-        table_list = aws_client.dynamodb.list_tables()
-        assert tables_before == len(table_list["TableNames"])
+        dynamodb_wait_for_table_active(table_name=table_name)
 
-        with pytest.raises(Exception) as ctx:
-            aws_client.dynamodb.delete_table(TableName=table_name)
-        assert ctx.match("ResourceNotFoundException")
+        # ListTables
+        assert table_name in aws_client.dynamodb.list_tables()["TableNames"]
+
+        # DescribeTable
+        response = aws_client.dynamodb.describe_table(TableName=table_name)
+        snapshot.match("describe-table", response)
+
+        # DeleteTable
+        response = aws_client.dynamodb.delete_table(TableName=table_name)
+        snapshot.match("delete-table", response)
+
+        # ListTable: after DeleteTable
+        retry(
+            lambda: table_name not in aws_client.dynamodb.list_tables()["TableNames"],
+            sleep=1,
+            retries=30,
+        )
+
+        # DeleteTable: delete non-existent table
+        with pytest.raises(ClientError) as exc:
+            aws_client.dynamodb.delete_table(TableName="non-existent")
+        snapshot.match("delete-non-existent-table", exc.value.response)
+
+    @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..TableDescription.TableStatus",  # DDBLocal directly goes to ACTIVE status
+            "$..Table.ProvisionedThroughput.LastDecreaseDateTime",  # Not returned by DDBLocal
+            "$..Table.ProvisionedThroughput.LastIncreaseDateTime",  # Not returned by DDBLocal
+        ]
+    )
+    def test_table_warm_throughput(
+        self, dynamodb_create_table_with_parameters, snapshot, aws_client
+    ):
+        """
+        This test ensures that WarmThroughput params provided to CreateTable are reflected in DescribeTable
+        """
+
+        snapshot.add_transformer(
+            [
+                TransformerUtility.key_value("TableName"),
+                TransformerUtility.key_value("TableArn"),
+            ]
+        )
+
+        table_name = f"test-ddb-table-{short_uid()}"
+
+        response = dynamodb_create_table_with_parameters(
+            TableName=table_name,
+            KeySchema=[{"AttributeName": "id", "KeyType": "HASH"}],
+            AttributeDefinitions=[{"AttributeName": "id", "AttributeType": "S"}],
+            ProvisionedThroughput={"ReadCapacityUnits": 5, "WriteCapacityUnits": 5},
+            WarmThroughput={"ReadUnitsPerSecond": 1000, "WriteUnitsPerSecond": 1200},
+        )
+        snapshot.match("create-table", response)
+
+        response = aws_client.dynamodb.describe_table(TableName=table_name)
+        snapshot.match("describe-table", response)
 
     @markers.aws.validated
     def test_transaction_write_items(
@@ -1947,9 +2017,14 @@ class TestDynamoDB:
         assert result["TableDescription"]["SSEDescription"]["KMSMasterKeyArn"] == kms_master_key_arn
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..KeyMetadata.CurrentKeyMaterialId"]  # Not supported by LS
+    )
     def test_dynamodb_create_table_with_partial_sse_specification(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
+        snapshot.add_transformer(TransformerUtility.key_value("CurrentKeyMaterialId"))
+
         table_name = f"test_table_{short_uid()}"
         sse_specification = {"Enabled": True}
 
@@ -1979,9 +2054,14 @@ class TestDynamoDB:
         assert "SSESpecification" not in result["Table"]
 
     @markers.aws.validated
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..KeyMetadata.CurrentKeyMaterialId"]  # Not supported by LS
+    )
     def test_dynamodb_update_table_without_sse_specification_change(
         self, dynamodb_create_table_with_parameters, snapshot, aws_client
     ):
+        snapshot.add_transformer(TransformerUtility.key_value("CurrentKeyMaterialId"))
+
         table_name = f"test_table_{short_uid()}"
 
         sse_specification = {"Enabled": True}
@@ -2284,6 +2364,7 @@ class TestDynamoDB:
         paths=[
             "$..PointInTimeRecoveryDescription..EarliestRestorableDateTime",
             "$..PointInTimeRecoveryDescription..LatestRestorableDateTime",
+            "$..ContinuousBackupsDescription.PointInTimeRecoveryDescription.RecoveryPeriodInDays",
         ]
     )
     @markers.aws.validated
@@ -2638,6 +2719,8 @@ class TestDynamoDB:
     @pytest.mark.parametrize("billing_mode", ["PAY_PER_REQUEST", "PROVISIONED"])
     @markers.snapshot.skip_snapshot_verify(
         paths=[
+            # Warm throughput for GSI is not implemented in LS. DDB Local doesn't support it either.
+            "$..Table.GlobalSecondaryIndexes..WarmThroughput",
             # LS returns those and not AWS, probably because no changes happened there yet
             "$..ProvisionedThroughput.LastDecreaseDateTime",
             "$..ProvisionedThroughput.LastIncreaseDateTime",

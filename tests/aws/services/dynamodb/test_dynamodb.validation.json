@@ -1,81 +1,213 @@
 {
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_binary": {
-    "last_validated_date": "2023-08-23T14:32:35+00:00"
+    "last_validated_date": "2025-10-08T12:33:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.15,
+      "teardown": 0.41,
+      "total": 6.56
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_items": {
-    "last_validated_date": "2023-08-23T14:33:43+00:00"
+    "last_validated_date": "2025-10-08T12:36:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.2,
+      "teardown": 0.34,
+      "total": 5.54
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_items_streaming": {
-    "last_validated_date": "2023-10-22T21:23:09+00:00"
+    "last_validated_date": "2025-10-08T12:36:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.08,
+      "teardown": 0.41,
+      "total": 7.49
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_not_existing_table": {
-    "last_validated_date": "2023-10-22T18:45:30+00:00"
+    "last_validated_date": "2025-10-08T12:37:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.21,
+      "teardown": 0.0,
+      "total": 0.21
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_batch_write_not_matching_schema": {
-    "last_validated_date": "2023-08-23T14:34:26+00:00"
+    "last_validated_date": "2025-10-08T12:37:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.37,
+      "teardown": 0.5,
+      "total": 6.87
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_continuous_backup_update": {
-    "last_validated_date": "2023-08-23T14:34:39+00:00"
+    "last_validated_date": "2025-10-08T12:38:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 10.06,
+      "teardown": 0.41,
+      "total": 10.47
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_create_duplicate_table": {
-    "last_validated_date": "2023-08-23T14:33:08+00:00"
+    "last_validated_date": "2025-10-08T12:35:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.98,
+      "teardown": 2.68,
+      "total": 8.66
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_data_encoding_consistency": {
-    "last_validated_date": "2023-08-24T08:56:37+00:00"
+    "last_validated_date": "2025-10-08T12:37:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.8,
+      "teardown": 0.34,
+      "total": 8.14
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_batch_execute_statement": {
-    "last_validated_date": "2023-08-23T14:32:51+00:00"
+    "last_validated_date": "2025-10-08T12:33:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.75,
+      "teardown": 2.14,
+      "total": 6.89
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_create_table_with_partial_sse_specification": {
-    "last_validated_date": "2024-01-10T12:59:50+00:00"
+    "last_validated_date": "2025-10-08T14:03:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.67,
+      "call": 7.68,
+      "teardown": 0.3,
+      "total": 8.65
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_describe_contributor_insights": {
-    "last_validated_date": "2025-09-30T20:00:00+00:00",
+    "last_validated_date": "2025-10-08T12:46:55+00:00",
     "durations_in_seconds": {
-      "setup": 0.9,
-      "call": 6.59,
-      "teardown": 0.42,
-      "total": 7.91
+      "setup": 0.0,
+      "call": 6.54,
+      "teardown": 0.49,
+      "total": 7.03
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_statement_empy_parameter": {
-    "last_validated_date": "2025-01-03T09:24:27+00:00"
+    "last_validated_date": "2025-10-08T12:33:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.77,
+      "teardown": 0.35,
+      "total": 7.12
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_execute_transaction": {
-    "last_validated_date": "2023-08-23T14:32:44+00:00"
+    "last_validated_date": "2025-10-08T12:33:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.99,
+      "teardown": 0.41,
+      "total": 8.4
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_get_batch_items": {
-    "last_validated_date": "2023-08-23T14:33:58+00:00"
+    "last_validated_date": "2025-10-08T12:37:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 4.7,
+      "teardown": 0.4,
+      "total": 5.1
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_idempotent_writing": {
-    "last_validated_date": "2023-08-23T14:39:54+00:00"
+    "last_validated_date": "2025-10-08T12:37:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.81,
+      "teardown": 0.42,
+      "total": 6.23
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_partiql_missing": {
-    "last_validated_date": "2023-08-23T14:33:00+00:00"
+    "last_validated_date": "2025-10-08T12:33:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.34,
+      "teardown": 1.54,
+      "total": 7.88
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_pay_per_request": {
-    "last_validated_date": "2023-08-23T14:33:43+00:00"
+    "last_validated_date": "2025-10-08T12:36:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.17,
+      "total": 0.35
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_records_with_update_item": {
     "last_validated_date": "2024-06-26T14:28:26+00:00"
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_stream_stream_view_type": {
-    "last_validated_date": "2024-05-31T14:49:56+00:00"
+    "last_validated_date": "2025-10-08T12:34:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 10.26,
+      "teardown": 0.38,
+      "total": 10.64
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_streams_describe_with_exclusive_start_shard_id": {
-    "last_validated_date": "2023-10-22T20:27:28+00:00"
+    "last_validated_date": "2025-10-08T12:37:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.84,
+      "teardown": 0.46,
+      "total": 7.3
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_dynamodb_update_table_without_sse_specification_change": {
-    "last_validated_date": "2024-12-17T10:39:19+00:00"
+    "last_validated_date": "2025-10-08T14:06:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.77,
+      "call": 7.22,
+      "teardown": 39.29,
+      "total": 47.28
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_empty_and_binary_values": {
-    "last_validated_date": "2023-08-23T14:32:29+00:00"
+    "last_validated_date": "2025-10-08T12:33:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.36,
+      "teardown": 0.0,
+      "total": 6.36
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PAY_PER_REQUEST]": {
-    "last_validated_date": "2025-01-08T18:17:06+00:00"
+    "last_validated_date": "2025-10-08T12:46:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.17,
+      "teardown": 0.51,
+      "total": 14.68
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_gsi_with_billing_mode[PROVISIONED]": {
-    "last_validated_date": "2025-01-08T18:17:21+00:00"
+    "last_validated_date": "2025-10-08T12:46:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.33,
+      "teardown": 0.33,
+      "total": 15.66
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_kinesis_streaming_destination_crud": {
     "last_validated_date": "2025-07-23T13:31:04+00:00",
@@ -87,33 +219,120 @@
     }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_in_put_item": {
-    "last_validated_date": "2023-08-23T14:32:21+00:00"
+    "last_validated_date": "2025-10-08T12:33:15+00:00",
+    "durations_in_seconds": {
+      "setup": 6.35,
+      "call": 0.92,
+      "teardown": 0.19,
+      "total": 7.46
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_return_values_on_conditions_check_failure": {
-    "last_validated_date": "2024-01-03T17:52:19+00:00"
+    "last_validated_date": "2025-10-08T12:45:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.6,
+      "teardown": 0.34,
+      "total": 6.94
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_stream_destination_records": {
+    "last_validated_date": "2025-10-08T12:45:49+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 468.26,
+      "teardown": 0.62,
+      "total": 468.88
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_streams_on_global_tables": {
-    "last_validated_date": "2025-05-22T12:44:55+00:00"
+    "last_validated_date": "2025-10-08T12:35:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 64.24,
+      "teardown": 3.24,
+      "total": 67.48
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_table_crud": {
+    "last_validated_date": "2025-10-08T12:35:32+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.7,
+      "teardown": 0.21,
+      "total": 6.91
+    }
+  },
+  "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_table_warm_throughput": {
+    "last_validated_date": "2025-10-08T12:35:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.84,
+      "teardown": 0.33,
+      "total": 7.17
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_get_items": {
-    "last_validated_date": "2023-08-23T14:33:37+00:00"
+    "last_validated_date": "2025-10-08T12:36:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 6.7,
+      "teardown": 0.41,
+      "total": 7.11
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming": {
-    "last_validated_date": "2024-05-31T14:47:04+00:00"
+    "last_validated_date": "2025-10-08T12:46:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 8.54,
+      "teardown": 0.32,
+      "total": 8.86
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transact_write_items_streaming_for_different_tables": {
-    "last_validated_date": "2024-04-02T21:45:36+00:00"
+    "last_validated_date": "2025-10-08T12:46:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 12.7,
+      "teardown": 0.77,
+      "total": 13.47
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_binary_data": {
-    "last_validated_date": "2023-08-23T14:33:31+00:00"
+    "last_validated_date": "2025-10-08T12:35:59+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 7.62,
+      "teardown": 0.33,
+      "total": 7.95
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_canceled": {
-    "last_validated_date": "2023-08-23T14:33:24+00:00"
+    "last_validated_date": "2025-10-08T12:35:51+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.79,
+      "teardown": 0.4,
+      "total": 6.19
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_transaction_write_items": {
-    "last_validated_date": "2023-08-23T14:33:16+00:00"
+    "last_validated_date": "2025-10-08T12:35:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 5.32,
+      "teardown": 0.37,
+      "total": 5.69
+    }
   },
   "tests/aws/services/dynamodb/test_dynamodb.py::TestDynamoDB::test_valid_local_secondary_index": {
-    "last_validated_date": "2023-08-23T14:32:11+00:00"
+    "last_validated_date": "2025-10-08T12:33:08+00:00",
+    "durations_in_seconds": {
+      "setup": 0.89,
+      "call": 8.17,
+      "teardown": 0.49,
+      "total": 9.55
+    }
   }
 }
