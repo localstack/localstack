@@ -5,6 +5,7 @@ import textwrap
 import botocore.errorfactory
 import botocore.exceptions
 import pytest
+from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
 from localstack.utils.files import load_file
@@ -459,3 +460,32 @@ def test_diff_after_update(deploy_cfn_template, aws_client, snapshot):
 
     describe_stack_response = aws_client.cloudformation.describe_stacks(StackName=stack.stack_name)
     assert describe_stack_response["Stacks"][0]["StackStatus"] == "UPDATE_COMPLETE"
+
+
+@markers.aws.validated
+@skip_if_legacy_engine
+def test_update_deleted_stack(aws_client, deploy_cfn_template, snapshot):
+    template = json.dumps(
+        {
+            "Resources": {
+                "Parameter": {
+                    "Type": "AWS::SSM::Parameter",
+                    "Properties": {"Type": "String", "Value": "Test"},
+                }
+            }
+        }
+    )
+
+    stack = deploy_cfn_template(template=template)
+    stack.destroy()
+
+    with pytest.raises(botocore.exceptions.ClientError) as ex:
+        aws_client.cloudformation.create_change_set(
+            StackName=stack.stack_id,
+            ChangeSetName="test",
+            TemplateBody=template,
+            ChangeSetType="UPDATE",
+        )
+
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
+    snapshot.match("Error", ex.value.response)

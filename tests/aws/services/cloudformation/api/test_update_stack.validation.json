@@ -8,6 +8,15 @@
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_no_template_error": {
     "last_validated_date": "2022-11-21T07:57:45+00:00"
   },
+  "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_deleted_stack": {
+    "last_validated_date": "2025-10-10T21:42:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.25,
+      "call": 18.99,
+      "teardown": 0.12,
+      "total": 19.36
+    }
+  },
   "tests/aws/services/cloudformation/api/test_update_stack.py::test_update_with_invalid_rollback_configuration_errors": {
     "last_validated_date": "2022-11-21T14:36:32+00:00"
   },

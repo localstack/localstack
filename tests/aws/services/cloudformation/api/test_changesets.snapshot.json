@@ -655,5 +655,59 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_create_changeset_for_deleted_stack": {
+    "recorded-date": "10-10-2025, 18:02:05",
+    "recorded-content": {
+      "ErrorForCreate": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack [<stack-id>] already exists and cannot be created again with the changeSet [test].",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "ErrorForUpdate": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack:<stack-id> is in DELETE_COMPLETE state and can not be updated.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_changesets.py::test_changeset_for_deleted_stack": {
+    "recorded-date": "10-10-2025, 18:49:37",
+    "recorded-content": {
+      "ErrorForInProgress": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack:<stack-id> is in DELETE_IN_PROGRESS state and can not be updated.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "ErrorForComplete": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Stack:<stack-id> is in DELETE_COMPLETE state and can not be updated.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
