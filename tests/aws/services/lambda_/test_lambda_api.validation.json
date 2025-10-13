@@ -51,10 +51,22 @@
     "last_validated_date": "2024-12-05T10:52:30+00:00"
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "last_validated_date": "2024-10-14T12:36:54+00:00"
+    "last_validated_date": "2025-10-13T19:06:25+00:00",
+    "durations_in_seconds": {
+      "setup": 11.48,
+      "call": 18.08,
+      "teardown": 2.09,
+      "total": 31.65
+    }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle_delete_function": {
-    "last_validated_date": "2024-10-12T09:59:58+00:00"
+    "last_validated_date": "2025-10-13T19:09:30+00:00",
+    "durations_in_seconds": {
+      "setup": 11.41,
+      "call": 19.44,
+      "teardown": 1.92,
+      "total": 32.77
+    }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_function_name_variations": {
     "last_validated_date": "2024-10-14T12:46:32+00:00"
