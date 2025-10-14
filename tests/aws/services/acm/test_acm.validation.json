@@ -3,12 +3,30 @@
     "last_validated_date": "2023-04-18T17:01:27+00:00"
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
-    "last_validated_date": "2024-01-09T14:58:14+00:00"
+    "last_validated_date": "2025-10-14T09:18:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.45,
+      "call": 5.97,
+      "teardown": 0.19,
+      "total": 6.61
+    }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_domain_validation": {
-    "last_validated_date": "2024-04-12T15:36:37+00:00"
+    "last_validated_date": "2025-10-14T09:31:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.46,
+      "call": 2.94,
+      "teardown": 0.21,
+      "total": 3.61
+    }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
-    "last_validated_date": "2024-02-22T17:41:15+00:00"
+    "last_validated_date": "2025-10-14T09:17:56+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 1.25,
+      "teardown": 0.25,
+      "total": 1.98
+    }
   }
 }
