@@ -105,7 +105,7 @@ class S3EventNotificationContext:
     key_storage_class: StorageClass | None
 
     @classmethod
-    def from_request_context_native(
+    def from_request_context(
         cls,
         request_context: RequestContext,
         s3_bucket: S3Bucket,

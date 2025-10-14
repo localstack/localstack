@@ -10,8 +10,6 @@ from localstack.aws.api.s3 import (
 )
 from localstack.aws.api.s3 import Type as GranteeType
 
-S3_VIRTUAL_HOST_FORWARDED_HEADER = "x-s3-vhost-forwarded-for"
-
 S3_UPLOAD_PART_MIN_SIZE = 5242880
 """
 This is minimum size allowed by S3 when uploading more than one part for a Multipart Upload, except for the last part

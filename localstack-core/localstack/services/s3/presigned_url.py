@@ -45,10 +45,8 @@ from localstack.services.s3.constants import (
     SIGNATURE_V4_PARAMS,
 )
 from localstack.services.s3.utils import (
-    S3_VIRTUAL_HOST_FORWARDED_HEADER,
     capitalize_header_name_from_snake_case,
     extract_bucket_name_and_key_from_headers_and_path,
-    forwarded_from_virtual_host_addressed_request,
     is_bucket_name_valid,
     is_presigned_url_request,
     uses_host_addressing,
@@ -567,34 +565,21 @@ class S3SigV4SignatureContext:
             self._query_parameters
         )
 
-        if forwarded_from_virtual_host_addressed_request(self._headers):
-            # FIXME: maybe move this so it happens earlier in the chain when using virtual host?
-            if not is_bucket_name_valid(self._bucket):
-                raise InvalidBucketName(BucketName=self._bucket)
-            netloc = self._headers.get(S3_VIRTUAL_HOST_FORWARDED_HEADER)
-            self.host = netloc
-            self._original_host = netloc
-            self.signed_headers["host"] = netloc
-            # the request comes from the Virtual Host router, we need to remove the bucket from the path
+        netloc = urlparse.urlparse(self.request.url).netloc
+        self.host = netloc
+        self._original_host = netloc
+        if (host_addressed := uses_host_addressing(self._headers)) and not is_bucket_name_valid(
+            self._bucket
+        ):
+            raise InvalidBucketName(BucketName=self._bucket)
+
+        if not host_addressed and not self.request.path.startswith(f"/{self._bucket}"):
+            # if in path style, check that the path starts with the bucket
+            # our path has been sanitized, we should use the un-sanitized one
             splitted_path = self.request.path.split("/", maxsplit=2)
-            self.path = f"/{splitted_path[-1]}"
-
+            self.path = f"/{self._bucket}/{splitted_path[-1]}"
         else:
-            netloc = urlparse.urlparse(self.request.url).netloc
-            self.host = netloc
-            self._original_host = netloc
-            if (host_addressed := uses_host_addressing(self._headers)) and not is_bucket_name_valid(
-                self._bucket
-            ):
-                raise InvalidBucketName(BucketName=self._bucket)
-
-            if not host_addressed and not self.request.path.startswith(f"/{self._bucket}"):
-                # if in path style, check that the path starts with the bucket
-                # our path has been sanitized, we should use the un-sanitized one
-                splitted_path = self.request.path.split("/", maxsplit=2)
-                self.path = f"/{self._bucket}/{splitted_path[-1]}"
-            else:
-                self.path = self.request.path
+            self.path = self.request.path
 
         # we need to URL encode the path, as the key needs to be urlencoded for the signature to match
         self.path = urlparse.quote(self.path)
