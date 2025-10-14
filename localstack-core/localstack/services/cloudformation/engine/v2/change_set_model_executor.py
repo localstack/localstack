@@ -576,6 +576,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     )
                     # TODO: do we actually need this line?
                     resolved_resource.update(extra_resource_properties)
+                    self.resources[logical_resource_id] = resolved_resource
 
             case OperationStatus.FAILED:
                 reason = event.message
@@ -585,13 +586,11 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                 )
                 resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
                 resolved_resource["ResourceStatusReason"] = reason
+                self.resources[logical_resource_id] = resolved_resource
+
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
 
-        if action == ChangeAction.Remove:
-            self.resources.pop(logical_resource_id, None)
-        else:
-            self.resources[logical_resource_id] = resolved_resource
         return event
 
     def create_resource_provider_payload(
