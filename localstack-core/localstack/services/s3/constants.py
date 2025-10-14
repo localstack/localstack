@@ -21,6 +21,11 @@ This is minimum size allowed by S3 when uploading more than one part for a Multi
 DEFAULT_PRE_SIGNED_ACCESS_KEY_ID = "test"
 DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY = "test"
 
+S3_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
+"""
+S3 is returning a Host Id as part of its exceptions
+"""
+
 AUTHENTICATED_USERS_ACL_GROUP = "http://acs.amazonaws.com/groups/global/AuthenticatedUsers"
 ALL_USERS_ACL_GROUP = "http://acs.amazonaws.com/groups/global/AllUsers"
 LOG_DELIVERY_ACL_GROUP = "http://acs.amazonaws.com/groups/s3/LogDelivery"

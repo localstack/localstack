@@ -236,6 +236,7 @@ from localstack.services.s3.constants import (
     ARCHIVES_STORAGE_CLASSES,
     CHECKSUM_ALGORITHMS,
     DEFAULT_BUCKET_ENCRYPTION,
+    S3_HOST_ID,
 )
 from localstack.services.s3.cors import S3CorsHandler, s3_cors_request_handler
 from localstack.services.s3.exceptions import (
@@ -477,7 +478,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # See the `TestS3.test_create_bucket_aws_global` test
             raise AuthorizationHeaderMalformed(
                 f"The authorization header is malformed; the region 'aws-global' is wrong; expecting '{AWS_REGION_US_EAST_1}'",
-                HostId="9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg=",
+                HostId=S3_HOST_ID,
                 Region=AWS_REGION_US_EAST_1,
             )
 
@@ -654,7 +655,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             # See the `TestS3.test_create_bucket_aws_global` test
             raise AuthorizationHeaderMalformed(
                 f"The authorization header is malformed; the region 'aws-global' is wrong; expecting '{AWS_REGION_US_EAST_1}'",
-                HostId="9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg=",
+                HostId=S3_HOST_ID,
                 Region=AWS_REGION_US_EAST_1,
             )
 

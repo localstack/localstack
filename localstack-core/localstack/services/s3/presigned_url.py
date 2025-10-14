@@ -40,6 +40,7 @@ from localstack.http.request import get_raw_path
 from localstack.services.s3.constants import (
     DEFAULT_PRE_SIGNED_ACCESS_KEY_ID,
     DEFAULT_PRE_SIGNED_SECRET_ACCESS_KEY,
+    S3_HOST_ID,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
 )
@@ -84,8 +85,6 @@ BLACKLISTED_HEADERS = ["X-Amz-Security-Token"]
 IGNORED_SIGV4_HEADERS = [
     "x-amz-content-sha256",
 ]
-
-FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
 
 HOST_COMBINATION_REGEX = r"^(.*)(:[\d]{0,6})"
 PORT_REPLACEMENT = [":80", ":443", f":{config.GATEWAY_LISTEN[0].port}", ""]
@@ -156,7 +155,7 @@ def create_signature_does_not_match_sig_v2(
         "The request signature we calculated does not match the signature you provided. Check your key and signing method."
     )
     ex.AWSAccessKeyId = access_key_id
-    ex.HostId = FAKE_HOST_ID
+    ex.HostId = S3_HOST_ID
     ex.SignatureProvided = request_signature
     ex.StringToSign = string_to_sign
     ex.StringToSignBytes = to_bytes(string_to_sign).hex(sep=" ", bytes_per_sep=2).upper()
@@ -299,7 +298,7 @@ def is_valid_sig_v2(query_args: set) -> bool:
             LOG.info("Presign signature calculation failed")
             raise AccessDenied(
                 "Query-string authentication requires the Signature, Expires and AWSAccessKeyId parameters",
-                HostId=FAKE_HOST_ID,
+                HostId=S3_HOST_ID,
             )
 
         return True
@@ -317,7 +316,7 @@ def is_valid_sig_v4(query_args: set) -> bool:
             LOG.info("Presign signature calculation failed")
             raise AuthorizationQueryParametersError(
                 "Query-string authentication version 4 requires the X-Amz-Algorithm, X-Amz-Credential, X-Amz-Signature, X-Amz-Date, X-Amz-SignedHeaders, and X-Amz-Expires parameters.",
-                HostId=FAKE_HOST_ID,
+                HostId=S3_HOST_ID,
             )
 
         return True
@@ -351,7 +350,7 @@ def validate_presigned_url_s3(context: RequestContext) -> None:
             )
         else:
             raise AccessDenied(
-                "Request has expired", HostId=FAKE_HOST_ID, Expires=expires, ServerTime=time.time()
+                "Request has expired", HostId=S3_HOST_ID, Expires=expires, ServerTime=time.time()
             )
 
     auth_signer = HmacV1QueryAuthValidation(credentials=signing_credentials, expires=expires)
@@ -450,7 +449,7 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
         else:
             raise AccessDenied(
                 "There were headers present in the request which were not signed",
-                HostId=FAKE_HOST_ID,
+                HostId=S3_HOST_ID,
                 HeadersNotSigned=", ".join(sigv4_context.missing_signed_headers),
             )
 
@@ -482,7 +481,7 @@ def validate_presigned_url_s3v4(context: RequestContext) -> None:
         else:
             raise AccessDenied(
                 "Request has expired",
-                HostId=FAKE_HOST_ID,
+                HostId=S3_HOST_ID,
                 Expires=expiration_time.timestamp(),
                 ServerTime=time.time(),
                 X_Amz_Expires=x_amz_expires,
@@ -714,7 +713,7 @@ class S3SigV4SignatureContext:
         if not (split_creds := credential.split("/")) or len(split_creds) != 5:
             raise AuthorizationQueryParametersError(
                 'Error parsing the X-Amz-Credential parameter; the Credential is mal-formed; expecting "<YOUR-AKID>/YYYYMMDD/REGION/SERVICE/aws4_request".',
-                HostId=FAKE_HOST_ID,
+                HostId=S3_HOST_ID,
             )
 
         return split_creds[2]
@@ -775,7 +774,7 @@ def validate_post_policy(
             "Bucket POST must contain a field named 'key'.  If it is specified, please check the order of the fields.",
             ArgumentName="key",
             ArgumentValue="",
-            HostId=FAKE_HOST_ID,
+            HostId=S3_HOST_ID,
         )
 
     form_dict = {k.lower(): v for k, v in request_form.items()}
@@ -791,7 +790,7 @@ def validate_post_policy(
 
     if not is_v2 and not is_v4:
         ex: AccessDenied = AccessDenied("Access Denied")
-        ex.HostId = FAKE_HOST_ID
+        ex.HostId = S3_HOST_ID
         raise ex
 
     try:
@@ -810,7 +809,7 @@ def validate_post_policy(
     if expiration := policy_decoded.get("expiration"):
         if is_expired(_parse_policy_expiration_date(expiration)):
             ex: AccessDenied = AccessDenied("Invalid according to Policy: Policy expired.")
-            ex.HostId = FAKE_HOST_ID
+            ex.HostId = S3_HOST_ID
             raise ex
 
     # TODO: validate the signature
@@ -832,7 +831,7 @@ def validate_post_policy(
             str_condition = str(condition).replace("'", '"')
             raise AccessDenied(
                 f"Invalid according to Policy: Policy Condition failed: {str_condition}",
-                HostId=FAKE_HOST_ID,
+                HostId=S3_HOST_ID,
             )
 
 
@@ -885,7 +884,7 @@ def _verify_condition(condition: list | dict, form: dict, additional_policy_meta
                     "Your proposed upload exceeds the maximum allowed size",
                     ProposedSize=size,
                     MaxSizeAllowed=end,
-                    HostId=FAKE_HOST_ID,
+                    HostId=S3_HOST_ID,
                 )
             else:
                 return True
@@ -934,7 +933,7 @@ def _is_match_with_signature_fields(
                     f"Bucket POST must contain a field named '{argument_name}'.  If it is specified, please check the order of the fields.",
                     ArgumentName=argument_name,
                     ArgumentValue="",
-                    HostId=FAKE_HOST_ID,
+                    HostId=S3_HOST_ID,
                 )
 
         return True
