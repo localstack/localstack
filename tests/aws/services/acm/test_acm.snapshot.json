@@ -139,19 +139,21 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_create_certificate_for_multiple_alternative_domains": {
-    "recorded-date": "09-01-2024, 14:58:14",
+    "recorded-date": "14-10-2025, 09:18:38",
     "recorded-content": {
       "list-cert-summary-list": {
         "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
         "CreatedAt": "datetime",
         "DomainName": "test.example.com",
+        "ExportOption": "DISABLED",
+        "Exported": false,
         "ExtendedKeyUsages": [],
         "HasAdditionalSubjectAlternativeNames": false,
         "InUse": false,
         "KeyAlgorithm": "RSA-2048",
         "KeyUsages": [],
         "RenewalEligibility": "INELIGIBLE",
-        "Status": "FAILED",
+        "Status": "PENDING_VALIDATION",
         "SubjectAlternativeNameSummaries": [
           "*.test.example.com",
           "another.domain.com",
@@ -201,7 +203,8 @@
         "KeyAlgorithm": "RSA-2048",
         "KeyUsages": [],
         "Options": {
-          "CertificateTransparencyLoggingPreference": "ENABLED"
+          "CertificateTransparencyLoggingPreference": "ENABLED",
+          "Export": "DISABLED"
         },
         "RenewalEligibility": "INELIGIBLE",
         "SignatureAlgorithm": "SHA256WITHRSA",
@@ -218,7 +221,7 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_import_certificate": {
-    "recorded-date": "22-02-2024, 17:41:15",
+    "recorded-date": "14-10-2025, 09:17:56",
     "recorded-content": {
       "import-certificate-response": {
         "CertificateArn": "arn:<partition>:acm:<region>:111111111111:certificate/<cert-id>",
@@ -270,7 +273,8 @@
           "NotAfter": "datetime",
           "NotBefore": "datetime",
           "Options": {
-            "CertificateTransparencyLoggingPreference": "DISABLED"
+            "CertificateTransparencyLoggingPreference": "DISABLED",
+            "Export": "DISABLED"
           },
           "RenewalEligibility": "INELIGIBLE",
           "Serial": "03:e9",
@@ -293,7 +297,7 @@
     }
   },
   "tests/aws/services/acm/test_acm.py::TestACM::test_domain_validation": {
-    "recorded-date": "12-04-2024, 15:36:37",
+    "recorded-date": "14-10-2025, 09:31:48",
     "recorded-content": {
       "describe-certificate": {
         "Certificate": {
@@ -315,7 +319,8 @@
           "KeyAlgorithm": "RSA-2048",
           "KeyUsages": [],
           "Options": {
-            "CertificateTransparencyLoggingPreference": "ENABLED"
+            "CertificateTransparencyLoggingPreference": "ENABLED",
+            "Export": "DISABLED"
           },
           "RenewalEligibility": "INELIGIBLE",
           "SignatureAlgorithm": "<signature-algorithm:1>",
