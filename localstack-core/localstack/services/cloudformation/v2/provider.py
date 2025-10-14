@@ -450,12 +450,20 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             )  # TODO: check proper message
 
         template_body = api_utils.extract_template_body(request)
-        structured_template = template_preparer.parse_template(template_body)
 
         if len(template_body) > 51200 and not template_url:
             raise ValidationError(
                 f"1 validation error detected: Value '{template_body}' at 'templateBody' "
                 "failed to satisfy constraint: Member must have length less than or equal to 51200"
+            )
+
+        structured_template = template_preparer.parse_template_v2(template_body)
+
+        if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
+            "Transform" in structured_template.keys() or "Fn::Transform" in template_body
+        ):
+            raise InsufficientCapabilitiesException(
+                "Requires capabilities : [CAPABILITY_AUTO_EXPAND]"
             )
 
         # this is intentionally not in a util yet. Let's first see how the different operations deal with these before generalizing
@@ -875,7 +883,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             )  # TODO: check proper message
 
         template_body = api_utils.extract_template_body(request)
-        structured_template = template_preparer.parse_template(template_body)
+        structured_template = template_preparer.parse_template_v2(template_body)
 
         if len(template_body) > 51200 and not template_url:
             raise ValidationError(
@@ -1431,7 +1439,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
                 )  # TODO: check proper message
 
             template_body = api_utils.extract_template_body(request)
-            template = template_preparer.parse_template(template_body)
+            template = template_preparer.parse_template_v2(template_body)
 
         id_summaries = defaultdict(list)
         if "Resources" not in template:
@@ -1510,7 +1518,7 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
             )  # TODO: check proper message
 
         template_body = api_utils.extract_template_body(request)
-        structured_template = template_preparer.parse_template(template_body)
+        structured_template = template_preparer.parse_template_v2(template_body)
 
         if "CAPABILITY_AUTO_EXPAND" not in request.get("Capabilities", []) and (
             "Transform" in structured_template.keys() or "Fn::Transform" in template_body
