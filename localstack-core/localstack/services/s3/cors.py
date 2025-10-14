@@ -21,13 +21,13 @@ from localstack.aws.protocol.op_router import RestServiceOperationRouter
 from localstack.aws.spec import get_service_catalog
 from localstack.config import S3_VIRTUAL_HOSTNAME
 from localstack.http import Request, Response
+from localstack.services.s3.constants import S3_HOST_ID
 from localstack.services.s3.utils import S3_VIRTUAL_HOSTNAME_REGEX
 
 # TODO: add more logging statements
 LOG = logging.getLogger(__name__)
 
 _s3_virtual_host_regex = re.compile(S3_VIRTUAL_HOSTNAME_REGEX)
-FAKE_HOST_ID = "9Gjjt1m+cjU4OPvX9O9/8RuvnG41MRb/18Oux2o5H5MY7ISNTlXN+Dz9IG62/ILVxhAGI0qyPfg="
 
 # TODO: refactor those to expose the needed methods maybe in another way that both can import
 add_default_headers = CorsResponseEnricher.add_cors_headers
@@ -135,7 +135,7 @@ class S3CorsHandler(Handler):
             if is_options_request:
                 context.operation = self._get_op_from_request(request)
                 raise BadRequest(
-                    "Insufficient information. Origin request header needed.", HostId=FAKE_HOST_ID
+                    "Insufficient information. Origin request header needed.", HostId=S3_HOST_ID
                 )
             else:
                 # If the header is missing, Amazon S3 doesn't treat the request as a cross-origin request,
@@ -167,7 +167,7 @@ class S3CorsHandler(Handler):
                     context.operation = self._get_op_from_request(request)
                     raise AccessForbidden(
                         message,
-                        HostId=FAKE_HOST_ID,
+                        HostId=S3_HOST_ID,
                         Method=request.headers.get("Access-Control-Request-Method", "OPTIONS"),
                         ResourceType="BUCKET",
                     )
@@ -182,7 +182,7 @@ class S3CorsHandler(Handler):
                 context.operation = self._get_op_from_request(request)
                 raise AccessForbidden(
                     "CORSResponse: This CORS request is not allowed. This is usually because the evalution of Origin, request method / Access-Control-Request-Method or Access-Control-Request-Headers are not whitelisted by the resource's CORS spec.",
-                    HostId=FAKE_HOST_ID,
+                    HostId=S3_HOST_ID,
                     Method=request.headers.get("Access-Control-Request-Method"),
                     ResourceType="OBJECT",
                 )
