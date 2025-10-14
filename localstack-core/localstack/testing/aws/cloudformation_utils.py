@@ -29,7 +29,7 @@ def load_template_file(file_path: str | os.PathLike, *, path_ctx: str | os.PathL
     elif not file_path_obj.is_absolute():
         raise ValueError("Provided path must be absolute if no path_ctx is provided")
 
-    return load_file(file_path_obj.absolute())
+    return load_file(file_path_obj.absolute(), strict=True)
 
 
 # TODO: TBH this utility really doesn't add anything, probably better to just remove it
