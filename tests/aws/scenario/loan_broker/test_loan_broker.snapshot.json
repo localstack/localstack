@@ -1,6 +1,6 @@
 {
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input0-SUCCEEDED]": {
-    "recorded-date": "02-08-2023, 11:58:05",
+    "recorded-date": "13-10-2025, 18:55:01",
     "recorded-content": {
       "describe-execution-finished": {
         "executionArn": "<execution-arn:1>",
@@ -52,6 +52,9 @@
         "outputDetails": {
           "included": true
         },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
         "startDate": "datetime",
         "stateMachineArn": "<state-machine-arn:1>",
         "status": "SUCCEEDED",
@@ -65,7 +68,7 @@
     }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input1-SUCCEEDED]": {
-    "recorded-date": "02-08-2023, 11:58:07",
+    "recorded-date": "13-10-2025, 18:55:03",
     "recorded-content": {
       "describe-execution-finished": {
         "executionArn": "<execution-arn:1>",
@@ -108,6 +111,9 @@
         "outputDetails": {
           "included": true
         },
+        "redriveCount": 0,
+        "redriveStatus": "NOT_REDRIVABLE",
+        "redriveStatusReason": "Execution is SUCCEEDED and cannot be redriven",
         "startDate": "datetime",
         "stateMachineArn": "<state-machine-arn:1>",
         "status": "SUCCEEDED",
@@ -121,7 +127,7 @@
     }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input2-FAILED]": {
-    "recorded-date": "02-08-2023, 11:58:10",
+    "recorded-date": "13-10-2025, 18:55:04",
     "recorded-content": {
       "describe-execution-finished": {
         "cause": "An error occurred while executing the state 'Get Credit Score from credit bureau' (entered at the event id #2). The JSONPath '$.Payload.body.score' specified for the field 'Score.$' could not be found in the input '<json-input:1>'",
@@ -136,6 +142,8 @@
           "included": true
         },
         "name": "<name:1>",
+        "redriveCount": 0,
+        "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
         "stateMachineArn": "<state-machine-arn:1>",
         "status": "FAILED",
@@ -149,7 +157,7 @@
     }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input3-FAILED]": {
-    "recorded-date": "02-08-2023, 11:58:10",
+    "recorded-date": "13-10-2025, 18:55:05",
     "recorded-content": {
       "describe-execution-finished": {
         "cause": "An error occurred while executing the state 'Get Credit Score from credit bureau' (entered at the event id #2). The JSONPath '$.SSN' specified for the field 'SSN.$' could not be found in the input '<json-input:1>'",
@@ -162,6 +170,8 @@
           "included": true
         },
         "name": "<name:1>",
+        "redriveCount": 0,
+        "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
         "stateMachineArn": "<state-machine-arn:1>",
         "status": "FAILED",
@@ -175,7 +185,7 @@
     }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_stepfunctions_input_recipient_list[step_function_input4-FAILED]": {
-    "recorded-date": "02-08-2023, 11:58:13",
+    "recorded-date": "13-10-2025, 18:55:07",
     "recorded-content": {
       "describe-execution-finished": {
         "cause": "An error occurred while executing the state 'Get all bank quotes' (entered at the event id #12). The JSONPath '$.Amount' specified for the field 'Amount.$' could not be found in the input '<json-input:1>'",
@@ -188,6 +198,8 @@
           "included": true
         },
         "name": "<name:1>",
+        "redriveCount": 0,
+        "redriveStatus": "REDRIVABLE",
         "startDate": "datetime",
         "stateMachineArn": "<state-machine-arn:1>",
         "status": "FAILED",
@@ -201,7 +213,7 @@
     }
   },
   "tests/aws/scenario/loan_broker/test_loan_broker.py::TestLoanBrokerScenario::test_prefill_dynamodb_table": {
-    "recorded-date": "24-08-2023, 16:33:21",
+    "recorded-date": "13-10-2025, 18:54:57",
     "recorded-content": {
       "describe_table": {
         "Table": {
@@ -233,7 +245,12 @@
           "TableId": "<uuid:1>",
           "TableName": "LoanBrokerBanksTable",
           "TableSizeBytes": 0,
-          "TableStatus": "ACTIVE"
+          "TableStatus": "ACTIVE",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

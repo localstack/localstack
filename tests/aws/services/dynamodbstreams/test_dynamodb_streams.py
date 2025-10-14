@@ -24,7 +24,6 @@ class TestDynamoDBStreams:
         paths=[
             "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
             "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-            "$..Table.Replicas",
         ]
     )
     def test_table_v2_stream(self, aws_client, infrastructure_setup, snapshot):

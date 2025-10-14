@@ -4,6 +4,7 @@ import aws_cdk as cdk
 import pytest
 from aws_cdk import aws_dynamodb as dynamodb
 from aws_cdk.aws_dynamodb import BillingMode
+from botocore.exceptions import ClientError
 
 from localstack.testing.pytest import markers
 from localstack.utils.aws.arns import get_partition
@@ -67,8 +68,6 @@ def test_globalindex_read_write_provisioned_throughput_dynamodb_table(
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-        "$..Table.Replicas",
-        "$..Table.DeletionProtectionEnabled",
     ]
 )
 def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
@@ -92,8 +91,6 @@ def test_default_name_for_table(deploy_cfn_template, snapshot, aws_client):
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-        "$..Table.Replicas",
-        "$..Table.DeletionProtectionEnabled",
     ]
 )
 @pytest.mark.parametrize("billing_mode", ["PROVISIONED", "PAY_PER_REQUEST"])
@@ -117,10 +114,8 @@ def test_billing_mode_as_conditional(deploy_cfn_template, snapshot, aws_client, 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(
     paths=[
-        "$..Table.DeletionProtectionEnabled",
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-        "$..Table.Replicas",
     ]
 )
 def test_global_table(deploy_cfn_template, snapshot, aws_client):
@@ -136,7 +131,7 @@ def test_global_table(deploy_cfn_template, snapshot, aws_client):
 
     stack.destroy()
 
-    with pytest.raises(Exception) as ex:
+    with pytest.raises(ClientError) as ex:
         aws_client.dynamodb.describe_table(TableName=stack.outputs["TableName"])
 
     error_code = ex.value.response["Error"]["Code"]

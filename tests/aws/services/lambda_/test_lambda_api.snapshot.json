@@ -5868,7 +5868,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle": {
-    "recorded-date": "14-10-2024, 12:36:57",
+    "recorded-date": "13-10-2025, 19:06:25",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -5906,7 +5906,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
-          "TableStatus": "UPDATING"
+          "TableStatus": "UPDATING",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -17537,7 +17542,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaEventSourceMappings::test_event_source_mapping_lifecycle_delete_function": {
-    "recorded-date": "12-10-2024, 10:00:01",
+    "recorded-date": "13-10-2025, 19:09:29",
     "recorded-content": {
       "update_table_response": {
         "TableDescription": {
@@ -17575,7 +17580,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<resource:2>",
           "TableSizeBytes": 0,
-          "TableStatus": "UPDATING"
+          "TableStatus": "UPDATING",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "ACTIVE",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

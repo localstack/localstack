@@ -981,7 +981,6 @@ class TestCfnLambdaIntegrations:
             # dynamodb describe_table
             "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
             "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
-            "$..Table.Replicas",
             # stream result
             "$..StreamDescription.CreationRequestDateTime",
         ]

@@ -35,7 +35,7 @@
     }
   },
   "tests/aws/services/dynamodbstreams/test_dynamodb_streams.py::TestDynamoDBStreams::test_table_v2_stream": {
-    "recorded-date": "12-06-2024, 21:57:48",
+    "recorded-date": "13-10-2025, 19:03:15",
     "recorded-content": {
       "global-table-v2": {
         "Table": {
@@ -73,7 +73,12 @@
           "TableId": "<uuid:1>",
           "TableName": "<table-name:1>",
           "TableSizeBytes": 0,
-          "TableStatus": "<table-status:1>"
+          "TableStatus": "<table-status:1>",
+          "WarmThroughput": {
+            "ReadUnitsPerSecond": 12000,
+            "Status": "<table-status:1>",
+            "WriteUnitsPerSecond": 4000
+          }
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},

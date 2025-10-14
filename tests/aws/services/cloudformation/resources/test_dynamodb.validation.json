@@ -1,15 +1,39 @@
 {
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PAY_PER_REQUEST]": {
-    "last_validated_date": "2023-08-28T10:35:02+00:00"
+    "last_validated_date": "2025-10-13T19:00:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 21.82,
+      "teardown": 15.38,
+      "total": 37.2
+    }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_billing_mode_as_conditional[PROVISIONED]": {
-    "last_validated_date": "2023-08-28T10:34:41+00:00"
+    "last_validated_date": "2025-10-13T18:59:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 22.58,
+      "teardown": 15.38,
+      "total": 38.43
+    }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_default_name_for_table": {
-    "last_validated_date": "2023-08-28T10:34:19+00:00"
+    "last_validated_date": "2025-10-13T18:58:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.48,
+      "call": 22.98,
+      "teardown": 15.44,
+      "total": 38.9
+    }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table": {
-    "last_validated_date": "2023-12-01T11:54:13+00:00"
+    "last_validated_date": "2025-10-13T19:01:29+00:00",
+    "durations_in_seconds": {
+      "setup": 0.47,
+      "call": 38.13,
+      "teardown": 0.24,
+      "total": 38.84
+    }
   },
   "tests/aws/services/cloudformation/resources/test_dynamodb.py::test_global_table_with_ttl_and_sse": {
     "last_validated_date": "2024-03-12T15:44:36+00:00"

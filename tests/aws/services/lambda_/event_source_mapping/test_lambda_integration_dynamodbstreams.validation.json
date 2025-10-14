@@ -39,13 +39,25 @@
     "last_validated_date": "2025-02-22T03:03:01+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_on_failure_destination_config": {
-    "last_validated_date": "2024-10-12T11:01:14+00:00"
+    "last_validated_date": "2025-10-13T19:19:23+00:00",
+    "durations_in_seconds": {
+      "setup": 11.61,
+      "call": 169.22,
+      "teardown": 3.13,
+      "total": 183.96
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_s3_on_failure_destination": {
     "last_validated_date": "2025-01-03T16:42:22+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_event_source_mapping_with_sns_on_failure_destination_config": {
-    "last_validated_date": "2024-10-12T10:59:07+00:00"
+    "last_validated_date": "2025-10-13T19:15:21+00:00",
+    "durations_in_seconds": {
+      "setup": 11.5,
+      "call": 154.95,
+      "teardown": 3.93,
+      "total": 170.38
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_invalid_event_filter[[{\"eventName\": [\"INSERT\"=123}]]": {
     "last_validated_date": "2024-10-12T11:21:39+00:00"
@@ -72,7 +84,13 @@
     "last_validated_date": "2024-10-12T11:39:10+00:00"
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_failures": {
-    "last_validated_date": "2024-10-12T11:25:21+00:00"
+    "last_validated_date": "2025-10-13T19:22:57+00:00",
+    "durations_in_seconds": {
+      "setup": 11.44,
+      "call": 193.1,
+      "teardown": 2.62,
+      "total": 207.16
+    }
   },
   "tests/aws/services/lambda_/event_source_mapping/test_lambda_integration_dynamodbstreams.py::TestDynamoDBEventSourceMapping::test_dynamodb_report_batch_item_success_scenarios[empty_batch_item_failure_success]": {
     "last_validated_date": "2024-10-12T11:44:04+00:00"
