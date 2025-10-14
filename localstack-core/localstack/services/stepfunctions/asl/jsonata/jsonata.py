@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import Any, Final
 
 import jpype
-import jpype.imports
+import jpype.imports  # noqa # Required for JVM Java class imports
 
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.packages import jpype_jsonata_package
