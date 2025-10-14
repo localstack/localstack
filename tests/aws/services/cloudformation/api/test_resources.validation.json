@@ -1,11 +1,11 @@
 {
   "tests/aws/services/cloudformation/api/test_resources.py::test_describe_deleted_resource_on_update": {
-    "last_validated_date": "2025-10-14T18:28:09+00:00",
+    "last_validated_date": "2025-10-14T20:37:39+00:00",
     "durations_in_seconds": {
-      "setup": 0.23,
-      "call": 22.83,
-      "teardown": 4.53,
-      "total": 27.59
+      "setup": 0.27,
+      "call": 22.65,
+      "teardown": 4.55,
+      "total": 27.47
     }
   },
   "tests/aws/services/cloudformation/api/test_resources.py::test_describe_failed_resource": {
