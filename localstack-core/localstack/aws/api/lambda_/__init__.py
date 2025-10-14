@@ -36,6 +36,7 @@ Handler = str
 Header = str
 HttpStatus = int
 Integer = int
+InvokedViaFunctionUrl = bool
 KMSKeyArn = str
 LastUpdateStatusReason = str
 LayerArn = str
@@ -691,6 +692,7 @@ class AddPermissionRequest(ServiceRequest):
     RevisionId: Optional[String]
     PrincipalOrgID: Optional[PrincipalOrgID]
     FunctionUrlAuthType: Optional[FunctionUrlAuthType]
+    InvokedViaFunctionUrl: Optional[InvokedViaFunctionUrl]
 
 
 class AddPermissionResponse(TypedDict, total=False):
@@ -1903,6 +1905,7 @@ class LambdaApi:
         revision_id: String | None = None,
         principal_org_id: PrincipalOrgID | None = None,
         function_url_auth_type: FunctionUrlAuthType | None = None,
+        invoked_via_function_url: InvokedViaFunctionUrl | None = None,
         **kwargs,
     ) -> AddPermissionResponse:
         raise NotImplementedError
