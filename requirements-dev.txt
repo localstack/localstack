@@ -29,11 +29,11 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.12.0
+aws-cdk-cloud-assembly-schema==48.14.0
     # via aws-cdk-lib
 aws-cdk-lib==2.219.0
     # via localstack-core
-aws-sam-translator==1.100.0
+aws-sam-translator==1.101.0
     # via
     #   cfn-lint
     #   localstack-core
@@ -61,7 +61,7 @@ build==1.3.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
-cachetools==6.2.0
+cachetools==6.2.1
     # via
     #   airspeed-ext
     #   localstack-core
@@ -80,9 +80,9 @@ cffi==2.0.0
     # via cryptography
 cfgv==3.4.0
     # via pre-commit
-cfn-lint==1.40.0
+cfn-lint==1.40.1
     # via moto-ext
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
 click==8.3.0
     # via
@@ -142,7 +142,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-filelock==3.19.1
+filelock==3.20.0
     # via virtualenv
 graphql-core==3.2.6
     # via moto-ext
@@ -170,7 +170,7 @@ hyperlink==21.0.0
     # via localstack-twisted
 identify==2.6.15
     # via pre-commit
-idna==3.10
+idna==3.11
     # via
     #   anyio
     #   httpx
@@ -191,7 +191,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.3.4
+joserfc==1.4.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
@@ -250,7 +250,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.14.post7
+moto-ext==5.1.14.post34
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -296,7 +296,7 @@ pathable==0.4.4
     # via jsonschema-path
 pathspec==0.12.1
     # via mypy
-platformdirs==4.4.0
+platformdirs==4.5.0
     # via virtualenv
 pluggy==1.6.0
     # via
@@ -337,15 +337,15 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.11.10
+pydantic==2.12.1
     # via aws-sam-translator
-pydantic-core==2.33.2
+pydantic-core==2.41.3
     # via pydantic
 pygments==2.19.2
     # via
     #   pytest
     #   rich
-pymongo==4.15.2
+pymongo==4.15.3
     # via localstack-core
 pyopenssl==25.3.0
     # via
@@ -365,7 +365,7 @@ pytest==8.4.2
     #   pytest-tinybird
 pytest-httpserver==1.1.3
     # via localstack-core
-pytest-rerunfailures==16.0.1
+pytest-rerunfailures==16.1
     # via localstack-core
 pytest-split==0.10.0
     # via localstack-core
@@ -419,7 +419,7 @@ responses==0.25.8
     # via moto-ext
 rfc3339-validator==0.1.4
     # via openapi-schema-validator
-rich==14.1.0
+rich==14.2.0
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -433,7 +433,7 @@ rsa==4.7.2
     # via awscli
 rstr==3.2.2
     # via localstack-core (pyproject.toml)
-ruff==0.13.3
+ruff==0.14.0
     # via localstack-core (pyproject.toml)
 s3transfer==0.14.0
     # via
@@ -487,9 +487,9 @@ urllib3==2.5.0
     #   opensearch-py
     #   requests
     #   responses
-virtualenv==20.34.0
+virtualenv==20.35.3
     # via pre-commit
-websocket-client==1.8.0
+websocket-client==1.9.0
     # via localstack-core
 werkzeug==3.1.3
     # via

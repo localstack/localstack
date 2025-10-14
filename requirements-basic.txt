@@ -6,13 +6,13 @@
 #
 build==1.3.0
     # via localstack-core (pyproject.toml)
-cachetools==6.2.0
+cachetools==6.2.1
     # via localstack-core (pyproject.toml)
 certifi==2025.10.5
     # via requests
 cffi==2.0.0
     # via cryptography
-charset-normalizer==3.4.3
+charset-normalizer==3.4.4
     # via requests
 click==8.3.0
     # via localstack-core (pyproject.toml)
@@ -24,7 +24,7 @@ dnslib==0.9.26
     # via localstack-core (pyproject.toml)
 dnspython==2.8.0
     # via localstack-core (pyproject.toml)
-idna==3.10
+idna==3.11
     # via requests
 markdown-it-py==4.0.0
     # via rich
@@ -48,7 +48,7 @@ pyyaml==6.0.3
     # via localstack-core (pyproject.toml)
 requests==2.32.5
     # via localstack-core (pyproject.toml)
-rich==14.1.0
+rich==14.2.0
     # via localstack-core (pyproject.toml)
 semver==3.0.4
     # via localstack-core (pyproject.toml)
