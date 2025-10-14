@@ -558,7 +558,7 @@ class SesProvider(SesApi, ServiceLifecycleHook):
             )
 
         backend = get_ses_backend(context)
-        if identity not in backend.addresses:
+        if identity not in backend.email_identities:
             raise MessageRejected(f"Identity {identity} is not verified or does not exist.")
 
         # Store the setting in the backend
