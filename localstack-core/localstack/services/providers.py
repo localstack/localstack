@@ -440,3 +440,11 @@ def transcribe():
 
     provider = TranscribeProvider()
     return Service.for_provider(provider, dispatch_table_factory=MotoFallbackDispatcher)
+
+
+@aws_provider()
+def transfer():
+    from localstack.services.transfer.provider import TransferProvider
+
+    provider = TransferProvider()
+    return Service.for_provider(provider)
