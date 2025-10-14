@@ -116,6 +116,7 @@ def test_billing_mode_as_conditional(deploy_cfn_template, snapshot, aws_client, 
     paths=[
         "$..Table.ProvisionedThroughput.LastDecreaseDateTime",
         "$..Table.ProvisionedThroughput.LastIncreaseDateTime",
+        "$..Table.Replicas",
     ]
 )
 def test_global_table(deploy_cfn_template, snapshot, aws_client):
