@@ -16,5 +16,21 @@
     "recorded-content": {
       "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: Resource name my-bad-resource-id is non alphanumeric."
     }
+  },
+  "tests/aws/services/cloudformation/api/test_resources.py::test_describe_deleted_resource_on_update": {
+    "recorded-date": "14-10-2025, 18:28:09",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource Parameter does not exist for stack <stack-name>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

@@ -53,3 +53,28 @@ def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
         deploy_cfn_template(template=json.dumps(template))
 
     snapshot.match("error", err.value)
+
+
+@markers.aws.validated
+def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_template):
+    template = {
+        "Resources": {
+            "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {"Type": "String", "Value": "Test"},
+            }
+        }
+    }
+
+    stack = deploy_cfn_template(template=json.dumps(template))
+
+    template["Resources"]["Parameter2"] = template["Resources"].pop("Parameter")
+    deploy_cfn_template(template=json.dumps(template), is_update=True, stack_name=stack.stack_name)
+
+    with pytest.raises(ClientError) as err:
+        aws_client.cloudformation.describe_stack_resource(
+            StackName=stack.stack_name, LogicalResourceId="Parameter"
+        )
+
+    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+    snapshot.match("error", err.value.response)
