@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
+from localstack.utils.strings import short_uid
 
 
 @skip_if_legacy_engine()
@@ -77,4 +78,30 @@ def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_te
         )
 
     snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+    snapshot.match("error", err.value.response)
+
+
+@markers.aws.validated
+def test_describe_failed_resource(aws_client, snapshot, deploy_cfn_template):
+    template = {
+        "Resources": {
+            "Parameter": {
+                "Type": "AWS::SSM::Parameter",
+                "Properties": {"Type": "Invalid", "Value": "Test"},
+            }
+        }
+    }
+
+    stack_name = f"test-stack-{short_uid()}"
+    try:
+        deploy_cfn_template(template=json.dumps(template), stack_name=stack_name)
+    except Exception:
+        pass
+
+    with pytest.raises(ClientError) as err:
+        aws_client.cloudformation.describe_stack_resource(
+            StackName=stack_name, LogicalResourceId="Parameter"
+        )
+
+    snapshot.add_transformer(snapshot.transform.regex(stack_name, "<stack-name>"))
     snapshot.match("error", err.value.response)

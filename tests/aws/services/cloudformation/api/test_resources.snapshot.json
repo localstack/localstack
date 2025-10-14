@@ -32,5 +32,21 @@
         }
       }
     }
+  },
+  "tests/aws/services/cloudformation/api/test_resources.py::test_describe_failed_resource": {
+    "recorded-date": "14-10-2025, 19:04:45",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource Parameter does not exist for stack <stack-name>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

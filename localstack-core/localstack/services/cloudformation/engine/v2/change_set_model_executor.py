@@ -584,9 +584,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     "Resource provider operation failed: '%s'",
                     reason,
                 )
-                resolved_resource["ResourceStatus"] = ResourceStatus(f"{status_from_action}_FAILED")
-                resolved_resource["ResourceStatusReason"] = reason
-                self.resources[logical_resource_id] = resolved_resource
 
             case other:
                 raise NotImplementedError(f"Event status '{other}' not handled")
