@@ -5942,5 +5942,110 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_set_get_sms_attributes": {
+    "recorded-date": "13-10-2025, 10:30:42",
+    "recorded-content": {
+      "get-sms-all-attributes": {
+        "attributes": {
+          "DefaultSMSType": "Promotional",
+          "DefaultSenderID": "LSTest",
+          "DeliveryStatusSuccessSamplingRate": "100",
+          "MonthlySpendLimit": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-sms-some-attributes": {
+        "attributes": {
+          "DefaultSMSType": "Promotional",
+          "DefaultSenderID": "LSTest"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_set_invalid_sms_attributes[InvalidAttributeName]": {
+    "recorded-date": "13-10-2025, 10:43:41",
+    "recorded-content": {
+      "invalid-attribute": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "InvalidAttribute is not a valid attribute",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_set_invalid_sms_attributes[TooLongID]": {
+    "recorded-date": "13-10-2025, 10:43:45",
+    "recorded-content": {
+      "invalid-attribute": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "DefaultSendID is not a valid attribute",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_set_invalid_sms_attributes[NoLetterID]": {
+    "recorded-date": "13-10-2025, 10:43:52",
+    "recorded-content": {
+      "invalid-attribute": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "DefaultSendID is not a valid attribute",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_set_invalid_sms_attributes[InvalidSMSType]": {
+    "recorded-date": "13-10-2025, 10:43:57",
+    "recorded-content": {
+      "invalid-attribute": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "DefaultSMSType is invalid",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSMS::test_get_sms_attributes_from_unmodified_region": {
+    "recorded-date": "13-10-2025, 11:12:33",
+    "recorded-content": {
+      "get-sms-attributes_unmodified_region": {
+        "attributes": {
+          "MonthlySpendLimit": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

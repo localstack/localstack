@@ -36,6 +36,15 @@ SnsProtocols = Literal[
 SnsApplicationPlatforms = Literal[
     "APNS", "APNS_SANDBOX", "ADM", "FCM", "Baidu", "GCM", "MPNS", "WNS"
 ]
+SMS_ATTRIBUTE_NAMES = [
+    "DeliveryStatusIAMRole",
+    "DeliveryStatusSuccessSamplingRate",
+    "DefaultSenderID",
+    "DefaultSMSType",
+    "UsageReportS3Bucket",
+]
+SMS_TYPES = ["Promotional", "Transactional"]
+SMS_DEFAULT_SENDER_REGEX = r"^(?=[A-Za-z0-9]{1,11}$)(?=.*[A-Za-z])[A-Za-z0-9]+$"
 SnsMessageProtocols = Literal[SnsProtocols, SnsApplicationPlatforms]
 
 
@@ -142,6 +151,9 @@ class SnsStore(BaseStore):
 
     # maps confirmation token to subscription ARN
     subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
+
+    # topic/subscription independent default values for sending sms messages
+    sms_attributes: dict[str, str] = LocalAttribute(default=dict)
 
     TAGS: TaggingService = CrossRegionAttribute(default=TaggingService)
 

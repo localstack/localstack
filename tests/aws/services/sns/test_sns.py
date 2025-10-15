@@ -3966,6 +3966,67 @@ class TestSNSSMS:
             sns_subscription(TopicArn=topic_arn, Protocol="sms", Endpoint="NAA+15551234567")
         snapshot.match("wrong-endpoint", e.value.response)
 
+    @markers.aws.manual_setup_required
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in v1")
+    def test_set_get_sms_attributes(self, aws_client, account_id, snapshot):
+        if is_aws_cloud():
+            LOG.warning(
+                "Warning: this test will permanently set values for sms attributes in this region. \n Removing is not possible, only overwriting.\n Remove the exception if you wish to proceed"
+            )
+            raise Exception("Check logs to enable this test against AWS")
+
+        aws_client.sns.set_sms_attributes(
+            attributes={
+                "DeliveryStatusSuccessSamplingRate": "100",
+                "DefaultSenderID": "LSTest",
+                "DefaultSMSType": "Promotional",
+            }
+        )
+
+        response = aws_client.sns.get_sms_attributes()
+        snapshot.match("get-sms-all-attributes", response)
+
+        response = aws_client.sns.get_sms_attributes(
+            attributes=["DefaultSenderID", "DefaultSMSType"]
+        )
+        snapshot.match("get-sms-some-attributes", response)
+
+    @markers.aws.manual_setup_required
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in v1")
+    def test_get_sms_attributes_from_unmodified_region(
+        self, aws_client_factory, secondary_region_name, snapshot
+    ):
+        # if the secondary region is already modified, you can use SECONDARY_TEST_AWS_PROFILE and similar
+        # variables to change it
+
+        default_spend_limit = "1"
+
+        sns_unmodified_region = aws_client_factory(region_name=secondary_region_name).sns
+        response = sns_unmodified_region.get_sms_attributes()
+        assert response["attributes"]["MonthlySpendLimit"] == default_spend_limit
+        snapshot.match("get-sms-attributes_unmodified_region", response)
+
+    @pytest.mark.parametrize(
+        "attribute_key_value",
+        [
+            ("InvalidAttribute", "invalid"),
+            ("DefaultSendID", "a" * 12),
+            ("DefaultSendID", "123456789"),
+            ("DefaultSMSType", "invalid"),
+        ],
+        ids=["InvalidAttributeName", "TooLongID", "NoLetterID", "InvalidSMSType"],
+    )
+    @markers.aws.validated
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Not implemented in v1")
+    def test_set_invalid_sms_attributes(self, aws_client, snapshot, attribute_key_value):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_sms_attributes(
+                attributes={
+                    attribute_key_value[0]: attribute_key_value[1],
+                }
+            )
+        snapshot.match("invalid-attribute", e.value.response)
+
 
 class TestSNSSubscriptionHttp:
     @markers.aws.validated
