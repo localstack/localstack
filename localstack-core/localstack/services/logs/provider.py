@@ -105,7 +105,7 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
                 "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
             )
 
-        copy_groups = copy.deepcopy(region_backend.groups)
+        copy_groups = copy.deepcopy(dict(region_backend.groups))
 
         groups = [
             group.to_describe_dict()
