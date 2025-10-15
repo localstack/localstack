@@ -233,21 +233,18 @@ class SnsProvider(SnsApi):
         # An endpoint may only be subscribed to a topic once. Subsequent
         # subscribe calls do nothing (subscribe is idempotent), except if its attributes are different.
         for existing_topic_subscription in topic_subscriptions:
-            if existing_topic_subscription.get("Endpoint") == endpoint:
+            sub = store.subscriptions.get(existing_topic_subscription, {})
+            if sub.get("Endpoint") == endpoint:
                 if sub_attributes:
                     # validate the subscription attributes aren't different
                     for attr in sns_constants.VALID_SUBSCRIPTION_ATTR_NAME:
                         # if a new attribute is present and different from an existent one, raise
-                        if (
-                            new_attr := sub_attributes.get(attr)
-                        ) and existing_topic_subscription.get(attr) != new_attr:
+                        if (new_attr := sub_attributes.get(attr)) and sub.get(attr) != new_attr:
                             raise InvalidParameterException(
                                 "Invalid parameter: Attributes Reason: Subscription already exists with different attributes"
                             )
 
-                return SubscribeResponse(
-                    SubscriptionArn=existing_topic_subscription["SubscriptionArn"]
-                )
+                return SubscribeResponse(SubscriptionArn=sub["SubscriptionArn"])
         principal = DUMMY_SUBSCRIPTION_PRINCIPAL.format(
             partition=get_partition(context.region), account_id=context.account_id
         )
@@ -283,7 +280,7 @@ class SnsProvider(SnsApi):
 
         store.subscriptions[subscription_arn] = subscription
 
-        topic_subscriptions.append(subscription)
+        topic_subscriptions.append(subscription_arn)
 
         # store the token and subscription arn
         # TODO: the token is a 288 hex char string
@@ -384,7 +381,7 @@ class SnsProvider(SnsApi):
             )
 
         with contextlib.suppress(KeyError):
-            store.topics[subscription["TopicArn"]]["subscriptions"].remove(subscription)
+            store.topics[subscription["TopicArn"]]["subscriptions"].remove(subscription_arn)
         store.subscription_filter_policy.pop(subscription_arn, None)
         store.subscriptions.pop(subscription_arn, None)
 
@@ -504,7 +501,10 @@ class SnsProvider(SnsApi):
         self, context: RequestContext, topic_arn: topicARN, next_token: nextToken = None, **kwargs
     ) -> ListSubscriptionsByTopicResponse:
         topic: Topic = self._get_topic(topic_arn, context)
-        subscriptions = topic["subscriptions"]
+        parsed_topic_arn = parse_and_validate_topic_arn(topic_arn)
+        store = self.get_store(parsed_topic_arn["account"], parsed_topic_arn["region"])
+        sub_arns: list[str] = topic.get("subscriptions", [])
+        subscriptions = [store.subscriptions[k] for k in sub_arns if k in store.subscriptions]
 
         paginated_subscriptions = PaginatedList(subscriptions)
         page, next_token = paginated_subscriptions.get_page(

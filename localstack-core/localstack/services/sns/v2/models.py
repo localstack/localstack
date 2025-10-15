@@ -21,6 +21,14 @@ from localstack.utils.objects import singleton_factory
 from localstack.utils.strings import long_uid
 from localstack.utils.tagging import TaggingService
 
+
+class Topic(TypedDict, total=True):
+    arn: str
+    name: str
+    attributes: TopicAttributesMap
+    subscriptions: list[str]
+
+
 SnsProtocols = Literal[
     "http", "https", "email", "email-json", "sms", "sqs", "application", "lambda", "firehose"
 ]
@@ -53,13 +61,6 @@ class SnsSubscription(TypedDict, total=False):
     ConfirmationWasAuthenticated: Literal["true", "false"]
     SubscriptionRoleArn: str | None
     DeliveryPolicy: str | None
-
-
-class Topic(TypedDict, total=True):
-    arn: str
-    name: str
-    attributes: TopicAttributesMap
-    subscriptions: list[SnsSubscription]
 
 
 @singleton_factory
