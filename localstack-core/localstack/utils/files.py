@@ -296,7 +296,7 @@ def new_tmp_file(suffix: str | None = None, dir: str | None = None) -> str:
     return tmp_path
 
 
-def new_tmp_dir(dir: str | None = None):
+def new_tmp_dir(dir: str | None = None) -> str:
     folder = tempfile.mkdtemp(dir=dir)
     TMP_FILES.append(folder)
     return folder
