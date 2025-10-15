@@ -107,10 +107,8 @@ class SnsProvider(SnsApi):
                 )
         else:
             # AWS does not seem to save explicit settings of fifo = false
-            try:
-                attributes.pop("FifoTopic", None)
-            except KeyError:
-                pass
+
+            attributes.pop("FifoTopic", None)
             name_match = re.match(SNS_TOPIC_NAME_PATTERN, name)
             if not name_match:
                 raise InvalidParameterException("Invalid parameter: Topic Name")
@@ -213,6 +211,7 @@ class SnsProvider(SnsApi):
             )
 
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
+            # TODO: move to sqs protocol block if possible
             raise InvalidParameterException(
                 "Invalid parameter: Invalid parameter: Endpoint Reason: FIFO SQS Queues can not be subscribed to standard SNS topics"
             )

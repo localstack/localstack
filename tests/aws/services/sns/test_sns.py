@@ -360,7 +360,11 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
-    @markers.snapshot.skip_snapshot_verify(paths=["$..Error.Message"])
+    @markers.snapshot.skip_snapshot_verify(
+        # skipped only for v1
+        condition=is_sns_v1_provider,
+        paths=["$..Error.Message"],
+    )
     @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
         # Valid names within length constraints
@@ -1478,7 +1482,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("get-subscription-attributes", resp)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_creating_subscription_with_attributes(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"sub-with-attrs-{short_uid()}")["TopicArn"]
 
@@ -1493,7 +1497,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("subscription-with-attributes", attrs)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_delete_subscriptions_on_delete_topic(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"del-subs-topic-{short_uid()}")["TopicArn"]
 
@@ -1510,7 +1514,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("get-sub-after-topic-delete", e.value.response)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_set_subscription_attributes(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"set-attr-sub-{short_uid()}")["TopicArn"]
 
@@ -1531,7 +1535,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("set-subscription-attributes", attrs)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_subscribe_invalid_filter_policy(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"filter-policy-{short_uid()}")["TopicArn"]
 
@@ -1545,7 +1549,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("subscribe-invalid-filter-policy", e.value.response)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_check_not_opted_out(self, sns_create_topic, aws_client, snapshot):
         sns_create_topic(Name=f"optout-{short_uid()}")["TopicArn"]
 
@@ -1553,7 +1557,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("check-not-opted-out", resp)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_check_opted_out(self, sns_create_topic, aws_client, snapshot):
         sns_create_topic(Name=f"opted-{short_uid()}")["TopicArn"]
 
@@ -1563,27 +1567,27 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("check-opted-out", resp)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_check_opted_out_invalid(self, sns_create_topic, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
             aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="invalid-number")
         snapshot.match("check-opted-out-invalid", e.value.response)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_list_opted_out(self, sns_create_topic, aws_client, snapshot):
         resp = aws_client.sns.list_phone_numbers_opted_out()
         snapshot.match("list-opted-out", resp)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_opt_in(self, sns_create_topic, aws_client, snapshot):
         aws_client.sns.opt_in_phone_number(PhoneNumber="+1234567890")
         resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
         snapshot.match("opt-in", resp)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_confirm_subscription(self, sns_create_topic, aws_client, snapshot):
         topic_arn = sns_create_topic(Name=f"confirm-sub-{short_uid()}")["TopicArn"]
 
@@ -1599,7 +1603,7 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("confirm-subscription", resp)
 
     @pytest.mark.skip(reason="TODO")
-    @markers.aws.unknown
+    @markers.aws.needs_fixing
     def test_get_subscription_attributes_error_not_exists(self, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
             aws_client.sns.get_subscription_attributes(
