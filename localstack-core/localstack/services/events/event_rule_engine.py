@@ -59,7 +59,7 @@ class EventRuleEngine:
             for flat_pattern in flat_pattern_conditions
         )
 
-    def _evaluate_condition(self, value, condition, field_exists: bool):
+    def _evaluate_condition(self, value: t.Any, condition: t.Any, field_exists: bool) -> bool:
         if not isinstance(condition, dict):
             return field_exists and value == condition
 
@@ -134,19 +134,19 @@ class EventRuleEngine:
         return False
 
     @staticmethod
-    def _evaluate_prefix(condition: str | list, value: str) -> bool:
-        return value is not None and value.startswith(condition)
+    def _evaluate_prefix(condition: str | list, value: t.Any) -> bool:
+        return isinstance(value, str) and value.startswith(condition)
 
     @staticmethod
-    def _evaluate_suffix(condition: str | list, value: str) -> bool:
-        return value is not None and value.endswith(condition)
+    def _evaluate_suffix(condition: str | list, value: t.Any) -> bool:
+        return isinstance(value, str) and value.endswith(condition)
 
     @staticmethod
-    def _evaluate_equal_ignore_case(condition: str, value: str) -> bool:
-        return value is not None and condition.lower() == value.lower()
+    def _evaluate_equal_ignore_case(condition: str, value: t.Any) -> bool:
+        return isinstance(value, str) and condition.lower() == value.lower()
 
     @staticmethod
-    def _evaluate_cidr(condition: str, value: str) -> bool:
+    def _evaluate_cidr(condition: str, value: t.Any) -> bool:
         try:
             ip = ipaddress.ip_address(value)
             return ip in ipaddress.ip_network(condition)
@@ -154,8 +154,8 @@ class EventRuleEngine:
             return False
 
     @staticmethod
-    def _evaluate_wildcard(condition: str, value: str) -> bool:
-        return value is not None and bool(
+    def _evaluate_wildcard(condition: str, value: t.Any) -> bool:
+        return isinstance(value, str) and bool(
             re.match(re.escape(condition).replace("\\*", ".+") + "$", value)
         )
 
