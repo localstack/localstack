@@ -361,8 +361,10 @@ class TestSNSTopicCrudV2:
         attrs = aws_client.sns.get_topic_attributes(TopicArn=resp2["TopicArn"])
         snapshot.match("topic-attrs-idempotent-2", attrs)
 
-    @pytest.mark.skipif(
-        is_sns_v1_provider(), reason="covered in moto, but with slight parity errors"
+    @markers.snapshot.skip_snapshot_verify(
+        # skipped only for v1
+        condition=is_sns_v1_provider,
+        paths=["$..Error.Message"],
     )
     @markers.aws.validated
     def test_create_topic_name_constraints(self, snapshot, sns_create_topic):
@@ -381,10 +383,12 @@ class TestSNSTopicCrudV2:
         snapshot.match("name-too-long", e.value.response)
 
         # Invalid chars
-        for c in [":", ";", "!", "@", "|", "^", "%", " "]:
+        # TODO: the index is used because using special characters in the matched name doesn't work for all chars
+        #  -> we should write a snapshot test to investigate further
+        for index, c in enumerate([":", ";", "!", "@", "|", "^", "%", " "]):
             with pytest.raises(ClientError) as e:
                 sns_create_topic(Name=f"bad{c}name")
-            snapshot.match(f"name-invalid-char-{c}", e.value.response)
+            snapshot.match(f"name-invalid-char-{index}", e.value.response)
 
     @markers.aws.validated
     @markers.snapshot.skip_snapshot_verify(
@@ -875,7 +879,6 @@ class TestSNSPublishCrud:
 
 class TestSNSSubscriptionCrud:
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_subscribe_with_invalid_protocol(self, sns_create_topic, sns_subscription, snapshot):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -887,7 +890,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("exception", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_unsubscribe_from_non_existing_subscription(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -900,7 +902,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("empty-unsubscribe", response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_create_subscriptions_with_attributes(
         self,
         sns_create_topic,
@@ -953,7 +954,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("get-attrs-nonexistent-sub", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_not_found_error_on_set_subscription_attributes(
         self,
         sns_create_topic,
@@ -1008,7 +1008,6 @@ class TestSNSSubscriptionCrud:
             "$.invalid-json-filter-policy.Error.Message",  # message contains java trace in AWS, assert instead
         ]
     )
-    @skip_if_sns_v2
     def test_validate_set_sub_attributes(
         self,
         sns_create_topic,
@@ -1082,7 +1081,6 @@ class TestSNSSubscriptionCrud:
     @markers.snapshot.skip_snapshot_verify(
         paths=["$.invalid-token.Error.Message"]  # validate the token shape
     )
-    @skip_if_sns_v2
     def test_sns_confirm_subscription_wrong_token(self, sns_create_topic, snapshot, aws_client):
         topic_arn = sns_create_topic()["TopicArn"]
 
@@ -1109,42 +1107,29 @@ class TestSNSSubscriptionCrud:
         snapshot.match("token-not-exists", e.value.response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=["$.list-subscriptions.Subscriptions"],
-        # there could be cleanup issues and don't want to flake, manually assert
-    )
-    @skip_if_sns_v2
     def test_list_subscriptions(
         self,
         sns_create_topic,
         sqs_create_queue,
         sqs_get_queue_arn,
         sns_subscription,
-        snapshot,
         aws_client,
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("NextToken"))
         topic = sns_create_topic()
         topic_arn = topic["TopicArn"]
-        snapshot.match("create-topic-1", topic)
         topic_2 = sns_create_topic()
         topic_arn_2 = topic_2["TopicArn"]
-        snapshot.match("create-topic-2", topic_2)
-        sorting_list = []
+        created_subscriptions = []
         for i in range(3):
             queue_url = sqs_create_queue()
             queue_arn = sqs_get_queue_arn(queue_url)
-            subscription = sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
-            snapshot.match(f"sub-topic-1-{i}", subscription)
-            sorting_list.append((topic_arn, queue_arn))
+            sns_subscription(TopicArn=topic_arn, Protocol="sqs", Endpoint=queue_arn)
+            created_subscriptions.append((topic_arn, queue_arn))
         for i in range(3):
             queue_url = sqs_create_queue()
             queue_arn = sqs_get_queue_arn(queue_url)
-            subscription = sns_subscription(
-                TopicArn=topic_arn_2, Protocol="sqs", Endpoint=queue_arn
-            )
-            snapshot.match(f"sub-topic-2-{i}", subscription)
-            sorting_list.append((topic_arn_2, queue_arn))
+            sns_subscription(TopicArn=topic_arn_2, Protocol="sqs", Endpoint=queue_arn)
+            created_subscriptions.append((topic_arn_2, queue_arn))
 
         list_subs = aws_client.sns.list_subscriptions()
         all_subs = list_subs["Subscriptions"]
@@ -1153,14 +1138,10 @@ class TestSNSSubscriptionCrud:
                 list_subs = aws_client.sns.list_subscriptions(NextToken=next_token)
                 all_subs.extend(list_subs["Subscriptions"])
 
-        all_subs.sort(key=lambda x: sorting_list.index((x["TopicArn"], x["Endpoint"])))
-        list_subs["Subscriptions"] = all_subs
-        snapshot.match("list-subscriptions-aggregated", list_subs)
-
-        assert all((sub["TopicArn"], sub["Endpoint"]) in sorting_list for sub in all_subs)
+        all_sub_tuples = [(sub["TopicArn"], sub["Endpoint"]) for sub in all_subs]
+        assert all(sub in all_sub_tuples for sub in created_subscriptions)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_list_subscriptions_by_topic_pagination(
         self, sns_create_topic, sns_subscription, snapshot, aws_client
     ):
@@ -1202,7 +1183,6 @@ class TestSNSSubscriptionCrud:
         assert len(response["Subscriptions"]) <= 100
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_subscribe_idempotency(
         self, aws_client, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, snapshot
     ):
@@ -1274,7 +1254,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("subscribe-diff-attributes", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_unsubscribe_idempotency(
         self, sns_create_topic, sqs_create_queue, sns_create_sqs_subscription, snapshot, aws_client
     ):
@@ -1291,7 +1270,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("unsubscribe-2", unsubscribe_2)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_unsubscribe_wrong_arn_format(self, snapshot, aws_client_factory, region_name):
         sns_client = aws_client_factory(
             region_name=region_name, config=Config(parameter_validation=False)
@@ -1318,7 +1296,6 @@ class TestSNSSubscriptionCrud:
         snapshot.match("invalid-unsubscribe-arn-4", e.value.response)
 
     @markers.aws.validated
-    @skip_if_sns_v2
     def test_subscribe_with_invalid_topic(self, sns_create_topic, sns_subscription, snapshot):
         with pytest.raises(ClientError) as e:
             sns_subscription(
@@ -1344,6 +1321,303 @@ class TestSNSSubscriptionCrud:
             )
 
         snapshot.match("non-existent-topic", e.value.response)
+
+
+class TestSNSSubscriptionCrudV2:
+    @markers.aws.validated
+    def test_subscribe_sms(self, sns_create_topic, aws_client, snapshot):
+        topic_name = f"test-topic-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic>"))
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+
+        resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sms",
+            Endpoint="+1234567890",
+        )
+        snapshot.match("subscribe-sms-1", resp)
+
+    # FIXME
+    @pytest.mark.skipif(not is_aws_cloud(), reason="not accepting valid sms endpoint")
+    @markers.aws.validated
+    def test_subscribe_sms_obscure_phone_number(self, sns_create_topic, aws_client, snapshot):
+        topic_name = f"test-topic-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic>"))
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sms",
+            Endpoint="+12/34-567.890",
+        )
+        snapshot.match("subscribe-sms-2", resp)
+
+    @markers.aws.validated
+    def test_subscribe_unknown_topic(self, aws_client, snapshot, account_id, region_name):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.subscribe(
+                TopicArn=f"arn:aws:sns:{region_name}:{account_id}:unknown-{short_uid()}",
+                Protocol="sms",
+                Endpoint="+1234567890",
+            )
+        snapshot.match("subscribe-unknown-topic", e.value.response)
+
+    @markers.aws.validated
+    def test_subscribe_unknown_sqs_queue(
+        self, sns_create_topic, aws_client, snapshot, account_id, region_name
+    ):
+        topic_name = f"test-topic-{short_uid()}"
+        snapshot.add_transformer(snapshot.transform.regex(topic_name, "<topic>"))
+        topic_arn = sns_create_topic(Name=topic_name)["TopicArn"]
+        resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=f"arn:aws:sqs:{region_name}:{account_id}:unknown-{short_uid()}",
+        )
+        snapshot.match("subscribe-unknown-sqs", resp)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.subscribe(
+                TopicArn=topic_arn,
+                Protocol="sqs",
+                Endpoint="unknown",
+            )
+        snapshot.match("subscribe-unknown-sqs-invalid_arn", e.value.response)
+
+    @markers.aws.validated
+    def test_subscribe_sqs_queue_url(
+        self, sns_create_topic, sqs_create_queue, aws_client, snapshot
+    ):
+        topic_arn = sns_create_topic(Name=f"sqs-topic-{short_uid()}")["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.subscribe(
+                TopicArn=topic_arn,
+                Protocol="sqs",
+                Endpoint=queue_url,
+            )
+
+        snapshot.match("subscribe-sqs-via-url-error", e.value.response)
+
+    @markers.aws.validated
+    def test_subscribe_invalid_sms(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"bad-sms-{short_uid()}")["TopicArn"]
+
+        invalid_numbers = ["+15--551234567", "NAA+15551234567", "+15551234567.", "/+15551234567"]
+
+        for number in invalid_numbers:
+            with pytest.raises(ClientError) as e:
+                aws_client.sns.subscribe(
+                    TopicArn=topic_arn,
+                    Protocol="sms",
+                    Endpoint=number,
+                )
+            snapshot.match(f"subscribe-bad-sms-{number}", e.value.response)
+
+    # TODO: Parametrize for email protocol as well
+    @markers.aws.validated
+    def test_creating_subscription(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"create-sub-{short_uid()}")["TopicArn"]
+
+        resp = aws_client.sns.subscribe(
+            TopicArn=topic_arn, Protocol="http", Endpoint="http://example.com/"
+        )
+        snapshot.match("create-subscription", resp)
+
+    # TODO: parametrize for email protocol
+    @markers.aws.validated
+    def test_unsubscribe_from_deleted_topic(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"del-topic-sub-{short_uid()}")["TopicArn"]
+
+        sub_arn = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="http",
+            Endpoint="http://example.com/",
+        )["SubscriptionArn"]
+
+        aws_client.sns.delete_topic(TopicArn=topic_arn)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.unsubscribe(SubscriptionArn=sub_arn)
+        snapshot.match("unsubscribe-deleted-topic", e.value.response)
+
+    # TODO: parametrize for http and email protocol
+    @markers.aws.validated
+    def test_getting_subscriptions_by_topic(
+        self, sns_create_topic, sqs_create_queue, sqs_get_queue_arn, aws_client, snapshot
+    ):
+        topic_arn = sns_create_topic(Name=f"get-subs-{short_uid()}")["TopicArn"]
+        queue_url = sqs_create_queue(QueueName=f"queue-{short_uid()}")
+
+        aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="sqs",
+            Endpoint=sqs_get_queue_arn(queue_url),
+        )
+
+        resp = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+        snapshot.match("list-subscriptions-by-topic", resp)
+
+    @markers.aws.validated
+    def test_subscription_paging(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"paging-sub-{short_uid()}")["TopicArn"]
+
+        sub_arns = []
+        for i in range(120):
+            sub_arns.append(
+                aws_client.sns.subscribe(
+                    TopicArn=topic_arn,
+                    Protocol="email",
+                    Endpoint=f"user{i}@example.com",
+                )["SubscriptionArn"]
+            )
+
+        resp = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+        assert "NextToken" in resp
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.validated
+    def test_subscribe_attributes(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"sub-attrs-{short_uid()}")["TopicArn"]
+
+        sub_arn = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="test@example.com",
+        )["SubscriptionArn"]
+
+        resp = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+        snapshot.match("get-subscription-attributes", resp)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_creating_subscription_with_attributes(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"sub-with-attrs-{short_uid()}")["TopicArn"]
+
+        sub_arn = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="test@example.com",
+            Attributes={"RawMessageDelivery": "true"},
+        )["SubscriptionArn"]
+
+        attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+        snapshot.match("subscription-with-attributes", attrs)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_delete_subscriptions_on_delete_topic(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"del-subs-topic-{short_uid()}")["TopicArn"]
+
+        sub_arn = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="test@example.com",
+        )["SubscriptionArn"]
+
+        aws_client.sns.delete_topic(TopicArn=topic_arn)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+        snapshot.match("get-sub-after-topic-delete", e.value.response)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_set_subscription_attributes(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"set-attr-sub-{short_uid()}")["TopicArn"]
+
+        sub_arn = aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="test@example.com",
+        )["SubscriptionArn"]
+
+        aws_client.sns.set_subscription_attributes(
+            SubscriptionArn=sub_arn,
+            AttributeName="RawMessageDelivery",
+            AttributeValue="true",
+        )
+
+        attrs = aws_client.sns.get_subscription_attributes(SubscriptionArn=sub_arn)
+        assert attrs["Attributes"]["RawMessageDelivery"] == "true"
+        snapshot.match("set-subscription-attributes", attrs)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_subscribe_invalid_filter_policy(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"filter-policy-{short_uid()}")["TopicArn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.subscribe(
+                TopicArn=topic_arn,
+                Protocol="email",
+                Endpoint="test@example.com",
+                Attributes={"FilterPolicy": "invalid-json"},
+            )
+        snapshot.match("subscribe-invalid-filter-policy", e.value.response)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_check_not_opted_out(self, sns_create_topic, aws_client, snapshot):
+        sns_create_topic(Name=f"optout-{short_uid()}")["TopicArn"]
+
+        resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
+        snapshot.match("check-not-opted-out", resp)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_check_opted_out(self, sns_create_topic, aws_client, snapshot):
+        sns_create_topic(Name=f"opted-{short_uid()}")["TopicArn"]
+
+        # Simulate opt-out
+        aws_client.sns.opt_in_phone_number(PhoneNumber="+1234567890")
+        resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
+        snapshot.match("check-opted-out", resp)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_check_opted_out_invalid(self, sns_create_topic, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="invalid-number")
+        snapshot.match("check-opted-out-invalid", e.value.response)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_list_opted_out(self, sns_create_topic, aws_client, snapshot):
+        resp = aws_client.sns.list_phone_numbers_opted_out()
+        snapshot.match("list-opted-out", resp)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_opt_in(self, sns_create_topic, aws_client, snapshot):
+        aws_client.sns.opt_in_phone_number(PhoneNumber="+1234567890")
+        resp = aws_client.sns.check_if_phone_number_is_opted_out(PhoneNumber="+1234567890")
+        snapshot.match("opt-in", resp)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_confirm_subscription(self, sns_create_topic, aws_client, snapshot):
+        topic_arn = sns_create_topic(Name=f"confirm-sub-{short_uid()}")["TopicArn"]
+
+        aws_client.sns.subscribe(
+            TopicArn=topic_arn,
+            Protocol="email",
+            Endpoint="test@example.com",
+        )
+
+        resp = aws_client.sns.confirm_subscription(
+            TopicArn=topic_arn, Token="fake-token", AuthenticateOnUnsubscribe="true"
+        )
+        snapshot.match("confirm-subscription", resp)
+
+    @pytest.mark.skip(reason="TODO")
+    @markers.aws.needs_fixing
+    def test_get_subscription_attributes_error_not_exists(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_subscription_attributes(
+                SubscriptionArn=f"arn:aws:sns:us-east-1:000000000000:nonexistent-{short_uid()}"
+            )
+        snapshot.match("get-sub-attrs-nonexistent", e.value.response)
 
 
 class TestSNSSubscriptionLambda:

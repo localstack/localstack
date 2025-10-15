@@ -637,7 +637,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_protocol": {
-    "recorded-date": "24-08-2023, 23:27:50",
+    "recorded-date": "06-10-2025, 10:25:11",
     "recorded-content": {
       "exception": {
         "Error": {
@@ -653,7 +653,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_from_non_existing_subscription": {
-    "recorded-date": "24-08-2023, 23:27:52",
+    "recorded-date": "06-10-2025, 10:25:16",
     "recorded-content": {
       "empty-unsubscribe": {
         "ResponseMetadata": {
@@ -664,7 +664,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_create_subscriptions_with_attributes": {
-    "recorded-date": "29-03-2024, 19:44:43",
+    "recorded-date": "06-10-2025, 10:25:19",
     "recorded-content": {
       "subscribe-wrong-attr": {
         "Error": {
@@ -715,7 +715,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_not_found_error_on_set_subscription_attributes": {
-    "recorded-date": "24-08-2023, 23:27:55",
+    "recorded-date": "06-10-2025, 10:25:23",
     "recorded-content": {
       "sub": {
         "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:1>",
@@ -777,7 +777,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_validate_set_sub_attributes": {
-    "recorded-date": "29-03-2024, 19:30:24",
+    "recorded-date": "06-10-2025, 10:25:27",
     "recorded-content": {
       "fake-attribute": {
         "Error": {
@@ -826,7 +826,7 @@
       "invalid-json-redrive-policy": {
         "Error": {
           "Code": "InvalidParameter",
-          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: java.io.StringReader@469cc9aa; line: 1, column: 3]",
+          "Message": "Invalid parameter: RedrivePolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -837,7 +837,7 @@
       "invalid-json-filter-policy": {
         "Error": {
           "Code": "InvalidParameter",
-          "Message": "Invalid parameter: FilterPolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: (String)\"{invalidjson}\"; line: 1, column: 3]",
+          "Message": "Invalid parameter: FilterPolicy: failed to parse JSON. Unexpected character ('i' (code 105)): was expecting double-quote to start field name\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 2]",
           "Type": "Sender"
         },
         "ResponseMetadata": {
@@ -848,7 +848,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_sns_confirm_subscription_wrong_token": {
-    "recorded-date": "24-08-2023, 23:27:58",
+    "recorded-date": "06-10-2025, 10:25:28",
     "recorded-content": {
       "topic-not-exists": {
         "Error": {
@@ -886,7 +886,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionLambda::test_python_lambda_subscribe_sns_topic": {
-    "recorded-date": "24-08-2023, 23:28:59",
+    "recorded-date": "06-10-2025, 11:08:48",
     "recorded-content": {
       "notification": {
         "Message": "Hello world.",
@@ -3599,118 +3599,11 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions": {
-    "recorded-date": "25-08-2023, 16:23:53",
-    "recorded-content": {
-      "create-topic-1": {
-        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "create-topic-2": {
-        "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-topic-1-0": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-topic-1-1": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:4>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-topic-1-2": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:5>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-topic-2-0": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:6>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-topic-2-1": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:7>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "sub-topic-2-2": {
-        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:8>",
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      },
-      "list-subscriptions-aggregated": {
-        "Subscriptions": [
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:9>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:3>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:10>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:4>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:11>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>:<resource:5>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:12>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:6>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:13>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:7>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
-          },
-          {
-            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:14>",
-            "Owner": "111111111111",
-            "Protocol": "sqs",
-            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>:<resource:8>",
-            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:2>"
-          }
-        ],
-        "ResponseMetadata": {
-          "HTTPHeaders": {},
-          "HTTPStatusCode": 200
-        }
-      }
-    }
+    "recorded-date": "07-10-2025, 10:07:36",
+    "recorded-content": {}
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_idempotency": {
-    "recorded-date": "20-03-2025, 17:16:39",
+    "recorded-date": "06-10-2025, 10:26:46",
     "recorded-content": {
       "subscribe": {
         "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:4>:<resource:1>",
@@ -4021,7 +3914,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_wrong_arn_format": {
-    "recorded-date": "02-09-2025, 20:17:36",
+    "recorded-date": "06-10-2025, 10:26:51",
     "recorded-content": {
       "invalid-unsubscribe-arn-1": {
         "Error": {
@@ -4070,7 +3963,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_unsubscribe_idempotency": {
-    "recorded-date": "07-11-2023, 00:36:06",
+    "recorded-date": "06-10-2025, 10:26:49",
     "recorded-content": {
       "unsubscribe-1": {
         "ResponseMetadata": {
@@ -4239,7 +4132,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_list_subscriptions_by_topic_pagination": {
-    "recorded-date": "16-05-2024, 10:32:16",
+    "recorded-date": "06-10-2025, 10:26:42",
     "recorded-content": {
       "list-sub-per-topic-page-2": {
         "Subscriptions": [
@@ -4951,7 +4844,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrud::test_subscribe_with_invalid_topic": {
-    "recorded-date": "23-01-2025, 22:38:17",
+    "recorded-date": "06-10-2025, 10:26:53",
     "recorded-content": {
       "invalid-subscribe-arn-1": {
         "Error": {
@@ -5403,7 +5296,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrudV2::test_create_topic_name_constraints": {
-    "recorded-date": "29-09-2025, 10:46:44",
+    "recorded-date": "07-10-2025, 09:49:48",
     "recorded-content": {
       "valid-name-max-length": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -5434,7 +5327,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-:": {
+      "name-invalid-char-0": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5445,7 +5338,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-;": {
+      "name-invalid-char-1": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5456,7 +5349,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-!": {
+      "name-invalid-char-2": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5467,7 +5360,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-@": {
+      "name-invalid-char-3": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5478,7 +5371,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-|": {
+      "name-invalid-char-4": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5489,7 +5382,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-^": {
+      "name-invalid-char-5": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5500,7 +5393,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char-%": {
+      "name-invalid-char-6": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5511,7 +5404,7 @@
           "HTTPStatusCode": 400
         }
       },
-      "name-invalid-char- ": {
+      "name-invalid-char-7": {
         "Error": {
           "Code": "InvalidParameter",
           "Message": "Invalid parameter: Topic Name",
@@ -5743,6 +5636,309 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sms": {
+    "recorded-date": "06-10-2025, 11:39:50",
+    "recorded-content": {
+      "subscribe-sms-1": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_unknown_topic": {
+    "recorded-date": "06-10-2025, 11:43:45",
+    "recorded-content": {
+      "subscribe-unknown-topic": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Topic does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_unknown_sqs_queue": {
+    "recorded-date": "06-10-2025, 12:03:29",
+    "recorded-content": {
+      "subscribe-unknown-sqs": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "subscribe-unknown-sqs-invalid_arn": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SQS endpoint ARN",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sqs_queue_url": {
+    "recorded-date": "06-10-2025, 11:56:36",
+    "recorded-content": {
+      "subscribe-sqs-via-url-error": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SQS endpoint ARN",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_double_subscription": {
+    "recorded-date": "06-10-2025, 11:39:56",
+    "recorded-content": {
+      "double-subscription-first": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:double-sub-befdfdff:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "double-subscription-second": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:double-sub-befdfdff:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_bad_sms": {
+    "recorded-date": "06-10-2025, 11:39:57",
+    "recorded-content": {
+      "subscribe-bad-sms": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: invalid-number",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription": {
+    "recorded-date": "07-10-2025, 07:40:45",
+    "recorded-content": {
+      "create-subscription": {
+        "SubscriptionArn": "pending confirmation",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_unsubscribe_from_deleted_topic": {
+    "recorded-date": "07-10-2025, 07:46:56",
+    "recorded-content": {
+      "unsubscribe-deleted-topic": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_getting_subscriptions_by_topic": {
+    "recorded-date": "07-10-2025, 08:29:43",
+    "recorded-content": {
+      "list-subscriptions-by-topic": {
+        "Subscriptions": [
+          {
+            "Endpoint": "arn:<partition>:sqs:<region>:111111111111:<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "sqs",
+            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_sms_obscure_phone_number": {
+    "recorded-date": "06-10-2025, 11:39:51",
+    "recorded-content": {
+      "subscribe-sms-2": {
+        "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<topic>:<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_attributes": {
+    "recorded-date": "06-10-2025, 11:40:42",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_creating_subscription_with_attributes": {
+    "recorded-date": "06-10-2025, 11:40:44",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_delete_subscriptions_on_delete_topic": {
+    "recorded-date": "06-10-2025, 11:40:45",
+    "recorded-content": {
+      "get-sub-after-topic-delete": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_set_subscription_attributes": {
+    "recorded-date": "06-10-2025, 11:40:47",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_filter_policy": {
+    "recorded-date": "06-10-2025, 11:40:48",
+    "recorded-content": {
+      "subscribe-invalid-filter-policy": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: FilterPolicy: failed to parse JSON. Unrecognized token 'invalid': was expecting (JSON String, Number, Array, Object or token 'null', 'true' or 'false')\n at [Source: REDACTED (`StreamReadFeature.INCLUDE_SOURCE_IN_LOCATION` disabled); line: 1, column: 8]",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_not_opted_out": {
+    "recorded-date": "06-10-2025, 11:40:48",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_opted_out": {
+    "recorded-date": "06-10-2025, 11:40:49",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_check_opted_out_invalid": {
+    "recorded-date": "06-10-2025, 11:40:49",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_list_opted_out": {
+    "recorded-date": "06-10-2025, 11:40:50",
+    "recorded-content": {
+      "list-opted-out": {
+        "phoneNumbers": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_opt_in": {
+    "recorded-date": "06-10-2025, 11:40:50",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_confirm_subscription": {
+    "recorded-date": "06-10-2025, 11:40:51",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_get_subscription_attributes_error_not_exists": {
+    "recorded-date": "06-10-2025, 11:40:51",
+    "recorded-content": {
+      "get-sub-attrs-nonexistent": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: SubscriptionId",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSSubscriptionCrudV2::test_subscribe_invalid_sms": {
+    "recorded-date": "06-10-2025, 12:09:25",
+    "recorded-content": {
+      "subscribe-bad-sms-+15--551234567": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: +15--551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-bad-sms-NAA+15551234567": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: NAA+15551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-bad-sms-+15551234567.": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: +15551234567.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "subscribe-bad-sms-/+15551234567": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid SMS endpoint: /+15551234567",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
