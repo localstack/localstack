@@ -9,6 +9,7 @@ from botocore.utils import InvalidArnException
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
     ConfirmSubscriptionResponse,
+    AmazonResourceName,
     CreateTopicResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
@@ -17,6 +18,7 @@ from localstack.aws.api.sns import (
     ListString,
     ListSubscriptionsByTopicResponse,
     ListSubscriptionsResponse,
+    ListTagsForResourceResponse,
     ListTopicsResponse,
     MapStringToString,
     NotFoundException,
@@ -26,8 +28,11 @@ from localstack.aws.api.sns import (
     SubscribeResponse,
     Subscription,
     SubscriptionAttributesMap,
+    TagKeyList,
     TagList,
+    TagResourceResponse,
     TopicAttributesMap,
+    UntagResourceResponse,
     attributeName,
     attributeValue,
     authenticateOnUnsubscribe,
@@ -102,6 +107,11 @@ class SnsProvider(SnsApi):
                 if not attrs.get(k) or not attrs.get(k) == v:
                     # TODO:
                     raise InvalidParameterException("Fix this Exception message and type")
+            tag_resource_success = _check_matching_tags(topic_arn, tags, store)
+            if not tag_resource_success:
+                raise InvalidParameterException(
+                    "Invalid parameter: Tags Reason: Topic already exists with different tags"
+                )
             return CreateTopicResponse(TopicArn=topic_arn)
 
         attributes = attributes or {}
@@ -121,7 +131,8 @@ class SnsProvider(SnsApi):
                 raise InvalidParameterException("Invalid parameter: Topic Name")
 
         topic = _create_topic(name=name, attributes=attributes, context=context)
-        # todo: tags
+        if tags:
+            self.tag_resource(context=context, resource_arn=topic_arn, tags=tags)
 
         store.topics[topic_arn] = topic
 
@@ -546,6 +557,34 @@ class SnsProvider(SnsApi):
 
         return GetSMSAttributesResponse(attributes=return_attributes)
 
+    def list_tags_for_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, **kwargs
+    ) -> ListTagsForResourceResponse:
+        store = sns_stores[context.account_id][context.region]
+        tags = store.TAGS.list_tags_for_resource(resource_arn)
+        return ListTagsForResourceResponse(Tags=tags.get("Tags"))
+
+    def tag_resource(
+        self, context: RequestContext, resource_arn: AmazonResourceName, tags: TagList, **kwargs
+    ) -> TagResourceResponse:
+        unique_tag_keys = {tag["Key"] for tag in tags}
+        if len(unique_tag_keys) < len(tags):
+            raise InvalidParameterException("Invalid parameter: Duplicated keys are not allowed.")
+        store = sns_stores[context.account_id][context.region]
+        store.TAGS.tag_resource(resource_arn, tags)
+        return TagResourceResponse()
+
+    def untag_resource(
+        self,
+        context: RequestContext,
+        resource_arn: AmazonResourceName,
+        tag_keys: TagKeyList,
+        **kwargs,
+    ) -> UntagResourceResponse:
+        store = sns_stores[context.account_id][context.region]
+        store.TAGS.untag_resource(resource_arn, tag_keys)
+        return UntagResourceResponse()
+
     @staticmethod
     def get_store(account_id: str, region: str) -> SnsStore:
         return sns_stores[account_id][region]
@@ -649,3 +688,24 @@ def _validate_sms_attributes(attributes: dict) -> None:
 def _set_sms_attribute_default(store: SnsStore) -> None:
     # TODO: don't call this on every sms attribute crud api call
     store.sms_attributes.setdefault("MonthlySpendLimit", "1")
+
+
+def _check_matching_tags(topic_arn: str, tags: TagList | None, store: SnsStore) -> bool:
+    """
+    Checks if a topic to be created doesn't already exist with different tags
+    :param topic_arn: Arn of the topic
+    :param tags: Tags to be checked
+    :param store: Store object that holds the topics and tags
+    :return: False if there is a mismatch in tags, True otherwise
+    """
+    existing_tags = store.TAGS.list_tags_for_resource(topic_arn)["Tags"]
+    # if this is none there is nothing to check
+    if topic_arn in store.topics:
+        if tags is None:
+            tags = []
+        for tag in tags:
+            # this means topic already created with empty tags and when we try to create it
+            # again with other tag value then it should fail according to aws documentation.
+            if existing_tags is not None and tag not in existing_tags:
+                return False
+    return True

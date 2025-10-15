@@ -90,7 +90,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_tags": {
-    "recorded-date": "24-08-2023, 22:30:44",
+    "recorded-date": "13-10-2025, 06:50:09",
     "recorded-content": {
       "duplicate-key-error": {
         "Error": {
@@ -235,7 +235,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_duplicate_topic_with_more_tags": {
-    "recorded-date": "24-08-2023, 22:30:46",
+    "recorded-date": "13-10-2025, 06:53:55",
     "recorded-content": {
       "exception-duplicate": {
         "Error": {
@@ -251,7 +251,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_duplicate_topic_check_idempotency": {
-    "recorded-date": "24-08-2023, 22:30:47",
+    "recorded-date": "13-10-2025, 07:07:09",
     "recorded-content": {
       "response-created": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
@@ -284,7 +284,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSTopicCrud::test_create_topic_after_delete_with_new_tags": {
-    "recorded-date": "24-08-2023, 22:30:48",
+    "recorded-date": "13-10-2025, 07:59:08",
     "recorded-content": {
       "topic-0": {
         "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:1>",
