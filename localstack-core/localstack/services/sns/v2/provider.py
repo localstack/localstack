@@ -8,8 +8,8 @@ from botocore.utils import InvalidArnException
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
-    ConfirmSubscriptionResponse,
     AmazonResourceName,
+    ConfirmSubscriptionResponse,
     CreateTopicResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
