@@ -59,14 +59,21 @@ class EventRuleEngine:
             for flat_pattern in flat_pattern_conditions
         )
 
-    def _evaluate_condition(self, value, condition, field_exists: bool):
+    def _evaluate_condition(self, value: t.Any, condition: t.Any, field_exists: bool) -> bool:
         if not isinstance(condition, dict):
             return field_exists and value == condition
+
         elif (must_exist := condition.get("exists")) is not None:
             # if must_exists is True then field_exists must be True
             # if must_exists is False then fields_exists must be False
             return must_exist == field_exists
+
         elif (anything_but := condition.get("anything-but")) is not None:
+            if not field_exists:
+                # anything-but can handle None `value`, but it needs to differentiate between user-set `null` and
+                # missing value
+                return False
+
             if isinstance(anything_but, dict):
                 if (not_condition := anything_but.get("prefix")) is not None:
                     predicate = self._evaluate_prefix
@@ -95,6 +102,7 @@ class EventRuleEngine:
         elif value is None:
             # the remaining conditions require the value to not be None
             return False
+
         elif (prefix := condition.get("prefix")) is not None:
             if isinstance(prefix, dict):
                 if (prefix_equal_ignore_case := prefix.get("equals-ignore-case")) is not None:
@@ -104,7 +112,7 @@ class EventRuleEngine:
 
         elif (suffix := condition.get("suffix")) is not None:
             if isinstance(suffix, dict):
-                if suffix_equal_ignore_case := suffix.get("equals-ignore-case"):
+                if (suffix_equal_ignore_case := suffix.get("equals-ignore-case")) is not None:
                     return self._evaluate_suffix(suffix_equal_ignore_case.lower(), value.lower())
             else:
                 return self._evaluate_suffix(suffix, value)
@@ -126,19 +134,19 @@ class EventRuleEngine:
         return False
 
     @staticmethod
-    def _evaluate_prefix(condition: str | list, value: str) -> bool:
-        return value.startswith(condition)
+    def _evaluate_prefix(condition: str | list, value: t.Any) -> bool:
+        return isinstance(value, str) and value.startswith(condition)
 
     @staticmethod
-    def _evaluate_suffix(condition: str | list, value: str) -> bool:
-        return value.endswith(condition)
+    def _evaluate_suffix(condition: str | list, value: t.Any) -> bool:
+        return isinstance(value, str) and value.endswith(condition)
 
     @staticmethod
-    def _evaluate_equal_ignore_case(condition: str, value: str) -> bool:
-        return condition.lower() == value.lower()
+    def _evaluate_equal_ignore_case(condition: str, value: t.Any) -> bool:
+        return isinstance(value, str) and condition.lower() == value.lower()
 
     @staticmethod
-    def _evaluate_cidr(condition: str, value: str) -> bool:
+    def _evaluate_cidr(condition: str, value: t.Any) -> bool:
         try:
             ip = ipaddress.ip_address(value)
             return ip in ipaddress.ip_network(condition)
@@ -146,8 +154,10 @@ class EventRuleEngine:
             return False
 
     @staticmethod
-    def _evaluate_wildcard(condition: str, value: str) -> bool:
-        return bool(re.match(re.escape(condition).replace("\\*", ".+") + "$", value))
+    def _evaluate_wildcard(condition: str, value: t.Any) -> bool:
+        return isinstance(value, str) and bool(
+            re.match(re.escape(condition).replace("\\*", ".+") + "$", value)
+        )
 
     @staticmethod
     def _evaluate_numeric_condition(conditions: list, value: t.Any) -> bool:
@@ -457,10 +467,18 @@ class EventPatternCompiler:
                     return
 
                 elif operator == "anything-but":
-                    # anything-but can actually contain any kind of simple rule (str, number, and list)
+                    # anything-but can actually contain any kind of simple rule (str, number, and list) except Null
+                    if value is None:
+                        raise InvalidEventPatternException(
+                            f"{self.error_prefix}Value of anything-but must be an array or single string/number value."
+                        )
                     if isinstance(value, list):
                         for v in value:
-                            self._validate_rule(v)
+                            if v is None:
+                                raise InvalidEventPatternException(
+                                    f"{self.error_prefix}Inside anything but list, start|null|boolean is not supported."
+                                )
+                            self._validate_rule(v, from_="anything-but")
 
                         return
 
