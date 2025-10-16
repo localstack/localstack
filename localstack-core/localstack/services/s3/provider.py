@@ -384,7 +384,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         """
         if s3_bucket.notification_configuration:
             if not s3_notif_ctx:
-                s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                s3_notif_ctx = S3EventNotificationContext.from_request_context(
                     context,
                     s3_bucket=s3_bucket,
                     s3_object=s3_object,
@@ -1271,7 +1271,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             delete_marker_id = generate_version_id(s3_bucket.versioning_status)
             delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
             s3_bucket.objects.set(key, delete_marker)
-            s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+            s3_notif_ctx = S3EventNotificationContext.from_request_context(
                 context,
                 s3_bucket=s3_bucket,
                 s3_object=delete_marker,
@@ -1374,7 +1374,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 delete_marker_id = generate_version_id(s3_bucket.versioning_status)
                 delete_marker = S3DeleteMarker(key=object_key, version_id=delete_marker_id)
                 s3_bucket.objects.set(object_key, delete_marker)
-                s3_notif_ctx = S3EventNotificationContext.from_request_context_native(
+                s3_notif_ctx = S3EventNotificationContext.from_request_context(
                     context,
                     s3_bucket=s3_bucket,
                     s3_object=delete_marker,
@@ -2202,7 +2202,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # TODO: add a way to transition from ongoing-request=true to false? for now it is instant
         s3_object.restore = f'ongoing-request="false", expiry-date="{restore_expiration_date}"'
 
-        s3_notif_ctx_initiated = S3EventNotificationContext.from_request_context_native(
+        s3_notif_ctx_initiated = S3EventNotificationContext.from_request_context(
             context,
             s3_bucket=s3_bucket,
             s3_object=s3_object,

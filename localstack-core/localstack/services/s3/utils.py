@@ -7,6 +7,7 @@ import logging
 import re
 import time
 import zlib
+from collections.abc import Mapping
 from enum import StrEnum
 from secrets import token_bytes
 from typing import Any, Literal, NamedTuple, Protocol
@@ -63,7 +64,6 @@ from localstack.services.s3.constants import (
     AUTHENTICATED_USERS_ACL_GRANTEE,
     CHECKSUM_ALGORITHMS,
     LOG_DELIVERY_ACL_GRANTEE,
-    S3_VIRTUAL_HOST_FORWARDED_HEADER,
     SIGNATURE_V2_PARAMS,
     SIGNATURE_V4_PARAMS,
     SYSTEM_METADATA_SETTABLE_HEADERS,
@@ -522,7 +522,7 @@ def is_valid_canonical_id(canonical_id: str) -> bool:
         return False
 
 
-def uses_host_addressing(headers: dict[str, str]) -> str | None:
+def uses_host_addressing(headers: Mapping[str, str]) -> str | None:
     """
     Determines if the request is targeting S3 with virtual host addressing
     :param headers: the request headers
@@ -549,15 +549,6 @@ def get_system_metadata_from_request(request: dict) -> Metadata:
             metadata[system_metadata_field] = field_value
 
     return metadata
-
-
-def forwarded_from_virtual_host_addressed_request(headers: dict[str, str]) -> bool:
-    """
-    Determines if the request was forwarded from a v-host addressing style into a path one
-    """
-    # we can assume that the host header we are receiving here is actually the header we originally received
-    # from the client (because the edge service is forwarding the request in memory)
-    return S3_VIRTUAL_HOST_FORWARDED_HEADER in headers
 
 
 def extract_bucket_name_and_key_from_headers_and_path(
