@@ -546,6 +546,15 @@ def test_save_load_file(tmp_path):
     assert content + more_content == load_file(file_name)
 
 
+def test_load_file_strict(tmp_path):
+    file_name = tmp_path / short_uid()
+    assert not os.path.isfile(file_name)
+
+    assert load_file(file_name) is None
+    with pytest.raises(FileNotFoundError):
+        load_file(file_name, strict=True)
+
+
 def test_save_load_file_with_permissions(tmp_path):
     file_name = tmp_path / (f"special_permissions_{short_uid()}")
     content = f"some_content_{short_uid()}"
