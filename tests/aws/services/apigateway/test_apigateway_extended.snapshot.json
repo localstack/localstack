@@ -2203,7 +2203,7 @@
       }
     }
   },
-  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_usage_plan_with_invalid_throttle": {
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_usage_plan_with_throttle": {
     "recorded-date": "26-09-2025, 15:15:33",
     "recorded-content": {
       "create-usage-plan-burst-gt-rate": {

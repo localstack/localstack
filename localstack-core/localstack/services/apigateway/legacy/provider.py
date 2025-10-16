@@ -2429,9 +2429,6 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         if not include_values:
             for api_key in api_keys:
                 api_key.pop("value")
-        if limit is not None:
-            if limit < 1 or limit > 500:
-                limit = None
 
         item_list = PaginatedList(api_keys)
 

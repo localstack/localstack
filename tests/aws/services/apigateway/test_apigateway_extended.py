@@ -451,7 +451,7 @@ class TestApigatewayApiKeysCrud:
         snapshot.match("update-api-key-immutable-field", e.value.response)
 
     @markers.aws.validated
-    def test_create_usage_plan_with_invalid_throttle(
+    def test_create_usage_plan_with_throttle(
         self, aws_client, snapshot, cleanup_api_keys, cleanups
     ):
         snapshot.add_transformer(
