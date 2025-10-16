@@ -6,7 +6,6 @@ import shutil
 import stat
 import tempfile
 from pathlib import Path
-from typing import Any
 
 LOG = logging.getLogger(__name__)
 TMP_FILES = []
@@ -82,8 +81,20 @@ def save_file(file, content, append=False, permissions=None):
 
 
 def load_file(
-    file_path: str | os.PathLike, default: Any = None, mode: str | None = None, strict: bool = False
-):
+    file_path: str | os.PathLike,
+    default: str | bytes | None = None,
+    mode: str | None = None,
+    strict: bool = False,
+) -> str | bytes | None:
+    """
+    Return file contents
+
+    :param file_path: path of the file
+    :param default: if strict=False then return this value if the file does not exist
+    :param mode: mode to open the file with (e.g. `r`, `rw`)
+    :param strict: raise an error if the file path is not a file
+    :return: the file contents
+    """
     if not os.path.isfile(file_path):
         if strict:
             raise FileNotFoundError(file_path)
