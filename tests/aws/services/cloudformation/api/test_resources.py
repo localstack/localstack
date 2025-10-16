@@ -59,6 +59,7 @@ def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
 
 @markers.aws.validated
 @markers.snapshot.skip_snapshot_verify(paths=["$..StackResourceDetail.Metadata"])
+@skip_if_legacy_engine
 def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_template):
     template = {
         "Resources": {
@@ -93,6 +94,7 @@ def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_te
 
 
 @markers.aws.validated
+@skip_if_legacy_engine
 def test_describe_failed_resource(aws_client, snapshot, deploy_cfn_template):
     template = {
         "Resources": {
