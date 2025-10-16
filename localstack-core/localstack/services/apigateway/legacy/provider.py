@@ -2430,6 +2430,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             for api_key in api_keys:
                 api_key.pop("value")
 
+        if limit is not None:
+            if limit < 1 or limit > 500:
+                limit = None
+
         item_list = PaginatedList(api_keys)
 
         def token_generator(item):
