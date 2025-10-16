@@ -296,7 +296,8 @@ def new_tmp_file(suffix: str | None = None, dir: str | None = None) -> str:
     return tmp_path
 
 
-def new_tmp_dir(dir: str | None = None) -> str:
+def new_tmp_dir(dir: str | None = None, mode: int = 0o777) -> str:
     folder = tempfile.mkdtemp(dir=dir)
     TMP_FILES.append(folder)
+    idempotent_chmod(folder, mode=mode)
     return folder
