@@ -1109,6 +1109,12 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         try:
             resource = stack.resolved_resources[logical_resource_id]
+            if resource.get("ResourceStatus") not in [
+                StackStatus.CREATE_COMPLETE,
+                StackStatus.UPDATE_COMPLETE,
+                StackStatus.ROLLBACK_COMPLETE,
+            ]:
+                raise KeyError
         except KeyError:
             raise ValidationError(
                 f"Resource {logical_resource_id} does not exist for stack {stack_name}"

@@ -16,5 +16,56 @@
     "recorded-content": {
       "error": "An error occurred (ValidationError) when calling the CreateChangeSet operation: Template format error: Resource name my-bad-resource-id is non alphanumeric."
     }
+  },
+  "tests/aws/services/cloudformation/api/test_resources.py::test_describe_deleted_resource_on_update": {
+    "recorded-date": "16-10-2025, 15:06:04",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource Parameter does not exist for stack <stack-name:1>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "parameter": {
+        "StackResourceDetail": {
+          "DriftInformation": {
+            "StackResourceDriftStatus": "NOT_CHECKED"
+          },
+          "LastUpdatedTimestamp": "timestamp",
+          "LogicalResourceId": "Parameter2",
+          "Metadata": {},
+          "PhysicalResourceId": "<physical-resource-id:1>",
+          "ResourceStatus": "CREATE_COMPLETE",
+          "ResourceType": "AWS::SSM::Parameter",
+          "StackId": "<stack-id:1>",
+          "StackName": "<stack-name:1>"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/cloudformation/api/test_resources.py::test_describe_failed_resource": {
+    "recorded-date": "16-10-2025, 15:02:53",
+    "recorded-content": {
+      "error": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "Resource Parameter does not exist for stack <stack-name>",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }

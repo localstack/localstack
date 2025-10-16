@@ -576,7 +576,6 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
                     )
                     # TODO: do we actually need this line?
                     resolved_resource.update(extra_resource_properties)
-
             case OperationStatus.FAILED:
                 reason = event.message
                 LOG.warning(
