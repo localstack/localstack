@@ -1109,7 +1109,11 @@ class CloudformationProviderV2(CloudformationProvider, ServiceLifecycleHook):
 
         try:
             resource = stack.resolved_resources[logical_resource_id]
-            if resource.get("ResourceStatus") not in ["CREATE_COMPLETE", "UPDATE_COMPLETE"]:
+            if resource.get("ResourceStatus") not in [
+                StackStatus.CREATE_COMPLETE,
+                StackStatus.UPDATE_COMPLETE,
+                StackStatus.ROLLBACK_COMPLETE,
+            ]:
                 raise KeyError
         except KeyError:
             raise ValidationError(

@@ -1,20 +1,20 @@
 {
   "tests/aws/services/cloudformation/api/test_resources.py::test_describe_deleted_resource_on_update": {
-    "last_validated_date": "2025-10-14T20:37:39+00:00",
+    "last_validated_date": "2025-10-16T15:08:41+00:00",
     "durations_in_seconds": {
-      "setup": 0.27,
-      "call": 22.65,
-      "teardown": 4.55,
-      "total": 27.47
+      "setup": 0.28,
+      "call": 22.95,
+      "teardown": 4.6,
+      "total": 27.83
     }
   },
   "tests/aws/services/cloudformation/api/test_resources.py::test_describe_failed_resource": {
-    "last_validated_date": "2025-10-14T19:04:45+00:00",
+    "last_validated_date": "2025-10-16T15:02:53+00:00",
     "durations_in_seconds": {
-      "setup": 0.26,
-      "call": 10.67,
+      "setup": 0.29,
+      "call": 8.61,
       "teardown": 0.0,
-      "total": 10.93
+      "total": 8.9
     }
   },
   "tests/aws/services/cloudformation/v2/ported_from_v1/api/test_resources.py::test_describe_non_existent_resource": {

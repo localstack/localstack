@@ -6,6 +6,7 @@ from botocore.exceptions import ClientError
 from tests.aws.services.cloudformation.conftest import skip_if_legacy_engine
 
 from localstack.testing.pytest import markers
+from localstack.testing.pytest.fixtures import StackDeployError
 from localstack.utils.strings import short_uid
 
 
@@ -57,6 +58,7 @@ def test_invalid_logical_resource_id(deploy_cfn_template, snapshot):
 
 
 @markers.aws.validated
+@markers.snapshot.skip_snapshot_verify(paths=["$..StackResourceDetail.Metadata"])
 def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_template):
     template = {
         "Resources": {
@@ -69,6 +71,7 @@ def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_te
 
     stack = deploy_cfn_template(template=json.dumps(template))
 
+    # Update the template to remove the previous resource and create a new one
     template["Resources"]["Parameter2"] = template["Resources"].pop("Parameter")
     deploy_cfn_template(template=json.dumps(template), is_update=True, stack_name=stack.stack_name)
 
@@ -77,8 +80,16 @@ def test_describe_deleted_resource_on_update(aws_client, snapshot, deploy_cfn_te
             StackName=stack.stack_name, LogicalResourceId="Parameter"
         )
 
-    snapshot.add_transformer(snapshot.transform.regex(stack.stack_name, "<stack-name>"))
+    parameter2 = aws_client.cloudformation.describe_stack_resource(
+        StackName=stack.stack_name, LogicalResourceId="Parameter2"
+    )
+
+    snapshot.add_transformer(snapshot.transform.key_value("PhysicalResourceId"))
+    snapshot.add_transformer(snapshot.transform.key_value("StackId"))
+    snapshot.add_transformer(snapshot.transform.key_value("StackName"))
+
     snapshot.match("error", err.value.response)
+    snapshot.match("parameter", parameter2)
 
 
 @markers.aws.validated
@@ -93,10 +104,8 @@ def test_describe_failed_resource(aws_client, snapshot, deploy_cfn_template):
     }
 
     stack_name = f"test-stack-{short_uid()}"
-    try:
+    with pytest.raises(StackDeployError):
         deploy_cfn_template(template=json.dumps(template), stack_name=stack_name)
-    except Exception:
-        pass
 
     with pytest.raises(ClientError) as err:
         aws_client.cloudformation.describe_stack_resource(
