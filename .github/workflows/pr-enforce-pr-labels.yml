@@ -1,7 +1,7 @@
 name: Enforce Labels
 on:
   pull_request_target:
-    types: [labeled, unlabeled, opened]
+    types: [labeled, unlabeled, opened, synchronize]
 
 jobs:
   labels:
