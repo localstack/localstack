@@ -36,7 +36,7 @@ from localstack.services.lambda_.event_source_mapping.senders.sender_utils impor
 )
 from localstack.utils.aws.arns import parse_arn, s3_bucket_name
 from localstack.utils.backoff import ExponentialBackoff
-from localstack.utils.batch_policy import Batcher
+from localstack.utils.batching import Batcher
 from localstack.utils.strings import long_uid
 
 LOG = logging.getLogger(__name__)
