@@ -1847,7 +1847,7 @@
     }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_usage_plan_api_keys": {
-    "recorded-date": "10-10-2024, 18:54:42",
+    "recorded-date": "26-09-2025, 16:23:51",
     "recorded-content": {
       "get-api-keys": {
         "items": [],
@@ -1872,11 +1872,11 @@
       "create-api-key-2": {
         "createdDate": "datetime",
         "enabled": false,
-        "id": "<id:1>",
+        "id": "<id:2>",
         "lastUpdatedDate": "datetime",
-        "name": "<name:1>",
+        "name": "<name:2>",
         "stageKeys": [],
-        "value": "<value:1>",
+        "value": "<value:2>",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 201
@@ -2022,6 +2022,201 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_negative_get_usage_plan_api_keys": {
+    "recorded-date": "16-07-2025, 15:26:48",
+    "recorded-content": {
+      "get-api-keys-invalid-limit": {
+        "items": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-api-key": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:1>",
+        "lastUpdatedDate": "datetime",
+        "name": "<name:1>",
+        "stageKeys": [],
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update-api-key-name": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:1>",
+        "lastUpdatedDate": "datetime",
+        "name": "<name:2>",
+        "stageKeys": [],
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_api_key_with_invalid_name": {
+    "recorded-date": "17-07-2025, 13:16:59",
+    "recorded-content": {
+      "create-api-key-name-too-long": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Key name, can be at most 1024 characters."
+        },
+        "message": "Invalid API Key name, can be at most 1024 characters.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-api-key-empty-name": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:1>",
+        "lastUpdatedDate": "datetime",
+        "stageKeys": [],
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "create-api-key-no-name": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:2>",
+        "lastUpdatedDate": "datetime",
+        "stageKeys": [],
+        "value": "<value:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_api_key_with_invalid_value": {
+    "recorded-date": "17-07-2025, 13:59:45",
+    "recorded-content": {
+      "create-api-key-short-value": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "API Key value should be at least 20 characters"
+        },
+        "message": "API Key value should be at least 20 characters",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-api-key-invalid-value-too-long": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "API Key value exceeds maximum size of 128 characters"
+        },
+        "message": "API Key value exceeds maximum size of 128 characters",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "create-api-key-empty-value": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:1>",
+        "lastUpdatedDate": "datetime",
+        "stageKeys": [],
+        "value": "<value:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_update_api_key_invalid_description_length": {
+    "recorded-date": "17-07-2025, 15:02:27",
+    "recorded-content": {
+      "create-api-key-description-too-long": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Key description specified."
+        },
+        "message": "Invalid API Key description specified.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      },
+      "update-api-key-description-too-long": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid API Key description specified."
+        },
+        "message": "Invalid API Key description specified.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_update_api_key_invalid_enabled_type": {
+    "recorded-date": "17-07-2025, 15:33:05",
+    "recorded-content": {
+      "update-api-key-invalid-enabled-type": {
+        "createdDate": "datetime",
+        "enabled": false,
+        "id": "<id:1>",
+        "lastUpdatedDate": "datetime",
+        "stageKeys": [],
+        "tags": {},
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_update_api_key_immutable_field": {
+    "recorded-date": "18-07-2025, 14:31:57",
+    "recorded-content": {
+      "update-api-key-immutable-field": {
+        "Error": {
+          "Code": "BadRequestException",
+          "Message": "Invalid patch path  '/id' specified for op 'replace'. Must be one of: [/description, /enabled, /name, /customerId]"
+        },
+        "message": "Invalid patch path  '/id' specified for op 'replace'. Must be one of: [/description, /enabled, /name, /customerId]",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_usage_plan_with_throttle": {
+    "recorded-date": "26-09-2025, 15:15:33",
+    "recorded-content": {
+      "create-usage-plan-burst-gt-rate": {
+        "apiStages": [],
+        "id": "<id:1>",
+        "name": "<name:1>",
+        "throttle": {
+          "burstLimit": 20,
+          "rateLimit": 10.0
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       }
     }

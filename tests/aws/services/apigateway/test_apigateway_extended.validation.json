@@ -1,9 +1,78 @@
 {
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_api_key_with_invalid_name": {
+    "last_validated_date": "2025-09-26T15:36:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.43,
+      "teardown": 0.0,
+      "total": 0.43
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_api_key_with_invalid_value": {
+    "last_validated_date": "2025-09-26T15:36:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.39,
+      "teardown": 0.0,
+      "total": 0.39
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_create_usage_plan_with_throttle": {
+    "last_validated_date": "2025-09-26T15:36:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.41,
+      "teardown": 0.0,
+      "total": 0.41
+    }
+  },
   "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_api_keys": {
     "last_validated_date": "2024-10-10T18:53:36+00:00"
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_get_usage_plan_api_keys": {
-    "last_validated_date": "2024-10-10T18:54:41+00:00"
+    "last_validated_date": "2025-09-26T16:25:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.88,
+      "call": 4.05,
+      "teardown": 0.59,
+      "total": 5.52
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_negative_get_usage_plan_api_keys": {
+    "last_validated_date": "2025-09-26T15:36:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.51,
+      "teardown": 0.24,
+      "total": 0.75
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_update_api_key_immutable_field": {
+    "last_validated_date": "2025-09-26T15:36:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.29,
+      "teardown": 0.32,
+      "total": 0.61
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_update_api_key_invalid_description_length": {
+    "last_validated_date": "2025-09-26T15:36:17+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.66,
+      "teardown": 0.29,
+      "total": 0.95
+    }
+  },
+  "tests/aws/services/apigateway/test_apigateway_extended.py::TestApigatewayApiKeysCrud::test_update_api_key_invalid_enabled_type": {
+    "last_validated_date": "2025-09-26T15:36:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.55,
+      "teardown": 0.31,
+      "total": 0.86
+    }
   },
   "tests/aws/services/apigateway/test_apigateway_extended.py::test_export_oas30_openapi[TEST_IMPORT_PETSTORE_SWAGGER]": {
     "last_validated_date": "2025-05-06T18:34:11+00:00"

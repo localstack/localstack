@@ -323,8 +323,18 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         tags: MapOfStringToString = None,
         **kwargs,
     ) -> ApiKey:
+        if name and len(name) > 1024:
+            raise BadRequestException("Invalid API Key name, can be at most 1024 characters.")
+        if value:
+            if len(value) > 128:
+                raise BadRequestException("API Key value exceeds maximum size of 128 characters")
+            elif len(value) < 20:
+                raise BadRequestException("API Key value should be at least 20 characters")
+        if description and len(description) > 125000:
+            raise BadRequestException("Invalid API Key description specified.")
         api_key = call_moto(context)
-
+        if name == "":
+            api_key.pop("name", None)
         #  transform array of stage keys [{'restApiId': '0iscapk09u', 'stageName': 'dev'}] into
         #  array of strings ['0iscapk09u/dev']
         stage_keys = api_key.get("stageKeys", [])
@@ -2420,6 +2430,10 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
             for api_key in api_keys:
                 api_key.pop("value")
 
+        if limit is not None:
+            if limit < 1 or limit > 500:
+                limit = None
+
         item_list = PaginatedList(api_keys)
 
         def token_generator(item):
@@ -2444,6 +2458,14 @@ class ApigatewayProvider(ApigatewayApi, ServiceLifecycleHook):
         patch_operations: ListOfPatchOperation = None,
         **kwargs,
     ) -> ApiKey:
+        for patch_op in patch_operations:
+            if patch_op["path"] not in ("/description", "/enabled", "/name", "/customerId"):
+                raise BadRequestException(
+                    f"Invalid patch path  '{patch_op['path']}' specified for op '{patch_op['op']}'. Must be one of: [/description, /enabled, /name, /customerId]"
+                )
+
+            if patch_op["path"] == "/description" and len(patch_op["value"]) > 125000:
+                raise BadRequestException("Invalid API Key description specified.")
         response: ApiKey = call_moto(context)
         if "value" in response:
             response.pop("value", None)

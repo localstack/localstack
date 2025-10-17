@@ -46,8 +46,6 @@ def apigw_create_api_key(aws_client):
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..body.host",
-        # TODO: not returned by LS
-        "$..endpointConfiguration.ipAddressType",
     ]
 )
 def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file, region_name):
@@ -91,8 +89,6 @@ def test_export_swagger_openapi(aws_client, snapshot, import_apigw, import_file,
 @markers.snapshot.skip_snapshot_verify(
     paths=[
         "$..body.servers..url",
-        # TODO: not returned by LS
-        "$..endpointConfiguration.ipAddressType",
     ]
 )
 def test_export_oas30_openapi(aws_client, snapshot, import_apigw, region_name, import_file):
@@ -272,7 +268,7 @@ class TestApigatewayApiKeysCrud:
         snapshot.match("create-api-key", create_api_key)
 
         create_api_key_2 = apigw_create_api_key(name=api_key_name_2)
-        snapshot.match("create-api-key-2", create_api_key)
+        snapshot.match("create-api-key-2", create_api_key_2)
 
         get_api_keys_after_create = aws_client.apigateway.get_api_keys()
         snapshot.match("get-api-keys-after-create-1", get_api_keys_after_create)
@@ -332,3 +328,141 @@ class TestApigatewayApiKeysCrud:
 
         get_up_keys_bad_d = aws_client.apigateway.get_usage_plan_keys(usagePlanId="bad-id")
         snapshot.match("get-up-keys-bad-usage-plan", get_up_keys_bad_d)
+
+    @markers.aws.validated
+    def test_negative_get_usage_plan_api_keys(
+        self, aws_client, apigw_create_api_key, snapshot, cleanup_api_keys, cleanups
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.key_value("value"),
+                snapshot.transform.key_value("name"),
+            ]
+        )
+
+        get_keys = aws_client.apigateway.get_api_keys(limit=-1)
+        snapshot.match("get-api-keys-invalid-limit", get_keys)
+
+        create_api_key = apigw_create_api_key(name="key-enabled-false", enabled=False)
+        assert not create_api_key["enabled"]
+        snapshot.match("create-api-key", create_api_key)
+
+        update_resp = aws_client.apigateway.update_api_key(
+            apiKey=create_api_key["id"],
+            patchOperations=[{"op": "replace", "path": "/name", "value": "new-name"}],
+        )
+        snapshot.match("update-api-key-name", update_resp)
+
+    @markers.aws.validated
+    def test_create_api_key_with_invalid_name(
+        self, aws_client, snapshot, cleanup_api_keys, cleanups
+    ):
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.key_value("value"),
+            ]
+        )
+        long_name = "a" * 1025
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_api_key(name=long_name)
+        snapshot.match("create-api-key-name-too-long", e.value.response)
+
+        create_empty_name = aws_client.apigateway.create_api_key(name="")
+        snapshot.match("create-api-key-empty-name", create_empty_name)
+
+        create_no_name = aws_client.apigateway.create_api_key()
+        snapshot.match("create-api-key-no-name", create_no_name)
+
+    @markers.aws.validated
+    def test_create_api_key_with_invalid_value(
+        self, aws_client, snapshot, cleanup_api_keys, cleanups
+    ):
+        snapshot.add_transformers_list([snapshot.transform.key_value("id")])
+        shot_value = "short"
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_api_key(value=shot_value)
+        snapshot.match("create-api-key-short-value", e.value.response)
+
+        long_value = "a" * 129
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.create_api_key(value=long_value)
+        snapshot.match("create-api-key-invalid-value-too-long", e.value.response)
+
+        snapshot.add_transformers_list(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.key_value("value"),
+            ]
+        )
+        empty_value = aws_client.apigateway.create_api_key(value="")
+        snapshot.add_transformers_list([snapshot.transform.key_value("id")])
+        snapshot.match("create-api-key-empty-value", empty_value)
+
+    @markers.aws.validated
+    def test_update_api_key_invalid_description_length(
+        self, aws_client, snapshot, apigw_create_api_key, cleanup_api_keys, cleanups
+    ):
+        long_description = "a" * 125001
+        with pytest.raises(ClientError) as e:
+            apigw_create_api_key(description=long_description)
+        snapshot.match("create-api-key-description-too-long", e.value.response)
+
+        api_key = apigw_create_api_key()
+        api_key_id = api_key["id"]
+
+        long_description = "a" * 125001
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_api_key(
+                apiKey=api_key_id,
+                patchOperations=[
+                    {"op": "replace", "path": "/description", "value": long_description}
+                ],
+            )
+        snapshot.match("update-api-key-description-too-long", e.value.response)
+
+    @markers.aws.validated
+    def test_update_api_key_invalid_enabled_type(
+        self, aws_client, snapshot, apigw_create_api_key, cleanup_api_keys, cleanups
+    ):
+        snapshot.add_transformers_list([snapshot.transform.key_value("id")])
+        api_key = apigw_create_api_key()
+        api_key_id = api_key["id"]
+
+        invalid_enabled_type = aws_client.apigateway.update_api_key(
+            apiKey=api_key_id,
+            patchOperations=[{"op": "replace", "path": "/enabled", "value": "not-a-boolean"}],
+        )
+        snapshot.match("update-api-key-invalid-enabled-type", invalid_enabled_type)
+
+    @markers.aws.validated
+    def test_update_api_key_immutable_field(
+        self, aws_client, snapshot, apigw_create_api_key, cleanup_api_keys, cleanups
+    ):
+        api_key = apigw_create_api_key()
+        api_key_id = api_key["id"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.apigateway.update_api_key(
+                apiKey=api_key_id,
+                patchOperations=[{"op": "replace", "path": "/id", "value": "new-id"}],
+            )
+        snapshot.match("update-api-key-immutable-field", e.value.response)
+
+    @markers.aws.validated
+    def test_create_usage_plan_with_throttle(
+        self, aws_client, snapshot, cleanup_api_keys, cleanups
+    ):
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("id"),
+                snapshot.transform.key_value("name"),
+            ]
+        )
+
+        invalid_burst_limit = aws_client.apigateway.create_usage_plan(
+            name=f"invalid-throttle-burst-gt-rate-{short_uid()}",
+            throttle={"rateLimit": 10, "burstLimit": 20},
+        )
+        snapshot.match("create-usage-plan-burst-gt-rate", invalid_burst_limit)
