@@ -63,8 +63,6 @@ def pytest_runtestloop(session: Session):
             return
         LOG.info("TEST_FORCE_LOCALSTACK_START is set, a Localstack instance will be created.")
 
-    from localstack.utils.common import safe_requests
-
     if is_aws_cloud():
         localstack_config.DEFAULT_DELAY = 5
         localstack_config.DEFAULT_MAX_ATTEMPTS = 60
@@ -72,8 +70,6 @@ def pytest_runtestloop(session: Session):
     # configure
     os.environ[ENV_INTERNAL_TEST_RUN] = "1"
     localstack_config.INCLUDE_STACK_TRACES_IN_HTTP_RESPONSE = True
-
-    safe_requests.verify_ssl = False
 
     from localstack.runtime import current
 
