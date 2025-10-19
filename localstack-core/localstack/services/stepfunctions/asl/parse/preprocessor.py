@@ -356,7 +356,8 @@ LOG = logging.getLogger(__name__)
 
 
 class Preprocessor(ASLParserVisitor):
-    _query_language_per_scope: list[QueryLanguage] = []
+    def __init__(self):
+        self._query_language_per_scope: list[QueryLanguage] = []
 
     def _get_current_query_language(self) -> QueryLanguage:
         return self._query_language_per_scope[-1]
