@@ -63,9 +63,17 @@ class TestSfnApiValidation:
         [
             ValidationTemplate.VALID_BASE_PASS,
             ValidationTemplate.INVALID_BASE_NO_STARTAT,
+            ValidationTemplate.INVALID_DOWNGRADE_QUERY_LANGUAGE,
+            ValidationTemplate.VALID_QUERY_LANGUAGE_PASS,
             CallbackTemplates.SQS_WAIT_FOR_TASK_TOKEN,
         ],
-        ids=["VALID_BASE_PASS", "INVALID_BASE_NO_STARTAT", "ILLEGAL_WFTT"],
+        ids=[
+            "VALID_BASE_PASS",
+            "INVALID_BASE_NO_STARTAT",
+            "INVALID_DOWNGRADE_QUERY_LANGUAGE",
+            "VALID_QUERY_LANGUAGE_PASS",
+            "ILLEGAL_WFTT",
+        ],
     )
     @markers.aws.validated
     def test_validate_state_machine_definition_type_express(
