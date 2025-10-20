@@ -1682,10 +1682,7 @@ class ChangeSetModel:
             # TODO: raise errors if not dict
             if isinstance(obj, dict):
                 key_set.update(obj.keys())
-        # The keys list is sorted to increase reproducibility of the
-        # update graph build process or downstream logics.
-        keys = sorted(key_set)
-        return keys
+        return list(key_set)
 
     @staticmethod
     def _name_if_intrinsic_function(value: Maybe[Any]) -> str | None:
