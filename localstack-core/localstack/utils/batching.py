@@ -4,9 +4,6 @@ import threading
 import time
 from typing import Generic, Protocol, TypeVar, overload
 
-from pydantic import Field
-from pydantic.dataclasses import dataclass
-
 LOG = logging.getLogger(__name__)
 
 T = TypeVar("T")
@@ -16,7 +13,6 @@ BatchPolicyTriggered = bool
 
 
 # TODO: Add batching on bytes as well.
-@dataclass
 class Batcher(Generic[T]):
     """
     A utility for collecting items into batches and flushing them when one or more batch policy conditions are met.
@@ -51,14 +47,33 @@ class Batcher(Generic[T]):
         assert batcher.flush() == ["item1", "item2", "item3", "item4"]
     """
 
-    max_count: int | None = Field(default=None, description="Maximum number of items", ge=0)
-    max_window: float | None = Field(
-        default=None, description="Maximum time window in seconds", ge=0
-    )
+    max_count: int | None
+    """
+    Maximum number of items, must be None or positive.
+    """
 
-    _triggered: bool = Field(default=False, init=False)
-    _last_batch_time: float = Field(default_factory=time.monotonic, init=False)
-    _batch: list[T] = Field(default_factory=list, init=False)
+    max_window: float | None
+    """
+    Maximum time window in seconds, must be None or positive.
+    """
+
+    _triggered: bool
+    _last_batch_time: float
+    _batch: list[T]
+
+    def __init__(self, max_count: int | None = None, max_window: float | None = None):
+        """
+        Initialize a new Batcher instance.
+
+        :param max_count: Maximum number of items that be None or positive.
+        :param max_window: Maximum time window in seconds that must be None or positive.
+        """
+        self.max_count = max_count
+        self.max_window = max_window
+
+        self._triggered = False
+        self._last_batch_time = time.monotonic()
+        self._batch = []
 
     @property
     def period(self) -> float:
