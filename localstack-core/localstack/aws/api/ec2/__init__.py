@@ -19,6 +19,7 @@ BaselineBandwidthInMbps = int
 BaselineIops = int
 BaselineThroughputInMBps = float
 Boolean = bool
+BoxedBoolean = bool
 BoxedDouble = float
 BoxedInteger = int
 BundleId = str
@@ -26,6 +27,7 @@ BurstablePerformanceFlag = bool
 CancelCapacityReservationFleetErrorCode = str
 CancelCapacityReservationFleetErrorMessage = str
 CapacityBlockId = str
+CapacityManagerDataExportId = str
 CapacityReservationFleetId = str
 CapacityReservationId = str
 CarrierGatewayId = str
@@ -64,6 +66,7 @@ DescribeCapacityBlockExtensionOfferingsMaxResults = int
 DescribeCapacityBlockOfferingsMaxResults = int
 DescribeCapacityBlockStatusMaxResults = int
 DescribeCapacityBlocksMaxResults = int
+DescribeCapacityManagerDataExportsRequestMaxResults = int
 DescribeCapacityReservationBillingRequestsRequestMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
 DescribeCapacityReservationsMaxResults = int
@@ -289,6 +292,7 @@ OutpostLagId = str
 OutpostLagMaxResults = int
 PasswordData = str
 PeakBandwidthInGbps = float
+Period = int
 PlacementGroupArn = str
 PlacementGroupId = str
 PlacementGroupName = str
@@ -714,6 +718,18 @@ class CapacityBlockResourceState(StrEnum):
     payment_failed = "payment-failed"
 
 
+class CapacityManagerDataExportStatus(StrEnum):
+    pending = "pending"
+    in_progress = "in-progress"
+    delivered = "delivered"
+    failed = "failed"
+
+
+class CapacityManagerStatus(StrEnum):
+    enabled = "enabled"
+    disabled = "disabled"
+
+
 class CapacityReservationBillingRequestStatus(StrEnum):
     pending = "pending"
     accepted = "accepted"
@@ -792,6 +808,11 @@ class CapacityReservationType(StrEnum):
     capacity_block = "capacity-block"
 
 
+class CapacityTenancy(StrEnum):
+    default = "default"
+    dedicated = "dedicated"
+
+
 class CarrierGatewayState(StrEnum):
     pending = "pending"
     available = "available"
@@ -841,6 +862,11 @@ class ClientVpnRouteStatusCode(StrEnum):
     active = "active"
     failed = "failed"
     deleting = "deleting"
+
+
+class Comparison(StrEnum):
+    equals = "equals"
+    in_ = "in"
 
 
 class ConnectionNotificationState(StrEnum):
@@ -1109,6 +1135,26 @@ class FastSnapshotRestoreStateCode(StrEnum):
     disabled = "disabled"
 
 
+class FilterByDimension(StrEnum):
+    resource_region = "resource-region"
+    availability_zone_id = "availability-zone-id"
+    account_id = "account-id"
+    instance_family = "instance-family"
+    instance_type = "instance-type"
+    instance_platform = "instance-platform"
+    reservation_arn = "reservation-arn"
+    reservation_id = "reservation-id"
+    reservation_type = "reservation-type"
+    reservation_create_timestamp = "reservation-create-timestamp"
+    reservation_start_timestamp = "reservation-start-timestamp"
+    reservation_end_timestamp = "reservation-end-timestamp"
+    reservation_end_date_type = "reservation-end-date-type"
+    tenancy = "tenancy"
+    reservation_state = "reservation-state"
+    reservation_instance_match_criteria = "reservation-instance-match-criteria"
+    reservation_unused_financial_owner = "reservation-unused-financial-owner"
+
+
 class FindingsFound(StrEnum):
     true = "true"
     false = "false"
@@ -1207,6 +1253,26 @@ class GatewayAssociationState(StrEnum):
 
 class GatewayType(StrEnum):
     ipsec_1 = "ipsec.1"
+
+
+class GroupBy(StrEnum):
+    resource_region = "resource-region"
+    availability_zone_id = "availability-zone-id"
+    account_id = "account-id"
+    instance_family = "instance-family"
+    instance_type = "instance-type"
+    instance_platform = "instance-platform"
+    reservation_arn = "reservation-arn"
+    reservation_id = "reservation-id"
+    reservation_type = "reservation-type"
+    reservation_create_timestamp = "reservation-create-timestamp"
+    reservation_start_timestamp = "reservation-start-timestamp"
+    reservation_end_timestamp = "reservation-end-timestamp"
+    reservation_end_date_type = "reservation-end-date-type"
+    tenancy = "tenancy"
+    reservation_state = "reservation-state"
+    reservation_instance_match_criteria = "reservation-instance-match-criteria"
+    reservation_unused_financial_owner = "reservation-unused-financial-owner"
 
 
 class HostMaintenance(StrEnum):
@@ -1310,9 +1376,16 @@ class ImdsSupportValues(StrEnum):
     v2_0 = "v2.0"
 
 
+class IngestionStatus(StrEnum):
+    initial_ingestion_in_progress = "initial-ingestion-in-progress"
+    ingestion_complete = "ingestion-complete"
+    ingestion_failed = "ingestion-failed"
+
+
 class InitializationType(StrEnum):
     default = "default"
     provisioned_rate = "provisioned-rate"
+    volume_copy = "volume-copy"
 
 
 class InstanceAttributeName(StrEnum):
@@ -2939,6 +3012,52 @@ class MetadataDefaultHttpTokensState(StrEnum):
     no_preference = "no-preference"
 
 
+class Metric(StrEnum):
+    reservation_total_capacity_hrs_vcpu = "reservation-total-capacity-hrs-vcpu"
+    reservation_total_capacity_hrs_inst = "reservation-total-capacity-hrs-inst"
+    reservation_max_size_vcpu = "reservation-max-size-vcpu"
+    reservation_max_size_inst = "reservation-max-size-inst"
+    reservation_min_size_vcpu = "reservation-min-size-vcpu"
+    reservation_min_size_inst = "reservation-min-size-inst"
+    reservation_unused_total_capacity_hrs_vcpu = "reservation-unused-total-capacity-hrs-vcpu"
+    reservation_unused_total_capacity_hrs_inst = "reservation-unused-total-capacity-hrs-inst"
+    reservation_unused_total_estimated_cost = "reservation-unused-total-estimated-cost"
+    reservation_max_unused_size_vcpu = "reservation-max-unused-size-vcpu"
+    reservation_max_unused_size_inst = "reservation-max-unused-size-inst"
+    reservation_min_unused_size_vcpu = "reservation-min-unused-size-vcpu"
+    reservation_min_unused_size_inst = "reservation-min-unused-size-inst"
+    reservation_max_utilization = "reservation-max-utilization"
+    reservation_min_utilization = "reservation-min-utilization"
+    reservation_avg_utilization_vcpu = "reservation-avg-utilization-vcpu"
+    reservation_avg_utilization_inst = "reservation-avg-utilization-inst"
+    reservation_total_count = "reservation-total-count"
+    reservation_total_estimated_cost = "reservation-total-estimated-cost"
+    reservation_avg_future_size_vcpu = "reservation-avg-future-size-vcpu"
+    reservation_avg_future_size_inst = "reservation-avg-future-size-inst"
+    reservation_min_future_size_vcpu = "reservation-min-future-size-vcpu"
+    reservation_min_future_size_inst = "reservation-min-future-size-inst"
+    reservation_max_future_size_vcpu = "reservation-max-future-size-vcpu"
+    reservation_max_future_size_inst = "reservation-max-future-size-inst"
+    reservation_avg_committed_size_vcpu = "reservation-avg-committed-size-vcpu"
+    reservation_avg_committed_size_inst = "reservation-avg-committed-size-inst"
+    reservation_max_committed_size_vcpu = "reservation-max-committed-size-vcpu"
+    reservation_max_committed_size_inst = "reservation-max-committed-size-inst"
+    reservation_min_committed_size_vcpu = "reservation-min-committed-size-vcpu"
+    reservation_min_committed_size_inst = "reservation-min-committed-size-inst"
+    reserved_total_usage_hrs_vcpu = "reserved-total-usage-hrs-vcpu"
+    reserved_total_usage_hrs_inst = "reserved-total-usage-hrs-inst"
+    reserved_total_estimated_cost = "reserved-total-estimated-cost"
+    unreserved_total_usage_hrs_vcpu = "unreserved-total-usage-hrs-vcpu"
+    unreserved_total_usage_hrs_inst = "unreserved-total-usage-hrs-inst"
+    unreserved_total_estimated_cost = "unreserved-total-estimated-cost"
+    spot_total_usage_hrs_vcpu = "spot-total-usage-hrs-vcpu"
+    spot_total_usage_hrs_inst = "spot-total-usage-hrs-inst"
+    spot_total_estimated_cost = "spot-total-estimated-cost"
+    spot_avg_run_time_before_interruption_inst = "spot-avg-run-time-before-interruption-inst"
+    spot_max_run_time_before_interruption_inst = "spot-max-run-time-before-interruption-inst"
+    spot_min_run_time_before_interruption_inst = "spot-min-run-time-before-interruption-inst"
+
+
 class MetricType(StrEnum):
     aggregate_latency = "aggregate-latency"
 
@@ -3065,6 +3184,11 @@ class OnDemandAllocationStrategy(StrEnum):
 class OperationType(StrEnum):
     add = "add"
     remove = "remove"
+
+
+class OutputFormat(StrEnum):
+    csv = "csv"
+    parquet = "parquet"
 
 
 class PartitionLoadFrequency(StrEnum):
@@ -3223,11 +3347,28 @@ class ReportStatusType(StrEnum):
     impaired = "impaired"
 
 
+class ReservationEndDateType(StrEnum):
+    limited = "limited"
+    unlimited = "unlimited"
+
+
 class ReservationState(StrEnum):
+    active = "active"
+    expired = "expired"
+    cancelled = "cancelled"
+    scheduled = "scheduled"
+    pending = "pending"
+    failed = "failed"
+    delayed = "delayed"
+    unsupported = "unsupported"
     payment_pending = "payment-pending"
     payment_failed = "payment-failed"
-    active = "active"
     retired = "retired"
+
+
+class ReservationType(StrEnum):
+    capacity_block = "capacity-block"
+    odcr = "odcr"
 
 
 class ReservedInstanceState(StrEnum):
@@ -3347,6 +3488,7 @@ class ResourceType(StrEnum):
     ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
     capacity_block = "capacity-block"
     mac_modification_task = "mac-modification-task"
+    capacity_manager_data_export = "capacity-manager-data-export"
 
 
 class RootDeviceType(StrEnum):
@@ -3463,6 +3605,10 @@ class SSEType(StrEnum):
     sse_ebs = "sse-ebs"
     sse_kms = "sse-kms"
     none = "none"
+
+
+class Schedule(StrEnum):
+    hourly = "hourly"
 
 
 class SecurityGroupReferencingSupportValue(StrEnum):
@@ -6288,6 +6434,58 @@ class CapacityBlockStatus(TypedDict, total=False):
 
 
 CapacityBlockStatusSet = List[CapacityBlockStatus]
+ConditionValueList = List[String]
+
+
+class DimensionCondition(TypedDict, total=False):
+    Dimension: Optional[FilterByDimension]
+    Comparison: Optional[Comparison]
+    Values: Optional[ConditionValueList]
+
+
+class CapacityManagerCondition(TypedDict, total=False):
+    DimensionCondition: Optional[DimensionCondition]
+
+
+CapacityManagerConditionSet = List[CapacityManagerCondition]
+CapacityManagerDataExportIdSet = List[CapacityManagerDataExportId]
+
+
+class CapacityManagerDataExportResponse(TypedDict, total=False):
+    CapacityManagerDataExportId: Optional[CapacityManagerDataExportId]
+    S3BucketName: Optional[String]
+    S3BucketPrefix: Optional[String]
+    Schedule: Optional[Schedule]
+    OutputFormat: Optional[OutputFormat]
+    CreateTime: Optional[MillisecondDateTime]
+    LatestDeliveryStatus: Optional[CapacityManagerDataExportStatus]
+    LatestDeliveryStatusMessage: Optional[String]
+    LatestDeliveryS3LocationUri: Optional[String]
+    LatestDeliveryTime: Optional[MillisecondDateTime]
+    Tags: Optional[TagList]
+
+
+CapacityManagerDataExportResponseSet = List[CapacityManagerDataExportResponse]
+
+
+class CapacityManagerDimension(TypedDict, total=False):
+    ResourceRegion: Optional[String]
+    AvailabilityZoneId: Optional[String]
+    AccountId: Optional[String]
+    InstanceFamily: Optional[String]
+    InstanceType: Optional[String]
+    InstancePlatform: Optional[String]
+    ReservationArn: Optional[String]
+    ReservationId: Optional[String]
+    ReservationType: Optional[ReservationType]
+    ReservationCreateTimestamp: Optional[MillisecondDateTime]
+    ReservationStartTimestamp: Optional[MillisecondDateTime]
+    ReservationEndTimestamp: Optional[MillisecondDateTime]
+    ReservationEndDateType: Optional[ReservationEndDateType]
+    Tenancy: Optional[CapacityTenancy]
+    ReservationState: Optional[ReservationState]
+    ReservationInstanceMatchCriteria: Optional[String]
+    ReservationUnusedFinancialOwner: Optional[String]
 
 
 class CapacityReservationCommitmentInfo(TypedDict, total=False):
@@ -6860,6 +7058,68 @@ class CopySnapshotResult(TypedDict, total=False):
     SnapshotId: Optional[String]
 
 
+class CopyVolumesRequest(ServiceRequest):
+    SourceVolumeId: VolumeId
+    Iops: Optional[Integer]
+    Size: Optional[Integer]
+    VolumeType: Optional[VolumeType]
+    DryRun: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
+    MultiAttachEnabled: Optional[Boolean]
+    Throughput: Optional[Integer]
+    ClientToken: Optional[String]
+
+
+class VolumeAttachment(TypedDict, total=False):
+    DeleteOnTermination: Optional[Boolean]
+    AssociatedResource: Optional[String]
+    InstanceOwningService: Optional[String]
+    VolumeId: Optional[String]
+    InstanceId: Optional[String]
+    Device: Optional[String]
+    State: Optional[VolumeAttachmentState]
+    AttachTime: Optional[DateTime]
+
+
+VolumeAttachmentList = List[VolumeAttachment]
+
+
+class OperatorResponse(TypedDict, total=False):
+    Managed: Optional[Boolean]
+    Principal: Optional[String]
+
+
+class Volume(TypedDict, total=False):
+    AvailabilityZoneId: Optional[String]
+    OutpostArn: Optional[String]
+    SourceVolumeId: Optional[String]
+    Iops: Optional[Integer]
+    Tags: Optional[TagList]
+    VolumeType: Optional[VolumeType]
+    FastRestored: Optional[Boolean]
+    MultiAttachEnabled: Optional[Boolean]
+    Throughput: Optional[Integer]
+    SseType: Optional[SSEType]
+    Operator: Optional[OperatorResponse]
+    VolumeInitializationRate: Optional[Integer]
+    VolumeId: Optional[String]
+    Size: Optional[Integer]
+    SnapshotId: Optional[String]
+    AvailabilityZone: Optional[String]
+    State: Optional[VolumeState]
+    CreateTime: Optional[DateTime]
+    Attachments: Optional[VolumeAttachmentList]
+    Encrypted: Optional[Boolean]
+    KmsKeyId: Optional[String]
+
+
+VolumeList = List[Volume]
+
+
+class CopyVolumesResult(TypedDict, total=False):
+    Volumes: Optional[VolumeList]
+
+
 CoreCountList = List[CoreCount]
 CpuManufacturerSet = List[CpuManufacturer]
 
@@ -6874,6 +7134,20 @@ class CpuOptionsRequest(TypedDict, total=False):
     CoreCount: Optional[Integer]
     ThreadsPerCore: Optional[Integer]
     AmdSevSnp: Optional[AmdSevSnpSpecification]
+
+
+class CreateCapacityManagerDataExportRequest(ServiceRequest):
+    S3BucketName: String
+    S3BucketPrefix: Optional[String]
+    Schedule: Schedule
+    OutputFormat: OutputFormat
+    ClientToken: Optional[String]
+    DryRun: Optional[Boolean]
+    TagSpecifications: Optional[TagSpecificationList]
+
+
+class CreateCapacityManagerDataExportResult(TypedDict, total=False):
+    CapacityManagerDataExportId: Optional[CapacityManagerDataExportId]
 
 
 class CreateCapacityReservationBySplittingRequest(ServiceRequest):
@@ -8259,11 +8533,6 @@ ErrorSet = List[ValidationError]
 
 class ValidationWarning(TypedDict, total=False):
     Errors: Optional[ErrorSet]
-
-
-class OperatorResponse(TypedDict, total=False):
-    Managed: Optional[Boolean]
-    Principal: Optional[String]
 
 
 class LaunchTemplate(TypedDict, total=False):
@@ -10815,6 +11084,15 @@ class DeclarativePoliciesReport(TypedDict, total=False):
 DeclarativePoliciesReportList = List[DeclarativePoliciesReport]
 
 
+class DeleteCapacityManagerDataExportRequest(ServiceRequest):
+    CapacityManagerDataExportId: CapacityManagerDataExportId
+    DryRun: Optional[Boolean]
+
+
+class DeleteCapacityManagerDataExportResult(TypedDict, total=False):
+    CapacityManagerDataExportId: Optional[CapacityManagerDataExportId]
+
+
 class DeleteCarrierGatewayRequest(ServiceRequest):
     CarrierGatewayId: CarrierGatewayId
     DryRun: Optional[Boolean]
@@ -11948,6 +12226,19 @@ class DescribeCapacityBlocksRequest(ServiceRequest):
 
 class DescribeCapacityBlocksResult(TypedDict, total=False):
     CapacityBlocks: Optional[CapacityBlockSet]
+    NextToken: Optional[String]
+
+
+class DescribeCapacityManagerDataExportsRequest(ServiceRequest):
+    CapacityManagerDataExportIds: Optional[CapacityManagerDataExportIdSet]
+    MaxResults: Optional[DescribeCapacityManagerDataExportsRequestMaxResults]
+    NextToken: Optional[String]
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+
+
+class DescribeCapacityManagerDataExportsResult(TypedDict, total=False):
+    CapacityManagerDataExports: Optional[CapacityManagerDataExportResponseSet]
     NextToken: Optional[String]
 
 
@@ -16248,46 +16539,6 @@ class DescribeVolumesRequest(ServiceRequest):
     MaxResults: Optional[Integer]
 
 
-class VolumeAttachment(TypedDict, total=False):
-    DeleteOnTermination: Optional[Boolean]
-    AssociatedResource: Optional[String]
-    InstanceOwningService: Optional[String]
-    VolumeId: Optional[String]
-    InstanceId: Optional[String]
-    Device: Optional[String]
-    State: Optional[VolumeAttachmentState]
-    AttachTime: Optional[DateTime]
-
-
-VolumeAttachmentList = List[VolumeAttachment]
-
-
-class Volume(TypedDict, total=False):
-    AvailabilityZoneId: Optional[String]
-    OutpostArn: Optional[String]
-    Iops: Optional[Integer]
-    Tags: Optional[TagList]
-    VolumeType: Optional[VolumeType]
-    FastRestored: Optional[Boolean]
-    MultiAttachEnabled: Optional[Boolean]
-    Throughput: Optional[Integer]
-    SseType: Optional[SSEType]
-    Operator: Optional[OperatorResponse]
-    VolumeInitializationRate: Optional[Integer]
-    VolumeId: Optional[String]
-    Size: Optional[Integer]
-    SnapshotId: Optional[String]
-    AvailabilityZone: Optional[String]
-    State: Optional[VolumeState]
-    CreateTime: Optional[DateTime]
-    Attachments: Optional[VolumeAttachmentList]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[String]
-
-
-VolumeList = List[Volume]
-
-
 class DescribeVolumesResult(TypedDict, total=False):
     NextToken: Optional[String]
     Volumes: Optional[VolumeList]
@@ -16689,6 +16940,16 @@ class DisableAwsNetworkPerformanceMetricSubscriptionRequest(ServiceRequest):
 
 class DisableAwsNetworkPerformanceMetricSubscriptionResult(TypedDict, total=False):
     Output: Optional[Boolean]
+
+
+class DisableCapacityManagerRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+
+
+class DisableCapacityManagerResult(TypedDict, total=False):
+    CapacityManagerStatus: Optional[CapacityManagerStatus]
+    OrganizationsAccess: Optional[Boolean]
 
 
 class DisableEbsEncryptionByDefaultRequest(ServiceRequest):
@@ -17137,6 +17398,17 @@ class EnableAwsNetworkPerformanceMetricSubscriptionResult(TypedDict, total=False
     Output: Optional[Boolean]
 
 
+class EnableCapacityManagerRequest(ServiceRequest):
+    OrganizationsAccess: Optional[Boolean]
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+
+
+class EnableCapacityManagerResult(TypedDict, total=False):
+    CapacityManagerStatus: Optional[CapacityManagerStatus]
+    OrganizationsAccess: Optional[Boolean]
+
+
 class EnableEbsEncryptionByDefaultRequest(ServiceRequest):
     DryRun: Optional[Boolean]
 
@@ -17532,6 +17804,77 @@ class GetAwsNetworkPerformanceDataRequest(ServiceRequest):
 class GetAwsNetworkPerformanceDataResult(TypedDict, total=False):
     DataResponses: Optional[DataResponses]
     NextToken: Optional[String]
+
+
+class GetCapacityManagerAttributesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+
+
+class GetCapacityManagerAttributesResult(TypedDict, total=False):
+    CapacityManagerStatus: Optional[CapacityManagerStatus]
+    OrganizationsAccess: Optional[Boolean]
+    DataExportCount: Optional[Integer]
+    IngestionStatus: Optional[IngestionStatus]
+    IngestionStatusMessage: Optional[String]
+    EarliestDatapointTimestamp: Optional[MillisecondDateTime]
+    LatestDatapointTimestamp: Optional[MillisecondDateTime]
+
+
+GroupBySet = List[GroupBy]
+MetricSet = List[Metric]
+
+
+class GetCapacityManagerMetricDataRequest(ServiceRequest):
+    MetricNames: MetricSet
+    StartTime: MillisecondDateTime
+    EndTime: MillisecondDateTime
+    Period: Period
+    GroupBy: Optional[GroupBySet]
+    FilterBy: Optional[CapacityManagerConditionSet]
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+    DryRun: Optional[Boolean]
+
+
+class MetricValue(TypedDict, total=False):
+    Metric: Optional[Metric]
+    Value: Optional[Double]
+
+
+MetricValueSet = List[MetricValue]
+
+
+class MetricDataResult(TypedDict, total=False):
+    Dimension: Optional[CapacityManagerDimension]
+    Timestamp: Optional[MillisecondDateTime]
+    MetricValues: Optional[MetricValueSet]
+
+
+MetricDataResultSet = List[MetricDataResult]
+
+
+class GetCapacityManagerMetricDataResult(TypedDict, total=False):
+    MetricDataResults: Optional[MetricDataResultSet]
+    NextToken: Optional[NextToken]
+
+
+class GetCapacityManagerMetricDimensionsRequest(ServiceRequest):
+    GroupBy: GroupBySet
+    FilterBy: Optional[CapacityManagerConditionSet]
+    StartTime: MillisecondDateTime
+    EndTime: MillisecondDateTime
+    MetricNames: MetricSet
+    MaxResults: Optional[MaxResults]
+    NextToken: Optional[NextToken]
+    DryRun: Optional[Boolean]
+
+
+MetricDimensionResultSet = List[CapacityManagerDimension]
+
+
+class GetCapacityManagerMetricDimensionsResult(TypedDict, total=False):
+    MetricDimensionResults: Optional[MetricDimensionResultSet]
+    NextToken: Optional[NextToken]
 
 
 class GetCapacityReservationUsageRequest(ServiceRequest):
@@ -21137,6 +21480,17 @@ class UnmonitorInstancesResult(TypedDict, total=False):
     InstanceMonitorings: Optional[InstanceMonitoringList]
 
 
+class UpdateCapacityManagerOrganizationsAccessRequest(ServiceRequest):
+    OrganizationsAccess: BoxedBoolean
+    DryRun: Optional[Boolean]
+    ClientToken: Optional[String]
+
+
+class UpdateCapacityManagerOrganizationsAccessResult(TypedDict, total=False):
+    CapacityManagerStatus: Optional[CapacityManagerStatus]
+    OrganizationsAccess: Optional[Boolean]
+
+
 class UpdateSecurityGroupRuleDescriptionsEgressRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     GroupId: Optional[SecurityGroupId]
@@ -21906,6 +22260,38 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> CopySnapshotResult:
+        raise NotImplementedError
+
+    @handler("CopyVolumes")
+    def copy_volumes(
+        self,
+        context: RequestContext,
+        source_volume_id: VolumeId,
+        iops: Integer | None = None,
+        size: Integer | None = None,
+        volume_type: VolumeType | None = None,
+        dry_run: Boolean | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        multi_attach_enabled: Boolean | None = None,
+        throughput: Integer | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> CopyVolumesResult:
+        raise NotImplementedError
+
+    @handler("CreateCapacityManagerDataExport")
+    def create_capacity_manager_data_export(
+        self,
+        context: RequestContext,
+        s3_bucket_name: String,
+        schedule: Schedule,
+        output_format: OutputFormat,
+        s3_bucket_prefix: String | None = None,
+        client_token: String | None = None,
+        dry_run: Boolean | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        **kwargs,
+    ) -> CreateCapacityManagerDataExportResult:
         raise NotImplementedError
 
     @handler("CreateCapacityReservation")
@@ -23266,6 +23652,16 @@ class Ec2Api:
     ) -> CreateVpnGatewayResult:
         raise NotImplementedError
 
+    @handler("DeleteCapacityManagerDataExport")
+    def delete_capacity_manager_data_export(
+        self,
+        context: RequestContext,
+        capacity_manager_data_export_id: CapacityManagerDataExportId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteCapacityManagerDataExportResult:
+        raise NotImplementedError
+
     @handler("DeleteCarrierGateway")
     def delete_carrier_gateway(
         self,
@@ -24350,6 +24746,19 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> DescribeCapacityBlocksResult:
+        raise NotImplementedError
+
+    @handler("DescribeCapacityManagerDataExports")
+    def describe_capacity_manager_data_exports(
+        self,
+        context: RequestContext,
+        capacity_manager_data_export_ids: CapacityManagerDataExportIdSet | None = None,
+        max_results: DescribeCapacityManagerDataExportsRequestMaxResults | None = None,
+        next_token: String | None = None,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        **kwargs,
+    ) -> DescribeCapacityManagerDataExportsResult:
         raise NotImplementedError
 
     @handler("DescribeCapacityReservationBillingRequests")
@@ -26474,6 +26883,16 @@ class Ec2Api:
     ) -> DisableAwsNetworkPerformanceMetricSubscriptionResult:
         raise NotImplementedError
 
+    @handler("DisableCapacityManager")
+    def disable_capacity_manager(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> DisableCapacityManagerResult:
+        raise NotImplementedError
+
     @handler("DisableEbsEncryptionByDefault")
     def disable_ebs_encryption_by_default(
         self, context: RequestContext, dry_run: Boolean | None = None, **kwargs
@@ -26812,6 +27231,17 @@ class Ec2Api:
     ) -> EnableAwsNetworkPerformanceMetricSubscriptionResult:
         raise NotImplementedError
 
+    @handler("EnableCapacityManager")
+    def enable_capacity_manager(
+        self,
+        context: RequestContext,
+        organizations_access: Boolean | None = None,
+        dry_run: Boolean | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> EnableCapacityManagerResult:
+        raise NotImplementedError
+
     @handler("EnableEbsEncryptionByDefault")
     def enable_ebs_encryption_by_default(
         self, context: RequestContext, dry_run: Boolean | None = None, **kwargs
@@ -27075,6 +27505,45 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> GetAwsNetworkPerformanceDataResult:
+        raise NotImplementedError
+
+    @handler("GetCapacityManagerAttributes")
+    def get_capacity_manager_attributes(
+        self, context: RequestContext, dry_run: Boolean | None = None, **kwargs
+    ) -> GetCapacityManagerAttributesResult:
+        raise NotImplementedError
+
+    @handler("GetCapacityManagerMetricData")
+    def get_capacity_manager_metric_data(
+        self,
+        context: RequestContext,
+        metric_names: MetricSet,
+        start_time: MillisecondDateTime,
+        end_time: MillisecondDateTime,
+        period: Period,
+        group_by: GroupBySet | None = None,
+        filter_by: CapacityManagerConditionSet | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> GetCapacityManagerMetricDataResult:
+        raise NotImplementedError
+
+    @handler("GetCapacityManagerMetricDimensions")
+    def get_capacity_manager_metric_dimensions(
+        self,
+        context: RequestContext,
+        group_by: GroupBySet,
+        start_time: MillisecondDateTime,
+        end_time: MillisecondDateTime,
+        metric_names: MetricSet,
+        filter_by: CapacityManagerConditionSet | None = None,
+        max_results: MaxResults | None = None,
+        next_token: NextToken | None = None,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> GetCapacityManagerMetricDimensionsResult:
         raise NotImplementedError
 
     @handler("GetCapacityReservationUsage")
@@ -29667,6 +30136,17 @@ class Ec2Api:
         dry_run: Boolean | None = None,
         **kwargs,
     ) -> UnmonitorInstancesResult:
+        raise NotImplementedError
+
+    @handler("UpdateCapacityManagerOrganizationsAccess")
+    def update_capacity_manager_organizations_access(
+        self,
+        context: RequestContext,
+        organizations_access: BoxedBoolean,
+        dry_run: Boolean | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> UpdateCapacityManagerOrganizationsAccessResult:
         raise NotImplementedError
 
     @handler("UpdateSecurityGroupRuleDescriptionsEgress")
