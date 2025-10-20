@@ -1677,12 +1677,16 @@ class ChangeSetModel:
 
     @staticmethod
     def _safe_keys_of(*objects: Maybe[dict]) -> list[str]:
-        key_set: set[str] = set()
+        keys: list[str] = []
+        seen: set[str] = set()
         for obj in objects:
             # TODO: raise errors if not dict
             if isinstance(obj, dict):
-                key_set.update(obj.keys())
-        return list(key_set)
+                for key in obj.keys():
+                    if key not in seen:
+                        keys.append(key)
+                        seen.add(key)
+        return keys
 
     @staticmethod
     def _name_if_intrinsic_function(value: Maybe[Any]) -> str | None:
