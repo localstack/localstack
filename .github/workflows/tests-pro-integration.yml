@@ -212,7 +212,7 @@ jobs:
           python-version-file: 'localstack/.python-version'
 
       - name: Set up Node 22.x
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: 22.x
 
