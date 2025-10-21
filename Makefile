@@ -78,7 +78,7 @@ entrypoints:              ## Run plux to build entry points
 	@test -s localstack-core/localstack_core.egg-info/entry_points.txt || (echo "Entrypoints were not correctly created! Aborting!" && exit 1)
 
 dist: entrypoints        ## Build source and built (wheel) distributions of the current version
-	$(VENV_RUN); pip install --upgrade twine; python -m build
+	$(VENV_RUN); pip install --upgrade build twine; python -m build
 
 publish: clean-dist dist  ## Publish the library to the central PyPi repository
 	# make sure the dist archive contains a non-empty entry_points.txt file before uploading
