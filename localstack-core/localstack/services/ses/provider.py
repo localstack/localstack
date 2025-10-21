@@ -8,7 +8,6 @@ from datetime import UTC, date, datetime, time
 from typing import TYPE_CHECKING, Any
 
 from botocore.exceptions import ClientError
-from moto.core.parsers import XFormedDict
 from moto.ses import ses_backends
 from moto.ses.models import SESBackend
 
@@ -688,7 +687,7 @@ class SNSEmitter:
 def notify_event_destinations(
     context: RequestContext,
     # FIXME: Moto stores the Event Destinations as a single value when it should be a list
-    event_destinations: XFormedDict,
+    event_destinations: EventDestination | list[EventDestination],
     payload: EventDestinationPayload,
     email_type: EmailType,
 ):
@@ -698,14 +697,14 @@ def notify_event_destinations(
         event_destinations = [event_destinations]
 
     for event_destination in event_destinations:
-        if not event_destination["enabled"]:
+        if not event_destination["Enabled"]:
             continue
 
-        sns_destination_arn = event_destination.get("sns_destination", {}).get("topic_arn")
+        sns_destination_arn = event_destination.get("SNSDestination", {}).get("TopicARN")
         if not sns_destination_arn:
             continue
 
-        matching_event_types = event_destination.get("matching_event_types") or []
+        matching_event_types = event_destination.get("MatchingEventTypes") or []
         if EventType.send in matching_event_types:
             emitter.emit_send_event(
                 payload, sns_destination_arn, emit_source_arn=email_type != EmailType.TEMPLATED
