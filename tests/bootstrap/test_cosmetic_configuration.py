@@ -155,7 +155,7 @@ class TestLocalStackHost:
             stack,
             "Domain",
             domain_name=domain_name,
-            version=cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_3,
+            version=cdk.aws_opensearchservice.EngineVersion.OPENSEARCH_2_19,
         )
         cdk.CfnOutput(stack, "DomainEndpoint", value=domain.domain_endpoint)
 
