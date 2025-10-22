@@ -10,11 +10,13 @@ from localstack.aws.api import RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     ConfirmSubscriptionResponse,
+    CreatePlatformApplicationResponse,
     CreateTopicResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    ListPlatformApplicationsResponse,
     ListString,
     ListSubscriptionsByTopicResponse,
     ListSubscriptionsResponse,
@@ -534,6 +536,30 @@ class SnsProvider(SnsApi):
         if next_token:
             response["NextToken"] = next_token
         return response
+
+    def create_platform_application(
+        self,
+        context: RequestContext,
+        name: String,
+        platform: String,
+        attributes: MapStringToString,
+        **kwargs,
+    ) -> CreatePlatformApplicationResponse:
+        pass
+
+    def delete_platform_application(
+        self, context: RequestContext, platform_application_arn: String, **kwargs
+    ) -> None:
+        pass
+
+    def list_platform_applications(
+        self, context: RequestContext, next_token: String | None = None, **kwargs
+    ) -> ListPlatformApplicationsResponse:
+        pass
+
+    #
+    # Platform Application Operations
+    #
 
     def set_sms_attributes(
         self, context: RequestContext, attributes: MapStringToString, **kwargs
