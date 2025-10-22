@@ -4205,8 +4205,8 @@
       ]
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_lifecycle[no-tags]": {
-    "recorded-date": "09-09-2025, 09:37:20",
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_lifecycle": {
+    "recorded-date": "08-08-2025, 15:30:34",
     "recorded-content": {
       "change-set-pre-execute": {
         "Capabilities": [],
@@ -4271,80 +4271,39 @@
       }
     }
   },
-  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_stack_description_lifecycle[with-tags]": {
-    "recorded-date": "09-09-2025, 09:37:28",
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_create_stack_from_template": {
+    "recorded-date": "22-10-2025, 18:44:36",
     "recorded-content": {
-      "change-set-pre-execute": {
-        "Capabilities": [],
-        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
-        "ChangeSetName": "<change-set-name:1>",
-        "Changes": [
+      "stack_create_ec2": {
+        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "stack_description": {
+        "Stacks": [
           {
-            "ResourceChange": {
-              "Action": "Add",
-              "Details": [],
-              "LogicalResourceId": "TestResource",
-              "ResourceType": "AWS::SSM::Parameter",
-              "Scope": []
+            "CreationTime": "datetime",
+            "Description": "AWS CloudFormation sample template.  \nCreate an Amazon EC2 instance with cfn-init and cfn-signal.\n",
+            "DisableRollback": false,
+            "DriftInformation": {
+              "StackDriftStatus": "NOT_CHECKED"
             },
-            "Type": "Resource"
-          }
-        ],
-        "CreationTime": "datetime",
-        "ExecutionStatus": "AVAILABLE",
-        "IncludeNestedStacks": false,
-        "NotificationARNs": [],
-        "RollbackConfiguration": {},
-        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-        "StackName": "<stack-name:1>",
-        "Status": "CREATE_COMPLETE",
-        "Tags": [
-          {
-            "Key": "foo",
-            "Value": "bar"
+            "EnableTerminationProtection": false,
+            "LastUpdatedTime": "datetime",
+            "NotificationARNs": [],
+            "RollbackConfiguration": {},
+            "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:1>",
+            "StackName": "<stack-name:1>",
+            "StackStatus": "CREATE_COMPLETE",
+            "Tags": []
           }
         ],
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      },
-      "stack-pre-execute": {
-        "CreationTime": "datetime",
-        "DisableRollback": false,
-        "DriftInformation": {
-          "StackDriftStatus": "NOT_CHECKED"
-        },
-        "EnableTerminationProtection": false,
-        "NotificationARNs": [],
-        "RollbackConfiguration": {},
-        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-        "StackName": "<stack-name:1>",
-        "StackStatus": "REVIEW_IN_PROGRESS",
-        "StackStatusReason": "User Initiated",
-        "Tags": []
-      },
-      "stack-post-execute": {
-        "ChangeSetId": "arn:<partition>:cloudformation:<region>:111111111111:changeSet/<resource:1>",
-        "CreationTime": "datetime",
-        "Description": "test <env>.test.net",
-        "DisableRollback": false,
-        "DriftInformation": {
-          "StackDriftStatus": "NOT_CHECKED"
-        },
-        "EnableTerminationProtection": false,
-        "LastUpdatedTime": "datetime",
-        "NotificationARNs": [],
-        "RollbackConfiguration": {},
-        "StackId": "arn:<partition>:cloudformation:<region>:111111111111:stack/<stack-name:1>/<resource:2>",
-        "StackName": "<stack-name:1>",
-        "StackStatus": "CREATE_COMPLETE",
-        "Tags": [
-          {
-            "Key": "foo",
-            "Value": "bar"
-          }
-        ]
       }
     }
   }
