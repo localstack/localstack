@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_base": {
-    "recorded-date": "12-09-2023, 10:45:20",
+    "recorded-date": "06-11-2025, 13:30:27",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -265,7 +265,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_malformed_detail": {
-    "recorded-date": "12-09-2023, 10:51:57",
+    "recorded-date": "06-11-2025, 12:26:47",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -384,12 +384,11 @@
           "HTTPHeaders": {},
           "HTTPStatusCode": 200
         }
-      },
-      "stepfunctions_events": []
+      }
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_no_source": {
-    "recorded-date": "12-09-2023, 13:17:16",
+    "recorded-date": "06-11-2025, 12:27:36",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -576,7 +575,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_mixed_malformed_detail": {
-    "recorded-date": "05-12-2024, 13:56:38",
+    "recorded-date": "06-11-2025, 12:27:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [

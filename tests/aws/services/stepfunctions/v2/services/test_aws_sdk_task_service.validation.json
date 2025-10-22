@@ -1,53 +1,164 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_delete_item": {
-    "last_validated_date": "2023-05-16T20:28:05+00:00"
+    "last_validated_date": "2025-11-06T12:18:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 21.28,
+      "teardown": 2.13,
+      "total": 23.41
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_get_item": {
-    "last_validated_date": "2023-05-16T20:27:38+00:00"
+    "last_validated_date": "2025-11-06T12:18:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 20.9,
+      "teardown": 2.12,
+      "total": 23.02
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_dynamodb_put_update_get_item": {
-    "last_validated_date": "2023-05-16T20:28:28+00:00"
+    "last_validated_date": "2025-11-06T12:19:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 20.52,
+      "teardown": 2.44,
+      "total": 22.96
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_list_secrets": {
-    "last_validated_date": "2023-06-22T11:59:49+00:00"
+    "last_validated_date": "2025-11-06T12:17:55+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 18.96,
+      "teardown": 1.7,
+      "total": 20.66
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[binary]": {
-    "last_validated_date": "2025-01-27T10:18:40+00:00"
+    "last_validated_date": "2025-11-06T12:22:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.72,
+      "teardown": 3.57,
+      "total": 19.29
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[bytearray]": {
-    "last_validated_date": "2025-01-27T10:18:56+00:00"
+    "last_validated_date": "2025-11-06T12:22:22+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.37,
+      "teardown": 3.55,
+      "total": 18.92
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_binary]": {
-    "last_validated_date": "2025-01-27T10:18:18+00:00"
+    "last_validated_date": "2025-11-06T12:21:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.17,
+      "teardown": 3.74,
+      "total": 19.91
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[empty_str]": {
-    "last_validated_date": "2025-01-27T10:17:44+00:00"
+    "last_validated_date": "2025-11-06T12:21:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 20.53,
+      "teardown": 3.77,
+      "total": 24.3
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_get_object[str]": {
-    "last_validated_date": "2025-01-27T10:18:02+00:00"
+    "last_validated_date": "2025-11-06T12:21:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.75,
+      "teardown": 3.73,
+      "total": 19.48
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[bool]": {
-    "last_validated_date": "2025-01-27T10:30:01+00:00"
+    "last_validated_date": "2025-11-06T12:23:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.98,
+      "teardown": 3.22,
+      "total": 19.2
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[dict]": {
-    "last_validated_date": "2025-01-27T10:29:28+00:00"
+    "last_validated_date": "2025-11-06T12:23:00+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.81,
+      "teardown": 3.25,
+      "total": 19.06
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[list]": {
-    "last_validated_date": "2025-01-27T10:29:44+00:00"
+    "last_validated_date": "2025-11-06T12:23:19+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.87,
+      "teardown": 3.25,
+      "total": 19.12
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[num]": {
-    "last_validated_date": "2025-01-27T10:30:17+00:00"
+    "last_validated_date": "2025-11-06T12:23:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.76,
+      "teardown": 3.33,
+      "total": 19.09
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_s3_put_object[str]": {
-    "last_validated_date": "2025-01-27T10:29:12+00:00"
+    "last_validated_date": "2025-11-06T12:22:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.06,
+      "teardown": 3.18,
+      "total": 18.24
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_outcome_with_no_such_token[state_machine_template0]": {
-    "last_validated_date": "2024-04-10T18:55:26+00:00"
+    "last_validated_date": "2025-11-06T12:19:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 14.23,
+      "teardown": 1.69,
+      "total": 15.92
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_send_task_outcome_with_no_such_token[state_machine_template1]": {
-    "last_validated_date": "2024-04-10T18:55:40+00:00"
+    "last_validated_date": "2025-11-06T12:19:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.14,
+      "teardown": 1.73,
+      "total": 14.87
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution": {
+    "last_validated_date": "2025-11-06T12:20:05+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 26.45,
+      "teardown": 4.09,
+      "total": 30.54
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_aws_sdk_task_service.py::TestTaskServiceAwsSdk::test_sfn_start_execution_implicit_json_serialisation": {
-    "last_validated_date": "2024-02-05T11:29:16+00:00"
+    "last_validated_date": "2025-11-06T12:20:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 31.74,
+      "teardown": 3.5,
+      "total": 35.24
+    }
   }
 }

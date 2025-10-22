@@ -1,0 +1,31 @@
+{
+  "Comment": "MAP_TASK_STATE_MACHINE",
+  "QueryLanguage": "JSONata",
+  "StartAt": "State0",
+  "States": {
+   "State0": {
+      "Type": "Map",
+      "Items": "{% $states.input.Values %}",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "Arguments": {
+              "FunctionName": "function-arn",
+              "Payload": "{% $states.input %}",
+            },
+            "End": true
+          }
+        }
+      },
+      "ToleratedFailureCount": 1,
+      "End": true
+    }
+  }
+}

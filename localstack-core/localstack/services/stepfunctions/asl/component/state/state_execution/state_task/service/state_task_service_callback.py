@@ -346,7 +346,7 @@ class StateTaskServiceCallback(StateTaskService, abc.ABC):
                     )
                 ),
             )
-            if not env.is_mocked_mode():
+            if not env.is_local_mocked_mode() and not env.is_test_state_mocked_mode():
                 self._eval_integration_pattern(
                     env=env,
                     resource_runtime_part=resource_runtime_part,

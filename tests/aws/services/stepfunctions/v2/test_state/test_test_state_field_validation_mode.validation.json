@@ -1,0 +1,20 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_field_validation_mode.py::TestStateMockFieldValidationMode::test_strict_mode_mock_result_field_not_in_api_spec[empty_json]": {
+    "last_validated_date": "2025-11-12T16:48:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.76,
+      "teardown": 0.99,
+      "total": 12.75
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_field_validation_mode.py::TestStateMockFieldValidationMode::test_strict_mode_mock_result_field_not_in_api_spec[field_not_part_of_api_spec]": {
+    "last_validated_date": "2025-11-12T16:48:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.66,
+      "call": 13.19,
+      "teardown": 1.03,
+      "total": 14.88
+    }
+  }
+}

@@ -7,8 +7,10 @@ from localstack.aws.api.stepfunctions import (
     Arn,
     ExecutionStatus,
     InspectionLevel,
+    MockInput,
     StateMachineType,
     TestExecutionStatus,
+    TestStateConfiguration,
     TestStateOutput,
     Timestamp,
 )
@@ -19,7 +21,9 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
     ProgramState,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.program_state import (
+    ProgramCaughtError,
     ProgramChoiceSelected,
+    ProgramRetriable,
 )
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
 from localstack.services.stepfunctions.backend.activity import Activity
@@ -31,6 +35,7 @@ from localstack.services.stepfunctions.backend.state_machine import StateMachine
 from localstack.services.stepfunctions.backend.test_state.execution_worker import (
     TestStateExecutionWorker,
 )
+from localstack.services.stepfunctions.backend.test_state.test_state_mock import TestStateMock
 
 LOG = logging.getLogger(__name__)
 
@@ -38,6 +43,8 @@ LOG = logging.getLogger(__name__)
 class TestStateExecution(Execution):
     exec_worker: TestStateExecutionWorker | None
     next_state: str | None
+    state_name: str | None
+    mock: TestStateMock | None
 
     class TestCaseExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
         _execution: TestStateExecution
@@ -48,6 +55,16 @@ class TestStateExecution(Execution):
                 self.execution.exec_status = ExecutionStatus.SUCCEEDED
                 self.execution.output = self.execution.exec_worker.env.states.get_input()
                 self.execution.next_state = exit_program_state.next_state_name
+            elif isinstance(exit_program_state, ProgramCaughtError):
+                self.execution.exec_status = ExecutionStatus.SUCCEEDED
+                self.execution.error = exit_program_state.error
+                self.execution.cause = exit_program_state.cause
+                self.execution.output = self.execution.exec_worker.env.states.get_input()
+                self.execution.next_state = exit_program_state.next_state_name
+            elif isinstance(exit_program_state, ProgramRetriable):
+                self.execution.exec_status = ExecutionStatus.SUCCEEDED
+                self.execution.error = exit_program_state.error
+                self.execution.cause = exit_program_state.cause
             else:
                 self._reflect_execution_status()
 
@@ -61,7 +78,10 @@ class TestStateExecution(Execution):
         state_machine: StateMachineInstance,
         start_date: Timestamp,
         activity_store: dict[Arn, Activity],
+        state_name: str | None = None,
         input_data: dict | None = None,
+        mock: MockInput | None = None,
+        state_configuration: TestStateConfiguration | None = None,
     ):
         super().__init__(
             name=name,
@@ -79,6 +99,8 @@ class TestStateExecution(Execution):
         )
         self._execution_terminated_event = threading.Event()
         self.next_state = None
+        self.state_name = state_name
+        self.mock = TestStateMock(mock, state_configuration)
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return self.TestCaseExecutionWorkerCommunication(self)
@@ -93,6 +115,8 @@ class TestStateExecution(Execution):
             exec_comm=self._get_start_execution_worker_comm(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
+            state_name=self.state_name,
+            mock=self.mock,
         )
 
     def publish_execution_status_change_event(self):
@@ -116,6 +140,21 @@ class TestStateExecution(Execution):
             output_str = to_json_str(self.output)
             test_state_output = TestStateOutput(
                 status=TestExecutionStatus.SUCCEEDED, nextState=self.next_state, output=output_str
+            )
+        elif isinstance(exit_program_state, ProgramCaughtError):
+            output_str = to_json_str(self.output)
+            test_state_output = TestStateOutput(
+                status=TestExecutionStatus.CAUGHT_ERROR,
+                nextState=self.next_state,
+                output=output_str,
+                error=exit_program_state.error,
+                cause=exit_program_state.cause,
+            )
+        elif isinstance(exit_program_state, ProgramRetriable):
+            test_state_output = TestStateOutput(
+                status=TestExecutionStatus.RETRIABLE,
+                error=exit_program_state.error,
+                cause=exit_program_state.cause,
             )
         else:
             # TODO: handle other statuses

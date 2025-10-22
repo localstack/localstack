@@ -1,0 +1,55 @@
+{
+  "Comment": "MAP_TASK_STATE",
+  "Type": "Map",
+  "QueryLanguage": "JSONata",
+  "Items": "{% $states.input.Values %}",
+  "ItemProcessor": {
+    "ProcessorConfig": {
+      "Mode": "DISTRIBUTED",
+      "ExecutionType": "STANDARD"
+    },
+    "StartAt": "TestState",
+    "States": {
+      "TestState": {
+        "Type": "Task",
+        "QueryLanguage": "JSONata",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Arguments": {
+          "FunctionName": "foo",
+          "Payload": "bar"
+        },
+        "End": true
+      }
+    }
+  },
+  "Output": {
+    "result": "{% $map($states.result, function($v) { $v = 1 ? 'pass' : 'failed' }) %}",
+    "successCount": "{% $count($states.result[$ = 1]) %}",
+    "failedCount": "{% $count($states.result[$ = 0]) %}"
+  },
+  "ToleratedFailureCount": 1,
+  "Retry": [
+    {
+      "ErrorEquals": ["MockException"],
+      "MaxAttempts": 3
+    },
+    {
+      "ErrorEquals": ["States.ExceedToleratedFailureThreshold"],
+      "MaxAttempts": 2
+    }
+  ],
+  "Catch": [
+    {
+      "ErrorEquals": ["States.ExceedToleratedFailureThreshold"],
+      "Output": "{% $states %}",
+      "Next": "HandleThresholdExceeded"
+    },
+    {
+      "ErrorEquals": ["MockException"],
+      "Output": "{% $states %}",
+      "Next": "HandleMockException"
+
+    }
+  ],
+  "End": true
+}

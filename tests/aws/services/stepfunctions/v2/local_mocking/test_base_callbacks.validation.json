@@ -1,0 +1,38 @@
+{
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC2]": {
+    "last_validated_date": "2025-10-28T09:42:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 28.55,
+      "teardown": 2.78,
+      "total": 31.33
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_callbacks.py::TestBaseScenarios::test_sfn_start_execution_sync[SFN_SYNC]": {
+    "last_validated_date": "2025-10-28T09:41:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.51,
+      "call": 29.71,
+      "teardown": 3.07,
+      "total": 33.29
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_callbacks.py::TestBaseScenarios::test_sqs_wait_for_task_token": {
+    "last_validated_date": "2025-10-28T09:42:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 27.0,
+      "teardown": 2.67,
+      "total": 29.67
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_callbacks.py::TestBaseScenarios::test_sqs_wait_for_task_token_task_failure": {
+    "last_validated_date": "2025-10-28T09:43:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 27.62,
+      "teardown": 2.66,
+      "total": 30.28
+    }
+  }
+}

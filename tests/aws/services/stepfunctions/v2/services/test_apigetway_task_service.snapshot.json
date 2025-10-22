@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_query_parameters": {
-    "recorded-date": "20-08-2023, 15:18:59",
+    "recorded-date": "06-11-2025, 12:16:28",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -259,7 +259,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_base": {
-    "recorded-date": "20-08-2023, 15:26:20",
+    "recorded-date": "06-11-2025, 12:12:42",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -449,7 +449,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[None]": {
-    "recorded-date": "25-08-2023, 12:40:49",
+    "recorded-date": "06-11-2025, 12:13:06",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -642,7 +642,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[]": {
-    "recorded-date": "25-08-2023, 12:41:13",
+    "recorded-date": "06-11-2025, 12:13:47",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -835,7 +835,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[HelloWorld]": {
-    "recorded-date": "25-08-2023, 12:41:49",
+    "recorded-date": "06-11-2025, 12:14:17",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1800,7 +1800,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_error": {
-    "recorded-date": "20-08-2023, 16:15:34",
+    "recorded-date": "06-11-2025, 12:16:53",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1905,7 +1905,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_body_post[request_body3]": {
-    "recorded-date": "25-08-2023, 12:42:12",
+    "recorded-date": "06-11-2025, 12:14:54",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2181,7 +2181,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_headers[custom_header1]": {
-    "recorded-date": "06-10-2024, 14:50:48",
+    "recorded-date": "06-11-2025, 12:15:22",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2401,7 +2401,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_apigetway_task_service.py::TestTaskApiGateway::test_invoke_with_headers[custom_header2]": {
-    "recorded-date": "06-10-2024, 14:51:07",
+    "recorded-date": "06-11-2025, 12:16:00",
     "recorded-content": {
       "get_execution_history": {
         "events": [

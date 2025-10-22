@@ -1,0 +1,25 @@
+{
+  "Comment": "BASE_MAP_STATE_MACHINE",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Map",
+      "ItemsPath": "$.Values",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        }
+      },
+      "ToleratedFailureCount": 2,
+      "End": true
+    }
+  }
+}

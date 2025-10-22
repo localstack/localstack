@@ -1,7 +1,9 @@
 import json
 
 import pytest
-from localstack_snapshot.snapshots.transformer import RegexTransformer
+from localstack_snapshot.snapshots.transformer import (
+    RegexTransformer,
+)
 
 from localstack.testing.pytest import markers
 from localstack.testing.pytest.stepfunctions.utils import (

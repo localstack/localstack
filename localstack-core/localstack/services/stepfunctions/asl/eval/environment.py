@@ -3,7 +3,7 @@ from __future__ import annotations
 import copy
 import logging
 import threading
-from typing import Any, Final, Optional
+from typing import Any, Final, Optional, Self
 
 from localstack.aws.api.stepfunctions import (
     Arn,
@@ -34,7 +34,10 @@ from localstack.services.stepfunctions.asl.eval.program_state import (
 from localstack.services.stepfunctions.asl.eval.states import ContextObjectData, States
 from localstack.services.stepfunctions.asl.eval.variable_store import VariableStore
 from localstack.services.stepfunctions.backend.activity import Activity
-from localstack.services.stepfunctions.mocking.mock_config import MockedResponse, MockTestCase
+from localstack.services.stepfunctions.local_mocking.mock_config import (
+    LocalMockedResponse,
+    LocalMockTestCase,
+)
 
 LOG = logging.getLogger(__name__)
 
@@ -52,7 +55,7 @@ class Environment:
     callback_pool_manager: CallbackPoolManager
     map_run_record_pool_manager: MapRunRecordPoolManager
     activity_store: Final[dict[Arn, Activity]]
-    mock_test_case: MockTestCase | None = None
+    local_mock_test_case: LocalMockTestCase | None = None
 
     _frames: Final[list[Environment]]
     _is_frame: bool = False
@@ -71,7 +74,7 @@ class Environment:
         cloud_watch_logging_session: CloudWatchLoggingSession | None,
         activity_store: dict[Arn, Activity],
         variable_store: VariableStore | None = None,
-        mock_test_case: MockTestCase | None = None,
+        local_mock_test_case: LocalMockTestCase | None = None,
     ):
         super().__init__()
         self._state_mutex = threading.RLock()
@@ -89,7 +92,7 @@ class Environment:
 
         self.activity_store = activity_store
 
-        self.mock_test_case = mock_test_case
+        self.local_mock_test_case = local_mock_test_case
 
         self._frames = []
         self._is_frame = False
@@ -101,9 +104,9 @@ class Environment:
 
     @classmethod
     def as_frame_of(
-        cls, env: Environment, event_history_frame_cache: EventHistoryContext | None = None
-    ) -> Environment:
-        return Environment.as_inner_frame_of(
+        cls, env: Self, event_history_frame_cache: EventHistoryContext | None = None
+    ) -> Self:
+        return cls.as_inner_frame_of(
             env=env,
             variable_store=env.variable_store,
             event_history_frame_cache=event_history_frame_cache,
@@ -112,10 +115,10 @@ class Environment:
     @classmethod
     def as_inner_frame_of(
         cls,
-        env: Environment,
+        env: Self,
         variable_store: VariableStore,
         event_history_frame_cache: EventHistoryContext | None = None,
-    ) -> Environment:
+    ) -> Self:
         # Construct the frame's context object data.
         context = ContextObjectData(
             Execution=env.states.context_object.context_object_data["Execution"],
@@ -138,8 +141,8 @@ class Environment:
             cloud_watch_logging_session=env.cloud_watch_logging_session,
             activity_store=env.activity_store,
             variable_store=variable_store,
-            mock_test_case=env.mock_test_case,
         )
+        frame.local_mock_test_case = env.local_mock_test_case
         frame._is_frame = True
         frame.event_manager = env.event_manager
         if "State" in env.states.context_object.context_object_data:
@@ -267,32 +270,37 @@ class Environment:
     def is_standard_workflow(self) -> bool:
         return self.execution_type == StateMachineType.STANDARD
 
-    def is_mocked_mode(self) -> bool:
+    def is_test_state_mocked_mode(self) -> bool:
+        return False
+
+    def is_local_mocked_mode(self) -> bool:
         """
-        Returns True if the state machine is running in mock mode and the current
-        state has a defined mock configuration in the target environment or frame;
-        otherwise, returns False.
+        Returns True if:
+        - the state machine is running in Step Functions Local mode
+        - the current state has a defined Local mock configuration in the target environment or frame
+
+        Otherwise, returns False.
         """
         return (
-            self.mock_test_case is not None
-            and self.next_state_name in self.mock_test_case.state_mocked_responses
+            self.local_mock_test_case is not None
+            and self.next_state_name in self.local_mock_test_case.state_mocked_responses
         )
 
-    def get_current_mocked_response(self) -> MockedResponse:
-        if not self.is_mocked_mode():
+    def get_current_local_mocked_response(self) -> LocalMockedResponse:
+        if not self.is_local_mocked_mode():
             raise RuntimeError(
                 "Cannot retrieve mocked response: execution is not operating in mocked mode"
             )
         state_name = self.next_state_name
-        state_mocked_responses: Optional = self.mock_test_case.state_mocked_responses.get(
+        state_mocked_responses: Optional = self.local_mock_test_case.state_mocked_responses.get(
             state_name
         )
         if state_mocked_responses is None:
-            raise RuntimeError(f"No mocked response definition for state '{state_name}'")
+            raise RuntimeError(f"No Local mocked response definition for state '{state_name}'")
         retry_count = self.states.context_object.context_object_data["State"]["RetryCount"]
         if len(state_mocked_responses.mocked_responses) <= retry_count:
             raise RuntimeError(
-                f"No mocked response definition for state '{state_name}' "
+                f"No Local mocked response definition for state '{state_name}' "
                 f"and retry number '{retry_count}'"
             )
         return state_mocked_responses.mocked_responses[retry_count]

@@ -1,0 +1,35 @@
+{
+  "Comment": "MAP_ITEM_READER_STATE_MACHINE",
+  "QueryLanguage": "JSONata",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Map",
+      "MaxConcurrency": 1,
+      "ItemReader": {
+        "ReaderConfig": {
+          "InputType": "JSON",
+        },
+        "Resource": "arn:aws:states:::s3:getObject",
+        "Arguments": {
+          "Bucket": "{% $states.input.Bucket %}",
+          "Key":"{% $states.input.Key %}"
+        },
+      },
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "DISTRIBUTED",
+          "ExecutionType": "STANDARD"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Pass",
+            "End": true
+          }
+        },
+      },
+      "End": true
+    }
+  }
+}

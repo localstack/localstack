@@ -1,14 +1,38 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_base": {
-    "last_validated_date": "2023-09-12T08:45:20+00:00"
+    "last_validated_date": "2025-11-06T13:30:30+00:00",
+    "durations_in_seconds": {
+      "setup": 0.68,
+      "call": 18.5,
+      "teardown": 3.05,
+      "total": 22.23
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_malformed_detail": {
-    "last_validated_date": "2024-12-05T11:30:19+00:00"
+    "last_validated_date": "2025-11-06T12:26:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.84,
+      "teardown": 2.94,
+      "total": 16.78
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_mixed_malformed_detail": {
-    "last_validated_date": "2024-12-05T13:56:38+00:00"
+    "last_validated_date": "2025-11-06T12:27:57+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.32,
+      "teardown": 3.56,
+      "total": 18.88
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_events_task_service.py::TestTaskServiceEvents::test_put_events_no_source": {
-    "last_validated_date": "2023-09-12T11:17:16+00:00"
+    "last_validated_date": "2025-11-06T12:27:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 45.87,
+      "teardown": 2.61,
+      "total": 48.48
+    }
   }
 }

@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message": {
-    "recorded-date": "18-04-2024, 06:37:09",
+    "recorded-date": "06-11-2025, 12:39:48",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -70,9 +70,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -89,12 +87,12 @@
                     "Content-Length": "106",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -116,9 +114,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -135,12 +131,12 @@
                     "Content-Length": "106",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -157,9 +153,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -176,12 +170,12 @@
                     "Content-Length": "106",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -202,7 +196,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_unsupported_parameters": {
-    "recorded-date": "18-04-2024, 06:37:24",
+    "recorded-date": "06-11-2025, 12:40:04",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -278,9 +272,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -297,12 +289,12 @@
                     "Content-Length": "106",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -324,9 +316,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -343,12 +333,12 @@
                     "Content-Length": "106",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -365,9 +355,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -384,12 +372,12 @@
                     "Content-Length": "106",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -410,7 +398,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sqs_task_service.py::TestTaskServiceSqs::test_send_message_attributes": {
-    "recorded-date": "22-08-2024, 10:04:56",
+    "recorded-date": "06-11-2025, 12:40:20",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -495,9 +483,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -514,12 +500,12 @@
                     "Content-Length": "166",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -542,9 +528,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -561,12 +545,12 @@
                     "Content-Length": "166",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {
@@ -584,9 +568,7 @@
                 "MessageId": "<uuid:1>",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:2>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
@@ -603,12 +585,12 @@
                     "Content-Length": "166",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:2>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:2>"
+                  "RequestId": "RequestId"
                 }
               },
               "outputDetails": {

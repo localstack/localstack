@@ -1,0 +1,65 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_success": {
+    "last_validated_date": "2025-11-12T16:33:18+00:00",
+    "durations_in_seconds": {
+      "setup": 0.64,
+      "call": 18.94,
+      "teardown": 1.11,
+      "total": 20.69
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[base]": {
+    "last_validated_date": "2025-11-12T16:33:31+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.85,
+      "teardown": 1.08,
+      "total": 12.93
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io]": {
+    "last_validated_date": "2025-11-12T16:33:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 17.62,
+      "teardown": 1.09,
+      "total": 18.71
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io_output_path]": {
+    "last_validated_date": "2025-11-12T16:34:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.94,
+      "teardown": 1.11,
+      "total": 13.05
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_put_events_mock_success": {
+    "last_validated_date": "2025-11-12T16:34:16+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 11.85,
+      "teardown": 1.11,
+      "total": 12.96
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_send_sqs_message_success": {
+    "last_validated_date": "2025-11-12T17:54:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.65,
+      "call": 13.39,
+      "teardown": 0.98,
+      "total": 15.02
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_sfn_start_execution_success": {
+    "last_validated_date": "2025-11-13T11:41:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.58,
+      "call": 13.15,
+      "teardown": 0.99,
+      "total": 14.72
+    }
+  }
+}

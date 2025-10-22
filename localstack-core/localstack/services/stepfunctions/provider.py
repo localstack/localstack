@@ -57,6 +57,7 @@ from localstack.aws.api.stepfunctions import (
     LongArn,
     MaxConcurrency,
     MissingRequiredParameter,
+    MockInput,
     Name,
     PageSize,
     PageToken,
@@ -150,9 +151,9 @@ from localstack.services.stepfunctions.backend.store import SFNStore, sfn_stores
 from localstack.services.stepfunctions.backend.test_state.execution import (
     TestStateExecution,
 )
-from localstack.services.stepfunctions.mocking.mock_config import (
-    MockTestCase,
-    load_mock_test_case_for,
+from localstack.services.stepfunctions.local_mocking.mock_config import (
+    LocalMockTestCase,
+    load_local_mock_test_case_for,
 )
 from localstack.services.stepfunctions.stepfunctions_utils import (
     assert_pagination_parameters_valid,
@@ -239,6 +240,12 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         raise InvalidArn(
             f"Invalid Arn: 'Resource type not valid in this context: {lower_resource_type}'"
         )
+
+    @staticmethod
+    def _validate_test_state_mock_input(mock: MockInput) -> None:
+        if {"result", "errorOutput"} <= mock.keys():
+            # FIXME create proper error
+            raise ValidationException("Cannot define both 'result' and 'errorOutput'")
 
     @staticmethod
     def _validate_activity_name(name: str) -> None:
@@ -772,14 +779,16 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         return state_machine_arn.split("#")[0]
 
     @staticmethod
-    def _get_mock_test_case(state_machine_arn: str, state_machine_name: str) -> MockTestCase | None:
+    def _get_local_mock_test_case(
+        state_machine_arn: str, state_machine_name: str
+    ) -> LocalMockTestCase | None:
         """Extract and load a mock test case from a state machine ARN if present."""
         parts = state_machine_arn.split("#")
         if len(parts) != 2:
             return None
 
         mock_test_case_name = parts[1]
-        mock_test_case = load_mock_test_case_for(
+        mock_test_case = load_local_mock_test_case_for(
             state_machine_name=state_machine_name, test_case_name=mock_test_case_name
         )
         if mock_test_case is None:
@@ -856,7 +865,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 configuration=state_machine_clone.cloud_watch_logging_configuration,
             )
 
-        mock_test_case = self._get_mock_test_case(state_machine_arn, state_machine_clone.name)
+        local_mock_test_case = self._get_local_mock_test_case(
+            state_machine_arn, state_machine_clone.name
+        )
 
         execution = Execution(
             name=exec_name,
@@ -872,7 +883,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_data,
             trace_header=trace_header,
             activity_store=self.get_store(context).activities,
-            mock_test_case=mock_test_case,
+            local_mock_test_case=local_mock_test_case,
         )
 
         store.executions[exec_arn] = execution
@@ -932,7 +943,9 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
                 configuration=state_machine_clone.cloud_watch_logging_configuration,
             )
 
-        mock_test_case = self._get_mock_test_case(state_machine_arn, state_machine_clone.name)
+        local_mock_test_case = self._get_local_mock_test_case(
+            state_machine_arn, state_machine_clone.name
+        )
 
         execution = SyncExecution(
             name=exec_name,
@@ -947,7 +960,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             input_data=input_data,
             trace_header=trace_header,
             activity_store=self.get_store(context).activities,
-            mock_test_case=mock_test_case,
+            local_mock_test_case=local_mock_test_case,
         )
         self.get_store(context).executions[exec_arn] = execution
 
@@ -1485,9 +1498,26 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
     def test_state(
         self, context: RequestContext, request: TestStateInput, **kwargs
     ) -> TestStateOutput:
+        state_name = request.get("stateName")
+        definition = request["definition"]
+
         StepFunctionsProvider._validate_definition(
-            definition=request["definition"], static_analysers=[TestStateStaticAnalyser()]
+            definition=definition,
+            static_analysers=[TestStateStaticAnalyser(state_name)],
         )
+
+        # if StateName is present, we need to ensure the state being referenced exists in full definition.
+        if state_name and not TestStateStaticAnalyser.is_state_in_definition(
+            definition=definition, state_name=state_name
+        ):
+            raise ValidationException("State not found in definition")
+
+        if mock := request.get("mock"):
+            self._validate_test_state_mock_input(mock)
+
+        if state_configuration := request.get("stateConfiguration"):
+            # TODO: Add validations for this i.e assert len(input) <= failureCount
+            pass
 
         name: Name | None = f"TestState-{short_uid()}"
         arn = stepfunctions_state_machine_arn(
@@ -1499,11 +1529,16 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             role_arn=request["roleArn"],
             definition=request["definition"],
         )
-        exec_arn = stepfunctions_standard_execution_arn(state_machine.arn, name)
+
+        # HACK(gregfurman): The ARN that gets generated has a duplicate 'name' field in the
+        # resource ARN. Just replace this duplication and extract the execution ID.
+        exec_arn = stepfunctions_express_execution_arn(state_machine.arn, name)
+        exec_arn = exec_arn.replace(f":{name}:{name}:", f":{name}:", 1)
+        _, exec_name = exec_arn.rsplit(":", 1)
 
         input_json = json.loads(request["input"])
         execution = TestStateExecution(
-            name=name,
+            name=exec_name,
             role_arn=request["roleArn"],
             exec_arn=exec_arn,
             account_id=context.account_id,
@@ -1511,7 +1546,10 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             state_machine=state_machine,
             start_date=datetime.datetime.now(tz=datetime.UTC),
             input_data=input_json,
+            state_name=state_name,
             activity_store=self.get_store(context).activities,
+            mock=mock,
+            state_configuration=state_configuration,
         )
         execution.start()
 

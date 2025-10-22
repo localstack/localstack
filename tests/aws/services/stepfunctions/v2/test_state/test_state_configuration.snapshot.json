@@ -1,0 +1,1395 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_error_caused_by_state[INFO]": {
+    "recorded-date": "13-11-2025, 17:07:52",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_error_caused_by_state[DEBUG]": {
+    "recorded-date": "13-11-2025, 17:08:07",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              1,
+              1
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_error_caused_by_state[TRACE]": {
+    "recorded-date": "13-11-2025, 17:08:21",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Values": [
+              1,
+              1,
+              1
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_map_iteration_failure_count_with_state_error[INFO]": {
+    "recorded-date": "13-11-2025, 17:08:37",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_map_iteration_failure_count_with_state_error[DEBUG]": {
+    "recorded-date": "13-11-2025, 17:08:51",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_map_iteration_failure_count_with_state_error[TRACE]": {
+    "recorded-date": "13-11-2025, 17:09:07",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_with_state_error[INFO]": {
+    "recorded-date": "13-11-2025, 17:09:27",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_with_state_error[DEBUG]": {
+    "recorded-date": "13-11-2025, 17:09:43",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterInputPath": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "afterItemsPath": "[\"first\", \"second\", \"third\"]",
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 2
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterInputPath": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "afterItemsPath": "[\"first\", \"second\", \"third\"]",
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 2
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_with_state_error[TRACE]": {
+    "recorded-date": "13-11-2025, 17:09:57",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterInputPath": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "afterItemsPath": "[\"first\", \"second\", \"third\"]",
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 2
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterInputPath": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "afterItemsPath": "[\"first\", \"second\", \"third\"]",
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 2
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_map_iteration_item_reader[INFO]": {
+    "recorded-date": "13-11-2025, 17:59:50",
+    "recorded-content": {
+      "test_case_response": {
+        "output": "[1, 4, 9]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_map_iteration_item_reader[DEBUG]": {
+    "recorded-date": "13-11-2025, 18:00:05",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Bucket": "test-bucket",
+            "Key": "test-key"
+          },
+          "maxConcurrency": 1
+        },
+        "output": "[1, 4, 9]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_map_iteration_item_reader[TRACE]": {
+    "recorded-date": "13-11-2025, 18:00:20",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Bucket": "test-bucket",
+            "Key": "test-key"
+          },
+          "maxConcurrency": 1
+        },
+        "output": "[1, 4, 9]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-BASE_MAP_STATE]": {
+    "recorded-date": "13-11-2025, 18:01:00",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:5>:<resource:4>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:4>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:5>",
+              "Name": "<resource:5>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            0,
+            0,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-BASE_MAP_STATE_CATCH]": {
+    "recorded-date": "13-11-2025, 18:01:16",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "output": "[1, 1, 1]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "nextState": "HandleThreshold",
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "States.ExceedToleratedFailureThreshold",
+            "Cause": "The specified tolerated failure threshold was exceeded"
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-BASE_MAP_STATE_RETRY]": {
+    "recorded-date": "13-11-2025, 18:01:31",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "output": "[1, 1, 1]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[INFO-MAP_TASK_STATE]": {
+    "recorded-date": "13-11-2025, 18:07:46",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "output": {
+          "result": [
+            "pass",
+            "pass",
+            "pass"
+          ],
+          "successCount": 3,
+          "failedCount": 0
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-BASE_MAP_STATE]": {
+    "recorded-date": "18-11-2025, 11:30:45",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:5>:<resource:4>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:4>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:5>",
+              "Name": "<resource:5>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            0,
+            0,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-BASE_MAP_STATE_CATCH]": {
+    "recorded-date": "13-11-2025, 18:02:22",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": "[1, 1, 1]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "inspectionData": {
+          "errorDetails": {
+            "catchIndex": 1
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "nextState": "HandleThreshold",
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "States.ExceedToleratedFailureThreshold",
+            "Cause": "The specified tolerated failure threshold was exceeded"
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-BASE_MAP_STATE_RETRY]": {
+    "recorded-date": "13-11-2025, 18:02:38",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": "[1, 1, 1]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "inspectionData": {
+          "errorDetails": {
+            "retryBackoffIntervalSeconds": 1,
+            "retryIndex": 1
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[DEBUG-MAP_TASK_STATE]": {
+    "recorded-date": "13-11-2025, 18:07:18",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": {
+          "result": [
+            "pass",
+            "pass",
+            "pass"
+          ],
+          "successCount": 3,
+          "failedCount": 0
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "inspectionData": {
+          "errorDetails": {
+            "retryBackoffIntervalSeconds": 1,
+            "retryIndex": 1
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-BASE_MAP_STATE]": {
+    "recorded-date": "13-11-2025, 18:03:08",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            1,
+            1,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0
+        },
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:5>:<resource:4>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:4>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:5>",
+              "Name": "<resource:5>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "result": [
+            0,
+            0,
+            1
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-BASE_MAP_STATE_CATCH]": {
+    "recorded-date": "13-11-2025, 18:03:23",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": "[1, 1, 1]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "inspectionData": {
+          "errorDetails": {
+            "catchIndex": 1
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "nextState": "HandleThreshold",
+        "output": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "context": {
+            "Execution": {
+              "Id": "arn:<partition>:states:<region>:111111111111:express:<resource:3>:<resource:1>",
+              "Input": {
+                "Values": [
+                  "first",
+                  "second",
+                  "third"
+                ]
+              },
+              "Name": "<resource:1>",
+              "RoleArn": "arn:<partition>:iam::111111111111:role/<resource:2>",
+              "StartTime": "date"
+            },
+            "StateMachine": {
+              "Id": "arn:<partition>:states:<region>:111111111111:stateMachine:<resource:3>",
+              "Name": "<resource:3>"
+            },
+            "State": {
+              "Name": "StateName",
+              "EnteredTime": "date",
+              "RetryCount": 0
+            }
+          },
+          "errorOutput": {
+            "Error": "States.ExceedToleratedFailureThreshold",
+            "Cause": "The specified tolerated failure threshold was exceeded"
+          }
+        },
+        "status": "CAUGHT_ERROR",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-BASE_MAP_STATE_RETRY]": {
+    "recorded-date": "13-11-2025, 18:03:38",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": "[1, 1, 1]",
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "inspectionData": {
+          "errorDetails": {
+            "retryBackoffIntervalSeconds": 1,
+            "retryIndex": 1
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_map_state_failure_count[TRACE-MAP_TASK_STATE]": {
+    "recorded-date": "13-11-2025, 18:06:47",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "inspectionData": {
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "output": {
+          "result": [
+            "pass",
+            "pass",
+            "pass"
+          ],
+          "successCount": 3,
+          "failedCount": 0
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "The specified tolerated failure threshold was exceeded",
+        "error": "States.ExceedToleratedFailureThreshold",
+        "inspectionData": {
+          "errorDetails": {
+            "retryBackoffIntervalSeconds": 1,
+            "retryIndex": 1
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          },
+          "maxConcurrency": 0,
+          "toleratedFailureCount": 1
+        },
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_item_reader_with_error[INFO]": {
+    "recorded-date": "14-11-2025, 11:13:46",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_item_reader_with_error[DEBUG]": {
+    "recorded-date": "14-11-2025, 11:14:02",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Bucket": "test-bucket",
+            "Key": "test-key"
+          },
+          "maxConcurrency": 1
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Bucket": "test-bucket",
+            "Key": "test-key"
+          },
+          "maxConcurrency": 1
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_machine_configuration_item_reader_with_error[TRACE]": {
+    "recorded-date": "14-11-2025, 11:14:18",
+    "recorded-content": {
+      "below_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Bucket": "test-bucket",
+            "Key": "test-key"
+          },
+          "maxConcurrency": 1
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_failure": {
+        "cause": "Mock the error cause.",
+        "error": "MockException",
+        "inspectionData": {
+          "input": {
+            "Bucket": "test-bucket",
+            "Key": "test-key"
+          },
+          "maxConcurrency": 1
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_retrier_retry_count[TRACE]": {
+    "recorded-date": "22-11-2025, 17:13:28",
+    "recorded-content": {
+      "below_tolerated_retry_count_with_backoff": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "retryBackoffIntervalSeconds": 16,
+            "retryIndex": 0
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          }
+        },
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_retry_count": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "retryIndex": 0
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_state_configuration.py::TestStateConfiguration::test_state_configuration_retrier_retry_count[DEBUG]": {
+    "recorded-date": "22-11-2025, 17:13:15",
+    "recorded-content": {
+      "below_tolerated_retry_count_with_backoff": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "retryBackoffIntervalSeconds": 16,
+            "retryIndex": 0
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          }
+        },
+        "status": "RETRIABLE",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "exceeds_tolerated_retry_count": {
+        "cause": "Mock the cause of the error.",
+        "error": "MockException",
+        "inspectionData": {
+          "afterArguments": {
+            "FunctionName": "foo",
+            "Payload": "bar"
+          },
+          "errorDetails": {
+            "retryIndex": 0
+          },
+          "input": {
+            "Values": [
+              "first",
+              "second",
+              "third"
+            ]
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

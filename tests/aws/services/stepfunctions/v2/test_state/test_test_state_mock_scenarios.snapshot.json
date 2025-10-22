@@ -1,0 +1,135 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_base_lambda_service_task_mock_success": {
+    "recorded-date": "12-11-2025, 16:33:17",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "Payload": "function output",
+          "SdkHttpMetadata": {
+            "HttpStatusCode": 200
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[base]": {
+    "recorded-date": "12-11-2025, 16:33:30",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "SdkHttpMetadata": {
+            "HttpStatusCode": 200
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io]": {
+    "recorded-date": "12-11-2025, 16:33:49",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "TableName": "<table_name>",
+          "Item": {
+            "data": {
+              "S": "HelloWorld"
+            },
+            "id": {
+              "S": "id1"
+            }
+          },
+          "putItemOutput": {
+            "SdkHttpMetadata": {
+              "HttpStatusCode": 200
+            }
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_io_dynamodb_service_task_mock_success[io_output_path]": {
+    "recorded-date": "12-11-2025, 16:34:02",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "SdkHttpMetadata": {
+            "HttpStatusCode": 200
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_put_events_mock_success": {
+    "recorded-date": "12-11-2025, 16:34:15",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "Entries": [
+            {
+              "EventId": "<uuid:1>"
+            }
+          ]
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_send_sqs_message_success": {
+    "recorded-date": "12-11-2025, 17:54:05",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "MD5OfMessageBody": "<md5_of_message_body>",
+          "MessageId": "<uuid:1>"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_mock_scenarios.py::TestStateMockScenarios::test_sfn_start_execution_success": {
+    "recorded-date": "13-11-2025, 11:41:38",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "targetExecutionResult": {
+            "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:TargetStateMachine:TestStartTarget",
+            "StartDate": "start-date"
+          }
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

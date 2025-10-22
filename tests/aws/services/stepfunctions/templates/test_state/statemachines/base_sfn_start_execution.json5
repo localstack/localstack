@@ -1,0 +1,14 @@
+{
+  "Type": "Task",
+  "QueryLanguage": "JSONata",
+  "Resource": "arn:aws:states:::states:startExecution",
+  "Arguments": {
+    "Input": "{% $states.input.targetInput %}",
+    "StateMachineArn": "{% $states.input.stateMachineArn %}",
+    "Name": "{% $states.input.name %}"
+  },
+  "Output": {
+    "targetExecutionResult": "{% $states.result %}"
+  },
+  "End": true,
+}

@@ -1,4 +1,5 @@
 {
+  "Comment": "BASE_LAMBDA_SERVICE_TASK_STATE",
   "Type": "Task",
   "Resource": "arn:aws:states:::lambda:invoke",
   "Parameters": {

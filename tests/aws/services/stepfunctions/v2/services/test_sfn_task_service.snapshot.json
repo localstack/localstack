@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution": {
-    "recorded-date": "28-06-2023, 11:07:54",
+    "recorded-date": "06-11-2025, 12:35:23",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -72,14 +72,12 @@
                 "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:1>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
                     "Content-Length": [
-                      "160"
+                      "164"
                     ],
                     "Date": "date",
                     "Content-Type": [
@@ -88,15 +86,15 @@
                   },
                   "HttpHeaders": {
                     "connection": "keep-alive",
-                    "Content-Length": "160",
+                    "Content-Length": "164",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:1>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:1>"
+                  "RequestId": "RequestId"
                 },
                 "StartDate": "start-date"
               },
@@ -118,14 +116,12 @@
                 "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:1>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
                     "Content-Length": [
-                      "160"
+                      "164"
                     ],
                     "Date": "date",
                     "Content-Type": [
@@ -134,15 +130,15 @@
                   },
                   "HttpHeaders": {
                     "connection": "keep-alive",
-                    "Content-Length": "160",
+                    "Content-Length": "164",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:1>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:1>"
+                  "RequestId": "RequestId"
                 },
                 "StartDate": "start-date"
               },
@@ -159,14 +155,12 @@
                 "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:1>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
                     "Content-Length": [
-                      "160"
+                      "164"
                     ],
                     "Date": "date",
                     "Content-Type": [
@@ -175,15 +169,15 @@
                   },
                   "HttpHeaders": {
                     "connection": "keep-alive",
-                    "Content-Length": "160",
+                    "Content-Length": "164",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:1>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:1>"
+                  "RequestId": "RequestId"
                 },
                 "StartDate": "start-date"
               },
@@ -205,7 +199,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_sfn_task_service.py::TestTaskServiceSfn::test_start_execution_input_json": {
-    "recorded-date": "28-06-2023, 11:12:13",
+    "recorded-date": "06-11-2025, 12:35:53",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -283,14 +277,12 @@
                 "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:1>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
                     "Content-Length": [
-                      "161"
+                      "163"
                     ],
                     "Date": "date",
                     "Content-Type": [
@@ -299,15 +291,15 @@
                   },
                   "HttpHeaders": {
                     "connection": "keep-alive",
-                    "Content-Length": "161",
+                    "Content-Length": "163",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:1>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:1>"
+                  "RequestId": "RequestId"
                 },
                 "StartDate": "start-date"
               },
@@ -329,14 +321,12 @@
                 "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:1>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
                     "Content-Length": [
-                      "161"
+                      "163"
                     ],
                     "Date": "date",
                     "Content-Type": [
@@ -345,15 +335,15 @@
                   },
                   "HttpHeaders": {
                     "connection": "keep-alive",
-                    "Content-Length": "161",
+                    "Content-Length": "163",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:1>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:1>"
+                  "RequestId": "RequestId"
                 },
                 "StartDate": "start-date"
               },
@@ -370,14 +360,12 @@
                 "ExecutionArn": "arn:<partition>:states:<region>:111111111111:execution:<ArnPart_0idx>:TestStartTarget",
                 "SdkHttpMetadata": {
                   "AllHttpHeaders": {
-                    "x-amzn-RequestId": [
-                      "<uuid:1>"
-                    ],
+                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "connection": [
                       "keep-alive"
                     ],
                     "Content-Length": [
-                      "161"
+                      "163"
                     ],
                     "Date": "date",
                     "Content-Type": [
@@ -386,15 +374,15 @@
                   },
                   "HttpHeaders": {
                     "connection": "keep-alive",
-                    "Content-Length": "161",
+                    "Content-Length": "163",
                     "Content-Type": "application/x-amz-json-1.0",
                     "Date": "date",
-                    "x-amzn-RequestId": "<uuid:1>"
+                    "x-amzn-RequestId": "x-amzn-RequestId"
                   },
                   "HttpStatusCode": 200
                 },
                 "SdkResponseMetadata": {
-                  "RequestId": "<uuid:1>"
+                  "RequestId": "RequestId"
                 },
                 "StartDate": "start-date"
               },

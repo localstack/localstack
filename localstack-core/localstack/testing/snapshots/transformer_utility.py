@@ -791,6 +791,11 @@ class TransformerUtility:
                 "x-amzn-RequestId",
                 replace_reference=False,
             ),
+            JsonpathTransformer(
+                "$..x-amzn-requestid",
+                "x-amzn-requestid",
+                replace_reference=False,
+            ),
             KeyValueBasedTransformer(_transform_stepfunctions_cause_details, "json-input"),
         ]
 

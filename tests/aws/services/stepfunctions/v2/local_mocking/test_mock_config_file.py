@@ -1,10 +1,10 @@
 from localstack import config
-from localstack.services.stepfunctions.mocking.mock_config import (
-    MockTestCase,
-    load_mock_test_case_for,
+from localstack.services.stepfunctions.local_mocking.mock_config import (
+    LocalMockTestCase,
+    load_local_mock_test_case_for,
 )
 from localstack.testing.pytest import markers
-from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service_integrations import (
+from tests.aws.services.stepfunctions.local_mocked_service_integrations.mocked_service_integrations import (
     MockedServiceIntegrationsLoader,
 )
 
@@ -12,7 +12,7 @@ from tests.aws.services.stepfunctions.mocked_service_integrations.mocked_service
 class TestMockConfigFile:
     @markers.aws.only_localstack
     def test_is_mock_config_flag_detected_unset(self, mock_config_file):
-        mock_test_case = load_mock_test_case_for(
+        mock_test_case = load_local_mock_test_case_for(
             state_machine_name="state_machine_name", test_case_name="test_case_name"
         )
         assert mock_test_case is None
@@ -31,7 +31,7 @@ class TestMockConfigFile:
         }
         mock_config_file_path = mock_config_file(mock_config)
         monkeypatch.setattr(config, "SFN_MOCK_CONFIG", mock_config_file_path)
-        mock_test_case: MockTestCase = load_mock_test_case_for(
+        mock_test_case: LocalMockTestCase = load_local_mock_test_case_for(
             state_machine_name="S0", test_case_name="BaseTestCase"
         )
         assert mock_test_case is not None
