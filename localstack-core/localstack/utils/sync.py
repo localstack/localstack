@@ -218,24 +218,31 @@ class Once:
                     self._is_done = True
 
 
-def once(fn: Callable[..., T]) -> Callable[..., T | None]:
+def once_func(fn: Callable[..., T]) -> Callable[..., T | None]:
     """
-    A decorator that ensures a function is over ever executed once.
+    Wraps and returns a function that can only ever execute once.
 
-    The first call to decorated function will permanently set results.
+    The first call to the returned function will permanently set the result.
+    If the wrapped function raises an exception, this will be re-raised on each subsequent call.
 
-    If the decorated function rasies an exception, this will be re-raised on each subsequent call.
+    This function can be used either as a decorator or called directly.
 
+    Direct usage:
     ```python
-    @once
+    delete_file = once_func(os.remove)
+
+    delete_file("myfile.txt")  # deletes the file
+    delete_file("myfile.txt")  # does nothing
+    ```
+
+    As a decorator:
+    ```python
+    @once_func
     def delete_file():
         os.remove("myfile.txt")
 
-    # deletes the file
-    delete_file()
-    # already called, so does nothing
-    delete_file()
-
+    delete_file()  # deletes the file
+    delete_file()  # does nothing
     ```
     """
     once = Once()

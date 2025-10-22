@@ -2,7 +2,7 @@ import threading
 
 import pytest
 
-from localstack.utils.sync import Once, SynchronizedDefaultDict, once
+from localstack.utils.sync import Once, SynchronizedDefaultDict, once_func
 
 
 def test_synchronized_defaultdict():
@@ -70,7 +70,7 @@ class TestOnceDecorator:
     def test_executes_only_once(self):
         counter = []
 
-        @once
+        @once_func
         def increment():
             counter.append(1)
             return sum(counter)
@@ -87,7 +87,7 @@ class TestOnceDecorator:
     def test_with_arguments(self):
         calls = []
 
-        @once
+        @once_func
         def add(a, b):
             calls.append((a, b))
             return a + b
@@ -105,7 +105,7 @@ class TestOnceDecorator:
     def test_exception_reraises(self):
         call_count = []
 
-        @once
+        @once_func
         def failing_function():
             call_count.append(1)
             raise ValueError("Something went wrong")
@@ -124,7 +124,7 @@ class TestOnceDecorator:
     def test_none_return_value(self):
         calls = []
 
-        @once
+        @once_func
         def returns_none():
             calls.append(1)
             return None
@@ -137,7 +137,7 @@ class TestOnceDecorator:
         assert result2 is None
 
     def test_preserves_function_metadata(self):
-        @once
+        @once_func
         def documented_function():
             """This is a docstring."""
             return 42
@@ -149,12 +149,12 @@ class TestOnceDecorator:
         counter1 = []
         counter2 = []
 
-        @once
+        @once_func
         def function1():
             counter1.append(1)
             return "func1"
 
-        @once
+        @once_func
         def function2():
             counter2.append(1)
             return "func2"
@@ -170,7 +170,7 @@ class TestOnceDecorator:
     def test_with_kwargs(self):
         calls = []
 
-        @once
+        @once_func
         def with_kwargs(a, b=10, **kwargs):
             calls.append((a, b, kwargs))
             return "result"
