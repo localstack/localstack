@@ -597,7 +597,7 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                     f"Template format error: Unresolved resource dependencies [{logical_name_of_resource}] in the Resources block of the template"
                 )
 
-        # Custom Resources have the ability to mutate their definition
+        # Custom Resources can mutate their definition
         # So the preproc should search first in the resource values and then check the template
         if select_before:
             value = self._before_deployed_property_value_of(
@@ -609,11 +609,13 @@ class ChangeSetModelPreproc(ChangeSetModelVisitor):
                 resource_logical_id=logical_name_of_resource,
                 property_name=attribute_name,
             )
+        if value is not None:
+            return value
 
         node_property: NodeProperty | None = self._get_node_property_for(
             property_name=attribute_name, node_resource=node_resource
         )
-        if value is None and node_property is not None:
+        if node_property is not None:
             # The property is statically defined in the template and its value can be computed.
             property_delta = self.visit(node_property)
             value = property_delta.before if select_before else property_delta.after
