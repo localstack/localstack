@@ -251,7 +251,6 @@ class ExecutionState(CommonStateField, abc.ABC):
                 )
                 error_output = self._construct_error_output_value(failure_event=failure_event)
                 env.states.set_error_output(error_output)
-                env.states.set_result(error_output)
 
                 if self.retry:
                     retry_outcome: RetryOutcome = self._handle_retry(

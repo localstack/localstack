@@ -6,13 +6,13 @@ from localstack.aws.api.lambda_ import InvocationResponse
 from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.credentials import (
     StateCredentials,
 )
-from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.mock_eval_utils import (
-    eval_mocked_response,
+from localstack.services.stepfunctions.asl.component.state.state_execution.state_task.local_mock_eval_utils import (
+    eval_local_mocked_response,
 )
 from localstack.services.stepfunctions.asl.eval.environment import Environment
 from localstack.services.stepfunctions.asl.utils.boto_client import boto_client_for
 from localstack.services.stepfunctions.asl.utils.encoding import to_json_str
-from localstack.services.stepfunctions.mocking.mock_config import MockedResponse
+from localstack.services.stepfunctions.local_mocking.mock_config import LocalMockedResponse
 from localstack.utils.collections import select_from_typed_dict
 from localstack.utils.strings import to_bytes
 
@@ -42,9 +42,9 @@ def _from_payload(payload_streaming_body: IO[bytes]) -> Any | str:
         return decoded_data
 
 
-def _mocked_invoke_lambda_function(env: Environment) -> InvocationResponse:
-    mocked_response: MockedResponse = env.get_current_mocked_response()
-    eval_mocked_response(env=env, mocked_response=mocked_response)
+def _local_mocked_invoke_lambda_function(env: Environment) -> InvocationResponse:
+    mocked_response: LocalMockedResponse = env.get_current_local_mocked_response()
+    eval_local_mocked_response(env=env, mocked_response=mocked_response)
     invocation_resp: InvocationResponse = env.stack.pop()
     return invocation_resp
 
@@ -68,8 +68,8 @@ def _invoke_lambda_function(
 def execute_lambda_function_integration(
     env: Environment, parameters: dict, region: str, state_credentials: StateCredentials
 ) -> None:
-    if env.is_mocked_mode():
-        invocation_response: InvocationResponse = _mocked_invoke_lambda_function(env=env)
+    if env.is_local_mocked_mode():
+        invocation_response: InvocationResponse = _local_mocked_invoke_lambda_function(env=env)
     else:
         invocation_response: InvocationResponse = _invoke_lambda_function(
             parameters=parameters, region=region, state_credentials=state_credentials

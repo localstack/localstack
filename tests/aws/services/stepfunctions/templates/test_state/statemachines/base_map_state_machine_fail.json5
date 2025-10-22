@@ -1,0 +1,24 @@
+{
+  "Comment": "BASE_MAP_STATE_MACHINE_FAIL",
+  "StartAt": "State0",
+  "States": {
+   "State0": {
+      "Type": "Map",
+      "ItemsPath": "$.Values",
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "HandleItem",
+        "States": {
+          "HandleItem": {
+            "Type": "Fail",
+            "Error": "SomeFailure",
+            "Cause": "This state machines raises a 'SomeFailure' failure."
+          }
+        }
+      },
+      "End": true
+    }
+  }
+}

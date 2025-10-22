@@ -1,0 +1,10 @@
+{
+  "Comment": "BASE_PASS_STATE_MACHINE",
+  "StartAt": "State0",
+  "States": {
+    "State0": {
+      "Type": "Pass",
+      "End": true
+    }
+  }
+}

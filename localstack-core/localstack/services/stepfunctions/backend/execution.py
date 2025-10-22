@@ -59,7 +59,7 @@ from localstack.services.stepfunctions.backend.state_machine import (
     StateMachineInstance,
     StateMachineVersion,
 )
-from localstack.services.stepfunctions.mocking.mock_config import MockTestCase
+from localstack.services.stepfunctions.local_mocking.mock_config import LocalMockTestCase
 
 LOG = logging.getLogger(__name__)
 
@@ -108,7 +108,7 @@ class Execution:
     state_machine_version_arn: Final[Arn | None]
     state_machine_alias_arn: Final[Arn | None]
 
-    mock_test_case: Final[MockTestCase | None]
+    local_mock_test_case: Final[LocalMockTestCase | None]
 
     start_date: Final[Timestamp]
     input_data: Final[json | None]
@@ -144,7 +144,7 @@ class Execution:
         input_data: json | None = None,
         trace_header: TraceHeader | None = None,
         state_machine_alias_arn: Arn | None = None,
-        mock_test_case: MockTestCase | None = None,
+        local_mock_test_case: LocalMockTestCase | None = None,
     ):
         self.name = name
         self.sm_type = sm_type
@@ -173,7 +173,7 @@ class Execution:
         self.error = None
         self.cause = None
         self._activity_store = activity_store
-        self.mock_test_case = mock_test_case
+        self.local_mock_test_case = local_mock_test_case
 
     def _get_events_client(self):
         return connect_to(aws_access_key_id=self.account_id, region_name=self.region_name).events
@@ -304,7 +304,7 @@ class Execution:
             exec_comm=self._get_start_execution_worker_comm(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
-            mock_test_case=self.mock_test_case,
+            local_mock_test_case=self.local_mock_test_case,
         )
 
     def start(self) -> None:
@@ -391,7 +391,7 @@ class SyncExecution(Execution):
             exec_comm=self._get_start_execution_worker_comm(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
-            mock_test_case=self.mock_test_case,
+            local_mock_test_case=self.local_mock_test_case,
         )
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:

@@ -7,6 +7,9 @@ from localstack.aws.api.lambda_ import Runtime
 from localstack.aws.api.stepfunctions import InspectionLevel
 from localstack.testing.pytest import markers
 from localstack.utils.strings import short_uid
+from tests.aws.services.stepfunctions.templates.evaluatejsonata.evaluate_jsonata_templates import (
+    EvaluateJsonataTemplate as EJT,
+)
 from tests.aws.services.stepfunctions.templates.services.services_templates import (
     ServicesTemplates as ST,
 )
@@ -22,6 +25,7 @@ NESTED_DICT_INPUT = json.dumps(
     }
 )
 BASE_CHOICE_STATE_INPUT = json.dumps({"type": "Private", "value": 22})
+BASE_MAP_STATE_INPUT = json.dumps({"Values": [1, 2, 3]})
 
 BASE_TEMPLATE_INPUT_BINDINGS: list[tuple[str, str]] = [
     (TST.BASE_PASS_STATE, HELLO_WORLD_INPUT),
@@ -83,17 +87,6 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_response", test_case_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
-            # unsupported state modifiers. Such as ResultSelector, which is neither defined in
-            # this Pass state, nor supported by Pass states.
-            "$..inspectionData.afterInputPath",
-            "$..inspectionData.afterParameters",
-            "$..inspectionData.afterResultPath",
-            "$..inspectionData.afterResultSelector",
-        ]
-    )
     @pytest.mark.parametrize(
         "tct_template,execution_input",
         BASE_TEMPLATE_INPUT_BINDINGS,
@@ -123,17 +116,6 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_response", test_case_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
-            # unsupported state modifiers. Such as ResultSelector, which is neither defined in
-            # this Pass state, nor supported by Pass states.
-            "$..inspectionData.afterInputPath",
-            "$..inspectionData.afterParameters",
-            "$..inspectionData.afterResultPath",
-            "$..inspectionData.afterResultSelector",
-        ]
-    )
     @pytest.mark.parametrize(
         "tct_template,execution_input",
         BASE_TEMPLATE_INPUT_BINDINGS,
@@ -163,16 +145,6 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_response", test_case_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared and
-            # unsupported state modifiers.
-            "$..inspectionData.afterInputPath",
-            "$..inspectionData.afterParameters",
-            "$..inspectionData.afterResultPath",
-            "$..inspectionData.afterResultSelector",
-        ]
-    )
     @pytest.mark.parametrize(
         "inspection_level", [InspectionLevel.INFO, InspectionLevel.DEBUG, InspectionLevel.TRACE]
     )
@@ -209,14 +181,6 @@ class TestStateCaseScenarios:
         sfn_snapshot.match("test_case_response", test_case_response)
 
     @markers.aws.validated
-    @markers.snapshot.skip_snapshot_verify(
-        paths=[
-            # Unknown generalisable behaviour by AWS leads to the outputting of undeclared state modifiers.
-            "$..inspectionData.afterInputPath",
-            "$..inspectionData.afterResultPath",
-            "$..inspectionData.afterResultSelector",
-        ]
-    )
     @pytest.mark.parametrize(
         "inspection_level", [InspectionLevel.INFO, InspectionLevel.DEBUG, InspectionLevel.TRACE]
     )
@@ -250,3 +214,86 @@ class TestStateCaseScenarios:
             inspectionLevel=inspection_level,
         )
         sfn_snapshot.match("test_case_response", test_case_response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "inspection_level", [InspectionLevel.INFO, InspectionLevel.DEBUG, InspectionLevel.TRACE]
+    )
+    @pytest.mark.parametrize(
+        "expression_dict",
+        [
+            {"MaxConcurrency": EJT.JSONATA_NUMBER_EXPRESSION},
+            {"ToleratedFailurePercentage": EJT.JSONATA_NUMBER_EXPRESSION},
+            {"ToleratedFailureCount": EJT.JSONATA_NUMBER_EXPRESSION},
+        ],
+        ids=[
+            "MAX_CONCURRENCY",
+            "TOLERATED_FAILURE_PERCENTAGE",
+            "TOLERATED_FAILURE_COUNT",
+        ],
+    )
+    def test_base_map_state_inspect(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        sfn_snapshot,
+        expression_dict,
+        inspection_level,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.resource_name())
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        template = TST.load_sfn_template(TST.BASE_MAP_STATE)
+        template.update(expression_dict)
+
+        definition = json.dumps(template)
+
+        test_case_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=BASE_MAP_STATE_INPUT,
+            inspectionLevel=inspection_level,
+            mock={"result": json.dumps([1, 1, 1])},
+        )
+        sfn_snapshot.match("test_case_response", test_case_response)
+
+    @markers.aws.validated
+    @pytest.mark.parametrize(
+        "inspection_level", [InspectionLevel.INFO, InspectionLevel.DEBUG, InspectionLevel.TRACE]
+    )
+    def test_state_task_catch_error(
+        self,
+        aws_client,
+        aws_client_no_sync_prefix,
+        create_state_machine_iam_role,
+        sfn_snapshot,
+        inspection_level,
+    ):
+        sfn_snapshot.add_transformer(sfn_snapshot.transform.resource_name())
+
+        sfn_role_arn = create_state_machine_iam_role(aws_client)
+        template = TST.load_sfn_template(TST.BASE_TASK_STATE_CATCH)
+        definition = json.dumps(template)
+
+        catch_mock_exception_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=HELLO_WORLD_INPUT,
+            inspectionLevel=inspection_level,
+            mock={
+                "errorOutput": {"error": "MockException", "cause": "Mock the cause of the error."}
+            },
+        )
+
+        sfn_snapshot.match("test_catch_mock_exception_response", catch_mock_exception_response)
+
+        catch_task_failed_response = aws_client_no_sync_prefix.stepfunctions.test_state(
+            definition=definition,
+            roleArn=sfn_role_arn,
+            input=HELLO_WORLD_INPUT,
+            inspectionLevel=inspection_level,
+            mock={"errorOutput": {"error": "States.TaskFailed", "cause": "The task failed."}},
+        )
+
+        sfn_snapshot.match("catch_task_failed_response", catch_task_failed_response)

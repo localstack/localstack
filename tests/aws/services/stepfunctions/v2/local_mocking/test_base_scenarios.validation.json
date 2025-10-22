@@ -1,0 +1,83 @@
+{
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_dynamodb_put_get_item": {
+    "last_validated_date": "2025-10-28T09:45:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 23.19,
+      "teardown": 1.78,
+      "total": 24.97
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_events_put_events": {
+    "last_validated_date": "2025-10-28T09:45:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 13.95,
+      "teardown": 2.44,
+      "total": 16.39
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke": {
+    "last_validated_date": "2025-10-28T09:43:43+00:00",
+    "durations_in_seconds": {
+      "setup": 10.55,
+      "call": 16.82,
+      "teardown": 2.19,
+      "total": 29.56
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke": {
+    "last_validated_date": "2025-10-28T09:44:02+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.4,
+      "teardown": 2.25,
+      "total": 18.65
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke_sync_execution": {
+    "last_validated_date": "2025-10-28T09:44:20+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.81,
+      "teardown": 1.95,
+      "total": 17.76
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_map_state_lambda": {
+    "last_validated_date": "2025-10-28T09:45:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 20.99,
+      "teardown": 2.51,
+      "total": 23.5
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_lambda": {
+    "last_validated_date": "2025-10-28T10:20:00+00:00",
+    "durations_in_seconds": {
+      "setup": 11.86,
+      "call": 19.2,
+      "teardown": 3.44,
+      "total": 34.5
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_sns_publish_base": {
+    "last_validated_date": "2025-10-28T09:44:54+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 15.03,
+      "teardown": 1.98,
+      "total": 17.01
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_sqs_send_message": {
+    "last_validated_date": "2025-10-28T10:04:28+00:00",
+    "durations_in_seconds": {
+      "setup": 11.84,
+      "call": 15.44,
+      "teardown": 2.01,
+      "total": 29.29
+    }
+  }
+}

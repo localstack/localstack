@@ -7,6 +7,9 @@ from localstack.services.stepfunctions.asl.component.common.error_name.failure_e
     FailureEventException,
 )
 from localstack.services.stepfunctions.asl.component.state.state import CommonStateField
+from localstack.services.stepfunctions.asl.component.state.state_continue_with import (
+    ContinueWithEnd,
+)
 from localstack.services.stepfunctions.asl.component.state.state_fail.cause_decl import CauseDecl
 from localstack.services.stepfunctions.asl.component.state.state_fail.error_decl import ErrorDecl
 from localstack.services.stepfunctions.asl.component.state.state_props import StateProps
@@ -27,6 +30,7 @@ class StateFail(CommonStateField):
         super().from_state_props(state_props)
         self.cause = state_props.get(CauseDecl)
         self.error = state_props.get(ErrorDecl)
+        self.continue_with = ContinueWithEnd()
 
     def _eval_state(self, env: Environment) -> None:
         task_failed_event_details = TaskFailedEventDetails()

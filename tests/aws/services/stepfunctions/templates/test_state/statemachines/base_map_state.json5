@@ -1,0 +1,27 @@
+{
+  "Comment": "BASE_MAP_STATE",
+  "Type": "Map",
+  "QueryLanguage": "JSONata",
+  "Items": "{% $states.input.Values %}",
+  "ItemProcessor": {
+    "ProcessorConfig": {
+      "Mode": "DISTRIBUTED",
+      "ExecutionType": "STANDARD"
+    },
+    "StartAt": "TestState",
+    "States": {
+      "TestState": {
+        "Type": "Task",
+        "QueryLanguage": "JSONata",
+        "Resource": "arn:aws:states:::lambda:invoke",
+        "Arguments": {
+          "FunctionName": "foo",
+          "Payload": "bar"
+        },
+        "End": true
+      }
+    }
+  },
+  "Output": "{% $states %}",
+  "End": true
+}

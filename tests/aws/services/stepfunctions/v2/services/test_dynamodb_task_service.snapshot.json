@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_GET_ITEM]": {
-    "recorded-date": "03-02-2025, 16:31:26",
+    "recorded-date": "06-11-2025, 23:10:57",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -334,10 +334,10 @@
                     "Server": [
                       "Server"
                     ],
+                    "x-amzn-requestid": "x-amzn-requestid",
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "53"
@@ -354,7 +354,7 @@
                     "Date": "date",
                     "Server": "Server",
                     "x-amz-crc32": "x-amz-crc32",
-                    "x-amzn-RequestId": "x-amzn-RequestId"
+                    "x-amzn-requestid": "x-amzn-requestid"
                   },
                   "HttpStatusCode": 200
                 },
@@ -445,10 +445,10 @@
                       "Server": [
                         "Server"
                       ],
+                      "x-amzn-requestid": "x-amzn-requestid",
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": "x-amzn-RequestId",
                       "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "53"
@@ -465,7 +465,7 @@
                       "Date": "date",
                       "Server": "Server",
                       "x-amz-crc32": "x-amz-crc32",
-                      "x-amzn-RequestId": "x-amzn-RequestId"
+                      "x-amzn-requestid": "x-amzn-requestid"
                     },
                     "HttpStatusCode": 200
                   },
@@ -552,10 +552,10 @@
                       "Server": [
                         "Server"
                       ],
+                      "x-amzn-requestid": "x-amzn-requestid",
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": "x-amzn-RequestId",
                       "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "53"
@@ -572,7 +572,7 @@
                       "Date": "date",
                       "Server": "Server",
                       "x-amz-crc32": "x-amz-crc32",
-                      "x-amzn-RequestId": "x-amzn-RequestId"
+                      "x-amzn-requestid": "x-amzn-requestid"
                     },
                     "HttpStatusCode": 200
                   },
@@ -599,7 +599,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_DELETE_ITEM]": {
-    "recorded-date": "03-02-2025, 16:31:51",
+    "recorded-date": "06-11-2025, 23:11:20",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1174,7 +1174,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_UPDATE_GET_ITEM]": {
-    "recorded-date": "03-02-2025, 16:34:47",
+    "recorded-date": "06-11-2025, 23:11:42",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1813,10 +1813,10 @@
                     "Server": [
                       "Server"
                     ],
+                    "x-amzn-requestid": "x-amzn-requestid",
                     "Connection": [
                       "keep-alive"
                     ],
-                    "x-amzn-RequestId": "x-amzn-RequestId",
                     "x-amz-crc32": "x-amz-crc32",
                     "Content-Length": [
                       "83"
@@ -1833,7 +1833,7 @@
                     "Date": "date",
                     "Server": "Server",
                     "x-amz-crc32": "x-amz-crc32",
-                    "x-amzn-RequestId": "x-amzn-RequestId"
+                    "x-amzn-requestid": "x-amzn-requestid"
                   },
                   "HttpStatusCode": 200
                 },
@@ -1966,10 +1966,10 @@
                       "Server": [
                         "Server"
                       ],
+                      "x-amzn-requestid": "x-amzn-requestid",
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": "x-amzn-RequestId",
                       "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "83"
@@ -1986,7 +1986,7 @@
                       "Date": "date",
                       "Server": "Server",
                       "x-amz-crc32": "x-amz-crc32",
-                      "x-amzn-RequestId": "x-amzn-RequestId"
+                      "x-amzn-requestid": "x-amzn-requestid"
                     },
                     "HttpStatusCode": 200
                   },
@@ -2115,10 +2115,10 @@
                       "Server": [
                         "Server"
                       ],
+                      "x-amzn-requestid": "x-amzn-requestid",
                       "Connection": [
                         "keep-alive"
                       ],
-                      "x-amzn-RequestId": "x-amzn-RequestId",
                       "x-amz-crc32": "x-amz-crc32",
                       "Content-Length": [
                         "83"
@@ -2135,7 +2135,7 @@
                       "Date": "date",
                       "Server": "Server",
                       "x-amz-crc32": "x-amz-crc32",
-                      "x-amzn-RequestId": "x-amzn-RequestId"
+                      "x-amzn-requestid": "x-amzn-requestid"
                     },
                     "HttpStatusCode": 200
                   },
@@ -2162,7 +2162,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_invalid_integration": {
-    "recorded-date": "03-02-2025, 16:35:03",
+    "recorded-date": "06-11-2025, 23:12:21",
     "recorded-content": {
       "exception": {
         "exception_typename": "InvalidDefinition",
@@ -2171,7 +2171,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/services/test_dynamodb_task_service.py::TestTaskServiceDynamoDB::test_base_integrations[DYNAMODB_PUT_QUERY]": {
-    "recorded-date": "05-02-2025, 09:50:00",
+    "recorded-date": "06-11-2025, 23:12:05",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2496,11 +2496,11 @@
                 "Count": 1,
                 "Items": [
                   {
-                    "data": {
-                      "S": "HelloWorld"
-                    },
                     "id": {
                       "S": "id1"
+                    },
+                    "data": {
+                      "S": "HelloWorld"
                     }
                   }
                 ],
@@ -2579,11 +2579,11 @@
                   "Count": 1,
                   "Items": [
                     {
-                      "data": {
-                        "S": "HelloWorld"
-                      },
                       "id": {
                         "S": "id1"
+                      },
+                      "data": {
+                        "S": "HelloWorld"
                       }
                     }
                   ],
@@ -2658,11 +2658,11 @@
                   "Count": 1,
                   "Items": [
                     {
-                      "data": {
-                        "S": "HelloWorld"
-                      },
                       "id": {
                         "S": "id1"
+                      },
+                      "data": {
+                        "S": "HelloWorld"
                       }
                     }
                   ],

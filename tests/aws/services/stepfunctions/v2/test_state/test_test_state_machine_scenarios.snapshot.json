@@ -1,0 +1,349 @@
+{
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[INFO-BASE_PASS_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:22:06",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[INFO-BASE_FAIL_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:22:21",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[DEBUG-BASE_PASS_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:22:51",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[DEBUG-BASE_FAIL_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:23:06",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[TRACE-BASE_PASS_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:23:35",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[TRACE-BASE_FAIL_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:23:49",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[INFO-State0]": {
+    "recorded-date": "14-11-2025, 13:11:27",
+    "recorded-content": {
+      "test_case_response": {
+        "nextState": "State1",
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[INFO-State1]": {
+    "recorded-date": "14-11-2025, 13:11:43",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[DEBUG-State0]": {
+    "recorded-date": "14-11-2025, 13:11:58",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "nextState": "State1",
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[DEBUG-State1]": {
+    "recorded-date": "14-11-2025, 13:12:12",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[TRACE-State0]": {
+    "recorded-date": "14-11-2025, 13:12:27",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "nextState": "State1",
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_multi_state[TRACE-State1]": {
+    "recorded-date": "14-11-2025, 13:12:42",
+    "recorded-content": {
+      "test_case_response": {
+        "cause": "This state machines raises a 'SomeFailure' failure.",
+        "error": "SomeFailure",
+        "inspectionData": {
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "status": "FAILED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_validation_failures[dne]": {
+    "recorded-date": "29-10-2025, 11:53:42",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: State not found in definition"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_validation_failures[invalid]": {
+    "recorded-date": "29-10-2025, 11:53:57",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ValidationException",
+        "exception_value": "An error occurred (ValidationException) when calling the TestState operation: State not found in definition"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name_validation_failures[empty]": {
+    "recorded-date": "29-10-2025, 11:54:11",
+    "recorded-content": {
+      "exception": {
+        "exception_typename": "ParamValidationError",
+        "exception_value": "Parameter validation failed:\nInvalid length for parameter stateName, value: 0, valid min length: 1"
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[INFO-BASE_MAP_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:22:36",
+    "recorded-content": {
+      "test_case_response": {
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[DEBUG-BASE_MAP_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:23:20",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_state/test_test_state_machine_scenarios.py::TestStateMachineScenarios::test_base_state_name[TRACE-BASE_MAP_STATE_MACHINE]": {
+    "recorded-date": "14-11-2025, 13:24:04",
+    "recorded-content": {
+      "test_case_response": {
+        "inspectionData": {
+          "afterInputPath": {
+            "Value": "HelloWorld"
+          },
+          "afterParameters": {
+            "Value": "HelloWorld"
+          },
+          "afterResultPath": {
+            "Value": "HelloWorld"
+          },
+          "afterResultSelector": {
+            "Value": "HelloWorld"
+          },
+          "input": {
+            "Value": "HelloWorld"
+          }
+        },
+        "output": {
+          "Value": "HelloWorld"
+        },
+        "status": "SUCCEEDED",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 import abc
 from typing import Any, Final
 
-from localstack.services.stepfunctions.mocking.mock_config_file import (
+from localstack.services.stepfunctions.local_mocking.mock_config_file import (
     RawMockConfig,
     RawResponseModel,
     RawTestCase,
@@ -9,7 +9,7 @@ from localstack.services.stepfunctions.mocking.mock_config_file import (
 )
 
 
-class MockedResponse(abc.ABC):
+class LocalMockedResponse(abc.ABC):
     range_start: Final[int]
     range_end: Final[int]
 
@@ -28,7 +28,7 @@ class MockedResponse(abc.ABC):
         self.range_end = range_end
 
 
-class MockedResponseReturn(MockedResponse):
+class LocalMockedResponseReturn(LocalMockedResponse):
     payload: Final[Any]
 
     def __init__(self, range_start: int, range_end: int, payload: Any):
@@ -36,7 +36,7 @@ class MockedResponseReturn(MockedResponse):
         self.payload = payload
 
 
-class MockedResponseThrow(MockedResponse):
+class LocalMockedResponseThrow(LocalMockedResponse):
     error: Final[str]
     cause: Final[str]
 
@@ -49,10 +49,13 @@ class MockedResponseThrow(MockedResponse):
 class StateMockedResponses:
     state_name: Final[str]
     mocked_response_name: Final[str]
-    mocked_responses: Final[list[MockedResponse]]
+    mocked_responses: Final[list[LocalMockedResponse]]
 
     def __init__(
-        self, state_name: str, mocked_response_name: str, mocked_responses: list[MockedResponse]
+        self,
+        state_name: str,
+        mocked_response_name: str,
+        mocked_responses: list[LocalMockedResponse],
     ):
         self.state_name = state_name
         self.mocked_response_name = mocked_response_name
@@ -74,7 +77,7 @@ class StateMockedResponses:
             last_range_end = mocked_response.range_end
 
 
-class MockTestCase:
+class LocalMockTestCase:
     state_machine_name: Final[str]
     test_case_name: Final[str]
     state_mocked_responses: Final[dict[str, StateMockedResponses]]
@@ -127,13 +130,15 @@ def _parse_mocked_response_range(string_definition: str) -> tuple[int, int]:
 
 def _mocked_response_from_raw(
     raw_response_model_range: str, raw_response_model: RawResponseModel
-) -> MockedResponse:
+) -> LocalMockedResponse:
     range_start, range_end = _parse_mocked_response_range(raw_response_model_range)
     if raw_response_model.Return:
         payload = raw_response_model.Return.model_dump()
-        return MockedResponseReturn(range_start=range_start, range_end=range_end, payload=payload)
+        return LocalMockedResponseReturn(
+            range_start=range_start, range_end=range_end, payload=payload
+        )
     throw_definition = raw_response_model.Throw
-    return MockedResponseThrow(
+    return LocalMockedResponseThrow(
         range_start=range_start,
         range_end=range_end,
         error=throw_definition.Error,
@@ -143,7 +148,7 @@ def _mocked_response_from_raw(
 
 def _mocked_responses_from_raw(
     mocked_response_name: str, raw_mock_config: RawMockConfig
-) -> list[MockedResponse]:
+) -> list[LocalMockedResponse]:
     raw_response_models: dict[str, RawResponseModel] | None = raw_mock_config.MockedResponses.get(
         mocked_response_name
     )
@@ -151,9 +156,9 @@ def _mocked_responses_from_raw(
         raise RuntimeError(
             f"No definitions for mocked response '{mocked_response_name}' in the mock configuration file."
         )
-    mocked_responses: list[MockedResponse] = []
+    mocked_responses: list[LocalMockedResponse] = []
     for raw_response_model_range, raw_response_model in raw_response_models.items():
-        mocked_response: MockedResponse = _mocked_response_from_raw(
+        mocked_response: LocalMockedResponse = _mocked_response_from_raw(
             raw_response_model_range=raw_response_model_range, raw_response_model=raw_response_model
         )
         mocked_responses.append(mocked_response)
@@ -175,7 +180,7 @@ def _state_mocked_responses_from_raw(
 
 def _mock_test_case_from_raw(
     state_machine_name: str, test_case_name: str, raw_mock_config: RawMockConfig
-) -> MockTestCase:
+) -> LocalMockTestCase:
     state_machine = raw_mock_config.StateMachines.get(state_machine_name)
     if not state_machine:
         raise RuntimeError(
@@ -195,18 +200,20 @@ def _mock_test_case_from_raw(
             raw_mock_config=raw_mock_config,
         )
         state_mocked_responses_list.append(state_mocked_responses)
-    return MockTestCase(
+    return LocalMockTestCase(
         state_machine_name=state_machine_name,
         test_case_name=test_case_name,
         state_mocked_responses_list=state_mocked_responses_list,
     )
 
 
-def load_mock_test_case_for(state_machine_name: str, test_case_name: str) -> MockTestCase | None:
+def load_local_mock_test_case_for(
+    state_machine_name: str, test_case_name: str
+) -> LocalMockTestCase | None:
     raw_mock_config: RawMockConfig | None = _load_sfn_raw_mock_config()
     if raw_mock_config is None:
         return None
-    mock_test_case: MockTestCase = _mock_test_case_from_raw(
+    mock_test_case: LocalMockTestCase = _mock_test_case_from_raw(
         state_machine_name=state_machine_name,
         test_case_name=test_case_name,
         raw_mock_config=raw_mock_config,

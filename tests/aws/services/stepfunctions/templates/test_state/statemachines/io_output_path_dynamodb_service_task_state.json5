@@ -1,0 +1,11 @@
+{
+  "Type": "Task",
+  "Resource": "arn:aws:states:::dynamodb:putItem",
+  "Parameters": {
+    "TableName.$": "$.TableName",
+    "Item.$": "$.Item"
+  },
+  "ResultPath": "$.putItemOutput",
+  "OutputPath": "$.putItemOutput",
+  "End": true
+}

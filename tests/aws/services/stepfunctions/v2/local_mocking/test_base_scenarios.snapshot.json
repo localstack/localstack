@@ -1,6 +1,6 @@
 {
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke": {
-    "recorded-date": "14-04-2025, 18:51:50",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke": {
+    "recorded-date": "28-10-2025, 09:44:00",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -436,8 +436,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke": {
-    "recorded-date": "22-04-2025, 10:30:21",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_invoke": {
+    "recorded-date": "28-10-2025, 09:43:41",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -543,8 +543,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sqs_send_message": {
-    "recorded-date": "22-04-2025, 19:39:14",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_sqs_send_message": {
+    "recorded-date": "28-10-2025, 10:04:26",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -739,8 +739,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_sns_publish_base": {
-    "recorded-date": "23-04-2025, 13:52:23",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_sns_publish_base": {
+    "recorded-date": "28-10-2025, 09:44:52",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -938,8 +938,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_events_put_events": {
-    "recorded-date": "23-04-2025, 14:28:24",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_events_put_events": {
+    "recorded-date": "28-10-2025, 09:45:08",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1083,8 +1083,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_dynamodb_put_get_item": {
-    "recorded-date": "23-04-2025, 15:32:30",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_dynamodb_put_get_item": {
+    "recorded-date": "28-10-2025, 09:45:33",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -1646,8 +1646,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_map_state_lambda": {
-    "recorded-date": "24-04-2025, 11:11:05",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_map_state_lambda": {
+    "recorded-date": "28-10-2025, 09:45:56",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2064,8 +2064,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_lambda": {
-    "recorded-date": "28-04-2025, 12:36:06",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_parallel_state_lambda": {
+    "recorded-date": "28-10-2025, 10:19:56",
     "recorded-content": {
       "get_execution_history": {
         "events": [
@@ -2162,49 +2162,7 @@
             "previousEventId": 0,
             "stateExitedEventDetails": {
               "name": "Branch1",
-              "output": {
-                "ExecutedVersion": "$LATEST",
-                "Payload": [
-                  "string-literal"
-                ],
-                "SdkHttpMetadata": {
-                  "AllHttpHeaders": {
-                    "X-Amz-Executed-Version": [
-                      "$LATEST"
-                    ],
-                    "x-amzn-Remapped-Content-Length": [
-                      "0"
-                    ],
-                    "Connection": [
-                      "keep-alive"
-                    ],
-                    "x-amzn-RequestId": "x-amzn-RequestId",
-                    "Content-Length": [
-                      "18"
-                    ],
-                    "Date": "date",
-                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                    "Content-Type": [
-                      "application/json"
-                    ]
-                  },
-                  "HttpHeaders": {
-                    "Connection": "keep-alive",
-                    "Content-Length": "18",
-                    "Content-Type": "application/json",
-                    "Date": "date",
-                    "X-Amz-Executed-Version": "$LATEST",
-                    "x-amzn-Remapped-Content-Length": "0",
-                    "x-amzn-RequestId": "x-amzn-RequestId",
-                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-                  },
-                  "HttpStatusCode": 200
-                },
-                "SdkResponseMetadata": {
-                  "RequestId": "RequestId"
-                },
-                "StatusCode": 200
-              },
+              "output": "stateExitedEventDetails.output",
               "outputDetails": {
                 "truncated": false
               }
@@ -2219,47 +2177,7 @@
             "previousEventId": 0,
             "stateExitedEventDetails": {
               "name": "Branch2",
-              "output": {
-                "ExecutedVersion": "$LATEST",
-                "Payload": "input-event-['string-literal']",
-                "SdkHttpMetadata": {
-                  "AllHttpHeaders": {
-                    "X-Amz-Executed-Version": [
-                      "$LATEST"
-                    ],
-                    "x-amzn-Remapped-Content-Length": [
-                      "0"
-                    ],
-                    "Connection": [
-                      "keep-alive"
-                    ],
-                    "x-amzn-RequestId": "x-amzn-RequestId",
-                    "Content-Length": [
-                      "32"
-                    ],
-                    "Date": "date",
-                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id",
-                    "Content-Type": [
-                      "application/json"
-                    ]
-                  },
-                  "HttpHeaders": {
-                    "Connection": "keep-alive",
-                    "Content-Length": "32",
-                    "Content-Type": "application/json",
-                    "Date": "date",
-                    "X-Amz-Executed-Version": "$LATEST",
-                    "x-amzn-Remapped-Content-Length": "0",
-                    "x-amzn-RequestId": "x-amzn-RequestId",
-                    "X-Amzn-Trace-Id": "X-Amzn-Trace-Id"
-                  },
-                  "HttpStatusCode": 200
-                },
-                "SdkResponseMetadata": {
-                  "RequestId": "RequestId"
-                },
-                "StatusCode": 200
-              },
+              "output": "stateExitedEventDetails.output",
               "outputDetails": {
                 "truncated": false
               }
@@ -2448,7 +2366,7 @@
             "previousEventId": 13,
             "stateExitedEventDetails": {
               "name": "ParallelState",
-              "output": "[{\"ExecutedVersion\":\"$LATEST\",\"Payload\":[\"string-literal\"],\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"],\"Content-Length\":[\"18\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"18\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"},\"StatusCode\":200},{\"ExecutedVersion\":\"$LATEST\",\"Payload\":\"input-event-['string-literal']\",\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"],\"Content-Length\":[\"32\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"32\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"},\"StatusCode\":200}]",
+              "output": "stateExitedEventDetails.output",
               "outputDetails": {
                 "truncated": false
               }
@@ -2458,7 +2376,7 @@
           },
           {
             "executionSucceededEventDetails": {
-              "output": "[{\"ExecutedVersion\":\"$LATEST\",\"Payload\":[\"string-literal\"],\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"],\"Content-Length\":[\"18\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"18\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-0182b6d14f9778376d202e25;Parent=7880c132e0e2009b;Sampled=0;Lineage=1:816810b0:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"c455c86f-6cb5-4d5d-8a71-4f0a98b33059\"},\"StatusCode\":200},{\"ExecutedVersion\":\"$LATEST\",\"Payload\":\"input-event-['string-literal']\",\"SdkHttpMetadata\":{\"AllHttpHeaders\":{\"X-Amz-Executed-Version\":[\"$LATEST\"],\"x-amzn-Remapped-Content-Length\":[\"0\"],\"Connection\":[\"keep-alive\"],\"x-amzn-RequestId\":[\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"],\"Content-Length\":[\"32\"],\"Date\":[\"Mon, 28 Apr 2025 12:36:05 GMT\"],\"X-Amzn-Trace-Id\":[\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"],\"Content-Type\":[\"application/json\"]},\"HttpHeaders\":{\"Connection\":\"keep-alive\",\"Content-Length\":\"32\",\"Content-Type\":\"application/json\",\"Date\":\"Mon, 28 Apr 2025 12:36:05 GMT\",\"X-Amz-Executed-Version\":\"$LATEST\",\"x-amzn-Remapped-Content-Length\":\"0\",\"x-amzn-RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\",\"X-Amzn-Trace-Id\":\"Root=1-680f7635-5bd01853792e73951459090c;Parent=56aa9955dca169e9;Sampled=0;Lineage=1:786b2a01:0\"},\"HttpStatusCode\":200},\"SdkResponseMetadata\":{\"RequestId\":\"bee07bb2-41e2-4c9f-9f6f-1a70696cc112\"},\"StatusCode\":200}]",
+              "output": "executionSucceededEventDetails.output",
               "outputDetails": {
                 "truncated": false
               }
@@ -2476,8 +2394,8 @@
       }
     }
   },
-  "tests/aws/services/stepfunctions/v2/mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke_sync_execution": {
-    "recorded-date": "03-06-2025, 18:47:04",
+  "tests/aws/services/stepfunctions/v2/local_mocking/test_base_scenarios.py::TestBaseScenarios::test_lambda_service_invoke_sync_execution": {
+    "recorded-date": "28-10-2025, 09:44:18",
     "recorded-content": {
       "creation_response": {
         "creationDate": "datetime",
@@ -2489,7 +2407,7 @@
       },
       "start_execution_sync_response": {
         "billingDetails": {
-          "billedDurationInMilliseconds": 300,
+          "billedDurationInMilliseconds": 400,
           "billedMemoryUsedInMB": 64
         },
         "executionArn": "arn:<partition>:states:<region>:111111111111:express:<ArnPart_0idx>:<SyncExecArn_Part1_0idx>:<SyncExecArn_Part2_0idx>",

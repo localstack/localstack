@@ -1,33 +1,93 @@
 {
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke": {
-    "last_validated_date": "2023-06-22T11:39:30+00:00"
+    "last_validated_date": "2025-11-06T12:31:50+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.88,
+      "teardown": 2.88,
+      "total": 19.76
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_bytes_payload": {
-    "last_validated_date": "2023-08-04T08:48:27+00:00"
+    "last_validated_date": "2025-11-06T12:32:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.23,
+      "teardown": 2.73,
+      "total": 18.96
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0.0]": {
-    "last_validated_date": "2023-08-04T14:04:46+00:00"
+    "last_validated_date": "2025-11-06T12:33:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.33,
+      "teardown": 2.8,
+      "total": 19.13
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0_0]": {
-    "last_validated_date": "2023-08-04T14:05:04+00:00"
+    "last_validated_date": "2025-11-06T12:33:25+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.29,
+      "teardown": 2.79,
+      "total": 19.08
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[0_1]": {
-    "last_validated_date": "2023-08-04T14:05:23+00:00"
+    "last_validated_date": "2025-11-06T12:33:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.7,
+      "teardown": 2.84,
+      "total": 19.54
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[HelloWorld]": {
-    "last_validated_date": "2023-08-04T14:04:28+00:00"
+    "last_validated_date": "2025-11-06T12:32:47+00:00",
+    "durations_in_seconds": {
+      "setup": 0.01,
+      "call": 16.35,
+      "teardown": 2.87,
+      "total": 19.23
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[True]": {
-    "last_validated_date": "2023-08-04T14:05:41+00:00"
+    "last_validated_date": "2025-11-06T12:34:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.45,
+      "teardown": 3.0,
+      "total": 19.45
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value5]": {
-    "last_validated_date": "2023-08-04T14:05:59+00:00"
+    "last_validated_date": "2025-11-06T12:34:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.33,
+      "teardown": 2.85,
+      "total": 19.18
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_json_values[json_value6]": {
-    "last_validated_date": "2023-08-04T14:06:16+00:00"
+    "last_validated_date": "2025-11-06T12:34:43+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.16,
+      "teardown": 2.83,
+      "total": 18.99
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_invoke_unsupported_param": {
-    "last_validated_date": "2023-06-22T12:15:28+00:00"
+    "last_validated_date": "2025-11-06T12:32:28+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 16.45,
+      "teardown": 2.34,
+      "total": 18.79
+    }
   },
   "tests/aws/services/stepfunctions/v2/services/test_lambda_task_service.py::TestTaskServiceLambda::test_list_functions": {
     "last_validated_date": "2023-05-11T09:29:56+00:00"

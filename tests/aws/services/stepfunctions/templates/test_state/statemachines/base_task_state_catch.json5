@@ -1,0 +1,23 @@
+{
+  "Comment": "BASE_TASK_STATE_CATCH",
+  "QueryLanguage": "JSONata",
+  "Type": "Task",
+  "Resource": "arn:aws:states:::lambda:invoke",
+  "Arguments": {
+    "FunctionName": "foo",
+    "Payload": "bar"
+  },
+  "Catch": [
+    {
+      "ErrorEquals": ["MockException"],
+      "Output": "{% $states %}",
+      "Next": "HandleMockError"
+    },
+    {
+      "ErrorEquals": ["States.TaskFailed"],
+      "Output": "{% $states %}",
+      "Next": "HandleThreshold"
+    }
+  ],
+  "End": true
+}
