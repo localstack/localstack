@@ -40,6 +40,10 @@ class LockedFileMixin:
         # this lock allows us to make `seek` and `read` operation as an atomic one, without an external reader
         # modifying the internal position of the stream
         self.position_lock = RLock()
+        # these locks are for the read/write lock issues. No writer should modify the object while a reader is
+        # currently iterating over it.
+        # see:
+        self.readwrite_lock = rwlock.RWLockWrite()
         self.internal_last_modified = 0
 
 
@@ -67,7 +71,6 @@ class EphemeralS3StoredObject(S3StoredObject):
         self,
         s3_object: S3Object | S3Part,
         file: LockedSpooledTemporaryFile,
-        lock: rwlock.RWLockWrite,
         mode: Literal["r", "w"] = "r",
     ):
         super().__init__(s3_object=s3_object, mode=mode)
@@ -77,9 +80,11 @@ class EphemeralS3StoredObject(S3StoredObject):
         self.checksum_hash = None
         self._checksum = None
         self._pos = 0
-        # these locks are for the read/write lock issues. No writer should modify the object while a reader is
-        # currently iterating over it.
-        self._lock = lock.gen_wlock() if mode == "w" else lock.gen_rlock()
+        self._lock = (
+            self.file.readwrite_lock.gen_wlock()
+            if mode == "w"
+            else self.file.readwrite_lock.gen_rlock()
+        )
         self._lock.acquire()
 
     def read(self, s: int = -1) -> bytes | None:
@@ -251,7 +256,7 @@ class EphemeralS3StoredObject(S3StoredObject):
 class EphemeralS3StoredMultipart(S3StoredMultipart):
     upload_dir: str
     _s3_store: "EphemeralS3ObjectStore"
-    parts: dict[PartNumber, tuple[LockedSpooledTemporaryFile, rwlock.RWLockWrite]]
+    parts: dict[PartNumber, LockedSpooledTemporaryFile]
 
     def __init__(
         self,
@@ -272,14 +277,11 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param mode: opening mode, "read" or "write"
         :return: EphemeralS3StoredObject, most often to directly `write` into it.
         """
-        if not (file_and_lock := self.parts.get(s3_part.part_number)):
-            lock = rwlock.RWLockWrite()
+        if not (file := self.parts.get(s3_part.part_number)):
             file = LockedSpooledTemporaryFile(dir=self.upload_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
-            self.parts[s3_part.part_number] = (file, lock)
-        else:
-            file, lock = file_and_lock
+            self.parts[s3_part.part_number] = file
 
-        return EphemeralS3StoredObject(s3_part, file, mode=mode, lock=lock)
+        return EphemeralS3StoredObject(s3_part, file, mode=mode)
 
     def remove_part(self, s3_part: S3Part):
         """
@@ -287,8 +289,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         :param s3_part: S3Part
         :return:
         """
-        # the lock will be release because we always call `remove_part` inside `with open()`
-        stored_part_file, _ = self.parts.pop(s3_part.part_number, (None, None))
+        stored_part_file = self.parts.pop(s3_part.part_number, None)
         if stored_part_file:
             stored_part_file.close()
 
@@ -314,7 +315,7 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
         Iterates over all parts of the collection to close them and clean them up. Closing a part will delete it.
         :return:
         """
-        for stored_part_file, lock in self.parts.values():
+        for stored_part_file in self.parts.values():
             stored_part_file.close()
         self.parts.clear()
 
@@ -351,7 +352,6 @@ class EphemeralS3StoredMultipart(S3StoredMultipart):
 class BucketTemporaryFileSystem(TypedDict):
     keys: dict[str, LockedSpooledTemporaryFile]
     multiparts: dict[MultipartUploadId, EphemeralS3StoredMultipart]
-    _keys_locks: dict[str, rwlock.RWLockWrite]
 
 
 class EphemeralS3ObjectStore(S3ObjectStore):
@@ -372,7 +372,7 @@ class EphemeralS3ObjectStore(S3ObjectStore):
 
     def __init__(self, root_directory: str = None):
         self._filesystem: dict[BucketName, BucketTemporaryFileSystem] = defaultdict(
-            lambda: {"keys": {}, "multiparts": {}, "_keys_locks": {}}
+            lambda: {"keys": {}, "multiparts": {}}
         )
         # namespace the EphemeralS3ObjectStore artifacts under a single root directory, under gettempdir() if not
         # provided
@@ -394,20 +394,13 @@ class EphemeralS3ObjectStore(S3ObjectStore):
         :param mode: read or write mode for the object to open
         :return: EphemeralS3StoredObject
         """
-
-        if not (lock := self._filesystem.get(bucket, {}).get("_keys_locks", {}).get(s3_object.key)):
-            # we have a ReadWrite lock for the object itself, shared across object versions
-            # this is needed to avoid concurrent overwrite of latest object in the stack
-            lock = rwlock.RWLockWrite()
-            self._filesystem[bucket]["_keys_locks"][s3_object.key] = lock
-
         key = self._key_from_s3_object(s3_object)
         if not (file := self._get_object_file(bucket, key)):
             bucket_tmp_dir = os.path.join(self.root_directory, bucket)
             file = LockedSpooledTemporaryFile(dir=bucket_tmp_dir, max_size=S3_MAX_FILE_SIZE_BYTES)
             self._filesystem[bucket]["keys"][key] = file
 
-        return EphemeralS3StoredObject(s3_object=s3_object, file=file, mode=mode, lock=lock)
+        return EphemeralS3StoredObject(s3_object=s3_object, file=file, mode=mode)
 
     def remove(self, bucket: BucketName, s3_object: S3Object | list[S3Object]):
         """
