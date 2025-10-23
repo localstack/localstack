@@ -1,4 +1,13 @@
 {
+  "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_create_stack_url_as_template": {
+    "last_validated_date": "2025-10-23T19:25:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.82,
+      "call": 0.82,
+      "teardown": 0.02,
+      "total": 1.66
+    }
+  },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_failure_options_for_stack_update[False-2]": {
     "last_validated_date": "2024-06-25T17:21:51+00:00"
   },

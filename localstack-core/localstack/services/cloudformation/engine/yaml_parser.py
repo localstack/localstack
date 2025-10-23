@@ -1,5 +1,7 @@
 import yaml
 
+from localstack.services.cloudformation.engine.validations import ValidationError
+
 
 def construct_raw(_, node):
     return node.value
@@ -60,5 +62,10 @@ customloader = NoDatesSafeLoader
 yaml.add_multi_constructor("!", shorthand_constructor, customloader)
 
 
-def parse_yaml(input_data: str):
-    return yaml.load(input_data, customloader)
+def parse_yaml(input_data: str) -> dict:
+    parsed = yaml.load(input_data, Loader=customloader)
+
+    if not isinstance(parsed, dict):
+        raise ValidationError("Template format error: unsupported structure.")
+
+    return parsed
