@@ -98,8 +98,10 @@ def extract_resource_from_arn(arn: str) -> str | None:
 #
 
 
-def _resource_arn(name: str, pattern: str, account_id: str, region_name: str) -> str:
-    if ":" in name:
+def _resource_arn(
+    name: str, pattern: str, account_id: str, region_name: str, allow_colons=False
+) -> str:
+    if ":" in name and not allow_colons:
         return name
     if len(pattern.split("%s")) == 4:
         return pattern % (get_partition(region_name), account_id, name)
