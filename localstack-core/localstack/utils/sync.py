@@ -141,3 +141,127 @@ class SynchronizedDefaultDict(defaultdict):
     def __str__(self):
         with self._lock:
             return super().__str__()
+
+
+class Once:
+    """
+    An object that will perform an action exactly once.
+    Inspired by Golang's [sync.Once](https://pkg.go.dev/sync#Once) operation.
+
+
+    ### Example 1
+
+    Multiple threads using `Once::do` to ensure only 1 line is printed.
+
+    ```python
+    import threading
+    import time
+    import random
+
+    greet_once = Once()
+    def greet():
+        print("This should happen only once.")
+
+    greet_threads = []
+    for _ in range(10):
+        t = threading.Thread(target=lambda: greet_once.do(greet))
+        greet_threads.append(t)
+        t.start()
+
+    for t in greet_threads:
+        t.join()
+    ```
+
+
+    ### Example 2
+
+    Ensuring idemponent calling to prevent exceptions on multiple calls.
+
+    ```python
+    import os
+
+    class Service:
+        close_once: sync.Once
+
+    def start(self):
+        with open("my-service.txt) as f:
+            myfile.write("Started service")
+
+    def close(self):
+        # Ensure we only ever delete the file once on close
+        self.close_once.do(lambda: os.remove("my-service.txt"))
+
+    ```
+
+
+    """
+
+    _is_done: bool = False
+    _mu: threading.Lock = threading.Lock()
+
+    def do(self, fn: Callable[[], None]):
+        """
+        `do` calls the function `fn()` if-and-only-if `do` has never been called before.
+
+        This ensures idempotent and thread-safe execution.
+
+        If the function raises an exception, `do` considers `fn` as done, where subsequent calls are still no-ops.
+        """
+        if self._is_done:
+            return
+
+        with self._mu:
+            if not self._is_done:
+                try:
+                    fn()
+                finally:
+                    self._is_done = True
+
+
+def once_func(fn: Callable[..., T]) -> Callable[..., T | None]:
+    """
+    Wraps and returns a function that can only ever execute once.
+
+    The first call to the returned function will permanently set the result.
+    If the wrapped function raises an exception, this will be re-raised on each subsequent call.
+
+    This function can be used either as a decorator or called directly.
+
+    Direct usage:
+    ```python
+    delete_file = once_func(os.remove)
+
+    delete_file("myfile.txt")  # deletes the file
+    delete_file("myfile.txt")  # does nothing
+    ```
+
+    As a decorator:
+    ```python
+    @once_func
+    def delete_file():
+        os.remove("myfile.txt")
+
+    delete_file()  # deletes the file
+    delete_file()  # does nothing
+    ```
+    """
+    once = Once()
+
+    result, exception = None, None
+
+    def _do(*args, **kwargs):
+        nonlocal result, exception
+        try:
+            result = fn(*args, **kwargs)
+        except Exception as e:
+            exception = e
+            raise
+
+    @functools.wraps(fn)
+    def wrapper(*args, **kwargs):
+        once.do(lambda: _do(*args, **kwargs))
+        if exception is not None:
+            raise exception
+        return result
+
+    return wrapper
