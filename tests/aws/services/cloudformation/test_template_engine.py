@@ -1317,3 +1317,49 @@ class TestPseudoParameters:
         snapshot.add_transformer(snapshot.transform.regex(stack.stack_id, "<stack-id>"))
 
         snapshot.match("StackId", stack.outputs["StackId"])
+
+
+@pytest.fixture
+def create_invalid_change_set(aws_client):
+    """
+    Designed for use when we don't are about the result of the call, but only that the create_change_set call fails
+    """
+    change_set_ids = []
+
+    def create(template_body: str):
+        change_set_name = f"cs-{short_uid()}"
+        stack_name = f"stack-{short_uid()}"
+
+        result = aws_client.cloudformation.create_change_set(
+            StackName=stack_name,
+            ChangeSetName=change_set_name,
+            # TODO: parameters
+            TemplateBody=template_body,
+            ChangeSetType="CREATE",
+        )
+
+        change_set_ids.append(result["Id"])
+
+    yield create
+
+    for change_set_id in reversed(change_set_ids):
+        aws_client.cloudformation.delete_change_set(ChangeSetName=change_set_id)
+
+
+@skip_if_legacy_engine()
+class TestInvalidTemplates:
+    @markers.aws.validated
+    def test_non_parsable(self, create_invalid_change_set, snapshot):
+        template = "{"
+        with pytest.raises(ClientError) as exc_info:
+            create_invalid_change_set(template_body=template)
+
+        snapshot.match("error", exc_info.value.response)
+
+    @markers.aws.validated
+    def test_string_template(self, create_invalid_change_set, snapshot):
+        template = "test"
+        with pytest.raises(ClientError) as exc_info:
+            create_invalid_change_set(template_body=template)
+
+        snapshot.match("error", exc_info.value.response)
