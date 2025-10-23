@@ -183,28 +183,17 @@ class TestStacksApi:
 
             snapshot.match("stack_response", e.value.response)
 
-    @markers.aws.only_localstack
-    def test_create_stack_from_template(self, snapshot, aws_client):
+    @markers.aws.unknown
+    def test_create_stack_url_as_template(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 
         stack_name = f"stack-{short_uid()}"
 
-        result = aws_client.cloudformation.create_stack(
-            StackName=stack_name,
-            TemplateBody=load_file(
-                os.path.join(
-                    os.path.dirname(__file__), "../../../templates/ec2_cfn_init_template.yml"
-                )
-            ),
-        )
-        snapshot.match("stack_create_ec2", result)
+        template_url = "https://raw.githubusercontent.com/aws-cloudformation/aws-cloudformation-templates/refs/heads/main/EC2/InstanceWithCfnInit.yaml"
 
-        aws_client.cloudformation.get_waiter("stack_create_complete").wait(StackName=stack_name)
-
-        describe_result = aws_client.cloudformation.describe_stacks(StackName=stack_name)
-        snapshot.match("stack_description", describe_result)
-
-        aws_client.cloudformation.delete_stack(StackName=stack_name)
+        with pytest.raises(ClientError) as e:
+            aws_client.cloudformation.create_stack(StackName=stack_name, TemplateBody=template_url)
+        snapshot.match("stack_create_ec2", e.value)
 
     @markers.aws.validated
     @pytest.mark.parametrize("fileformat", ["yaml", "json"])
