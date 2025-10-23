@@ -183,7 +183,7 @@ class TestStacksApi:
 
             snapshot.match("stack_response", e.value.response)
 
-    @markers.aws.unknown
+    @markers.aws.validated
     def test_create_stack_url_as_template(self, snapshot, aws_client):
         snapshot.add_transformer(snapshot.transform.cloudformation_api())
 

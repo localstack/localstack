@@ -4349,7 +4349,7 @@
     }
   },
   "tests/aws/services/cloudformation/api/test_stacks.py::TestStacksApi::test_create_stack_url_as_template": {
-    "recorded-date": "23-10-2025, 18:51:49",
+    "recorded-date": "23-10-2025, 19:25:10",
     "recorded-content": {
       "stack_create_ec2": "An error occurred (ValidationError) when calling the CreateStack operation: Template format error: unsupported structure."
     }
