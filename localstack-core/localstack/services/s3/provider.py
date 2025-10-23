@@ -2675,6 +2675,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         elif if_none_match:
+            # TODO: improve concurrency mechanism for `if_none_match` and `if_match`
             if if_none_match != "*":
                 raise NotImplementedException(
                     "A header you provided implies functionality that is not implemented",
