@@ -24,5 +24,5 @@ Optional: How are the proposed changes tested?
 ## Related
 
 <!--
-Optional: Links to related issues and references.
+Optional: Links to related issues and references (e.g., Linear IDs).
 -->
