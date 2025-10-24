@@ -6312,6 +6312,7 @@ class TestS3PresignedUrl:
         finally:
             s3_presigned_client.meta.events.unregister("before-sign.s3.GetObject", add_query_param)
 
+    @markers.requires_in_process  # Patches skip signature validation
     @markers.aws.only_localstack
     def test_presign_check_signature_validation_for_port_permutation(
         self, s3_bucket, patch_s3_skip_signature_validation_false, aws_client
@@ -6354,6 +6355,7 @@ class TestS3PresignedUrl:
         assert response["Body"].read() == b"something"
         snapshot.match("get_object", response)
 
+    @markers.requires_in_process  # Patches skip signature validation
     @markers.aws.only_localstack
     def test_get_request_expires_ignored_if_validation_disabled(
         self, s3_bucket, monkeypatch, patch_s3_skip_signature_validation_false, aws_client
@@ -6917,6 +6919,7 @@ class TestS3PresignedUrl:
         exception["StatusCode"] = response.status_code
         snapshot.match("override-signed-qs", exception)
 
+    @markers.requires_in_process  # Patches skip signature validation
     @markers.aws.validated
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
     def test_s3_put_presigned_url_missing_sig_param(
@@ -6992,6 +6995,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="STS not enabled in S3 image")
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_with_session_token(
         self,
         s3_create_bucket_with_client,
@@ -7031,6 +7035,7 @@ class TestS3PresignedUrl:
 
     @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="STS not enabled in S3 image")
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_with_different_user_credentials(
         self,
         aws_client,
@@ -7102,6 +7107,7 @@ class TestS3PresignedUrl:
         assert response._content == b"test-value"
 
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     @pytest.mark.parametrize("signature_version", ["s3", "s3v4"])
     def test_s3_get_response_header_overrides(
         self, s3_bucket, signature_version, patch_s3_skip_signature_validation_false, aws_client
@@ -7358,6 +7364,7 @@ class TestS3PresignedUrl:
         ],
     )
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_presigned_url_signature_authentication_multi_part(
         self,
         s3_create_bucket,
@@ -7622,6 +7629,7 @@ class TestS3PresignedUrl:
         ["s3", "s3v4"],
     )
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     def test_s3_presign_url_encoding(
         self, aws_client, s3_bucket, signature_version, patch_s3_skip_signature_validation_false
     ):
@@ -10651,6 +10659,7 @@ class TestS3PresignedPost:
         "signature_version",
         ["s3", "s3v4"],
     )
+    @markers.requires_in_process  # Patches skip signature validation
     def test_post_request_malformed_policy(
         self,
         s3_bucket,
@@ -10693,6 +10702,7 @@ class TestS3PresignedPost:
         assert exception["Error"]["StringToSign"] == presigned_request["fields"]["policy"]
 
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     @pytest.mark.parametrize(
         "signature_version",
         ["s3", "s3v4"],
@@ -10734,6 +10744,7 @@ class TestS3PresignedPost:
         snapshot.match("exception-missing-signature", exception)
 
     @markers.aws.validated
+    @markers.requires_in_process  # Patches skip signature validation
     @pytest.mark.parametrize(
         "signature_version",
         ["s3", "s3v4"],

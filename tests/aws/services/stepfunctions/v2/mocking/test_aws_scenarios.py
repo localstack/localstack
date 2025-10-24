@@ -10,6 +10,7 @@ from tests.aws.services.stepfunctions.templates.mocked.mocked_templates import M
 
 
 class TestBaseScenarios:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_lambda_sqs_integration_happy_path(
         self,
@@ -46,6 +47,7 @@ class TestBaseScenarios:
         event_last = events[-1]
         assert event_last["type"] == "ExecutionSucceeded"
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_lambda_sqs_integration_retry_path(
         self,
@@ -103,6 +105,7 @@ class TestBaseScenarios:
         event_last = events[-1]
         assert event_last["type"] == "ExecutionSucceeded"
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_lambda_sqs_integration_hybrid_path(
         self,

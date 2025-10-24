@@ -82,6 +82,7 @@ def aws_sqs_client(aws_client, request: str) -> "SQSClient":
 
 
 class TestSqsProvider:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_get_queue_url_contains_localstack_host(
         self,
@@ -228,6 +229,7 @@ class TestSqsProvider:
             "You must wait 60 seconds after deleting a queue before you can create another with the same name."
         )
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_create_queue_recently_deleted_cache(
         self,
@@ -1642,6 +1644,7 @@ class TestSqsProvider:
         bodies = {message["Body"] for message in messages}
         assert bodies == {"0", "1", "2", "3", "4", "5", "6", "7", "8"}
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_external_endpoint(self, monkeypatch, sqs_create_queue, aws_sqs_client):
         external_host = "external-host"
@@ -1662,6 +1665,7 @@ class TestSqsProvider:
         receive_result = aws_sqs_client.receive_message(QueueUrl=queue_url)
         assert receive_result["Messages"][0]["Body"] == message_body
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_external_hostname_via_host_header(self, monkeypatch, sqs_create_queue, region_name):
         """test making a request with a different external hostname/port being returned"""
@@ -4122,6 +4126,7 @@ class TestSqsProvider:
         )
         assert int(approx_nr_of_messages["Attributes"]["ApproximateNumberOfMessages"]) == 0
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_list_queues_multi_region_without_endpoint_strategy(
         self, aws_client_factory, cleanups, monkeypatch
@@ -5325,6 +5330,7 @@ class TestSqsQueryApi:
         assert response.ok
         assert "foobar" in response.text
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_queue_url_format_path_strategy(
         self, sqs_create_queue, account_id, region_name, monkeypatch
