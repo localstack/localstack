@@ -1036,6 +1036,7 @@ class TestSES:
 
 @pytest.mark.usefixtures("openapi_validate")
 class TestSESRetrospection:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_send_email_can_retrospect(self, aws_client):
         # Test that sent emails can be retrospected through saved file and API access
@@ -1116,6 +1117,7 @@ class TestSESRetrospection:
         assert requests.delete(emails_url + f"?id={message2_id}").status_code == 204
         assert requests.get(emails_url).json() == {"messages": []}
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_send_templated_email_can_retrospect(self, create_template, aws_client):
         # Test that sent emails can be retrospected through saved file and API access

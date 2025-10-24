@@ -6354,6 +6354,7 @@ class TestS3PresignedUrl:
         assert response["Body"].read() == b"something"
         snapshot.match("get_object", response)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_get_request_expires_ignored_if_validation_disabled(
         self, s3_bucket, monkeypatch, patch_s3_skip_signature_validation_false, aws_client

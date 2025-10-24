@@ -16,6 +16,7 @@ API_KEY_ID = "ApiKeyId"
 
 # Custom ids can't be set on aws.
 @markers.aws.only_localstack
+@markers.requires_in_process
 def test_apigateway_custom_ids(
     aws_client, set_resource_custom_id, create_rest_apigw, account_id, region_name, cleanups
 ):

@@ -38,6 +38,7 @@ TEST_MESSAGE = "Test-message-2948294kdlsie"
 
 @pytest.mark.parametrize("lambda_processor_enabled", [True, False])
 @markers.aws.unknown
+@markers.requires_in_process  # uses pytest httpserver
 def test_kinesis_firehose_http(
     aws_client,
     lambda_processor_enabled: bool,

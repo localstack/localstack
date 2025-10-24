@@ -549,6 +549,7 @@ def test_lambda_cfn_run_with_empty_string_replacement_deny_list(
     )
 
 
+@markers.requires_in_process
 @markers.aws.only_localstack(reason="This is functionality specific to Localstack")
 def test_lambda_cfn_run_with_non_empty_string_replacement_deny_list(
     deploy_cfn_template, aws_client, get_function_envars, monkeypatch

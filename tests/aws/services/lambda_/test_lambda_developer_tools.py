@@ -36,6 +36,7 @@ class TestHotReloading:
         ids=["nodejs20.x", "python3.12"],
     )
     @markers.aws.only_localstack
+    @markers.requires_in_process
     def test_hot_reloading(
         self,
         create_lambda_function_aws,
@@ -165,6 +166,7 @@ class TestHotReloading:
                 Runtime=Runtime.python3_12,
             )
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_hot_reloading_environment_placeholder(
         self, create_lambda_function_aws, lambda_su_role, cleanups, aws_client, monkeypatch
@@ -198,6 +200,7 @@ class TestHotReloading:
 
 
 class TestDockerFlags:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_additional_docker_flags(self, create_lambda_function, monkeypatch, aws_client):
         env_value = short_uid()
@@ -214,6 +217,7 @@ class TestDockerFlags:
         result_data = json.load(result["Payload"])
         assert {"Hello": env_value} == result_data
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_lambda_docker_networks(self, lambda_su_role, monkeypatch, aws_client, cleanups):
         function_name = f"test-network-{short_uid()}"
