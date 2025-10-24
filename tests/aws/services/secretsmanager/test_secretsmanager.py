@@ -2535,6 +2535,7 @@ class TestSecretsManager:
         )
         sm_snapshot.match("secret_value_http_response", json_response)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_create_secret_with_custom_id(
         self, account_id, region_name, create_secret, set_resource_custom_id

@@ -11,6 +11,7 @@ from .test_integration import PARTITION_KEY
 
 
 class TestErrorInjection:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_kinesis_error_injection(
         self, monkeypatch, wait_for_stream_ready, aws_client, aws_client_factory
@@ -34,6 +35,7 @@ class TestErrorInjection:
         finally:
             aws_client.kinesis.delete_stream(StreamName=stream_name)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_dynamodb_error_injection(self, monkeypatch, aws_client, dynamodb_create_table):
         table_name = dynamodb_create_table()["TableDescription"]["TableName"]
@@ -51,6 +53,7 @@ class TestErrorInjection:
             )
         exc.match("ProvisionedThroughputExceededException")
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_dynamodb_read_error_injection(self, monkeypatch, aws_client, dynamodb_create_table):
         table_name = dynamodb_create_table()["TableDescription"]["TableName"]
@@ -68,6 +71,7 @@ class TestErrorInjection:
             )
         exc.match("ProvisionedThroughputExceededException")
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_dynamodb_write_error_injection(self, monkeypatch, aws_client, dynamodb_create_table):
         table_name = dynamodb_create_table()["TableDescription"]["TableName"]

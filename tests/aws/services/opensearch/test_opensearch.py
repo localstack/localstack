@@ -640,6 +640,7 @@ class TestOpensearchProvider:
             f"search unsuccessful({response.status_code}): {response.text}"
         )
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_endpoint_strategy_path(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "path")
@@ -653,6 +654,7 @@ class TestOpensearchProvider:
         endpoint = status["Endpoint"]
         assert endpoint.endswith(f"/{domain_name}")
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_endpoint_strategy_port(self, monkeypatch, opensearch_create_domain, aws_client):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
@@ -688,6 +690,7 @@ class TestOpensearchProvider:
 
 @markers.skip_offline
 class TestEdgeProxiedOpensearchCluster:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_route_through_edge(self):
         cluster_id = f"domain-{short_uid()}"
@@ -784,6 +787,7 @@ class TestEdgeProxiedOpensearchCluster:
 
 @markers.skip_offline
 class TestMultiClusterManager:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_multi_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
@@ -832,6 +836,7 @@ class TestMultiClusterManager:
 
 @markers.skip_offline
 class TestMultiplexingClusterManager:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_multiplexing_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
@@ -880,6 +885,7 @@ class TestMultiplexingClusterManager:
 
 @markers.skip_offline
 class TestSingletonClusterManager:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_endpoint_strategy_port_singleton_cluster(self, account_id, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "port")
@@ -926,6 +932,7 @@ class TestSingletonClusterManager:
 
 @markers.skip_offline
 class TestCustomBackendManager:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_custom_backend(self, account_id, httpserver, monkeypatch):
         monkeypatch.setattr(config, "OPENSEARCH_ENDPOINT_STRATEGY", "domain")
@@ -992,6 +999,7 @@ class TestCustomBackendManager:
 
         httpserver.check()
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_custom_backend_with_custom_endpoint(
         self,

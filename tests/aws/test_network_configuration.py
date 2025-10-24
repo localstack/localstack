@@ -27,6 +27,7 @@ class TestOpenSearch:
     OpenSearch does not respect any customisations and just returns a domain with localhost.localstack.cloud in.
     """
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_default_strategy(
         self, opensearch_create_domain, assert_host_customisation, aws_client
@@ -60,6 +61,7 @@ class TestOpenSearch:
 
         assert_host_customisation(endpoint)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_path_strategy(
         self,
@@ -81,6 +83,7 @@ class TestOpenSearch:
 
 class TestS3:
     @markers.aws.only_localstack
+    @markers.requires_in_process
     def test_non_us_east_1_location(
         self, s3_empty_bucket, cleanups, assert_host_customisation, aws_client_factory
     ):
@@ -101,6 +104,7 @@ class TestS3:
 
         assert_host_customisation(res["Location"])
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_multipart_upload(self, s3_bucket, assert_host_customisation, aws_client):
         key_name = f"key-{short_uid()}"
@@ -119,6 +123,7 @@ class TestS3:
 
         assert_host_customisation(res["Location"])
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_201_response(self, s3_bucket, assert_host_customisation, aws_client):
         key_name = f"key-{short_uid()}"
@@ -150,6 +155,7 @@ class TestSQS:
     * LOCALSTACK_HOST
     """
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_off_strategy_without_external_port(
         self, monkeypatch, sqs_create_queue, assert_host_customisation
@@ -162,6 +168,7 @@ class TestSQS:
         assert_host_customisation(queue_url)
         assert queue_name in queue_url
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_off_strategy_with_external_port(
         self, monkeypatch, sqs_create_queue, assert_host_customisation
@@ -181,6 +188,7 @@ class TestSQS:
         assert queue_name in queue_url
         assert f":{external_port}" in queue_url
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @pytest.mark.parametrize("strategy", ["standard", "domain"])
     def test_domain_based_strategies(
@@ -194,6 +202,7 @@ class TestSQS:
         assert_host_customisation(queue_url)
         assert queue_name in queue_url
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_path_strategy(self, monkeypatch, sqs_create_queue, assert_host_customisation):
         monkeypatch.setattr(config, "SQS_ENDPOINT_STRATEGY", "path")
@@ -206,6 +215,7 @@ class TestSQS:
 
 
 class TestLambda:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_function_url(self, assert_host_customisation, create_lambda_function, aws_client):
         function_name = f"function-{short_uid()}"
@@ -226,6 +236,7 @@ class TestLambda:
 
         assert_host_customisation(function_url)
 
+    @markers.requires_in_process
     @pytest.mark.skip(reason="Not implemented for new provider (was tested for old provider)")
     @markers.aws.only_localstack
     def test_http_api_for_function_url(

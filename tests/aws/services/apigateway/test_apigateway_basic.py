@@ -301,6 +301,7 @@ class TestAPIGateway:
     @pytest.mark.parametrize("disable_custom_cors", [True, False])
     @pytest.mark.parametrize("origin", ["http://allowed", "http://denied"])
     @markers.aws.only_localstack
+    @markers.requires_in_process
     def test_invoke_endpoint_cors_headers(
         self, url_type, disable_custom_cors, origin, monkeypatch, aws_client
     ):
