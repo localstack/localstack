@@ -101,7 +101,7 @@ jobs:
 
       - name: Upload generated markdown
         if: ${{ inputs.createIssue }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           path: ./target/MARKER_REPORT_ISSUE.md
 

@@ -195,7 +195,7 @@ jobs:
           key: ${{ steps.cached-lambda-common-restore.outputs.cache-primary-key }}
 
       - name: Archive Lambda common packages
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: lambda-common-${{ env.PLATFORM }}
           path: |
@@ -245,7 +245,7 @@ jobs:
 
       - name: Archive Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: test-selection
           path: |
@@ -296,7 +296,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-preflight
@@ -319,7 +319,7 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-preflight
 
@@ -382,7 +382,7 @@ jobs:
           fetch-depth: 0
 
       - name: Download Lambda Common packages
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: lambda-common-${{ env.PLATFORM }}
           path: |
@@ -395,7 +395,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-selection
           path: dist/testselection/
@@ -421,7 +421,7 @@ jobs:
           mv .test_durations .test_durations-${{ env.PLATFORM }}-${{ matrix.group }}
 
       - name: Archive Test Durations
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: pytest-split-durations-${{ env.PLATFORM }}-${{ matrix.group }}
@@ -430,7 +430,7 @@ jobs:
           retention-days: 5
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-integration-${{ env.PLATFORM }}-${{ matrix.group }}
@@ -442,7 +442,7 @@ jobs:
 
       - name: Archive Parity Metric Results
         if: success()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: parity-metric-raw-${{ env.PLATFORM }}-${{ matrix.group }}
           path: target/metric_reports
@@ -488,7 +488,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-bootstrap
@@ -522,13 +522,13 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Bootstrap Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         if: ${{ matrix.arch == 'amd64' }}
         with:
           pattern: test-results-bootstrap
 
       - name: Download Integration Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-integration-${{ matrix.arch }}-*
 
@@ -609,7 +609,7 @@ jobs:
         run: make docker-run-tests
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-acceptance-${{ env.PLATFORM }}
@@ -642,7 +642,7 @@ jobs:
     if: always() && !cancelled() && !contains(needs.*.result, 'skipped')
     steps:
       - name: Download Acceptance Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-acceptance-${{ matrix.arch }}
 
@@ -680,7 +680,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-selection
           path: dist/testselection/
@@ -699,7 +699,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-cloudwatch-v1
@@ -733,7 +733,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-selection
           path: dist/testselection/
@@ -751,7 +751,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-dynamodb-v2
@@ -785,7 +785,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-selection
           path: dist/testselection/
@@ -804,7 +804,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-events-v1
@@ -839,7 +839,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-selection
           path: dist/testselection/
@@ -855,7 +855,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-cloudformation-legacy
@@ -889,7 +889,7 @@ jobs:
 
       - name: Download Test Selection
         if: ${{ env.TESTSELECTION_PYTEST_ARGS }}
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-selection
           path: dist/testselection/
@@ -908,7 +908,7 @@ jobs:
         run: make test-coverage
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-sns-v2
@@ -936,27 +936,27 @@ jobs:
       issues: read
     steps:
       - name: Download Cloudformation legacy Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-cloudformation-legacy
 
       - name: Download EventBridge v1 Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-events-v1
 
       - name: Download DynamoDB v2 Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-dynamodb-v2
 
       - name: Download CloudWatch v1 Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-cloudwatch-v1
 
       - name: Download SNS v2 Artifacts
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           pattern: test-results-sns-v2
 
@@ -1030,7 +1030,7 @@ jobs:
           localstack stop
 
       - name: Archive Capture-Not-Implemented Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: capture-notimplemented
           path: results/
