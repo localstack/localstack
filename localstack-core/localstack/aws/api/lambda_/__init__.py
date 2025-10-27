@@ -287,6 +287,7 @@ class Runtime(StrEnum):
     java21 = "java21"
     python3_13 = "python3.13"
     nodejs22_x = "nodejs22.x"
+    nodejs24_x = "nodejs24.x"
 
 
 class SchemaRegistryEventRecordFormat(StrEnum):

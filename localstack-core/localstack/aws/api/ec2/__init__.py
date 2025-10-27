@@ -9356,6 +9356,7 @@ class NetworkInterface(TypedDict, total=False):
     Ipv6Address: Optional[String]
     Operator: Optional[OperatorResponse]
     AssociatedSubnets: Optional[AssociatedSubnetList]
+    AvailabilityZoneId: Optional[String]
 
 
 class CreateNetworkInterfaceResult(TypedDict, total=False):
