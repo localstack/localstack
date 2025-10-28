@@ -638,8 +638,10 @@ class SnsProvider(SnsApi):
         attributes: MapStringToString,
         **kwargs,
     ) -> None:
-        platform_application = self._get_platform_application(platform_application_arn, context)
+        parse_and_validate_platform_application_arn(platform_application_arn)
         _validate_platform_application_attributes(attributes)
+
+        platform_application = self._get_platform_application(platform_application_arn, context)
         platform_application["Attributes"].update(attributes)
 
     #
