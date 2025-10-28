@@ -2,7 +2,7 @@ import itertools
 import time
 from dataclasses import dataclass, field
 from enum import StrEnum
-from typing import Literal, TypedDict
+from typing import Literal, TypedDict, get_args
 
 from localstack.aws.api.sns import (
     MessageAttributeMap,
@@ -34,21 +34,13 @@ SnsProtocols = Literal[
     "http", "https", "email", "email-json", "sms", "sqs", "application", "lambda", "firehose"
 ]
 
-# TODO: unify this
 SnsApplicationPlatforms = Literal[
     "APNS", "APNS_SANDBOX", "ADM", "FCM", "Baidu", "GCM", "MPNS", "WNS"
 ]
 
 
-class SnsApplicationPlatform(StrEnum):
-    APNS = "APNS"
-    APNS_SANDBOX = "APNS_SANDBOX"
-    ADM = "ADM"
-    FCM = "FCM"
-    Baidu = "Baidu"
-    GCM = "GCM"
-    MPNS = "MPNS"
-    WNS = "WNS"
+def get_valid_platforms() -> list[str]:
+    return list(get_args(SnsApplicationPlatforms))
 
 
 SMS_ATTRIBUTE_NAMES = [

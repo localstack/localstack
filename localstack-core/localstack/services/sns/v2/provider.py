@@ -57,12 +57,12 @@ from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
     SMS_TYPES,
-    SnsApplicationPlatform,
     SnsMessage,
     SnsMessageType,
     SnsStore,
     SnsSubscription,
     Topic,
+    get_valid_platforms,
     sns_stores,
 )
 from localstack.services.sns.v2.utils import (
@@ -559,7 +559,7 @@ class SnsProvider(SnsApi):
         **kwargs,
     ) -> CreatePlatformApplicationResponse:
         _validate_platform_application_name(name)
-        if platform not in [p.value for p in SnsApplicationPlatform]:
+        if platform not in get_valid_platforms():
             raise InvalidParameterException(
                 f"Invalid parameter: Platform Reason: {platform} is not supported"
             )
