@@ -3669,6 +3669,7 @@ class TestSNSPlatformApplicationCrud:
             )
         )
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_list_platform_applications(
         self, aws_client, snapshot, sns_create_platform_application
@@ -3694,6 +3695,7 @@ class TestSNSPlatformApplicationCrud:
         ],
         ids=["no-args", "missing-credential", "missing-principal"],
     )
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_create_platform_application_invalid_attributes(self, aws_client, snapshot, attributes):
         # We cannot actually verify the validity of the passed credentials, which is why it is not part of this test
@@ -3705,6 +3707,7 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("platform-application-no-attributes", e.value.response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @pytest.mark.parametrize(
         "name", [f"{'a' * 257}", "", "@name"], ids=["too-long", "empty", "invalid-char"]
     )
@@ -3718,6 +3721,7 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("invalid-application-name", e.value.response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_create_platform_application_invalid_platform(self, aws_client, snapshot):
         attributes = {"PlatformPrincipal": "dummy", "PlatformCredential": "dummy"}
@@ -3730,6 +3734,7 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("invalid-platform", e.value.response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_get_platform_application_attributes(
         self, aws_client, snapshot, sns_create_platform_application
@@ -3749,6 +3754,7 @@ class TestSNSPlatformApplicationCrud:
         )
         snapshot.match("get-application-attributes", response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_get_platform_application_attributes_invalid_arn(self, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
@@ -3765,6 +3771,7 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("non_existing-application-arn", e.value.response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_set_platform_application_attributes(
         self, aws_client, snapshot, sns_create_platform_application
@@ -3792,6 +3799,7 @@ class TestSNSPlatformApplicationCrud:
         )
         snapshot.match("set-get-application-attributes", response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.validated
     def test_set_platform_application_attributes_invalid_arn(self, aws_client, snapshot):
         with pytest.raises(ClientError) as e:
@@ -3800,6 +3808,7 @@ class TestSNSPlatformApplicationCrud:
             )
         snapshot.match("invalid-application-arn", e.value.response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @pytest.mark.parametrize(
         "attributes",
         [
