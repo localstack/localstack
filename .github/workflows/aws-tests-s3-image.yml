@@ -137,7 +137,7 @@ jobs:
           make docker-run-tests-s3-only
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-s3-image-${{ matrix.arch }}
@@ -149,7 +149,7 @@ jobs:
         run: ./bin/docker-helper.sh save
 
       - name: Store Docker image as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: localstack-s3-image-${{ matrix.arch }}
           path: ${{ steps.save-image.outputs.IMAGE_FILENAME }}
@@ -173,12 +173,12 @@ jobs:
       )
     steps:
       - name: Download AMD64 Results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-results-s3-image-amd64
 
       - name: Download ARM64 Results
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: test-results-s3-image-arm64
 
@@ -217,12 +217,12 @@ jobs:
         run: pip install --upgrade setuptools setuptools_scm
 
       - name: Download AMD64 image
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: localstack-s3-image-amd64
 
       - name: Download ARM64 image
-        uses: actions/download-artifact@v5
+        uses: actions/download-artifact@v6
         with:
           name: localstack-s3-image-arm64
 

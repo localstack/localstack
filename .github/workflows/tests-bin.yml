@@ -43,7 +43,7 @@ jobs:
           mv report.xml tests-junit-base.xml
 
       - name: Archive Test Results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         if: success() || failure()
         with:
           name: test-results-tests-bin
