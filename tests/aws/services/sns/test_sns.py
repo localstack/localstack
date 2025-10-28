@@ -3649,6 +3649,177 @@ class TestSNSSubscriptionSES:
         assert messages[0]["Source"] == sender_address
 
 
+class TestSNSPlatformApplicationCrud:
+    @markers.aws.manual_setup_required
+    def test_create_platform_application(self, aws_client, snapshot, cleanups):
+        name = f"platform-application-{short_uid()}"
+        platform = "ADM"
+        # these values need to be extracted from a real amazon developer account if tested against AWS
+        # https://developer.amazon.com/settings/console/securityprofile/overview.html
+        client_id = "dummy"
+        client_secret = "dummy"
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
+        response = aws_client.sns.create_platform_application(
+            Name=name, Platform=platform, Attributes=attributes
+        )
+        snapshot.match("create-platform-application", response)
+        cleanups.append(
+            lambda: aws_client.delete_platform_application(
+                PlatformApplicationArn=response["PlatformApplicationArn"]
+            )
+        )
+
+    @markers.aws.manual_setup_required
+    def test_list_platform_applications(
+        self, aws_client, snapshot, sns_create_platform_application
+    ):
+        name = f"platform-application-{short_uid()}"
+        platform = "ADM"
+        # these values need to be extracted from a real amazon developer account if tested against AWS
+        # https://developer.amazon.com/settings/console/securityprofile/overview.html
+        client_id = "dummy"
+        client_secret = "dummy"
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
+        sns_create_platform_application(Name=name, Platform=platform, Attributes=attributes)
+
+        response = aws_client.sns.list_platform_applications()
+        snapshot.match("list-platform-applications", response)
+
+    @pytest.mark.parametrize(
+        "attributes",
+        [
+            {},
+            {"PlatformPrincipal": "dummy"},
+            {"PlatformCredential": "dummy"},
+        ],
+        ids=["no-args", "missing-credential", "missing-principal"],
+    )
+    @markers.aws.validated
+    def test_create_platform_application_invalid_attributes(self, aws_client, snapshot, attributes):
+        # We cannot actually verify the validity of the passed credentials, which is why it is not part of this test
+        name = f"platform-application-{short_uid()}"
+        platform = "ADM"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.create_platform_application(
+                Name=name, Platform=platform, Attributes=attributes
+            )
+        snapshot.match("platform-application-no-attributes", e.value.response)
+
+    @pytest.mark.parametrize(
+        "name", [f"{'a' * 257}", "", "@name"], ids=["too-long", "empty", "invalid-char"]
+    )
+    @markers.aws.validated
+    def test_create_platform_application_invalid_name(self, aws_client, snapshot, name):
+        attributes = {"PlatformPrincipal": "dummy", "PlatformCredential": "dummy"}
+        platform = "ADM"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.create_platform_application(
+                Name=name, Platform=platform, Attributes=attributes
+            )
+        snapshot.match("invalid-application-name", e.value.response)
+
+    @markers.aws.validated
+    def test_create_platform_application_invalid_platform(self, aws_client, snapshot):
+        attributes = {"PlatformPrincipal": "dummy", "PlatformCredential": "dummy"}
+
+        name = f"platform-application-{short_uid()}"
+        invalid_platform = "AAA"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.create_platform_application(
+                Name=name, Platform=invalid_platform, Attributes=attributes
+            )
+        snapshot.match("invalid-platform", e.value.response)
+
+    @markers.aws.manual_setup_required
+    def test_get_platform_application_attributes(
+        self, aws_client, snapshot, sns_create_platform_application
+    ):
+        name = f"platform-application-{short_uid()}"
+        platform = "ADM"
+        # these values need to be extracted from a real amazon developer account if tested against AWS
+        # https://developer.amazon.com/settings/console/securityprofile/overview.html
+        client_id = "dummy"
+        client_secret = "dummy"
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
+        platform_application_arn = sns_create_platform_application(
+            Name=name, Platform=platform, Attributes=attributes
+        )["PlatformApplicationArn"]
+        response = aws_client.sns.get_platform_application_attributes(
+            PlatformApplicationArn=platform_application_arn
+        )
+        snapshot.match("get-application-attributes", response)
+
+    @markers.aws.validated
+    def test_get_platform_application_attributes_invalid_arn(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_platform_application_attributes(PlatformApplicationArn="invalid-arn")
+        snapshot.match("invalid-application-arn", e.value.response)
+
+    @markers.aws.validated
+    def test_get_platform_application_attributes_non_existing_app(
+        self, aws_client, snapshot, account_id, region_name
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_platform_application_attributes(
+                PlatformApplicationArn=f"arn:aws:sns:{region_name}:{account_id}:app/ADM/NonExistingApp"
+            )
+        snapshot.match("non_existing-application-arn", e.value.response)
+
+    @markers.aws.manual_setup_required
+    def test_set_platform_application_attributes(
+        self, aws_client, snapshot, sns_create_platform_application
+    ):
+        name = f"platform-application-{short_uid()}"
+        platform = "ADM"
+        # these values need to be extracted from a real amazon developer account if tested against AWS
+        # https://developer.amazon.com/settings/console/securityprofile/overview.html
+        client_id = "dummy"
+        client_secret = "dummy"
+        attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
+        platform_application_arn = sns_create_platform_application(
+            Name=name, Platform=platform, Attributes=attributes
+        )["PlatformApplicationArn"]
+
+        attributes = {"SuccessFeedbackSampleRate": "50"}
+        aws_client.sns.set_platform_application_attributes(
+            Attributes=attributes, PlatformApplicationArn=platform_application_arn
+        )
+        # give the attributes time to propagate
+        if is_aws_cloud():
+            time.sleep(30)
+        response = aws_client.sns.get_platform_application_attributes(
+            PlatformApplicationArn=platform_application_arn
+        )
+        snapshot.match("set-get-application-attributes", response)
+
+    @markers.aws.validated
+    def test_set_platform_application_attributes_invalid_arn(self, aws_client, snapshot):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_platform_application_attributes(
+                PlatformApplicationArn="invalid-arn", Attributes={}
+            )
+        snapshot.match("invalid-application-arn", e.value.response)
+
+    @pytest.mark.parametrize(
+        "attributes",
+        [
+            {},
+            {"PlatformPrincipal": "dummy"},
+        ],
+        ids=["no-args", "dummy-args"],
+    )
+    @markers.aws.validated
+    def test_set_platform_application_attributes_non_existing_app(
+        self, aws_client, snapshot, account_id, region_name, attributes
+    ):
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_platform_application_attributes(
+                PlatformApplicationArn=f"arn:aws:sns:{region_name}:{account_id}:app/ADM/NonExistingApp",
+                Attributes=attributes,
+            )
+        snapshot.match("non_existing-application-arn", e.value.response)
+
+
 class TestSNSPlatformEndpoint:
     @markers.aws.only_localstack
     @skip_if_sns_v2

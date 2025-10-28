@@ -6,16 +6,18 @@ import re
 
 from botocore.utils import InvalidArnException
 
-from localstack.aws.api import RequestContext
+from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     ConfirmSubscriptionResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
+    GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
     GetTopicAttributesResponse,
     InvalidParameterException,
+    ListEndpointsByPlatformApplicationResponse,
     ListPlatformApplicationsResponse,
     ListString,
     ListSubscriptionsByTopicResponse,
@@ -24,6 +26,7 @@ from localstack.aws.api.sns import (
     ListTopicsResponse,
     MapStringToString,
     NotFoundException,
+    PlatformApplication,
     SetSMSAttributesResponse,
     SnsApi,
     String,
@@ -54,6 +57,7 @@ from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
     SMS_TYPES,
+    SnsApplicationPlatform,
     SnsMessage,
     SnsMessageType,
     SnsStore,
@@ -67,10 +71,16 @@ from localstack.services.sns.v2.utils import (
     get_next_page_token_from_arn,
     get_region_from_subscription_token,
     is_valid_e164_number,
+    parse_and_validate_platform_application_arn,
     parse_and_validate_topic_arn,
     validate_subscription_attribute,
 )
-from localstack.utils.aws.arns import get_partition, parse_arn, sns_topic_arn
+from localstack.utils.aws.arns import (
+    get_partition,
+    parse_arn,
+    sns_platform_application_arn,
+    sns_topic_arn,
+)
 from localstack.utils.collections import PaginatedList, select_from_typed_dict
 
 # set up logger
@@ -537,6 +547,9 @@ class SnsProvider(SnsApi):
             response["NextToken"] = next_token
         return response
 
+    #
+    # PlatformApplications
+    #
     def create_platform_application(
         self,
         context: RequestContext,
@@ -545,20 +558,106 @@ class SnsProvider(SnsApi):
         attributes: MapStringToString,
         **kwargs,
     ) -> CreatePlatformApplicationResponse:
-        pass
+        _validate_platform_application_name(name)
+        if platform not in [p.value for p in SnsApplicationPlatform]:
+            raise InvalidParameterException(
+                f"Invalid parameter: Platform Reason: {platform} is not supported"
+            )
+
+        _validate_platform_application_attributes(attributes)
+
+        # attribute validation specific to create_platform_application
+        if (
+            "PlatformCredential" in attributes.keys()
+            and "PlatformPrincipal" not in attributes.keys()
+        ):
+            raise InvalidParameterException(
+                "Invalid parameter: Attributes Reason: PlatformCredential attribute provided without PlatformPrincipal"
+            )
+
+        elif (
+            "PlatformPrincipal" in attributes.keys()
+            and "PlatformCredential" not in attributes.keys()
+        ):
+            raise InvalidParameterException(
+                "Invalid parameter: Attributes Reason: PlatformPrincipal attribute provided without PlatformCredential"
+            )
+
+        store = self.get_store(context.account_id, context.region)
+        # We are not validating the access data here like AWS does (against ADM and the like)
+        attributes.pop("PlatformPrincipal")
+        attributes.pop("PlatformCredential")
+        _attributes = {"Enabled": "true"}
+        _attributes.update(attributes)
+        application_arn = sns_platform_application_arn(
+            platform_application_name=name,
+            platform=platform,
+            account_id=context.account_id,
+            region_name=context.region,
+        )
+        platform_application = PlatformApplication(
+            PlatformApplicationArn=application_arn, Attributes=_attributes
+        )
+        store.platform_applications[application_arn] = platform_application
+        return CreatePlatformApplicationResponse(**platform_application)
 
     def delete_platform_application(
         self, context: RequestContext, platform_application_arn: String, **kwargs
     ) -> None:
-        pass
+        store = self.get_store(context.account_id, context.region)
+        store.platform_applications.pop(platform_application_arn, None)
 
     def list_platform_applications(
         self, context: RequestContext, next_token: String | None = None, **kwargs
     ) -> ListPlatformApplicationsResponse:
-        pass
+        store = self.get_store(context.account_id, context.region)
+        platform_applications = store.platform_applications.values()
+        paginated_applications = PaginatedList(platform_applications)
+        page, next_token = paginated_applications.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x["PlatformApplicationArn"]),
+            page_size=100,
+            next_token=next_token,
+        )
+
+        response = ListPlatformApplicationsResponse(PlatformApplications=page)
+        if next_token:
+            response["NextToken"] = next_token
+        return response
+
+    def get_platform_application_attributes(
+        self, context: RequestContext, platform_application_arn: String, **kwargs
+    ) -> GetPlatformApplicationAttributesResponse:
+        platform_application = self._get_platform_application(platform_application_arn, context)
+        attributes = platform_application["Attributes"]
+        return GetPlatformApplicationAttributesResponse(Attributes=attributes)
+
+    def set_platform_application_attributes(
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        attributes: MapStringToString,
+        **kwargs,
+    ) -> None:
+        platform_application = self._get_platform_application(platform_application_arn, context)
+        _validate_platform_application_attributes(attributes)
+        platform_application["Attributes"].update(attributes)
 
     #
-    # Platform Application Operations
+    # Platform Endpoints
+    #
+
+    def list_endpoints_by_platform_application(
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        next_token: String | None = None,
+        **kwargs,
+    ) -> ListEndpointsByPlatformApplicationResponse:
+        # TODO: stub so cleanup fixture won't fail
+        return ListEndpointsByPlatformApplicationResponse(Endpoints=[])
+
+    #
+    # Sms operations
     #
 
     def set_sms_attributes(
@@ -632,6 +731,17 @@ class SnsProvider(SnsApi):
         except KeyError:
             raise NotFoundException("Topic does not exist")
 
+    @staticmethod
+    def _get_platform_application(
+        platform_application_arn: str, context: RequestContext
+    ) -> PlatformApplication:
+        parse_and_validate_platform_application_arn(platform_application_arn)
+        try:
+            store = SnsProvider.get_store(context.account_id, context.region)
+            return store.platform_applications[platform_application_arn]
+        except KeyError:
+            raise NotFoundException("PlatformApplication does not exist")
+
 
 def _create_topic(name: str, attributes: dict, context: RequestContext) -> Topic:
     topic_arn = sns_topic_arn(
@@ -697,6 +807,28 @@ def _create_default_topic_policy(topic: Topic, context: RequestContext) -> str:
             ],
         }
     )
+
+
+def _validate_platform_application_name(name: str) -> None:
+    reason = ""
+    if not name:
+        reason = "cannot be empty"
+    elif not re.match(r"^.{0,256}$", name):
+        reason = "must be at most 256 characters long"
+    elif not re.match(r"^[A-Za-z0-9._-]+$", name):
+        reason = "must contain only characters 'a'-'z', 'A'-'Z', '0'-'9', '_', '-', and '.'"
+
+    if reason:
+        raise InvalidParameterException(f"Invalid parameter: {name} Reason: {reason}")
+
+
+def _validate_platform_application_attributes(attributes: dict) -> None:
+    if not attributes:
+        raise CommonServiceException(
+            code="ValidationError",
+            message="1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
+            sender_fault=True,
+        )
 
 
 def _validate_sms_attributes(attributes: dict) -> None:

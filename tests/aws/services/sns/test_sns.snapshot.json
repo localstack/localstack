@@ -6047,5 +6047,311 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application": {
+    "recorded-date": "28-10-2025, 09:29:32",
+    "recorded-content": {
+      "create-platform-application": {
+        "PlatformApplicationArn": "arn:<partition>:sns:<region>:111111111111:app/ADM/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_list_platform_applications": {
+    "recorded-date": "28-10-2025, 09:29:33",
+    "recorded-content": {
+      "list-platform-applications": {
+        "PlatformApplications": [
+          {
+            "Attributes": {
+              "Enabled": "true"
+            },
+            "PlatformApplicationArn": "arn:<partition>:sns:<region>:111111111111:app/ADM/<resource:1>"
+          },
+          {
+            "Attributes": {
+              "Enabled": "true"
+            },
+            "PlatformApplicationArn": "arn:<partition>:sns:<region>:111111111111:app/ADM/<resource:2>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[no-args]": {
+    "recorded-date": "28-10-2025, 09:29:33",
+    "recorded-content": {
+      "platform-application-no-attributes": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[missing-credential]": {
+    "recorded-date": "28-10-2025, 09:29:33",
+    "recorded-content": {
+      "platform-application-no-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: PlatformPrincipal attribute provided without PlatformCredential",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[missing-principal]": {
+    "recorded-date": "28-10-2025, 09:29:34",
+    "recorded-content": {
+      "platform-application-no-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: PlatformCredential attribute provided without PlatformPrincipal",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_name[too-long]": {
+    "recorded-date": "28-10-2025, 09:29:34",
+    "recorded-content": {
+      "invalid-application-name": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa Reason: must be at most 256 characters long",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_name[empty]": {
+    "recorded-date": "28-10-2025, 09:29:34",
+    "recorded-content": {
+      "invalid-application-name": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter:  Reason: cannot be empty",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_name[invalid-char]": {
+    "recorded-date": "28-10-2025, 09:29:35",
+    "recorded-content": {
+      "invalid-application-name": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: @name Reason: must contain only characters 'a'-'z', 'A'-'Z', '0'-'9', '_', '-', and '.'",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_platform": {
+    "recorded-date": "28-10-2025, 09:29:35",
+    "recorded-content": {
+      "invalid-platform": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Platform Reason: AAA is not supported",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_platform_application_attributes_invalid_arn": {
+    "recorded-date": "28-10-2025, 09:29:37",
+    "recorded-content": {
+      "invalid-application-arn": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: PlatformApplicationArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_platform_application_attributes": {
+    "recorded-date": "28-10-2025, 09:29:36",
+    "recorded-content": {
+      "get-application-attributes": {
+        "Attributes": {
+          "Enabled": "true"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes": {
+    "recorded-date": "28-10-2025, 09:30:09",
+    "recorded-content": {
+      "set-get-application-attributes": {
+        "Attributes": {
+          "Enabled": "true",
+          "SuccessFeedbackSampleRate": "50"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_platform_application_attributes_non_existing_app": {
+    "recorded-date": "28-10-2025, 09:29:37",
+    "recorded-content": {
+      "non_existing-application-arn": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_invalid_arn": {
+    "recorded-date": "28-10-2025, 09:30:09",
+    "recorded-content": {
+      "invalid-application-arn": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: PlatformApplicationArn Reason: An ARN must have at least 6 elements, not 1",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app": {
+    "recorded-date": "28-10-2025, 09:17:14",
+    "recorded-content": {
+      "non_existing-application-arn": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[no-args]": {
+    "recorded-date": "28-10-2025, 09:30:09",
+    "recorded-content": {
+      "non_existing-application-arn": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[missing-credential]": {
+    "recorded-date": "28-10-2025, 09:23:04",
+    "recorded-content": {
+      "non_existing-application-arn": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[missing-principal]": {
+    "recorded-date": "28-10-2025, 09:23:04",
+    "recorded-content": {
+      "non_existing-application-arn": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[dummy-args]": {
+    "recorded-date": "28-10-2025, 09:30:09",
+    "recorded-content": {
+      "non_existing-application-arn": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

@@ -11,13 +11,21 @@ from localstack.utils.strings import short_uid, to_bytes, to_str
 
 
 def parse_and_validate_topic_arn(topic_arn: str | None) -> ArnData:
-    topic_arn = topic_arn or ""
+    return _parse_and_validate_arn(topic_arn, "Topic")
+
+
+def parse_and_validate_platform_application_arn(platform_application_arn: str | None) -> ArnData:
+    return _parse_and_validate_arn(platform_application_arn, "PlatformApplication")
+
+
+def _parse_and_validate_arn(arn: str | None, resource_type: str) -> ArnData:
+    arn = arn or ""
     try:
-        return parse_arn(topic_arn)
+        return parse_arn(arn)
     except InvalidArnException:
-        count = len(topic_arn.split(":"))
+        count = len(arn.split(":"))
         raise InvalidParameterException(
-            f"Invalid parameter: TopicArn Reason: An ARN must have at least 6 elements, not {count}"
+            f"Invalid parameter: {resource_type}Arn Reason: An ARN must have at least 6 elements, not {count}"
         )
 
 

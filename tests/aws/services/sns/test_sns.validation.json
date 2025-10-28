@@ -5,6 +5,213 @@
   "tests/aws/services/sns/test_sns.py::TestSNSMultiRegions::test_cross_region_delivery_sqs": {
     "last_validated_date": "2025-05-28T09:55:16+00:00"
   },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application": {
+    "last_validated_date": "2025-10-28T09:29:32+00:00",
+    "durations_in_seconds": {
+      "setup": 1.29,
+      "call": 1.21,
+      "teardown": 0.01,
+      "total": 2.51
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[invalid-cred-first0]": {
+    "last_validated_date": "2025-10-27T11:10:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.18,
+      "teardown": 0.01,
+      "total": 0.19
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[invalid-cred-first1]": {
+    "last_validated_date": "2025-10-27T11:10:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.17,
+      "teardown": 0.0,
+      "total": 0.17
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[missing-credential]": {
+    "last_validated_date": "2025-10-28T09:29:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[missing-principal]": {
+    "last_validated_date": "2025-10-28T09:29:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.01,
+      "total": 0.31
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_attributes[no-args]": {
+    "last_validated_date": "2025-10-28T09:29:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.24,
+      "teardown": 0.0,
+      "total": 0.24
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_name[empty]": {
+    "last_validated_date": "2025-10-28T09:29:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_name[invalid-char]": {
+    "last_validated_date": "2025-10-28T09:29:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_name[too-long]": {
+    "last_validated_date": "2025-10-28T09:29:34+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.29,
+      "teardown": 0.0,
+      "total": 0.29
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application_invalid_platform": {
+    "last_validated_date": "2025-10-28T09:29:35+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_invalid_values": {
+    "last_validated_date": "2025-10-27T11:36:17+00:00",
+    "durations_in_seconds": {
+      "setup": 1.03,
+      "call": 1.57,
+      "teardown": 0.01,
+      "total": 2.61
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_missing_platform_application_attributes": {
+    "last_validated_date": "2025-10-27T12:48:51+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 0.91,
+      "teardown": 0.0,
+      "total": 1.96
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_platform_application_attributes": {
+    "last_validated_date": "2025-10-28T09:29:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.61,
+      "teardown": 0.61,
+      "total": 1.22
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_platform_application_attributes_invalid_arn": {
+    "last_validated_date": "2025-10-28T09:29:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_get_platform_application_attributes_non_existing_app": {
+    "last_validated_date": "2025-10-28T09:29:37+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_list_platform_applications": {
+    "last_validated_date": "2025-10-28T09:29:33+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.62,
+      "teardown": 0.48,
+      "total": 1.1
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes": {
+    "last_validated_date": "2025-10-28T09:30:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 31.33,
+      "teardown": 0.61,
+      "total": 31.94
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_invalid_arn": {
+    "last_validated_date": "2025-10-28T09:30:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app": {
+    "last_validated_date": "2025-10-28T09:17:14+00:00",
+    "durations_in_seconds": {
+      "setup": 0.98,
+      "call": 1.27,
+      "teardown": 0.0,
+      "total": 2.25
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[dummy-args]": {
+    "last_validated_date": "2025-10-28T09:30:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.14,
+      "teardown": 0.0,
+      "total": 0.14
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[missing-credential]": {
+    "last_validated_date": "2025-10-28T09:23:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[missing-principal]": {
+    "last_validated_date": "2025-10-28T09:23:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.3,
+      "teardown": 0.0,
+      "total": 0.3
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_set_platform_application_attributes_non_existing_app[no-args]": {
+    "last_validated_date": "2025-10-28T09:30:09+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.0,
+      "total": 0.13
+    }
+  },
   "tests/aws/services/sns/test_sns.py::TestSNSPublishCrud::test_empty_sns_message": {
     "last_validated_date": "2023-08-24T20:31:48+00:00"
   },
