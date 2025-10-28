@@ -1,4 +1,5 @@
 import base64
+import contextlib
 import copy
 import datetime
 import json
@@ -8,6 +9,7 @@ from collections import defaultdict
 from inspect import signature
 from io import BytesIO
 from operator import itemgetter
+from threading import RLock
 from typing import IO
 from urllib import parse as urlparse
 from zoneinfo import ZoneInfo
@@ -340,6 +342,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         self._storage_backend = storage_backend or EphemeralS3ObjectStore(DEFAULT_S3_TMP_DIR)
         self._notification_dispatcher = NotificationDispatcher()
         self._cors_handler = S3CorsHandler(BucketCorsIndex())
+        # TODO: add lock for keys for PutObject, only way to support precondition writes for versioned buckets
+        self._preconditions_locks = defaultdict(lambda: defaultdict(RLock))
 
         # runtime cache of Lifecycle Expiration headers, as they need to be calculated everytime we fetch an object
         # in case the rules have changed
@@ -590,6 +594,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         store.global_bucket_map.pop(bucket)
         self._cors_handler.invalidate_cache()
         self._expiration_cache.pop(bucket, None)
+        self._preconditions_locks.pop(bucket, None)
         # clean up the storage backend
         self._storage_backend.delete_bucket(bucket)
 
@@ -750,6 +755,12 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             system_metadata["ContentType"] = "binary/octet-stream"
 
         version_id = generate_version_id(s3_bucket.versioning_status)
+        if version_id != "null":
+            # if we are in a versioned bucket, we need to lock around the full key (all the versions)
+            # because object versions have locks per version
+            precondition_lock = self._preconditions_locks[bucket_name][key]
+        else:
+            precondition_lock = contextlib.nullcontext()
 
         etag_content_md5 = ""
         if content_md5 := request.get("ContentMD5"):
@@ -832,7 +843,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if encodings:
                     s3_object.system_metadata["ContentEncoding"] = ",".join(encodings)
 
-        with self._storage_backend.open(bucket_name, s3_object, mode="w") as s3_stored_object:
+        with (
+            precondition_lock,
+            self._storage_backend.open(bucket_name, s3_object, mode="w") as s3_stored_object,
+        ):
             # as we are inside the lock here, if multiple concurrent requests happen for the same object, it's the first
             # one to finish to succeed, and subsequent will raise exceptions. Once the first write finishes, we're
             # opening the lock and other requests can check this condition
@@ -1304,6 +1318,10 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
         self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
+        if key not in s3_bucket.objects:
+            # we clean up keys that do not have any object versions in them anymore
+            self._preconditions_locks[bucket].pop(key, None)
+
         return response
 
     def delete_objects(
@@ -1337,6 +1355,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         errors = []
 
         to_remove = []
+        versioned_keys = set()
         for to_delete_object in objects:
             object_key = to_delete_object.get("Key")
             version_id = to_delete_object.get("VersionId")
@@ -1417,6 +1436,8 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 continue
 
             s3_bucket.objects.pop(object_key=object_key, version_id=version_id)
+            versioned_keys.add(object_key)
+
             if not quiet:
                 deleted_object = DeletedObject(
                     Key=object_key,
@@ -1433,6 +1454,11 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
             self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
             store.TAGS.tags.pop(get_unique_key_id(bucket, object_key, version_id), None)
+
+        for versioned_key in versioned_keys:
+            # we clean up keys that do not have any object versions in them anymore
+            if versioned_key not in s3_bucket.objects:
+                self._preconditions_locks[bucket].pop(versioned_key, None)
 
         # TODO: request charged
         self._storage_backend.remove(bucket, to_remove)
@@ -2649,6 +2675,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
             )
 
         elif if_none_match:
+            # TODO: improve concurrency mechanism for `if_none_match` and `if_match`
             if if_none_match != "*":
                 raise NotImplementedException(
                     "A header you provided implies functionality that is not implemented",
