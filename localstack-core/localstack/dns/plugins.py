@@ -11,8 +11,12 @@ DNS_SHUTDOWN_PRIORITY = -30
 """Make sure the DNS server is shut down after the ON_AFTER_SERVICE_SHUTDOWN_HANDLERS, which in turn is after
 SERVICE_SHUTDOWN_PRIORITY. Currently this value needs to be less than -20"""
 
+DNS_START_PRIORITY = 20
+"""Make sure the DNS server is started before the pro activation, to ensure proper DNS resolution for the activate call,
+if the resolv.conf is set to localhost from outside the container"""
 
-@hooks.on_infra_start(priority=10)
+
+@hooks.on_infra_start(priority=DNS_START_PRIORITY)
 def start_dns_server():
     try:
         from localstack.dns import server
