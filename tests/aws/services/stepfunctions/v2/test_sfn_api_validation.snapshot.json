@@ -1,6 +1,6 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[EMPTY_STRING]": {
-    "recorded-date": "09-10-2024, 08:51:57",
+    "recorded-date": "19-10-2025, 02:38:10",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [
@@ -20,7 +20,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[NOT_A_DEF]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:10",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [
@@ -41,7 +41,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[EMPTY_DICT]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:10",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [
@@ -62,7 +62,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[VALID_BASE_PASS]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:11",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [],
@@ -76,7 +76,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[INVALID_BASE_NO_STARTAT]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:11",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [
@@ -97,7 +97,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[VALID_BASE_PASS]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:11",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [],
@@ -111,7 +111,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[INVALID_BASE_NO_STARTAT]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:11",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [
@@ -132,7 +132,7 @@
     }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[ILLEGAL_WFTT]": {
-    "recorded-date": "09-10-2024, 08:51:58",
+    "recorded-date": "19-10-2025, 02:38:12",
     "recorded-content": {
       "validation_response": {
         "diagnostics": [
@@ -144,6 +144,76 @@
           }
         ],
         "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[VALID_QUERY_LANGUAGE_PASS]": {
+    "recorded-date": "19-10-2025, 02:38:11",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [],
+        "result": "OK",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[INVALID_DOWNGRADE_QUERY_LANGUAGE]": {
+    "recorded-date": "19-10-2025, 02:38:11",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "location": "/States/Pass",
+            "message": "'QueryLanguage' can not be 'JSONPath' if set to 'JSONata' for whole state machine",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[INVALID_DOWNGRADE_QUERY_LANGUAGE]": {
+    "recorded-date": "19-10-2025, 02:38:11",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [
+          {
+            "code": "SCHEMA_VALIDATION_FAILED",
+            "location": "/States/Pass",
+            "message": "'QueryLanguage' can not be 'JSONPath' if set to 'JSONata' for whole state machine",
+            "severity": "ERROR"
+          }
+        ],
+        "result": "FAIL",
+        "truncated": false,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[VALID_QUERY_LANGUAGE_PASS]": {
+    "recorded-date": "19-10-2025, 02:38:11",
+    "recorded-content": {
+      "validation_response": {
+        "diagnostics": [],
+        "result": "OK",
         "truncated": false,
         "ResponseMetadata": {
           "HTTPHeaders": {},
