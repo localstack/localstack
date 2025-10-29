@@ -6049,7 +6049,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_create_platform_application": {
-    "recorded-date": "28-10-2025, 09:29:32",
+    "recorded-date": "29-10-2025, 09:14:55",
     "recorded-content": {
       "create-platform-application": {
         "PlatformApplicationArn": "arn:<partition>:sns:<region>:111111111111:app/ADM/<resource:1>",
@@ -6061,7 +6061,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformApplicationCrud::test_list_platform_applications": {
-    "recorded-date": "28-10-2025, 09:29:33",
+    "recorded-date": "29-10-2025, 09:20:15",
     "recorded-content": {
       "list-platform-applications": {
         "PlatformApplications": [
@@ -6070,12 +6070,6 @@
               "Enabled": "true"
             },
             "PlatformApplicationArn": "arn:<partition>:sns:<region>:111111111111:app/ADM/<resource:1>"
-          },
-          {
-            "Attributes": {
-              "Enabled": "true"
-            },
-            "PlatformApplicationArn": "arn:<partition>:sns:<region>:111111111111:app/ADM/<resource:2>"
           }
         ],
         "ResponseMetadata": {

@@ -3650,36 +3650,34 @@ class TestSNSSubscriptionSES:
 
 
 class TestSNSPlatformApplicationCrud:
-    @markers.aws.manual_setup_required
-    def test_create_platform_application(self, aws_client, snapshot, cleanups):
-        name = f"platform-application-{short_uid()}"
-        platform = "ADM"
+    @pytest.fixture(scope="class")
+    def platform_credentials(self) -> tuple[str, str]:
         # these values need to be extracted from a real amazon developer account if tested against AWS
         # https://developer.amazon.com/settings/console/securityprofile/overview.html
         client_id = "dummy"
         client_secret = "dummy"
+        return client_id, client_secret
+
+    @markers.aws.manual_setup_required
+    def test_create_platform_application(
+        self, aws_client, snapshot, sns_create_platform_application, platform_credentials
+    ):
+        platform = "ADM"
+        # if tested against AWS, the fixture needs to contain real credentials
+        client_id, client_secret = platform_credentials
         attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
-        response = aws_client.sns.create_platform_application(
-            Name=name, Platform=platform, Attributes=attributes
-        )
+        response = sns_create_platform_application(Platform=platform, Attributes=attributes)
         snapshot.match("create-platform-application", response)
-        cleanups.append(
-            lambda: aws_client.delete_platform_application(
-                PlatformApplicationArn=response["PlatformApplicationArn"]
-            )
-        )
 
     @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_list_platform_applications(
-        self, aws_client, snapshot, sns_create_platform_application
+        self, aws_client, snapshot, sns_create_platform_application, platform_credentials
     ):
         name = f"platform-application-{short_uid()}"
         platform = "ADM"
-        # these values need to be extracted from a real amazon developer account if tested against AWS
-        # https://developer.amazon.com/settings/console/securityprofile/overview.html
-        client_id = "dummy"
-        client_secret = "dummy"
+        # if tested against AWS, the fixture needs to contain real credentials
+        client_id, client_secret = platform_credentials
         attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         sns_create_platform_application(Name=name, Platform=platform, Attributes=attributes)
 
@@ -3737,14 +3735,12 @@ class TestSNSPlatformApplicationCrud:
     @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_get_platform_application_attributes(
-        self, aws_client, snapshot, sns_create_platform_application
+        self, aws_client, snapshot, sns_create_platform_application, platform_credentials
     ):
         name = f"platform-application-{short_uid()}"
         platform = "ADM"
-        # these values need to be extracted from a real amazon developer account if tested against AWS
-        # https://developer.amazon.com/settings/console/securityprofile/overview.html
-        client_id = "dummy"
-        client_secret = "dummy"
+        # if tested against AWS, the fixture needs to contain real credentials
+        client_id, client_secret = platform_credentials
         attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         platform_application_arn = sns_create_platform_application(
             Name=name, Platform=platform, Attributes=attributes
@@ -3774,14 +3770,12 @@ class TestSNSPlatformApplicationCrud:
     @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_set_platform_application_attributes(
-        self, aws_client, snapshot, sns_create_platform_application
+        self, aws_client, snapshot, sns_create_platform_application, platform_credentials
     ):
         name = f"platform-application-{short_uid()}"
         platform = "ADM"
-        # these values need to be extracted from a real amazon developer account if tested against AWS
-        # https://developer.amazon.com/settings/console/securityprofile/overview.html
-        client_id = "dummy"
-        client_secret = "dummy"
+        # if tested against AWS, the fixture needs to contain real credentials
+        client_id, client_secret = platform_credentials
         attributes = {"PlatformPrincipal": client_id, "PlatformCredential": client_secret}
         platform_application_arn = sns_create_platform_application(
             Name=name, Platform=platform, Attributes=attributes

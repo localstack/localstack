@@ -50,7 +50,10 @@ from localstack.aws.api.sns import (
 )
 from localstack.services.sns import constants as sns_constants
 from localstack.services.sns.certificate import SNS_SERVER_CERT
-from localstack.services.sns.constants import DUMMY_SUBSCRIPTION_PRINCIPAL
+from localstack.services.sns.constants import (
+    DUMMY_SUBSCRIPTION_PRINCIPAL,
+    VALID_APPLICATION_PLATFORMS,
+)
 from localstack.services.sns.filter import FilterPolicyValidator
 from localstack.services.sns.publisher import PublishDispatcher, SnsPublishContext
 from localstack.services.sns.v2.models import (
@@ -62,7 +65,6 @@ from localstack.services.sns.v2.models import (
     SnsStore,
     SnsSubscription,
     Topic,
-    get_valid_platforms,
     sns_stores,
 )
 from localstack.services.sns.v2.utils import (
@@ -559,7 +561,7 @@ class SnsProvider(SnsApi):
         **kwargs,
     ) -> CreatePlatformApplicationResponse:
         _validate_platform_application_name(name)
-        if platform not in get_valid_platforms():
+        if platform not in VALID_APPLICATION_PLATFORMS:
             raise InvalidParameterException(
                 f"Invalid parameter: Platform Reason: {platform} is not supported"
             )
@@ -567,18 +569,12 @@ class SnsProvider(SnsApi):
         _validate_platform_application_attributes(attributes)
 
         # attribute validation specific to create_platform_application
-        if (
-            "PlatformCredential" in attributes.keys()
-            and "PlatformPrincipal" not in attributes.keys()
-        ):
+        if "PlatformCredential" in attributes and "PlatformPrincipal" not in attributes:
             raise InvalidParameterException(
                 "Invalid parameter: Attributes Reason: PlatformCredential attribute provided without PlatformPrincipal"
             )
 
-        elif (
-            "PlatformPrincipal" in attributes.keys()
-            and "PlatformCredential" not in attributes.keys()
-        ):
+        elif "PlatformPrincipal" in attributes and "PlatformCredential" not in attributes:
             raise InvalidParameterException(
                 "Invalid parameter: Attributes Reason: PlatformPrincipal attribute provided without PlatformCredential"
             )
@@ -613,15 +609,15 @@ class SnsProvider(SnsApi):
         store = self.get_store(context.account_id, context.region)
         platform_applications = store.platform_applications.values()
         paginated_applications = PaginatedList(platform_applications)
-        page, next_token = paginated_applications.get_page(
+        page, token = paginated_applications.get_page(
             token_generator=lambda x: get_next_page_token_from_arn(x["PlatformApplicationArn"]),
             page_size=100,
             next_token=next_token,
         )
 
         response = ListPlatformApplicationsResponse(PlatformApplications=page)
-        if next_token:
-            response["NextToken"] = next_token
+        if token:
+            response["NextToken"] = token
         return response
 
     def get_platform_application_attributes(
