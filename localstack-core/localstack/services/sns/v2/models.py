@@ -6,6 +6,7 @@ from typing import Literal, TypedDict
 
 from localstack.aws.api.sns import (
     MessageAttributeMap,
+    PlatformApplication,
     PublishBatchRequestEntry,
     TopicAttributesMap,
     subscriptionARN,
@@ -36,6 +37,8 @@ SnsProtocols = Literal[
 SnsApplicationPlatforms = Literal[
     "APNS", "APNS_SANDBOX", "ADM", "FCM", "Baidu", "GCM", "MPNS", "WNS"
 ]
+
+
 SMS_ATTRIBUTE_NAMES = [
     "DeliveryStatusIAMRole",
     "DeliveryStatusSuccessSamplingRate",
@@ -151,6 +154,9 @@ class SnsStore(BaseStore):
 
     # maps confirmation token to subscription ARN
     subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
+
+    # maps platform application arns to platform applications
+    platform_applications: dict[str, PlatformApplication] = LocalAttribute(default=dict)
 
     # topic/subscription independent default values for sending sms messages
     sms_attributes: dict[str, str] = LocalAttribute(default=dict)

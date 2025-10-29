@@ -476,6 +476,12 @@ def sns_topic_arn(topic_name: str, account_id: str, region_name: str) -> str:
     return f"arn:{get_partition(region_name)}:sns:{region_name}:{account_id}:{topic_name}"
 
 
+def sns_platform_application_arn(
+    platform_application_name: str, platform: str, account_id: str, region_name: str
+) -> str:
+    return f"arn:{get_partition(region_name)}:sns:{region_name}:{account_id}:app/{platform}/{platform_application_name}"
+
+
 #
 # ECR
 #

@@ -1,5 +1,8 @@
 import re
 from string import ascii_letters, digits
+from typing import get_args
+
+from localstack.services.sns.v2.models import SnsApplicationPlatforms
 
 SNS_PROTOCOLS = [
     "http",
@@ -40,3 +43,5 @@ SNS_CERT_ENDPOINT = "/_aws/sns/SimpleNotificationService-6c6f63616c737461636b697
 
 DUMMY_SUBSCRIPTION_PRINCIPAL = "arn:{partition}:iam::{account_id}:user/DummySNSPrincipal"
 E164_REGEX = re.compile(r"^\+?[1-9]\d{1,14}$")
+
+VALID_APPLICATION_PLATFORMS = list(get_args(SnsApplicationPlatforms))
