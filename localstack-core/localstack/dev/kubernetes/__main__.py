@@ -9,6 +9,7 @@ EDGE_SERVICE_NODE_PORT = 30066
 NODE_PORT_START = 30010
 SERVICE_PORT_START = 4510
 NUMBER_OF_SERVICE_PORTS = 50
+EDGE_SERVICE_DNS_PORT = 31053
 
 
 @dataclasses.dataclass
@@ -144,7 +145,12 @@ def generate_mount_points(
     return mount_points
 
 
-def generate_k8s_cluster_config(mount_points: list[MountPoint], port: int = 4566):
+def generate_k8s_cluster_config(
+    mount_points: list[MountPoint],
+    port: int = 4566,
+    expose_dns: bool = False,
+    dns_port: int = 53,
+):
     volumes = [
         {
             "volume": f"{mount_point.host_path}:{mount_point.node_path}",
@@ -176,6 +182,24 @@ def generate_k8s_cluster_config(mount_points: list[MountPoint], port: int = 4566
             "port": f"{SERVICE_PORT_START}-{SERVICE_PORT_START + NUMBER_OF_SERVICE_PORTS - 1}:{NODE_PORT_START}-{NODE_PORT_START + NUMBER_OF_SERVICE_PORTS - 1}",
         },
     ]
+
+    if expose_dns:
+        ports.append(
+            {
+                "nodeFilters": [
+                    "server:0",
+                ],
+                "port": f"{dns_port}:{EDGE_SERVICE_DNS_PORT}/udp",
+            }
+        )
+        ports.append(
+            {
+                "nodeFilters": [
+                    "server:0",
+                ],
+                "port": f"{dns_port}:{EDGE_SERVICE_DNS_PORT}/tcp",
+            }
+        )
 
     config = {
         "apiVersion": "k3d.io/v1alpha5",
@@ -279,7 +303,11 @@ def generate_k8s_helm_overrides(
             "end": SERVICE_PORT_START + NUMBER_OF_SERVICE_PORTS,
             "nodePortStart": NODE_PORT_START,
         },
-        "dnsService": True,
+        "dnsService": {
+            "enabled": True,
+            "nodePortTcp": EDGE_SERVICE_DNS_PORT,
+            "nodePortUdp": EDGE_SERVICE_DNS_PORT,
+        },
     }
     overrides = {
         "debug": True,
@@ -355,6 +383,18 @@ def print_file(content: dict, file_name: str):
     help="Port to expose from the kubernetes node",
     type=click.IntRange(0, 65535),
 )
+@click.option(
+    "--expose-dns",
+    is_flag=True,
+    default=False,
+    help="Expose DNS port from the kubernetes node.",
+)
+@click.option(
+    "--dns-port",
+    default=53,
+    help="DNS port to expose from the kubernetes node. It is applied only if --expose-dns is set.",
+    type=click.IntRange(0, 65535),
+)
 @click.argument("command", nargs=-1, required=False)
 def run(
     pro: bool = None,
@@ -367,13 +407,17 @@ def run(
     command: str = None,
     env: list[str] = None,
     port: int = None,
+    expose_dns: bool = False,
+    dns_port: int = 53,
 ):
     """
     A tool for localstack developers to generate the kubernetes cluster configuration file and the overrides to mount the localstack code into the cluster.
     """
     mount_points = generate_mount_points(pro, mount_moto, mount_entrypoints)
 
-    config = generate_k8s_cluster_config(mount_points, port=port)
+    config = generate_k8s_cluster_config(
+        mount_points, port=port, expose_dns=expose_dns, dns_port=dns_port
+    )
 
     overrides = generate_k8s_helm_overrides(mount_points, pro=pro, env=env)
 
