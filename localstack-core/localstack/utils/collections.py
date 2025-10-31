@@ -5,7 +5,7 @@ and manipulate python collection (dicts, list, sets).
 
 import logging
 import re
-from collections.abc import Callable, Iterable, Iterator, Mapping, Sized
+from collections.abc import Callable, Generator, Iterable, Iterator, Mapping, Sized
 from typing import (
     Any,
     Optional,
@@ -23,6 +23,9 @@ LOG = logging.getLogger(__name__)
 
 # default regex to match an item in a comma-separated list string
 DEFAULT_REGEX_LIST_ITEM = r"[\w-]+"
+
+_E = TypeVar("_E")
+"""TypeVar var used internally for container type parameters."""
 
 
 class AccessTrackingDict(dict):
@@ -101,21 +104,18 @@ class HashableJsonDict(ImmutableDict):
         return hash(canonical_json(self._dict))
 
 
-_ListType = TypeVar("_ListType")
-
-
-class PaginatedList(list[_ListType]):
+class PaginatedList(list[_E]):
     """List which can be paginated and filtered. For usage in AWS APIs with paginated responses"""
 
     DEFAULT_PAGE_SIZE = 50
 
     def get_page(
         self,
-        token_generator: Callable[[_ListType], str],
+        token_generator: Callable[[_E], str],
         next_token: str = None,
         page_size: int = None,
-        filter_function: Callable[[_ListType], bool] = None,
-    ) -> tuple[list[_ListType], str | None]:
+        filter_function: Callable[[_E], bool] = None,
+    ) -> tuple[list[_E], str | None]:
         if filter_function is not None:
             result_list = list(filter(filter_function, self))
         else:
@@ -528,9 +528,6 @@ def is_comma_delimited_list(string: str, item_regex: str | None = None) -> bool:
     return True
 
 
-_E = TypeVar("_E")
-
-
 def optional_list(condition: bool, items: Iterable[_E]) -> list[_E]:
     """
     Given an iterable, either create a list out of the entire iterable (if `condition` is `True`), or return the empty list.
@@ -540,3 +537,18 @@ def optional_list(condition: bool, items: Iterable[_E]) -> list[_E]:
     []
     """
     return list(filter(lambda _: condition, items))
+
+
+def iter_chunks(items: list[_E], chunk_size: int) -> Generator[list[_E], None, None]:
+    """
+    Split a list into smaller chunks of a specified size and iterate over them.
+
+    It is implemented as a generator and yields each chunk as needed, making it memory-efficient for large lists.
+
+    :param items:  A list of elements to be divided into chunks.
+    :param chunk_size: The maximum number of elements that a single chunk can contain.
+    :return: A generator that yields chunks (sublists) of the original list. Each chunk contains up to `chunk_size`
+    elements.
+    """
+    for i in range(0, len(items), chunk_size):
+        yield items[i : i + chunk_size]
