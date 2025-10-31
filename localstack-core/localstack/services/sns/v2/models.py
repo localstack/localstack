@@ -142,16 +142,17 @@ class SnsMessage:
         )
 
 
+class PlatformEndpoint(TypedDict, total=False):
+    PlatformEndpointArn: str
+    Attributes: dict[str, str]
+    CustomUserData: str
+    PlatformApplicationArn: str
+
+
 class SnsPlatformApplication(TypedDict, total=False):
     PlatformApplicationArn: str
     Attributes: dict[str, str]
-    PlatformEndpoints: list[tuple[str, str]]
-
-
-class PlatformEndpoint(TypedDict, total=False):
-    PlatformApplicationArn: str
-    Attributes: dict[str, str]
-    CustomUserData: str
+    PlatformEndpoints: dict[str, str]
 
 
 class SnsStore(BaseStore):

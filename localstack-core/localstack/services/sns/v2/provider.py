@@ -13,7 +13,6 @@ from localstack.aws.api.sns import (
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
-    GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
@@ -71,6 +70,7 @@ from localstack.services.sns.v2.models import (
     sns_stores,
 )
 from localstack.services.sns.v2.utils import (
+    create_platform_endpoint_arn,
     create_subscription_arn,
     encode_subscription_token_with_region,
     get_next_page_token_from_arn,
@@ -240,10 +240,11 @@ class SnsProvider(SnsApi):
                 raise InvalidParameterException("Invalid parameter: SQS endpoint ARN")
 
         elif protocol == "application":
-            # TODO: This needs to be implemented once applications are ported from moto to the new provider
-            raise NotImplementedError(
-                "This functionality needs yet to be ported to the new SNS provider"
-            )
+            # TODO: Validate exact behaviour
+            try:
+                parse_arn(endpoint)
+            except InvalidArnException:
+                raise InvalidParameterException("Invalid parameter: ApplicationEndpoint ARN")
 
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             # TODO: move to sqs protocol block if possible
@@ -595,7 +596,10 @@ class SnsProvider(SnsApi):
             region_name=context.region,
         )
         platform_application = SnsPlatformApplication(
-            PlatformApplicationArn=application_arn, Attributes=_attributes, PlatformEndpoints=[]
+            PlatformApplicationArn=application_arn,
+            Attributes=_attributes,
+            PlatformEndpoints={},
+            Platform=platform,
         )
         store.platform_applications[application_arn] = platform_application
         return CreatePlatformApplicationResponse(**platform_application)
@@ -605,6 +609,8 @@ class SnsProvider(SnsApi):
     ) -> None:
         store = self.get_store(context.account_id, context.region)
         store.platform_applications.pop(platform_application_arn, None)
+        # TODO: if the platform had endpoints, should we remove them from the store? There is no way to list
+        #   endpoints without an application
 
     def list_platform_applications(
         self, context: RequestContext, next_token: String | None = None, **kwargs
@@ -659,26 +665,40 @@ class SnsProvider(SnsApi):
         store = self.get_store(context.account_id, context.region)
         application = store.platform_applications.get(platform_application_arn)
         if not application:
-            raise NotFoundException("Platform Application not found")
+            raise NotFoundException("PlatformApplication does not exist")
+        endpoint_arn = application["PlatformEndpoints"].get(token, {})
+        attributes = attributes or {}
+        _attributes = {"Enabled": "true", "Token": token, **attributes}
+        if endpoint_arn and (endpoint := store.platform_endpoints.get(endpoint_arn)):
+            # endpoint for that application with that particular token already exists
+            if not endpoint["Attributes"] == _attributes:
+                raise InvalidParameterException(
+                    f"Invalid parameter: Token Reason: Endpoint {endpoint_arn} already exists with the same Token, but different attributes."
+                )
+            else:
+                return CreateEndpointResponse(EndpointArn=endpoint_arn)
+
+        endpoint_arn = create_platform_endpoint_arn(platform_application_arn)
         endpoint = PlatformEndpoint(
-            Attributes=attributes,
+            Attributes=_attributes,
             CustomUserData=custom_user_data,
+            PlatformEndpointArn=endpoint_arn,
             PlatformApplicationArn=platform_application_arn,
         )
-        application["PlatformEndpoints"].append(endpoint)  # FIXME
+        store.platform_endpoints[endpoint_arn] = endpoint
+        application["PlatformEndpoints"][token] = endpoint_arn
+
+        return CreateEndpointResponse(EndpointArn=endpoint_arn)
 
     def delete_endpoint(self, context: RequestContext, endpoint_arn: String, **kwargs) -> None:
-        pass
-
-    def get_endpoint_attributes(
-        self, context: RequestContext, endpoint_arn: String, **kwargs
-    ) -> GetEndpointAttributesResponse:
-        pass
-
-    def set_endpoint_attributes(
-        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString, **kwargs
-    ) -> None:
-        pass
+        store = self.get_store(context.account_id, context.region)
+        endpoint = store.platform_endpoints.pop(endpoint_arn, None)
+        if endpoint:
+            platform_application = store.platform_applications.get(
+                endpoint["PlatformApplicationArn"]
+            )
+            if platform_application:
+                platform_application["PlatformEndpoints"].pop(endpoint["Attributes"]["Token"], None)
 
     def list_endpoints_by_platform_application(
         self,
@@ -687,8 +707,29 @@ class SnsProvider(SnsApi):
         next_token: String | None = None,
         **kwargs,
     ) -> ListEndpointsByPlatformApplicationResponse:
-        # TODO: stub so cleanup fixture won't fail
-        return ListEndpointsByPlatformApplicationResponse(Endpoints=[])
+        store = self.get_store(context.account_id, context.region)
+        platform_application = store.platform_applications.get(platform_application_arn, {})
+        if not platform_application:
+            raise NotFoundException("PlatformApplication does not exist")
+        endpoint_arns = platform_application.get("PlatformEndpoints").values()
+        paginated_endpoint_arns = PaginatedList(endpoint_arns)
+        page, token = paginated_endpoint_arns.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x),
+            page_size=100,
+            next_token=next_token,
+        )
+        response = ListEndpointsByPlatformApplicationResponse(
+            Endpoints=[
+                {
+                    "EndpointArn": endpoint_arn,
+                    "Attributes": store.platform_endpoints.get(endpoint_arn, {}).get("Attributes"),
+                }
+                for endpoint_arn in page
+            ]
+        )
+        if token:
+            response["NextToken"] = token
+        return response
 
     #
     # Sms operations

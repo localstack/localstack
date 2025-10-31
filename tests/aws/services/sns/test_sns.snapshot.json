@@ -6347,5 +6347,181 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint": {
+    "recorded-date": "31-10-2025, 19:55:44",
+    "recorded-content": {
+      "create-platform-endpoint": {
+        "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_idempotency": {
+    "recorded-date": "31-10-2025, 19:56:07",
+    "recorded-content": {
+      "create-platform-endpoint": {
+        "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-platform-endpoint-idempotent": {
+        "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-platform-endpoint-different-token": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Token Reason: Endpoint arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1> already exists with the same Token, but different attributes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_non_existent_app": {
+    "recorded-date": "31-10-2025, 17:45:19",
+    "recorded-content": {
+      "create-platform-endpoint": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_list_platform_endpoints": {
+    "recorded-date": "31-10-2025, 18:07:43",
+    "recorded-content": {
+      "list-endpoints-by-app": {
+        "Endpoints": [
+          {
+            "Attributes": {
+              "Enabled": "true",
+              "Token": "token_1"
+            },
+            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint": {
+    "recorded-date": "31-10-2025, 18:29:49",
+    "recorded-content": {
+      "list-endpoints-by-app-pre-delete": {
+        "Endpoints": [
+          {
+            "Attributes": {
+              "Enabled": "true",
+              "Token": "token_1"
+            },
+            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-endpoint": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-endpoints-by-app-post-delete": {
+        "Endpoints": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint_with_subscription": {
+    "recorded-date": "31-10-2025, 19:02:06",
+    "recorded-content": {
+      "list-subscriptions-pre-delete": {
+        "NextToken": "AAHBKpbxqol68uhFDM69YukknU8L1NOI5d+6FIRpys8BFw==",
+        "Subscriptions": [
+          {
+            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "application",
+            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-endpoint": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-subscriptions-post-delete": {
+        "NextToken": "AAEYfwVzDZYdGUPsc22QZlUK8muiZrLreU3KRlxuZSAVEA==",
+        "Subscriptions": [
+          {
+            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "application",
+            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_endpoints_of_deleted_app": {
+    "recorded-date": "31-10-2025, 19:24:20",
+    "recorded-content": {
+      "delete-application": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-endpoints-after-app-delete": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
   }
 }

@@ -103,6 +103,14 @@ def create_subscription_arn(topic_arn: str) -> str:
     return f"{topic_arn}:{uuid4()}"
 
 
+def create_platform_endpoint_arn(
+    platform_application_arn: str,
+) -> str:
+    # This is the format of an Endpoint Arn
+    # arn:aws:sns:us-west-2:1234567890:endpoint/GCM/MyApplication/12345678-abcd-9012-efgh-345678901234
+    return f"{platform_application_arn.replace('app', 'endpoint', 1)}/{uuid4().hex}"
+
+
 def encode_subscription_token_with_region(region: str) -> str:
     """
     Create a 64 characters Subscription Token with the region encoded
