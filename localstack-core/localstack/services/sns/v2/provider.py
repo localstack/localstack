@@ -10,8 +10,10 @@ from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     ConfirmSubscriptionResponse,
+    CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
+    GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
@@ -26,7 +28,6 @@ from localstack.aws.api.sns import (
     ListTopicsResponse,
     MapStringToString,
     NotFoundException,
-    PlatformApplication,
     SetSMSAttributesResponse,
     SnsApi,
     String,
@@ -60,8 +61,10 @@ from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
     SMS_TYPES,
+    PlatformEndpoint,
     SnsMessage,
     SnsMessageType,
+    SnsPlatformApplication,
     SnsStore,
     SnsSubscription,
     Topic,
@@ -591,8 +594,8 @@ class SnsProvider(SnsApi):
             account_id=context.account_id,
             region_name=context.region,
         )
-        platform_application = PlatformApplication(
-            PlatformApplicationArn=application_arn, Attributes=_attributes
+        platform_application = SnsPlatformApplication(
+            PlatformApplicationArn=application_arn, Attributes=_attributes, PlatformEndpoints=[]
         )
         store.platform_applications[application_arn] = platform_application
         return CreatePlatformApplicationResponse(**platform_application)
@@ -643,6 +646,39 @@ class SnsProvider(SnsApi):
     #
     # Platform Endpoints
     #
+
+    def create_platform_endpoint(
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        token: String,
+        custom_user_data: String | None = None,
+        attributes: MapStringToString | None = None,
+        **kwargs,
+    ) -> CreateEndpointResponse:
+        store = self.get_store(context.account_id, context.region)
+        application = store.platform_applications.get(platform_application_arn)
+        if not application:
+            raise NotFoundException("Platform Application not found")
+        endpoint = PlatformEndpoint(
+            Attributes=attributes,
+            CustomUserData=custom_user_data,
+            PlatformApplicationArn=platform_application_arn,
+        )
+        application["PlatformEndpoints"].append(endpoint)  # FIXME
+
+    def delete_endpoint(self, context: RequestContext, endpoint_arn: String, **kwargs) -> None:
+        pass
+
+    def get_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, **kwargs
+    ) -> GetEndpointAttributesResponse:
+        pass
+
+    def set_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString, **kwargs
+    ) -> None:
+        pass
 
     def list_endpoints_by_platform_application(
         self,
@@ -732,7 +768,7 @@ class SnsProvider(SnsApi):
     @staticmethod
     def _get_platform_application(
         platform_application_arn: str, context: RequestContext
-    ) -> PlatformApplication:
+    ) -> SnsPlatformApplication:
         parse_and_validate_platform_application_arn(platform_application_arn)
         try:
             store = SnsProvider.get_store(context.account_id, context.region)

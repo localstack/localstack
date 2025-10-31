@@ -482,6 +482,12 @@ def sns_platform_application_arn(
     return f"arn:{get_partition(region_name)}:sns:{region_name}:{account_id}:app/{platform}/{platform_application_name}"
 
 
+def sns_platform_endpoint_arn(
+    platform_application_name: str, platform: str, account_id: str, region_name: str
+) -> str:
+    return f"arn:{get_partition(region_name)}:sns:{region_name}:{account_id}:endpoint/{platform}/{platform_application_name}/12345678-abcd-9012-efgh-345678901234"
+
+
 #
 # ECR
 #
