@@ -601,7 +601,6 @@ class SnsProvider(SnsApi):
             PlatformApplicationArn=application_arn,
             Attributes=_attributes,
             PlatformEndpoints={},
-            Platform=platform,
         )
         store.platform_applications[application_arn] = platform_application
         return CreatePlatformApplicationResponse(**platform_application)
@@ -612,7 +611,7 @@ class SnsProvider(SnsApi):
         store = self.get_store(context.account_id, context.region)
         store.platform_applications.pop(platform_application_arn, None)
         # TODO: if the platform had endpoints, should we remove them from the store? There is no way to list
-        #   endpoints without an application
+        #   endpoints without an application, so this is impossible to check the state of AWS here
 
     def list_platform_applications(
         self, context: RequestContext, next_token: String | None = None, **kwargs
@@ -670,6 +669,9 @@ class SnsProvider(SnsApi):
             raise NotFoundException("PlatformApplication does not exist")
         endpoint_arn = application["PlatformEndpoints"].get(token, {})
         attributes = attributes or {}
+        _validate_endpoint_attributes(attributes, allow_empty=True)
+        # CustomUserData can be specified both in attributes and as parameter. Attributes take precedence
+        attributes.setdefault(EndpointAttributeNames.CUSTOM_USER_DATA, custom_user_data)
         _attributes = {"Enabled": "true", "Token": token, **attributes}
         if endpoint_arn and (endpoint := store.platform_endpoints.get(endpoint_arn)):
             # endpoint for that application with that particular token already exists
@@ -683,7 +685,6 @@ class SnsProvider(SnsApi):
         endpoint_arn = create_platform_endpoint_arn(platform_application_arn)
         endpoint = PlatformEndpoint(
             Attributes=_attributes,
-            CustomUserData=custom_user_data,
             PlatformEndpointArn=endpoint_arn,
             PlatformApplicationArn=platform_application_arn,
         )
@@ -933,8 +934,9 @@ def _check_empty_attributes(attributes: dict) -> None:
         )
 
 
-def _validate_endpoint_attributes(attributes: dict) -> None:
-    _check_empty_attributes(attributes)
+def _validate_endpoint_attributes(attributes: dict, allow_empty: bool = False) -> None:
+    if not allow_empty:
+        _check_empty_attributes(attributes)
     for key in attributes:
         if key not in EndpointAttributeNames:
             raise InvalidParameterException(

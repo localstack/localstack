@@ -3941,9 +3941,9 @@ class TestSNSPlatformEndpointCrud:
         sns_create_platform_endpoint,
         snapshot,
     ):
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -3967,9 +3967,9 @@ class TestSNSPlatformEndpointCrud:
         sns_create_platform_endpoint,
         snapshot,
     ):
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -4015,9 +4015,9 @@ class TestSNSPlatformEndpointCrud:
         # you must also unsubscribe the endpoint from the topic."
         # This test validates this particular case
 
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -4059,9 +4059,9 @@ class TestSNSPlatformEndpointCrud:
         sns_create_platform_endpoint,
         snapshot,
     ):
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -4090,9 +4090,9 @@ class TestSNSPlatformEndpointCrud:
         sns_create_platform_endpoint,
         sns_create_platform_application,
     ):
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -4114,9 +4114,9 @@ class TestSNSPlatformEndpointCrud:
         sns_create_platform_application,
         aws_client,
     ):
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -4196,9 +4196,9 @@ class TestSNSPlatformEndpointCrud:
         aws_client,
         attributes,
     ):
-        # if tested against AWS, the fixture needs to contain real credentials
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         initial_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
         app_arn = sns_create_platform_application(
@@ -4211,6 +4211,104 @@ class TestSNSPlatformEndpointCrud:
         with pytest.raises(ClientError) as e:
             aws_client.sns.set_endpoint_attributes(EndpointArn=endpoint_arn, Attributes=attributes)
         snapshot.match("set-platform-endpoint-invalid-attributes", e.value.response)
+
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
+    @pytest.mark.parametrize(
+        "attributes",
+        [
+            {"PlatformPrincipal": "Principal"},
+            {"PlatformCredential": "Credential"},
+            {"InvalidKey": "Value"},
+            {"CustomUserData": "A" * 2050},
+        ],
+        ids=[
+            "Invalid_Name_Principal",
+            "Invalid_Name_Credential",
+            "Invalid_Name_Generic",
+            "Data_Too_Long",
+        ],
+    )
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_with_invalid_attributes(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+        attributes,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        platform_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=platform_attributes
+        )["PlatformApplicationArn"]
+        with pytest.raises(ClientError) as e:
+            sns_create_platform_endpoint(
+                platform_application_arn=app_arn, token="token_1", Attributes=attributes
+            )
+        snapshot.match("create-platform-endpoint-invalid-attr", e.value.response)
+
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_custom_data(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        platform_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=platform_attributes
+        )["PlatformApplicationArn"]
+
+        custom_user_data = "bar"
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1", CustomUserData=custom_user_data
+        )["EndpointArn"]
+
+        response = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("create-endpoint-double-custom-data", response)
+
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_double_custom_data(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+    ):
+        # For some reason, CustomUserData can be specified both as parameter directly and inside attributes.
+
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        platform_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=platform_attributes
+        )["PlatformApplicationArn"]
+
+        attributes = {"CustomUserData": "foo"}
+        custom_user_data = "bar"
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn,
+            token="token_1",
+            Attributes=attributes,
+            CustomUserData=custom_user_data,
+        )["EndpointArn"]
+
+        response = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("create-endpoint-double-custom-data", response)
 
 
 class TestSNSPlatformEndpoint:

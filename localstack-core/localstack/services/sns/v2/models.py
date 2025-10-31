@@ -40,7 +40,7 @@ SnsApplicationPlatforms = Literal[
 
 class EndpointAttributeNames(StrEnum):
     CUSTOM_USER_DATA = "CustomUserData"
-    ATTRIBUTES = "Attributes"
+    Token = "Token"
     ENABLED = "Enabled"
 
 
@@ -151,7 +151,6 @@ class SnsMessage:
 class PlatformEndpoint(TypedDict, total=False):
     PlatformEndpointArn: str
     Attributes: dict[str, str]
-    CustomUserData: str
     PlatformApplicationArn: str
 
 
