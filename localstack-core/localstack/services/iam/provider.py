@@ -73,8 +73,10 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.iam.iam_patches import apply_iam_patches
-from localstack.services.iam.resources.basic_iam_policy_simulator import BasicIAMPolicySimulator
-from localstack.services.iam.resources.iam_policy_simulator import IAMPolicySimulator
+from localstack.services.iam.resources.policy_simulator import (
+    BasicIAMPolicySimulator,
+    IAMPolicySimulator,
+)
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.moto import call_moto
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header

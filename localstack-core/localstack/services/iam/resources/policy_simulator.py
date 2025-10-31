@@ -1,10 +1,25 @@
+import abc
+
 from moto.iam import iam_backends
 from moto.iam.models import IAMBackend
 
 from localstack.aws.api import RequestContext
 from localstack.aws.api.iam import SimulatePolicyResponse, SimulatePrincipalPolicyRequest
-from localstack.services.iam.resources.iam_policy_simulator import IAMPolicySimulator
 from localstack.utils import json
+
+
+class IAMPolicySimulator(abc.ABC):
+    @abc.abstractmethod
+    def simulate_principal_policy(
+        self, context: RequestContext, request: SimulatePrincipalPolicyRequest
+    ):
+        """
+        Simulate principal policy
+        :param request: SimulatePrincipalPolicyRequest
+        :param context: RequestContext
+        :return: SimulatePrincipalResponse
+        """
+        pass
 
 
 class BasicIAMPolicySimulator(IAMPolicySimulator):
