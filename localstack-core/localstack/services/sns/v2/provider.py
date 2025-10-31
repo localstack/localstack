@@ -13,6 +13,7 @@ from localstack.aws.api.sns import (
     CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
+    GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
@@ -60,6 +61,7 @@ from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
     SMS_TYPES,
+    EndpointAttributeNames,
     PlatformEndpoint,
     SnsMessage,
     SnsMessageType,
@@ -731,6 +733,27 @@ class SnsProvider(SnsApi):
             response["NextToken"] = token
         return response
 
+    def get_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, **kwargs
+    ) -> GetEndpointAttributesResponse:
+        store = self.get_store(context.account_id, context.region)
+        endpoint = store.platform_endpoints.get(endpoint_arn)
+        if not endpoint:
+            raise NotFoundException("Endpoint does not exist")
+        attributes = endpoint["Attributes"]
+        return GetEndpointAttributesResponse(Attributes=attributes)
+
+    def set_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString, **kwargs
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        endpoint = store.platform_endpoints.get(endpoint_arn)
+        if not endpoint:
+            raise NotFoundException("Endpoint does not exist")
+        _validate_endpoint_attributes(attributes)
+        attributes = attributes or {}
+        endpoint["Attributes"].update(attributes)
+
     #
     # Sms operations
     #
@@ -898,11 +921,28 @@ def _validate_platform_application_name(name: str) -> None:
 
 
 def _validate_platform_application_attributes(attributes: dict) -> None:
+    _check_empty_attributes(attributes)
+
+
+def _check_empty_attributes(attributes: dict) -> None:
     if not attributes:
         raise CommonServiceException(
             code="ValidationError",
             message="1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
             sender_fault=True,
+        )
+
+
+def _validate_endpoint_attributes(attributes: dict) -> None:
+    _check_empty_attributes(attributes)
+    for key in attributes:
+        if key not in EndpointAttributeNames:
+            raise InvalidParameterException(
+                f"Invalid parameter: Attributes Reason: Invalid attribute name: {key}"
+            )
+    if len(attributes.get(EndpointAttributeNames.CUSTOM_USER_DATA, "")) > 2048:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Invalid value for attribute: CustomUserData: must be at most 2048 bytes long in UTF-8 encoding"
         )
 
 

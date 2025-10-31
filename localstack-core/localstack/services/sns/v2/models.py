@@ -38,6 +38,12 @@ SnsApplicationPlatforms = Literal[
 ]
 
 
+class EndpointAttributeNames(StrEnum):
+    CUSTOM_USER_DATA = "CustomUserData"
+    ATTRIBUTES = "Attributes"
+    ENABLED = "Enabled"
+
+
 SMS_ATTRIBUTE_NAMES = [
     "DeliveryStatusIAMRole",
     "DeliveryStatusSuccessSamplingRate",

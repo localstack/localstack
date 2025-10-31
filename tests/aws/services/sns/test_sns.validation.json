@@ -213,25 +213,25 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint": {
-    "last_validated_date": "2025-10-31T19:55:44+00:00",
+    "last_validated_date": "2025-10-31T21:10:21+00:00",
     "durations_in_seconds": {
-      "setup": 0.86,
-      "call": 1.7,
-      "teardown": 0.91,
-      "total": 3.47
+      "setup": 0.88,
+      "call": 1.61,
+      "teardown": 0.92,
+      "total": 3.41
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_idempotency": {
-    "last_validated_date": "2025-10-31T19:56:07+00:00",
+    "last_validated_date": "2025-10-31T21:10:23+00:00",
     "durations_in_seconds": {
-      "setup": 1.11,
-      "call": 2.53,
+      "setup": 0.01,
+      "call": 1.19,
       "teardown": 0.92,
-      "total": 4.56
+      "total": 2.12
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_non_existent_app": {
-    "last_validated_date": "2025-10-31T19:34:02+00:00",
+    "last_validated_date": "2025-10-31T21:10:23+00:00",
     "durations_in_seconds": {
       "setup": 0.0,
       "call": 0.3,
@@ -240,30 +240,48 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_endpoints_of_deleted_app": {
-    "last_validated_date": "2025-10-31T19:40:02+00:00",
+    "last_validated_date": "2025-10-31T21:11:35+00:00",
     "durations_in_seconds": {
-      "setup": 0.75,
-      "call": 13.21,
-      "teardown": 0.31,
-      "total": 14.27
+      "setup": 0.0,
+      "call": 12.09,
+      "teardown": 0.3,
+      "total": 12.39
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint": {
-    "last_validated_date": "2025-10-31T19:35:44+00:00",
+    "last_validated_date": "2025-10-31T21:10:38+00:00",
     "durations_in_seconds": {
-      "setup": 1.09,
-      "call": 33.19,
-      "teardown": 0.6,
-      "total": 34.88
+      "setup": 0.0,
+      "call": 12.17,
+      "teardown": 0.61,
+      "total": 12.78
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint_with_subscription": {
-    "last_validated_date": "2025-10-31T19:02:06+00:00",
+    "last_validated_date": "2025-10-31T21:11:22+00:00",
     "durations_in_seconds": {
-      "setup": 1.04,
-      "call": 24.88,
-      "teardown": 1.02,
-      "total": 26.94
+      "setup": 0.0,
+      "call": 43.62,
+      "teardown": 0.92,
+      "total": 44.54
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_get_platform_endpoint_attributes": {
+    "last_validated_date": "2025-10-31T21:11:36+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.92,
+      "teardown": 0.72,
+      "total": 1.64
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_get_platform_endpoint_attributes_non_existent_endpoint": {
+    "last_validated_date": "2025-10-31T21:11:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.0,
+      "total": 0.13
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_list_platform_endpoint": {
@@ -276,12 +294,138 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_list_platform_endpoints": {
-    "last_validated_date": "2025-10-31T19:34:52+00:00",
+    "last_validated_date": "2025-10-31T21:10:25+00:00",
     "durations_in_seconds": {
-      "setup": 1.08,
-      "call": 1.66,
+      "setup": 0.01,
+      "call": 0.91,
+      "teardown": 0.72,
+      "total": 1.64
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes": {
+    "last_validated_date": "2025-10-31T21:11:38+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 1.22,
+      "teardown": 0.83,
+      "total": 2.05
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_arn": {
+    "last_validated_date": "2025-10-31T20:20:11+00:00",
+    "durations_in_seconds": {
+      "setup": 1.05,
+      "call": 0.9,
+      "teardown": 0.01,
+      "total": 1.96
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Data_Too_Long]": {
+    "last_validated_date": "2025-10-31T21:11:48+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.8,
       "teardown": 0.92,
-      "total": 3.66
+      "total": 1.72
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Empty]": {
+    "last_validated_date": "2025-10-31T21:11:41+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.91,
+      "teardown": 0.92,
+      "total": 1.83
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Credential]": {
+    "last_validated_date": "2025-10-31T21:11:44+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.92,
+      "teardown": 0.87,
+      "total": 1.79
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Generic]": {
+    "last_validated_date": "2025-10-31T21:11:46+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.77,
+      "teardown": 0.83,
+      "total": 1.6
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Principal]": {
+    "last_validated_date": "2025-10-31T21:11:42+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.92,
+      "teardown": 0.92,
+      "total": 1.84
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[attributes0]": {
+    "last_validated_date": "2025-10-31T20:48:00+00:00",
+    "durations_in_seconds": {
+      "setup": 1.11,
+      "call": 1.64,
+      "teardown": 0.9,
+      "total": 3.65
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[attributes1]": {
+    "last_validated_date": "2025-10-31T20:48:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.9,
+      "teardown": 0.79,
+      "total": 1.69
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[attributes2]": {
+    "last_validated_date": "2025-10-31T20:48:03+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.74,
+      "teardown": 0.84,
+      "total": 1.58
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[attributes3]": {
+    "last_validated_date": "2025-10-31T20:48:04+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.9,
+      "teardown": 0.63,
+      "total": 1.53
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[attributes4]": {
+    "last_validated_date": "2025-10-31T20:48:06+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.9,
+      "teardown": 0.7,
+      "total": 1.6
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_non_existent_app": {
+    "last_validated_date": "2025-10-31T20:29:24+00:00",
+    "durations_in_seconds": {
+      "setup": 0.8,
+      "call": 0.93,
+      "teardown": 0.01,
+      "total": 1.74
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_non_existent_endpoint": {
+    "last_validated_date": "2025-10-31T21:11:39+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.25,
+      "teardown": 0.0,
+      "total": 0.25
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_subscribe_platform_endpoint": {

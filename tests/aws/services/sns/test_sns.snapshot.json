@@ -6349,7 +6349,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint": {
-    "recorded-date": "31-10-2025, 19:55:44",
+    "recorded-date": "31-10-2025, 21:10:21",
     "recorded-content": {
       "create-platform-endpoint": {
         "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
@@ -6361,7 +6361,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_idempotency": {
-    "recorded-date": "31-10-2025, 19:56:07",
+    "recorded-date": "31-10-2025, 21:10:23",
     "recorded-content": {
       "create-platform-endpoint": {
         "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
@@ -6391,7 +6391,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_non_existent_app": {
-    "recorded-date": "31-10-2025, 17:45:19",
+    "recorded-date": "31-10-2025, 21:10:23",
     "recorded-content": {
       "create-platform-endpoint": {
         "Error": {
@@ -6407,7 +6407,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_list_platform_endpoints": {
-    "recorded-date": "31-10-2025, 18:07:43",
+    "recorded-date": "31-10-2025, 21:10:25",
     "recorded-content": {
       "list-endpoints-by-app": {
         "Endpoints": [
@@ -6416,7 +6416,7 @@
               "Enabled": "true",
               "Token": "token_1"
             },
-            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>"
+            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>"
           }
         ],
         "ResponseMetadata": {
@@ -6427,7 +6427,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint": {
-    "recorded-date": "31-10-2025, 18:29:49",
+    "recorded-date": "31-10-2025, 21:10:38",
     "recorded-content": {
       "list-endpoints-by-app-pre-delete": {
         "Endpoints": [
@@ -6436,7 +6436,7 @@
               "Enabled": "true",
               "Token": "token_1"
             },
-            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>"
+            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>"
           }
         ],
         "ResponseMetadata": {
@@ -6460,13 +6460,13 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint_with_subscription": {
-    "recorded-date": "31-10-2025, 19:02:06",
+    "recorded-date": "31-10-2025, 21:11:22",
     "recorded-content": {
       "list-subscriptions-pre-delete": {
-        "NextToken": "AAHBKpbxqol68uhFDM69YukknU8L1NOI5d+6FIRpys8BFw==",
+        "NextToken": "AAG9LCMIVXPCiKJf+rsdaS9DyZu6xfWzoErWBwyoWKES7A==",
         "Subscriptions": [
           {
-            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>",
+            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
             "Owner": "111111111111",
             "Protocol": "application",
             "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
@@ -6485,10 +6485,10 @@
         }
       },
       "list-subscriptions-post-delete": {
-        "NextToken": "AAEYfwVzDZYdGUPsc22QZlUK8muiZrLreU3KRlxuZSAVEA==",
+        "NextToken": "AAH+e/XN9n3f0NBgBjKQKcpVyRMqz7iVzr2At9rNbCniHg==",
         "Subscriptions": [
           {
-            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/app1/<resource:1>",
+            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
             "Owner": "111111111111",
             "Protocol": "application",
             "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
@@ -6503,7 +6503,7 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_endpoints_of_deleted_app": {
-    "recorded-date": "31-10-2025, 19:24:20",
+    "recorded-date": "31-10-2025, 21:11:35",
     "recorded-content": {
       "delete-application": {
         "ResponseMetadata": {
@@ -6520,6 +6520,170 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_get_platform_endpoint_attributes": {
+    "recorded-date": "31-10-2025, 21:11:36",
+    "recorded-content": {
+      "get-platform-endpoint-attributes": {
+        "Attributes": {
+          "Enabled": "true",
+          "Token": "token_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes": {
+    "recorded-date": "31-10-2025, 21:11:38",
+    "recorded-content": {
+      "set-platform-endpoint-attributes": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-platform-endpoint-attributes": {
+        "Attributes": {
+          "Enabled": "false",
+          "Token": "token_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_arn": {
+    "recorded-date": "31-10-2025, 20:20:11",
+    "recorded-content": {
+      "set-platform-endpoint-attributes-non-existent-app": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: EndpointArn Reason: Wrong number of slashes in relative portion of the ARN.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_non_existent_endpoint": {
+    "recorded-date": "31-10-2025, 21:11:39",
+    "recorded-content": {
+      "set-platform-endpoint-attributes-non-existent-app": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Endpoint does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Principal]": {
+    "recorded-date": "31-10-2025, 21:11:42",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: PlatformPrincipal",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Credential]": {
+    "recorded-date": "31-10-2025, 21:11:44",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: PlatformCredential",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Generic]": {
+    "recorded-date": "31-10-2025, 21:11:46",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: InvalidKey",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Data_Too_Long]": {
+    "recorded-date": "31-10-2025, 21:11:48",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid value for attribute: CustomUserData: must be at most 2048 bytes long in UTF-8 encoding",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_get_platform_endpoint_attributes_non_existent_endpoint": {
+    "recorded-date": "31-10-2025, 21:11:39",
+    "recorded-content": {
+      "set-platform-endpoint-attributes-non-existent-app": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Endpoint does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Empty]": {
+    "recorded-date": "31-10-2025, 21:11:41",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
         }
       }
     }
