@@ -12,7 +12,7 @@ class IAMPolicySimulator(abc.ABC):
     @abc.abstractmethod
     def simulate_principal_policy(
         self, context: RequestContext, request: SimulatePrincipalPolicyRequest
-    ):
+    ) -> SimulatePolicyResponse:
         """
         Simulate principal policy
         :param request: SimulatePrincipalPolicyRequest
