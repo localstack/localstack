@@ -4799,6 +4799,7 @@ class TestLambdaUrl:
         # region changes, https vs http, etc
         assert f"://{custom_id_value}.lambda-url." in url_config_created["FunctionUrl"]
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_create_url_config_custom_id_tag_invalid_id(
         self, create_lambda_function, aws_client, caplog
@@ -6855,6 +6856,7 @@ class TestLambdaLayer:
             "get_layer_version_policy_postdeletes2", get_layer_version_policy_postdeletes2
         )
 
+    @markers.requires_in_process
     @markers.aws.only_localstack(reason="Deterministic id generation is LS only")
     def test_layer_deterministic_version(
         self, dummylayer, cleanups, aws_client, account_id, region_name, set_resource_custom_id

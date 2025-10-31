@@ -3571,6 +3571,7 @@ class TestSNSSubscriptionSQSFifo:
 
 
 class TestSNSSubscriptionSES:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_topic_email_subscription_confirmation(
@@ -3604,6 +3605,7 @@ class TestSNSSubscriptionSES:
 
         retry(check_subscription, retries=PUBLICATION_RETRIES, sleep=PUBLICATION_TIMEOUT)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_email_sender(
@@ -3824,6 +3826,7 @@ class TestSNSPlatformApplicationCrud:
 
 
 class TestSNSPlatformEndpoint:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_subscribe_platform_endpoint(
@@ -3982,6 +3985,7 @@ class TestSNSPlatformEndpoint:
             )
         assert ex.value.response["Error"]["Code"] == "InvalidParameter"
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_publish_to_platform_endpoint_is_dispatched(
@@ -4046,6 +4050,7 @@ class TestSNSPlatformEndpoint:
 
 
 class TestSNSSMS:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_publish_sms(self, aws_client, account_id, region_name):
@@ -4083,6 +4088,7 @@ class TestSNSSMS:
         )
         snapshot.match("subscribe-sms-attrs", sub_attrs)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_publish_sms_endpoint(
@@ -4229,6 +4235,7 @@ class TestSNSSubscriptionHttp:
         )
         snapshot.match("subscription-with-arn", subscription_with_arn)
 
+    @markers.requires_in_process  # uses pytest httpserver
     @markers.aws.manual_setup_required
     @skip_if_sns_v2
     def test_redrive_policy_http_subscription(
@@ -4278,6 +4285,7 @@ class TestSNSSubscriptionHttp:
         assert message["Type"] == "Notification"
         assert json.loads(message["Message"])["message"] == "test_redrive_policy"
 
+    @markers.requires_in_process  # uses pytest httpserver
     @markers.aws.manual_setup_required
     @skip_if_sns_v2
     def test_multiple_subscriptions_http_endpoint(
@@ -4364,6 +4372,7 @@ class TestSNSSubscriptionHttp:
             for server in servers:
                 server.stop()
 
+    @markers.requires_in_process  # uses pytest httpserver
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     @markers.snapshot.skip_snapshot_verify(
@@ -4547,6 +4556,7 @@ class TestSNSSubscriptionHttp:
         )
         snapshot.match("unsubscribe-request", payload)
 
+    @markers.requires_in_process  # uses pytest httpserver
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     @skip_if_sns_v2
@@ -4634,6 +4644,7 @@ class TestSNSSubscriptionHttp:
         # AWS doesn't send to the DLQ if the UnsubscribeConfirmation fails to be delivered
         assert "Messages" not in response or response["Messages"] == []
 
+    @markers.requires_in_process  # uses pytest httpserver
     @markers.aws.manual_setup_required
     @pytest.mark.parametrize("raw_message_delivery", [True, False])
     @markers.snapshot.skip_snapshot_verify(
@@ -5506,6 +5517,7 @@ class TestSNSPublishDelivery:
 
 
 class TestSNSCertEndpoint:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @pytest.mark.parametrize("cert_host", ["", "sns.us-east-1.amazonaws.com"])
     @skip_if_sns_v2
@@ -5553,6 +5565,7 @@ class TestSNSCertEndpoint:
 
 @pytest.mark.usefixtures("openapi_validate")
 class TestSNSRetrospectionEndpoints:
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_publish_to_platform_endpoint_can_retrospect(
@@ -5710,6 +5723,7 @@ class TestSNSRetrospectionEndpoints:
         ).json()
         assert not msg_with_region["platform_endpoint_messages"]
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_publish_sms_can_retrospect(
@@ -5814,6 +5828,7 @@ class TestSNSRetrospectionEndpoints:
         msg_with_region = requests.get(msgs_url, params={"region": region_name}).json()
         assert not msg_with_region["sms_messages"]
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     @skip_if_sns_v2
     def test_subscription_tokens_can_retrospect(

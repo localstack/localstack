@@ -264,6 +264,7 @@ class TestLambdaBaseFeatures:
 
         retry(_check_print_in_logs, retries=10)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack
     def test_lambda_too_large_response_but_with_custom_limit(
         self, caplog, create_lambda_function, aws_client, monkeypatch
@@ -1970,6 +1971,7 @@ class TestLambdaErrors:
         )
         snapshot.match("invocation_error", result)
 
+    @markers.requires_in_process
     @markers.aws.only_localstack(
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
@@ -1999,6 +2001,7 @@ class TestLambdaErrors:
             r"retries: \d\): \[[^]]*\] Timeout while starting up lambda environment .*"
         )
 
+    @markers.requires_in_process
     @markers.aws.only_localstack(
         reason="Can only induce Lambda-internal Docker error in LocalStack"
     )
