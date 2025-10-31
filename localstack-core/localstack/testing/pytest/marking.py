@@ -78,6 +78,8 @@ class Markers:
     """Tests to execute when updating snapshots for a new Lambda runtime"""
     k8s_always_run = pytest.mark.k8s_always_run
     """This tests will always run against k8s environment"""
+    skip_k8s = pytest.mark.skip_k8s
+    """This test will be skipped in k8s environment"""
 
 
 # pytest plugin
