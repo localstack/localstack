@@ -1488,13 +1488,13 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("list-subscriptions-by-topic", resp)
 
     @markers.aws.validated
-    def test_subscription_paging(self, sns_create_topic, aws_client, snapshot):
+    def test_subscription_paging(self, sns_create_topic, aws_client, snapshot, sns_subscription):
         topic_arn = sns_create_topic(Name=f"paging-sub-{short_uid()}")["TopicArn"]
 
         sub_arns = []
         for i in range(120):
             sub_arns.append(
-                aws_client.sns.subscribe(
+                sns_subscription(
                     TopicArn=topic_arn,
                     Protocol="email",
                     Endpoint=f"user{i}@example.com",
@@ -4252,6 +4252,7 @@ class TestSNSPlatformEndpointCrud:
             )
         snapshot.match("create-platform-endpoint-invalid-attr", e.value.response)
 
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
     @markers.aws.manual_setup_required
     def test_create_platform_endpoint_custom_data(
         self,
