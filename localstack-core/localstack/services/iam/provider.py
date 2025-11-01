@@ -20,7 +20,6 @@ from moto.iam.utils import generate_access_key_id_from_account_id
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
-    ActionNameType,
     AttachedPermissionsBoundary,
     CreateRoleRequest,
     CreateRoleResponse,
@@ -31,7 +30,6 @@ from localstack.aws.api.iam import (
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
-    EvaluationResult,
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
@@ -41,9 +39,7 @@ from localstack.aws.api.iam import (
     ListServiceSpecificCredentialsResponse,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
-    PolicyEvaluationDecisionType,
     ResetServiceSpecificCredentialResponse,
-    ResourceNameType,
     Role,
     ServiceSpecificCredential,
     ServiceSpecificCredentialMetadata,
@@ -133,25 +129,6 @@ class IamProvider(IamApi):
             result["Role"].pop("RoleLastUsed")
 
         return result
-
-    @staticmethod
-    def build_evaluation_result(
-        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: list[dict]
-    ) -> EvaluationResult:
-        eval_res = EvaluationResult()
-        eval_res["EvalActionName"] = action_name
-        eval_res["EvalResourceName"] = resource_name
-        eval_res["EvalDecision"] = PolicyEvaluationDecisionType.explicitDeny
-        for statement in policy_statements:
-            # TODO Implement evaluation logic here
-            if (
-                action_name in statement["Action"]
-                and resource_name in statement["Resource"]
-                and statement["Effect"] == "Allow"
-            ):
-                eval_res["EvalDecision"] = PolicyEvaluationDecisionType.allowed
-                eval_res["MatchedStatements"] = []  # TODO: add support for statement compilation.
-        return eval_res
 
     @handler("SimulatePrincipalPolicy", expand=False)
     def simulate_principal_policy(

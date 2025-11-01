@@ -1,11 +1,18 @@
 import abc
+import json
 
 from moto.iam import iam_backends
 from moto.iam.models import IAMBackend
 
 from localstack.aws.api import RequestContext
-from localstack.aws.api.iam import SimulatePolicyResponse, SimulatePrincipalPolicyRequest
-from localstack.utils import json
+from localstack.aws.api.iam import (
+    ActionNameType,
+    EvaluationResult,
+    PolicyEvaluationDecisionType,
+    ResourceNameType,
+    SimulatePolicyResponse,
+    SimulatePrincipalPolicyRequest,
+)
 
 
 class IAMPolicySimulator(abc.ABC):
@@ -24,7 +31,9 @@ class IAMPolicySimulator(abc.ABC):
 
 class BasicIAMPolicySimulator(IAMPolicySimulator):
     def simulate_principal_policy(
-        self, request: SimulatePrincipalPolicyRequest, context: RequestContext
+        self,
+        context: RequestContext,
+        request: SimulatePrincipalPolicyRequest,
     ) -> SimulatePolicyResponse:
         backend = self.get_iam_backend(context)
         policies = self.get_policies_from_principal(backend, request.get("PolicySourceArn"))
@@ -52,6 +61,25 @@ class BasicIAMPolicySimulator(IAMPolicySimulator):
         response["EvaluationResults"] = evaluations
 
         return response
+
+    @staticmethod
+    def build_evaluation_result(
+        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: list[dict]
+    ) -> EvaluationResult:
+        eval_res = EvaluationResult()
+        eval_res["EvalActionName"] = action_name
+        eval_res["EvalResourceName"] = resource_name
+        eval_res["EvalDecision"] = PolicyEvaluationDecisionType.explicitDeny
+        for statement in policy_statements:
+            # TODO Implement evaluation logic here
+            if (
+                action_name in statement["Action"]
+                and resource_name in statement["Resource"]
+                and statement["Effect"] == "Allow"
+            ):
+                eval_res["EvalDecision"] = PolicyEvaluationDecisionType.allowed
+                eval_res["MatchedStatements"] = []  # TODO: add support for statement compilation.
+        return eval_res
 
     @staticmethod
     def get_iam_backend(context: RequestContext) -> IAMBackend:
