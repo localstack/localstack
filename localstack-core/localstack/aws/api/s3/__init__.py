@@ -1485,6 +1485,8 @@ class CopyObjectRequest(ServiceRequest):
     GrantRead: Optional[GrantRead]
     GrantReadACP: Optional[GrantReadACP]
     GrantWriteACP: Optional[GrantWriteACP]
+    IfMatch: Optional[IfMatch]
+    IfNoneMatch: Optional[IfNoneMatch]
     Key: ObjectKey
     Metadata: Optional[Metadata]
     MetadataDirective: Optional[MetadataDirective]
@@ -3840,6 +3842,8 @@ class S3Api:
         grant_read: GrantRead | None = None,
         grant_read_acp: GrantReadACP | None = None,
         grant_write_acp: GrantWriteACP | None = None,
+        if_match: IfMatch | None = None,
+        if_none_match: IfNoneMatch | None = None,
         metadata: Metadata | None = None,
         metadata_directive: MetadataDirective | None = None,
         tagging_directive: TaggingDirective | None = None,

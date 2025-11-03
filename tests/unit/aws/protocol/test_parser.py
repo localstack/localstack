@@ -910,9 +910,9 @@ def test_ec2_parser_ec2_with_botocore():
 
 def test_restjson_parser_path_params_with_slashes():
     _botocore_parser_integration_test(
-        service="qldb",
+        service="appconfig",
         action="ListTagsForResource",
-        ResourceArn="arn:aws:qldb:eu-central-1:000000000000:ledger/c-c67c827a",
+        ResourceArn="arn:aws:appconfig:us-east-1:000000000000:application/application-1/environment/env-1",
     )
 
 

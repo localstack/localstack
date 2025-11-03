@@ -5,6 +5,7 @@ from typing import Dict, List, Optional, TypedDict
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
 AWSAccountIdType = str
+AccountIdType = str
 AliasNameType = str
 ArnType = str
 BackingKeyIdResponseType = str
@@ -621,6 +622,7 @@ class CreateCustomKeyStoreRequest(ServiceRequest):
     XksProxyUriEndpoint: Optional[XksProxyUriEndpointType]
     XksProxyUriPath: Optional[XksProxyUriPathType]
     XksProxyVpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
+    XksProxyVpcEndpointServiceOwner: Optional[AccountIdType]
     XksProxyAuthenticationCredential: Optional[XksProxyAuthenticationCredentialType]
     XksProxyConnectivity: Optional[XksProxyConnectivityType]
 
@@ -744,6 +746,7 @@ class XksProxyConfigurationType(TypedDict, total=False):
     UriEndpoint: Optional[XksProxyUriEndpointType]
     UriPath: Optional[XksProxyUriPathType]
     VpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
+    VpcEndpointServiceOwner: Optional[AccountIdType]
 
 
 class CustomKeyStoresListEntry(TypedDict, total=False):
@@ -1290,6 +1293,7 @@ class UpdateCustomKeyStoreRequest(ServiceRequest):
     XksProxyUriEndpoint: Optional[XksProxyUriEndpointType]
     XksProxyUriPath: Optional[XksProxyUriPathType]
     XksProxyVpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
+    XksProxyVpcEndpointServiceOwner: Optional[AccountIdType]
     XksProxyAuthenticationCredential: Optional[XksProxyAuthenticationCredentialType]
     XksProxyConnectivity: Optional[XksProxyConnectivityType]
 
@@ -1373,6 +1377,7 @@ class KmsApi:
         xks_proxy_uri_endpoint: XksProxyUriEndpointType | None = None,
         xks_proxy_uri_path: XksProxyUriPathType | None = None,
         xks_proxy_vpc_endpoint_service_name: XksProxyVpcEndpointServiceNameType | None = None,
+        xks_proxy_vpc_endpoint_service_owner: AccountIdType | None = None,
         xks_proxy_authentication_credential: XksProxyAuthenticationCredentialType | None = None,
         xks_proxy_connectivity: XksProxyConnectivityType | None = None,
         **kwargs,
@@ -1864,6 +1869,7 @@ class KmsApi:
         xks_proxy_uri_endpoint: XksProxyUriEndpointType | None = None,
         xks_proxy_uri_path: XksProxyUriPathType | None = None,
         xks_proxy_vpc_endpoint_service_name: XksProxyVpcEndpointServiceNameType | None = None,
+        xks_proxy_vpc_endpoint_service_owner: AccountIdType | None = None,
         xks_proxy_authentication_credential: XksProxyAuthenticationCredentialType | None = None,
         xks_proxy_connectivity: XksProxyConnectivityType | None = None,
         **kwargs,

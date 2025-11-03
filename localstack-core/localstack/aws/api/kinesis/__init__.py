@@ -18,6 +18,7 @@ ListShardsInputLimit = int
 ListStreamConsumersInputLimit = int
 ListStreamsInputLimit = int
 ListTagsForStreamInputLimit = int
+MaxRecordSizeInKiB = int
 NextToken = str
 OnDemandStreamCountLimitObject = int
 OnDemandStreamCountObject = int
@@ -241,6 +242,7 @@ class CreateStreamInput(ServiceRequest):
     ShardCount: Optional[PositiveIntegerObject]
     StreamModeDetails: Optional[StreamModeDetails]
     Tags: Optional[TagMap]
+    MaxRecordSizeInKiB: Optional[MaxRecordSizeInKiB]
 
 
 Data = bytes
@@ -357,6 +359,7 @@ class StreamDescriptionSummary(TypedDict, total=False):
     KeyId: Optional[KeyId]
     OpenShardCount: ShardCountObject
     ConsumerCount: Optional[ConsumerCountObject]
+    MaxRecordSizeInKiB: Optional[MaxRecordSizeInKiB]
 
 
 class DescribeStreamSummaryOutput(TypedDict, total=False):
@@ -666,6 +669,11 @@ class UntagResourceInput(ServiceRequest):
     ResourceARN: ResourceARN
 
 
+class UpdateMaxRecordSizeInput(ServiceRequest):
+    StreamARN: Optional[StreamARN]
+    MaxRecordSizeInKiB: MaxRecordSizeInKiB
+
+
 class UpdateShardCountInput(ServiceRequest):
     StreamName: Optional[StreamName]
     TargetShardCount: PositiveIntegerObject
@@ -708,6 +716,7 @@ class KinesisApi:
         shard_count: PositiveIntegerObject | None = None,
         stream_mode_details: StreamModeDetails | None = None,
         tags: TagMap | None = None,
+        max_record_size_in_ki_b: MaxRecordSizeInKiB | None = None,
         **kwargs,
     ) -> None:
         raise NotImplementedError
@@ -1029,6 +1038,16 @@ class KinesisApi:
     @handler("UntagResource")
     def untag_resource(
         self, context: RequestContext, tag_keys: TagKeyList, resource_arn: ResourceARN, **kwargs
+    ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateMaxRecordSize")
+    def update_max_record_size(
+        self,
+        context: RequestContext,
+        max_record_size_in_ki_b: MaxRecordSizeInKiB,
+        stream_arn: StreamARN | None = None,
+        **kwargs,
     ) -> None:
         raise NotImplementedError
 

@@ -69,6 +69,7 @@ DescribeCapacityBlocksMaxResults = int
 DescribeCapacityManagerDataExportsRequestMaxResults = int
 DescribeCapacityReservationBillingRequestsRequestMaxResults = int
 DescribeCapacityReservationFleetsMaxResults = int
+DescribeCapacityReservationTopologyMaxResults = int
 DescribeCapacityReservationsMaxResults = int
 DescribeClassicLinkInstancesMaxResults = int
 DescribeClientVpnAuthorizationRulesMaxResults = int
@@ -212,6 +213,8 @@ IpamNetmaskLength = int
 IpamPoolAllocationId = str
 IpamPoolCidrId = str
 IpamPoolId = str
+IpamPrefixListResolverId = str
+IpamPrefixListResolverTargetId = str
 IpamResourceDiscoveryAssociationId = str
 IpamResourceDiscoveryId = str
 IpamScopeId = str
@@ -2724,6 +2727,57 @@ class IpamPoolState(StrEnum):
     restore_in_progress = "restore-in-progress"
 
 
+class IpamPrefixListResolverRuleConditionOperation(StrEnum):
+    equals = "equals"
+    not_equals = "not-equals"
+    subnet_of = "subnet-of"
+
+
+class IpamPrefixListResolverRuleType(StrEnum):
+    static_cidr = "static-cidr"
+    ipam_resource_cidr = "ipam-resource-cidr"
+    ipam_pool_cidr = "ipam-pool-cidr"
+
+
+class IpamPrefixListResolverState(StrEnum):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    modify_in_progress = "modify-in-progress"
+    modify_complete = "modify-complete"
+    modify_failed = "modify-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
+class IpamPrefixListResolverTargetState(StrEnum):
+    create_in_progress = "create-in-progress"
+    create_complete = "create-complete"
+    create_failed = "create-failed"
+    modify_in_progress = "modify-in-progress"
+    modify_complete = "modify-complete"
+    modify_failed = "modify-failed"
+    sync_in_progress = "sync-in-progress"
+    sync_complete = "sync-complete"
+    sync_failed = "sync-failed"
+    delete_in_progress = "delete-in-progress"
+    delete_complete = "delete-complete"
+    delete_failed = "delete-failed"
+    isolate_in_progress = "isolate-in-progress"
+    isolate_complete = "isolate-complete"
+    restore_in_progress = "restore-in-progress"
+
+
+class IpamPrefixListResolverVersionCreationStatus(StrEnum):
+    pending = "pending"
+    success = "success"
+    failure = "failure"
+
+
 class IpamPublicAddressAssociationStatus(StrEnum):
     associated = "associated"
     disassociated = "disassociated"
@@ -3488,6 +3542,8 @@ class ResourceType(StrEnum):
     ipam_external_resource_verification_token = "ipam-external-resource-verification-token"
     capacity_block = "capacity-block"
     mac_modification_task = "mac-modification-task"
+    ipam_prefix_list_resolver = "ipam-prefix-list-resolver"
+    ipam_prefix_list_resolver_target = "ipam-prefix-list-resolver-target"
     capacity_manager_data_export = "capacity-manager-data-export"
 
 
@@ -6619,6 +6675,23 @@ class CapacityReservationSpecificationResponse(TypedDict, total=False):
     CapacityReservationTarget: Optional[CapacityReservationTargetResponse]
 
 
+NetworkNodeSet = List[String]
+
+
+class CapacityReservationTopology(TypedDict, total=False):
+    CapacityReservationId: Optional[String]
+    CapacityBlockId: Optional[String]
+    State: Optional[String]
+    InstanceType: Optional[String]
+    GroupName: Optional[String]
+    NetworkNodes: Optional[NetworkNodeSet]
+    AvailabilityZoneId: Optional[String]
+    AvailabilityZone: Optional[String]
+
+
+CapacityReservationTopologySet = List[CapacityReservationTopology]
+
+
 class CarrierGateway(TypedDict, total=False):
     CarrierGatewayId: Optional[CarrierGatewayId]
     VpcId: Optional[VpcId]
@@ -7393,6 +7466,9 @@ class VpcEncryptionControlExclusions(TypedDict, total=False):
     NatGateway: Optional[VpcEncryptionControlExclusion]
     VirtualPrivateGateway: Optional[VpcEncryptionControlExclusion]
     VpcPeering: Optional[VpcEncryptionControlExclusion]
+    Lambda: Optional[VpcEncryptionControlExclusion]
+    VpcLattice: Optional[VpcEncryptionControlExclusion]
+    ElasticFileSystem: Optional[VpcEncryptionControlExclusion]
 
 
 class VpcEncryptionControl(TypedDict, total=False):
@@ -8155,6 +8231,88 @@ class IpamPool(TypedDict, total=False):
 
 class CreateIpamPoolResult(TypedDict, total=False):
     IpamPool: Optional[IpamPool]
+
+
+class IpamPrefixListResolverRuleConditionRequest(TypedDict, total=False):
+    Operation: IpamPrefixListResolverRuleConditionOperation
+    IpamPoolId: Optional[String]
+    ResourceId: Optional[String]
+    ResourceOwner: Optional[String]
+    ResourceRegion: Optional[String]
+    ResourceTag: Optional[RequestIpamResourceTag]
+    Cidr: Optional[String]
+
+
+IpamPrefixListResolverRuleConditionRequestSet = List[IpamPrefixListResolverRuleConditionRequest]
+
+
+class IpamPrefixListResolverRuleRequest(TypedDict, total=False):
+    RuleType: IpamPrefixListResolverRuleType
+    StaticCidr: Optional[String]
+    IpamScopeId: Optional[IpamScopeId]
+    ResourceType: Optional[IpamResourceType]
+    Conditions: Optional[IpamPrefixListResolverRuleConditionRequestSet]
+
+
+IpamPrefixListResolverRuleRequestSet = List[IpamPrefixListResolverRuleRequest]
+
+
+class CreateIpamPrefixListResolverRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamId: IpamId
+    Description: Optional[String]
+    AddressFamily: AddressFamily
+    Rules: Optional[IpamPrefixListResolverRuleRequestSet]
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
+class IpamPrefixListResolver(TypedDict, total=False):
+    OwnerId: Optional[String]
+    IpamPrefixListResolverId: Optional[IpamPrefixListResolverId]
+    IpamPrefixListResolverArn: Optional[ResourceArn]
+    IpamArn: Optional[ResourceArn]
+    IpamRegion: Optional[String]
+    Description: Optional[String]
+    AddressFamily: Optional[AddressFamily]
+    State: Optional[IpamPrefixListResolverState]
+    Tags: Optional[TagList]
+    LastVersionCreationStatus: Optional[IpamPrefixListResolverVersionCreationStatus]
+    LastVersionCreationStatusMessage: Optional[String]
+
+
+class CreateIpamPrefixListResolverResult(TypedDict, total=False):
+    IpamPrefixListResolver: Optional[IpamPrefixListResolver]
+
+
+class CreateIpamPrefixListResolverTargetRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverId: IpamPrefixListResolverId
+    PrefixListId: String
+    PrefixListRegion: String
+    DesiredVersion: Optional[BoxedLong]
+    TrackLatestVersion: Boolean
+    TagSpecifications: Optional[TagSpecificationList]
+    ClientToken: Optional[String]
+
+
+class IpamPrefixListResolverTarget(TypedDict, total=False):
+    IpamPrefixListResolverTargetId: Optional[IpamPrefixListResolverTargetId]
+    IpamPrefixListResolverTargetArn: Optional[ResourceArn]
+    IpamPrefixListResolverId: Optional[IpamPrefixListResolverId]
+    OwnerId: Optional[String]
+    PrefixListId: Optional[PrefixListResourceId]
+    PrefixListRegion: Optional[String]
+    DesiredVersion: Optional[BoxedLong]
+    LastSyncedVersion: Optional[BoxedLong]
+    TrackLatestVersion: Optional[Boolean]
+    StateMessage: Optional[String]
+    State: Optional[IpamPrefixListResolverTargetState]
+    Tags: Optional[TagList]
+
+
+class CreateIpamPrefixListResolverTargetResult(TypedDict, total=False):
+    IpamPrefixListResolverTarget: Optional[IpamPrefixListResolverTarget]
 
 
 class CreateIpamRequest(ServiceRequest):
@@ -9024,6 +9182,8 @@ class ManagedPrefixList(TypedDict, total=False):
     Version: Optional[Long]
     Tags: Optional[TagList]
     OwnerId: Optional[String]
+    IpamPrefixListResolverTargetId: Optional[String]
+    IpamPrefixListResolverSyncEnabled: Optional[Boolean]
 
 
 class CreateManagedPrefixListResult(TypedDict, total=False):
@@ -9356,6 +9516,7 @@ class NetworkInterface(TypedDict, total=False):
     Ipv6Address: Optional[String]
     Operator: Optional[OperatorResponse]
     AssociatedSubnets: Optional[AssociatedSubnetList]
+    AvailabilityZoneId: Optional[String]
 
 
 class CreateNetworkInterfaceResult(TypedDict, total=False):
@@ -11272,6 +11433,24 @@ class DeleteIpamPoolResult(TypedDict, total=False):
     IpamPool: Optional[IpamPool]
 
 
+class DeleteIpamPrefixListResolverRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverId: IpamPrefixListResolverId
+
+
+class DeleteIpamPrefixListResolverResult(TypedDict, total=False):
+    IpamPrefixListResolver: Optional[IpamPrefixListResolver]
+
+
+class DeleteIpamPrefixListResolverTargetRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverTargetId: IpamPrefixListResolverTargetId
+
+
+class DeleteIpamPrefixListResolverTargetResult(TypedDict, total=False):
+    IpamPrefixListResolverTarget: Optional[IpamPrefixListResolverTarget]
+
+
 class DeleteIpamRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     IpamId: IpamId
@@ -12267,6 +12446,19 @@ class DescribeCapacityReservationFleetsRequest(ServiceRequest):
 class DescribeCapacityReservationFleetsResult(TypedDict, total=False):
     CapacityReservationFleets: Optional[CapacityReservationFleetSet]
     NextToken: Optional[String]
+
+
+class DescribeCapacityReservationTopologyRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    NextToken: Optional[String]
+    MaxResults: Optional[DescribeCapacityReservationTopologyMaxResults]
+    CapacityReservationIds: Optional[CapacityReservationIdSet]
+    Filters: Optional[FilterList]
+
+
+class DescribeCapacityReservationTopologyResult(TypedDict, total=False):
+    NextToken: Optional[String]
+    CapacityReservations: Optional[CapacityReservationTopologySet]
 
 
 class DescribeCapacityReservationsRequest(ServiceRequest):
@@ -14193,6 +14385,39 @@ IpamPoolSet = List[IpamPool]
 class DescribeIpamPoolsResult(TypedDict, total=False):
     NextToken: Optional[NextToken]
     IpamPools: Optional[IpamPoolSet]
+
+
+class DescribeIpamPrefixListResolverTargetsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[IpamMaxResults]
+    NextToken: Optional[NextToken]
+    IpamPrefixListResolverTargetIds: Optional[ValueStringList]
+    IpamPrefixListResolverId: Optional[IpamPrefixListResolverId]
+
+
+IpamPrefixListResolverTargetSet = List[IpamPrefixListResolverTarget]
+
+
+class DescribeIpamPrefixListResolverTargetsResult(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    IpamPrefixListResolverTargets: Optional[IpamPrefixListResolverTargetSet]
+
+
+class DescribeIpamPrefixListResolversRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    Filters: Optional[FilterList]
+    MaxResults: Optional[IpamMaxResults]
+    NextToken: Optional[NextToken]
+    IpamPrefixListResolverIds: Optional[ValueStringList]
+
+
+IpamPrefixListResolverSet = List[IpamPrefixListResolver]
+
+
+class DescribeIpamPrefixListResolversResult(TypedDict, total=False):
+    NextToken: Optional[NextToken]
+    IpamPrefixListResolvers: Optional[IpamPrefixListResolverSet]
 
 
 class DescribeIpamResourceDiscoveriesRequest(ServiceRequest):
@@ -18310,6 +18535,87 @@ class GetIpamPoolCidrsResult(TypedDict, total=False):
     NextToken: Optional[NextToken]
 
 
+class GetIpamPrefixListResolverRulesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverId: IpamPrefixListResolverId
+    Filters: Optional[FilterList]
+    MaxResults: Optional[IpamMaxResults]
+    NextToken: Optional[NextToken]
+
+
+class IpamPrefixListResolverRuleCondition(TypedDict, total=False):
+    Operation: Optional[IpamPrefixListResolverRuleConditionOperation]
+    IpamPoolId: Optional[String]
+    ResourceId: Optional[String]
+    ResourceOwner: Optional[String]
+    ResourceRegion: Optional[String]
+    ResourceTag: Optional[IpamResourceTag]
+    Cidr: Optional[String]
+
+
+IpamPrefixListResolverRuleConditionSet = List[IpamPrefixListResolverRuleCondition]
+
+
+class IpamPrefixListResolverRule(TypedDict, total=False):
+    RuleType: Optional[IpamPrefixListResolverRuleType]
+    StaticCidr: Optional[String]
+    IpamScopeId: Optional[IpamScopeId]
+    ResourceType: Optional[IpamResourceType]
+    Conditions: Optional[IpamPrefixListResolverRuleConditionSet]
+
+
+IpamPrefixListResolverRuleSet = List[IpamPrefixListResolverRule]
+
+
+class GetIpamPrefixListResolverRulesResult(TypedDict, total=False):
+    Rules: Optional[IpamPrefixListResolverRuleSet]
+    NextToken: Optional[NextToken]
+
+
+class GetIpamPrefixListResolverVersionEntriesRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverId: IpamPrefixListResolverId
+    IpamPrefixListResolverVersion: Long
+    MaxResults: Optional[IpamMaxResults]
+    NextToken: Optional[NextToken]
+
+
+class IpamPrefixListResolverVersionEntry(TypedDict, total=False):
+    Cidr: Optional[String]
+
+
+IpamPrefixListResolverVersionEntrySet = List[IpamPrefixListResolverVersionEntry]
+
+
+class GetIpamPrefixListResolverVersionEntriesResult(TypedDict, total=False):
+    Entries: Optional[IpamPrefixListResolverVersionEntrySet]
+    NextToken: Optional[NextToken]
+
+
+IpamPrefixListResolverVersionNumberSet = List[Long]
+
+
+class GetIpamPrefixListResolverVersionsRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverId: IpamPrefixListResolverId
+    IpamPrefixListResolverVersions: Optional[IpamPrefixListResolverVersionNumberSet]
+    MaxResults: Optional[IpamMaxResults]
+    Filters: Optional[FilterList]
+    NextToken: Optional[NextToken]
+
+
+class IpamPrefixListResolverVersion(TypedDict, total=False):
+    Version: Optional[Long]
+
+
+IpamPrefixListResolverVersionSet = List[IpamPrefixListResolverVersion]
+
+
+class GetIpamPrefixListResolverVersionsResult(TypedDict, total=False):
+    IpamPrefixListResolverVersions: Optional[IpamPrefixListResolverVersionSet]
+    NextToken: Optional[NextToken]
+
+
 class GetIpamResourceCidrsRequest(ServiceRequest):
     DryRun: Optional[Boolean]
     Filters: Optional[FilterList]
@@ -19655,6 +19961,29 @@ class ModifyIpamPoolResult(TypedDict, total=False):
     IpamPool: Optional[IpamPool]
 
 
+class ModifyIpamPrefixListResolverRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverId: IpamPrefixListResolverId
+    Description: Optional[String]
+    Rules: Optional[IpamPrefixListResolverRuleRequestSet]
+
+
+class ModifyIpamPrefixListResolverResult(TypedDict, total=False):
+    IpamPrefixListResolver: Optional[IpamPrefixListResolver]
+
+
+class ModifyIpamPrefixListResolverTargetRequest(ServiceRequest):
+    DryRun: Optional[Boolean]
+    IpamPrefixListResolverTargetId: IpamPrefixListResolverTargetId
+    DesiredVersion: Optional[BoxedLong]
+    TrackLatestVersion: Optional[BoxedBoolean]
+    ClientToken: Optional[String]
+
+
+class ModifyIpamPrefixListResolverTargetResult(TypedDict, total=False):
+    IpamPrefixListResolverTarget: Optional[IpamPrefixListResolverTarget]
+
+
 class RemoveIpamOperatingRegion(TypedDict, total=False):
     RegionName: Optional[String]
 
@@ -19762,6 +20091,7 @@ class ModifyManagedPrefixListRequest(ServiceRequest):
     AddEntries: Optional[AddPrefixListEntries]
     RemoveEntries: Optional[RemovePrefixListEntries]
     MaxEntries: Optional[Integer]
+    IpamPrefixListResolverSyncEnabled: Optional[BoxedBoolean]
 
 
 class ModifyManagedPrefixListResult(TypedDict, total=False):
@@ -22666,6 +22996,37 @@ class Ec2Api:
     ) -> CreateIpamPoolResult:
         raise NotImplementedError
 
+    @handler("CreateIpamPrefixListResolver")
+    def create_ipam_prefix_list_resolver(
+        self,
+        context: RequestContext,
+        ipam_id: IpamId,
+        address_family: AddressFamily,
+        dry_run: Boolean | None = None,
+        description: String | None = None,
+        rules: IpamPrefixListResolverRuleRequestSet | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> CreateIpamPrefixListResolverResult:
+        raise NotImplementedError
+
+    @handler("CreateIpamPrefixListResolverTarget")
+    def create_ipam_prefix_list_resolver_target(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId,
+        prefix_list_id: String,
+        prefix_list_region: String,
+        track_latest_version: Boolean,
+        dry_run: Boolean | None = None,
+        desired_version: BoxedLong | None = None,
+        tag_specifications: TagSpecificationList | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> CreateIpamPrefixListResolverTargetResult:
+        raise NotImplementedError
+
     @handler("CreateIpamResourceDiscovery")
     def create_ipam_resource_discovery(
         self,
@@ -23849,6 +24210,26 @@ class Ec2Api:
     ) -> DeleteIpamPoolResult:
         raise NotImplementedError
 
+    @handler("DeleteIpamPrefixListResolver")
+    def delete_ipam_prefix_list_resolver(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteIpamPrefixListResolverResult:
+        raise NotImplementedError
+
+    @handler("DeleteIpamPrefixListResolverTarget")
+    def delete_ipam_prefix_list_resolver_target(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_target_id: IpamPrefixListResolverTargetId,
+        dry_run: Boolean | None = None,
+        **kwargs,
+    ) -> DeleteIpamPrefixListResolverTargetResult:
+        raise NotImplementedError
+
     @handler("DeleteIpamResourceDiscovery")
     def delete_ipam_resource_discovery(
         self,
@@ -24788,6 +25169,19 @@ class Ec2Api:
     ) -> DescribeCapacityReservationFleetsResult:
         raise NotImplementedError
 
+    @handler("DescribeCapacityReservationTopology")
+    def describe_capacity_reservation_topology(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        next_token: String | None = None,
+        max_results: DescribeCapacityReservationTopologyMaxResults | None = None,
+        capacity_reservation_ids: CapacityReservationIdSet | None = None,
+        filters: FilterList | None = None,
+        **kwargs,
+    ) -> DescribeCapacityReservationTopologyResult:
+        raise NotImplementedError
+
     @handler("DescribeCapacityReservations")
     def describe_capacity_reservations(
         self,
@@ -25450,6 +25844,33 @@ class Ec2Api:
         ipam_pool_ids: ValueStringList | None = None,
         **kwargs,
     ) -> DescribeIpamPoolsResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamPrefixListResolverTargets")
+    def describe_ipam_prefix_list_resolver_targets(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        ipam_prefix_list_resolver_target_ids: ValueStringList | None = None,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId | None = None,
+        **kwargs,
+    ) -> DescribeIpamPrefixListResolverTargetsResult:
+        raise NotImplementedError
+
+    @handler("DescribeIpamPrefixListResolvers")
+    def describe_ipam_prefix_list_resolvers(
+        self,
+        context: RequestContext,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        ipam_prefix_list_resolver_ids: ValueStringList | None = None,
+        **kwargs,
+    ) -> DescribeIpamPrefixListResolversResult:
         raise NotImplementedError
 
     @handler("DescribeIpamResourceDiscoveries")
@@ -27787,6 +28208,46 @@ class Ec2Api:
     ) -> GetIpamPoolCidrsResult:
         raise NotImplementedError
 
+    @handler("GetIpamPrefixListResolverRules")
+    def get_ipam_prefix_list_resolver_rules(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId,
+        dry_run: Boolean | None = None,
+        filters: FilterList | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> GetIpamPrefixListResolverRulesResult:
+        raise NotImplementedError
+
+    @handler("GetIpamPrefixListResolverVersionEntries")
+    def get_ipam_prefix_list_resolver_version_entries(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId,
+        ipam_prefix_list_resolver_version: Long,
+        dry_run: Boolean | None = None,
+        max_results: IpamMaxResults | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> GetIpamPrefixListResolverVersionEntriesResult:
+        raise NotImplementedError
+
+    @handler("GetIpamPrefixListResolverVersions")
+    def get_ipam_prefix_list_resolver_versions(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId,
+        dry_run: Boolean | None = None,
+        ipam_prefix_list_resolver_versions: IpamPrefixListResolverVersionNumberSet | None = None,
+        max_results: IpamMaxResults | None = None,
+        filters: FilterList | None = None,
+        next_token: NextToken | None = None,
+        **kwargs,
+    ) -> GetIpamPrefixListResolverVersionsResult:
+        raise NotImplementedError
+
     @handler("GetIpamResourceCidrs")
     def get_ipam_resource_cidrs(
         self,
@@ -28629,6 +29090,31 @@ class Ec2Api:
     ) -> ModifyIpamPoolResult:
         raise NotImplementedError
 
+    @handler("ModifyIpamPrefixListResolver")
+    def modify_ipam_prefix_list_resolver(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_id: IpamPrefixListResolverId,
+        dry_run: Boolean | None = None,
+        description: String | None = None,
+        rules: IpamPrefixListResolverRuleRequestSet | None = None,
+        **kwargs,
+    ) -> ModifyIpamPrefixListResolverResult:
+        raise NotImplementedError
+
+    @handler("ModifyIpamPrefixListResolverTarget")
+    def modify_ipam_prefix_list_resolver_target(
+        self,
+        context: RequestContext,
+        ipam_prefix_list_resolver_target_id: IpamPrefixListResolverTargetId,
+        dry_run: Boolean | None = None,
+        desired_version: BoxedLong | None = None,
+        track_latest_version: BoxedBoolean | None = None,
+        client_token: String | None = None,
+        **kwargs,
+    ) -> ModifyIpamPrefixListResolverTargetResult:
+        raise NotImplementedError
+
     @handler("ModifyIpamResourceCidr")
     def modify_ipam_resource_cidr(
         self,
@@ -28709,6 +29195,7 @@ class Ec2Api:
         add_entries: AddPrefixListEntries | None = None,
         remove_entries: RemovePrefixListEntries | None = None,
         max_entries: Integer | None = None,
+        ipam_prefix_list_resolver_sync_enabled: BoxedBoolean | None = None,
         **kwargs,
     ) -> ModifyManagedPrefixListResult:
         raise NotImplementedError

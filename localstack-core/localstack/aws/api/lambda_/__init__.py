@@ -287,6 +287,9 @@ class Runtime(StrEnum):
     java21 = "java21"
     python3_13 = "python3.13"
     nodejs22_x = "nodejs22.x"
+    java25 = "java25"
+    nodejs24_x = "nodejs24.x"
+    python3_14 = "python3.14"
 
 
 class SchemaRegistryEventRecordFormat(StrEnum):
@@ -592,6 +595,13 @@ class ResourceNotReadyException(ServiceException):
     code: str = "ResourceNotReadyException"
     sender_fault: bool = False
     status_code: int = 502
+    Type: Optional[String]
+
+
+class SerializedRequestEntityTooLargeException(ServiceException):
+    code: str = "SerializedRequestEntityTooLargeException"
+    sender_fault: bool = True
+    status_code: int = 413
     Type: Optional[String]
 
 
