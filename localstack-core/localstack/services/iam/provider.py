@@ -20,10 +20,7 @@ from moto.iam.utils import generate_access_key_id_from_account_id
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
 from localstack.aws.api.iam import (
-    ActionNameListType,
-    ActionNameType,
     AttachedPermissionsBoundary,
-    ContextEntryListType,
     CreateRoleRequest,
     CreateRoleResponse,
     CreateServiceLinkedRoleResponse,
@@ -33,7 +30,6 @@ from localstack.aws.api.iam import (
     DeleteServiceLinkedRoleResponse,
     DeletionTaskIdType,
     DeletionTaskStatusType,
-    EvaluationResult,
     GetServiceLinkedRoleDeletionStatusResponse,
     GetUserResponse,
     IamApi,
@@ -43,16 +39,12 @@ from localstack.aws.api.iam import (
     ListServiceSpecificCredentialsResponse,
     MalformedPolicyDocumentException,
     NoSuchEntityException,
-    PolicyEvaluationDecisionType,
     ResetServiceSpecificCredentialResponse,
-    ResourceHandlingOptionType,
-    ResourceNameListType,
-    ResourceNameType,
     Role,
     ServiceSpecificCredential,
     ServiceSpecificCredentialMetadata,
     SimulatePolicyResponse,
-    SimulationPolicyListType,
+    SimulatePrincipalPolicyRequest,
     User,
     allUsers,
     arnType,
@@ -65,7 +57,6 @@ from localstack.aws.api.iam import (
     maxItemsType,
     pathPrefixType,
     pathType,
-    policyDocumentType,
     roleDescriptionType,
     roleNameType,
     serviceName,
@@ -78,6 +69,10 @@ from localstack.aws.api.iam import (
 from localstack.aws.connect import connect_to
 from localstack.constants import INTERNAL_AWS_SECRET_ACCESS_KEY
 from localstack.services.iam.iam_patches import apply_iam_patches
+from localstack.services.iam.resources.policy_simulator import (
+    BasicIAMPolicySimulator,
+    IAMPolicySimulator,
+)
 from localstack.services.iam.resources.service_linked_roles import SERVICE_LINKED_ROLES
 from localstack.services.moto import call_moto
 from localstack.utils.aws.request_context import extract_access_key_id_from_auth_header
@@ -108,58 +103,12 @@ def get_iam_backend(context: RequestContext) -> IAMBackend:
     return iam_backends[context.account_id][context.partition]
 
 
-def get_policies_from_principal(backend: IAMBackend, principal_arn: str) -> list[dict]:
-    policies = []
-    if ":role" in principal_arn:
-        role_name = principal_arn.split("/")[-1]
-
-        policies.append(backend.get_role(role_name=role_name).assume_role_policy_document)
-
-        policy_names = backend.list_role_policies(role_name=role_name)
-        policies.extend(
-            [
-                backend.get_role_policy(role_name=role_name, policy_name=policy_name)[1]
-                for policy_name in policy_names
-            ]
-        )
-
-        attached_policies, _ = backend.list_attached_role_policies(role_name=role_name)
-        policies.extend([policy.document for policy in attached_policies])
-
-    if ":group" in principal_arn:
-        print(principal_arn)
-        group_name = principal_arn.split("/")[-1]
-        policy_names = backend.list_group_policies(group_name=group_name)
-        policies.extend(
-            [
-                backend.get_group_policy(group_name=group_name, policy_name=policy_name)[1]
-                for policy_name in policy_names
-            ]
-        )
-
-        attached_policies, _ = backend.list_attached_group_policies(group_name=group_name)
-        policies.extend([policy.document for policy in attached_policies])
-
-    if ":user" in principal_arn:
-        print(principal_arn)
-        user_name = principal_arn.split("/")[-1]
-        policy_names = backend.list_user_policies(user_name=user_name)
-        policies.extend(
-            [
-                backend.get_user_policy(user_name=user_name, policy_name=policy_name)[1]
-                for policy_name in policy_names
-            ]
-        )
-
-        attached_policies, _ = backend.list_attached_user_policies(user_name=user_name)
-        policies.extend([policy.document for policy in attached_policies])
-
-    return policies
-
-
 class IamProvider(IamApi):
+    policy_simulator: IAMPolicySimulator
+
     def __init__(self):
         apply_iam_patches()
+        self.policy_simulator = BasicIAMPolicySimulator()
 
     @handler("CreateRole", expand=False)
     def create_role(
@@ -181,68 +130,14 @@ class IamProvider(IamApi):
 
         return result
 
-    @staticmethod
-    def build_evaluation_result(
-        action_name: ActionNameType, resource_name: ResourceNameType, policy_statements: list[dict]
-    ) -> EvaluationResult:
-        eval_res = EvaluationResult()
-        eval_res["EvalActionName"] = action_name
-        eval_res["EvalResourceName"] = resource_name
-        eval_res["EvalDecision"] = PolicyEvaluationDecisionType.explicitDeny
-        for statement in policy_statements:
-            # TODO Implement evaluation logic here
-            if (
-                action_name in statement["Action"]
-                and resource_name in statement["Resource"]
-                and statement["Effect"] == "Allow"
-            ):
-                eval_res["EvalDecision"] = PolicyEvaluationDecisionType.allowed
-                eval_res["MatchedStatements"] = []  # TODO: add support for statement compilation.
-        return eval_res
-
+    @handler("SimulatePrincipalPolicy", expand=False)
     def simulate_principal_policy(
         self,
         context: RequestContext,
-        policy_source_arn: arnType,
-        action_names: ActionNameListType,
-        policy_input_list: SimulationPolicyListType = None,
-        permissions_boundary_policy_input_list: SimulationPolicyListType = None,
-        resource_arns: ResourceNameListType = None,
-        resource_policy: policyDocumentType = None,
-        resource_owner: ResourceNameType = None,
-        caller_arn: ResourceNameType = None,
-        context_entries: ContextEntryListType = None,
-        resource_handling_option: ResourceHandlingOptionType = None,
-        max_items: maxItemsType = None,
-        marker: markerType = None,
+        request: SimulatePrincipalPolicyRequest,
         **kwargs,
     ) -> SimulatePolicyResponse:
-        backend = get_iam_backend(context)
-
-        policies = get_policies_from_principal(backend, policy_source_arn)
-
-        def _get_statements_from_policy_list(policies: list[str]):
-            statements = []
-            for policy_str in policies:
-                policy_dict = json.loads(policy_str)
-                if isinstance(policy_dict["Statement"], list):
-                    statements.extend(policy_dict["Statement"])
-                else:
-                    statements.append(policy_dict["Statement"])
-            return statements
-
-        policy_statements = _get_statements_from_policy_list(policies)
-
-        evaluations = [
-            self.build_evaluation_result(action_name, resource_arn, policy_statements)
-            for action_name in action_names
-            for resource_arn in resource_arns
-        ]
-
-        response = SimulatePolicyResponse()
-        response["IsTruncated"] = False
-        response["EvaluationResults"] = evaluations
-        return response
+        return self.policy_simulator.simulate_principal_policy(context, request)
 
     def delete_policy(self, context: RequestContext, policy_arn: arnType, **kwargs) -> None:
         backend = get_iam_backend(context)
