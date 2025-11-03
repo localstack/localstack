@@ -276,6 +276,13 @@ class summaryKeyType(StrEnum):
     PolicyVersionsInUseQuota = "PolicyVersionsInUseQuota"
     VersionsPerPolicyQuota = "VersionsPerPolicyQuota"
     GlobalEndpointTokenVersion = "GlobalEndpointTokenVersion"
+    AssumeRolePolicySizeQuota = "AssumeRolePolicySizeQuota"
+    InstanceProfiles = "InstanceProfiles"
+    InstanceProfilesQuota = "InstanceProfilesQuota"
+    Providers = "Providers"
+    RolePolicySizeQuota = "RolePolicySizeQuota"
+    Roles = "Roles"
+    RolesQuota = "RolesQuota"
 
 
 class AccountNotManagementOrDelegatedAdministratorException(ServiceException):
