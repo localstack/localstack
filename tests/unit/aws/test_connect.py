@@ -212,8 +212,6 @@ class TestClientFactory:
             "opensearch",
             "organizations",
             "pi",
-            "qldb",
-            "qldb_session",
             "rds",
             "rds_data",
             "redshift",
