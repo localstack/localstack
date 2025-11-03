@@ -1246,23 +1246,29 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 ArgumentName="x-amz-bypass-governance-retention",
             )
 
-        # TODO: this is only supported for Directory Buckets
-        non_supported_precondition = None
-        if if_match:
-            non_supported_precondition = "If-Match"
-        if if_match_size:
-            non_supported_precondition = "x-amz-if-match-size"
-        if if_match_last_modified_time:
-            non_supported_precondition = "x-amz-if-match-last-modified-time"
-        if non_supported_precondition:
-            LOG.warning(
-                "DeleteObject Preconditions is only supported for Directory Buckets. "
-                "LocalStack does not support Directory Buckets yet."
-            )
-            raise NotImplementedException(
-                "A header you provided implies functionality that is not implemented",
-                Header=non_supported_precondition,
-            )
+        # Check conditional delete parameters
+        s3_object = s3_bucket.objects.get(key)
+        if s3_object:
+            if if_match and s3_object.etag != if_match:
+                raise PreconditionFailed(
+                    f"The ETag condition was not met. Expected: {if_match}, Actual: {s3_object.etag}",
+                    Condition="If-Match"
+                )
+
+            if if_match_last_modified_time:
+                obj_last_modified = s3_object.last_modified.replace(microsecond=0)
+                header_time = if_match_last_modified_time.replace(microsecond=0)
+                if obj_last_modified != header_time:
+                    raise PreconditionFailed(
+                        f"The Last-Modified time condition was not met. Expected: {header_time}, Actual: {obj_last_modified}",
+                        Condition="x-amz-if-match-last-modified-time"
+                    )
+
+            if if_match_size is not None and s3_object.size != if_match_size:
+                raise PreconditionFailed(
+                    f"The size condition was not met. Expected: {if_match_size}, Actual: {s3_object.size}",
+                    Condition="x-amz-if-match-size"
+                )
 
         if s3_bucket.versioning_status is None:
             if version_id and version_id != "null":
@@ -5005,3 +5011,4 @@ def verify_object_equality_precondition_write(
             Condition="If-Match",
             Key=key,
         )
+
