@@ -105,7 +105,6 @@ class BasicIAMPolicySimulator(IAMPolicySimulator):
             policies.extend([policy.document for policy in attached_policies])
 
         if ":group" in principal_arn:
-            print(principal_arn)
             group_name = principal_arn.split("/")[-1]
             policy_names = backend.list_group_policies(group_name=group_name)
             policies.extend(
@@ -119,7 +118,6 @@ class BasicIAMPolicySimulator(IAMPolicySimulator):
             policies.extend([policy.document for policy in attached_policies])
 
         if ":user" in principal_arn:
-            print(principal_arn)
             user_name = principal_arn.split("/")[-1]
             policy_names = backend.list_user_policies(user_name=user_name)
             policies.extend(
