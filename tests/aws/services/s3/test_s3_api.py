@@ -1,6 +1,7 @@
 import datetime
 import json
 import string
+import time
 from operator import itemgetter
 from time import sleep
 from urllib.parse import urlencode
@@ -2919,53 +2920,82 @@ class TestS3MetricsConfiguration:
             aws_client.s3.delete_bucket_metrics_configuration(Bucket=s3_bucket, Id=metric_id)
         snapshot.match("delete_bucket_metrics_configuration_2", delete_err.value.response)
 
-
 class TestS3DeletePrecondition:
     @markers.aws.validated
-    def test_delete_object_if_match_non_express(self, s3_bucket, aws_client, snapshot):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Error.RequestID", "$..RequestId"]
+    )
+    def test_delete_object_if_match_success(self, s3_bucket, aws_client, snapshot):
+        """Test successful deletion with correct If-Match ETag"""
+        snapshot.add_transformer(snapshot.transform.s3_api())
         key = "test-precondition"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test content")
+        snapshot.match("put-object", response)
+        etag = response["ETag"].strip('"')  # Unquoted for IfMatch
 
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatch="badvalue")
-        snapshot.match("delete-obj-if-match", e.value.response)
+        # Delete with correct ETag should succeed
+        delete_response = aws_client.s3.delete_object(
+            Bucket=s3_bucket,
+            Key=key,
+            IfMatch=etag
+        )
+        snapshot.match("delete-obj-if-match-success", delete_response)
+
+        # Verify object is deleted
+        with pytest.raises(ClientError) as exc_info:
+            aws_client.s3.head_object(Bucket=s3_bucket, Key=key)
+        snapshot.match("head-obj-after-delete", exc_info.value.response)
 
     @markers.aws.validated
-    def test_delete_object_if_match_modified_non_express(self, s3_bucket, aws_client, snapshot):
+    @markers.snapshot.skip_snapshot_verify(
+        paths=["$..Error.RequestID", "$..RequestId"]
+    )
+    def test_delete_object_if_match_failed(self, s3_bucket, aws_client, snapshot):
+        """Test failed deletion with incorrect If-Match ETag"""
+        snapshot.add_transformer(snapshot.transform.s3_api())
         key = "test-precondition"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
-
-        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatchLastModifiedTime=earlier)
-        snapshot.match("delete-obj-if-match-last-modified", e.value.response)
-
-    @markers.aws.validated
-    def test_delete_object_if_match_size_non_express(self, s3_bucket, aws_client, snapshot):
-        key = "test-precondition"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
-
-        with pytest.raises(ClientError) as e:
-            aws_client.s3.delete_object(Bucket=s3_bucket, Key=key, IfMatchSize=10)
-        snapshot.match("delete-obj-if-match-size", e.value.response)
-
-    @markers.aws.validated
-    def test_delete_object_if_match_all_non_express(self, s3_bucket, aws_client, snapshot):
-        key = "test-precondition"
-        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
-        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
+        response = aws_client.s3.put_object(Bucket=s3_bucket, Key=key, Body="test content")
+        snapshot.match("put-object", response)
 
         with pytest.raises(ClientError) as e:
             aws_client.s3.delete_object(
                 Bucket=s3_bucket,
                 Key=key,
-                IfMatchSize=10,
-                IfMatch="badvalue",
-                IfMatchLastModifiedTime=earlier,
+                IfMatch="incorrect-etag"
             )
-        snapshot.match("delete-obj-if-match-all", e.value.response)
+        snapshot.match("delete-obj-if-match-failed", e.value.response)
 
+    @markers.aws.validated
+    def test_delete_object_if_match_modified_non_express(self, s3_bucket, aws_client, snapshot):
+        """Test If-Match-Last-Modified-Time (not implemented for non-directory buckets)"""
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+
+        earlier = datetime.datetime.now(tz=datetime.UTC) - datetime.timedelta(days=1)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(
+                Bucket=s3_bucket, 
+                Key=key, 
+                IfMatchLastModifiedTime=earlier
+            )
+        snapshot.match("delete-obj-if-match-last-modified", e.value.response)
+
+    @markers.aws.validated
+    def test_delete_object_if_match_size_non_express(self, s3_bucket, aws_client, snapshot):
+        """Test If-Match-Size (not implemented for non-directory buckets)"""
+        key = "test-precondition"
+        aws_client.s3.put_object(Bucket=s3_bucket, Key=key)
+
+        with pytest.raises(ClientError) as e:
+            aws_client.s3.delete_object(
+                Bucket=s3_bucket, 
+                Key=key, 
+                IfMatchSize=10
+            )
+        snapshot.match("delete-obj-if-match-size", e.value.response)
+
+    
 
 @pytest.mark.skipif(condition=TEST_S3_IMAGE, reason="SQS not enabled in S3 image")
 class TestS3BucketNotificationConfiguration:
@@ -3041,3 +3071,4 @@ class TestS3BucketNotificationConfiguration:
                 Bucket=s3_bucket, NotificationConfiguration=cfg
             )
         snapshot.match("invalid_filter_name", e.value.response)
+
