@@ -301,19 +301,19 @@ class TestDNSServer:
         """Test adding and deleting aliases"""
         dns_server.add_host("example.org", TargetRecord("122.122.122.122", RecordType.A))
         dns_server.add_alias(
-            source_name="foo.something.org",
+            source_name="foo.example.org",
             record_type=RecordType.A,
             target=AliasTarget(target="example.org"),
         )
-        answer = query_dns("foo.something.org", "A")
+        answer = query_dns("foo.example.org", "A")
         assert answer.answer
         assert "122.122.122.122" in answer.to_text()
 
         # delete alias and try again
         dns_server.delete_alias(
-            source_name="foo.something.org", record_type=RecordType.A, target=AliasTarget(target="")
+            source_name="foo.example.org", record_type=RecordType.A, target=AliasTarget(target="")
         )
-        answer = query_dns("foo.something.org", "A")
+        answer = query_dns("foo.example.org", "A")
         assert not answer.answer
 
         # check if add_host is still available
@@ -420,7 +420,7 @@ class TestDNSServer:
 
         with pytest.raises(ValueError):
             dns_server.delete_alias(
-                source_name="foo.something.org",
+                source_name="foo.example.org",
                 record_type=RecordType.A,
                 target=AliasTarget(target=""),
             )
