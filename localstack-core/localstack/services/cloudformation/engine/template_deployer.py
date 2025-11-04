@@ -87,6 +87,31 @@ def get_attr_from_model_instance(
     resource_id: str,
     attribute_sub_name: str | None = None,
 ) -> str:
+    """
+    Resolve CloudFormation Fn::GetAtt attribute references from a resource instance.
+
+    This function extracts attribute values from CloudFormation resources, handling both
+    regular attribute access and immediate attribute resolution for attributes that are
+    available immediately after resource creation.
+
+    Args:
+        resource: The CloudFormation resource dictionary containing Properties and metadata
+        attribute_name: The name of the attribute to retrieve (e.g., "RootResourceId", "Arn")
+        resource_type: The AWS resource type (e.g., "AWS::ApiGateway::RestApi")
+        resource_id: The logical resource ID from the CloudFormation template
+        attribute_sub_name: Optional sub-attribute name for nested attribute access
+
+    Returns:
+        The resolved attribute value as a string, or None if not found
+
+    Raises:
+        Exception: If the resource type doesn't support the requested attribute
+
+    Note:
+        This function implements dynamic immediate attribute resolution to prevent
+        circular dependency issues when accessing attributes that are available
+        immediately after resource creation (e.g., API Gateway RootResourceId).
+    """
     if resource["PhysicalResourceId"] == MOCK_REFERENCE:
         LOG.warning(
             "Attribute '%s' requested from unsupported resource with id %s",
@@ -141,14 +166,19 @@ def get_attr_from_model_instance(
     #     f"Failed to resolve attribute for Fn::GetAtt in {resource_type}: {resource_id}.{attribute_name}"
     # )  # TODO: check CFn behavior via snapshot
 
-    # Future-proof fix for deployment timing issue:
-    # Instead of maintaining a hardcoded list of immediate attributes, we dynamically check
-    # if the requested attribute is already available in the resource's Properties.
-    # This works because resource providers set attributes directly in their model during create()
+    # Dynamic immediate attribute resolution (prevents circular dependencies):
+    # Many CloudFormation resources set certain attributes immediately during the create()
+    # method in their resource providers. These attributes (like API Gateway's RootResourceId,
+    # S3 bucket ARNs, Lambda ARNs) don't require dependency resolution because they're
+    # available as soon as the AWS resource is created.
+    #
+    # This dynamic approach checks if:
+    # 1. The resource has been created (PhysicalResourceId exists)
+    # 2. The requested attribute exists in Properties (set by resource provider)
+    #
+    # If both conditions are met, we can safely return the attribute without
+    # triggering dependency resolution loops that cause circular dependency errors.
     if attribute_candidate is None and resource.get("PhysicalResourceId"):
-        # If the resource has been created (has PhysicalResourceId) and the attribute
-        # exists in Properties, it means the resource provider set it during creation
-        # and it's immediately available
         if attribute_name in properties:
             attribute_candidate = properties.get(attribute_name)
             LOG.debug(

@@ -1,9 +1,29 @@
 """
-Test-driven development for CloudFormation deployment timing fix.
+Test suite for CloudFormation deployment timing fix.
 
-This module tests the fix for the bug where CloudFormation fails to deploy
-complex API Gateway templates due to circular dependency resolution loops
-when trying to resolve immediately available attributes like RootResourceId.
+This module provides comprehensive test coverage for the fix that resolves circular
+dependency issues when accessing immediately available CloudFormation attributes.
+
+The problem occurs when CloudFormation templates use Fn::GetAtt to reference attributes
+that are available immediately after resource creation (such as API Gateway RootResourceId,
+S3 bucket ARNs, Lambda function ARNs). The original implementation would attempt dependency
+resolution for these attributes, creating artificial circular dependency loops.
+
+The fix implements dynamic immediate attribute detection by checking if:
+1. The resource has been created (PhysicalResourceId exists)
+2. The requested attribute exists in the resource's Properties
+
+This approach is future-proof and works automatically for any AWS resource type without
+requiring hardcoded mappings.
+
+Test categories:
+- API Gateway resources (original bug scenario)
+- S3 bucket immediate attributes
+- Lambda function immediate attributes
+- Complex deployment scenarios
+- Configuration validation
+
+See: localstack_fix.md for the original bug analysis and solution design.
 """
 
 import pytest
@@ -25,27 +45,34 @@ class TestImmediatelyAvailableAttributes:
         template = {
             "AWSTemplateFormatVersion": "2010-09-09",
             "Resources": {
+                # Create the API Gateway RestApi resource
                 "MyApi": {"Type": "AWS::ApiGateway::RestApi", "Properties": {"Name": "TestApi"}},
+                # Create a resource that depends on the immediately available RootResourceId
+                # This is the pattern that was causing circular dependency errors
                 "MyResource": {
                     "Type": "AWS::ApiGateway::Resource",
                     "Properties": {
                         "RestApiId": {"Ref": "MyApi"},
+                        # This Fn::GetAtt reference was causing the bug - RootResourceId should
+                        # be immediately available after RestApi creation
                         "ParentId": {"Fn::GetAtt": ["MyApi", "RootResourceId"]},
                         "PathPart": "test",
                     },
                 },
             },
             "Outputs": {
+                # Verify we can access both the API ID and the immediate RootResourceId
                 "ApiId": {"Value": {"Ref": "MyApi"}},
                 "RootResourceId": {"Value": {"Fn::GetAtt": ["MyApi", "RootResourceId"]}},
                 "ResourceId": {"Value": {"Ref": "MyResource"}},
             },
         }
 
-        # This should not raise DependencyNotYetSatisfied exceptions
+        # Deploy the template - this should succeed with our fix
+        # Previously this would fail with circular dependency errors
         stack = deploy_cfn_template(template=template)
 
-        # Verify the stack deployed successfully
+        # Verify the deployment was successful and all outputs are available
         assert stack.outputs["ApiId"]
         assert stack.outputs["RootResourceId"]
         assert stack.outputs["ResourceId"]
