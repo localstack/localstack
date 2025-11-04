@@ -305,8 +305,7 @@ def generate_k8s_helm_overrides(
         },
         "dnsService": {
             "enabled": True,
-            "nodePortTcp": EDGE_SERVICE_DNS_PORT,
-            "nodePortUdp": EDGE_SERVICE_DNS_PORT,
+            "nodePort": EDGE_SERVICE_DNS_PORT,
         },
     }
     overrides = {
