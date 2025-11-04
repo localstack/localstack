@@ -60,8 +60,8 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         log_group_name: LogGroupName,
         log_stream_name: LogStreamName,
         log_events: InputLogEvents,
-        sequence_token: SequenceToken = None,
-        entity: Entity = None,
+        sequence_token: SequenceToken | None = None,
+        entity: Entity | None = None,
         **kwargs,
     ) -> PutLogEventsResponse:
         logs_backend = get_moto_logs_backend(context.account_id, context.region)
@@ -97,8 +97,8 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
     ) -> DescribeLogGroupsResponse:
         region_backend = get_moto_logs_backend(context.account_id, context.region)
 
-        prefix: str = request.get("logGroupNamePrefix", "")
-        pattern: str = request.get("logGroupNamePattern", "")
+        prefix: str | None = request.get("logGroupNamePrefix", "")
+        pattern: str | None = request.get("logGroupNamePattern", "")
 
         if pattern and prefix:
             raise InvalidParameterException(
@@ -122,8 +122,8 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
     def describe_log_streams(
         self, context: RequestContext, request: DescribeLogStreamsRequest
     ) -> DescribeLogStreamsResponse:
-        log_group_name: str = request.get("logGroupName")
-        log_group_identifier: str = request.get("logGroupIdentifier")
+        log_group_name: str | None = request.get("logGroupName")
+        log_group_identifier: str | None = request.get("logGroupIdentifier")
 
         if log_group_identifier and log_group_name:
             raise CommonServiceException(
@@ -142,9 +142,9 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
         self,
         context: RequestContext,
         log_group_name: LogGroupName,
-        kms_key_id: KmsKeyId = None,
-        tags: Tags = None,
-        log_group_class: LogGroupClass = None,
+        kms_key_id: KmsKeyId | None = None,
+        tags: Tags | None = None,
+        log_group_class: LogGroupClass | None = None,
         **kwargs,
     ) -> None:
         call_moto(context)
