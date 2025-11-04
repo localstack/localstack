@@ -140,6 +140,23 @@ def get_attr_from_model_instance(
     # raise Exception(
     #     f"Failed to resolve attribute for Fn::GetAtt in {resource_type}: {resource_id}.{attribute_name}"
     # )  # TODO: check CFn behavior via snapshot
+
+    # Future-proof fix for deployment timing issue:
+    # Instead of maintaining a hardcoded list of immediate attributes, we dynamically check
+    # if the requested attribute is already available in the resource's Properties.
+    # This works because resource providers set attributes directly in their model during create()
+    if attribute_candidate is None and resource.get("PhysicalResourceId"):
+        # If the resource has been created (has PhysicalResourceId) and the attribute
+        # exists in Properties, it means the resource provider set it during creation
+        # and it's immediately available
+        if attribute_name in properties:
+            attribute_candidate = properties.get(attribute_name)
+            LOG.debug(
+                "Resolved immediate attribute %s.%s from Properties during deployment",
+                resource_id,
+                attribute_name,
+            )
+
     return attribute_candidate
 
 
