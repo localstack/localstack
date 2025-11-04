@@ -1265,17 +1265,14 @@ class S3Provider(S3Api, ServiceLifecycleHook):
         # Ensure we have a lock for this bucket/key
         if bucket not in self._preconditions_locks:
             self._preconditions_locks[bucket] = defaultdict(RLock)
-        
+
         # Acquire lock before any operations to ensure atomicity
         with self._preconditions_locks[bucket][key]:
             s3_object = s3_bucket.objects.get(key)
             if not s3_object:
                 if if_match:
                     # If If-Match is specified and object doesn't exist, it's a precondition failure
-                    raise PreconditionFailed(
-                        "Object does not exist",
-                        Condition="If-Match"
-                    )
+                    raise PreconditionFailed("Object does not exist", Condition="If-Match")
                 return DeleteObjectOutput()
 
             # Check If-Match condition if provided
@@ -1286,7 +1283,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 if object_etag != expected_etag:
                     raise PreconditionFailed(
                         f"The ETag condition was not met. Expected: {if_match}, Actual: {s3_object.etag}",
-                        Condition="If-Match"
+                        Condition="If-Match",
                     )
 
         if s3_bucket.versioning_status is None:

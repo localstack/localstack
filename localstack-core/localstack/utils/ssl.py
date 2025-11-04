@@ -1,12 +1,13 @@
 import logging
 import os
 
+from localstack.version import __version__ as version
+
 from localstack import config
 from localstack.constants import API_ENDPOINT, ASSETS_ENDPOINT
 from localstack.utils.crypto import generate_ssl_cert
 from localstack.utils.http import download
 from localstack.utils.time import now
-from localstack.version import __version__ as version
 
 LOG = logging.getLogger(__name__)
 
