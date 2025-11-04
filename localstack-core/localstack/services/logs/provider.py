@@ -43,7 +43,7 @@ from localstack.services.plugins import ServiceLifecycleHook
 from localstack.utils.aws import arns
 from localstack.utils.aws.client_types import ServicePrincipal
 from localstack.utils.bootstrap import is_api_enabled
-from localstack.utils.common import is_number
+from localstack.utils.numbers import is_number
 from localstack.utils.patch import patch
 
 LOG = logging.getLogger(__name__)
