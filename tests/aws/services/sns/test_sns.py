@@ -1451,6 +1451,8 @@ class TestSNSSubscriptionCrudV2:
         resp = aws_client.sns.subscribe(
             TopicArn=topic_arn, Protocol="http", Endpoint="http://example.com/"
         )
+        # TODO: investigate why it leaves the subscription in `SNS.ListSubscriptions`, we maybe need to clean up
+        #  after deleting topics, not fully in parity as AWS cleans up instantly
         snapshot.match("create-subscription", resp)
 
     # TODO: parametrize for email protocol
@@ -4017,6 +4019,7 @@ class TestSNSPlatformEndpointCrud:
 
         app_name = f"platform-application-{short_uid()}"
         snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        snapshot.add_transformer(snapshot.transform.key_value("NextToken"))
         # if tested against AWS, the fixture needs to contain real credentials
         principal, credential = platform_credentials
         attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
@@ -4033,7 +4036,8 @@ class TestSNSPlatformEndpointCrud:
         if is_aws_cloud():
             time.sleep(20)
 
-        response = aws_client.sns.list_subscriptions()
+        # we list subscriptions by topic, as some tests are not cleaning up properly
+        response = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
         snapshot.match("list-subscriptions-pre-delete", response)
 
         response = aws_client.sns.delete_endpoint(EndpointArn=endpoint_arn)
@@ -4043,7 +4047,7 @@ class TestSNSPlatformEndpointCrud:
         if is_aws_cloud():
             time.sleep(20)
 
-        response = aws_client.sns.list_subscriptions()
+        response = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
         snapshot.match("list-subscriptions-post-delete", response)
 
     @markers.aws.manual_setup_required

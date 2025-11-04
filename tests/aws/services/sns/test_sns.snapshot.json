@@ -6460,10 +6460,10 @@
     }
   },
   "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint_with_subscription": {
-    "recorded-date": "31-10-2025, 21:27:49",
+    "recorded-date": "04-11-2025, 19:18:31",
     "recorded-content": {
       "list-subscriptions-pre-delete": {
-        "NextToken": "AAHhOl6T07LJ89hFxXiaWC4QlQUd8UbuziOx37A3XgerhQ==",
+        "NextToken": "<next-token:1>",
         "Subscriptions": [
           {
             "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
@@ -6485,7 +6485,7 @@
         }
       },
       "list-subscriptions-post-delete": {
-        "NextToken": "AAHxwWMatFh66c2j/bctn8NEhVsRAwebBzaS6enPfvneEA==",
+        "NextToken": "<next-token:2>",
         "Subscriptions": [
           {
             "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
