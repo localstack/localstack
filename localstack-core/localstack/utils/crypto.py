@@ -4,7 +4,15 @@ import os
 import re
 import threading
 
+from asn1crypto import algos, cms, core
+from asn1crypto import x509 as asn1_x509
+from Crypto.Cipher import AES, PKCS1_OAEP
+from Crypto.Hash import SHA256
+from Crypto.PublicKey import RSA as CryptoRSA
+from Crypto.Random import get_random_bytes
+from Crypto.Util.Padding import pad as crypto_pad
 from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .files import TMP_FILES, file_exists_not_empty, load_file, new_tmp_file, save_file
@@ -25,6 +33,11 @@ PEM_CERT_START = "-----BEGIN CERTIFICATE-----"
 PEM_CERT_END = "-----END CERTIFICATE-----"
 PEM_KEY_START_REGEX = r"-----BEGIN(.*)PRIVATE KEY-----"
 PEM_KEY_END_REGEX = r"-----END(.*)PRIVATE KEY-----"
+
+OID_AES256_CBC = "2.16.840.1.101.3.4.1.42"
+OID_MGF1 = "1.2.840.113549.1.1.8"
+OID_RSAES_OAEP = "1.2.840.113549.1.1.7"
+OID_SHA256 = "2.16.840.1.101.3.4.2.1"
 
 
 @synchronized(lock=SSL_CERT_LOCK)
@@ -183,3 +196,106 @@ def decrypt(
     decrypted = decryptor.update(encrypted) + decryptor.finalize()
     decrypted = unpad(decrypted)
     return decrypted
+
+
+def pkcs7_envelope_encrypt(plaintext: bytes, recipient_pubkey) -> bytes:
+    """
+    Create a PKCS7 wrapper of some plaintext decryptable by recipient_pubkey.  Uses RSA-OAEP with SHA-256
+    to encrypt the AES-256-CBC content key.  Hazmat's PKCS7EnvelopeBuilder doesn't support RSA-OAEP with SHA-256,
+    so we need to build the envelope manually with asn1crypto and PyCryptoDome.
+    """
+
+    # Get the public key to PyCryptoDome's object
+    pem_bytes = recipient_pubkey.public_bytes(
+        encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
+    )
+    crypto_pubkey = CryptoRSA.import_key(pem_bytes)
+
+    # Generate the AES session key
+    session_key = get_random_bytes(32)
+
+    # Encrypt the sesssion key with RSA-OAEP-SHA256 to recipient_pubkey
+    cipher_rsa = PKCS1_OAEP.new(crypto_pubkey, hashAlgo=SHA256)
+    encrypted_session_key = cipher_rsa.encrypt(session_key)
+
+    # Encrypt the context with the session key
+    iv = get_random_bytes(16)
+    cipher_aes = AES.new(session_key, AES.MODE_CBC, iv)
+    padded_plaintext = crypto_pad(plaintext, AES.block_size)
+    encrypted_content = cipher_aes.encrypt(padded_plaintext)
+
+    # Finally, build the envelope
+
+    # Add the recipient
+    recipient_identifier = cms.RecipientIdentifier(
+        name="issuer_and_serial_number",
+        value=cms.IssuerAndSerialNumber(
+            {
+                "issuer": asn1_x509.Name.build({"common_name": "recipient"}),
+                "serial_number": 1,
+            }
+        ),
+    )
+    key_enc_algorithm = cms.KeyEncryptionAlgorithm(
+        {
+            "algorithm": OID_RSAES_OAEP,
+            "parameters": algos.RSAESOAEPParams(
+                {
+                    "hash_algorithm": algos.DigestAlgorithm(
+                        {
+                            "algorithm": OID_SHA256,
+                        }
+                    ),
+                    "mask_gen_algorithm": algos.MaskGenAlgorithm(
+                        {
+                            "algorithm": OID_MGF1,
+                            "parameters": algos.DigestAlgorithm(
+                                {
+                                    "algorithm": OID_SHA256,
+                                }
+                            ),
+                        }
+                    ),
+                }
+            ),
+        }
+    )
+    recipient_info = cms.KeyTransRecipientInfo(
+        {
+            "version": "v0",
+            "rid": recipient_identifier,
+            "key_encryption_algorithm": key_enc_algorithm,
+            "encrypted_key": encrypted_session_key,
+        }
+    )
+
+    # Add the encrypted content
+    content_enc_algorithm = cms.EncryptionAlgorithm(
+        {
+            "algorithm": OID_AES256_CBC,
+            "parameters": core.OctetString(iv),
+        }
+    )
+    encrypted_content_info = cms.EncryptedContentInfo(
+        {
+            "content_type": "data",
+            "content_encryption_algorithm": content_enc_algorithm,
+            "encrypted_content": encrypted_content,
+        }
+    )
+    enveloped_data = cms.EnvelopedData(
+        {
+            "version": "v0",
+            "recipient_infos": [recipient_info],
+            "encrypted_content_info": encrypted_content_info,
+        }
+    )
+
+    # Finally add a wrapper and return its bytes
+    content_info = cms.ContentInfo(
+        {
+            "content_type": "enveloped_data",
+            "content": enveloped_data,
+        }
+    )
+    return content_info.dump()

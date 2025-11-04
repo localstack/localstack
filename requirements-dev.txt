@@ -18,6 +18,10 @@ apispec==6.8.4
     # via localstack-core
 argparse==1.4.0
     # via kclpy-ext
+asn1crypto==1.5.1
+    # via
+    #   localstack-core
+    #   localstack-core (pyproject.toml)
 attrs==25.4.0
     # via
     #   cattrs
@@ -340,6 +344,10 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
+pycryptodome==3.23.0
+    # via
+    #   localstack-core
+    #   localstack-core (pyproject.toml)
 pydantic==2.12.3
     # via
     #   aws-sam-translator
