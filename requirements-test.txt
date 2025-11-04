@@ -29,19 +29,19 @@ aws-cdk-asset-awscli-v1==2.2.242
     # via aws-cdk-lib
 aws-cdk-asset-node-proxy-agent-v6==2.1.0
     # via aws-cdk-lib
-aws-cdk-cloud-assembly-schema==48.16.0
+aws-cdk-cloud-assembly-schema==48.17.0
     # via aws-cdk-lib
-aws-cdk-lib==2.221.0
+aws-cdk-lib==2.221.1
     # via localstack-core (pyproject.toml)
 aws-sam-translator==1.101.0
     # via
     #   cfn-lint
     #   localstack-core
-aws-xray-sdk==2.14.0
+aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.42.64
     # via localstack-core
-awscrt==0.28.2
+awscrt==0.28.3
     # via localstack-core
 boto3==1.40.64
     # via
@@ -74,7 +74,7 @@ certifi==2025.10.5
     #   requests
 cffi==2.0.0
     # via cryptography
-cfn-lint==1.40.3
+cfn-lint==1.40.4
     # via moto-ext
 charset-normalizer==3.4.4
     # via requests
@@ -124,7 +124,7 @@ docutils==0.19
     # via awscli
 events==0.5
     # via opensearch-py
-graphql-core==3.2.6
+graphql-core==3.2.7
     # via moto-ext
 h11==0.16.0
     # via
@@ -175,7 +175,7 @@ joserfc==1.4.0
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core
-jsii==1.117.0
+jsii==1.118.0
     # via
     #   aws-cdk-asset-awscli-v1
     #   aws-cdk-asset-node-proxy-agent-v6
@@ -233,7 +233,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.15.post10
+moto-ext==5.1.15.post30
     # via localstack-core
 mpmath==1.3.0
     # via sympy
@@ -281,7 +281,7 @@ priority==1.3.0
     # via
     #   hypercorn
     #   localstack-twisted
-psutil==7.1.2
+psutil==7.1.3
     # via
     #   localstack-core
     #   localstack-core (pyproject.toml)
@@ -358,7 +358,7 @@ referencing==0.36.2
     #   jsonschema
     #   jsonschema-path
     #   jsonschema-specifications
-regex==2025.10.23
+regex==2025.11.3
     # via cfn-lint
 requests==2.32.5
     # via

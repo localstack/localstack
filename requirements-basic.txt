@@ -30,7 +30,7 @@ mdurl==0.1.2
     # via markdown-it-py
 plux==1.13.0
     # via localstack-core (pyproject.toml)
-psutil==7.1.2
+psutil==7.1.3
     # via localstack-core (pyproject.toml)
 pycparser==2.23
     # via cffi
