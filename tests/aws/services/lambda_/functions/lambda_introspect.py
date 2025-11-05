@@ -4,6 +4,7 @@ import platform
 import re
 import stat
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -35,4 +36,5 @@ def handler(event, context):
         "platform_machine": platform.machine(),
         "pwd": os.getcwd(),
         "paths": path_details,
+        "recursion_limit": sys.getrecursionlimit(),
     }
