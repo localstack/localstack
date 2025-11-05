@@ -213,7 +213,7 @@ def create_readable_report(
         if additional_test_details:
             fd.write("    <h2>Additional Test Coverage</h2>\n")
             fd.write(
-                "<div>     Note: this is probalby wrong usage of the script. It includes operations that have been covered with the acceptance tests only"
+                "<div>     Note: this is probably wrong usage of the script. It includes operations that have been covered with the acceptance tests only"
             )
             fd.write(f"<p>{additional_test_details}</p></div>\n")
         fd.write("</body></html>")
