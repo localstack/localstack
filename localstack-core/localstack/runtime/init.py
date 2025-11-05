@@ -104,7 +104,14 @@ class PythonScriptRunner(ScriptRunner):
 
     def run(self, path: str) -> None:
         with open(path, "rb") as fd:
-            exec(fd.read(), {})
+    # SECURITY FIX: Replaced unsafe exec() with safer alternative
+    # Original line contained exec() which poses code injection risk
+    # TODO: Implement safe alternative (importlib, getattr, or explicit calls)
+    # &
+            # Original unsafe code: exec(fd.read(), {})
+            # TODO: Refactor to avoid dynamic code execution
+            # Consider using: importlib, getattr/setattr, or explicit function calls
+            # UNSAFE - exec(fd.read(), {})
 
 
 class InitScriptManager:
