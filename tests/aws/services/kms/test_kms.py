@@ -1467,17 +1467,21 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
-    @pytest.mark.skip(
-        reason="This needs to be fixed as AWS introduced support for on demand rotation of imported keys."
-    )
-    def test_rotate_key_on_demand_raises_error_given_key_with_imported_key_material(
-        self, kms_create_key, aws_client, snapshot
+    @pytest.mark.parametrize(
+        "key_spec", ["SYMMETRIC_DEFAULT", "RSA_4096"]
+    )  # Check with a non-default key spec to test ordering of raised errors.
+    def test_rotate_key_on_demand_on_external_key_with_no_key_material(
+        self, kms_create_key, aws_client, snapshot, key_spec
     ):
-        key_id = kms_create_key(Origin="EXTERNAL")["KeyId"]
+        create_key_response = kms_create_key(
+            Origin="EXTERNAL", KeyUsage="ENCRYPT_DECRYPT", Description="test-key"
+        )
+        key_id = create_key_response["KeyId"]
+        snapshot.match("create-kms-external-key", create_key_response)
 
         with pytest.raises(ClientError) as e:
             aws_client.kms.rotate_key_on_demand(KeyId=key_id)
-        snapshot.match("error-response", e.value.response)
+        snapshot.match(f"rotate-key-on-demand-error-response-{key_spec}", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize("rotation_period_in_days", [90, 180])
