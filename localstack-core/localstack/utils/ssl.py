@@ -69,4 +69,3 @@ def get_cert_pem_file_path():
 def create_ssl_cert(serial_number=None):
     cert_pem_file = get_cert_pem_file_path()
     return generate_ssl_cert(cert_pem_file, serial_number=serial_number)
-
