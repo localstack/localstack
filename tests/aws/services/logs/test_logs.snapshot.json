@@ -140,13 +140,15 @@
     }
   },
   "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
-    "recorded-date": "06-04-2023, 11:42:42",
+    "recorded-date": "05-11-2025, 17:25:32",
     "recorded-content": {
       "describe-log-groups-prefix": {
         "logGroups": [
           {
             "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
             "creationTime": "timestamp",
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
             "logGroupName": "<log-group-name:1>",
             "metricFilterCount": 0,
             "storedBytes": 0
@@ -162,7 +164,10 @@
           {
             "arn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>:*",
             "creationTime": "timestamp",
-            "logGroupName": "<log-group-name:1>"
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>",
+            "metricFilterCount": 0
           }
         ],
         "nextToken": "<next_token>",
@@ -179,6 +184,27 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      },
+      "list-log-groups-pattern-no-match": {
+        "logGroups": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-log-groups-pattern-match": {
+        "logGroups": [
+          {
+            "logGroupArn": "arn:<partition>:logs:<region>:111111111111:log-group:<log-group-name:1>",
+            "logGroupClass": "STANDARD",
+            "logGroupName": "<log-group-name:1>"
+          }
+        ],
+        "nextToken": "<next_token>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
         }
       },
       "logs_log_group": [

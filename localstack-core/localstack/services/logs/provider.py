@@ -22,10 +22,13 @@ from localstack.aws.api.logs import (
     InputLogEvents,
     InvalidParameterException,
     KmsKeyId,
+    ListLogGroupsRequest,
+    ListLogGroupsResponse,
     ListTagsForResourceResponse,
     ListTagsLogGroupResponse,
     LogGroupClass,
     LogGroupName,
+    LogGroupSummary,
     LogsApi,
     LogStreamName,
     PutLogEventsResponse,
@@ -105,17 +108,16 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
                 "LogGroup name prefix and LogGroup name pattern are mutually exclusive parameters."
             )
 
-        copy_groups = copy.deepcopy(dict(region_backend.groups))
+        moto_groups = copy.deepcopy(dict(region_backend.groups)).values()
 
         groups = [
-            group.to_describe_dict()
-            for name, group in copy_groups.items()
+            {"logGroupClass": LogGroupClass.STANDARD} | group.to_describe_dict()
+            for group in sorted(moto_groups, key=lambda g: g.name)
             if not (prefix or pattern)
-            or (prefix and name.startswith(prefix))
-            or (pattern and pattern in name)
+            or (prefix and group.name.startswith(prefix))
+            or (pattern and pattern in group.name)
         ]
 
-        groups = sorted(groups, key=lambda x: x["logGroupName"])
         return DescribeLogGroupsResponse(logGroups=groups)
 
     @handler("DescribeLogStreams", expand=False)
@@ -137,6 +139,22 @@ class LogsProvider(LogsApi, ServiceLifecycleHook):
             request_copy["logGroupName"] = log_group_identifier.split(":")[-1]
 
         return moto.call_moto_with_request(context, request_copy)
+
+    @handler("ListLogGroups", expand=False)
+    def list_log_groups(
+        self, context: RequestContext, request: ListLogGroupsRequest
+    ) -> ListLogGroupsResponse:
+        pattern: str | None = request.get("logGroupNamePattern")
+        region_backend: LogsBackend = get_moto_logs_backend(context.account_id, context.region)
+        moto_groups = copy.deepcopy(region_backend.groups).values()
+        groups = [
+            LogGroupSummary(
+                logGroupName=group.name, logGroupArn=group.arn, logGroupClass=LogGroupClass.STANDARD
+            )
+            for group in sorted(moto_groups, key=lambda g: g.name)
+            if not pattern or pattern in group.name
+        ]
+        return ListLogGroupsResponse(logGroups=groups)
 
     def create_log_group(
         self,
@@ -442,10 +460,9 @@ def moto_to_describe_dict(target, self):
     # reported race condition in https://github.com/localstack/localstack/issues/8011
     # making copy of "streams" dict here to avoid issues while summing up storedBytes
     copy_streams = copy.deepcopy(self.streams)
-    # parity tests shows that the arn ends with ":*"
-    arn = self.arn if self.arn.endswith(":*") else f"{self.arn}:*"
     log_group = {
-        "arn": arn,
+        "arn": f"{self.arn}:*",
+        "logGroupArn": self.arn,
         "creationTime": self.creation_time,
         "logGroupName": self.name,
         "metricFilterCount": 0,
