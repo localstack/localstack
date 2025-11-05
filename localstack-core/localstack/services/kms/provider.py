@@ -1445,8 +1445,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         if key.metadata["KeySpec"] != KeySpec.SYMMETRIC_DEFAULT:
             raise UnsupportedOperationException()
-        if key.metadata["KeyState"] == KeyState.PendingImport:
-            raise KMSInvalidStateException(f"{key.metadata['Arn']} is pending import.")
+        self._validate_key_state_not_pending_import(key)
 
         key.rotate_key_on_demand()
 
