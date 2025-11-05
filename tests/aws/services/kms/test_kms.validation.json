@@ -332,6 +332,24 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_modifies_key_material": {
     "last_validated_date": "2025-03-08T09:24:15+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_on_external_key_with_no_key_material[RSA_4096]": {
+    "last_validated_date": "2025-11-05T16:12:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.1,
+      "teardown": 0.05,
+      "total": 0.15
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_on_external_key_with_no_key_material[SYMMETRIC_DEFAULT]": {
+    "last_validated_date": "2025-11-05T16:12:01+00:00",
+    "durations_in_seconds": {
+      "setup": 0.83,
+      "call": 0.21,
+      "teardown": 0.05,
+      "total": 1.09
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_raises_error_given_key_is_disabled": {
     "last_validated_date": "2025-03-08T09:26:50+00:00"
   },
