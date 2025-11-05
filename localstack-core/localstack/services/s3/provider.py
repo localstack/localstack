@@ -1282,7 +1282,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 expected_etag = if_match.strip('"')
                 if object_etag != expected_etag:
                     raise PreconditionFailed(
-                        f"The ETag condition was not met. Expected: {if_match}, Actual: {s3_object.etag}",
+                        "At least one of the pre-conditions you specified did not hold",
                         Condition="If-Match",
                     )
 
