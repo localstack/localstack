@@ -3211,5 +3211,73 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_on_external_key_with_no_key_material[SYMMETRIC_DEFAULT]": {
+    "recorded-date": "05-11-2025, 16:12:01",
+    "recorded-content": {
+      "create-kms-external-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test-key",
+        "Enabled": false,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "PendingImport",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "rotate-key-on-demand-error-response-SYMMETRIC_DEFAULT": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import."
+        },
+        "message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_on_external_key_with_no_key_material[RSA_4096]": {
+    "recorded-date": "05-11-2025, 16:12:01",
+    "recorded-content": {
+      "create-kms-external-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test-key",
+        "Enabled": false,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "PendingImport",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "rotate-key-on-demand-error-response-RSA_4096": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import."
+        },
+        "message": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1> is pending import.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
