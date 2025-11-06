@@ -3,7 +3,13 @@
     "last_validated_date": "2024-05-24T13:57:11+00:00"
   },
   "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_create_and_delete_log_stream": {
-    "last_validated_date": "2023-04-06T09:42:42+00:00"
+    "last_validated_date": "2025-11-05T17:25:41+00:00",
+    "durations_in_seconds": {
+      "setup": 1.91,
+      "call": 3.46,
+      "teardown": 0.16,
+      "total": 5.53
+    }
   },
   "tests/aws/services/logs/test_logs.py::TestCloudWatchLogs::test_filter_log_events_response_header": {
     "last_validated_date": "2024-05-24T13:58:30+00:00"

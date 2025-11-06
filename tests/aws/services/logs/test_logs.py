@@ -166,9 +166,9 @@ class TestCloudWatchLogs:
             # TODO 'describe-log-groups' returns different attributes on AWS when using
             #   'logGroupNamePattern' compared to 'logGroupNamePrefix' (for the same log group)
             #    seems like a weird issue on AWS side, we just exclude the paths here for this particular call
-            "$..describe-log-groups-pattern.logGroups..metricFilterCount",
             "$..describe-log-groups-pattern.logGroups..storedBytes",
             "$..describe-log-groups-pattern.nextToken",
+            "$..list-log-groups-pattern-match.nextToken",
         ]
     )
     @markers.aws.validated
@@ -203,6 +203,13 @@ class TestCloudWatchLogs:
                 logGroupNamePattern=logs_log_group, logGroupNamePrefix=logs_log_group
             )
         snapshot.match("error-describe-logs-group", ctx.value.response)
+
+        response = aws_client.logs.list_log_groups(logGroupNamePattern="no-such-group")
+        snapshot.match("list-log-groups-pattern-no-match", response)
+        response = aws_client.logs.list_log_groups(
+            logGroupNamePattern=logs_log_group.split("-")[-1]
+        )
+        snapshot.match("list-log-groups-pattern-match", response)
 
         aws_client.logs.create_log_stream(logGroupName=logs_log_group, logStreamName=test_name)
         log_streams_between = aws_client.logs.describe_log_streams(logGroupName=logs_log_group).get(
