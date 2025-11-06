@@ -1032,7 +1032,7 @@ class BaseCBORRequestParser(RequestParser, ABC):
             return method(stream, additional_info)
         else:
             raise ProtocolParserError(
-                f"Unsupported inital byte found for data item- "
+                f"Unsupported initial byte found for data item- "
                 f"Major type:{major_type}, Additional info: "
                 f"{additional_info}"
             )
