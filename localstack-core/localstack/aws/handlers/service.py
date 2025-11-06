@@ -222,7 +222,15 @@ class ServiceExceptionSerializer(ExceptionHandler):
                 operation = context.service.operation_model(context.service.operation_names[0])
                 msg = f"exception while calling {service_name} with unknown operation: {message}"
 
-            status_code = 501 if config.FAIL_FAST else 500
+            # Check for license restricted plugin message and set status code to 501
+            if (
+                hasattr(exception, "reason")
+                and "not part of the active license agreement"
+                in str(getattr(exception, "reason", "")).lower()
+            ):
+                status_code = 501
+            else:
+                status_code = 501 if config.FAIL_FAST else 500
 
             error = CommonServiceException(
                 "InternalError", msg, status_code=status_code
