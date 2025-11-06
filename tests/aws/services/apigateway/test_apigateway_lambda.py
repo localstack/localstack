@@ -72,6 +72,9 @@ def handler(event, context, *args):
         "$..accept-encoding",
         "$..x-localstack-edge",
         "$..pathParameters",
+        # The value of Accept-Encoding can change when the zstandard package is present
+        "$..headers.Accept-Encoding",
+        "$..multiValueHeaders.Accept-Encoding",
         "$..requestContext.authorizer",
         "$..requestContext.deploymentId",
         "$..requestContext.domainName",
@@ -1259,6 +1262,9 @@ def test_lambda_rust_proxy_integration(
         "$..User-Agent",
         "$..x-localstack-edge",
         "$..pathParameters",
+        # The value of Accept-Encoding can change when the zstandard package is present
+        "$..content.headers.Accept-Encoding",
+        "$..content.multiValueHeaders.Accept-Encoding",
         "$..requestContext.authorizer",
         "$..requestContext.deploymentId",
         "$..requestContext.domainName",

@@ -1407,6 +1407,8 @@ class TestLambdaURL:
             "$..headers.x-forwarded-for",
             "$..headers.x-amzn-trace-id",
             "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
+            # The value of Accept-Encoding can change when the zstandard package is present
+            "$..content.headers.accept-encoding",
         ]
     )
     @markers.aws.validated
@@ -1440,6 +1442,8 @@ class TestLambdaURL:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..content.headers.domain",  # TODO: LS Lambda should populate this value for AWS parity
+            # The value of Accept-Encoding can change when the zstandard package is present
+            "$..content.headers.accept-encoding",
             "$..origin",  # TODO: LS Lambda should populate this value for AWS parity
         ]
     )
@@ -1465,6 +1469,8 @@ class TestLambdaURL:
     @markers.snapshot.skip_snapshot_verify(
         paths=[
             "$..origin",  # FIXME: LS does not populate the value
+            # The value of Accept-Encoding can change when the zstandard package is present
+            "$..content.headers.accept-encoding",
         ]
     )
     def test_lambda_url_form_payload(self, create_echo_http_server, snapshot, aws_client):

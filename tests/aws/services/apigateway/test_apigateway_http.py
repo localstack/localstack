@@ -245,6 +245,8 @@ def test_http_integration_method(
         "$..headers.x-amzn-remapped-x-amzn-requestid",
         #  TODO AWS doesn't seems to add Server to lambda invocation for lambda url
         "$..headers.x-amzn-remapped-server",
+        # The value of Accept-Encoding can change when the zstandard package is present
+        "$..content.headers.accept-encoding",
     ]
 )
 @pytest.mark.skipif(
