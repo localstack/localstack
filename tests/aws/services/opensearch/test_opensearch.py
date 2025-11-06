@@ -99,6 +99,21 @@ def try_cluster_health(cluster_url: str):
     ], "expected cluster state to be in a valid state"
 
 
+@pytest.fixture(autouse=True)
+def disable_ssl_validation_for_unsupported_regions(region_name, monkeypatch):
+    # list of regions supported in our certificate
+    # prevents SSL verification for regional hostnames not present in the SAN list of the certificate
+    if region_name not in {
+        "eu-central-1",
+        "eu-west-1",
+        "us-east-1",
+        "us-east-2",
+        "us-west-1",
+        "us-west-2",
+    }:
+        monkeypatch.setattr(requests, "verify_ssl", False)
+
+
 @markers.skip_offline
 class TestOpensearchProvider:
     """
