@@ -3279,5 +3279,17 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_on_demand_returns_arn_for_key_id": {
+    "recorded-date": "06-11-2025, 11:07:58",
+    "recorded-content": {
+      "rotate-on-demand-aws-key": {
+        "KeyId": "<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
