@@ -1268,12 +1268,89 @@ class S3Provider(S3Api, ServiceLifecycleHook):
 
         # Acquire lock before any operations to ensure atomicity
         with self._preconditions_locks[bucket][key]:
-            s3_object = s3_bucket.objects.get(key)
-            if not s3_object:
+            # Handle non-versioned buckets - similar pattern to delete_objects()
+            if s3_bucket.versioning_status is None:
+                # Validate version_id for non-versioned buckets - raise error if provided
+                if version_id and version_id != "null":
+                    raise InvalidArgument(
+                        "Invalid version id specified",
+                        ArgumentName="versionId",
+                        ArgumentValue=version_id,
+                    )
+
+                # Check If-Match condition if provided (need to get object first)
+                s3_object = s3_bucket.objects.get(key)
+                if not s3_object:
+                    if if_match:
+                        # If If-Match is specified and object doesn't exist, it's a precondition failure
+                        raise PreconditionFailed("Object does not exist", Condition="If-Match")
+                    return DeleteObjectOutput()
+
+                # Check If-Match condition if provided
                 if if_match:
-                    # If If-Match is specified and object doesn't exist, it's a precondition failure
-                    raise PreconditionFailed("Object does not exist", Condition="If-Match")
+                    # Normalize ETags by removing quotes for comparison
+                    object_etag = s3_object.etag.strip('"')
+                    expected_etag = if_match.strip('"')
+                    if object_etag != expected_etag:
+                        raise PreconditionFailed(
+                            "At least one of the pre-conditions you specified did not hold",
+                            Condition="If-Match",
+                        )
+
+                # Delete object from non-versioned bucket
+                found_object = s3_bucket.objects.pop(key, None)
+                # TODO: RequestCharged
+                if found_object:
+                    self._storage_backend.remove(bucket, found_object)
+                    self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+                    store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+
                 return DeleteObjectOutput()
+
+            # Handle versioned buckets - similar pattern to delete_objects()
+            if not version_id:
+                # Check If-Match condition if provided (need to get current object first)
+                current_object = s3_bucket.objects.get(key)
+                if if_match:
+                    if not current_object:
+                        raise PreconditionFailed("Object does not exist", Condition="If-Match")
+                    # DeleteMarkers don't have etags, so If-Match will always fail
+                    if isinstance(current_object, S3DeleteMarker):
+                        raise PreconditionFailed(
+                            "At least one of the pre-conditions you specified did not hold",
+                            Condition="If-Match",
+                        )
+                    # Normalize ETags by removing quotes for comparison
+                    object_etag = current_object.etag.strip('"')
+                    expected_etag = if_match.strip('"')
+                    if object_etag != expected_etag:
+                        raise PreconditionFailed(
+                            "At least one of the pre-conditions you specified did not hold",
+                            Condition="If-Match",
+                        )
+
+                delete_marker_id = generate_version_id(s3_bucket.versioning_status)
+                delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
+                s3_bucket.objects.set(key, delete_marker)
+                s3_notif_ctx = S3EventNotificationContext.from_request_context(
+                    context,
+                    s3_bucket=s3_bucket,
+                    s3_object=delete_marker,
+                )
+                s3_notif_ctx.event_type = f"{s3_notif_ctx.event_type}MarkerCreated"
+                self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx)
+
+                return DeleteObjectOutput(VersionId=delete_marker.version_id, DeleteMarker=True)
+
+            # When version_id is specified, we need to validate it exists
+            # If the key doesn't exist at all, we still try to get the version to provide proper error
+            s3_object = s3_bucket.objects.get(key, version_id)
+            if not s3_object:
+                raise InvalidArgument(
+                    "Invalid version id specified",
+                    ArgumentName="versionId",
+                    ArgumentValue=version_id,
+                )
 
             # Check If-Match condition if provided
             if if_match:
@@ -1286,65 +1363,24 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                         Condition="If-Match",
                     )
 
-        if s3_bucket.versioning_status is None:
-            if version_id and version_id != "null":
-                raise InvalidArgument(
-                    "Invalid version id specified",
-                    ArgumentName="versionId",
-                    ArgumentValue=version_id,
-                )
+            if s3_object.is_locked(bypass_governance_retention):
+                raise AccessDenied("Access Denied because object protected by object lock.")
 
-            found_object = s3_bucket.objects.pop(key, None)
-            # TODO: RequestCharged
-            if found_object:
-                self._storage_backend.remove(bucket, found_object)
-                self._notify(context, s3_bucket=s3_bucket, s3_object=found_object)
+            s3_bucket.objects.pop(object_key=key, version_id=version_id)
+            response = DeleteObjectOutput(VersionId=s3_object.version_id)
+
+            if isinstance(s3_object, S3DeleteMarker):
+                response["DeleteMarker"] = True
+            else:
+                self._storage_backend.remove(bucket, s3_object)
                 store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
+            self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
 
-            return DeleteObjectOutput()
+            if key not in s3_bucket.objects:
+                # we clean up keys that do not have any object versions in them anymore
+                self._preconditions_locks[bucket].pop(key, None)
 
-        if not version_id:
-            delete_marker_id = generate_version_id(s3_bucket.versioning_status)
-            delete_marker = S3DeleteMarker(key=key, version_id=delete_marker_id)
-            s3_bucket.objects.set(key, delete_marker)
-            s3_notif_ctx = S3EventNotificationContext.from_request_context(
-                context,
-                s3_bucket=s3_bucket,
-                s3_object=delete_marker,
-            )
-            s3_notif_ctx.event_type = f"{s3_notif_ctx.event_type}MarkerCreated"
-            self._notify(context, s3_bucket=s3_bucket, s3_notif_ctx=s3_notif_ctx)
-
-            return DeleteObjectOutput(VersionId=delete_marker.version_id, DeleteMarker=True)
-
-        if key not in s3_bucket.objects:
-            return DeleteObjectOutput()
-
-        if not (s3_object := s3_bucket.objects.get(key, version_id)):
-            raise InvalidArgument(
-                "Invalid version id specified",
-                ArgumentName="versionId",
-                ArgumentValue=version_id,
-            )
-
-        if s3_object.is_locked(bypass_governance_retention):
-            raise AccessDenied("Access Denied because object protected by object lock.")
-
-        s3_bucket.objects.pop(object_key=key, version_id=version_id)
-        response = DeleteObjectOutput(VersionId=s3_object.version_id)
-
-        if isinstance(s3_object, S3DeleteMarker):
-            response["DeleteMarker"] = True
-        else:
-            self._storage_backend.remove(bucket, s3_object)
-            store.TAGS.tags.pop(get_unique_key_id(bucket, key, version_id), None)
-        self._notify(context, s3_bucket=s3_bucket, s3_object=s3_object)
-
-        if key not in s3_bucket.objects:
-            # we clean up keys that do not have any object versions in them anymore
-            self._preconditions_locks[bucket].pop(key, None)
-
-        return response
+            return response
 
     def delete_objects(
         self,
