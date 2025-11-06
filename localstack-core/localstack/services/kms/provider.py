@@ -1450,7 +1450,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key.rotate_key_on_demand()
 
         return RotateKeyOnDemandResponse(
-            KeyId=key_id,
+            KeyId=key.metadata["Arn"],
         )
 
     @handler("TagResource", expand=False)

@@ -1365,6 +1365,13 @@ class TestKMS:
         snapshot.match("error-response", e.value.response)
 
     @markers.aws.validated
+    def test_rotate_on_demand_returns_arn_for_key_id(self, kms_create_key, aws_client, snapshot):
+        aws_kms_key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")
+        aws_key_rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=aws_kms_key["KeyId"])
+        snapshot.match("rotate-on-demand-aws-key", aws_key_rotate_on_demand_response)
+        assert aws_key_rotate_on_demand_response["KeyId"] == aws_kms_key["Arn"]
+
+    @markers.aws.validated
     def test_rotate_key_on_demand_modifies_key_material(self, kms_create_key, aws_client, snapshot):
         key_id = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")["KeyId"]
         message = b"test message 123 !%$@ 1234567890"
