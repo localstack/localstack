@@ -59,7 +59,14 @@ def handler(event, context, *args):
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=CLOUDFRONT_SKIP_HEADERS)
+@markers.snapshot.skip_snapshot_verify(
+    paths=CLOUDFRONT_SKIP_HEADERS
+    + [
+        # The value of Accept-Encoding can change when the zstandard package is present
+        "$..headers.Accept-Encoding",
+        "$..multiValueHeaders.Accept-Encoding",
+    ]
+)
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
@@ -1244,7 +1251,14 @@ def test_lambda_rust_proxy_integration(
 
 
 @markers.aws.validated
-@markers.snapshot.skip_snapshot_verify(paths=CLOUDFRONT_SKIP_HEADERS)
+@markers.snapshot.skip_snapshot_verify(
+    paths=CLOUDFRONT_SKIP_HEADERS
+    + [
+        # The value of Accept-Encoding can change when the zstandard package is present
+        "$..content.headers.Accept-Encoding",
+        "$..content.multiValueHeaders.Accept-Encoding",
+    ]
+)
 @markers.snapshot.skip_snapshot_verify(
     condition=lambda: not is_next_gen_api(),
     paths=[
