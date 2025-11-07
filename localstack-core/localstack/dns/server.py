@@ -227,7 +227,7 @@ class RecordConverter:
     @staticmethod
     def _is_gateway(ip: IPv4Address) -> bool:
         """
-        Look up the gateways that this contianer has, and return True if the
+        Look up the gateways that this container has, and return True if the
         supplied ip address is in that list.
         """
         return ip == iputils.get_default_gateway()
