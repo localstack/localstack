@@ -755,6 +755,9 @@ class KmsKey:
             )
         self.previous_keys.append(self.crypto_key.key_material)
         self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+        self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
+            self.crypto_key.key_material
+        )
 
 
 class KmsGrant:
