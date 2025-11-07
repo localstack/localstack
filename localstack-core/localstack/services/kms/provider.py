@@ -1232,7 +1232,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         return ImportKeyMaterialResponse(
             KeyId=key_to_import_material_to.metadata["Arn"],
-            KeyMaterialId=key_to_import_material_to.metadata["CurrentKeyMaterialId"],
+            KeyMaterialId=key_material_id,
         )
 
     def delete_imported_key_material(
