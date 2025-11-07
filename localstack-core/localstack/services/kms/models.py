@@ -326,6 +326,13 @@ class KmsKey:
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
 
+    def generate_key_material_id(self, current_material: bytes) -> str:
+        # The Key Material ID should depend on the material provided and the Key ID.
+        # UUID5 generates the correct format for the, but half the required length of 64 hence * 2.
+        key_id_as_uuid = uuid.UUID(self.metadata["KeyId"])
+        key_material_id_hex = uuid.uuid5(key_id_as_uuid, current_material).hex
+        return str(key_material_id_hex) * 2
+
     def calculate_and_set_arn(self, account_id, region):
         self.metadata["Arn"] = kms_key_arn(self.metadata.get("KeyId"), account_id, region)
 
