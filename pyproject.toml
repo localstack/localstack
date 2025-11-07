@@ -261,7 +261,6 @@ extend-safe-fixes = [
 # Since F401 (removing unused imports) is currently an unsafe fix, these imports cannot be automatically removed.
 # Therefore, we temporarily disable the rules below for __init__ files.
 [tool.ruff.lint.per-file-ignores]
-"localstack-core/localstack/**/__init__.py" = ["UP006", "UP007", "UP035", "UP045"]
 "tests/aws/services/lambda_/functions/**" = ["UP"]  # lambda tests parametrize the runtime
 
 [tool.ruff.lint.pyupgrade]
