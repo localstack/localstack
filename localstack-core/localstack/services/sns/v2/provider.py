@@ -10,8 +10,11 @@ from localstack.aws.api import CommonServiceException, RequestContext
 from localstack.aws.api.sns import (
     AmazonResourceName,
     ConfirmSubscriptionResponse,
+    CreateEndpointResponse,
     CreatePlatformApplicationResponse,
     CreateTopicResponse,
+    Endpoint,
+    GetEndpointAttributesResponse,
     GetPlatformApplicationAttributesResponse,
     GetSMSAttributesResponse,
     GetSubscriptionAttributesResponse,
@@ -60,6 +63,9 @@ from localstack.services.sns.v2.models import (
     SMS_ATTRIBUTE_NAMES,
     SMS_DEFAULT_SENDER_REGEX,
     SMS_TYPES,
+    EndpointAttributeNames,
+    PlatformApplicationDetails,
+    PlatformEndpoint,
     SnsMessage,
     SnsMessageType,
     SnsStore,
@@ -68,6 +74,7 @@ from localstack.services.sns.v2.models import (
     sns_stores,
 )
 from localstack.services.sns.v2.utils import (
+    create_platform_endpoint_arn,
     create_subscription_arn,
     encode_subscription_token_with_region,
     get_next_page_token_from_arn,
@@ -237,10 +244,11 @@ class SnsProvider(SnsApi):
                 raise InvalidParameterException("Invalid parameter: SQS endpoint ARN")
 
         elif protocol == "application":
-            # TODO: This needs to be implemented once applications are ported from moto to the new provider
-            raise NotImplementedError(
-                "This functionality needs yet to be ported to the new SNS provider"
-            )
+            # TODO: Validate exact behaviour
+            try:
+                parse_arn(endpoint)
+            except InvalidArnException:
+                raise InvalidParameterException("Invalid parameter: ApplicationEndpoint ARN")
 
         if ".fifo" in endpoint and ".fifo" not in topic_arn:
             # TODO: move to sqs protocol block if possible
@@ -591,17 +599,24 @@ class SnsProvider(SnsApi):
             account_id=context.account_id,
             region_name=context.region,
         )
-        platform_application = PlatformApplication(
-            PlatformApplicationArn=application_arn, Attributes=_attributes
+        platform_application_details = PlatformApplicationDetails(
+            platform_application=PlatformApplication(
+                PlatformApplicationArn=application_arn,
+                Attributes=_attributes,
+            ),
+            platform_endpoints={},
         )
-        store.platform_applications[application_arn] = platform_application
-        return CreatePlatformApplicationResponse(**platform_application)
+        store.platform_applications[application_arn] = platform_application_details
+
+        return platform_application_details.platform_application
 
     def delete_platform_application(
         self, context: RequestContext, platform_application_arn: String, **kwargs
     ) -> None:
         store = self.get_store(context.account_id, context.region)
         store.platform_applications.pop(platform_application_arn, None)
+        # TODO: if the platform had endpoints, should we remove them from the store? There is no way to list
+        #   endpoints without an application, so this is impossible to check the state of AWS here
 
     def list_platform_applications(
         self, context: RequestContext, next_token: String | None = None, **kwargs
@@ -615,7 +630,9 @@ class SnsProvider(SnsApi):
             next_token=next_token,
         )
 
-        response = ListPlatformApplicationsResponse(PlatformApplications=page)
+        response = ListPlatformApplicationsResponse(
+            PlatformApplications=[platform_app.platform_application for platform_app in page]
+        )
         if token:
             response["NextToken"] = token
         return response
@@ -644,6 +661,62 @@ class SnsProvider(SnsApi):
     # Platform Endpoints
     #
 
+    def create_platform_endpoint(
+        self,
+        context: RequestContext,
+        platform_application_arn: String,
+        token: String,
+        custom_user_data: String | None = None,
+        attributes: MapStringToString | None = None,
+        **kwargs,
+    ) -> CreateEndpointResponse:
+        store = self.get_store(context.account_id, context.region)
+        application = store.platform_applications.get(platform_application_arn)
+        if not application:
+            raise NotFoundException("PlatformApplication does not exist")
+        endpoint_arn = application.platform_endpoints.get(token, {})
+        attributes = attributes or {}
+        _validate_endpoint_attributes(attributes, allow_empty=True)
+        # CustomUserData can be specified both in attributes and as parameter. Attributes take precedence
+        attributes.setdefault(EndpointAttributeNames.CUSTOM_USER_DATA, custom_user_data)
+        _attributes = {"Enabled": "true", "Token": token, **attributes}
+        if endpoint_arn and (
+            platform_endpoint_details := store.platform_endpoints.get(endpoint_arn)
+        ):
+            # endpoint for that application with that particular token already exists
+            if not platform_endpoint_details.platform_endpoint["Attributes"] == _attributes:
+                raise InvalidParameterException(
+                    f"Invalid parameter: Token Reason: Endpoint {endpoint_arn} already exists with the same Token, but different attributes."
+                )
+            else:
+                return CreateEndpointResponse(EndpointArn=endpoint_arn)
+
+        endpoint_arn = create_platform_endpoint_arn(platform_application_arn)
+        platform_endpoint = PlatformEndpoint(
+            platform_application_arn=endpoint_arn,
+            platform_endpoint=Endpoint(
+                Attributes=_attributes,
+                EndpointArn=endpoint_arn,
+            ),
+        )
+        store.platform_endpoints[endpoint_arn] = platform_endpoint
+        application.platform_endpoints[token] = endpoint_arn
+
+        return CreateEndpointResponse(EndpointArn=endpoint_arn)
+
+    def delete_endpoint(self, context: RequestContext, endpoint_arn: String, **kwargs) -> None:
+        store = self.get_store(context.account_id, context.region)
+        platform_endpoint_details = store.platform_endpoints.pop(endpoint_arn, None)
+        if platform_endpoint_details:
+            platform_application = store.platform_applications.get(
+                platform_endpoint_details.platform_application_arn
+            )
+            if platform_application:
+                platform_endpoint = platform_endpoint_details.platform_endpoint
+                platform_application.platform_endpoints.pop(
+                    platform_endpoint["Attributes"]["Token"], None
+                )
+
     def list_endpoints_by_platform_application(
         self,
         context: RequestContext,
@@ -651,8 +724,49 @@ class SnsProvider(SnsApi):
         next_token: String | None = None,
         **kwargs,
     ) -> ListEndpointsByPlatformApplicationResponse:
-        # TODO: stub so cleanup fixture won't fail
-        return ListEndpointsByPlatformApplicationResponse(Endpoints=[])
+        store = self.get_store(context.account_id, context.region)
+        platform_application = store.platform_applications.get(platform_application_arn)
+        if not platform_application:
+            raise NotFoundException("PlatformApplication does not exist")
+        endpoint_arns = platform_application.platform_endpoints.values()
+        paginated_endpoint_arns = PaginatedList(endpoint_arns)
+        page, token = paginated_endpoint_arns.get_page(
+            token_generator=lambda x: get_next_page_token_from_arn(x),
+            page_size=100,
+            next_token=next_token,
+        )
+
+        response = ListEndpointsByPlatformApplicationResponse(
+            Endpoints=[
+                store.platform_endpoints[endpoint_arn].platform_endpoint
+                for endpoint_arn in page
+                if endpoint_arn in store.platform_endpoints
+            ]
+        )
+        if token:
+            response["NextToken"] = token
+        return response
+
+    def get_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, **kwargs
+    ) -> GetEndpointAttributesResponse:
+        store = self.get_store(context.account_id, context.region)
+        platform_endpoint_details = store.platform_endpoints.get(endpoint_arn)
+        if not platform_endpoint_details:
+            raise NotFoundException("Endpoint does not exist")
+        attributes = platform_endpoint_details.platform_endpoint["Attributes"]
+        return GetEndpointAttributesResponse(Attributes=attributes)
+
+    def set_endpoint_attributes(
+        self, context: RequestContext, endpoint_arn: String, attributes: MapStringToString, **kwargs
+    ) -> None:
+        store = self.get_store(context.account_id, context.region)
+        platform_endpoint_details = store.platform_endpoints.get(endpoint_arn)
+        if not platform_endpoint_details:
+            raise NotFoundException("Endpoint does not exist")
+        _validate_endpoint_attributes(attributes)
+        attributes = attributes or {}
+        platform_endpoint_details.platform_endpoint["Attributes"].update(attributes)
 
     #
     # Sms operations
@@ -736,7 +850,7 @@ class SnsProvider(SnsApi):
         parse_and_validate_platform_application_arn(platform_application_arn)
         try:
             store = SnsProvider.get_store(context.account_id, context.region)
-            return store.platform_applications[platform_application_arn]
+            return store.platform_applications[platform_application_arn].platform_application
         except KeyError:
             raise NotFoundException("PlatformApplication does not exist")
 
@@ -821,11 +935,29 @@ def _validate_platform_application_name(name: str) -> None:
 
 
 def _validate_platform_application_attributes(attributes: dict) -> None:
+    _check_empty_attributes(attributes)
+
+
+def _check_empty_attributes(attributes: dict) -> None:
     if not attributes:
         raise CommonServiceException(
             code="ValidationError",
             message="1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
             sender_fault=True,
+        )
+
+
+def _validate_endpoint_attributes(attributes: dict, allow_empty: bool = False) -> None:
+    if not allow_empty:
+        _check_empty_attributes(attributes)
+    for key in attributes:
+        if key not in EndpointAttributeNames:
+            raise InvalidParameterException(
+                f"Invalid parameter: Attributes Reason: Invalid attribute name: {key}"
+            )
+    if len(attributes.get(EndpointAttributeNames.CUSTOM_USER_DATA, "")) > 2048:
+        raise InvalidParameterException(
+            "Invalid parameter: Attributes Reason: Invalid value for attribute: CustomUserData: must be at most 2048 bytes long in UTF-8 encoding"
         )
 
 

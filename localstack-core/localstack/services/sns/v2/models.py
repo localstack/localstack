@@ -5,6 +5,7 @@ from enum import StrEnum
 from typing import Literal, TypedDict
 
 from localstack.aws.api.sns import (
+    Endpoint,
     MessageAttributeMap,
     PlatformApplication,
     PublishBatchRequestEntry,
@@ -37,6 +38,12 @@ SnsProtocols = Literal[
 SnsApplicationPlatforms = Literal[
     "APNS", "APNS_SANDBOX", "ADM", "FCM", "Baidu", "GCM", "MPNS", "WNS"
 ]
+
+
+class EndpointAttributeNames(StrEnum):
+    CUSTOM_USER_DATA = "CustomUserData"
+    Token = "Token"
+    ENABLED = "Enabled"
 
 
 SMS_ATTRIBUTE_NAMES = [
@@ -143,6 +150,19 @@ class SnsMessage:
         )
 
 
+@dataclass
+class PlatformEndpoint:
+    platform_application_arn: str
+    platform_endpoint: Endpoint
+
+
+@dataclass
+class PlatformApplicationDetails:
+    platform_application: PlatformApplication
+    # maps all Endpoints of the PlatformApplication, from their Token to their ARN
+    platform_endpoints: dict[str, str]
+
+
 class SnsStore(BaseStore):
     topics: dict[str, Topic] = LocalAttribute(default=dict)
 
@@ -156,7 +176,10 @@ class SnsStore(BaseStore):
     subscription_tokens: dict[str, str] = LocalAttribute(default=dict)
 
     # maps platform application arns to platform applications
-    platform_applications: dict[str, PlatformApplication] = LocalAttribute(default=dict)
+    platform_applications: dict[str, PlatformApplicationDetails] = LocalAttribute(default=dict)
+
+    # maps endpoint arns to platform endpoints
+    platform_endpoints: dict[str, PlatformEndpoint] = LocalAttribute(default=dict)
 
     # topic/subscription independent default values for sending sms messages
     sms_attributes: dict[str, str] = LocalAttribute(default=dict)

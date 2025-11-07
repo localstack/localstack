@@ -6347,5 +6347,445 @@
         }
       }
     }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint": {
+    "recorded-date": "31-10-2025, 21:26:47",
+    "recorded-content": {
+      "create-platform-endpoint": {
+        "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_idempotency": {
+    "recorded-date": "31-10-2025, 21:26:49",
+    "recorded-content": {
+      "create-platform-endpoint": {
+        "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-platform-endpoint-idempotent": {
+        "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "create-platform-endpoint-different-token": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Token Reason: Endpoint arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1> already exists with the same Token, but different attributes.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_non_existent_app": {
+    "recorded-date": "31-10-2025, 21:26:50",
+    "recorded-content": {
+      "create-platform-endpoint": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_list_platform_endpoints": {
+    "recorded-date": "31-10-2025, 21:26:51",
+    "recorded-content": {
+      "list-endpoints-by-app": {
+        "Endpoints": [
+          {
+            "Attributes": {
+              "Enabled": "true",
+              "Token": "token_1"
+            },
+            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint": {
+    "recorded-date": "31-10-2025, 21:27:05",
+    "recorded-content": {
+      "list-endpoints-by-app-pre-delete": {
+        "Endpoints": [
+          {
+            "Attributes": {
+              "Enabled": "true",
+              "Token": "token_1"
+            },
+            "EndpointArn": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-endpoint": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-endpoints-by-app-post-delete": {
+        "Endpoints": [],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_platform_endpoint_with_subscription": {
+    "recorded-date": "04-11-2025, 19:18:31",
+    "recorded-content": {
+      "list-subscriptions-pre-delete": {
+        "NextToken": "<next-token:1>",
+        "Subscriptions": [
+          {
+            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "application",
+            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "delete-endpoint": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-subscriptions-post-delete": {
+        "NextToken": "<next-token:2>",
+        "Subscriptions": [
+          {
+            "Endpoint": "arn:<partition>:sns:<region>:111111111111:endpoint/ADM/<platform_application>/<resource:1>",
+            "Owner": "111111111111",
+            "Protocol": "application",
+            "SubscriptionArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>:<resource:2>",
+            "TopicArn": "arn:<partition>:sns:<region>:111111111111:<resource:3>"
+          }
+        ],
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_delete_endpoints_of_deleted_app": {
+    "recorded-date": "31-10-2025, 21:28:02",
+    "recorded-content": {
+      "delete-application": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "list-endpoints-after-app-delete": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "PlatformApplication does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_get_platform_endpoint_attributes": {
+    "recorded-date": "31-10-2025, 21:28:04",
+    "recorded-content": {
+      "get-platform-endpoint-attributes": {
+        "Attributes": {
+          "Enabled": "true",
+          "Token": "token_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes": {
+    "recorded-date": "31-10-2025, 21:28:06",
+    "recorded-content": {
+      "set-platform-endpoint-attributes": {
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get-platform-endpoint-attributes": {
+        "Attributes": {
+          "Enabled": "false",
+          "Token": "token_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_arn": {
+    "recorded-date": "31-10-2025, 20:20:11",
+    "recorded-content": {
+      "set-platform-endpoint-attributes-non-existent-app": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: EndpointArn Reason: Wrong number of slashes in relative portion of the ARN.",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_non_existent_endpoint": {
+    "recorded-date": "31-10-2025, 21:28:06",
+    "recorded-content": {
+      "set-platform-endpoint-attributes-non-existent-app": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Endpoint does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Principal]": {
+    "recorded-date": "31-10-2025, 21:31:04",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: PlatformPrincipal",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Credential]": {
+    "recorded-date": "31-10-2025, 21:31:06",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: PlatformCredential",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Invalid_Name_Generic]": {
+    "recorded-date": "31-10-2025, 21:31:07",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: InvalidKey",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Data_Too_Long]": {
+    "recorded-date": "31-10-2025, 21:31:10",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid value for attribute: CustomUserData: must be at most 2048 bytes long in UTF-8 encoding",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_get_platform_endpoint_attributes_non_existent_endpoint": {
+    "recorded-date": "31-10-2025, 21:28:06",
+    "recorded-content": {
+      "set-platform-endpoint-attributes-non-existent-app": {
+        "Error": {
+          "Code": "NotFound",
+          "Message": "Endpoint does not exist",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 404
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_set_platform_endpoint_attributes_invalid_attributes[Empty]": {
+    "recorded-date": "31-10-2025, 21:31:03",
+    "recorded-content": {
+      "set-platform-endpoint-invalid-attributes": {
+        "Error": {
+          "Code": "ValidationError",
+          "Message": "1 validation error detected: Value null at 'attributes' failed to satisfy constraint: Member must not be null",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_with_invalid_attributes[Empty]": {
+    "recorded-date": "31-10-2025, 21:25:17",
+    "recorded-content": {}
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_with_invalid_attributes[Invalid_Name_Principal]": {
+    "recorded-date": "31-10-2025, 21:28:15",
+    "recorded-content": {
+      "create-platform-endpoint-invalid-attr": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: PlatformPrincipal",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_with_invalid_attributes[Invalid_Name_Credential]": {
+    "recorded-date": "31-10-2025, 21:28:16",
+    "recorded-content": {
+      "create-platform-endpoint-invalid-attr": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: PlatformCredential",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_with_invalid_attributes[Invalid_Name_Generic]": {
+    "recorded-date": "31-10-2025, 21:28:17",
+    "recorded-content": {
+      "create-platform-endpoint-invalid-attr": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid attribute name: InvalidKey",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_with_invalid_attributes[Data_Too_Long]": {
+    "recorded-date": "31-10-2025, 21:28:18",
+    "recorded-content": {
+      "create-platform-endpoint-invalid-attr": {
+        "Error": {
+          "Code": "InvalidParameter",
+          "Message": "Invalid parameter: Attributes Reason: Invalid value for attribute: CustomUserData: must be at most 2048 bytes long in UTF-8 encoding",
+          "Type": "Sender"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_double_custom_data": {
+    "recorded-date": "31-10-2025, 21:41:35",
+    "recorded-content": {
+      "create-endpoint-double-custom-data": {
+        "Attributes": {
+          "CustomUserData": "foo",
+          "Enabled": "true",
+          "Token": "token_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/sns/test_sns.py::TestSNSPlatformEndpointCrud::test_create_platform_endpoint_custom_data": {
+    "recorded-date": "31-10-2025, 21:45:15",
+    "recorded-content": {
+      "create-endpoint-double-custom-data": {
+        "Attributes": {
+          "CustomUserData": "bar",
+          "Enabled": "true",
+          "Token": "token_1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }

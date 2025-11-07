@@ -5,6 +5,7 @@ import logging
 import queue
 import random
 import time
+import uuid
 from io import BytesIO
 from operator import itemgetter
 
@@ -71,9 +72,17 @@ def sns_create_platform_application(aws_client):
     yield factory
 
     for platform_application in platform_applications:
-        endpoints = aws_client.sns.list_endpoints_by_platform_application(
-            PlatformApplicationArn=platform_application
-        )
+        try:
+            endpoints = aws_client.sns.list_endpoints_by_platform_application(
+                PlatformApplicationArn=platform_application
+            )
+        except Exception as e:
+            LOG.debug(
+                "Error cleaning up platform app '%s': %s",
+                platform_application,
+                e,
+            )
+            return
         for endpoint in endpoints["Endpoints"]:
             try:
                 aws_client.sns.delete_endpoint(EndpointArn=endpoint["EndpointArn"])
@@ -88,6 +97,30 @@ def sns_create_platform_application(aws_client):
             aws_client.sns.delete_platform_application(PlatformApplicationArn=platform_application)
         except Exception as e:
             LOG.debug("Error cleaning up platform application '%s': %s", platform_application, e)
+
+
+@pytest.fixture
+def sns_create_platform_endpoint(aws_client):
+    platform_endpoints = []
+
+    def factory(platform_application_arn: str, token: str, **kwargs):
+        response = aws_client.sns.create_platform_endpoint(
+            PlatformApplicationArn=platform_application_arn, Token=token, **kwargs
+        )
+        platform_endpoints.append(response["EndpointArn"])
+        return response
+
+    yield factory
+
+    for endpoint in platform_endpoints:
+        try:
+            aws_client.sns.delete_endpoint(EndpointArn=endpoint["EndpointArn"])
+        except Exception as e:
+            LOG.debug(
+                "Error cleaning up platform endpoint '%s': %s",
+                endpoint,
+                e,
+            )
 
 
 class TestSNSTopicCrud:
@@ -1418,6 +1451,8 @@ class TestSNSSubscriptionCrudV2:
         resp = aws_client.sns.subscribe(
             TopicArn=topic_arn, Protocol="http", Endpoint="http://example.com/"
         )
+        # TODO: investigate why it leaves the subscription in `SNS.ListSubscriptions`, we maybe need to clean up
+        #  after deleting topics, not fully in parity as AWS cleans up instantly
         snapshot.match("create-subscription", resp)
 
     # TODO: parametrize for email protocol
@@ -1455,13 +1490,13 @@ class TestSNSSubscriptionCrudV2:
         snapshot.match("list-subscriptions-by-topic", resp)
 
     @markers.aws.validated
-    def test_subscription_paging(self, sns_create_topic, aws_client, snapshot):
+    def test_subscription_paging(self, sns_create_topic, aws_client, snapshot, sns_subscription):
         topic_arn = sns_create_topic(Name=f"paging-sub-{short_uid()}")["TopicArn"]
 
         sub_arns = []
         for i in range(120):
             sub_arns.append(
-                aws_client.sns.subscribe(
+                sns_subscription(
                     TopicArn=topic_arn,
                     Protocol="email",
                     Endpoint=f"user{i}@example.com",
@@ -3651,15 +3686,16 @@ class TestSNSSubscriptionSES:
         assert messages[0]["Source"] == sender_address
 
 
-class TestSNSPlatformApplicationCrud:
-    @pytest.fixture(scope="class")
-    def platform_credentials(self) -> tuple[str, str]:
-        # these values need to be extracted from a real amazon developer account if tested against AWS
-        # https://developer.amazon.com/settings/console/securityprofile/overview.html
-        client_id = "dummy"
-        client_secret = "dummy"
-        return client_id, client_secret
+@pytest.fixture(scope="class")
+def platform_credentials() -> tuple[str, str]:
+    # these values need to be extracted from a real amazon developer account if tested against AWS
+    # https://developer.amazon.com/settings/console/securityprofile/overview.html
+    client_id = "dummy"
+    client_secret = "dummy"
+    return client_id, client_secret
 
+
+class TestSNSPlatformApplicationCrud:
     @markers.aws.manual_setup_required
     def test_create_platform_application(
         self, aws_client, snapshot, sns_create_platform_application, platform_credentials
@@ -3823,6 +3859,463 @@ class TestSNSPlatformApplicationCrud:
                 Attributes=attributes,
             )
         snapshot.match("non_existing-application-arn", e.value.response)
+
+
+class TestSNSPlatformEndpointCrud:
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint(
+        self,
+        sns_create_platform_application,
+        sns_create_platform_endpoint,
+        aws_client,
+        account_id,
+        region_name,
+        platform_credentials,
+        snapshot,
+    ):
+        # if tested against AWS, the fixture needs to contain real credentials
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        response = sns_create_platform_endpoint(platform_application_arn=app_arn, token="token_1")
+        snapshot.match("create-platform-endpoint", response)
+
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_idempotency(
+        self,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        snapshot,
+    ):
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        response = sns_create_platform_endpoint(platform_application_arn=app_arn, token="token_1")
+        snapshot.match("create-platform-endpoint", response)
+
+        # create again with the same attributes and token
+        response = sns_create_platform_endpoint(platform_application_arn=app_arn, token="token_1")
+        snapshot.match("create-platform-endpoint-idempotent", response)
+
+        # create again with different attributes
+        with pytest.raises(ClientError) as e:
+            sns_create_platform_endpoint(
+                platform_application_arn=app_arn, token="token_1", Attributes={"Enabled": "false"}
+            )
+        snapshot.match("create-platform-endpoint-different-token", e.value.response)
+
+    @markers.aws.validated
+    def test_create_platform_endpoint_non_existent_app(
+        self,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
+        snapshot,
+    ):
+        platform_application_arn = "arn:aws:sns:%s:%s:app/ADM/non_existent_app"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.create_platform_endpoint(
+                PlatformApplicationArn=platform_application_arn % (region_name, account_id),
+                Token="token_1",
+            )
+        snapshot.match("create-platform-endpoint", e.value.response)
+
+    @markers.aws.manual_setup_required
+    def test_list_platform_endpoints(
+        self,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        snapshot,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        sns_create_platform_endpoint(platform_application_arn=app_arn, token="token_1")
+        response = aws_client.sns.list_endpoints_by_platform_application(
+            PlatformApplicationArn=app_arn
+        )
+
+        snapshot.match("list-endpoints-by-app", response)
+
+    @markers.aws.manual_setup_required
+    def test_delete_platform_endpoint(
+        self,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        snapshot,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1"
+        )["EndpointArn"]
+        response = aws_client.sns.list_endpoints_by_platform_application(
+            PlatformApplicationArn=app_arn
+        )
+        snapshot.match("list-endpoints-by-app-pre-delete", response)
+
+        response = aws_client.sns.delete_endpoint(EndpointArn=endpoint_arn)
+        snapshot.match("delete-endpoint", response)
+        if is_aws_cloud():
+            time.sleep(10)
+        response = aws_client.sns.list_endpoints_by_platform_application(
+            PlatformApplicationArn=app_arn
+        )
+        snapshot.match("list-endpoints-by-app-post-delete", response)
+
+    @markers.snapshot.skip_snapshot_verify(
+        paths=[
+            "$..NextToken"
+        ],  # FIXME: investigate why AWS is not deterministic here, NextToken is sometimes present, sometimes not
+    )
+    @markers.aws.manual_setup_required
+    def test_delete_platform_endpoint_with_subscription(
+        self,
+        sns_create_platform_application,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        account_id,
+        region_name,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        snapshot,
+    ):
+        # from the docs https://docs.aws.amazon.com/cli/latest/reference/sns/delete-endpoint.html
+        # "When you delete an endpoint that is also subscribed to a topic, then
+        # you must also unsubscribe the endpoint from the topic."
+        # This test validates this particular case
+
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        snapshot.add_transformer(snapshot.transform.key_value("NextToken"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1"
+        )["EndpointArn"]
+        topic_arn = sns_create_topic()["TopicArn"]
+        sns_subscription(TopicArn=topic_arn, Protocol="application", Endpoint=endpoint_arn)
+
+        # time to let the changes propagate
+        if is_aws_cloud():
+            time.sleep(20)
+
+        # we list subscriptions by topic, as some tests are not cleaning up properly
+        response = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+        snapshot.match("list-subscriptions-pre-delete", response)
+
+        response = aws_client.sns.delete_endpoint(EndpointArn=endpoint_arn)
+        snapshot.match("delete-endpoint", response)
+
+        # time to let the changes propagate
+        if is_aws_cloud():
+            time.sleep(20)
+
+        response = aws_client.sns.list_subscriptions_by_topic(TopicArn=topic_arn)
+        snapshot.match("list-subscriptions-post-delete", response)
+
+    @markers.aws.manual_setup_required
+    def test_delete_endpoints_of_deleted_app(
+        self,
+        sns_create_platform_application,
+        sns_create_topic,
+        sns_subscription,
+        aws_client,
+        account_id,
+        region_name,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        snapshot,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1"
+        )["EndpointArn"]
+
+        response = aws_client.sns.delete_platform_application(PlatformApplicationArn=app_arn)
+        snapshot.match("delete-application", response)
+        if is_aws_cloud():
+            time.sleep(10)
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.list_endpoints_by_platform_application(PlatformApplicationArn=app_arn)
+        snapshot.match("list-endpoints-after-app-delete", e.value.response)
+
+        aws_client.sns.delete_endpoint(EndpointArn=endpoint_arn)
+
+    @markers.aws.manual_setup_required
+    def test_get_platform_endpoint_attributes(
+        self,
+        aws_client,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1"
+        )["EndpointArn"]
+
+        response = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("get-platform-endpoint-attributes", response)
+
+    @markers.aws.manual_setup_required
+    def test_set_platform_endpoint_attributes(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=attributes
+        )["PlatformApplicationArn"]
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1"
+        )["EndpointArn"]
+
+        new_attributes = {"Enabled": "false"}
+        response = aws_client.sns.set_endpoint_attributes(
+            EndpointArn=endpoint_arn, Attributes=new_attributes
+        )
+        snapshot.match("set-platform-endpoint-attributes", response)
+
+        response = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("get-platform-endpoint-attributes", response)
+
+    @markers.aws.validated
+    def test_get_platform_endpoint_attributes_non_existent_endpoint(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
+    ):
+        endpoint_arn = f"arn:aws:sns:{region_name}:{account_id}:endpoint/ADM/fakeapp/{uuid.uuid4()}"
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("set-platform-endpoint-attributes-non-existent-app", e.value.response)
+
+    @markers.aws.validated
+    def test_set_platform_endpoint_attributes_non_existent_endpoint(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+        account_id,
+        region_name,
+    ):
+        endpoint_arn = f"arn:aws:sns:{region_name}:{account_id}:endpoint/ADM/fakeapp/{uuid.uuid4()}"
+        attributes = {"Enabled": "false"}
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_endpoint_attributes(EndpointArn=endpoint_arn, Attributes=attributes)
+        snapshot.match("set-platform-endpoint-attributes-non-existent-app", e.value.response)
+
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
+    @pytest.mark.parametrize(
+        "attributes",
+        [
+            {},
+            {"PlatformPrincipal": "Principal"},
+            {"PlatformCredential": "Credential"},
+            {"InvalidKey": "Value"},
+            {"CustomUserData": "A" * 2050},
+        ],
+        ids=[
+            "Empty",
+            "Invalid_Name_Principal",
+            "Invalid_Name_Credential",
+            "Invalid_Name_Generic",
+            "Data_Too_Long",
+        ],
+    )
+    @markers.aws.manual_setup_required
+    def test_set_platform_endpoint_attributes_invalid_attributes(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+        attributes,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        initial_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=initial_attributes
+        )["PlatformApplicationArn"]
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1"
+        )["EndpointArn"]
+
+        with pytest.raises(ClientError) as e:
+            aws_client.sns.set_endpoint_attributes(EndpointArn=endpoint_arn, Attributes=attributes)
+        snapshot.match("set-platform-endpoint-invalid-attributes", e.value.response)
+
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
+    @pytest.mark.parametrize(
+        "attributes",
+        [
+            {"PlatformPrincipal": "Principal"},
+            {"PlatformCredential": "Credential"},
+            {"InvalidKey": "Value"},
+            {"CustomUserData": "A" * 2050},
+        ],
+        ids=[
+            "Invalid_Name_Principal",
+            "Invalid_Name_Credential",
+            "Invalid_Name_Generic",
+            "Data_Too_Long",
+        ],
+    )
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_with_invalid_attributes(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+        attributes,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        platform_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=platform_attributes
+        )["PlatformApplicationArn"]
+        with pytest.raises(ClientError) as e:
+            sns_create_platform_endpoint(
+                platform_application_arn=app_arn, token="token_1", Attributes=attributes
+            )
+        snapshot.match("create-platform-endpoint-invalid-attr", e.value.response)
+
+    @pytest.mark.skipif(condition=is_sns_v1_provider(), reason="Parity gap with old provider")
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_custom_data(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+    ):
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        platform_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=platform_attributes
+        )["PlatformApplicationArn"]
+
+        custom_user_data = "bar"
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn, token="token_1", CustomUserData=custom_user_data
+        )["EndpointArn"]
+
+        response = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("create-endpoint-double-custom-data", response)
+
+    @markers.aws.manual_setup_required
+    def test_create_platform_endpoint_double_custom_data(
+        self,
+        snapshot,
+        platform_credentials,
+        sns_create_platform_endpoint,
+        sns_create_platform_application,
+        aws_client,
+    ):
+        # For some reason, CustomUserData can be specified both as parameter directly and inside attributes.
+
+        app_name = f"platform-application-{short_uid()}"
+        snapshot.add_transformer(RegexTransformer(app_name, "<platform_application>"))
+        # if tested against AWS, the fixture needs to contain real credentials
+        principal, credential = platform_credentials
+        platform_attributes = {"PlatformPrincipal": principal, "PlatformCredential": credential}
+        app_arn = sns_create_platform_application(
+            Name=app_name, Platform="ADM", Attributes=platform_attributes
+        )["PlatformApplicationArn"]
+
+        attributes = {"CustomUserData": "foo"}
+        custom_user_data = "bar"
+        endpoint_arn = sns_create_platform_endpoint(
+            platform_application_arn=app_arn,
+            token="token_1",
+            Attributes=attributes,
+            CustomUserData=custom_user_data,
+        )["EndpointArn"]
+
+        response = aws_client.sns.get_endpoint_attributes(EndpointArn=endpoint_arn)
+        snapshot.match("create-endpoint-double-custom-data", response)
 
 
 class TestSNSPlatformEndpoint:
