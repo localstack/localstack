@@ -1226,7 +1226,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         key_to_import_material_to.crypto_key.load_key_material(key_material)
 
-        return ImportKeyMaterialResponse()
+        return ImportKeyMaterialResponse(
+            KeyId=key_to_import_material_to.metadata["Arn"],
+            KeyMaterialId=key_to_import_material_to.metadata["CurrentKeyMaterialId"],
+        )
 
     def delete_imported_key_material(
         self,
