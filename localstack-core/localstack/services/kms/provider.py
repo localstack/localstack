@@ -1226,13 +1226,14 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         key_to_import_material_to.crypto_key.load_key_material(key_material)
 
-        key_material_id = key_to_import_material_to.generate_key_material_id(key_material)
-        if key_to_import_material_to.metadata["CurrentKeyMaterialId"] is None:
-            key_to_import_material_to.metadata["CurrentKeyMaterialId"] = key_material_id
+        if key_to_import_material_to.metadata.get("CurrentKeyMaterialId") is None:
+            key_to_import_material_to.metadata["CurrentKeyMaterialId"] = (
+                key_to_import_material_to.generate_key_material_id(key_material)
+            )
 
         return ImportKeyMaterialResponse(
             KeyId=key_to_import_material_to.metadata["Arn"],
-            KeyMaterialId=key_material_id,
+            KeyMaterialId=key_to_import_material_to.metadata["CurrentKeyMaterialId"],
         )
 
     def delete_imported_key_material(
