@@ -7853,7 +7853,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_create_lambda_exceptions": {
-    "recorded-date": "01-04-2025, 13:08:21",
+    "recorded-date": "06-11-2025, 11:54:01",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7868,10 +7868,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7880,10 +7880,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7925,7 +7925,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaFunction::test_update_lambda_exceptions": {
-    "recorded-date": "01-04-2025, 13:09:51",
+    "recorded-date": "06-11-2025, 11:54:03",
     "recorded-content": {
       "invalid_role_arn_exc": {
         "Error": {
@@ -7940,10 +7940,10 @@
       "invalid_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value non-existent-runtime at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -7952,10 +7952,10 @@
       "uppercase_runtime_exc": {
         "Error": {
           "Code": "InvalidParameterValueException",
-          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
+          "Message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN"
         },
         "Type": "User",
-        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
+        "message": "Value PYTHON3.9 at 'runtime' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9] or be a valid ARN",
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
@@ -8265,7 +8265,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_exceptions": {
-    "recorded-date": "01-04-2025, 13:19:20",
+    "recorded-date": "06-11-2025, 11:54:14",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -8292,7 +8292,7 @@
       "list_layers_exc_compatibleruntime_invalid": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'runtimedoesnotexist' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, python3.14, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
+          "Message": "1 validation error detected: Value 'runtimedoesnotexist' at 'compatibleRuntime' failed to satisfy constraint: Member must satisfy enum value set: [ruby3.5, ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, nodejs26.x, python3.13, python3.14, nodejs16.x, python3.15, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8367,7 +8367,7 @@
       "get_layer_version_by_arn_exc_invalidarn": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:layer:<resource:1>' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+)"
+          "Message": "1 validation error detected: Value 'arn:<partition>:lambda:<region>:111111111111:layer:<resource:1>' at 'arn' failed to satisfy constraint: Member must satisfy regular expression pattern: (arn:(aws[a-zA-Z-]*)?:lambda:(eusc-)?[a-z]{2}((-gov)|(-iso([a-z]?)))?-[a-z]+-\\d{1}:\\d{12}:layer:[a-zA-Z0-9-_]+:[0-9]+)|(arn:[a-zA-Z0-9-]+:lambda:::awslayer:[a-zA-Z0-9-_]+)"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8443,7 +8443,7 @@
       "publish_layer_version_exc_invalid_runtime_arch": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64], Member must not be null]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -8453,7 +8453,7 @@
       "publish_layer_version_exc_partially_invalid_values": {
         "Error": {
           "Code": "ValidationException",
-          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64]]"
+          "Message": "2 validation errors detected: Value '[invalidruntime, invalidruntime2, nodejs20.x]' at 'compatibleRuntimes' failed to satisfy constraint: Member must satisfy enum value set: [nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]; Value '[invalidarch, x86_64]' at 'compatibleArchitectures' failed to satisfy constraint: Member must satisfy constraint: [Member must satisfy enum value set: [x86_64, arm64], Member must not be null]"
         },
         "ResponseMetadata": {
           "HTTPHeaders": {},
@@ -12886,7 +12886,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java11]": {
-    "recorded-date": "01-04-2025, 13:30:54",
+    "recorded-date": "06-11-2025, 11:54:16",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -13030,7 +13030,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java17]": {
-    "recorded-date": "01-04-2025, 13:30:58",
+    "recorded-date": "06-11-2025, 11:54:19",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -13527,7 +13527,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes0]": {
-    "recorded-date": "01-04-2025, 13:12:59",
+    "recorded-date": "06-11-2025, 12:04:49",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13541,6 +13541,7 @@
           "nodejs16.x",
           "nodejs14.x",
           "nodejs12.x",
+          "python3.14",
           "python3.13",
           "python3.12",
           "python3.11",
@@ -13548,7 +13549,7 @@
           "python3.9",
           "python3.8",
           "python3.7",
-          "java21"
+          "java25"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13568,7 +13569,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes1]": {
-    "recorded-date": "01-04-2025, 13:13:03",
+    "recorded-date": "06-11-2025, 12:04:52",
     "recorded-content": {
       "publish_result": {
         "CompatibleArchitectures": [
@@ -13576,6 +13577,7 @@
           "x86_64"
         ],
         "CompatibleRuntimes": [
+          "java21",
           "java17",
           "java11",
           "java8.al2",
@@ -13589,8 +13591,7 @@
           "ruby3.2",
           "ruby2.7",
           "provided.al2023",
-          "provided.al2",
-          "provided"
+          "provided.al2"
         ],
         "Content": {
           "CodeSha256": "<code-sha256:1>",
@@ -13664,7 +13665,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java21]": {
-    "recorded-date": "01-04-2025, 13:31:02",
+    "recorded-date": "06-11-2025, 11:54:21",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -15944,7 +15945,7 @@
     "recorded-content": {}
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[java8]": {
-    "recorded-date": "01-04-2025, 13:02:29",
+    "recorded-date": "06-11-2025, 11:53:59",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -15961,7 +15962,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[go1.x]": {
-    "recorded-date": "01-04-2025, 13:02:29",
+    "recorded-date": "06-11-2025, 11:53:59",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -15978,7 +15979,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[provided]": {
-    "recorded-date": "01-04-2025, 13:02:30",
+    "recorded-date": "06-11-2025, 11:53:59",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -15995,7 +15996,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[ruby2.7]": {
-    "recorded-date": "01-04-2025, 13:02:30",
+    "recorded-date": "06-11-2025, 11:54:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16012,7 +16013,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs14.x]": {
-    "recorded-date": "01-04-2025, 13:02:30",
+    "recorded-date": "06-11-2025, 11:54:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16029,7 +16030,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[python3.7]": {
-    "recorded-date": "01-04-2025, 13:02:30",
+    "recorded-date": "06-11-2025, 11:54:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16046,7 +16047,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[dotnetcore3.1]": {
-    "recorded-date": "01-04-2025, 13:02:31",
+    "recorded-date": "06-11-2025, 11:54:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -16063,7 +16064,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestRuntimeValidation::test_create_deprecated_function_runtime_with_validation_enabled[nodejs12.x]": {
-    "recorded-date": "01-04-2025, 13:02:31",
+    "recorded-date": "06-11-2025, 11:54:00",
     "recorded-content": {
       "deprecation_error": {
         "Error": {
@@ -17947,7 +17948,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[python3.13]": {
-    "recorded-date": "01-04-2025, 13:31:11",
+    "recorded-date": "06-11-2025, 11:54:28",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18091,7 +18092,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[python3.12]": {
-    "recorded-date": "01-04-2025, 13:31:07",
+    "recorded-date": "06-11-2025, 11:54:26",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18316,7 +18317,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[dotnet8]": {
-    "recorded-date": "01-04-2025, 13:31:15",
+    "recorded-date": "06-11-2025, 11:54:31",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18460,7 +18461,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java11]": {
-    "recorded-date": "01-04-2025, 13:40:26",
+    "recorded-date": "06-11-2025, 11:54:33",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18552,7 +18553,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java17]": {
-    "recorded-date": "01-04-2025, 13:40:32",
+    "recorded-date": "06-11-2025, 11:54:35",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18644,7 +18645,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java21]": {
-    "recorded-date": "01-04-2025, 13:40:35",
+    "recorded-date": "06-11-2025, 11:54:38",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18736,7 +18737,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[python3.12]": {
-    "recorded-date": "01-04-2025, 13:40:40",
+    "recorded-date": "06-11-2025, 11:54:42",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18828,7 +18829,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[python3.13]": {
-    "recorded-date": "01-04-2025, 13:40:44",
+    "recorded-date": "06-11-2025, 11:54:44",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -18920,7 +18921,7 @@
     }
   },
   "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[dotnet8]": {
-    "recorded-date": "01-04-2025, 13:40:47",
+    "recorded-date": "06-11-2025, 11:54:47",
     "recorded-content": {
       "create_function_response": {
         "Architectures": [
@@ -19060,6 +19061,270 @@
         "ResponseMetadata": {
           "HTTPHeaders": {},
           "HTTPStatusCode": 400
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_lifecycle[java25]": {
+    "recorded-date": "06-11-2025, 11:54:24",
+    "recorded-content": {
+      "create_function_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "echo.Handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+        "Runtime": "java25",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 5,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "get_function_response_latest": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+          "FunctionName": "<function-name:1>",
+          "Handler": "echo.Handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 1024,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:2>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "Runtime": "java25",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 5,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "$LATEST"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "get_function_response_version_1": {
+        "Code": {
+          "Location": "<location>",
+          "RepositoryType": "S3"
+        },
+        "Configuration": {
+          "Architectures": [
+            "x86_64"
+          ],
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Description": "version1",
+          "EphemeralStorage": {
+            "Size": 512
+          },
+          "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>:1",
+          "FunctionName": "<function-name:1>",
+          "Handler": "echo.Handler",
+          "LastModified": "date",
+          "LastUpdateStatus": "Successful",
+          "LoggingConfig": {
+            "LogFormat": "Text",
+            "LogGroup": "/aws/lambda/<function-name:1>"
+          },
+          "MemorySize": 1024,
+          "PackageType": "Zip",
+          "RevisionId": "<uuid:3>",
+          "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+          "Runtime": "java25",
+          "RuntimeVersionConfig": {
+            "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+          },
+          "SnapStart": {
+            "ApplyOn": "None",
+            "OptimizationStatus": "Off"
+          },
+          "State": "Active",
+          "Timeout": 5,
+          "TracingConfig": {
+            "Mode": "PassThrough"
+          },
+          "Version": "1"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaSnapStart::test_snapstart_update_function_configuration[java25]": {
+    "recorded-date": "06-11-2025, 11:54:40",
+    "recorded-content": {
+      "create_function_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "echo.Handler",
+        "LastModified": "date",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:1>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+        "Runtime": "java25",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "None",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Pending",
+        "StateReason": "The function is being created.",
+        "StateReasonCode": "Creating",
+        "Timeout": 5,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
+        }
+      },
+      "update_function_response": {
+        "Architectures": [
+          "x86_64"
+        ],
+        "CodeSha256": "<code-sha256:1>",
+        "CodeSize": "<code-size>",
+        "Description": "",
+        "EphemeralStorage": {
+          "Size": 512
+        },
+        "FunctionArn": "arn:<partition>:lambda:<region>:111111111111:function:<function-name:1>",
+        "FunctionName": "<function-name:1>",
+        "Handler": "echo.Handler",
+        "LastModified": "date",
+        "LastUpdateStatus": "InProgress",
+        "LastUpdateStatusReason": "The function is being created.",
+        "LastUpdateStatusReasonCode": "Creating",
+        "LoggingConfig": {
+          "LogFormat": "Text",
+          "LogGroup": "/aws/lambda/<function-name:1>"
+        },
+        "MemorySize": 1024,
+        "PackageType": "Zip",
+        "RevisionId": "<uuid:2>",
+        "Role": "arn:<partition>:iam::111111111111:role/<resource:1>",
+        "Runtime": "java25",
+        "RuntimeVersionConfig": {
+          "RuntimeVersionArn": "arn:<partition>:lambda:<region>::runtime:<resource:2>"
+        },
+        "SnapStart": {
+          "ApplyOn": "PublishedVersions",
+          "OptimizationStatus": "Off"
+        },
+        "State": "Active",
+        "Timeout": 5,
+        "TracingConfig": {
+          "Mode": "PassThrough"
+        },
+        "Version": "$LATEST",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
+  },
+  "tests/aws/services/lambda_/test_lambda_api.py::TestLambdaLayer::test_layer_compatibilities[runtimes2]": {
+    "recorded-date": "06-11-2025, 12:04:57",
+    "recorded-content": {
+      "publish_result": {
+        "CompatibleArchitectures": [
+          "arm64",
+          "x86_64"
+        ],
+        "CompatibleRuntimes": [
+          "provided"
+        ],
+        "Content": {
+          "CodeSha256": "<code-sha256:1>",
+          "CodeSize": "<code-size>",
+          "Location": "<layer-location>"
+        },
+        "CreatedDate": "date",
+        "Description": "",
+        "LayerArn": "arn:<partition>:lambda:<region>:111111111111:layer:<resource:1>",
+        "LayerVersionArn": "arn:<partition>:lambda:<region>:111111111111:layer:<resource:1>:1",
+        "Version": 1,
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 201
         }
       }
     }

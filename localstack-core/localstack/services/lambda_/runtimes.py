@@ -23,7 +23,7 @@ from localstack.aws.api.lambda_ import Runtime
 # 5. Run the unit test to check the runtime setup:
 # tests.unit.services.lambda_.test_api_utils.TestApiUtils.test_check_runtime
 # 6. Review special tests including:
-# a) [ext] tests.aws.services.lambda_.test_lambda_endpoint_injection
+# a) [pro] tests.aws.services.lambda_.test_lambda_endpoint_injection
 # 7. Before merging, run the ext integration tests to cover transparent endpoint injection testing.
 # 8. Add the new runtime to the K8 image build: https://github.com/localstack/lambda-images
 # 9. Inform the web team to update the resource browser (consider offering an endpoint in the future)
@@ -40,6 +40,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.nodejs16_x: "nodejs:16",
     Runtime.nodejs14_x: "nodejs:14",  # deprecated Dec 4, 2023  => Jan 9, 2024  => Feb 8, 2024
     Runtime.nodejs12_x: "nodejs:12",  # deprecated Mar 31, 2023 => Mar 31, 2023 => Apr 30, 2023
+    Runtime.python3_14: "python:3.14",
     Runtime.python3_13: "python:3.13",
     Runtime.python3_12: "python:3.12",
     Runtime.python3_11: "python:3.11",
@@ -47,6 +48,7 @@ IMAGE_MAPPING: dict[Runtime, str] = {
     Runtime.python3_9: "python:3.9",
     Runtime.python3_8: "python:3.8",
     Runtime.python3_7: "python:3.7",  # deprecated Dec 4, 2023 => Jan 9, 2024 => Feb 8, 2024
+    Runtime.java25: "java:25",
     Runtime.java21: "java:21",
     Runtime.java17: "java:17",
     Runtime.java11: "java:11",
@@ -116,6 +118,7 @@ RUNTIMES_AGGREGATED = {
         Runtime.nodejs16_x,
     ],
     "python": [
+        Runtime.python3_14,
         Runtime.python3_13,
         Runtime.python3_12,
         Runtime.python3_11,
@@ -124,6 +127,7 @@ RUNTIMES_AGGREGATED = {
         Runtime.python3_8,
     ],
     "java": [
+        Runtime.java25,
         Runtime.java21,
         Runtime.java17,
         Runtime.java11,
@@ -155,12 +159,13 @@ SNAP_START_SUPPORTED_RUNTIMES = [
     Runtime.java11,
     Runtime.java17,
     Runtime.java21,
+    Runtime.java25,
     Runtime.python3_12,
     Runtime.python3_13,
     Runtime.dotnet8,
 ]
 
 # An ordered list of all Lambda runtimes considered valid by AWS. Matching snapshots in test_create_lambda_exceptions
-VALID_RUNTIMES: str = "[nodejs20.x, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]"
+VALID_RUNTIMES: str = "[nodejs20.x, python3.14, provided.al2023, python3.12, python3.13, nodejs22.x, java17, nodejs16.x, java25, dotnet8, python3.10, java11, python3.11, dotnet6, java21, nodejs18.x, provided.al2, ruby3.3, ruby3.4, java8.al2, ruby3.2, python3.8, python3.9]"
 # An ordered list of all Lambda runtimes for layers considered valid by AWS. Matching snapshots in test_layer_exceptions
-VALID_LAYER_RUNTIMES: str = "[ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, python3.13, python3.14, nodejs16.x, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
+VALID_LAYER_RUNTIMES: str = "[ruby3.5, ruby2.6, dotnetcore1.0, python3.7, nodejs8.10, nasa, ruby2.7, python2.7-greengrass, dotnetcore2.0, python3.8, java21, dotnet6, dotnetcore2.1, python3.9, java11, nodejs6.10, provided, dotnetcore3.1, dotnet8, java25, java17, nodejs, nodejs4.3, java8.al2, go1.x, dotnet10, nodejs20.x, go1.9, byol, nodejs10.x, provided.al2023, nodejs22.x, python3.10, java8, nodejs12.x, python3.11, nodejs24.x, nodejs8.x, python3.12, nodejs14.x, nodejs8.9, nodejs26.x, python3.13, python3.14, nodejs16.x, python3.15, provided.al2, nodejs4.3-edge, nodejs18.x, ruby3.2, python3.4, ruby3.3, ruby3.4, ruby2.5, python3.6, python2.7]"
