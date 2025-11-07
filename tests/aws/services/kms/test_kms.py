@@ -57,6 +57,16 @@ def get_signature_kwargs(signing_algorithm, message_type):
         kwargs["algorithm"] = algorithm
     return kwargs
 
+def generate_encrypted_symmetric_key_material(public_key: bytes) -> bytes:
+    symmetric_key_material = bytes(getrandbits(8) for _ in range(32))
+    public_key = load_der_public_key(public_key)
+    encrypted_key = public_key.encrypt(
+        symmetric_key_material,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+        ),
+    )
+    return encrypted_key
 
 @pytest.fixture(scope="class")
 def kms_client_for_region(aws_client_factory):
