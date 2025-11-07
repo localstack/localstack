@@ -328,7 +328,9 @@ class KmsKey:
         # where a KMS Key may have no key material i.e. with external keys, and hence no key material ID.
         # In the scenarios where we do want to expose a CurrentKeyMaterialId we should update it in the key metadata.
         if custom_key_material or self.metadata["Origin"] == "AWS_KMS":
-            self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(self.crypto_key.key_material)
+            self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
+                self.crypto_key.key_material
+            )
 
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
