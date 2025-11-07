@@ -502,7 +502,7 @@ class S3Provider(S3Api, ServiceLifecycleHook):
                 raise MalformedXML()
 
             if context.region == AWS_REGION_US_EAST_1:
-                if bucket_region == "us-east-1":
+                if bucket_region in ("us-east-1", "aws-global"):
                     raise InvalidLocationConstraint(
                         "The specified location-constraint is not valid",
                         LocationConstraint=bucket_region,
