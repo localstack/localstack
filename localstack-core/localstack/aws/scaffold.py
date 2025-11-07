@@ -188,9 +188,7 @@ class ShapeNode:
             if member in self.shape.required_members:
                 output.write(f"    {member}: IO[{q}{to_valid_python_name(shape.name)}{q}]\n")
             else:
-                output.write(
-                    f"    {member}: Optional[IO[{q}{to_valid_python_name(shape.name)}{q}]]\n"
-                )
+                output.write(f"    {member}: {q}IO[{to_valid_python_name(shape.name)}] | None{q}\n")
             del remaining_members[member]
         # render the streaming payload first
         if self.is_response and self.response_operation.has_streaming_output:
@@ -199,25 +197,26 @@ class ShapeNode:
             shape_name = to_valid_python_name(shape.name)
             if member in self.shape.required_members:
                 output.write(
-                    f"    {member}: Union[{q}{shape_name}{q}, IO[{q}{shape_name}{q}], Iterable[{q}{shape_name}{q}]]\n"
+                    f"    {member}: {q}{shape_name} | IO[{shape_name}] | Iterable[{shape_name}]{q}\n"
                 )
             else:
                 output.write(
-                    f"    {member}: Optional[Union[{q}{shape_name}{q}, IO[{q}{shape_name}{q}], Iterable[{q}{shape_name}{q}]]]\n"
+                    f"    {member}: {q}{shape_name} | IO[{shape_name}] | Iterable[{shape_name}] | None{q}\n"
                 )
             del remaining_members[member]
 
         for k, v in remaining_members.items():
+            shape_name = to_valid_python_name(v.name)
             if k in self.shape.required_members:
                 if v.serialization.get("eventstream"):
-                    output.write(f"    {k}: Iterator[{q}{to_valid_python_name(v.name)}{q}]\n")
+                    output.write(f"    {k}: Iterator[{q}{shape_name}{q}]\n")
                 else:
-                    output.write(f"    {k}: {q}{to_valid_python_name(v.name)}{q}\n")
+                    output.write(f"    {k}: {q}{shape_name}{q}\n")
             else:
                 if v.serialization.get("eventstream"):
-                    output.write(f"    {k}: Iterator[{q}{to_valid_python_name(v.name)}{q}]\n")
+                    output.write(f"    {k}: Iterator[{q}{shape_name}{q}]\n")
                 else:
-                    output.write(f"    {k}: Optional[{q}{to_valid_python_name(v.name)}{q}]\n")
+                    output.write(f"    {k}: {q}{shape_name} | None{q}\n")
 
     def _print_as_typed_dict(self, output, doc=True, quote_types=False):
         name = to_valid_python_name(self.shape.name)
@@ -236,7 +235,7 @@ class ShapeNode:
                 if v.serialization.get("eventstream"):
                     output.write(f'    "{k}": Iterator[{q}{member_name}{q}],\n')
                 else:
-                    output.write(f'    "{k}": Optional[{q}{member_name}{q}],\n')
+                    output.write(f'    "{k}": {q}{member_name} | None{q},\n')
         output.write("}, total=False)")
 
     def print_shape_doc(self, output, shape):
@@ -256,11 +255,11 @@ class ShapeNode:
             self._print_structure_declaration(output, doc, quote_types)
         elif isinstance(shape, ListShape):
             output.write(
-                f"{to_valid_python_name(shape.name)} = List[{q}{to_valid_python_name(shape.member.name)}{q}]"
+                f"{to_valid_python_name(shape.name)} = list[{q}{to_valid_python_name(shape.member.name)}{q}]"
             )
         elif isinstance(shape, MapShape):
             output.write(
-                f"{to_valid_python_name(shape.name)} = Dict[{q}{to_valid_python_name(shape.key.name)}{q}, {q}{to_valid_python_name(shape.value.name)}{q}]"
+                f"{to_valid_python_name(shape.name)} = dict[{q}{to_valid_python_name(shape.key.name)}{q}, {q}{to_valid_python_name(shape.value.name)}{q}]"
             )
         elif isinstance(shape, StringShape):
             if shape.enum:
@@ -316,9 +315,8 @@ class ShapeNode:
 def generate_service_types(output, service: ServiceModel, doc=True):
     output.write("from datetime import datetime\n")
     output.write("from enum import StrEnum\n")
-    output.write(
-        "from typing import Dict, List, Optional, Iterator, Iterable, IO, Union, TypedDict\n"
-    )
+    output.write("from typing import IO, TypedDict\n")
+    output.write("from collections.abc import Iterable, Iterator\n")
     output.write("\n")
     output.write(
         "from localstack.aws.api import handler, RequestContext, ServiceException, ServiceRequest"
@@ -372,8 +370,8 @@ def generate_service_api(output, service: ServiceModel, doc=True):
 
     output.write(f"class {class_name}:\n")
     output.write("\n")
-    output.write(f'    service = "{service.service_name}"\n')
-    output.write(f'    version = "{service.api_version}"\n')
+    output.write(f'    service: str = "{service.service_name}"\n')
+    output.write(f'    version: str = "{service.api_version}"\n')
     for op_name in service.operation_names:
         operation: OperationModel = service.operation_model(op_name)
 
