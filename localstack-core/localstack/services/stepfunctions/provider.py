@@ -203,8 +203,17 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_state_machine_arn(state_machine_arn: str) -> None:
-        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._STATE_MACHINE_ARN_REGEX.match(state_machine_arn):
+            # Provide detailed error message about which part of the ARN is invalid
+            arn_parts = state_machine_arn.split(":")
+            if len(arn_parts) < 6:
+                raise InvalidArn(f"Invalid arn: '{state_machine_arn}' - ARN must have at least 6 parts separated by colons")
+            if not arn_parts[0].startswith("arn"):
+                raise InvalidArn(f"Invalid arn: '{state_machine_arn}' - ARN must start with 'arn'")
+            if arn_parts[2] != "states":
+                raise InvalidArn(f"Invalid arn: '{state_machine_arn}' - Service must be 'states', got '{arn_parts[2]}'")
+            if len(arn_parts) >= 6 and arn_parts[5] != "stateMachine":
+                raise InvalidArn(f"Invalid arn: '{state_machine_arn}' - Resource type must be 'stateMachine', got '{arn_parts[5]}'")
             raise InvalidArn(f"Invalid arn: '{state_machine_arn}'")
 
     @staticmethod
@@ -213,14 +222,34 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
 
     @staticmethod
     def _validate_state_machine_execution_arn(execution_arn: str) -> None:
-        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._STATE_MACHINE_EXECUTION_ARN_REGEX.match(execution_arn):
+            # Provide detailed error message about which part of the ARN is invalid
+            arn_parts = execution_arn.split(":")
+            if len(arn_parts) < 6:
+                raise InvalidArn(f"Invalid arn: '{execution_arn}' - ARN must have at least 6 parts separated by colons")
+            if not arn_parts[0].startswith("arn"):
+                raise InvalidArn(f"Invalid arn: '{execution_arn}' - ARN must start with 'arn'")
+            if arn_parts[2] != "states":
+                raise InvalidArn(f"Invalid arn: '{execution_arn}' - Service must be 'states', got '{arn_parts[2]}'")
+            if len(arn_parts) >= 6 and arn_parts[5] not in ["stateMachine", "execution", "express"]:
+                raise InvalidArn(f"Invalid arn: '{execution_arn}' - Resource type must be 'stateMachine', 'execution', or 'express', got '{arn_parts[5]}'")
             raise InvalidArn(f"Invalid arn: '{execution_arn}'")
 
     @staticmethod
     def _validate_activity_arn(activity_arn: str) -> None:
-        # TODO: InvalidArn exception message do not communicate which part of the ARN is incorrect.
         if not StepFunctionsProvider._ACTIVITY_ARN_REGEX.match(activity_arn):
+            # Provide detailed error message about which part of the ARN is invalid
+            arn_parts = activity_arn.split(":")
+            if len(arn_parts) < 6:
+                raise InvalidArn(f"Invalid arn: '{activity_arn}' - ARN must have at least 6 parts separated by colons")
+            if not arn_parts[0].startswith("arn"):
+                raise InvalidArn(f"Invalid arn: '{activity_arn}' - ARN must start with 'arn'")
+            if arn_parts[2] != "states":
+                raise InvalidArn(f"Invalid arn: '{activity_arn}' - Service must be 'states', got '{arn_parts[2]}'")
+            if len(arn_parts) >= 6 and arn_parts[5] != "activity":
+                raise InvalidArn(f"Invalid arn: '{activity_arn}' - Resource type must be 'activity', got '{arn_parts[5]}'")
+            if len(arn_parts) >= 7 and len(arn_parts[6]) > 80:
+                raise InvalidArn(f"Invalid arn: '{activity_arn}' - Activity name must be 80 characters or less")
             raise InvalidArn(f"Invalid arn: '{activity_arn}'")
 
     @staticmethod
@@ -1510,6 +1539,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
         exec_arn = stepfunctions_standard_execution_arn(state_machine.arn, name)
 
         input_json = json.loads(input)
+        variables_json = json.loads(variables) if variables else None
         execution = TestStateExecution(
             name=name,
             role_arn=role_arn,
@@ -1520,6 +1550,7 @@ class StepFunctionsProvider(StepfunctionsApi, ServiceLifecycleHook):
             start_date=datetime.datetime.now(tz=datetime.UTC),
             input_data=input_json,
             activity_store=self.get_store(context).activities,
+            variables=variables_json,
         )
         execution.start()
 

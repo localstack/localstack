@@ -38,6 +38,7 @@ LOG = logging.getLogger(__name__)
 class TestStateExecution(Execution):
     exec_worker: TestStateExecutionWorker | None
     next_state: str | None
+    variables: dict | None
 
     class TestCaseExecutionWorkerCommunication(BaseExecutionWorkerCommunication):
         _execution: TestStateExecution
@@ -62,6 +63,7 @@ class TestStateExecution(Execution):
         start_date: Timestamp,
         activity_store: dict[Arn, Activity],
         input_data: dict | None = None,
+        variables: dict | None = None,
     ):
         super().__init__(
             name=name,
@@ -79,6 +81,7 @@ class TestStateExecution(Execution):
         )
         self._execution_terminated_event = threading.Event()
         self.next_state = None
+        self.variables = variables
 
     def _get_start_execution_worker_comm(self) -> BaseExecutionWorkerCommunication:
         return self.TestCaseExecutionWorkerCommunication(self)

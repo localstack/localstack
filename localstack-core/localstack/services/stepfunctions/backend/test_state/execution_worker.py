@@ -9,6 +9,7 @@ from localstack.services.stepfunctions.asl.eval.states import (
     StateMachineData,
 )
 from localstack.services.stepfunctions.asl.eval.test_state.environment import TestStateEnvironment
+from localstack.services.stepfunctions.asl.eval.variable_store import VariableStore
 from localstack.services.stepfunctions.asl.parse.test_state.asl_parser import (
     TestStateAmazonStateLanguageParser,
 )
@@ -24,6 +25,14 @@ class TestStateExecutionWorker(SyncExecutionWorker):
         )[0]
 
     def _get_evaluation_environment(self) -> Environment:
+        # Initialize variable store with variables if provided
+        variable_store = VariableStore()
+        if hasattr(self._exec_comm, 'execution') and hasattr(self._exec_comm.execution, 'variables'):
+            variables = self._exec_comm.execution.variables
+            if variables:
+                for key, value in variables.items():
+                    variable_store.set(key, value)
+        
         return TestStateEnvironment(
             aws_execution_details=self._evaluation_details.aws_execution_details,
             execution_type=self._evaluation_details.state_machine_details.typ,
@@ -43,4 +52,5 @@ class TestStateExecutionWorker(SyncExecutionWorker):
             event_history_context=EventHistoryContext.of_program_start(),
             cloud_watch_logging_session=self._cloud_watch_logging_session,
             activity_store=self._activity_store,
+            variable_store=variable_store,
         )
