@@ -44,6 +44,7 @@ class TestStateEnvironment(Environment):
         )
         self.inspection_data = InspectionData()
 
+    @classmethod
     def as_frame_of(
         cls,
         env: TestStateEnvironment,
@@ -53,6 +54,7 @@ class TestStateEnvironment(Environment):
         frame.inspection_data = env.inspection_data
         return frame
 
+    @classmethod
     def as_inner_frame_of(
         cls,
         env: TestStateEnvironment,
