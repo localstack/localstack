@@ -3291,5 +3291,181 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_updates_current_key_material_for_external_keys": {
+    "recorded-date": "09-11-2025, 16:21:58",
+    "recorded-content": {
+      "create-kms-external-key": {
+        "AWSAccountId": "111111111111",
+        "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "CreationDate": "datetime",
+        "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+        "Description": "test-key",
+        "Enabled": false,
+        "EncryptionAlgorithms": [
+          "SYMMETRIC_DEFAULT"
+        ],
+        "KeyId": "<key-id:1>",
+        "KeyManager": "CUSTOMER",
+        "KeySpec": "SYMMETRIC_DEFAULT",
+        "KeyState": "PendingImport",
+        "KeyUsage": "ENCRYPT_DECRYPT",
+        "MultiRegion": false,
+        "Origin": "EXTERNAL"
+      },
+      "get-import-parameters-response": {
+        "ImportToken": "import-token",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "ParametersValidTo": "datetime",
+        "PublicKey": "public-key",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-empty-key-response": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test-key",
+          "Enabled": false,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "PendingImport",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "import-key-material-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "KeyMaterialId": "<key-material-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-with-material-response": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<key-material-id:1>",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test-key",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "kms-encrypt-initial-response": {
+        "CiphertextBlob": "ciphertext-blob",
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "import-new-key-material-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "KeyMaterialId": "<key-material-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-with-new-material-response": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<key-material-id:1>",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test-key",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "rotate-key-on-demand-response": {
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "describe-key-after-rotation": {
+        "KeyMetadata": {
+          "AWSAccountId": "111111111111",
+          "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+          "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<key-material-id:2>",
+          "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
+          "Description": "test-key",
+          "Enabled": true,
+          "EncryptionAlgorithms": [
+            "SYMMETRIC_DEFAULT"
+          ],
+          "ExpirationModel": "KEY_MATERIAL_DOES_NOT_EXPIRE",
+          "KeyId": "<key-id:1>",
+          "KeyManager": "CUSTOMER",
+          "KeySpec": "SYMMETRIC_DEFAULT",
+          "KeyState": "Enabled",
+          "KeyUsage": "ENCRYPT_DECRYPT",
+          "MultiRegion": false,
+          "Origin": "EXTERNAL"
+        },
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "kms-encrypt-rotated-key-response": {
+        "CiphertextBlob": "ciphertext-blob",
+        "EncryptionAlgorithm": "SYMMETRIC_DEFAULT",
+        "KeyId": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      }
+    }
   }
 }
