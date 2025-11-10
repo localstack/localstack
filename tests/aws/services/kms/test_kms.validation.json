@@ -278,6 +278,15 @@
       "total": 3.24
     }
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_material_raises_if_there_is_already_key_material_pending": {
+    "last_validated_date": "2025-11-10T23:15:45+00:00",
+    "durations_in_seconds": {
+      "setup": 0.93,
+      "call": 0.62,
+      "teardown": 0.05,
+      "total": 1.6
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_rsa_aes_wrap_sha256": {
     "last_validated_date": "2025-07-22T06:11:13+00:00",
     "durations_in_seconds": {

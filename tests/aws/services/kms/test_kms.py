@@ -17,6 +17,7 @@ from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.keywrap import aes_key_wrap_with_padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
+from localstack_snapshot.snapshots.transformer import RegexTransformer
 
 from localstack.services.kms.models import (
     HEADER_LEN,
@@ -1605,6 +1606,70 @@ class TestKMS:
             EncryptionAlgorithm="SYMMETRIC_DEFAULT",
         )
         assert new_decrypted_response["Plaintext"] == plaintext
+
+    @markers.aws.validated
+    def test_import_key_material_raises_if_there_is_already_key_material_pending(
+        self, kms_create_key, aws_client, snapshot
+    ):
+        snapshot.add_transformer(RegexTransformer(r"[a-f0-9]{64}", "<key-material-id>"))
+        create_key_response = kms_create_key(
+            Origin="EXTERNAL", KeyUsage="ENCRYPT_DECRYPT", Description="test-key"
+        )
+        key_id = create_key_response["KeyId"]
+
+        get_parameters_response = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
+        )
+        assert get_parameters_response["ImportToken"]
+        assert get_parameters_response["PublicKey"]
+
+        initial_key_material = generate_encrypted_symmetric_key_material(
+            get_parameters_response["PublicKey"]
+        )
+        import_initial = aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=get_parameters_response["ImportToken"],
+            EncryptedKeyMaterial=initial_key_material,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+        )
+        snapshot.match("import-initial-material-response", import_initial)
+
+        get_parameters_response = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
+        )
+        assert get_parameters_response["ImportToken"]
+        assert get_parameters_response["PublicKey"]
+
+        pending_key_material = generate_encrypted_symmetric_key_material(
+            get_parameters_response["PublicKey"]
+        )
+        import_pending = aws_client.kms.import_key_material(
+            KeyId=key_id,
+            ImportToken=get_parameters_response["ImportToken"],
+            EncryptedKeyMaterial=pending_key_material,
+            ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+            ImportType="NEW_KEY_MATERIAL",
+        )
+        snapshot.match("import-pending-material-response", import_pending)
+
+        get_parameters_response = aws_client.kms.get_parameters_for_import(
+            KeyId=key_id, WrappingAlgorithm="RSAES_OAEP_SHA_256", WrappingKeySpec="RSA_2048"
+        )
+        assert get_parameters_response["ImportToken"]
+        assert get_parameters_response["PublicKey"]
+
+        final_key_material = generate_encrypted_symmetric_key_material(
+            get_parameters_response["PublicKey"]
+        )
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.import_key_material(
+                KeyId=key_id,
+                ImportToken=get_parameters_response["ImportToken"],
+                EncryptedKeyMaterial=final_key_material,
+                ExpirationModel="KEY_MATERIAL_DOES_NOT_EXPIRE",
+                ImportType="NEW_KEY_MATERIAL",
+            )
+        snapshot.match("existing-pending-material-error", e.value.response)
 
     @markers.aws.validated
     @pytest.mark.parametrize(
