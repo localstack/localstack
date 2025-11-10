@@ -170,6 +170,15 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import": {
     "last_validated_date": "2024-04-11T15:54:23+00:00"
   },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import_raises_for_non_external_kms_keys": {
+    "last_validated_date": "2025-11-10T22:37:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.85,
+      "call": 0.26,
+      "teardown": 0.05,
+      "total": 1.16
+    }
+  },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_public_key": {
     "last_validated_date": "2024-04-11T15:53:25+00:00"
   },

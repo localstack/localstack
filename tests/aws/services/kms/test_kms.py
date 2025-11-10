@@ -2369,6 +2369,19 @@ class TestKMS:
         snapshot.match("response-error", e.value.response)
 
     @markers.aws.validated
+    def test_get_parameters_for_import_raises_for_non_external_kms_keys(
+        self, kms_create_key, aws_client, snapshot
+    ):
+        aws_kms_key = kms_create_key()
+        with pytest.raises(ClientError) as e:
+            aws_client.kms.get_parameters_for_import(
+                KeyId=aws_kms_key["KeyId"],
+                WrappingAlgorithm="RSAES_OAEP_SHA_256",
+                WrappingKeySpec="RSA_2048",
+            )
+            snapshot.match("get-import-parameters-error", e.value.response)
+
+    @markers.aws.validated
     def test_derive_shared_secret(self, kms_create_key, aws_client, snapshot):
         snapshot.add_transformer(
             snapshot.transform.key_value("SharedSecret", reference_replacement=False)
