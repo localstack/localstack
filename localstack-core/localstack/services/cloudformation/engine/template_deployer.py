@@ -1379,7 +1379,9 @@ class TemplateDeployer:
     def create_resource_provider_payload(
         self, action: str, logical_resource_id: str
     ) -> ResourceProviderPayload:
-        # FIXME: use proper credentials
+        # TODO: use proper credentials from the request context
+        # Currently using internal marker credentials for LocalStack internal calls.
+        # Proper implementation would require passing through the actual caller's credentials.
         creds: Credentials = {
             "accessKeyId": self.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,

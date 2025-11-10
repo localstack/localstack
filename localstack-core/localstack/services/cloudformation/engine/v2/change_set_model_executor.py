@@ -598,7 +598,9 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
         before_properties: PreprocProperties | None,
         after_properties: PreprocProperties | None,
     ) -> ResourceProviderPayload | None:
-        # FIXME: use proper credentials
+        # TODO: use proper credentials from the request context
+        # Currently using internal marker credentials for LocalStack internal calls.
+        # Proper implementation would require passing through the actual caller's credentials.
         creds: Credentials = {
             "accessKeyId": self._change_set.stack.account_id,
             "secretAccessKey": INTERNAL_AWS_SECRET_ACCESS_KEY,
