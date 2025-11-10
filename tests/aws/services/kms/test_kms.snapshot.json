@@ -165,12 +165,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
-    "recorded-date": "13-04-2023, 11:29:30",
+    "recorded-date": "10-11-2025, 14:51:11",
     "recorded-content": {
       "describe-key": {
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test key 123",
         "Enabled": true,
@@ -188,7 +189,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "recorded-date": "14-06-2024, 13:34:43",
+    "recorded-date": "10-11-2025, 14:57:15",
     "recorded-content": {
       "describe-key-diff-region-with-id": {
         "Error": {
@@ -217,6 +218,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
           "Enabled": true,
@@ -241,6 +243,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<secondary-region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test key 123",
           "Enabled": true,
@@ -339,7 +342,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
-    "recorded-date": "11-04-2024, 15:51:52",
+    "recorded-date": "10-11-2025, 16:44:08",
     "recorded-content": {
       "describe-key-from-different-region": {
         "Error": {
@@ -409,6 +412,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "test replicated key",
           "Enabled": true,
@@ -446,16 +450,17 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:ap-southeast-1:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "",
-          "Enabled": false,
+          "Enabled": true,
           "EncryptionAlgorithms": [
             "SYMMETRIC_DEFAULT"
           ],
           "KeyId": "<key-id:1>",
           "KeyManager": "CUSTOMER",
           "KeySpec": "SYMMETRIC_DEFAULT",
-          "KeyState": "Creating",
+          "KeyState": "Enabled",
           "KeyUsage": "ENCRYPT_DECRYPT",
           "MultiRegion": true,
           "MultiRegionConfiguration": {
@@ -848,7 +853,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key": {
-    "recorded-date": "13-04-2023, 11:34:18",
+    "recorded-date": "10-11-2025, 17:24:11",
     "recorded-content": {
       "create-hmac-key": {
         "AWSAccountId": "111111111111",
@@ -1208,7 +1213,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
-    "recorded-date": "24-01-2024, 10:44:12",
+    "recorded-date": "10-11-2025, 14:57:58",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1278,6 +1283,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
           "Enabled": true,
@@ -1303,6 +1309,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "<description:1>",
           "Enabled": false,
@@ -1336,7 +1343,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
-    "recorded-date": "24-01-2024, 10:44:14",
+    "recorded-date": "10-11-2025, 16:00:07",
     "recorded-content": {
       "created-key": {
         "AWSAccountId": "111111111111",
@@ -1685,12 +1692,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_multi_region_key": {
-    "recorded-date": "11-04-2024, 14:46:26",
+    "recorded-date": "10-11-2025, 16:02:52",
     "recorded-content": {
       "create_multi_region_key": {
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test multi region key",
         "Enabled": true,
@@ -1716,12 +1724,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_non_multi_region_keys_should_not_have_multi_region_properties": {
-    "recorded-date": "11-04-2024, 15:47:59",
+    "recorded-date": "10-11-2025, 16:04:38",
     "recorded-content": {
       "non_multi_region_keys_should_not_have_multi_region_properties": {
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region>:111111111111:key/<key-id:1>",
         "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "test non multi region key",
         "Enabled": true,
@@ -2060,7 +2069,7 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
-    "recorded-date": "12-03-2025, 19:05:50",
+    "recorded-date": "10-11-2025, 17:37:46",
     "recorded-content": {
       "rotate-on-demand-response": {
         "KeyId": "<key-id:1>",
