@@ -1234,9 +1234,13 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # KeyMaterialId / CurrentKeyMaterialId is only exposed for symmetric keys used for encryption.
         imported_key_material_id = None
         if key_to_import_material_to.metadata["KeySpec"] == KeySpec.SYMMETRIC_DEFAULT:
-            imported_key_material_id = key_to_import_material_to.generate_key_material_id(key_material)
+            imported_key_material_id = key_to_import_material_to.generate_key_material_id(
+                key_material
+            )
             if key_to_import_material_to.metadata.get("CurrentKeyMaterialId") is None:
-                key_to_import_material_to.metadata["CurrentKeyMaterialId"] = imported_key_material_id
+                key_to_import_material_to.metadata["CurrentKeyMaterialId"] = (
+                    imported_key_material_id
+                )
 
         return ImportKeyMaterialResponse(
             KeyId=key_to_import_material_to.metadata["Arn"],
@@ -1368,7 +1372,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         key = self._get_kms_key(account_id, region_name, key_id, any_key_state_allowed=True)
 
         response = GetKeyRotationStatusResponse(
-            KeyId=key_id,
+            KeyId=key.metadata["Arn"],
             KeyRotationEnabled=key.is_key_rotation_enabled,
             NextRotationDate=key.next_rotation_date,
         )
