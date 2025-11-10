@@ -336,10 +336,17 @@ class KmsKey:
         self.next_rotation_date = None
 
     def generate_key_material_id(self, current_material: bytes) -> str:
+        # Multi-Region Keys are not valid UUIDs as they start with "mrk-". But in LocalStacks implementation
+        # the second part of the key ID is a valid UUID hex.
+        key_id = (
+            self.metadata["KeyId"]
+            if not self.metadata["KeyId"].startswith("mrk-")
+            else self.metadata["KeyId"].strip("mrk-")
+        )
+
         # The Key Material ID should depend on the material provided and the Key ID.
         # UUID5 generates the correct format for the, but half the required length of 64 hence * 2.
-        key_id_as_uuid = uuid.UUID(self.metadata["KeyId"])
-        key_material_id_hex = uuid.uuid5(key_id_as_uuid, current_material).hex
+        key_material_id_hex = uuid.uuid5(uuid.UUID(key_id), current_material).hex
         return str(key_material_id_hex) * 2
 
     def calculate_and_set_arn(self, account_id, region):
@@ -763,10 +770,10 @@ class KmsKey:
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
             )
         self.previous_keys.append(self.crypto_key.key_material)
-        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
         self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
             self.crypto_key.key_material
         )
+        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
 
 
 class KmsGrant:
