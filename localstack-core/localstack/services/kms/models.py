@@ -335,7 +335,7 @@ class KmsKey:
         self.rotation_period_in_days = 365
         self.next_rotation_date = None
 
-    def generate_key_material_id(self, current_material: bytes) -> str:
+    def generate_key_material_id(self, key_material: bytes) -> str:
         # Multi-Region Keys are not valid UUIDs as they start with "mrk-". But in LocalStacks implementation
         # the second part of the key ID is a valid UUID hex.
         key_id = (
@@ -345,8 +345,8 @@ class KmsKey:
         )
 
         # The Key Material ID should depend on the material provided and the Key ID.
-        # UUID5 generates the correct format for the, but half the required length of 64 hence * 2.
-        key_material_id_hex = uuid.uuid5(uuid.UUID(key_id), current_material).hex
+        # UUID5 generates the correct format, but half the required length of 64 hence * 2.
+        key_material_id_hex = uuid.uuid5(uuid.UUID(key_id), key_material).hex
         return str(key_material_id_hex) * 2
 
     def calculate_and_set_arn(self, account_id, region):
