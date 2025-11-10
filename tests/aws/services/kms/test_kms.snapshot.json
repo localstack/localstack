@@ -3478,8 +3478,20 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import_raises_for_non_external_kms_keys": {
-    "recorded-date": "10-11-2025, 22:37:15",
-    "recorded-content": {}
+    "recorded-date": "10-11-2025, 23:21:24",
+    "recorded-content": {
+      "get-import-parameters-error": {
+        "Error": {
+          "Code": "UnsupportedOperationException",
+          "Message": "<key-arn> origin is AWS_KMS which is not valid for this operation."
+        },
+        "message": "<key-arn> origin is AWS_KMS which is not valid for this operation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_material_raises_if_there_is_already_key_material_pending": {
     "recorded-date": "10-11-2025, 23:15:45",
