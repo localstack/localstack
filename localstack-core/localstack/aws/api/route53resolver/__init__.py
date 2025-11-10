@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -292,7 +292,7 @@ class InvalidParameterException(ServiceException):
     code: str = "InvalidParameterException"
     sender_fault: bool = False
     status_code: int = 400
-    FieldName: Optional[String]
+    FieldName: String | None
 
 
 class InvalidPolicyDocument(ServiceException):
@@ -317,35 +317,35 @@ class LimitExceededException(ServiceException):
     code: str = "LimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceType: Optional[String]
+    ResourceType: String | None
 
 
 class ResourceExistsException(ServiceException):
     code: str = "ResourceExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceType: Optional[String]
+    ResourceType: String | None
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceType: Optional[String]
+    ResourceType: String | None
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceType: Optional[String]
+    ResourceType: String | None
 
 
 class ResourceUnavailableException(ServiceException):
     code: str = "ResourceUnavailableException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceType: Optional[String]
+    ResourceType: String | None
 
 
 class ServiceQuotaExceededException(ServiceException):
@@ -377,7 +377,7 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class AssociateFirewallRuleGroupRequest(ServiceRequest):
@@ -386,35 +386,35 @@ class AssociateFirewallRuleGroupRequest(ServiceRequest):
     VpcId: ResourceId
     Priority: Priority
     Name: Name
-    MutationProtection: Optional[MutationProtectionStatus]
-    Tags: Optional[TagList]
+    MutationProtection: MutationProtectionStatus | None
+    Tags: TagList | None
 
 
 class FirewallRuleGroupAssociation(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Arn: Optional[Arn]
-    FirewallRuleGroupId: Optional[ResourceId]
-    VpcId: Optional[ResourceId]
-    Name: Optional[Name]
-    Priority: Optional[Priority]
-    MutationProtection: Optional[MutationProtectionStatus]
-    ManagedOwnerName: Optional[ServicePrinciple]
-    Status: Optional[FirewallRuleGroupAssociationStatus]
-    StatusMessage: Optional[StatusMessage]
-    CreatorRequestId: Optional[CreatorRequestId]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
+    Id: ResourceId | None
+    Arn: Arn | None
+    FirewallRuleGroupId: ResourceId | None
+    VpcId: ResourceId | None
+    Name: Name | None
+    Priority: Priority | None
+    MutationProtection: MutationProtectionStatus | None
+    ManagedOwnerName: ServicePrinciple | None
+    Status: FirewallRuleGroupAssociationStatus | None
+    StatusMessage: StatusMessage | None
+    CreatorRequestId: CreatorRequestId | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
 
 
 class AssociateFirewallRuleGroupResponse(TypedDict, total=False):
-    FirewallRuleGroupAssociation: Optional[FirewallRuleGroupAssociation]
+    FirewallRuleGroupAssociation: FirewallRuleGroupAssociation | None
 
 
 class IpAddressUpdate(TypedDict, total=False):
-    IpId: Optional[ResourceId]
-    SubnetId: Optional[SubnetId]
-    Ip: Optional[Ip]
-    Ipv6: Optional[Ipv6]
+    IpId: ResourceId | None
+    SubnetId: SubnetId | None
+    Ip: Ip | None
+    Ipv6: Ipv6 | None
 
 
 class AssociateResolverEndpointIpAddressRequest(ServiceRequest):
@@ -422,31 +422,31 @@ class AssociateResolverEndpointIpAddressRequest(ServiceRequest):
     IpAddress: IpAddressUpdate
 
 
-ProtocolList = List[Protocol]
-SecurityGroupIds = List[ResourceId]
+ProtocolList = list[Protocol]
+SecurityGroupIds = list[ResourceId]
 
 
 class ResolverEndpoint(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    CreatorRequestId: Optional[CreatorRequestId]
-    Arn: Optional[Arn]
-    Name: Optional[Name]
-    SecurityGroupIds: Optional[SecurityGroupIds]
-    Direction: Optional[ResolverEndpointDirection]
-    IpAddressCount: Optional[IpAddressCount]
-    HostVPCId: Optional[ResourceId]
-    Status: Optional[ResolverEndpointStatus]
-    StatusMessage: Optional[StatusMessage]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
-    OutpostArn: Optional[OutpostArn]
-    PreferredInstanceType: Optional[OutpostInstanceType]
-    ResolverEndpointType: Optional[ResolverEndpointType]
-    Protocols: Optional[ProtocolList]
+    Id: ResourceId | None
+    CreatorRequestId: CreatorRequestId | None
+    Arn: Arn | None
+    Name: Name | None
+    SecurityGroupIds: SecurityGroupIds | None
+    Direction: ResolverEndpointDirection | None
+    IpAddressCount: IpAddressCount | None
+    HostVPCId: ResourceId | None
+    Status: ResolverEndpointStatus | None
+    StatusMessage: StatusMessage | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
+    OutpostArn: OutpostArn | None
+    PreferredInstanceType: OutpostInstanceType | None
+    ResolverEndpointType: ResolverEndpointType | None
+    Protocols: ProtocolList | None
 
 
 class AssociateResolverEndpointIpAddressResponse(TypedDict, total=False):
-    ResolverEndpoint: Optional[ResolverEndpoint]
+    ResolverEndpoint: ResolverEndpoint | None
 
 
 class AssociateResolverQueryLogConfigRequest(ServiceRequest):
@@ -455,245 +455,245 @@ class AssociateResolverQueryLogConfigRequest(ServiceRequest):
 
 
 class ResolverQueryLogConfigAssociation(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    ResolverQueryLogConfigId: Optional[ResourceId]
-    ResourceId: Optional[ResourceId]
-    Status: Optional[ResolverQueryLogConfigAssociationStatus]
-    Error: Optional[ResolverQueryLogConfigAssociationError]
-    ErrorMessage: Optional[ResolverQueryLogConfigAssociationErrorMessage]
-    CreationTime: Optional[Rfc3339TimeString]
+    Id: ResourceId | None
+    ResolverQueryLogConfigId: ResourceId | None
+    ResourceId: ResourceId | None
+    Status: ResolverQueryLogConfigAssociationStatus | None
+    Error: ResolverQueryLogConfigAssociationError | None
+    ErrorMessage: ResolverQueryLogConfigAssociationErrorMessage | None
+    CreationTime: Rfc3339TimeString | None
 
 
 class AssociateResolverQueryLogConfigResponse(TypedDict, total=False):
-    ResolverQueryLogConfigAssociation: Optional[ResolverQueryLogConfigAssociation]
+    ResolverQueryLogConfigAssociation: ResolverQueryLogConfigAssociation | None
 
 
 class AssociateResolverRuleRequest(ServiceRequest):
     ResolverRuleId: ResourceId
-    Name: Optional[Name]
+    Name: Name | None
     VPCId: ResourceId
 
 
 class ResolverRuleAssociation(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    ResolverRuleId: Optional[ResourceId]
-    Name: Optional[Name]
-    VPCId: Optional[ResourceId]
-    Status: Optional[ResolverRuleAssociationStatus]
-    StatusMessage: Optional[StatusMessage]
+    Id: ResourceId | None
+    ResolverRuleId: ResourceId | None
+    Name: Name | None
+    VPCId: ResourceId | None
+    Status: ResolverRuleAssociationStatus | None
+    StatusMessage: StatusMessage | None
 
 
 class AssociateResolverRuleResponse(TypedDict, total=False):
-    ResolverRuleAssociation: Optional[ResolverRuleAssociation]
+    ResolverRuleAssociation: ResolverRuleAssociation | None
 
 
 class CreateFirewallDomainListRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     Name: Name
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class FirewallDomainList(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Arn: Optional[Arn]
-    Name: Optional[Name]
-    DomainCount: Optional[Unsigned]
-    Status: Optional[FirewallDomainListStatus]
-    StatusMessage: Optional[StatusMessage]
-    ManagedOwnerName: Optional[ServicePrinciple]
-    CreatorRequestId: Optional[CreatorRequestId]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
+    Id: ResourceId | None
+    Arn: Arn | None
+    Name: Name | None
+    DomainCount: Unsigned | None
+    Status: FirewallDomainListStatus | None
+    StatusMessage: StatusMessage | None
+    ManagedOwnerName: ServicePrinciple | None
+    CreatorRequestId: CreatorRequestId | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
 
 
 class CreateFirewallDomainListResponse(TypedDict, total=False):
-    FirewallDomainList: Optional[FirewallDomainList]
+    FirewallDomainList: FirewallDomainList | None
 
 
 class CreateFirewallRuleGroupRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     Name: Name
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class FirewallRuleGroup(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Arn: Optional[Arn]
-    Name: Optional[Name]
-    RuleCount: Optional[Unsigned]
-    Status: Optional[FirewallRuleGroupStatus]
-    StatusMessage: Optional[StatusMessage]
-    OwnerId: Optional[AccountId]
-    CreatorRequestId: Optional[CreatorRequestId]
-    ShareStatus: Optional[ShareStatus]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
+    Id: ResourceId | None
+    Arn: Arn | None
+    Name: Name | None
+    RuleCount: Unsigned | None
+    Status: FirewallRuleGroupStatus | None
+    StatusMessage: StatusMessage | None
+    OwnerId: AccountId | None
+    CreatorRequestId: CreatorRequestId | None
+    ShareStatus: ShareStatus | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
 
 
 class CreateFirewallRuleGroupResponse(TypedDict, total=False):
-    FirewallRuleGroup: Optional[FirewallRuleGroup]
+    FirewallRuleGroup: FirewallRuleGroup | None
 
 
 class CreateFirewallRuleRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     FirewallRuleGroupId: ResourceId
-    FirewallDomainListId: Optional[ResourceId]
+    FirewallDomainListId: ResourceId | None
     Priority: Priority
     Action: Action
-    BlockResponse: Optional[BlockResponse]
-    BlockOverrideDomain: Optional[BlockOverrideDomain]
-    BlockOverrideDnsType: Optional[BlockOverrideDnsType]
-    BlockOverrideTtl: Optional[BlockOverrideTtl]
+    BlockResponse: BlockResponse | None
+    BlockOverrideDomain: BlockOverrideDomain | None
+    BlockOverrideDnsType: BlockOverrideDnsType | None
+    BlockOverrideTtl: BlockOverrideTtl | None
     Name: Name
-    FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
-    Qtype: Optional[Qtype]
-    DnsThreatProtection: Optional[DnsThreatProtection]
-    ConfidenceThreshold: Optional[ConfidenceThreshold]
+    FirewallDomainRedirectionAction: FirewallDomainRedirectionAction | None
+    Qtype: Qtype | None
+    DnsThreatProtection: DnsThreatProtection | None
+    ConfidenceThreshold: ConfidenceThreshold | None
 
 
 class FirewallRule(TypedDict, total=False):
-    FirewallRuleGroupId: Optional[ResourceId]
-    FirewallDomainListId: Optional[ResourceId]
-    FirewallThreatProtectionId: Optional[ResourceId]
-    Name: Optional[Name]
-    Priority: Optional[Priority]
-    Action: Optional[Action]
-    BlockResponse: Optional[BlockResponse]
-    BlockOverrideDomain: Optional[BlockOverrideDomain]
-    BlockOverrideDnsType: Optional[BlockOverrideDnsType]
-    BlockOverrideTtl: Optional[Unsigned]
-    CreatorRequestId: Optional[CreatorRequestId]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
-    FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
-    Qtype: Optional[Qtype]
-    DnsThreatProtection: Optional[DnsThreatProtection]
-    ConfidenceThreshold: Optional[ConfidenceThreshold]
+    FirewallRuleGroupId: ResourceId | None
+    FirewallDomainListId: ResourceId | None
+    FirewallThreatProtectionId: ResourceId | None
+    Name: Name | None
+    Priority: Priority | None
+    Action: Action | None
+    BlockResponse: BlockResponse | None
+    BlockOverrideDomain: BlockOverrideDomain | None
+    BlockOverrideDnsType: BlockOverrideDnsType | None
+    BlockOverrideTtl: Unsigned | None
+    CreatorRequestId: CreatorRequestId | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
+    FirewallDomainRedirectionAction: FirewallDomainRedirectionAction | None
+    Qtype: Qtype | None
+    DnsThreatProtection: DnsThreatProtection | None
+    ConfidenceThreshold: ConfidenceThreshold | None
 
 
 class CreateFirewallRuleResponse(TypedDict, total=False):
-    FirewallRule: Optional[FirewallRule]
+    FirewallRule: FirewallRule | None
 
 
 class CreateOutpostResolverRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
     Name: OutpostResolverName
-    InstanceCount: Optional[InstanceCount]
+    InstanceCount: InstanceCount | None
     PreferredInstanceType: OutpostInstanceType
     OutpostArn: OutpostArn
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class OutpostResolver(TypedDict, total=False):
-    Arn: Optional[Arn]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
-    CreatorRequestId: Optional[CreatorRequestId]
-    Id: Optional[ResourceId]
-    InstanceCount: Optional[InstanceCount]
-    PreferredInstanceType: Optional[OutpostInstanceType]
-    Name: Optional[OutpostResolverName]
-    Status: Optional[OutpostResolverStatus]
-    StatusMessage: Optional[OutpostResolverStatusMessage]
-    OutpostArn: Optional[OutpostArn]
+    Arn: Arn | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
+    CreatorRequestId: CreatorRequestId | None
+    Id: ResourceId | None
+    InstanceCount: InstanceCount | None
+    PreferredInstanceType: OutpostInstanceType | None
+    Name: OutpostResolverName | None
+    Status: OutpostResolverStatus | None
+    StatusMessage: OutpostResolverStatusMessage | None
+    OutpostArn: OutpostArn | None
 
 
 class CreateOutpostResolverResponse(TypedDict, total=False):
-    OutpostResolver: Optional[OutpostResolver]
+    OutpostResolver: OutpostResolver | None
 
 
 class IpAddressRequest(TypedDict, total=False):
     SubnetId: SubnetId
-    Ip: Optional[Ip]
-    Ipv6: Optional[Ipv6]
+    Ip: Ip | None
+    Ipv6: Ipv6 | None
 
 
-IpAddressesRequest = List[IpAddressRequest]
+IpAddressesRequest = list[IpAddressRequest]
 
 
 class CreateResolverEndpointRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
-    Name: Optional[Name]
+    Name: Name | None
     SecurityGroupIds: SecurityGroupIds
     Direction: ResolverEndpointDirection
     IpAddresses: IpAddressesRequest
-    OutpostArn: Optional[OutpostArn]
-    PreferredInstanceType: Optional[OutpostInstanceType]
-    Tags: Optional[TagList]
-    ResolverEndpointType: Optional[ResolverEndpointType]
-    Protocols: Optional[ProtocolList]
+    OutpostArn: OutpostArn | None
+    PreferredInstanceType: OutpostInstanceType | None
+    Tags: TagList | None
+    ResolverEndpointType: ResolverEndpointType | None
+    Protocols: ProtocolList | None
 
 
 class CreateResolverEndpointResponse(TypedDict, total=False):
-    ResolverEndpoint: Optional[ResolverEndpoint]
+    ResolverEndpoint: ResolverEndpoint | None
 
 
 class CreateResolverQueryLogConfigRequest(ServiceRequest):
     Name: ResolverQueryLogConfigName
     DestinationArn: DestinationArn
     CreatorRequestId: CreatorRequestId
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class ResolverQueryLogConfig(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    OwnerId: Optional[AccountId]
-    Status: Optional[ResolverQueryLogConfigStatus]
-    ShareStatus: Optional[ShareStatus]
-    AssociationCount: Optional[Count]
-    Arn: Optional[Arn]
-    Name: Optional[ResolverQueryLogConfigName]
-    DestinationArn: Optional[DestinationArn]
-    CreatorRequestId: Optional[CreatorRequestId]
-    CreationTime: Optional[Rfc3339TimeString]
+    Id: ResourceId | None
+    OwnerId: AccountId | None
+    Status: ResolverQueryLogConfigStatus | None
+    ShareStatus: ShareStatus | None
+    AssociationCount: Count | None
+    Arn: Arn | None
+    Name: ResolverQueryLogConfigName | None
+    DestinationArn: DestinationArn | None
+    CreatorRequestId: CreatorRequestId | None
+    CreationTime: Rfc3339TimeString | None
 
 
 class CreateResolverQueryLogConfigResponse(TypedDict, total=False):
-    ResolverQueryLogConfig: Optional[ResolverQueryLogConfig]
+    ResolverQueryLogConfig: ResolverQueryLogConfig | None
 
 
 class TargetAddress(TypedDict, total=False):
-    Ip: Optional[Ip]
-    Port: Optional[Port]
-    Ipv6: Optional[Ipv6]
-    Protocol: Optional[Protocol]
-    ServerNameIndication: Optional[ServerNameIndication]
+    Ip: Ip | None
+    Port: Port | None
+    Ipv6: Ipv6 | None
+    Protocol: Protocol | None
+    ServerNameIndication: ServerNameIndication | None
 
 
-TargetList = List[TargetAddress]
+TargetList = list[TargetAddress]
 
 
 class CreateResolverRuleRequest(ServiceRequest):
     CreatorRequestId: CreatorRequestId
-    Name: Optional[Name]
+    Name: Name | None
     RuleType: RuleTypeOption
-    DomainName: Optional[DomainName]
-    TargetIps: Optional[TargetList]
-    ResolverEndpointId: Optional[ResourceId]
-    Tags: Optional[TagList]
-    DelegationRecord: Optional[DelegationRecord]
+    DomainName: DomainName | None
+    TargetIps: TargetList | None
+    ResolverEndpointId: ResourceId | None
+    Tags: TagList | None
+    DelegationRecord: DelegationRecord | None
 
 
 class ResolverRule(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    CreatorRequestId: Optional[CreatorRequestId]
-    Arn: Optional[Arn]
-    DomainName: Optional[DomainName]
-    Status: Optional[ResolverRuleStatus]
-    StatusMessage: Optional[StatusMessage]
-    RuleType: Optional[RuleTypeOption]
-    Name: Optional[Name]
-    TargetIps: Optional[TargetList]
-    ResolverEndpointId: Optional[ResourceId]
-    OwnerId: Optional[AccountId]
-    ShareStatus: Optional[ShareStatus]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
-    DelegationRecord: Optional[DelegationRecord]
+    Id: ResourceId | None
+    CreatorRequestId: CreatorRequestId | None
+    Arn: Arn | None
+    DomainName: DomainName | None
+    Status: ResolverRuleStatus | None
+    StatusMessage: StatusMessage | None
+    RuleType: RuleTypeOption | None
+    Name: Name | None
+    TargetIps: TargetList | None
+    ResolverEndpointId: ResourceId | None
+    OwnerId: AccountId | None
+    ShareStatus: ShareStatus | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
+    DelegationRecord: DelegationRecord | None
 
 
 class CreateResolverRuleResponse(TypedDict, total=False):
-    ResolverRule: Optional[ResolverRule]
+    ResolverRule: ResolverRule | None
 
 
 class DeleteFirewallDomainListRequest(ServiceRequest):
@@ -701,7 +701,7 @@ class DeleteFirewallDomainListRequest(ServiceRequest):
 
 
 class DeleteFirewallDomainListResponse(TypedDict, total=False):
-    FirewallDomainList: Optional[FirewallDomainList]
+    FirewallDomainList: FirewallDomainList | None
 
 
 class DeleteFirewallRuleGroupRequest(ServiceRequest):
@@ -709,18 +709,18 @@ class DeleteFirewallRuleGroupRequest(ServiceRequest):
 
 
 class DeleteFirewallRuleGroupResponse(TypedDict, total=False):
-    FirewallRuleGroup: Optional[FirewallRuleGroup]
+    FirewallRuleGroup: FirewallRuleGroup | None
 
 
 class DeleteFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
-    FirewallDomainListId: Optional[ResourceId]
-    FirewallThreatProtectionId: Optional[ResourceId]
-    Qtype: Optional[Qtype]
+    FirewallDomainListId: ResourceId | None
+    FirewallThreatProtectionId: ResourceId | None
+    Qtype: Qtype | None
 
 
 class DeleteFirewallRuleResponse(TypedDict, total=False):
-    FirewallRule: Optional[FirewallRule]
+    FirewallRule: FirewallRule | None
 
 
 class DeleteOutpostResolverRequest(ServiceRequest):
@@ -728,7 +728,7 @@ class DeleteOutpostResolverRequest(ServiceRequest):
 
 
 class DeleteOutpostResolverResponse(TypedDict, total=False):
-    OutpostResolver: Optional[OutpostResolver]
+    OutpostResolver: OutpostResolver | None
 
 
 class DeleteResolverEndpointRequest(ServiceRequest):
@@ -736,7 +736,7 @@ class DeleteResolverEndpointRequest(ServiceRequest):
 
 
 class DeleteResolverEndpointResponse(TypedDict, total=False):
-    ResolverEndpoint: Optional[ResolverEndpoint]
+    ResolverEndpoint: ResolverEndpoint | None
 
 
 class DeleteResolverQueryLogConfigRequest(ServiceRequest):
@@ -744,7 +744,7 @@ class DeleteResolverQueryLogConfigRequest(ServiceRequest):
 
 
 class DeleteResolverQueryLogConfigResponse(TypedDict, total=False):
-    ResolverQueryLogConfig: Optional[ResolverQueryLogConfig]
+    ResolverQueryLogConfig: ResolverQueryLogConfig | None
 
 
 class DeleteResolverRuleRequest(ServiceRequest):
@@ -752,7 +752,7 @@ class DeleteResolverRuleRequest(ServiceRequest):
 
 
 class DeleteResolverRuleResponse(TypedDict, total=False):
-    ResolverRule: Optional[ResolverRule]
+    ResolverRule: ResolverRule | None
 
 
 class DisassociateFirewallRuleGroupRequest(ServiceRequest):
@@ -760,7 +760,7 @@ class DisassociateFirewallRuleGroupRequest(ServiceRequest):
 
 
 class DisassociateFirewallRuleGroupResponse(TypedDict, total=False):
-    FirewallRuleGroupAssociation: Optional[FirewallRuleGroupAssociation]
+    FirewallRuleGroupAssociation: FirewallRuleGroupAssociation | None
 
 
 class DisassociateResolverEndpointIpAddressRequest(ServiceRequest):
@@ -769,7 +769,7 @@ class DisassociateResolverEndpointIpAddressRequest(ServiceRequest):
 
 
 class DisassociateResolverEndpointIpAddressResponse(TypedDict, total=False):
-    ResolverEndpoint: Optional[ResolverEndpoint]
+    ResolverEndpoint: ResolverEndpoint | None
 
 
 class DisassociateResolverQueryLogConfigRequest(ServiceRequest):
@@ -778,7 +778,7 @@ class DisassociateResolverQueryLogConfigRequest(ServiceRequest):
 
 
 class DisassociateResolverQueryLogConfigResponse(TypedDict, total=False):
-    ResolverQueryLogConfigAssociation: Optional[ResolverQueryLogConfigAssociation]
+    ResolverQueryLogConfigAssociation: ResolverQueryLogConfigAssociation | None
 
 
 class DisassociateResolverRuleRequest(ServiceRequest):
@@ -787,54 +787,54 @@ class DisassociateResolverRuleRequest(ServiceRequest):
 
 
 class DisassociateResolverRuleResponse(TypedDict, total=False):
-    ResolverRuleAssociation: Optional[ResolverRuleAssociation]
+    ResolverRuleAssociation: ResolverRuleAssociation | None
 
 
-FilterValues = List[FilterValue]
+FilterValues = list[FilterValue]
 
 
 class Filter(TypedDict, total=False):
-    Name: Optional[FilterName]
-    Values: Optional[FilterValues]
+    Name: FilterName | None
+    Values: FilterValues | None
 
 
-Filters = List[Filter]
+Filters = list[Filter]
 
 
 class FirewallConfig(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    ResourceId: Optional[ResourceId]
-    OwnerId: Optional[AccountId]
-    FirewallFailOpen: Optional[FirewallFailOpenStatus]
+    Id: ResourceId | None
+    ResourceId: ResourceId | None
+    OwnerId: AccountId | None
+    FirewallFailOpen: FirewallFailOpenStatus | None
 
 
-FirewallConfigList = List[FirewallConfig]
+FirewallConfigList = list[FirewallConfig]
 
 
 class FirewallDomainListMetadata(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Arn: Optional[Arn]
-    Name: Optional[Name]
-    CreatorRequestId: Optional[CreatorRequestId]
-    ManagedOwnerName: Optional[ServicePrinciple]
+    Id: ResourceId | None
+    Arn: Arn | None
+    Name: Name | None
+    CreatorRequestId: CreatorRequestId | None
+    ManagedOwnerName: ServicePrinciple | None
 
 
-FirewallDomainListMetadataList = List[FirewallDomainListMetadata]
-FirewallDomains = List[FirewallDomainName]
-FirewallRuleGroupAssociations = List[FirewallRuleGroupAssociation]
+FirewallDomainListMetadataList = list[FirewallDomainListMetadata]
+FirewallDomains = list[FirewallDomainName]
+FirewallRuleGroupAssociations = list[FirewallRuleGroupAssociation]
 
 
 class FirewallRuleGroupMetadata(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Arn: Optional[Arn]
-    Name: Optional[Name]
-    OwnerId: Optional[AccountId]
-    CreatorRequestId: Optional[CreatorRequestId]
-    ShareStatus: Optional[ShareStatus]
+    Id: ResourceId | None
+    Arn: Arn | None
+    Name: Name | None
+    OwnerId: AccountId | None
+    CreatorRequestId: CreatorRequestId | None
+    ShareStatus: ShareStatus | None
 
 
-FirewallRuleGroupMetadataList = List[FirewallRuleGroupMetadata]
-FirewallRules = List[FirewallRule]
+FirewallRuleGroupMetadataList = list[FirewallRuleGroupMetadata]
+FirewallRules = list[FirewallRule]
 
 
 class GetFirewallConfigRequest(ServiceRequest):
@@ -842,7 +842,7 @@ class GetFirewallConfigRequest(ServiceRequest):
 
 
 class GetFirewallConfigResponse(TypedDict, total=False):
-    FirewallConfig: Optional[FirewallConfig]
+    FirewallConfig: FirewallConfig | None
 
 
 class GetFirewallDomainListRequest(ServiceRequest):
@@ -850,7 +850,7 @@ class GetFirewallDomainListRequest(ServiceRequest):
 
 
 class GetFirewallDomainListResponse(TypedDict, total=False):
-    FirewallDomainList: Optional[FirewallDomainList]
+    FirewallDomainList: FirewallDomainList | None
 
 
 class GetFirewallRuleGroupAssociationRequest(ServiceRequest):
@@ -858,7 +858,7 @@ class GetFirewallRuleGroupAssociationRequest(ServiceRequest):
 
 
 class GetFirewallRuleGroupAssociationResponse(TypedDict, total=False):
-    FirewallRuleGroupAssociation: Optional[FirewallRuleGroupAssociation]
+    FirewallRuleGroupAssociation: FirewallRuleGroupAssociation | None
 
 
 class GetFirewallRuleGroupPolicyRequest(ServiceRequest):
@@ -866,7 +866,7 @@ class GetFirewallRuleGroupPolicyRequest(ServiceRequest):
 
 
 class GetFirewallRuleGroupPolicyResponse(TypedDict, total=False):
-    FirewallRuleGroupPolicy: Optional[FirewallRuleGroupPolicy]
+    FirewallRuleGroupPolicy: FirewallRuleGroupPolicy | None
 
 
 class GetFirewallRuleGroupRequest(ServiceRequest):
@@ -874,7 +874,7 @@ class GetFirewallRuleGroupRequest(ServiceRequest):
 
 
 class GetFirewallRuleGroupResponse(TypedDict, total=False):
-    FirewallRuleGroup: Optional[FirewallRuleGroup]
+    FirewallRuleGroup: FirewallRuleGroup | None
 
 
 class GetOutpostResolverRequest(ServiceRequest):
@@ -882,7 +882,7 @@ class GetOutpostResolverRequest(ServiceRequest):
 
 
 class GetOutpostResolverResponse(TypedDict, total=False):
-    OutpostResolver: Optional[OutpostResolver]
+    OutpostResolver: OutpostResolver | None
 
 
 class GetResolverConfigRequest(ServiceRequest):
@@ -890,14 +890,14 @@ class GetResolverConfigRequest(ServiceRequest):
 
 
 class ResolverConfig(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    ResourceId: Optional[ResourceId]
-    OwnerId: Optional[AccountId]
-    AutodefinedReverse: Optional[ResolverAutodefinedReverseStatus]
+    Id: ResourceId | None
+    ResourceId: ResourceId | None
+    OwnerId: AccountId | None
+    AutodefinedReverse: ResolverAutodefinedReverseStatus | None
 
 
 class GetResolverConfigResponse(TypedDict, total=False):
-    ResolverConfig: Optional[ResolverConfig]
+    ResolverConfig: ResolverConfig | None
 
 
 class GetResolverDnssecConfigRequest(ServiceRequest):
@@ -905,14 +905,14 @@ class GetResolverDnssecConfigRequest(ServiceRequest):
 
 
 class ResolverDnssecConfig(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    OwnerId: Optional[AccountId]
-    ResourceId: Optional[ResourceId]
-    ValidationStatus: Optional[ResolverDNSSECValidationStatus]
+    Id: ResourceId | None
+    OwnerId: AccountId | None
+    ResourceId: ResourceId | None
+    ValidationStatus: ResolverDNSSECValidationStatus | None
 
 
 class GetResolverDnssecConfigResponse(TypedDict, total=False):
-    ResolverDNSSECConfig: Optional[ResolverDnssecConfig]
+    ResolverDNSSECConfig: ResolverDnssecConfig | None
 
 
 class GetResolverEndpointRequest(ServiceRequest):
@@ -920,7 +920,7 @@ class GetResolverEndpointRequest(ServiceRequest):
 
 
 class GetResolverEndpointResponse(TypedDict, total=False):
-    ResolverEndpoint: Optional[ResolverEndpoint]
+    ResolverEndpoint: ResolverEndpoint | None
 
 
 class GetResolverQueryLogConfigAssociationRequest(ServiceRequest):
@@ -928,7 +928,7 @@ class GetResolverQueryLogConfigAssociationRequest(ServiceRequest):
 
 
 class GetResolverQueryLogConfigAssociationResponse(TypedDict, total=False):
-    ResolverQueryLogConfigAssociation: Optional[ResolverQueryLogConfigAssociation]
+    ResolverQueryLogConfigAssociation: ResolverQueryLogConfigAssociation | None
 
 
 class GetResolverQueryLogConfigPolicyRequest(ServiceRequest):
@@ -936,7 +936,7 @@ class GetResolverQueryLogConfigPolicyRequest(ServiceRequest):
 
 
 class GetResolverQueryLogConfigPolicyResponse(TypedDict, total=False):
-    ResolverQueryLogConfigPolicy: Optional[ResolverQueryLogConfigPolicy]
+    ResolverQueryLogConfigPolicy: ResolverQueryLogConfigPolicy | None
 
 
 class GetResolverQueryLogConfigRequest(ServiceRequest):
@@ -944,7 +944,7 @@ class GetResolverQueryLogConfigRequest(ServiceRequest):
 
 
 class GetResolverQueryLogConfigResponse(TypedDict, total=False):
-    ResolverQueryLogConfig: Optional[ResolverQueryLogConfig]
+    ResolverQueryLogConfig: ResolverQueryLogConfig | None
 
 
 class GetResolverRuleAssociationRequest(ServiceRequest):
@@ -952,7 +952,7 @@ class GetResolverRuleAssociationRequest(ServiceRequest):
 
 
 class GetResolverRuleAssociationResponse(TypedDict, total=False):
-    ResolverRuleAssociation: Optional[ResolverRuleAssociation]
+    ResolverRuleAssociation: ResolverRuleAssociation | None
 
 
 class GetResolverRulePolicyRequest(ServiceRequest):
@@ -960,7 +960,7 @@ class GetResolverRulePolicyRequest(ServiceRequest):
 
 
 class GetResolverRulePolicyResponse(TypedDict, total=False):
-    ResolverRulePolicy: Optional[ResolverRulePolicy]
+    ResolverRulePolicy: ResolverRulePolicy | None
 
 
 class GetResolverRuleRequest(ServiceRequest):
@@ -968,7 +968,7 @@ class GetResolverRuleRequest(ServiceRequest):
 
 
 class GetResolverRuleResponse(TypedDict, total=False):
-    ResolverRule: Optional[ResolverRule]
+    ResolverRule: ResolverRule | None
 
 
 class ImportFirewallDomainsRequest(ServiceRequest):
@@ -978,237 +978,237 @@ class ImportFirewallDomainsRequest(ServiceRequest):
 
 
 class ImportFirewallDomainsResponse(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Name: Optional[Name]
-    Status: Optional[FirewallDomainListStatus]
-    StatusMessage: Optional[StatusMessage]
+    Id: ResourceId | None
+    Name: Name | None
+    Status: FirewallDomainListStatus | None
+    StatusMessage: StatusMessage | None
 
 
 class IpAddressResponse(TypedDict, total=False):
-    IpId: Optional[ResourceId]
-    SubnetId: Optional[SubnetId]
-    Ip: Optional[Ip]
-    Ipv6: Optional[Ipv6]
-    Status: Optional[IpAddressStatus]
-    StatusMessage: Optional[StatusMessage]
-    CreationTime: Optional[Rfc3339TimeString]
-    ModificationTime: Optional[Rfc3339TimeString]
+    IpId: ResourceId | None
+    SubnetId: SubnetId | None
+    Ip: Ip | None
+    Ipv6: Ipv6 | None
+    Status: IpAddressStatus | None
+    StatusMessage: StatusMessage | None
+    CreationTime: Rfc3339TimeString | None
+    ModificationTime: Rfc3339TimeString | None
 
 
-IpAddressesResponse = List[IpAddressResponse]
+IpAddressesResponse = list[IpAddressResponse]
 
 
 class ListFirewallConfigsRequest(ServiceRequest):
-    MaxResults: Optional[ListFirewallConfigsMaxResult]
-    NextToken: Optional[NextToken]
+    MaxResults: ListFirewallConfigsMaxResult | None
+    NextToken: NextToken | None
 
 
 class ListFirewallConfigsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    FirewallConfigs: Optional[FirewallConfigList]
+    NextToken: NextToken | None
+    FirewallConfigs: FirewallConfigList | None
 
 
 class ListFirewallDomainListsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListFirewallDomainListsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    FirewallDomainLists: Optional[FirewallDomainListMetadataList]
+    NextToken: NextToken | None
+    FirewallDomainLists: FirewallDomainListMetadataList | None
 
 
 class ListFirewallDomainsRequest(ServiceRequest):
     FirewallDomainListId: ResourceId
-    MaxResults: Optional[ListDomainMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: ListDomainMaxResults | None
+    NextToken: NextToken | None
 
 
 class ListFirewallDomainsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    Domains: Optional[FirewallDomains]
+    NextToken: NextToken | None
+    Domains: FirewallDomains | None
 
 
 class ListFirewallRuleGroupAssociationsRequest(ServiceRequest):
-    FirewallRuleGroupId: Optional[ResourceId]
-    VpcId: Optional[ResourceId]
-    Priority: Optional[Priority]
-    Status: Optional[FirewallRuleGroupAssociationStatus]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    FirewallRuleGroupId: ResourceId | None
+    VpcId: ResourceId | None
+    Priority: Priority | None
+    Status: FirewallRuleGroupAssociationStatus | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListFirewallRuleGroupAssociationsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    FirewallRuleGroupAssociations: Optional[FirewallRuleGroupAssociations]
+    NextToken: NextToken | None
+    FirewallRuleGroupAssociations: FirewallRuleGroupAssociations | None
 
 
 class ListFirewallRuleGroupsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListFirewallRuleGroupsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    FirewallRuleGroups: Optional[FirewallRuleGroupMetadataList]
+    NextToken: NextToken | None
+    FirewallRuleGroups: FirewallRuleGroupMetadataList | None
 
 
 class ListFirewallRulesRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
-    Priority: Optional[Priority]
-    Action: Optional[Action]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Priority: Priority | None
+    Action: Action | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListFirewallRulesResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    FirewallRules: Optional[FirewallRules]
+    NextToken: NextToken | None
+    FirewallRules: FirewallRules | None
 
 
 class ListOutpostResolversRequest(ServiceRequest):
-    OutpostArn: Optional[OutpostArn]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    OutpostArn: OutpostArn | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-OutpostResolverList = List[OutpostResolver]
+OutpostResolverList = list[OutpostResolver]
 
 
 class ListOutpostResolversResponse(TypedDict, total=False):
-    OutpostResolvers: Optional[OutpostResolverList]
-    NextToken: Optional[NextToken]
+    OutpostResolvers: OutpostResolverList | None
+    NextToken: NextToken | None
 
 
 class ListResolverConfigsRequest(ServiceRequest):
-    MaxResults: Optional[ListResolverConfigsMaxResult]
-    NextToken: Optional[NextToken]
+    MaxResults: ListResolverConfigsMaxResult | None
+    NextToken: NextToken | None
 
 
-ResolverConfigList = List[ResolverConfig]
+ResolverConfigList = list[ResolverConfig]
 
 
 class ListResolverConfigsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    ResolverConfigs: Optional[ResolverConfigList]
+    NextToken: NextToken | None
+    ResolverConfigs: ResolverConfigList | None
 
 
 class ListResolverDnssecConfigsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[Filters]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Filters: Filters | None
 
 
-ResolverDnssecConfigList = List[ResolverDnssecConfig]
+ResolverDnssecConfigList = list[ResolverDnssecConfig]
 
 
 class ListResolverDnssecConfigsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    ResolverDnssecConfigs: Optional[ResolverDnssecConfigList]
+    NextToken: NextToken | None
+    ResolverDnssecConfigs: ResolverDnssecConfigList | None
 
 
 class ListResolverEndpointIpAddressesRequest(ServiceRequest):
     ResolverEndpointId: ResourceId
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListResolverEndpointIpAddressesResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    IpAddresses: Optional[IpAddressesResponse]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    IpAddresses: IpAddressesResponse | None
 
 
 class ListResolverEndpointsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[Filters]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Filters: Filters | None
 
 
-ResolverEndpoints = List[ResolverEndpoint]
+ResolverEndpoints = list[ResolverEndpoint]
 
 
 class ListResolverEndpointsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    ResolverEndpoints: Optional[ResolverEndpoints]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    ResolverEndpoints: ResolverEndpoints | None
 
 
 class ListResolverQueryLogConfigAssociationsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[Filters]
-    SortBy: Optional[SortByKey]
-    SortOrder: Optional[SortOrder]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Filters: Filters | None
+    SortBy: SortByKey | None
+    SortOrder: SortOrder | None
 
 
-ResolverQueryLogConfigAssociationList = List[ResolverQueryLogConfigAssociation]
+ResolverQueryLogConfigAssociationList = list[ResolverQueryLogConfigAssociation]
 
 
 class ListResolverQueryLogConfigAssociationsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    TotalCount: Optional[Count]
-    TotalFilteredCount: Optional[Count]
-    ResolverQueryLogConfigAssociations: Optional[ResolverQueryLogConfigAssociationList]
+    NextToken: NextToken | None
+    TotalCount: Count | None
+    TotalFilteredCount: Count | None
+    ResolverQueryLogConfigAssociations: ResolverQueryLogConfigAssociationList | None
 
 
 class ListResolverQueryLogConfigsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[Filters]
-    SortBy: Optional[SortByKey]
-    SortOrder: Optional[SortOrder]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Filters: Filters | None
+    SortBy: SortByKey | None
+    SortOrder: SortOrder | None
 
 
-ResolverQueryLogConfigList = List[ResolverQueryLogConfig]
+ResolverQueryLogConfigList = list[ResolverQueryLogConfig]
 
 
 class ListResolverQueryLogConfigsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    TotalCount: Optional[Count]
-    TotalFilteredCount: Optional[Count]
-    ResolverQueryLogConfigs: Optional[ResolverQueryLogConfigList]
+    NextToken: NextToken | None
+    TotalCount: Count | None
+    TotalFilteredCount: Count | None
+    ResolverQueryLogConfigs: ResolverQueryLogConfigList | None
 
 
 class ListResolverRuleAssociationsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[Filters]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Filters: Filters | None
 
 
-ResolverRuleAssociations = List[ResolverRuleAssociation]
+ResolverRuleAssociations = list[ResolverRuleAssociation]
 
 
 class ListResolverRuleAssociationsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    ResolverRuleAssociations: Optional[ResolverRuleAssociations]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    ResolverRuleAssociations: ResolverRuleAssociations | None
 
 
 class ListResolverRulesRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[Filters]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Filters: Filters | None
 
 
-ResolverRules = List[ResolverRule]
+ResolverRules = list[ResolverRule]
 
 
 class ListResolverRulesResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    ResolverRules: Optional[ResolverRules]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    ResolverRules: ResolverRules | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
     ResourceArn: Arn
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    Tags: Optional[TagList]
-    NextToken: Optional[NextToken]
+    Tags: TagList | None
+    NextToken: NextToken | None
 
 
 class PutFirewallRuleGroupPolicyRequest(ServiceRequest):
@@ -1217,7 +1217,7 @@ class PutFirewallRuleGroupPolicyRequest(ServiceRequest):
 
 
 class PutFirewallRuleGroupPolicyResponse(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class PutResolverQueryLogConfigPolicyRequest(ServiceRequest):
@@ -1226,7 +1226,7 @@ class PutResolverQueryLogConfigPolicyRequest(ServiceRequest):
 
 
 class PutResolverQueryLogConfigPolicyResponse(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class PutResolverRulePolicyRequest(ServiceRequest):
@@ -1235,16 +1235,16 @@ class PutResolverRulePolicyRequest(ServiceRequest):
 
 
 class PutResolverRulePolicyResponse(TypedDict, total=False):
-    ReturnValue: Optional[Boolean]
+    ReturnValue: Boolean | None
 
 
 class ResolverRuleConfig(TypedDict, total=False):
-    Name: Optional[Name]
-    TargetIps: Optional[TargetList]
-    ResolverEndpointId: Optional[ResourceId]
+    Name: Name | None
+    TargetIps: TargetList | None
+    ResolverEndpointId: ResourceId | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -1271,7 +1271,7 @@ class UpdateFirewallConfigRequest(ServiceRequest):
 
 
 class UpdateFirewallConfigResponse(TypedDict, total=False):
-    FirewallConfig: Optional[FirewallConfig]
+    FirewallConfig: FirewallConfig | None
 
 
 class UpdateFirewallDomainsRequest(ServiceRequest):
@@ -1281,42 +1281,42 @@ class UpdateFirewallDomainsRequest(ServiceRequest):
 
 
 class UpdateFirewallDomainsResponse(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    Name: Optional[Name]
-    Status: Optional[FirewallDomainListStatus]
-    StatusMessage: Optional[StatusMessage]
+    Id: ResourceId | None
+    Name: Name | None
+    Status: FirewallDomainListStatus | None
+    StatusMessage: StatusMessage | None
 
 
 class UpdateFirewallRuleGroupAssociationRequest(ServiceRequest):
     FirewallRuleGroupAssociationId: ResourceId
-    Priority: Optional[Priority]
-    MutationProtection: Optional[MutationProtectionStatus]
-    Name: Optional[Name]
+    Priority: Priority | None
+    MutationProtection: MutationProtectionStatus | None
+    Name: Name | None
 
 
 class UpdateFirewallRuleGroupAssociationResponse(TypedDict, total=False):
-    FirewallRuleGroupAssociation: Optional[FirewallRuleGroupAssociation]
+    FirewallRuleGroupAssociation: FirewallRuleGroupAssociation | None
 
 
 class UpdateFirewallRuleRequest(ServiceRequest):
     FirewallRuleGroupId: ResourceId
-    FirewallDomainListId: Optional[ResourceId]
-    FirewallThreatProtectionId: Optional[ResourceId]
-    Priority: Optional[Priority]
-    Action: Optional[Action]
-    BlockResponse: Optional[BlockResponse]
-    BlockOverrideDomain: Optional[BlockOverrideDomain]
-    BlockOverrideDnsType: Optional[BlockOverrideDnsType]
-    BlockOverrideTtl: Optional[BlockOverrideTtl]
-    Name: Optional[Name]
-    FirewallDomainRedirectionAction: Optional[FirewallDomainRedirectionAction]
-    Qtype: Optional[Qtype]
-    DnsThreatProtection: Optional[DnsThreatProtection]
-    ConfidenceThreshold: Optional[ConfidenceThreshold]
+    FirewallDomainListId: ResourceId | None
+    FirewallThreatProtectionId: ResourceId | None
+    Priority: Priority | None
+    Action: Action | None
+    BlockResponse: BlockResponse | None
+    BlockOverrideDomain: BlockOverrideDomain | None
+    BlockOverrideDnsType: BlockOverrideDnsType | None
+    BlockOverrideTtl: BlockOverrideTtl | None
+    Name: Name | None
+    FirewallDomainRedirectionAction: FirewallDomainRedirectionAction | None
+    Qtype: Qtype | None
+    DnsThreatProtection: DnsThreatProtection | None
+    ConfidenceThreshold: ConfidenceThreshold | None
 
 
 class UpdateFirewallRuleResponse(TypedDict, total=False):
-    FirewallRule: Optional[FirewallRule]
+    FirewallRule: FirewallRule | None
 
 
 class UpdateIpAddress(TypedDict, total=False):
@@ -1324,18 +1324,18 @@ class UpdateIpAddress(TypedDict, total=False):
     Ipv6: Ipv6
 
 
-UpdateIpAddresses = List[UpdateIpAddress]
+UpdateIpAddresses = list[UpdateIpAddress]
 
 
 class UpdateOutpostResolverRequest(ServiceRequest):
     Id: ResourceId
-    Name: Optional[OutpostResolverName]
-    InstanceCount: Optional[InstanceCount]
-    PreferredInstanceType: Optional[OutpostInstanceType]
+    Name: OutpostResolverName | None
+    InstanceCount: InstanceCount | None
+    PreferredInstanceType: OutpostInstanceType | None
 
 
 class UpdateOutpostResolverResponse(TypedDict, total=False):
-    OutpostResolver: Optional[OutpostResolver]
+    OutpostResolver: OutpostResolver | None
 
 
 class UpdateResolverConfigRequest(ServiceRequest):
@@ -1344,7 +1344,7 @@ class UpdateResolverConfigRequest(ServiceRequest):
 
 
 class UpdateResolverConfigResponse(TypedDict, total=False):
-    ResolverConfig: Optional[ResolverConfig]
+    ResolverConfig: ResolverConfig | None
 
 
 class UpdateResolverDnssecConfigRequest(ServiceRequest):
@@ -1353,19 +1353,19 @@ class UpdateResolverDnssecConfigRequest(ServiceRequest):
 
 
 class UpdateResolverDnssecConfigResponse(TypedDict, total=False):
-    ResolverDNSSECConfig: Optional[ResolverDnssecConfig]
+    ResolverDNSSECConfig: ResolverDnssecConfig | None
 
 
 class UpdateResolverEndpointRequest(ServiceRequest):
     ResolverEndpointId: ResourceId
-    Name: Optional[Name]
-    ResolverEndpointType: Optional[ResolverEndpointType]
-    UpdateIpAddresses: Optional[UpdateIpAddresses]
-    Protocols: Optional[ProtocolList]
+    Name: Name | None
+    ResolverEndpointType: ResolverEndpointType | None
+    UpdateIpAddresses: UpdateIpAddresses | None
+    Protocols: ProtocolList | None
 
 
 class UpdateResolverEndpointResponse(TypedDict, total=False):
-    ResolverEndpoint: Optional[ResolverEndpoint]
+    ResolverEndpoint: ResolverEndpoint | None
 
 
 class UpdateResolverRuleRequest(ServiceRequest):
@@ -1374,12 +1374,12 @@ class UpdateResolverRuleRequest(ServiceRequest):
 
 
 class UpdateResolverRuleResponse(TypedDict, total=False):
-    ResolverRule: Optional[ResolverRule]
+    ResolverRule: ResolverRule | None
 
 
 class Route53ResolverApi:
-    service = "route53resolver"
-    version = "2018-04-01"
+    service: str = "route53resolver"
+    version: str = "2018-04-01"
 
     @handler("AssociateFirewallRuleGroup")
     def associate_firewall_rule_group(

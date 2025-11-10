@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -521,7 +521,7 @@ class TooManyTagsException(ServiceException):
 
 
 class AbortIncompleteMultipartUpload(TypedDict, total=False):
-    DaysAfterInitiation: Optional[DaysAfterInitiation]
+    DaysAfterInitiation: DaysAfterInitiation | None
 
 
 class AccessControlTranslation(TypedDict, total=False):
@@ -532,50 +532,50 @@ CreationTimestamp = datetime
 
 
 class ListAccessGrantsInstanceEntry(TypedDict, total=False):
-    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
-    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
-    CreatedAt: Optional[CreationTimestamp]
-    IdentityCenterArn: Optional[IdentityCenterArn]
-    IdentityCenterInstanceArn: Optional[IdentityCenterArn]
-    IdentityCenterApplicationArn: Optional[IdentityCenterApplicationArn]
+    AccessGrantsInstanceId: AccessGrantsInstanceId | None
+    AccessGrantsInstanceArn: AccessGrantsInstanceArn | None
+    CreatedAt: CreationTimestamp | None
+    IdentityCenterArn: IdentityCenterArn | None
+    IdentityCenterInstanceArn: IdentityCenterArn | None
+    IdentityCenterApplicationArn: IdentityCenterApplicationArn | None
 
 
-AccessGrantsInstancesList = List[ListAccessGrantsInstanceEntry]
+AccessGrantsInstancesList = list[ListAccessGrantsInstanceEntry]
 
 
 class AccessGrantsLocationConfiguration(TypedDict, total=False):
-    S3SubPrefix: Optional[S3Prefix]
+    S3SubPrefix: S3Prefix | None
 
 
 class Grantee(TypedDict, total=False):
-    GranteeType: Optional[GranteeType]
-    GranteeIdentifier: Optional[GranteeIdentifier]
+    GranteeType: GranteeType | None
+    GranteeIdentifier: GranteeIdentifier | None
 
 
 class ListAccessGrantEntry(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantId: Optional[AccessGrantId]
-    AccessGrantArn: Optional[AccessGrantArn]
-    Grantee: Optional[Grantee]
-    Permission: Optional[Permission]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
-    GrantScope: Optional[S3Prefix]
-    ApplicationArn: Optional[IdentityCenterApplicationArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantId: AccessGrantId | None
+    AccessGrantArn: AccessGrantArn | None
+    Grantee: Grantee | None
+    Permission: Permission | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationConfiguration: AccessGrantsLocationConfiguration | None
+    GrantScope: S3Prefix | None
+    ApplicationArn: IdentityCenterApplicationArn | None
 
 
-AccessGrantsList = List[ListAccessGrantEntry]
+AccessGrantsList = list[ListAccessGrantEntry]
 
 
 class ListAccessGrantsLocationsEntry(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
-    LocationScope: Optional[S3Prefix]
-    IAMRoleArn: Optional[IAMRoleArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationArn: AccessGrantsLocationArn | None
+    LocationScope: S3Prefix | None
+    IAMRoleArn: IAMRoleArn | None
 
 
-AccessGrantsLocationsList = List[ListAccessGrantsLocationsEntry]
+AccessGrantsLocationsList = list[ListAccessGrantsLocationsEntry]
 
 
 class VpcConfiguration(TypedDict, total=False):
@@ -585,50 +585,50 @@ class VpcConfiguration(TypedDict, total=False):
 class AccessPoint(TypedDict, total=False):
     Name: AccessPointName
     NetworkOrigin: NetworkOrigin
-    VpcConfiguration: Optional[VpcConfiguration]
+    VpcConfiguration: VpcConfiguration | None
     Bucket: AccessPointBucketName
-    AccessPointArn: Optional[S3AccessPointArn]
-    Alias: Optional[Alias]
-    BucketAccountId: Optional[AccountId]
-    DataSourceId: Optional[DataSourceId]
-    DataSourceType: Optional[DataSourceType]
+    AccessPointArn: S3AccessPointArn | None
+    Alias: Alias | None
+    BucketAccountId: AccountId | None
+    DataSourceId: DataSourceId | None
+    DataSourceType: DataSourceType | None
 
 
-AccessPointList = List[AccessPoint]
-StorageLensGroupLevelExclude = List[StorageLensGroupArn]
-StorageLensGroupLevelInclude = List[StorageLensGroupArn]
+AccessPointList = list[AccessPoint]
+StorageLensGroupLevelExclude = list[StorageLensGroupArn]
+StorageLensGroupLevelInclude = list[StorageLensGroupArn]
 
 
 class StorageLensGroupLevelSelectionCriteria(TypedDict, total=False):
-    Include: Optional[StorageLensGroupLevelInclude]
-    Exclude: Optional[StorageLensGroupLevelExclude]
+    Include: StorageLensGroupLevelInclude | None
+    Exclude: StorageLensGroupLevelExclude | None
 
 
 class StorageLensGroupLevel(TypedDict, total=False):
-    SelectionCriteria: Optional[StorageLensGroupLevelSelectionCriteria]
+    SelectionCriteria: StorageLensGroupLevelSelectionCriteria | None
 
 
 class DetailedStatusCodesMetrics(TypedDict, total=False):
-    IsEnabled: Optional[IsEnabled]
+    IsEnabled: IsEnabled | None
 
 
 class AdvancedDataProtectionMetrics(TypedDict, total=False):
-    IsEnabled: Optional[IsEnabled]
+    IsEnabled: IsEnabled | None
 
 
 class AdvancedCostOptimizationMetrics(TypedDict, total=False):
-    IsEnabled: Optional[IsEnabled]
+    IsEnabled: IsEnabled | None
 
 
 class SelectionCriteria(TypedDict, total=False):
-    Delimiter: Optional[StorageLensPrefixLevelDelimiter]
-    MaxDepth: Optional[StorageLensPrefixLevelMaxDepth]
-    MinStorageBytesPercentage: Optional[MinStorageBytesPercentage]
+    Delimiter: StorageLensPrefixLevelDelimiter | None
+    MaxDepth: StorageLensPrefixLevelMaxDepth | None
+    MinStorageBytesPercentage: MinStorageBytesPercentage | None
 
 
 class PrefixLevelStorageMetrics(TypedDict, total=False):
-    IsEnabled: Optional[IsEnabled]
-    SelectionCriteria: Optional[SelectionCriteria]
+    IsEnabled: IsEnabled | None
+    SelectionCriteria: SelectionCriteria | None
 
 
 class PrefixLevel(TypedDict, total=False):
@@ -636,24 +636,24 @@ class PrefixLevel(TypedDict, total=False):
 
 
 class ActivityMetrics(TypedDict, total=False):
-    IsEnabled: Optional[IsEnabled]
+    IsEnabled: IsEnabled | None
 
 
 class BucketLevel(TypedDict, total=False):
-    ActivityMetrics: Optional[ActivityMetrics]
-    PrefixLevel: Optional[PrefixLevel]
-    AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
-    AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
-    DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
+    ActivityMetrics: ActivityMetrics | None
+    PrefixLevel: PrefixLevel | None
+    AdvancedCostOptimizationMetrics: AdvancedCostOptimizationMetrics | None
+    AdvancedDataProtectionMetrics: AdvancedDataProtectionMetrics | None
+    DetailedStatusCodesMetrics: DetailedStatusCodesMetrics | None
 
 
 class AccountLevel(TypedDict, total=False):
-    ActivityMetrics: Optional[ActivityMetrics]
+    ActivityMetrics: ActivityMetrics | None
     BucketLevel: BucketLevel
-    AdvancedCostOptimizationMetrics: Optional[AdvancedCostOptimizationMetrics]
-    AdvancedDataProtectionMetrics: Optional[AdvancedDataProtectionMetrics]
-    DetailedStatusCodesMetrics: Optional[DetailedStatusCodesMetrics]
-    StorageLensGroupLevel: Optional[StorageLensGroupLevel]
+    AdvancedCostOptimizationMetrics: AdvancedCostOptimizationMetrics | None
+    AdvancedDataProtectionMetrics: AdvancedDataProtectionMetrics | None
+    DetailedStatusCodesMetrics: DetailedStatusCodesMetrics | None
+    StorageLensGroupLevel: StorageLensGroupLevel | None
 
 
 class AssociateAccessGrantsIdentityCenterRequest(ServiceRequest):
@@ -665,27 +665,27 @@ AsyncCreationTimestamp = datetime
 
 
 class AsyncErrorDetails(TypedDict, total=False):
-    Code: Optional[MaxLength1024String]
-    Message: Optional[MaxLength1024String]
-    Resource: Optional[MaxLength1024String]
-    RequestId: Optional[MaxLength1024String]
+    Code: MaxLength1024String | None
+    Message: MaxLength1024String | None
+    Resource: MaxLength1024String | None
+    RequestId: MaxLength1024String | None
 
 
 class MultiRegionAccessPointRegionalResponse(TypedDict, total=False):
-    Name: Optional[RegionName]
-    RequestStatus: Optional[AsyncRequestStatus]
+    Name: RegionName | None
+    RequestStatus: AsyncRequestStatus | None
 
 
-MultiRegionAccessPointRegionalResponseList = List[MultiRegionAccessPointRegionalResponse]
+MultiRegionAccessPointRegionalResponseList = list[MultiRegionAccessPointRegionalResponse]
 
 
 class MultiRegionAccessPointsAsyncResponse(TypedDict, total=False):
-    Regions: Optional[MultiRegionAccessPointRegionalResponseList]
+    Regions: MultiRegionAccessPointRegionalResponseList | None
 
 
 class AsyncResponseDetails(TypedDict, total=False):
-    MultiRegionAccessPointDetails: Optional[MultiRegionAccessPointsAsyncResponse]
-    ErrorDetails: Optional[AsyncErrorDetails]
+    MultiRegionAccessPointDetails: MultiRegionAccessPointsAsyncResponse | None
+    ErrorDetails: AsyncErrorDetails | None
 
 
 class PutMultiRegionAccessPointPolicyInput(TypedDict, total=False):
@@ -699,55 +699,55 @@ class DeleteMultiRegionAccessPointInput(TypedDict, total=False):
 
 class Region(TypedDict, total=False):
     Bucket: BucketName
-    BucketAccountId: Optional[AccountId]
+    BucketAccountId: AccountId | None
 
 
-RegionCreationList = List[Region]
+RegionCreationList = list[Region]
 
 
 class PublicAccessBlockConfiguration(TypedDict, total=False):
-    BlockPublicAcls: Optional[Setting]
-    IgnorePublicAcls: Optional[Setting]
-    BlockPublicPolicy: Optional[Setting]
-    RestrictPublicBuckets: Optional[Setting]
+    BlockPublicAcls: Setting | None
+    IgnorePublicAcls: Setting | None
+    BlockPublicPolicy: Setting | None
+    RestrictPublicBuckets: Setting | None
 
 
 class CreateMultiRegionAccessPointInput(TypedDict, total=False):
     Name: MultiRegionAccessPointName
-    PublicAccessBlock: Optional[PublicAccessBlockConfiguration]
+    PublicAccessBlock: PublicAccessBlockConfiguration | None
     Regions: RegionCreationList
 
 
 class AsyncRequestParameters(TypedDict, total=False):
-    CreateMultiRegionAccessPointRequest: Optional[CreateMultiRegionAccessPointInput]
-    DeleteMultiRegionAccessPointRequest: Optional[DeleteMultiRegionAccessPointInput]
-    PutMultiRegionAccessPointPolicyRequest: Optional[PutMultiRegionAccessPointPolicyInput]
+    CreateMultiRegionAccessPointRequest: CreateMultiRegionAccessPointInput | None
+    DeleteMultiRegionAccessPointRequest: DeleteMultiRegionAccessPointInput | None
+    PutMultiRegionAccessPointPolicyRequest: PutMultiRegionAccessPointPolicyInput | None
 
 
 class AsyncOperation(TypedDict, total=False):
-    CreationTime: Optional[AsyncCreationTimestamp]
-    Operation: Optional[AsyncOperationName]
-    RequestTokenARN: Optional[AsyncRequestTokenARN]
-    RequestParameters: Optional[AsyncRequestParameters]
-    RequestStatus: Optional[AsyncRequestStatus]
-    ResponseDetails: Optional[AsyncResponseDetails]
+    CreationTime: AsyncCreationTimestamp | None
+    Operation: AsyncOperationName | None
+    RequestTokenARN: AsyncRequestTokenARN | None
+    RequestParameters: AsyncRequestParameters | None
+    RequestStatus: AsyncRequestStatus | None
+    ResponseDetails: AsyncResponseDetails | None
 
 
 class AwsLambdaTransformation(TypedDict, total=False):
     FunctionArn: FunctionArnString
-    FunctionPayload: Optional[AwsLambdaTransformationPayload]
+    FunctionPayload: AwsLambdaTransformationPayload | None
 
 
-Buckets = List[S3BucketArnString]
+Buckets = list[S3BucketArnString]
 
 
 class ListCallerAccessGrantsEntry(TypedDict, total=False):
-    Permission: Optional[Permission]
-    GrantScope: Optional[S3Prefix]
-    ApplicationArn: Optional[IdentityCenterApplicationArn]
+    Permission: Permission | None
+    GrantScope: S3Prefix | None
+    ApplicationArn: IdentityCenterApplicationArn | None
 
 
-CallerAccessGrantsList = List[ListCallerAccessGrantsEntry]
+CallerAccessGrantsList = list[ListCallerAccessGrantsEntry]
 
 
 class CloudWatchMetrics(TypedDict, total=False):
@@ -759,67 +759,67 @@ class Tag(TypedDict, total=False):
     Value: TagValueString
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class CreateAccessGrantRequest(ServiceRequest):
     AccountId: AccountId
     AccessGrantsLocationId: AccessGrantsLocationId
-    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
+    AccessGrantsLocationConfiguration: AccessGrantsLocationConfiguration | None
     Grantee: Grantee
     Permission: Permission
-    ApplicationArn: Optional[IdentityCenterApplicationArn]
-    S3PrefixType: Optional[S3PrefixType]
-    Tags: Optional[TagList]
+    ApplicationArn: IdentityCenterApplicationArn | None
+    S3PrefixType: S3PrefixType | None
+    Tags: TagList | None
 
 
 class CreateAccessGrantResult(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantId: Optional[AccessGrantId]
-    AccessGrantArn: Optional[AccessGrantArn]
-    Grantee: Optional[Grantee]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
-    Permission: Optional[Permission]
-    ApplicationArn: Optional[IdentityCenterApplicationArn]
-    GrantScope: Optional[S3Prefix]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantId: AccessGrantId | None
+    AccessGrantArn: AccessGrantArn | None
+    Grantee: Grantee | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationConfiguration: AccessGrantsLocationConfiguration | None
+    Permission: Permission | None
+    ApplicationArn: IdentityCenterApplicationArn | None
+    GrantScope: S3Prefix | None
 
 
 class CreateAccessGrantsInstanceRequest(ServiceRequest):
     AccountId: AccountId
-    IdentityCenterArn: Optional[IdentityCenterArn]
-    Tags: Optional[TagList]
+    IdentityCenterArn: IdentityCenterArn | None
+    Tags: TagList | None
 
 
 class CreateAccessGrantsInstanceResult(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
-    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
-    IdentityCenterArn: Optional[IdentityCenterArn]
-    IdentityCenterInstanceArn: Optional[IdentityCenterArn]
-    IdentityCenterApplicationArn: Optional[IdentityCenterApplicationArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantsInstanceId: AccessGrantsInstanceId | None
+    AccessGrantsInstanceArn: AccessGrantsInstanceArn | None
+    IdentityCenterArn: IdentityCenterArn | None
+    IdentityCenterInstanceArn: IdentityCenterArn | None
+    IdentityCenterApplicationArn: IdentityCenterApplicationArn | None
 
 
 class CreateAccessGrantsLocationRequest(ServiceRequest):
     AccountId: AccountId
     LocationScope: S3Prefix
     IAMRoleArn: IAMRoleArn
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateAccessGrantsLocationResult(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
-    LocationScope: Optional[S3Prefix]
-    IAMRoleArn: Optional[IAMRoleArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationArn: AccessGrantsLocationArn | None
+    LocationScope: S3Prefix | None
+    IAMRoleArn: IAMRoleArn | None
 
 
 class ObjectLambdaContentTransformation(TypedDict, total=False):
-    AwsLambda: Optional[AwsLambdaTransformation]
+    AwsLambda: AwsLambdaTransformation | None
 
 
-ObjectLambdaTransformationConfigurationActionsList = List[
+ObjectLambdaTransformationConfigurationActionsList = list[
     ObjectLambdaTransformationConfigurationAction
 ]
 
@@ -829,14 +829,14 @@ class ObjectLambdaTransformationConfiguration(TypedDict, total=False):
     ContentTransformation: ObjectLambdaContentTransformation
 
 
-ObjectLambdaTransformationConfigurationsList = List[ObjectLambdaTransformationConfiguration]
-ObjectLambdaAllowedFeaturesList = List[ObjectLambdaAllowedFeature]
+ObjectLambdaTransformationConfigurationsList = list[ObjectLambdaTransformationConfiguration]
+ObjectLambdaAllowedFeaturesList = list[ObjectLambdaAllowedFeature]
 
 
 class ObjectLambdaConfiguration(TypedDict, total=False):
     SupportingAccessPoint: ObjectLambdaSupportingAccessPointArn
-    CloudWatchMetricsEnabled: Optional[Boolean]
-    AllowedFeatures: Optional[ObjectLambdaAllowedFeaturesList]
+    CloudWatchMetricsEnabled: Boolean | None
+    AllowedFeatures: ObjectLambdaAllowedFeaturesList | None
     TransformationConfigurations: ObjectLambdaTransformationConfigurationsList
 
 
@@ -847,60 +847,60 @@ class CreateAccessPointForObjectLambdaRequest(ServiceRequest):
 
 
 class ObjectLambdaAccessPointAlias(TypedDict, total=False):
-    Value: Optional[ObjectLambdaAccessPointAliasValue]
-    Status: Optional[ObjectLambdaAccessPointAliasStatus]
+    Value: ObjectLambdaAccessPointAliasValue | None
+    Status: ObjectLambdaAccessPointAliasStatus | None
 
 
 class CreateAccessPointForObjectLambdaResult(TypedDict, total=False):
-    ObjectLambdaAccessPointArn: Optional[ObjectLambdaAccessPointArn]
-    Alias: Optional[ObjectLambdaAccessPointAlias]
+    ObjectLambdaAccessPointArn: ObjectLambdaAccessPointArn | None
+    Alias: ObjectLambdaAccessPointAlias | None
 
 
-ScopePermissionList = List[ScopePermission]
-PrefixesList = List[Prefix]
+ScopePermissionList = list[ScopePermission]
+PrefixesList = list[Prefix]
 
 
 class Scope(TypedDict, total=False):
-    Prefixes: Optional[PrefixesList]
-    Permissions: Optional[ScopePermissionList]
+    Prefixes: PrefixesList | None
+    Permissions: ScopePermissionList | None
 
 
 class CreateAccessPointRequest(ServiceRequest):
     AccountId: AccountId
     Name: AccessPointName
     Bucket: BucketName
-    VpcConfiguration: Optional[VpcConfiguration]
-    PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
-    BucketAccountId: Optional[AccountId]
-    Scope: Optional[Scope]
-    Tags: Optional[TagList]
+    VpcConfiguration: VpcConfiguration | None
+    PublicAccessBlockConfiguration: PublicAccessBlockConfiguration | None
+    BucketAccountId: AccountId | None
+    Scope: Scope | None
+    Tags: TagList | None
 
 
 class CreateAccessPointResult(TypedDict, total=False):
-    AccessPointArn: Optional[S3AccessPointArn]
-    Alias: Optional[Alias]
+    AccessPointArn: S3AccessPointArn | None
+    Alias: Alias | None
 
 
 class CreateBucketConfiguration(TypedDict, total=False):
-    LocationConstraint: Optional[BucketLocationConstraint]
+    LocationConstraint: BucketLocationConstraint | None
 
 
 class CreateBucketRequest(ServiceRequest):
-    ACL: Optional[BucketCannedACL]
+    ACL: BucketCannedACL | None
     Bucket: BucketName
-    CreateBucketConfiguration: Optional[CreateBucketConfiguration]
-    GrantFullControl: Optional[GrantFullControl]
-    GrantRead: Optional[GrantRead]
-    GrantReadACP: Optional[GrantReadACP]
-    GrantWrite: Optional[GrantWrite]
-    GrantWriteACP: Optional[GrantWriteACP]
-    ObjectLockEnabledForBucket: Optional[ObjectLockEnabledForBucket]
-    OutpostId: Optional[NonEmptyMaxLength64String]
+    CreateBucketConfiguration: CreateBucketConfiguration | None
+    GrantFullControl: GrantFullControl | None
+    GrantRead: GrantRead | None
+    GrantReadACP: GrantReadACP | None
+    GrantWrite: GrantWrite | None
+    GrantWriteACP: GrantWriteACP | None
+    ObjectLockEnabledForBucket: ObjectLockEnabledForBucket | None
+    OutpostId: NonEmptyMaxLength64String | None
 
 
 class CreateBucketResult(TypedDict, total=False):
-    Location: Optional[Location]
-    BucketArn: Optional[S3RegionalBucketArn]
+    Location: Location | None
+    BucketArn: S3RegionalBucketArn | None
 
 
 class NotSSEFilter(TypedDict, total=False):
@@ -912,12 +912,12 @@ class SSECFilter(TypedDict, total=False):
 
 
 class DSSEKMSFilter(TypedDict, total=False):
-    KmsKeyArn: Optional[NonEmptyKmsKeyArnString]
+    KmsKeyArn: NonEmptyKmsKeyArnString | None
 
 
 class SSEKMSFilter(TypedDict, total=False):
-    KmsKeyArn: Optional[NonEmptyKmsKeyArnString]
-    BucketKeyEnabled: Optional[Boolean]
+    KmsKeyArn: NonEmptyKmsKeyArnString | None
+    BucketKeyEnabled: Boolean | None
 
 
 class SSES3Filter(TypedDict, total=False):
@@ -925,40 +925,40 @@ class SSES3Filter(TypedDict, total=False):
 
 
 class ObjectEncryptionFilter(TypedDict, total=False):
-    SSES3: Optional[SSES3Filter]
-    SSEKMS: Optional[SSEKMSFilter]
-    DSSEKMS: Optional[DSSEKMSFilter]
-    SSEC: Optional[SSECFilter]
-    NOTSSE: Optional[NotSSEFilter]
+    SSES3: SSES3Filter | None
+    SSEKMS: SSEKMSFilter | None
+    DSSEKMS: DSSEKMSFilter | None
+    SSEC: SSECFilter | None
+    NOTSSE: NotSSEFilter | None
 
 
-ObjectEncryptionFilterList = List[ObjectEncryptionFilter]
-StorageClassList = List[S3StorageClass]
+ObjectEncryptionFilterList = list[ObjectEncryptionFilter]
+StorageClassList = list[S3StorageClass]
 ObjectSizeLessThanBytes = int
 ObjectSizeGreaterThanBytes = int
-NonEmptyMaxLength1024StringList = List[NonEmptyMaxLength1024String]
+NonEmptyMaxLength1024StringList = list[NonEmptyMaxLength1024String]
 
 
 class KeyNameConstraint(TypedDict, total=False):
-    MatchAnyPrefix: Optional[NonEmptyMaxLength1024StringList]
-    MatchAnySuffix: Optional[NonEmptyMaxLength1024StringList]
-    MatchAnySubstring: Optional[NonEmptyMaxLength1024StringList]
+    MatchAnyPrefix: NonEmptyMaxLength1024StringList | None
+    MatchAnySuffix: NonEmptyMaxLength1024StringList | None
+    MatchAnySubstring: NonEmptyMaxLength1024StringList | None
 
 
-ReplicationStatusFilterList = List[ReplicationStatus]
+ReplicationStatusFilterList = list[ReplicationStatus]
 ObjectCreationTime = datetime
 
 
 class JobManifestGeneratorFilter(TypedDict, total=False):
-    EligibleForReplication: Optional[Boolean]
-    CreatedAfter: Optional[ObjectCreationTime]
-    CreatedBefore: Optional[ObjectCreationTime]
-    ObjectReplicationStatuses: Optional[ReplicationStatusFilterList]
-    KeyNameConstraint: Optional[KeyNameConstraint]
-    ObjectSizeGreaterThanBytes: Optional[ObjectSizeGreaterThanBytes]
-    ObjectSizeLessThanBytes: Optional[ObjectSizeLessThanBytes]
-    MatchAnyStorageClass: Optional[StorageClassList]
-    MatchAnyObjectEncryption: Optional[ObjectEncryptionFilterList]
+    EligibleForReplication: Boolean | None
+    CreatedAfter: ObjectCreationTime | None
+    CreatedBefore: ObjectCreationTime | None
+    ObjectReplicationStatuses: ReplicationStatusFilterList | None
+    KeyNameConstraint: KeyNameConstraint | None
+    ObjectSizeGreaterThanBytes: ObjectSizeGreaterThanBytes | None
+    ObjectSizeLessThanBytes: ObjectSizeLessThanBytes | None
+    MatchAnyStorageClass: StorageClassList | None
+    MatchAnyObjectEncryption: ObjectEncryptionFilterList | None
 
 
 class SSEKMSEncryption(TypedDict, total=False):
@@ -970,28 +970,28 @@ class SSES3Encryption(TypedDict, total=False):
 
 
 class GeneratedManifestEncryption(TypedDict, total=False):
-    SSES3: Optional[SSES3Encryption]
-    SSEKMS: Optional[SSEKMSEncryption]
+    SSES3: SSES3Encryption | None
+    SSEKMS: SSEKMSEncryption | None
 
 
 class S3ManifestOutputLocation(TypedDict, total=False):
-    ExpectedManifestBucketOwner: Optional[AccountId]
+    ExpectedManifestBucketOwner: AccountId | None
     Bucket: S3BucketArnString
-    ManifestPrefix: Optional[ManifestPrefixString]
-    ManifestEncryption: Optional[GeneratedManifestEncryption]
+    ManifestPrefix: ManifestPrefixString | None
+    ManifestEncryption: GeneratedManifestEncryption | None
     ManifestFormat: GeneratedManifestFormat
 
 
 class S3JobManifestGenerator(TypedDict, total=False):
-    ExpectedBucketOwner: Optional[AccountId]
+    ExpectedBucketOwner: AccountId | None
     SourceBucket: S3BucketArnString
-    ManifestOutputLocation: Optional[S3ManifestOutputLocation]
-    Filter: Optional[JobManifestGeneratorFilter]
+    ManifestOutputLocation: S3ManifestOutputLocation | None
+    Filter: JobManifestGeneratorFilter | None
     EnableManifestOutput: Boolean
 
 
 class JobManifestGenerator(TypedDict, total=False):
-    S3JobManifestGenerator: Optional[S3JobManifestGenerator]
+    S3JobManifestGenerator: S3JobManifestGenerator | None
 
 
 class S3Tag(TypedDict, total=False):
@@ -999,21 +999,21 @@ class S3Tag(TypedDict, total=False):
     Value: TagValueString
 
 
-S3TagSet = List[S3Tag]
+S3TagSet = list[S3Tag]
 
 
 class JobManifestLocation(TypedDict, total=False):
     ObjectArn: S3KeyArnString
-    ObjectVersionId: Optional[S3ObjectVersionId]
+    ObjectVersionId: S3ObjectVersionId | None
     ETag: NonEmptyMaxLength1024String
 
 
-JobManifestFieldList = List[JobManifestFieldName]
+JobManifestFieldList = list[JobManifestFieldName]
 
 
 class JobManifestSpec(TypedDict, total=False):
     Format: JobManifestFormat
-    Fields: Optional[JobManifestFieldList]
+    Fields: JobManifestFieldList | None
 
 
 class JobManifest(TypedDict, total=False):
@@ -1022,17 +1022,17 @@ class JobManifest(TypedDict, total=False):
 
 
 class JobReport(TypedDict, total=False):
-    Bucket: Optional[S3BucketArnString]
-    Format: Optional[JobReportFormat]
+    Bucket: S3BucketArnString | None
+    Format: JobReportFormat | None
     Enabled: Boolean
-    Prefix: Optional[ReportPrefixString]
-    ReportScope: Optional[JobReportScope]
-    ExpectedBucketOwner: Optional[AccountId]
+    Prefix: ReportPrefixString | None
+    ReportScope: JobReportScope | None
+    ExpectedBucketOwner: AccountId | None
 
 
 class S3ComputeObjectChecksumOperation(TypedDict, total=False):
-    ChecksumAlgorithm: Optional[ComputeObjectChecksumAlgorithm]
-    ChecksumType: Optional[ComputeObjectChecksumType]
+    ChecksumAlgorithm: ComputeObjectChecksumAlgorithm | None
+    ChecksumType: ComputeObjectChecksumType | None
 
 
 class S3ReplicateObjectOperation(TypedDict, total=False):
@@ -1043,12 +1043,12 @@ TimeStamp = datetime
 
 
 class S3Retention(TypedDict, total=False):
-    RetainUntilDate: Optional[TimeStamp]
-    Mode: Optional[S3ObjectLockRetentionMode]
+    RetainUntilDate: TimeStamp | None
+    Mode: S3ObjectLockRetentionMode | None
 
 
 class S3SetObjectRetentionOperation(TypedDict, total=False):
-    BypassGovernanceRetention: Optional[Boolean]
+    BypassGovernanceRetention: Boolean | None
     Retention: S3Retention
 
 
@@ -1061,8 +1061,8 @@ class S3SetObjectLegalHoldOperation(TypedDict, total=False):
 
 
 class S3InitiateRestoreObjectOperation(TypedDict, total=False):
-    ExpirationInDays: Optional[S3ExpirationInDays]
-    GlacierJobTier: Optional[S3GlacierJobTier]
+    ExpirationInDays: S3ExpirationInDays | None
+    GlacierJobTier: S3GlacierJobTier | None
 
 
 class S3DeleteObjectTaggingOperation(TypedDict, total=False):
@@ -1070,119 +1070,119 @@ class S3DeleteObjectTaggingOperation(TypedDict, total=False):
 
 
 class S3SetObjectTaggingOperation(TypedDict, total=False):
-    TagSet: Optional[S3TagSet]
+    TagSet: S3TagSet | None
 
 
 class S3Grantee(TypedDict, total=False):
-    TypeIdentifier: Optional[S3GranteeTypeIdentifier]
-    Identifier: Optional[NonEmptyMaxLength1024String]
-    DisplayName: Optional[NonEmptyMaxLength1024String]
+    TypeIdentifier: S3GranteeTypeIdentifier | None
+    Identifier: NonEmptyMaxLength1024String | None
+    DisplayName: NonEmptyMaxLength1024String | None
 
 
 class S3Grant(TypedDict, total=False):
-    Grantee: Optional[S3Grantee]
-    Permission: Optional[S3Permission]
+    Grantee: S3Grantee | None
+    Permission: S3Permission | None
 
 
-S3GrantList = List[S3Grant]
+S3GrantList = list[S3Grant]
 
 
 class S3ObjectOwner(TypedDict, total=False):
-    ID: Optional[NonEmptyMaxLength1024String]
-    DisplayName: Optional[NonEmptyMaxLength1024String]
+    ID: NonEmptyMaxLength1024String | None
+    DisplayName: NonEmptyMaxLength1024String | None
 
 
 class S3AccessControlList(TypedDict, total=False):
     Owner: S3ObjectOwner
-    Grants: Optional[S3GrantList]
+    Grants: S3GrantList | None
 
 
 class S3AccessControlPolicy(TypedDict, total=False):
-    AccessControlList: Optional[S3AccessControlList]
-    CannedAccessControlList: Optional[S3CannedAccessControlList]
+    AccessControlList: S3AccessControlList | None
+    CannedAccessControlList: S3CannedAccessControlList | None
 
 
 class S3SetObjectAclOperation(TypedDict, total=False):
-    AccessControlPolicy: Optional[S3AccessControlPolicy]
+    AccessControlPolicy: S3AccessControlPolicy | None
 
 
 S3ContentLength = int
-S3UserMetadata = Dict[NonEmptyMaxLength1024String, MaxLength1024String]
+S3UserMetadata = dict[NonEmptyMaxLength1024String, MaxLength1024String]
 
 
 class S3ObjectMetadata(TypedDict, total=False):
-    CacheControl: Optional[NonEmptyMaxLength1024String]
-    ContentDisposition: Optional[NonEmptyMaxLength1024String]
-    ContentEncoding: Optional[NonEmptyMaxLength1024String]
-    ContentLanguage: Optional[NonEmptyMaxLength1024String]
-    UserMetadata: Optional[S3UserMetadata]
-    ContentLength: Optional[S3ContentLength]
-    ContentMD5: Optional[NonEmptyMaxLength1024String]
-    ContentType: Optional[NonEmptyMaxLength1024String]
-    HttpExpiresDate: Optional[TimeStamp]
-    RequesterCharged: Optional[Boolean]
-    SSEAlgorithm: Optional[S3SSEAlgorithm]
+    CacheControl: NonEmptyMaxLength1024String | None
+    ContentDisposition: NonEmptyMaxLength1024String | None
+    ContentEncoding: NonEmptyMaxLength1024String | None
+    ContentLanguage: NonEmptyMaxLength1024String | None
+    UserMetadata: S3UserMetadata | None
+    ContentLength: S3ContentLength | None
+    ContentMD5: NonEmptyMaxLength1024String | None
+    ContentType: NonEmptyMaxLength1024String | None
+    HttpExpiresDate: TimeStamp | None
+    RequesterCharged: Boolean | None
+    SSEAlgorithm: S3SSEAlgorithm | None
 
 
 class S3CopyObjectOperation(TypedDict, total=False):
-    TargetResource: Optional[S3RegionalOrS3ExpressBucketArnString]
-    CannedAccessControlList: Optional[S3CannedAccessControlList]
-    AccessControlGrants: Optional[S3GrantList]
-    MetadataDirective: Optional[S3MetadataDirective]
-    ModifiedSinceConstraint: Optional[TimeStamp]
-    NewObjectMetadata: Optional[S3ObjectMetadata]
-    NewObjectTagging: Optional[S3TagSet]
-    RedirectLocation: Optional[NonEmptyMaxLength2048String]
-    RequesterPays: Optional[Boolean]
-    StorageClass: Optional[S3StorageClass]
-    UnModifiedSinceConstraint: Optional[TimeStamp]
-    SSEAwsKmsKeyId: Optional[KmsKeyArnString]
-    TargetKeyPrefix: Optional[NonEmptyMaxLength1024String]
-    ObjectLockLegalHoldStatus: Optional[S3ObjectLockLegalHoldStatus]
-    ObjectLockMode: Optional[S3ObjectLockMode]
-    ObjectLockRetainUntilDate: Optional[TimeStamp]
-    BucketKeyEnabled: Optional[Boolean]
-    ChecksumAlgorithm: Optional[S3ChecksumAlgorithm]
+    TargetResource: S3RegionalOrS3ExpressBucketArnString | None
+    CannedAccessControlList: S3CannedAccessControlList | None
+    AccessControlGrants: S3GrantList | None
+    MetadataDirective: S3MetadataDirective | None
+    ModifiedSinceConstraint: TimeStamp | None
+    NewObjectMetadata: S3ObjectMetadata | None
+    NewObjectTagging: S3TagSet | None
+    RedirectLocation: NonEmptyMaxLength2048String | None
+    RequesterPays: Boolean | None
+    StorageClass: S3StorageClass | None
+    UnModifiedSinceConstraint: TimeStamp | None
+    SSEAwsKmsKeyId: KmsKeyArnString | None
+    TargetKeyPrefix: NonEmptyMaxLength1024String | None
+    ObjectLockLegalHoldStatus: S3ObjectLockLegalHoldStatus | None
+    ObjectLockMode: S3ObjectLockMode | None
+    ObjectLockRetainUntilDate: TimeStamp | None
+    BucketKeyEnabled: Boolean | None
+    ChecksumAlgorithm: S3ChecksumAlgorithm | None
 
 
-UserArguments = Dict[NonEmptyMaxLength64String, MaxLength1024String]
+UserArguments = dict[NonEmptyMaxLength64String, MaxLength1024String]
 
 
 class LambdaInvokeOperation(TypedDict, total=False):
-    FunctionArn: Optional[FunctionArnString]
-    InvocationSchemaVersion: Optional[NonEmptyMaxLength64String]
-    UserArguments: Optional[UserArguments]
+    FunctionArn: FunctionArnString | None
+    InvocationSchemaVersion: NonEmptyMaxLength64String | None
+    UserArguments: UserArguments | None
 
 
 class JobOperation(TypedDict, total=False):
-    LambdaInvoke: Optional[LambdaInvokeOperation]
-    S3PutObjectCopy: Optional[S3CopyObjectOperation]
-    S3PutObjectAcl: Optional[S3SetObjectAclOperation]
-    S3PutObjectTagging: Optional[S3SetObjectTaggingOperation]
-    S3DeleteObjectTagging: Optional[S3DeleteObjectTaggingOperation]
-    S3InitiateRestoreObject: Optional[S3InitiateRestoreObjectOperation]
-    S3PutObjectLegalHold: Optional[S3SetObjectLegalHoldOperation]
-    S3PutObjectRetention: Optional[S3SetObjectRetentionOperation]
-    S3ReplicateObject: Optional[S3ReplicateObjectOperation]
-    S3ComputeObjectChecksum: Optional[S3ComputeObjectChecksumOperation]
+    LambdaInvoke: LambdaInvokeOperation | None
+    S3PutObjectCopy: S3CopyObjectOperation | None
+    S3PutObjectAcl: S3SetObjectAclOperation | None
+    S3PutObjectTagging: S3SetObjectTaggingOperation | None
+    S3DeleteObjectTagging: S3DeleteObjectTaggingOperation | None
+    S3InitiateRestoreObject: S3InitiateRestoreObjectOperation | None
+    S3PutObjectLegalHold: S3SetObjectLegalHoldOperation | None
+    S3PutObjectRetention: S3SetObjectRetentionOperation | None
+    S3ReplicateObject: S3ReplicateObjectOperation | None
+    S3ComputeObjectChecksum: S3ComputeObjectChecksumOperation | None
 
 
 class CreateJobRequest(ServiceRequest):
     AccountId: AccountId
-    ConfirmationRequired: Optional[ConfirmationRequired]
+    ConfirmationRequired: ConfirmationRequired | None
     Operation: JobOperation
     Report: JobReport
     ClientRequestToken: NonEmptyMaxLength64String
-    Manifest: Optional[JobManifest]
-    Description: Optional[NonEmptyMaxLength256String]
+    Manifest: JobManifest | None
+    Description: NonEmptyMaxLength256String | None
     Priority: JobPriority
     RoleArn: IAMRoleArn
-    Tags: Optional[S3TagSet]
-    ManifestGenerator: Optional[JobManifestGenerator]
+    Tags: S3TagSet | None
+    ManifestGenerator: JobManifestGenerator | None
 
 
 class CreateJobResult(TypedDict, total=False):
-    JobId: Optional[JobId]
+    JobId: JobId | None
 
 
 class CreateMultiRegionAccessPointRequest(ServiceRequest):
@@ -1192,63 +1192,63 @@ class CreateMultiRegionAccessPointRequest(ServiceRequest):
 
 
 class CreateMultiRegionAccessPointResult(TypedDict, total=False):
-    RequestTokenARN: Optional[AsyncRequestTokenARN]
+    RequestTokenARN: AsyncRequestTokenARN | None
 
 
 ObjectSizeValue = int
 
 
 class MatchObjectSize(TypedDict, total=False):
-    BytesGreaterThan: Optional[ObjectSizeValue]
-    BytesLessThan: Optional[ObjectSizeValue]
+    BytesGreaterThan: ObjectSizeValue | None
+    BytesLessThan: ObjectSizeValue | None
 
 
 class MatchObjectAge(TypedDict, total=False):
-    DaysGreaterThan: Optional[ObjectAgeValue]
-    DaysLessThan: Optional[ObjectAgeValue]
+    DaysGreaterThan: ObjectAgeValue | None
+    DaysLessThan: ObjectAgeValue | None
 
 
-MatchAnyTag = List[S3Tag]
-MatchAnySuffix = List[Suffix]
-MatchAnyPrefix = List[Prefix]
+MatchAnyTag = list[S3Tag]
+MatchAnySuffix = list[Suffix]
+MatchAnyPrefix = list[Prefix]
 
 
 class StorageLensGroupOrOperator(TypedDict, total=False):
-    MatchAnyPrefix: Optional[MatchAnyPrefix]
-    MatchAnySuffix: Optional[MatchAnySuffix]
-    MatchAnyTag: Optional[MatchAnyTag]
-    MatchObjectAge: Optional[MatchObjectAge]
-    MatchObjectSize: Optional[MatchObjectSize]
+    MatchAnyPrefix: MatchAnyPrefix | None
+    MatchAnySuffix: MatchAnySuffix | None
+    MatchAnyTag: MatchAnyTag | None
+    MatchObjectAge: MatchObjectAge | None
+    MatchObjectSize: MatchObjectSize | None
 
 
 class StorageLensGroupAndOperator(TypedDict, total=False):
-    MatchAnyPrefix: Optional[MatchAnyPrefix]
-    MatchAnySuffix: Optional[MatchAnySuffix]
-    MatchAnyTag: Optional[MatchAnyTag]
-    MatchObjectAge: Optional[MatchObjectAge]
-    MatchObjectSize: Optional[MatchObjectSize]
+    MatchAnyPrefix: MatchAnyPrefix | None
+    MatchAnySuffix: MatchAnySuffix | None
+    MatchAnyTag: MatchAnyTag | None
+    MatchObjectAge: MatchObjectAge | None
+    MatchObjectSize: MatchObjectSize | None
 
 
 class StorageLensGroupFilter(TypedDict, total=False):
-    MatchAnyPrefix: Optional[MatchAnyPrefix]
-    MatchAnySuffix: Optional[MatchAnySuffix]
-    MatchAnyTag: Optional[MatchAnyTag]
-    MatchObjectAge: Optional[MatchObjectAge]
-    MatchObjectSize: Optional[MatchObjectSize]
-    And: Optional[StorageLensGroupAndOperator]
-    Or: Optional[StorageLensGroupOrOperator]
+    MatchAnyPrefix: MatchAnyPrefix | None
+    MatchAnySuffix: MatchAnySuffix | None
+    MatchAnyTag: MatchAnyTag | None
+    MatchObjectAge: MatchObjectAge | None
+    MatchObjectSize: MatchObjectSize | None
+    And: StorageLensGroupAndOperator | None
+    Or: StorageLensGroupOrOperator | None
 
 
 class StorageLensGroup(TypedDict, total=False):
     Name: StorageLensGroupName
     Filter: StorageLensGroupFilter
-    StorageLensGroupArn: Optional[StorageLensGroupArn]
+    StorageLensGroupArn: StorageLensGroupArn | None
 
 
 class CreateStorageLensGroupRequest(ServiceRequest):
     AccountId: AccountId
     StorageLensGroup: StorageLensGroup
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 CreationDate = datetime
@@ -1256,10 +1256,10 @@ Expiration = datetime
 
 
 class Credentials(TypedDict, total=False):
-    AccessKeyId: Optional[AccessKeyId]
-    SecretAccessKey: Optional[SecretAccessKey]
-    SessionToken: Optional[SessionToken]
-    Expiration: Optional[Expiration]
+    AccessKeyId: AccessKeyId | None
+    SecretAccessKey: SecretAccessKey | None
+    SessionToken: SessionToken | None
+    Expiration: Expiration | None
 
 
 Date = datetime
@@ -1353,7 +1353,7 @@ class DeleteMultiRegionAccessPointRequest(ServiceRequest):
 
 
 class DeleteMultiRegionAccessPointResult(TypedDict, total=False):
-    RequestTokenARN: Optional[AsyncRequestTokenARN]
+    RequestTokenARN: AsyncRequestTokenARN | None
 
 
 class DeletePublicAccessBlockRequest(ServiceRequest):
@@ -1385,8 +1385,8 @@ class DescribeJobRequest(ServiceRequest):
 
 
 class S3GeneratedManifestDescriptor(TypedDict, total=False):
-    Format: Optional[GeneratedManifestFormat]
-    Location: Optional[JobManifestLocation]
+    Format: GeneratedManifestFormat | None
+    Location: JobManifestLocation | None
 
 
 SuspendedDate = datetime
@@ -1395,16 +1395,16 @@ JobCreationTime = datetime
 
 
 class JobFailure(TypedDict, total=False):
-    FailureCode: Optional[JobFailureCode]
-    FailureReason: Optional[JobFailureReason]
+    FailureCode: JobFailureCode | None
+    FailureReason: JobFailureReason | None
 
 
-JobFailureList = List[JobFailure]
+JobFailureList = list[JobFailure]
 JobTimeInStateSeconds = int
 
 
 class JobTimers(TypedDict, total=False):
-    ElapsedTimeInActiveSeconds: Optional[JobTimeInStateSeconds]
+    ElapsedTimeInActiveSeconds: JobTimeInStateSeconds | None
 
 
 JobNumberOfTasksFailed = int
@@ -1413,36 +1413,36 @@ JobTotalNumberOfTasks = int
 
 
 class JobProgressSummary(TypedDict, total=False):
-    TotalNumberOfTasks: Optional[JobTotalNumberOfTasks]
-    NumberOfTasksSucceeded: Optional[JobNumberOfTasksSucceeded]
-    NumberOfTasksFailed: Optional[JobNumberOfTasksFailed]
-    Timers: Optional[JobTimers]
+    TotalNumberOfTasks: JobTotalNumberOfTasks | None
+    NumberOfTasksSucceeded: JobNumberOfTasksSucceeded | None
+    NumberOfTasksFailed: JobNumberOfTasksFailed | None
+    Timers: JobTimers | None
 
 
 class JobDescriptor(TypedDict, total=False):
-    JobId: Optional[JobId]
-    ConfirmationRequired: Optional[ConfirmationRequired]
-    Description: Optional[NonEmptyMaxLength256String]
-    JobArn: Optional[JobArn]
-    Status: Optional[JobStatus]
-    Manifest: Optional[JobManifest]
-    Operation: Optional[JobOperation]
-    Priority: Optional[JobPriority]
-    ProgressSummary: Optional[JobProgressSummary]
-    StatusUpdateReason: Optional[JobStatusUpdateReason]
-    FailureReasons: Optional[JobFailureList]
-    Report: Optional[JobReport]
-    CreationTime: Optional[JobCreationTime]
-    TerminationDate: Optional[JobTerminationDate]
-    RoleArn: Optional[IAMRoleArn]
-    SuspendedDate: Optional[SuspendedDate]
-    SuspendedCause: Optional[SuspendedCause]
-    ManifestGenerator: Optional[JobManifestGenerator]
-    GeneratedManifestDescriptor: Optional[S3GeneratedManifestDescriptor]
+    JobId: JobId | None
+    ConfirmationRequired: ConfirmationRequired | None
+    Description: NonEmptyMaxLength256String | None
+    JobArn: JobArn | None
+    Status: JobStatus | None
+    Manifest: JobManifest | None
+    Operation: JobOperation | None
+    Priority: JobPriority | None
+    ProgressSummary: JobProgressSummary | None
+    StatusUpdateReason: JobStatusUpdateReason | None
+    FailureReasons: JobFailureList | None
+    Report: JobReport | None
+    CreationTime: JobCreationTime | None
+    TerminationDate: JobTerminationDate | None
+    RoleArn: IAMRoleArn | None
+    SuspendedDate: SuspendedDate | None
+    SuspendedCause: SuspendedCause | None
+    ManifestGenerator: JobManifestGenerator | None
+    GeneratedManifestDescriptor: S3GeneratedManifestDescriptor | None
 
 
 class DescribeJobResult(TypedDict, total=False):
-    Job: Optional[JobDescriptor]
+    Job: JobDescriptor | None
 
 
 class DescribeMultiRegionAccessPointOperationRequest(ServiceRequest):
@@ -1451,20 +1451,20 @@ class DescribeMultiRegionAccessPointOperationRequest(ServiceRequest):
 
 
 class DescribeMultiRegionAccessPointOperationResult(TypedDict, total=False):
-    AsyncOperation: Optional[AsyncOperation]
+    AsyncOperation: AsyncOperation | None
 
 
 class ReplicationTimeValue(TypedDict, total=False):
-    Minutes: Optional[Minutes]
+    Minutes: Minutes | None
 
 
 class Metrics(TypedDict, total=False):
     Status: MetricsStatus
-    EventThreshold: Optional[ReplicationTimeValue]
+    EventThreshold: ReplicationTimeValue | None
 
 
 class EncryptionConfiguration(TypedDict, total=False):
-    ReplicaKmsKeyID: Optional[ReplicaKmsKeyID]
+    ReplicaKmsKeyID: ReplicaKmsKeyID | None
 
 
 class ReplicationTime(TypedDict, total=False):
@@ -1473,32 +1473,32 @@ class ReplicationTime(TypedDict, total=False):
 
 
 class Destination(TypedDict, total=False):
-    Account: Optional[AccountId]
+    Account: AccountId | None
     Bucket: BucketIdentifierString
-    ReplicationTime: Optional[ReplicationTime]
-    AccessControlTranslation: Optional[AccessControlTranslation]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    Metrics: Optional[Metrics]
-    StorageClass: Optional[ReplicationStorageClass]
+    ReplicationTime: ReplicationTime | None
+    AccessControlTranslation: AccessControlTranslation | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    Metrics: Metrics | None
+    StorageClass: ReplicationStorageClass | None
 
 
 class DissociateAccessGrantsIdentityCenterRequest(ServiceRequest):
     AccountId: AccountId
 
 
-Endpoints = Dict[NonEmptyMaxLength64String, NonEmptyMaxLength1024String]
+Endpoints = dict[NonEmptyMaxLength64String, NonEmptyMaxLength1024String]
 
 
 class EstablishedMultiRegionAccessPointPolicy(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
-Regions = List[S3AWSRegion]
+Regions = list[S3AWSRegion]
 
 
 class Exclude(TypedDict, total=False):
-    Buckets: Optional[Buckets]
-    Regions: Optional[Regions]
+    Buckets: Buckets | None
+    Regions: Regions | None
 
 
 class ExistingObjectReplication(TypedDict, total=False):
@@ -1511,15 +1511,15 @@ class GetAccessGrantRequest(ServiceRequest):
 
 
 class GetAccessGrantResult(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantId: Optional[AccessGrantId]
-    AccessGrantArn: Optional[AccessGrantArn]
-    Grantee: Optional[Grantee]
-    Permission: Optional[Permission]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationConfiguration: Optional[AccessGrantsLocationConfiguration]
-    GrantScope: Optional[S3Prefix]
-    ApplicationArn: Optional[IdentityCenterApplicationArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantId: AccessGrantId | None
+    AccessGrantArn: AccessGrantArn | None
+    Grantee: Grantee | None
+    Permission: Permission | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationConfiguration: AccessGrantsLocationConfiguration | None
+    GrantScope: S3Prefix | None
+    ApplicationArn: IdentityCenterApplicationArn | None
 
 
 class GetAccessGrantsInstanceForPrefixRequest(ServiceRequest):
@@ -1528,8 +1528,8 @@ class GetAccessGrantsInstanceForPrefixRequest(ServiceRequest):
 
 
 class GetAccessGrantsInstanceForPrefixResult(TypedDict, total=False):
-    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
-    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
+    AccessGrantsInstanceArn: AccessGrantsInstanceArn | None
+    AccessGrantsInstanceId: AccessGrantsInstanceId | None
 
 
 class GetAccessGrantsInstanceRequest(ServiceRequest):
@@ -1541,18 +1541,18 @@ class GetAccessGrantsInstanceResourcePolicyRequest(ServiceRequest):
 
 
 class GetAccessGrantsInstanceResourcePolicyResult(TypedDict, total=False):
-    Policy: Optional[PolicyDocument]
-    Organization: Optional[Organization]
-    CreatedAt: Optional[CreationTimestamp]
+    Policy: PolicyDocument | None
+    Organization: Organization | None
+    CreatedAt: CreationTimestamp | None
 
 
 class GetAccessGrantsInstanceResult(TypedDict, total=False):
-    AccessGrantsInstanceArn: Optional[AccessGrantsInstanceArn]
-    AccessGrantsInstanceId: Optional[AccessGrantsInstanceId]
-    IdentityCenterArn: Optional[IdentityCenterArn]
-    IdentityCenterInstanceArn: Optional[IdentityCenterArn]
-    IdentityCenterApplicationArn: Optional[IdentityCenterApplicationArn]
-    CreatedAt: Optional[CreationTimestamp]
+    AccessGrantsInstanceArn: AccessGrantsInstanceArn | None
+    AccessGrantsInstanceId: AccessGrantsInstanceId | None
+    IdentityCenterArn: IdentityCenterArn | None
+    IdentityCenterInstanceArn: IdentityCenterArn | None
+    IdentityCenterApplicationArn: IdentityCenterApplicationArn | None
+    CreatedAt: CreationTimestamp | None
 
 
 class GetAccessGrantsLocationRequest(ServiceRequest):
@@ -1561,11 +1561,11 @@ class GetAccessGrantsLocationRequest(ServiceRequest):
 
 
 class GetAccessGrantsLocationResult(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
-    LocationScope: Optional[S3Prefix]
-    IAMRoleArn: Optional[IAMRoleArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationArn: AccessGrantsLocationArn | None
+    LocationScope: S3Prefix | None
+    IAMRoleArn: IAMRoleArn | None
 
 
 class GetAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
@@ -1574,7 +1574,7 @@ class GetAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
 
 
 class GetAccessPointConfigurationForObjectLambdaResult(TypedDict, total=False):
-    Configuration: Optional[ObjectLambdaConfiguration]
+    Configuration: ObjectLambdaConfiguration | None
 
 
 class GetAccessPointForObjectLambdaRequest(ServiceRequest):
@@ -1583,10 +1583,10 @@ class GetAccessPointForObjectLambdaRequest(ServiceRequest):
 
 
 class GetAccessPointForObjectLambdaResult(TypedDict, total=False):
-    Name: Optional[ObjectLambdaAccessPointName]
-    PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
-    CreationDate: Optional[CreationDate]
-    Alias: Optional[ObjectLambdaAccessPointAlias]
+    Name: ObjectLambdaAccessPointName | None
+    PublicAccessBlockConfiguration: PublicAccessBlockConfiguration | None
+    CreationDate: CreationDate | None
+    Alias: ObjectLambdaAccessPointAlias | None
 
 
 class GetAccessPointPolicyForObjectLambdaRequest(ServiceRequest):
@@ -1595,7 +1595,7 @@ class GetAccessPointPolicyForObjectLambdaRequest(ServiceRequest):
 
 
 class GetAccessPointPolicyForObjectLambdaResult(TypedDict, total=False):
-    Policy: Optional[ObjectLambdaPolicy]
+    Policy: ObjectLambdaPolicy | None
 
 
 class GetAccessPointPolicyRequest(ServiceRequest):
@@ -1604,7 +1604,7 @@ class GetAccessPointPolicyRequest(ServiceRequest):
 
 
 class GetAccessPointPolicyResult(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
 class GetAccessPointPolicyStatusForObjectLambdaRequest(ServiceRequest):
@@ -1613,11 +1613,11 @@ class GetAccessPointPolicyStatusForObjectLambdaRequest(ServiceRequest):
 
 
 class PolicyStatus(TypedDict, total=False):
-    IsPublic: Optional[IsPublic]
+    IsPublic: IsPublic | None
 
 
 class GetAccessPointPolicyStatusForObjectLambdaResult(TypedDict, total=False):
-    PolicyStatus: Optional[PolicyStatus]
+    PolicyStatus: PolicyStatus | None
 
 
 class GetAccessPointPolicyStatusRequest(ServiceRequest):
@@ -1626,7 +1626,7 @@ class GetAccessPointPolicyStatusRequest(ServiceRequest):
 
 
 class GetAccessPointPolicyStatusResult(TypedDict, total=False):
-    PolicyStatus: Optional[PolicyStatus]
+    PolicyStatus: PolicyStatus | None
 
 
 class GetAccessPointRequest(ServiceRequest):
@@ -1635,18 +1635,18 @@ class GetAccessPointRequest(ServiceRequest):
 
 
 class GetAccessPointResult(TypedDict, total=False):
-    Name: Optional[AccessPointName]
-    Bucket: Optional[AccessPointBucketName]
-    NetworkOrigin: Optional[NetworkOrigin]
-    VpcConfiguration: Optional[VpcConfiguration]
-    PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
-    CreationDate: Optional[CreationDate]
-    Alias: Optional[Alias]
-    AccessPointArn: Optional[S3AccessPointArn]
-    Endpoints: Optional[Endpoints]
-    BucketAccountId: Optional[AccountId]
-    DataSourceId: Optional[DataSourceId]
-    DataSourceType: Optional[DataSourceType]
+    Name: AccessPointName | None
+    Bucket: AccessPointBucketName | None
+    NetworkOrigin: NetworkOrigin | None
+    VpcConfiguration: VpcConfiguration | None
+    PublicAccessBlockConfiguration: PublicAccessBlockConfiguration | None
+    CreationDate: CreationDate | None
+    Alias: Alias | None
+    AccessPointArn: S3AccessPointArn | None
+    Endpoints: Endpoints | None
+    BucketAccountId: AccountId | None
+    DataSourceId: DataSourceId | None
+    DataSourceType: DataSourceType | None
 
 
 class GetAccessPointScopeRequest(ServiceRequest):
@@ -1655,7 +1655,7 @@ class GetAccessPointScopeRequest(ServiceRequest):
 
 
 class GetAccessPointScopeResult(TypedDict, total=False):
-    Scope: Optional[Scope]
+    Scope: Scope | None
 
 
 class GetBucketLifecycleConfigurationRequest(ServiceRequest):
@@ -1664,64 +1664,64 @@ class GetBucketLifecycleConfigurationRequest(ServiceRequest):
 
 
 class NoncurrentVersionExpiration(TypedDict, total=False):
-    NoncurrentDays: Optional[Days]
-    NewerNoncurrentVersions: Optional[NoncurrentVersionCount]
+    NoncurrentDays: Days | None
+    NewerNoncurrentVersions: NoncurrentVersionCount | None
 
 
 class NoncurrentVersionTransition(TypedDict, total=False):
-    NoncurrentDays: Optional[Days]
-    StorageClass: Optional[TransitionStorageClass]
+    NoncurrentDays: Days | None
+    StorageClass: TransitionStorageClass | None
 
 
-NoncurrentVersionTransitionList = List[NoncurrentVersionTransition]
+NoncurrentVersionTransitionList = list[NoncurrentVersionTransition]
 
 
 class Transition(TypedDict, total=False):
-    Date: Optional[Date]
-    Days: Optional[Days]
-    StorageClass: Optional[TransitionStorageClass]
+    Date: Date | None
+    Days: Days | None
+    StorageClass: TransitionStorageClass | None
 
 
-TransitionList = List[Transition]
+TransitionList = list[Transition]
 
 
 class LifecycleRuleAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[S3TagSet]
-    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
-    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
+    Prefix: Prefix | None
+    Tags: S3TagSet | None
+    ObjectSizeGreaterThan: ObjectSizeGreaterThanBytes | None
+    ObjectSizeLessThan: ObjectSizeLessThanBytes | None
 
 
 class LifecycleRuleFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[S3Tag]
-    And: Optional[LifecycleRuleAndOperator]
-    ObjectSizeGreaterThan: Optional[ObjectSizeGreaterThanBytes]
-    ObjectSizeLessThan: Optional[ObjectSizeLessThanBytes]
+    Prefix: Prefix | None
+    Tag: S3Tag | None
+    And: LifecycleRuleAndOperator | None
+    ObjectSizeGreaterThan: ObjectSizeGreaterThanBytes | None
+    ObjectSizeLessThan: ObjectSizeLessThanBytes | None
 
 
 class LifecycleExpiration(TypedDict, total=False):
-    Date: Optional[Date]
-    Days: Optional[Days]
-    ExpiredObjectDeleteMarker: Optional[ExpiredObjectDeleteMarker]
+    Date: Date | None
+    Days: Days | None
+    ExpiredObjectDeleteMarker: ExpiredObjectDeleteMarker | None
 
 
 class LifecycleRule(TypedDict, total=False):
-    Expiration: Optional[LifecycleExpiration]
-    ID: Optional[ID]
-    Filter: Optional[LifecycleRuleFilter]
+    Expiration: LifecycleExpiration | None
+    ID: ID | None
+    Filter: LifecycleRuleFilter | None
     Status: ExpirationStatus
-    Transitions: Optional[TransitionList]
-    NoncurrentVersionTransitions: Optional[NoncurrentVersionTransitionList]
-    NoncurrentVersionExpiration: Optional[NoncurrentVersionExpiration]
-    AbortIncompleteMultipartUpload: Optional[AbortIncompleteMultipartUpload]
+    Transitions: TransitionList | None
+    NoncurrentVersionTransitions: NoncurrentVersionTransitionList | None
+    NoncurrentVersionExpiration: NoncurrentVersionExpiration | None
+    AbortIncompleteMultipartUpload: AbortIncompleteMultipartUpload | None
 
 
-LifecycleRules = List[LifecycleRule]
+LifecycleRules = list[LifecycleRule]
 
 
 class GetBucketLifecycleConfigurationResult(TypedDict, total=False):
-    Rules: Optional[LifecycleRules]
+    Rules: LifecycleRules | None
 
 
 class GetBucketPolicyRequest(ServiceRequest):
@@ -1730,7 +1730,7 @@ class GetBucketPolicyRequest(ServiceRequest):
 
 
 class GetBucketPolicyResult(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
 class GetBucketReplicationRequest(ServiceRequest):
@@ -1747,35 +1747,35 @@ class SseKmsEncryptedObjects(TypedDict, total=False):
 
 
 class SourceSelectionCriteria(TypedDict, total=False):
-    SseKmsEncryptedObjects: Optional[SseKmsEncryptedObjects]
-    ReplicaModifications: Optional[ReplicaModifications]
+    SseKmsEncryptedObjects: SseKmsEncryptedObjects | None
+    ReplicaModifications: ReplicaModifications | None
 
 
 class ReplicationRuleAndOperator(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tags: Optional[S3TagSet]
+    Prefix: Prefix | None
+    Tags: S3TagSet | None
 
 
 class ReplicationRuleFilter(TypedDict, total=False):
-    Prefix: Optional[Prefix]
-    Tag: Optional[S3Tag]
-    And: Optional[ReplicationRuleAndOperator]
+    Prefix: Prefix | None
+    Tag: S3Tag | None
+    And: ReplicationRuleAndOperator | None
 
 
 class ReplicationRule(TypedDict, total=False):
-    ID: Optional[ID]
-    Priority: Optional[Priority]
-    Prefix: Optional[Prefix]
-    Filter: Optional[ReplicationRuleFilter]
+    ID: ID | None
+    Priority: Priority | None
+    Prefix: Prefix | None
+    Filter: ReplicationRuleFilter | None
     Status: ReplicationRuleStatus
-    SourceSelectionCriteria: Optional[SourceSelectionCriteria]
-    ExistingObjectReplication: Optional[ExistingObjectReplication]
+    SourceSelectionCriteria: SourceSelectionCriteria | None
+    ExistingObjectReplication: ExistingObjectReplication | None
     Destination: Destination
-    DeleteMarkerReplication: Optional[DeleteMarkerReplication]
+    DeleteMarkerReplication: DeleteMarkerReplication | None
     Bucket: BucketIdentifierString
 
 
-ReplicationRules = List[ReplicationRule]
+ReplicationRules = list[ReplicationRule]
 
 
 class ReplicationConfiguration(TypedDict, total=False):
@@ -1784,7 +1784,7 @@ class ReplicationConfiguration(TypedDict, total=False):
 
 
 class GetBucketReplicationResult(TypedDict, total=False):
-    ReplicationConfiguration: Optional[ReplicationConfiguration]
+    ReplicationConfiguration: ReplicationConfiguration | None
 
 
 class GetBucketRequest(ServiceRequest):
@@ -1793,9 +1793,9 @@ class GetBucketRequest(ServiceRequest):
 
 
 class GetBucketResult(TypedDict, total=False):
-    Bucket: Optional[BucketName]
-    PublicAccessBlockEnabled: Optional[PublicAccessBlockEnabled]
-    CreationDate: Optional[CreationDate]
+    Bucket: BucketName | None
+    PublicAccessBlockEnabled: PublicAccessBlockEnabled | None
+    CreationDate: CreationDate | None
 
 
 class GetBucketTaggingRequest(ServiceRequest):
@@ -1813,23 +1813,23 @@ class GetBucketVersioningRequest(ServiceRequest):
 
 
 class GetBucketVersioningResult(TypedDict, total=False):
-    Status: Optional[BucketVersioningStatus]
-    MFADelete: Optional[MFADeleteStatus]
+    Status: BucketVersioningStatus | None
+    MFADelete: MFADeleteStatus | None
 
 
 class GetDataAccessRequest(ServiceRequest):
     AccountId: AccountId
     Target: S3Prefix
     Permission: Permission
-    DurationSeconds: Optional[DurationSeconds]
-    Privilege: Optional[Privilege]
-    TargetType: Optional[S3PrefixType]
+    DurationSeconds: DurationSeconds | None
+    Privilege: Privilege | None
+    TargetType: S3PrefixType | None
 
 
 class GetDataAccessResult(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    MatchedGrantTarget: Optional[S3Prefix]
-    Grantee: Optional[Grantee]
+    Credentials: Credentials | None
+    MatchedGrantTarget: S3Prefix | None
+    Grantee: Grantee | None
 
 
 class GetJobTaggingRequest(ServiceRequest):
@@ -1838,7 +1838,7 @@ class GetJobTaggingRequest(ServiceRequest):
 
 
 class GetJobTaggingResult(TypedDict, total=False):
-    Tags: Optional[S3TagSet]
+    Tags: S3TagSet | None
 
 
 class GetMultiRegionAccessPointPolicyRequest(ServiceRequest):
@@ -1847,16 +1847,16 @@ class GetMultiRegionAccessPointPolicyRequest(ServiceRequest):
 
 
 class ProposedMultiRegionAccessPointPolicy(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
 class MultiRegionAccessPointPolicyDocument(TypedDict, total=False):
-    Established: Optional[EstablishedMultiRegionAccessPointPolicy]
-    Proposed: Optional[ProposedMultiRegionAccessPointPolicy]
+    Established: EstablishedMultiRegionAccessPointPolicy | None
+    Proposed: ProposedMultiRegionAccessPointPolicy | None
 
 
 class GetMultiRegionAccessPointPolicyResult(TypedDict, total=False):
-    Policy: Optional[MultiRegionAccessPointPolicyDocument]
+    Policy: MultiRegionAccessPointPolicyDocument | None
 
 
 class GetMultiRegionAccessPointPolicyStatusRequest(ServiceRequest):
@@ -1865,7 +1865,7 @@ class GetMultiRegionAccessPointPolicyStatusRequest(ServiceRequest):
 
 
 class GetMultiRegionAccessPointPolicyStatusResult(TypedDict, total=False):
-    Established: Optional[PolicyStatus]
+    Established: PolicyStatus | None
 
 
 class GetMultiRegionAccessPointRequest(ServiceRequest):
@@ -1874,25 +1874,25 @@ class GetMultiRegionAccessPointRequest(ServiceRequest):
 
 
 class RegionReport(TypedDict, total=False):
-    Bucket: Optional[BucketName]
-    Region: Optional[RegionName]
-    BucketAccountId: Optional[AccountId]
+    Bucket: BucketName | None
+    Region: RegionName | None
+    BucketAccountId: AccountId | None
 
 
-RegionReportList = List[RegionReport]
+RegionReportList = list[RegionReport]
 
 
 class MultiRegionAccessPointReport(TypedDict, total=False):
-    Name: Optional[MultiRegionAccessPointName]
-    Alias: Optional[MultiRegionAccessPointAlias]
-    CreatedAt: Optional[CreationTimestamp]
-    PublicAccessBlock: Optional[PublicAccessBlockConfiguration]
-    Status: Optional[MultiRegionAccessPointStatus]
-    Regions: Optional[RegionReportList]
+    Name: MultiRegionAccessPointName | None
+    Alias: MultiRegionAccessPointAlias | None
+    CreatedAt: CreationTimestamp | None
+    PublicAccessBlock: PublicAccessBlockConfiguration | None
+    Status: MultiRegionAccessPointStatus | None
+    Regions: RegionReportList | None
 
 
 class GetMultiRegionAccessPointResult(TypedDict, total=False):
-    AccessPoint: Optional[MultiRegionAccessPointReport]
+    AccessPoint: MultiRegionAccessPointReport | None
 
 
 class GetMultiRegionAccessPointRoutesRequest(ServiceRequest):
@@ -1901,21 +1901,21 @@ class GetMultiRegionAccessPointRoutesRequest(ServiceRequest):
 
 
 class MultiRegionAccessPointRoute(TypedDict, total=False):
-    Bucket: Optional[BucketName]
-    Region: Optional[RegionName]
+    Bucket: BucketName | None
+    Region: RegionName | None
     TrafficDialPercentage: TrafficDialPercentage
 
 
-RouteList = List[MultiRegionAccessPointRoute]
+RouteList = list[MultiRegionAccessPointRoute]
 
 
 class GetMultiRegionAccessPointRoutesResult(TypedDict, total=False):
-    Mrap: Optional[MultiRegionAccessPointId]
-    Routes: Optional[RouteList]
+    Mrap: MultiRegionAccessPointId | None
+    Routes: RouteList | None
 
 
 class GetPublicAccessBlockOutput(TypedDict, total=False):
-    PublicAccessBlockConfiguration: Optional[PublicAccessBlockConfiguration]
+    PublicAccessBlockConfiguration: PublicAccessBlockConfiguration | None
 
 
 class GetPublicAccessBlockRequest(ServiceRequest):
@@ -1940,8 +1940,8 @@ class SSES3(TypedDict, total=False):
 
 
 class StorageLensDataExportEncryption(TypedDict, total=False):
-    SSES3: Optional[SSES3]
-    SSEKMS: Optional[SSEKMS]
+    SSES3: SSES3 | None
+    SSEKMS: SSEKMS | None
 
 
 class S3BucketDestination(TypedDict, total=False):
@@ -1949,33 +1949,33 @@ class S3BucketDestination(TypedDict, total=False):
     OutputSchemaVersion: OutputSchemaVersion
     AccountId: AccountId
     Arn: S3BucketArnString
-    Prefix: Optional[Prefix]
-    Encryption: Optional[StorageLensDataExportEncryption]
+    Prefix: Prefix | None
+    Encryption: StorageLensDataExportEncryption | None
 
 
 class StorageLensDataExport(TypedDict, total=False):
-    S3BucketDestination: Optional[S3BucketDestination]
-    CloudWatchMetrics: Optional[CloudWatchMetrics]
+    S3BucketDestination: S3BucketDestination | None
+    CloudWatchMetrics: CloudWatchMetrics | None
 
 
 class Include(TypedDict, total=False):
-    Buckets: Optional[Buckets]
-    Regions: Optional[Regions]
+    Buckets: Buckets | None
+    Regions: Regions | None
 
 
 class StorageLensConfiguration(TypedDict, total=False):
     Id: ConfigId
     AccountLevel: AccountLevel
-    Include: Optional[Include]
-    Exclude: Optional[Exclude]
-    DataExport: Optional[StorageLensDataExport]
+    Include: Include | None
+    Exclude: Exclude | None
+    DataExport: StorageLensDataExport | None
     IsEnabled: IsEnabled
-    AwsOrg: Optional[StorageLensAwsOrg]
-    StorageLensArn: Optional[StorageLensArn]
+    AwsOrg: StorageLensAwsOrg | None
+    StorageLensArn: StorageLensArn | None
 
 
 class GetStorageLensConfigurationResult(TypedDict, total=False):
-    StorageLensConfiguration: Optional[StorageLensConfiguration]
+    StorageLensConfiguration: StorageLensConfiguration | None
 
 
 class GetStorageLensConfigurationTaggingRequest(ServiceRequest):
@@ -1988,11 +1988,11 @@ class StorageLensTag(TypedDict, total=False):
     Value: TagValueString
 
 
-StorageLensTags = List[StorageLensTag]
+StorageLensTags = list[StorageLensTag]
 
 
 class GetStorageLensConfigurationTaggingResult(TypedDict, total=False):
-    Tags: Optional[StorageLensTags]
+    Tags: StorageLensTags | None
 
 
 class GetStorageLensGroupRequest(ServiceRequest):
@@ -2001,193 +2001,193 @@ class GetStorageLensGroupRequest(ServiceRequest):
 
 
 class GetStorageLensGroupResult(TypedDict, total=False):
-    StorageLensGroup: Optional[StorageLensGroup]
+    StorageLensGroup: StorageLensGroup | None
 
 
 class JobListDescriptor(TypedDict, total=False):
-    JobId: Optional[JobId]
-    Description: Optional[NonEmptyMaxLength256String]
-    Operation: Optional[OperationName]
-    Priority: Optional[JobPriority]
-    Status: Optional[JobStatus]
-    CreationTime: Optional[JobCreationTime]
-    TerminationDate: Optional[JobTerminationDate]
-    ProgressSummary: Optional[JobProgressSummary]
+    JobId: JobId | None
+    Description: NonEmptyMaxLength256String | None
+    Operation: OperationName | None
+    Priority: JobPriority | None
+    Status: JobStatus | None
+    CreationTime: JobCreationTime | None
+    TerminationDate: JobTerminationDate | None
+    ProgressSummary: JobProgressSummary | None
 
 
-JobListDescriptorList = List[JobListDescriptor]
-JobStatusList = List[JobStatus]
+JobListDescriptorList = list[JobListDescriptor]
+JobStatusList = list[JobStatus]
 
 
 class LifecycleConfiguration(TypedDict, total=False):
-    Rules: Optional[LifecycleRules]
+    Rules: LifecycleRules | None
 
 
 class ListAccessGrantsInstancesRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[ContinuationToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: ContinuationToken | None
+    MaxResults: MaxResults | None
 
 
 class ListAccessGrantsInstancesResult(TypedDict, total=False):
-    NextToken: Optional[ContinuationToken]
-    AccessGrantsInstancesList: Optional[AccessGrantsInstancesList]
+    NextToken: ContinuationToken | None
+    AccessGrantsInstancesList: AccessGrantsInstancesList | None
 
 
 class ListAccessGrantsLocationsRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[ContinuationToken]
-    MaxResults: Optional[MaxResults]
-    LocationScope: Optional[S3Prefix]
+    NextToken: ContinuationToken | None
+    MaxResults: MaxResults | None
+    LocationScope: S3Prefix | None
 
 
 class ListAccessGrantsLocationsResult(TypedDict, total=False):
-    NextToken: Optional[ContinuationToken]
-    AccessGrantsLocationsList: Optional[AccessGrantsLocationsList]
+    NextToken: ContinuationToken | None
+    AccessGrantsLocationsList: AccessGrantsLocationsList | None
 
 
 class ListAccessGrantsRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[ContinuationToken]
-    MaxResults: Optional[MaxResults]
-    GranteeType: Optional[GranteeType]
-    GranteeIdentifier: Optional[GranteeIdentifier]
-    Permission: Optional[Permission]
-    GrantScope: Optional[S3Prefix]
-    ApplicationArn: Optional[IdentityCenterApplicationArn]
+    NextToken: ContinuationToken | None
+    MaxResults: MaxResults | None
+    GranteeType: GranteeType | None
+    GranteeIdentifier: GranteeIdentifier | None
+    Permission: Permission | None
+    GrantScope: S3Prefix | None
+    ApplicationArn: IdentityCenterApplicationArn | None
 
 
 class ListAccessGrantsResult(TypedDict, total=False):
-    NextToken: Optional[ContinuationToken]
-    AccessGrantsList: Optional[AccessGrantsList]
+    NextToken: ContinuationToken | None
+    AccessGrantsList: AccessGrantsList | None
 
 
 class ListAccessPointsForDirectoryBucketsRequest(ServiceRequest):
     AccountId: AccountId
-    DirectoryBucket: Optional[BucketName]
-    NextToken: Optional[NonEmptyMaxLength1024String]
-    MaxResults: Optional[MaxResults]
+    DirectoryBucket: BucketName | None
+    NextToken: NonEmptyMaxLength1024String | None
+    MaxResults: MaxResults | None
 
 
 class ListAccessPointsForDirectoryBucketsResult(TypedDict, total=False):
-    AccessPointList: Optional[AccessPointList]
-    NextToken: Optional[NonEmptyMaxLength1024String]
+    AccessPointList: AccessPointList | None
+    NextToken: NonEmptyMaxLength1024String | None
 
 
 class ListAccessPointsForObjectLambdaRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[NonEmptyMaxLength1024String]
-    MaxResults: Optional[MaxResults]
+    NextToken: NonEmptyMaxLength1024String | None
+    MaxResults: MaxResults | None
 
 
 class ObjectLambdaAccessPoint(TypedDict, total=False):
     Name: ObjectLambdaAccessPointName
-    ObjectLambdaAccessPointArn: Optional[ObjectLambdaAccessPointArn]
-    Alias: Optional[ObjectLambdaAccessPointAlias]
+    ObjectLambdaAccessPointArn: ObjectLambdaAccessPointArn | None
+    Alias: ObjectLambdaAccessPointAlias | None
 
 
-ObjectLambdaAccessPointList = List[ObjectLambdaAccessPoint]
+ObjectLambdaAccessPointList = list[ObjectLambdaAccessPoint]
 
 
 class ListAccessPointsForObjectLambdaResult(TypedDict, total=False):
-    ObjectLambdaAccessPointList: Optional[ObjectLambdaAccessPointList]
-    NextToken: Optional[NonEmptyMaxLength1024String]
+    ObjectLambdaAccessPointList: ObjectLambdaAccessPointList | None
+    NextToken: NonEmptyMaxLength1024String | None
 
 
 class ListAccessPointsRequest(ServiceRequest):
     AccountId: AccountId
-    Bucket: Optional[BucketName]
-    NextToken: Optional[NonEmptyMaxLength1024String]
-    MaxResults: Optional[MaxResults]
-    DataSourceId: Optional[DataSourceId]
-    DataSourceType: Optional[DataSourceType]
+    Bucket: BucketName | None
+    NextToken: NonEmptyMaxLength1024String | None
+    MaxResults: MaxResults | None
+    DataSourceId: DataSourceId | None
+    DataSourceType: DataSourceType | None
 
 
 class ListAccessPointsResult(TypedDict, total=False):
-    AccessPointList: Optional[AccessPointList]
-    NextToken: Optional[NonEmptyMaxLength1024String]
+    AccessPointList: AccessPointList | None
+    NextToken: NonEmptyMaxLength1024String | None
 
 
 class ListCallerAccessGrantsRequest(ServiceRequest):
     AccountId: AccountId
-    GrantScope: Optional[S3Prefix]
-    NextToken: Optional[ContinuationToken]
-    MaxResults: Optional[MaxResults]
-    AllowedByApplication: Optional[Boolean]
+    GrantScope: S3Prefix | None
+    NextToken: ContinuationToken | None
+    MaxResults: MaxResults | None
+    AllowedByApplication: Boolean | None
 
 
 class ListCallerAccessGrantsResult(TypedDict, total=False):
-    NextToken: Optional[ContinuationToken]
-    CallerAccessGrantsList: Optional[CallerAccessGrantsList]
+    NextToken: ContinuationToken | None
+    CallerAccessGrantsList: CallerAccessGrantsList | None
 
 
 class ListJobsRequest(ServiceRequest):
     AccountId: AccountId
-    JobStatuses: Optional[JobStatusList]
-    NextToken: Optional[StringForNextToken]
-    MaxResults: Optional[MaxResults]
+    JobStatuses: JobStatusList | None
+    NextToken: StringForNextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListJobsResult(TypedDict, total=False):
-    NextToken: Optional[StringForNextToken]
-    Jobs: Optional[JobListDescriptorList]
+    NextToken: StringForNextToken | None
+    Jobs: JobListDescriptorList | None
 
 
 class ListMultiRegionAccessPointsRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[NonEmptyMaxLength1024String]
-    MaxResults: Optional[MaxResults]
+    NextToken: NonEmptyMaxLength1024String | None
+    MaxResults: MaxResults | None
 
 
-MultiRegionAccessPointReportList = List[MultiRegionAccessPointReport]
+MultiRegionAccessPointReportList = list[MultiRegionAccessPointReport]
 
 
 class ListMultiRegionAccessPointsResult(TypedDict, total=False):
-    AccessPoints: Optional[MultiRegionAccessPointReportList]
-    NextToken: Optional[NonEmptyMaxLength1024String]
+    AccessPoints: MultiRegionAccessPointReportList | None
+    NextToken: NonEmptyMaxLength1024String | None
 
 
 class ListRegionalBucketsRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[NonEmptyMaxLength1024String]
-    MaxResults: Optional[MaxResults]
-    OutpostId: Optional[NonEmptyMaxLength64String]
+    NextToken: NonEmptyMaxLength1024String | None
+    MaxResults: MaxResults | None
+    OutpostId: NonEmptyMaxLength64String | None
 
 
 class RegionalBucket(TypedDict, total=False):
     Bucket: BucketName
-    BucketArn: Optional[S3RegionalBucketArn]
+    BucketArn: S3RegionalBucketArn | None
     PublicAccessBlockEnabled: PublicAccessBlockEnabled
     CreationDate: CreationDate
-    OutpostId: Optional[NonEmptyMaxLength64String]
+    OutpostId: NonEmptyMaxLength64String | None
 
 
-RegionalBucketList = List[RegionalBucket]
+RegionalBucketList = list[RegionalBucket]
 
 
 class ListRegionalBucketsResult(TypedDict, total=False):
-    RegionalBucketList: Optional[RegionalBucketList]
-    NextToken: Optional[NonEmptyMaxLength1024String]
+    RegionalBucketList: RegionalBucketList | None
+    NextToken: NonEmptyMaxLength1024String | None
 
 
 class ListStorageLensConfigurationEntry(TypedDict, total=False):
     Id: ConfigId
     StorageLensArn: StorageLensArn
     HomeRegion: S3AWSRegion
-    IsEnabled: Optional[IsEnabled]
+    IsEnabled: IsEnabled | None
 
 
 class ListStorageLensConfigurationsRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[ContinuationToken]
+    NextToken: ContinuationToken | None
 
 
-StorageLensConfigurationList = List[ListStorageLensConfigurationEntry]
+StorageLensConfigurationList = list[ListStorageLensConfigurationEntry]
 
 
 class ListStorageLensConfigurationsResult(TypedDict, total=False):
-    NextToken: Optional[ContinuationToken]
-    StorageLensConfigurationList: Optional[StorageLensConfigurationList]
+    NextToken: ContinuationToken | None
+    StorageLensConfigurationList: StorageLensConfigurationList | None
 
 
 class ListStorageLensGroupEntry(TypedDict, total=False):
@@ -2198,15 +2198,15 @@ class ListStorageLensGroupEntry(TypedDict, total=False):
 
 class ListStorageLensGroupsRequest(ServiceRequest):
     AccountId: AccountId
-    NextToken: Optional[ContinuationToken]
+    NextToken: ContinuationToken | None
 
 
-StorageLensGroupList = List[ListStorageLensGroupEntry]
+StorageLensGroupList = list[ListStorageLensGroupEntry]
 
 
 class ListStorageLensGroupsResult(TypedDict, total=False):
-    NextToken: Optional[ContinuationToken]
-    StorageLensGroupList: Optional[StorageLensGroupList]
+    NextToken: ContinuationToken | None
+    StorageLensGroupList: StorageLensGroupList | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -2215,19 +2215,19 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResult(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class PutAccessGrantsInstanceResourcePolicyRequest(ServiceRequest):
     AccountId: AccountId
     Policy: PolicyDocument
-    Organization: Optional[Organization]
+    Organization: Organization | None
 
 
 class PutAccessGrantsInstanceResourcePolicyResult(TypedDict, total=False):
-    Policy: Optional[PolicyDocument]
-    Organization: Optional[Organization]
-    CreatedAt: Optional[CreationTimestamp]
+    Policy: PolicyDocument | None
+    Organization: Organization | None
+    CreatedAt: CreationTimestamp | None
 
 
 class PutAccessPointConfigurationForObjectLambdaRequest(ServiceRequest):
@@ -2257,13 +2257,13 @@ class PutAccessPointScopeRequest(ServiceRequest):
 class PutBucketLifecycleConfigurationRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
-    LifecycleConfiguration: Optional[LifecycleConfiguration]
+    LifecycleConfiguration: LifecycleConfiguration | None
 
 
 class PutBucketPolicyRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
-    ConfirmRemoveSelfBucketAccess: Optional[ConfirmRemoveSelfBucketAccess]
+    ConfirmRemoveSelfBucketAccess: ConfirmRemoveSelfBucketAccess | None
     Policy: Policy
 
 
@@ -2284,14 +2284,14 @@ class PutBucketTaggingRequest(ServiceRequest):
 
 
 class VersioningConfiguration(TypedDict, total=False):
-    MFADelete: Optional[MFADelete]
-    Status: Optional[BucketVersioningStatus]
+    MFADelete: MFADelete | None
+    Status: BucketVersioningStatus | None
 
 
 class PutBucketVersioningRequest(ServiceRequest):
     AccountId: AccountId
     Bucket: BucketName
-    MFA: Optional[MFA]
+    MFA: MFA | None
     VersioningConfiguration: VersioningConfiguration
 
 
@@ -2312,7 +2312,7 @@ class PutMultiRegionAccessPointPolicyRequest(ServiceRequest):
 
 
 class PutMultiRegionAccessPointPolicyResult(TypedDict, total=False):
-    RequestTokenARN: Optional[AsyncRequestTokenARN]
+    RequestTokenARN: AsyncRequestTokenARN | None
 
 
 class PutPublicAccessBlockRequest(ServiceRequest):
@@ -2324,7 +2324,7 @@ class PutStorageLensConfigurationRequest(ServiceRequest):
     ConfigId: ConfigId
     AccountId: AccountId
     StorageLensConfiguration: StorageLensConfiguration
-    Tags: Optional[StorageLensTags]
+    Tags: StorageLensTags | None
 
 
 class PutStorageLensConfigurationTaggingRequest(ServiceRequest):
@@ -2347,7 +2347,7 @@ class SubmitMultiRegionAccessPointRoutesResult(TypedDict, total=False):
     pass
 
 
-TagKeyList = List[TagKeyString]
+TagKeyList = list[TagKeyString]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -2377,11 +2377,11 @@ class UpdateAccessGrantsLocationRequest(ServiceRequest):
 
 
 class UpdateAccessGrantsLocationResult(TypedDict, total=False):
-    CreatedAt: Optional[CreationTimestamp]
-    AccessGrantsLocationId: Optional[AccessGrantsLocationId]
-    AccessGrantsLocationArn: Optional[AccessGrantsLocationArn]
-    LocationScope: Optional[S3Prefix]
-    IAMRoleArn: Optional[IAMRoleArn]
+    CreatedAt: CreationTimestamp | None
+    AccessGrantsLocationId: AccessGrantsLocationId | None
+    AccessGrantsLocationArn: AccessGrantsLocationArn | None
+    LocationScope: S3Prefix | None
+    IAMRoleArn: IAMRoleArn | None
 
 
 class UpdateJobPriorityRequest(ServiceRequest):
@@ -2399,13 +2399,13 @@ class UpdateJobStatusRequest(ServiceRequest):
     AccountId: AccountId
     JobId: JobId
     RequestedJobStatus: RequestedJobStatus
-    StatusUpdateReason: Optional[JobStatusUpdateReason]
+    StatusUpdateReason: JobStatusUpdateReason | None
 
 
 class UpdateJobStatusResult(TypedDict, total=False):
-    JobId: Optional[JobId]
-    Status: Optional[JobStatus]
-    StatusUpdateReason: Optional[JobStatusUpdateReason]
+    JobId: JobId | None
+    Status: JobStatus | None
+    StatusUpdateReason: JobStatusUpdateReason | None
 
 
 class UpdateStorageLensGroupRequest(ServiceRequest):
@@ -2415,8 +2415,8 @@ class UpdateStorageLensGroupRequest(ServiceRequest):
 
 
 class S3ControlApi:
-    service = "s3control"
-    version = "2018-08-20"
+    service: str = "s3control"
+    version: str = "2018-08-20"
 
     @handler("AssociateAccessGrantsIdentityCenter")
     def associate_access_grants_identity_center(

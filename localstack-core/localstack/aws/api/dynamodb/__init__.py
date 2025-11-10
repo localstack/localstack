@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -387,32 +387,32 @@ class BackupNotFoundException(ServiceException):
 
 
 class AttributeValue(TypedDict, total=False):
-    S: Optional["StringAttributeValue"]
-    N: Optional["NumberAttributeValue"]
-    B: Optional["BinaryAttributeValue"]
-    SS: Optional["StringSetAttributeValue"]
-    NS: Optional["NumberSetAttributeValue"]
-    BS: Optional["BinarySetAttributeValue"]
-    M: Optional["MapAttributeValue"]
-    L: Optional["ListAttributeValue"]
-    NULL: Optional["NullAttributeValue"]
-    BOOL: Optional["BooleanAttributeValue"]
+    S: "StringAttributeValue | None"
+    N: "NumberAttributeValue | None"
+    B: "BinaryAttributeValue | None"
+    SS: "StringSetAttributeValue | None"
+    NS: "NumberSetAttributeValue | None"
+    BS: "BinarySetAttributeValue | None"
+    M: "MapAttributeValue | None"
+    L: "ListAttributeValue | None"
+    NULL: "NullAttributeValue | None"
+    BOOL: "BooleanAttributeValue | None"
 
 
-ListAttributeValue = List[AttributeValue]
-MapAttributeValue = Dict[AttributeName, AttributeValue]
+ListAttributeValue = list[AttributeValue]
+MapAttributeValue = dict[AttributeName, AttributeValue]
 BinaryAttributeValue = bytes
-BinarySetAttributeValue = List[BinaryAttributeValue]
-NumberSetAttributeValue = List[NumberAttributeValue]
-StringSetAttributeValue = List[StringAttributeValue]
-AttributeMap = Dict[AttributeName, AttributeValue]
+BinarySetAttributeValue = list[BinaryAttributeValue]
+NumberSetAttributeValue = list[NumberAttributeValue]
+StringSetAttributeValue = list[StringAttributeValue]
+AttributeMap = dict[AttributeName, AttributeValue]
 
 
 class ConditionalCheckFailedException(ServiceException):
     code: str = "ConditionalCheckFailedException"
     sender_fault: bool = False
     status_code: int = 400
-    Item: Optional[AttributeMap]
+    Item: AttributeMap | None
 
 
 class ContinuousBackupsUnavailableException(ServiceException):
@@ -518,18 +518,18 @@ class PolicyNotFoundException(ServiceException):
 
 
 class ThrottlingReason(TypedDict, total=False):
-    reason: Optional[Reason]
-    resource: Optional[Resource]
+    reason: Reason | None
+    resource: Resource | None
 
 
-ThrottlingReasonList = List[ThrottlingReason]
+ThrottlingReasonList = list[ThrottlingReason]
 
 
 class ProvisionedThroughputExceededException(ServiceException):
     code: str = "ProvisionedThroughputExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    ThrottlingReasons: Optional[ThrottlingReasonList]
+    ThrottlingReasons: ThrottlingReasonList | None
 
 
 class ReplicaAlreadyExistsException(ServiceException):
@@ -554,7 +554,7 @@ class RequestLimitExceeded(ServiceException):
     code: str = "RequestLimitExceeded"
     sender_fault: bool = False
     status_code: int = 400
-    ThrottlingReasons: Optional[ThrottlingReasonList]
+    ThrottlingReasons: ThrottlingReasonList | None
 
 
 class ResourceInUseException(ServiceException):
@@ -591,23 +591,23 @@ class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = False
     status_code: int = 400
-    throttlingReasons: Optional[ThrottlingReasonList]
+    throttlingReasons: ThrottlingReasonList | None
 
 
 class CancellationReason(TypedDict, total=False):
-    Item: Optional[AttributeMap]
-    Code: Optional[Code]
-    Message: Optional[ErrorMessage]
+    Item: AttributeMap | None
+    Code: Code | None
+    Message: ErrorMessage | None
 
 
-CancellationReasonList = List[CancellationReason]
+CancellationReasonList = list[CancellationReason]
 
 
 class TransactionCanceledException(ServiceException):
     code: str = "TransactionCanceledException"
     sender_fault: bool = False
     status_code: int = 400
-    CancellationReasons: Optional[CancellationReasonList]
+    CancellationReasons: CancellationReasonList | None
 
 
 class TransactionConflictException(ServiceException):
@@ -626,9 +626,9 @@ Date = datetime
 
 
 class ArchivalSummary(TypedDict, total=False):
-    ArchivalDateTime: Optional[Date]
-    ArchivalReason: Optional[ArchivalReason]
-    ArchivalBackupArn: Optional[BackupArn]
+    ArchivalDateTime: Date | None
+    ArchivalReason: ArchivalReason | None
+    ArchivalBackupArn: BackupArn | None
 
 
 class AttributeDefinition(TypedDict, total=False):
@@ -636,45 +636,45 @@ class AttributeDefinition(TypedDict, total=False):
     AttributeType: ScalarAttributeType
 
 
-AttributeDefinitions = List[AttributeDefinition]
-AttributeNameList = List[AttributeName]
+AttributeDefinitions = list[AttributeDefinition]
+AttributeNameList = list[AttributeName]
 
 
 class AttributeValueUpdate(TypedDict, total=False):
-    Value: Optional[AttributeValue]
-    Action: Optional[AttributeAction]
+    Value: AttributeValue | None
+    Action: AttributeAction | None
 
 
-AttributeUpdates = Dict[AttributeName, AttributeValueUpdate]
-AttributeValueList = List[AttributeValue]
+AttributeUpdates = dict[AttributeName, AttributeValueUpdate]
+AttributeValueList = list[AttributeValue]
 
 
 class AutoScalingTargetTrackingScalingPolicyConfigurationDescription(TypedDict, total=False):
-    DisableScaleIn: Optional[BooleanObject]
-    ScaleInCooldown: Optional[IntegerObject]
-    ScaleOutCooldown: Optional[IntegerObject]
+    DisableScaleIn: BooleanObject | None
+    ScaleInCooldown: IntegerObject | None
+    ScaleOutCooldown: IntegerObject | None
     TargetValue: DoubleObject
 
 
 class AutoScalingPolicyDescription(TypedDict, total=False):
-    PolicyName: Optional[AutoScalingPolicyName]
-    TargetTrackingScalingPolicyConfiguration: Optional[
-        AutoScalingTargetTrackingScalingPolicyConfigurationDescription
-    ]
+    PolicyName: AutoScalingPolicyName | None
+    TargetTrackingScalingPolicyConfiguration: (
+        AutoScalingTargetTrackingScalingPolicyConfigurationDescription | None
+    )
 
 
-AutoScalingPolicyDescriptionList = List[AutoScalingPolicyDescription]
+AutoScalingPolicyDescriptionList = list[AutoScalingPolicyDescription]
 
 
 class AutoScalingTargetTrackingScalingPolicyConfigurationUpdate(TypedDict, total=False):
-    DisableScaleIn: Optional[BooleanObject]
-    ScaleInCooldown: Optional[IntegerObject]
-    ScaleOutCooldown: Optional[IntegerObject]
+    DisableScaleIn: BooleanObject | None
+    ScaleInCooldown: IntegerObject | None
+    ScaleOutCooldown: IntegerObject | None
     TargetValue: DoubleObject
 
 
 class AutoScalingPolicyUpdate(TypedDict, total=False):
-    PolicyName: Optional[AutoScalingPolicyName]
+    PolicyName: AutoScalingPolicyName | None
     TargetTrackingScalingPolicyConfiguration: (
         AutoScalingTargetTrackingScalingPolicyConfigurationUpdate
     )
@@ -684,47 +684,47 @@ PositiveLongObject = int
 
 
 class AutoScalingSettingsDescription(TypedDict, total=False):
-    MinimumUnits: Optional[PositiveLongObject]
-    MaximumUnits: Optional[PositiveLongObject]
-    AutoScalingDisabled: Optional[BooleanObject]
-    AutoScalingRoleArn: Optional[String]
-    ScalingPolicies: Optional[AutoScalingPolicyDescriptionList]
+    MinimumUnits: PositiveLongObject | None
+    MaximumUnits: PositiveLongObject | None
+    AutoScalingDisabled: BooleanObject | None
+    AutoScalingRoleArn: String | None
+    ScalingPolicies: AutoScalingPolicyDescriptionList | None
 
 
 class AutoScalingSettingsUpdate(TypedDict, total=False):
-    MinimumUnits: Optional[PositiveLongObject]
-    MaximumUnits: Optional[PositiveLongObject]
-    AutoScalingDisabled: Optional[BooleanObject]
-    AutoScalingRoleArn: Optional[AutoScalingRoleArn]
-    ScalingPolicyUpdate: Optional[AutoScalingPolicyUpdate]
+    MinimumUnits: PositiveLongObject | None
+    MaximumUnits: PositiveLongObject | None
+    AutoScalingDisabled: BooleanObject | None
+    AutoScalingRoleArn: AutoScalingRoleArn | None
+    ScalingPolicyUpdate: AutoScalingPolicyUpdate | None
 
 
 BackupCreationDateTime = datetime
 
 
 class SSEDescription(TypedDict, total=False):
-    Status: Optional[SSEStatus]
-    SSEType: Optional[SSEType]
-    KMSMasterKeyArn: Optional[KMSMasterKeyArn]
-    InaccessibleEncryptionDateTime: Optional[Date]
+    Status: SSEStatus | None
+    SSEType: SSEType | None
+    KMSMasterKeyArn: KMSMasterKeyArn | None
+    InaccessibleEncryptionDateTime: Date | None
 
 
 class TimeToLiveDescription(TypedDict, total=False):
-    TimeToLiveStatus: Optional[TimeToLiveStatus]
-    AttributeName: Optional[TimeToLiveAttributeName]
+    TimeToLiveStatus: TimeToLiveStatus | None
+    AttributeName: TimeToLiveAttributeName | None
 
 
 class StreamSpecification(TypedDict, total=False):
     StreamEnabled: StreamEnabled
-    StreamViewType: Optional[StreamViewType]
+    StreamViewType: StreamViewType | None
 
 
 LongObject = int
 
 
 class OnDemandThroughput(TypedDict, total=False):
-    MaxReadRequestUnits: Optional[LongObject]
-    MaxWriteRequestUnits: Optional[LongObject]
+    MaxReadRequestUnits: LongObject | None
+    MaxWriteRequestUnits: LongObject | None
 
 
 class ProvisionedThroughput(TypedDict, total=False):
@@ -732,12 +732,12 @@ class ProvisionedThroughput(TypedDict, total=False):
     WriteCapacityUnits: PositiveLongObject
 
 
-NonKeyAttributeNameList = List[NonKeyAttributeName]
+NonKeyAttributeNameList = list[NonKeyAttributeName]
 
 
 class Projection(TypedDict, total=False):
-    ProjectionType: Optional[ProjectionType]
-    NonKeyAttributes: Optional[NonKeyAttributeNameList]
+    ProjectionType: ProjectionType | None
+    NonKeyAttributes: NonKeyAttributeNameList | None
 
 
 class KeySchemaElement(TypedDict, total=False):
@@ -745,35 +745,35 @@ class KeySchemaElement(TypedDict, total=False):
     KeyType: KeyType
 
 
-KeySchema = List[KeySchemaElement]
+KeySchema = list[KeySchemaElement]
 
 
 class GlobalSecondaryIndexInfo(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    KeySchema: Optional[KeySchema]
-    Projection: Optional[Projection]
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    OnDemandThroughput: Optional[OnDemandThroughput]
+    IndexName: IndexName | None
+    KeySchema: KeySchema | None
+    Projection: Projection | None
+    ProvisionedThroughput: ProvisionedThroughput | None
+    OnDemandThroughput: OnDemandThroughput | None
 
 
-GlobalSecondaryIndexes = List[GlobalSecondaryIndexInfo]
+GlobalSecondaryIndexes = list[GlobalSecondaryIndexInfo]
 
 
 class LocalSecondaryIndexInfo(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    KeySchema: Optional[KeySchema]
-    Projection: Optional[Projection]
+    IndexName: IndexName | None
+    KeySchema: KeySchema | None
+    Projection: Projection | None
 
 
-LocalSecondaryIndexes = List[LocalSecondaryIndexInfo]
+LocalSecondaryIndexes = list[LocalSecondaryIndexInfo]
 
 
 class SourceTableFeatureDetails(TypedDict, total=False):
-    LocalSecondaryIndexes: Optional[LocalSecondaryIndexes]
-    GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexes]
-    StreamDescription: Optional[StreamSpecification]
-    TimeToLiveDescription: Optional[TimeToLiveDescription]
-    SSEDescription: Optional[SSEDescription]
+    LocalSecondaryIndexes: LocalSecondaryIndexes | None
+    GlobalSecondaryIndexes: GlobalSecondaryIndexes | None
+    StreamDescription: StreamSpecification | None
+    TimeToLiveDescription: TimeToLiveDescription | None
+    SSEDescription: SSEDescription | None
 
 
 ItemCount = int
@@ -783,14 +783,14 @@ TableCreationDateTime = datetime
 class SourceTableDetails(TypedDict, total=False):
     TableName: TableName
     TableId: TableId
-    TableArn: Optional[TableArn]
-    TableSizeBytes: Optional[LongObject]
+    TableArn: TableArn | None
+    TableSizeBytes: LongObject | None
     KeySchema: KeySchema
     TableCreationDateTime: TableCreationDateTime
     ProvisionedThroughput: ProvisionedThroughput
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    ItemCount: Optional[ItemCount]
-    BillingMode: Optional[BillingMode]
+    OnDemandThroughput: OnDemandThroughput | None
+    ItemCount: ItemCount | None
+    BillingMode: BillingMode | None
 
 
 BackupSizeBytes = int
@@ -799,129 +799,129 @@ BackupSizeBytes = int
 class BackupDetails(TypedDict, total=False):
     BackupArn: BackupArn
     BackupName: BackupName
-    BackupSizeBytes: Optional[BackupSizeBytes]
+    BackupSizeBytes: BackupSizeBytes | None
     BackupStatus: BackupStatus
     BackupType: BackupType
     BackupCreationDateTime: BackupCreationDateTime
-    BackupExpiryDateTime: Optional[Date]
+    BackupExpiryDateTime: Date | None
 
 
 class BackupDescription(TypedDict, total=False):
-    BackupDetails: Optional[BackupDetails]
-    SourceTableDetails: Optional[SourceTableDetails]
-    SourceTableFeatureDetails: Optional[SourceTableFeatureDetails]
+    BackupDetails: BackupDetails | None
+    SourceTableDetails: SourceTableDetails | None
+    SourceTableFeatureDetails: SourceTableFeatureDetails | None
 
 
 class BackupSummary(TypedDict, total=False):
-    TableName: Optional[TableName]
-    TableId: Optional[TableId]
-    TableArn: Optional[TableArn]
-    BackupArn: Optional[BackupArn]
-    BackupName: Optional[BackupName]
-    BackupCreationDateTime: Optional[BackupCreationDateTime]
-    BackupExpiryDateTime: Optional[Date]
-    BackupStatus: Optional[BackupStatus]
-    BackupType: Optional[BackupType]
-    BackupSizeBytes: Optional[BackupSizeBytes]
+    TableName: TableName | None
+    TableId: TableId | None
+    TableArn: TableArn | None
+    BackupArn: BackupArn | None
+    BackupName: BackupName | None
+    BackupCreationDateTime: BackupCreationDateTime | None
+    BackupExpiryDateTime: Date | None
+    BackupStatus: BackupStatus | None
+    BackupType: BackupType | None
+    BackupSizeBytes: BackupSizeBytes | None
 
 
-BackupSummaries = List[BackupSummary]
-PreparedStatementParameters = List[AttributeValue]
+BackupSummaries = list[BackupSummary]
+PreparedStatementParameters = list[AttributeValue]
 
 
 class BatchStatementRequest(TypedDict, total=False):
     Statement: PartiQLStatement
-    Parameters: Optional[PreparedStatementParameters]
-    ConsistentRead: Optional[ConsistentRead]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    Parameters: PreparedStatementParameters | None
+    ConsistentRead: ConsistentRead | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
-PartiQLBatchRequest = List[BatchStatementRequest]
+PartiQLBatchRequest = list[BatchStatementRequest]
 
 
 class BatchExecuteStatementInput(ServiceRequest):
     Statements: PartiQLBatchRequest
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
 
 
 class Capacity(TypedDict, total=False):
-    ReadCapacityUnits: Optional[ConsumedCapacityUnits]
-    WriteCapacityUnits: Optional[ConsumedCapacityUnits]
-    CapacityUnits: Optional[ConsumedCapacityUnits]
+    ReadCapacityUnits: ConsumedCapacityUnits | None
+    WriteCapacityUnits: ConsumedCapacityUnits | None
+    CapacityUnits: ConsumedCapacityUnits | None
 
 
-SecondaryIndexesCapacityMap = Dict[IndexName, Capacity]
+SecondaryIndexesCapacityMap = dict[IndexName, Capacity]
 
 
 class ConsumedCapacity(TypedDict, total=False):
-    TableName: Optional[TableArn]
-    CapacityUnits: Optional[ConsumedCapacityUnits]
-    ReadCapacityUnits: Optional[ConsumedCapacityUnits]
-    WriteCapacityUnits: Optional[ConsumedCapacityUnits]
-    Table: Optional[Capacity]
-    LocalSecondaryIndexes: Optional[SecondaryIndexesCapacityMap]
-    GlobalSecondaryIndexes: Optional[SecondaryIndexesCapacityMap]
+    TableName: TableArn | None
+    CapacityUnits: ConsumedCapacityUnits | None
+    ReadCapacityUnits: ConsumedCapacityUnits | None
+    WriteCapacityUnits: ConsumedCapacityUnits | None
+    Table: Capacity | None
+    LocalSecondaryIndexes: SecondaryIndexesCapacityMap | None
+    GlobalSecondaryIndexes: SecondaryIndexesCapacityMap | None
 
 
-ConsumedCapacityMultiple = List[ConsumedCapacity]
+ConsumedCapacityMultiple = list[ConsumedCapacity]
 
 
 class BatchStatementError(TypedDict, total=False):
-    Code: Optional[BatchStatementErrorCodeEnum]
-    Message: Optional[String]
-    Item: Optional[AttributeMap]
+    Code: BatchStatementErrorCodeEnum | None
+    Message: String | None
+    Item: AttributeMap | None
 
 
 class BatchStatementResponse(TypedDict, total=False):
-    Error: Optional[BatchStatementError]
-    TableName: Optional[TableName]
-    Item: Optional[AttributeMap]
+    Error: BatchStatementError | None
+    TableName: TableName | None
+    Item: AttributeMap | None
 
 
-PartiQLBatchResponse = List[BatchStatementResponse]
+PartiQLBatchResponse = list[BatchStatementResponse]
 
 
 class BatchExecuteStatementOutput(TypedDict, total=False):
-    Responses: Optional[PartiQLBatchResponse]
-    ConsumedCapacity: Optional[ConsumedCapacityMultiple]
+    Responses: PartiQLBatchResponse | None
+    ConsumedCapacity: ConsumedCapacityMultiple | None
 
 
-ExpressionAttributeNameMap = Dict[ExpressionAttributeNameVariable, AttributeName]
-Key = Dict[AttributeName, AttributeValue]
-KeyList = List[Key]
+ExpressionAttributeNameMap = dict[ExpressionAttributeNameVariable, AttributeName]
+Key = dict[AttributeName, AttributeValue]
+KeyList = list[Key]
 
 
 class KeysAndAttributes(TypedDict, total=False):
     Keys: KeyList
-    AttributesToGet: Optional[AttributeNameList]
-    ConsistentRead: Optional[ConsistentRead]
-    ProjectionExpression: Optional[ProjectionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
+    AttributesToGet: AttributeNameList | None
+    ConsistentRead: ConsistentRead | None
+    ProjectionExpression: ProjectionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
 
 
-BatchGetRequestMap = Dict[TableArn, KeysAndAttributes]
+BatchGetRequestMap = dict[TableArn, KeysAndAttributes]
 
 
 class BatchGetItemInput(ServiceRequest):
     RequestItems: BatchGetRequestMap
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
 
 
-ItemList = List[AttributeMap]
-BatchGetResponseMap = Dict[TableArn, ItemList]
+ItemList = list[AttributeMap]
+BatchGetResponseMap = dict[TableArn, ItemList]
 
 
 class BatchGetItemOutput(TypedDict, total=False):
-    Responses: Optional[BatchGetResponseMap]
-    UnprocessedKeys: Optional[BatchGetRequestMap]
-    ConsumedCapacity: Optional[ConsumedCapacityMultiple]
+    Responses: BatchGetResponseMap | None
+    UnprocessedKeys: BatchGetRequestMap | None
+    ConsumedCapacity: ConsumedCapacityMultiple | None
 
 
 class DeleteRequest(TypedDict, total=False):
     Key: Key
 
 
-PutItemInputAttributeMap = Dict[AttributeName, AttributeValue]
+PutItemInputAttributeMap = dict[AttributeName, AttributeValue]
 
 
 class PutRequest(TypedDict, total=False):
@@ -929,87 +929,87 @@ class PutRequest(TypedDict, total=False):
 
 
 class WriteRequest(TypedDict, total=False):
-    PutRequest: Optional[PutRequest]
-    DeleteRequest: Optional[DeleteRequest]
+    PutRequest: PutRequest | None
+    DeleteRequest: DeleteRequest | None
 
 
-WriteRequests = List[WriteRequest]
-BatchWriteItemRequestMap = Dict[TableArn, WriteRequests]
+WriteRequests = list[WriteRequest]
+BatchWriteItemRequestMap = dict[TableArn, WriteRequests]
 
 
 class BatchWriteItemInput(ServiceRequest):
     RequestItems: BatchWriteItemRequestMap
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ReturnItemCollectionMetrics: Optional[ReturnItemCollectionMetrics]
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ReturnItemCollectionMetrics: ReturnItemCollectionMetrics | None
 
 
-ItemCollectionSizeEstimateRange = List[ItemCollectionSizeEstimateBound]
-ItemCollectionKeyAttributeMap = Dict[AttributeName, AttributeValue]
+ItemCollectionSizeEstimateRange = list[ItemCollectionSizeEstimateBound]
+ItemCollectionKeyAttributeMap = dict[AttributeName, AttributeValue]
 
 
 class ItemCollectionMetrics(TypedDict, total=False):
-    ItemCollectionKey: Optional[ItemCollectionKeyAttributeMap]
-    SizeEstimateRangeGB: Optional[ItemCollectionSizeEstimateRange]
+    ItemCollectionKey: ItemCollectionKeyAttributeMap | None
+    SizeEstimateRangeGB: ItemCollectionSizeEstimateRange | None
 
 
-ItemCollectionMetricsMultiple = List[ItemCollectionMetrics]
-ItemCollectionMetricsPerTable = Dict[TableArn, ItemCollectionMetricsMultiple]
+ItemCollectionMetricsMultiple = list[ItemCollectionMetrics]
+ItemCollectionMetricsPerTable = dict[TableArn, ItemCollectionMetricsMultiple]
 
 
 class BatchWriteItemOutput(TypedDict, total=False):
-    UnprocessedItems: Optional[BatchWriteItemRequestMap]
-    ItemCollectionMetrics: Optional[ItemCollectionMetricsPerTable]
-    ConsumedCapacity: Optional[ConsumedCapacityMultiple]
+    UnprocessedItems: BatchWriteItemRequestMap | None
+    ItemCollectionMetrics: ItemCollectionMetricsPerTable | None
+    ConsumedCapacity: ConsumedCapacityMultiple | None
 
 
 BilledSizeBytes = int
 
 
 class BillingModeSummary(TypedDict, total=False):
-    BillingMode: Optional[BillingMode]
-    LastUpdateToPayPerRequestDateTime: Optional[Date]
+    BillingMode: BillingMode | None
+    LastUpdateToPayPerRequestDateTime: Date | None
 
 
 class Condition(TypedDict, total=False):
-    AttributeValueList: Optional[AttributeValueList]
+    AttributeValueList: AttributeValueList | None
     ComparisonOperator: ComparisonOperator
 
 
-ExpressionAttributeValueMap = Dict[ExpressionAttributeValueVariable, AttributeValue]
+ExpressionAttributeValueMap = dict[ExpressionAttributeValueVariable, AttributeValue]
 
 
 class ConditionCheck(TypedDict, total=False):
     Key: Key
     TableName: TableArn
     ConditionExpression: ConditionExpression
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class PointInTimeRecoveryDescription(TypedDict, total=False):
-    PointInTimeRecoveryStatus: Optional[PointInTimeRecoveryStatus]
-    RecoveryPeriodInDays: Optional[RecoveryPeriodInDays]
-    EarliestRestorableDateTime: Optional[Date]
-    LatestRestorableDateTime: Optional[Date]
+    PointInTimeRecoveryStatus: PointInTimeRecoveryStatus | None
+    RecoveryPeriodInDays: RecoveryPeriodInDays | None
+    EarliestRestorableDateTime: Date | None
+    LatestRestorableDateTime: Date | None
 
 
 class ContinuousBackupsDescription(TypedDict, total=False):
     ContinuousBackupsStatus: ContinuousBackupsStatus
-    PointInTimeRecoveryDescription: Optional[PointInTimeRecoveryDescription]
+    PointInTimeRecoveryDescription: PointInTimeRecoveryDescription | None
 
 
-ContributorInsightsRuleList = List[ContributorInsightsRule]
+ContributorInsightsRuleList = list[ContributorInsightsRule]
 
 
 class ContributorInsightsSummary(TypedDict, total=False):
-    TableName: Optional[TableName]
-    IndexName: Optional[IndexName]
-    ContributorInsightsStatus: Optional[ContributorInsightsStatus]
-    ContributorInsightsMode: Optional[ContributorInsightsMode]
+    TableName: TableName | None
+    IndexName: IndexName | None
+    ContributorInsightsStatus: ContributorInsightsStatus | None
+    ContributorInsightsMode: ContributorInsightsMode | None
 
 
-ContributorInsightsSummaries = List[ContributorInsightsSummary]
+ContributorInsightsSummaries = list[ContributorInsightsSummary]
 
 
 class CreateBackupInput(ServiceRequest):
@@ -1018,28 +1018,28 @@ class CreateBackupInput(ServiceRequest):
 
 
 class CreateBackupOutput(TypedDict, total=False):
-    BackupDetails: Optional[BackupDetails]
+    BackupDetails: BackupDetails | None
 
 
 class WarmThroughput(TypedDict, total=False):
-    ReadUnitsPerSecond: Optional[LongObject]
-    WriteUnitsPerSecond: Optional[LongObject]
+    ReadUnitsPerSecond: LongObject | None
+    WriteUnitsPerSecond: LongObject | None
 
 
 class CreateGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
     KeySchema: KeySchema
     Projection: Projection
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    WarmThroughput: Optional[WarmThroughput]
+    ProvisionedThroughput: ProvisionedThroughput | None
+    OnDemandThroughput: OnDemandThroughput | None
+    WarmThroughput: WarmThroughput | None
 
 
 class Replica(TypedDict, total=False):
-    RegionName: Optional[RegionName]
+    RegionName: RegionName | None
 
 
-ReplicaList = List[Replica]
+ReplicaList = list[Replica]
 
 
 class CreateGlobalTableInput(ServiceRequest):
@@ -1048,67 +1048,67 @@ class CreateGlobalTableInput(ServiceRequest):
 
 
 class TableClassSummary(TypedDict, total=False):
-    TableClass: Optional[TableClass]
-    LastUpdateDateTime: Optional[Date]
+    TableClass: TableClass | None
+    LastUpdateDateTime: Date | None
 
 
 class GlobalSecondaryIndexWarmThroughputDescription(TypedDict, total=False):
-    ReadUnitsPerSecond: Optional[PositiveLongObject]
-    WriteUnitsPerSecond: Optional[PositiveLongObject]
-    Status: Optional[IndexStatus]
+    ReadUnitsPerSecond: PositiveLongObject | None
+    WriteUnitsPerSecond: PositiveLongObject | None
+    Status: IndexStatus | None
 
 
 class OnDemandThroughputOverride(TypedDict, total=False):
-    MaxReadRequestUnits: Optional[LongObject]
+    MaxReadRequestUnits: LongObject | None
 
 
 class ProvisionedThroughputOverride(TypedDict, total=False):
-    ReadCapacityUnits: Optional[PositiveLongObject]
+    ReadCapacityUnits: PositiveLongObject | None
 
 
 class ReplicaGlobalSecondaryIndexDescription(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
-    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
-    WarmThroughput: Optional[GlobalSecondaryIndexWarmThroughputDescription]
+    IndexName: IndexName | None
+    ProvisionedThroughputOverride: ProvisionedThroughputOverride | None
+    OnDemandThroughputOverride: OnDemandThroughputOverride | None
+    WarmThroughput: GlobalSecondaryIndexWarmThroughputDescription | None
 
 
-ReplicaGlobalSecondaryIndexDescriptionList = List[ReplicaGlobalSecondaryIndexDescription]
+ReplicaGlobalSecondaryIndexDescriptionList = list[ReplicaGlobalSecondaryIndexDescription]
 
 
 class TableWarmThroughputDescription(TypedDict, total=False):
-    ReadUnitsPerSecond: Optional[PositiveLongObject]
-    WriteUnitsPerSecond: Optional[PositiveLongObject]
-    Status: Optional[TableStatus]
+    ReadUnitsPerSecond: PositiveLongObject | None
+    WriteUnitsPerSecond: PositiveLongObject | None
+    Status: TableStatus | None
 
 
 class ReplicaDescription(TypedDict, total=False):
-    RegionName: Optional[RegionName]
-    ReplicaStatus: Optional[ReplicaStatus]
-    ReplicaStatusDescription: Optional[ReplicaStatusDescription]
-    ReplicaStatusPercentProgress: Optional[ReplicaStatusPercentProgress]
-    KMSMasterKeyId: Optional[KMSMasterKeyId]
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
-    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
-    WarmThroughput: Optional[TableWarmThroughputDescription]
-    GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexDescriptionList]
-    ReplicaInaccessibleDateTime: Optional[Date]
-    ReplicaTableClassSummary: Optional[TableClassSummary]
+    RegionName: RegionName | None
+    ReplicaStatus: ReplicaStatus | None
+    ReplicaStatusDescription: ReplicaStatusDescription | None
+    ReplicaStatusPercentProgress: ReplicaStatusPercentProgress | None
+    KMSMasterKeyId: KMSMasterKeyId | None
+    ProvisionedThroughputOverride: ProvisionedThroughputOverride | None
+    OnDemandThroughputOverride: OnDemandThroughputOverride | None
+    WarmThroughput: TableWarmThroughputDescription | None
+    GlobalSecondaryIndexes: ReplicaGlobalSecondaryIndexDescriptionList | None
+    ReplicaInaccessibleDateTime: Date | None
+    ReplicaTableClassSummary: TableClassSummary | None
 
 
-ReplicaDescriptionList = List[ReplicaDescription]
+ReplicaDescriptionList = list[ReplicaDescription]
 
 
 class GlobalTableDescription(TypedDict, total=False):
-    ReplicationGroup: Optional[ReplicaDescriptionList]
-    GlobalTableArn: Optional[GlobalTableArnString]
-    CreationDateTime: Optional[Date]
-    GlobalTableStatus: Optional[GlobalTableStatus]
-    GlobalTableName: Optional[TableName]
+    ReplicationGroup: ReplicaDescriptionList | None
+    GlobalTableArn: GlobalTableArnString | None
+    CreationDateTime: Date | None
+    GlobalTableStatus: GlobalTableStatus | None
+    GlobalTableName: TableName | None
 
 
 class CreateGlobalTableOutput(TypedDict, total=False):
-    GlobalTableDescription: Optional[GlobalTableDescription]
+    GlobalTableDescription: GlobalTableDescription | None
 
 
 class CreateGlobalTableWitnessGroupMemberAction(TypedDict, total=False):
@@ -1121,20 +1121,20 @@ class CreateReplicaAction(TypedDict, total=False):
 
 class ReplicaGlobalSecondaryIndex(TypedDict, total=False):
     IndexName: IndexName
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
-    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
+    ProvisionedThroughputOverride: ProvisionedThroughputOverride | None
+    OnDemandThroughputOverride: OnDemandThroughputOverride | None
 
 
-ReplicaGlobalSecondaryIndexList = List[ReplicaGlobalSecondaryIndex]
+ReplicaGlobalSecondaryIndexList = list[ReplicaGlobalSecondaryIndex]
 
 
 class CreateReplicationGroupMemberAction(TypedDict, total=False):
     RegionName: RegionName
-    KMSMasterKeyId: Optional[KMSMasterKeyId]
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
-    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
-    GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexList]
-    TableClassOverride: Optional[TableClass]
+    KMSMasterKeyId: KMSMasterKeyId | None
+    ProvisionedThroughputOverride: ProvisionedThroughputOverride | None
+    OnDemandThroughputOverride: OnDemandThroughputOverride | None
+    GlobalSecondaryIndexes: ReplicaGlobalSecondaryIndexList | None
+    TableClassOverride: TableClass | None
 
 
 class Tag(TypedDict, total=False):
@@ -1142,25 +1142,25 @@ class Tag(TypedDict, total=False):
     Value: TagValueString
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class SSESpecification(TypedDict, total=False):
-    Enabled: Optional[SSEEnabled]
-    SSEType: Optional[SSEType]
-    KMSMasterKeyId: Optional[KMSMasterKeyId]
+    Enabled: SSEEnabled | None
+    SSEType: SSEType | None
+    KMSMasterKeyId: KMSMasterKeyId | None
 
 
 class GlobalSecondaryIndex(TypedDict, total=False):
     IndexName: IndexName
     KeySchema: KeySchema
     Projection: Projection
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    WarmThroughput: Optional[WarmThroughput]
+    ProvisionedThroughput: ProvisionedThroughput | None
+    OnDemandThroughput: OnDemandThroughput | None
+    WarmThroughput: WarmThroughput | None
 
 
-GlobalSecondaryIndexList = List[GlobalSecondaryIndex]
+GlobalSecondaryIndexList = list[GlobalSecondaryIndex]
 
 
 class LocalSecondaryIndex(TypedDict, total=False):
@@ -1169,129 +1169,129 @@ class LocalSecondaryIndex(TypedDict, total=False):
     Projection: Projection
 
 
-LocalSecondaryIndexList = List[LocalSecondaryIndex]
+LocalSecondaryIndexList = list[LocalSecondaryIndex]
 
 
 class CreateTableInput(ServiceRequest):
     AttributeDefinitions: AttributeDefinitions
     TableName: TableArn
     KeySchema: KeySchema
-    LocalSecondaryIndexes: Optional[LocalSecondaryIndexList]
-    GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexList]
-    BillingMode: Optional[BillingMode]
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    StreamSpecification: Optional[StreamSpecification]
-    SSESpecification: Optional[SSESpecification]
-    Tags: Optional[TagList]
-    TableClass: Optional[TableClass]
-    DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
-    WarmThroughput: Optional[WarmThroughput]
-    ResourcePolicy: Optional[ResourcePolicy]
-    OnDemandThroughput: Optional[OnDemandThroughput]
+    LocalSecondaryIndexes: LocalSecondaryIndexList | None
+    GlobalSecondaryIndexes: GlobalSecondaryIndexList | None
+    BillingMode: BillingMode | None
+    ProvisionedThroughput: ProvisionedThroughput | None
+    StreamSpecification: StreamSpecification | None
+    SSESpecification: SSESpecification | None
+    Tags: TagList | None
+    TableClass: TableClass | None
+    DeletionProtectionEnabled: DeletionProtectionEnabled | None
+    WarmThroughput: WarmThroughput | None
+    ResourcePolicy: ResourcePolicy | None
+    OnDemandThroughput: OnDemandThroughput | None
 
 
 class RestoreSummary(TypedDict, total=False):
-    SourceBackupArn: Optional[BackupArn]
-    SourceTableArn: Optional[TableArn]
+    SourceBackupArn: BackupArn | None
+    SourceTableArn: TableArn | None
     RestoreDateTime: Date
     RestoreInProgress: RestoreInProgress
 
 
 class GlobalTableWitnessDescription(TypedDict, total=False):
-    RegionName: Optional[RegionName]
-    WitnessStatus: Optional[WitnessStatus]
+    RegionName: RegionName | None
+    WitnessStatus: WitnessStatus | None
 
 
-GlobalTableWitnessDescriptionList = List[GlobalTableWitnessDescription]
+GlobalTableWitnessDescriptionList = list[GlobalTableWitnessDescription]
 NonNegativeLongObject = int
 
 
 class ProvisionedThroughputDescription(TypedDict, total=False):
-    LastIncreaseDateTime: Optional[Date]
-    LastDecreaseDateTime: Optional[Date]
-    NumberOfDecreasesToday: Optional[PositiveLongObject]
-    ReadCapacityUnits: Optional[NonNegativeLongObject]
-    WriteCapacityUnits: Optional[NonNegativeLongObject]
+    LastIncreaseDateTime: Date | None
+    LastDecreaseDateTime: Date | None
+    NumberOfDecreasesToday: PositiveLongObject | None
+    ReadCapacityUnits: NonNegativeLongObject | None
+    WriteCapacityUnits: NonNegativeLongObject | None
 
 
 class GlobalSecondaryIndexDescription(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    KeySchema: Optional[KeySchema]
-    Projection: Optional[Projection]
-    IndexStatus: Optional[IndexStatus]
-    Backfilling: Optional[Backfilling]
-    ProvisionedThroughput: Optional[ProvisionedThroughputDescription]
-    IndexSizeBytes: Optional[LongObject]
-    ItemCount: Optional[LongObject]
-    IndexArn: Optional[String]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    WarmThroughput: Optional[GlobalSecondaryIndexWarmThroughputDescription]
+    IndexName: IndexName | None
+    KeySchema: KeySchema | None
+    Projection: Projection | None
+    IndexStatus: IndexStatus | None
+    Backfilling: Backfilling | None
+    ProvisionedThroughput: ProvisionedThroughputDescription | None
+    IndexSizeBytes: LongObject | None
+    ItemCount: LongObject | None
+    IndexArn: String | None
+    OnDemandThroughput: OnDemandThroughput | None
+    WarmThroughput: GlobalSecondaryIndexWarmThroughputDescription | None
 
 
-GlobalSecondaryIndexDescriptionList = List[GlobalSecondaryIndexDescription]
+GlobalSecondaryIndexDescriptionList = list[GlobalSecondaryIndexDescription]
 
 
 class LocalSecondaryIndexDescription(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    KeySchema: Optional[KeySchema]
-    Projection: Optional[Projection]
-    IndexSizeBytes: Optional[LongObject]
-    ItemCount: Optional[LongObject]
-    IndexArn: Optional[String]
+    IndexName: IndexName | None
+    KeySchema: KeySchema | None
+    Projection: Projection | None
+    IndexSizeBytes: LongObject | None
+    ItemCount: LongObject | None
+    IndexArn: String | None
 
 
-LocalSecondaryIndexDescriptionList = List[LocalSecondaryIndexDescription]
+LocalSecondaryIndexDescriptionList = list[LocalSecondaryIndexDescription]
 
 
 class TableDescription(TypedDict, total=False):
-    AttributeDefinitions: Optional[AttributeDefinitions]
-    TableName: Optional[TableName]
-    KeySchema: Optional[KeySchema]
-    TableStatus: Optional[TableStatus]
-    CreationDateTime: Optional[Date]
-    ProvisionedThroughput: Optional[ProvisionedThroughputDescription]
-    TableSizeBytes: Optional[LongObject]
-    ItemCount: Optional[LongObject]
-    TableArn: Optional[String]
-    TableId: Optional[TableId]
-    BillingModeSummary: Optional[BillingModeSummary]
-    LocalSecondaryIndexes: Optional[LocalSecondaryIndexDescriptionList]
-    GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexDescriptionList]
-    StreamSpecification: Optional[StreamSpecification]
-    LatestStreamLabel: Optional[String]
-    LatestStreamArn: Optional[StreamArn]
-    GlobalTableVersion: Optional[String]
-    Replicas: Optional[ReplicaDescriptionList]
-    GlobalTableWitnesses: Optional[GlobalTableWitnessDescriptionList]
-    RestoreSummary: Optional[RestoreSummary]
-    SSEDescription: Optional[SSEDescription]
-    ArchivalSummary: Optional[ArchivalSummary]
-    TableClassSummary: Optional[TableClassSummary]
-    DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    WarmThroughput: Optional[TableWarmThroughputDescription]
-    MultiRegionConsistency: Optional[MultiRegionConsistency]
+    AttributeDefinitions: AttributeDefinitions | None
+    TableName: TableName | None
+    KeySchema: KeySchema | None
+    TableStatus: TableStatus | None
+    CreationDateTime: Date | None
+    ProvisionedThroughput: ProvisionedThroughputDescription | None
+    TableSizeBytes: LongObject | None
+    ItemCount: LongObject | None
+    TableArn: String | None
+    TableId: TableId | None
+    BillingModeSummary: BillingModeSummary | None
+    LocalSecondaryIndexes: LocalSecondaryIndexDescriptionList | None
+    GlobalSecondaryIndexes: GlobalSecondaryIndexDescriptionList | None
+    StreamSpecification: StreamSpecification | None
+    LatestStreamLabel: String | None
+    LatestStreamArn: StreamArn | None
+    GlobalTableVersion: String | None
+    Replicas: ReplicaDescriptionList | None
+    GlobalTableWitnesses: GlobalTableWitnessDescriptionList | None
+    RestoreSummary: RestoreSummary | None
+    SSEDescription: SSEDescription | None
+    ArchivalSummary: ArchivalSummary | None
+    TableClassSummary: TableClassSummary | None
+    DeletionProtectionEnabled: DeletionProtectionEnabled | None
+    OnDemandThroughput: OnDemandThroughput | None
+    WarmThroughput: TableWarmThroughputDescription | None
+    MultiRegionConsistency: MultiRegionConsistency | None
 
 
 class CreateTableOutput(TypedDict, total=False):
-    TableDescription: Optional[TableDescription]
+    TableDescription: TableDescription | None
 
 
-CsvHeaderList = List[CsvHeader]
+CsvHeaderList = list[CsvHeader]
 
 
 class CsvOptions(TypedDict, total=False):
-    Delimiter: Optional[CsvDelimiter]
-    HeaderList: Optional[CsvHeaderList]
+    Delimiter: CsvDelimiter | None
+    HeaderList: CsvHeaderList | None
 
 
 class Delete(TypedDict, total=False):
     Key: Key
     TableName: TableArn
-    ConditionExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    ConditionExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class DeleteBackupInput(ServiceRequest):
@@ -1299,7 +1299,7 @@ class DeleteBackupInput(ServiceRequest):
 
 
 class DeleteBackupOutput(TypedDict, total=False):
-    BackupDescription: Optional[BackupDescription]
+    BackupDescription: BackupDescription | None
 
 
 class DeleteGlobalSecondaryIndexAction(TypedDict, total=False):
@@ -1311,33 +1311,33 @@ class DeleteGlobalTableWitnessGroupMemberAction(TypedDict, total=False):
 
 
 class ExpectedAttributeValue(TypedDict, total=False):
-    Value: Optional[AttributeValue]
-    Exists: Optional[BooleanObject]
-    ComparisonOperator: Optional[ComparisonOperator]
-    AttributeValueList: Optional[AttributeValueList]
+    Value: AttributeValue | None
+    Exists: BooleanObject | None
+    ComparisonOperator: ComparisonOperator | None
+    AttributeValueList: AttributeValueList | None
 
 
-ExpectedAttributeMap = Dict[AttributeName, ExpectedAttributeValue]
+ExpectedAttributeMap = dict[AttributeName, ExpectedAttributeValue]
 
 
 class DeleteItemInput(ServiceRequest):
     TableName: TableArn
     Key: Key
-    Expected: Optional[ExpectedAttributeMap]
-    ConditionalOperator: Optional[ConditionalOperator]
-    ReturnValues: Optional[ReturnValue]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ReturnItemCollectionMetrics: Optional[ReturnItemCollectionMetrics]
-    ConditionExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    Expected: ExpectedAttributeMap | None
+    ConditionalOperator: ConditionalOperator | None
+    ReturnValues: ReturnValue | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ReturnItemCollectionMetrics: ReturnItemCollectionMetrics | None
+    ConditionExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class DeleteItemOutput(TypedDict, total=False):
-    Attributes: Optional[AttributeMap]
-    ConsumedCapacity: Optional[ConsumedCapacity]
-    ItemCollectionMetrics: Optional[ItemCollectionMetrics]
+    Attributes: AttributeMap | None
+    ConsumedCapacity: ConsumedCapacity | None
+    ItemCollectionMetrics: ItemCollectionMetrics | None
 
 
 class DeleteReplicaAction(TypedDict, total=False):
@@ -1350,11 +1350,11 @@ class DeleteReplicationGroupMemberAction(TypedDict, total=False):
 
 class DeleteResourcePolicyInput(ServiceRequest):
     ResourceArn: ResourceArnString
-    ExpectedRevisionId: Optional[PolicyRevisionId]
+    ExpectedRevisionId: PolicyRevisionId | None
 
 
 class DeleteResourcePolicyOutput(TypedDict, total=False):
-    RevisionId: Optional[PolicyRevisionId]
+    RevisionId: PolicyRevisionId | None
 
 
 class DeleteTableInput(ServiceRequest):
@@ -1362,7 +1362,7 @@ class DeleteTableInput(ServiceRequest):
 
 
 class DeleteTableOutput(TypedDict, total=False):
-    TableDescription: Optional[TableDescription]
+    TableDescription: TableDescription | None
 
 
 class DescribeBackupInput(ServiceRequest):
@@ -1370,7 +1370,7 @@ class DescribeBackupInput(ServiceRequest):
 
 
 class DescribeBackupOutput(TypedDict, total=False):
-    BackupDescription: Optional[BackupDescription]
+    BackupDescription: BackupDescription | None
 
 
 class DescribeContinuousBackupsInput(ServiceRequest):
@@ -1378,30 +1378,30 @@ class DescribeContinuousBackupsInput(ServiceRequest):
 
 
 class DescribeContinuousBackupsOutput(TypedDict, total=False):
-    ContinuousBackupsDescription: Optional[ContinuousBackupsDescription]
+    ContinuousBackupsDescription: ContinuousBackupsDescription | None
 
 
 class DescribeContributorInsightsInput(ServiceRequest):
     TableName: TableArn
-    IndexName: Optional[IndexName]
+    IndexName: IndexName | None
 
 
 class FailureException(TypedDict, total=False):
-    ExceptionName: Optional[ExceptionName]
-    ExceptionDescription: Optional[ExceptionDescription]
+    ExceptionName: ExceptionName | None
+    ExceptionDescription: ExceptionDescription | None
 
 
 LastUpdateDateTime = datetime
 
 
 class DescribeContributorInsightsOutput(TypedDict, total=False):
-    TableName: Optional[TableName]
-    IndexName: Optional[IndexName]
-    ContributorInsightsRuleList: Optional[ContributorInsightsRuleList]
-    ContributorInsightsStatus: Optional[ContributorInsightsStatus]
-    LastUpdateDateTime: Optional[LastUpdateDateTime]
-    FailureException: Optional[FailureException]
-    ContributorInsightsMode: Optional[ContributorInsightsMode]
+    TableName: TableName | None
+    IndexName: IndexName | None
+    ContributorInsightsRuleList: ContributorInsightsRuleList | None
+    ContributorInsightsStatus: ContributorInsightsStatus | None
+    LastUpdateDateTime: LastUpdateDateTime | None
+    FailureException: FailureException | None
+    ContributorInsightsMode: ContributorInsightsMode | None
 
 
 class DescribeEndpointsRequest(ServiceRequest):
@@ -1416,7 +1416,7 @@ class Endpoint(TypedDict, total=False):
     CachePeriodInMinutes: Long
 
 
-Endpoints = List[Endpoint]
+Endpoints = list[Endpoint]
 
 
 class DescribeEndpointsResponse(TypedDict, total=False):
@@ -1432,9 +1432,9 @@ ExportFromTime = datetime
 
 
 class IncrementalExportSpecification(TypedDict, total=False):
-    ExportFromTime: Optional[ExportFromTime]
-    ExportToTime: Optional[ExportToTime]
-    ExportViewType: Optional[ExportViewType]
+    ExportFromTime: ExportFromTime | None
+    ExportToTime: ExportToTime | None
+    ExportViewType: ExportViewType | None
 
 
 ExportTime = datetime
@@ -1443,31 +1443,31 @@ ExportStartTime = datetime
 
 
 class ExportDescription(TypedDict, total=False):
-    ExportArn: Optional[ExportArn]
-    ExportStatus: Optional[ExportStatus]
-    StartTime: Optional[ExportStartTime]
-    EndTime: Optional[ExportEndTime]
-    ExportManifest: Optional[ExportManifest]
-    TableArn: Optional[TableArn]
-    TableId: Optional[TableId]
-    ExportTime: Optional[ExportTime]
-    ClientToken: Optional[ClientToken]
-    S3Bucket: Optional[S3Bucket]
-    S3BucketOwner: Optional[S3BucketOwner]
-    S3Prefix: Optional[S3Prefix]
-    S3SseAlgorithm: Optional[S3SseAlgorithm]
-    S3SseKmsKeyId: Optional[S3SseKmsKeyId]
-    FailureCode: Optional[FailureCode]
-    FailureMessage: Optional[FailureMessage]
-    ExportFormat: Optional[ExportFormat]
-    BilledSizeBytes: Optional[BilledSizeBytes]
-    ItemCount: Optional[ItemCount]
-    ExportType: Optional[ExportType]
-    IncrementalExportSpecification: Optional[IncrementalExportSpecification]
+    ExportArn: ExportArn | None
+    ExportStatus: ExportStatus | None
+    StartTime: ExportStartTime | None
+    EndTime: ExportEndTime | None
+    ExportManifest: ExportManifest | None
+    TableArn: TableArn | None
+    TableId: TableId | None
+    ExportTime: ExportTime | None
+    ClientToken: ClientToken | None
+    S3Bucket: S3Bucket | None
+    S3BucketOwner: S3BucketOwner | None
+    S3Prefix: S3Prefix | None
+    S3SseAlgorithm: S3SseAlgorithm | None
+    S3SseKmsKeyId: S3SseKmsKeyId | None
+    FailureCode: FailureCode | None
+    FailureMessage: FailureMessage | None
+    ExportFormat: ExportFormat | None
+    BilledSizeBytes: BilledSizeBytes | None
+    ItemCount: ItemCount | None
+    ExportType: ExportType | None
+    IncrementalExportSpecification: IncrementalExportSpecification | None
 
 
 class DescribeExportOutput(TypedDict, total=False):
-    ExportDescription: Optional[ExportDescription]
+    ExportDescription: ExportDescription | None
 
 
 class DescribeGlobalTableInput(ServiceRequest):
@@ -1475,7 +1475,7 @@ class DescribeGlobalTableInput(ServiceRequest):
 
 
 class DescribeGlobalTableOutput(TypedDict, total=False):
-    GlobalTableDescription: Optional[GlobalTableDescription]
+    GlobalTableDescription: GlobalTableDescription | None
 
 
 class DescribeGlobalTableSettingsInput(ServiceRequest):
@@ -1484,38 +1484,36 @@ class DescribeGlobalTableSettingsInput(ServiceRequest):
 
 class ReplicaGlobalSecondaryIndexSettingsDescription(TypedDict, total=False):
     IndexName: IndexName
-    IndexStatus: Optional[IndexStatus]
-    ProvisionedReadCapacityUnits: Optional[PositiveLongObject]
-    ProvisionedReadCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
-    ProvisionedWriteCapacityUnits: Optional[PositiveLongObject]
-    ProvisionedWriteCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
+    IndexStatus: IndexStatus | None
+    ProvisionedReadCapacityUnits: PositiveLongObject | None
+    ProvisionedReadCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
+    ProvisionedWriteCapacityUnits: PositiveLongObject | None
+    ProvisionedWriteCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
 
 
-ReplicaGlobalSecondaryIndexSettingsDescriptionList = List[
+ReplicaGlobalSecondaryIndexSettingsDescriptionList = list[
     ReplicaGlobalSecondaryIndexSettingsDescription
 ]
 
 
 class ReplicaSettingsDescription(TypedDict, total=False):
     RegionName: RegionName
-    ReplicaStatus: Optional[ReplicaStatus]
-    ReplicaBillingModeSummary: Optional[BillingModeSummary]
-    ReplicaProvisionedReadCapacityUnits: Optional[NonNegativeLongObject]
-    ReplicaProvisionedReadCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
-    ReplicaProvisionedWriteCapacityUnits: Optional[NonNegativeLongObject]
-    ReplicaProvisionedWriteCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
-    ReplicaGlobalSecondaryIndexSettings: Optional[
-        ReplicaGlobalSecondaryIndexSettingsDescriptionList
-    ]
-    ReplicaTableClassSummary: Optional[TableClassSummary]
+    ReplicaStatus: ReplicaStatus | None
+    ReplicaBillingModeSummary: BillingModeSummary | None
+    ReplicaProvisionedReadCapacityUnits: NonNegativeLongObject | None
+    ReplicaProvisionedReadCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
+    ReplicaProvisionedWriteCapacityUnits: NonNegativeLongObject | None
+    ReplicaProvisionedWriteCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
+    ReplicaGlobalSecondaryIndexSettings: ReplicaGlobalSecondaryIndexSettingsDescriptionList | None
+    ReplicaTableClassSummary: TableClassSummary | None
 
 
-ReplicaSettingsDescriptionList = List[ReplicaSettingsDescription]
+ReplicaSettingsDescriptionList = list[ReplicaSettingsDescription]
 
 
 class DescribeGlobalTableSettingsOutput(TypedDict, total=False):
-    GlobalTableName: Optional[TableName]
-    ReplicaSettings: Optional[ReplicaSettingsDescriptionList]
+    GlobalTableName: TableName | None
+    ReplicaSettings: ReplicaSettingsDescriptionList | None
 
 
 class DescribeImportInput(ServiceRequest):
@@ -1532,46 +1530,46 @@ class TableCreationParameters(TypedDict, total=False):
     TableName: TableName
     AttributeDefinitions: AttributeDefinitions
     KeySchema: KeySchema
-    BillingMode: Optional[BillingMode]
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    SSESpecification: Optional[SSESpecification]
-    GlobalSecondaryIndexes: Optional[GlobalSecondaryIndexList]
+    BillingMode: BillingMode | None
+    ProvisionedThroughput: ProvisionedThroughput | None
+    OnDemandThroughput: OnDemandThroughput | None
+    SSESpecification: SSESpecification | None
+    GlobalSecondaryIndexes: GlobalSecondaryIndexList | None
 
 
 class InputFormatOptions(TypedDict, total=False):
-    Csv: Optional[CsvOptions]
+    Csv: CsvOptions | None
 
 
 ErrorCount = int
 
 
 class S3BucketSource(TypedDict, total=False):
-    S3BucketOwner: Optional[S3BucketOwner]
+    S3BucketOwner: S3BucketOwner | None
     S3Bucket: S3Bucket
-    S3KeyPrefix: Optional[S3Prefix]
+    S3KeyPrefix: S3Prefix | None
 
 
 class ImportTableDescription(TypedDict, total=False):
-    ImportArn: Optional[ImportArn]
-    ImportStatus: Optional[ImportStatus]
-    TableArn: Optional[TableArn]
-    TableId: Optional[TableId]
-    ClientToken: Optional[ClientToken]
-    S3BucketSource: Optional[S3BucketSource]
-    ErrorCount: Optional[ErrorCount]
-    CloudWatchLogGroupArn: Optional[CloudWatchLogGroupArn]
-    InputFormat: Optional[InputFormat]
-    InputFormatOptions: Optional[InputFormatOptions]
-    InputCompressionType: Optional[InputCompressionType]
-    TableCreationParameters: Optional[TableCreationParameters]
-    StartTime: Optional[ImportStartTime]
-    EndTime: Optional[ImportEndTime]
-    ProcessedSizeBytes: Optional[LongObject]
-    ProcessedItemCount: Optional[ProcessedItemCount]
-    ImportedItemCount: Optional[ImportedItemCount]
-    FailureCode: Optional[FailureCode]
-    FailureMessage: Optional[FailureMessage]
+    ImportArn: ImportArn | None
+    ImportStatus: ImportStatus | None
+    TableArn: TableArn | None
+    TableId: TableId | None
+    ClientToken: ClientToken | None
+    S3BucketSource: S3BucketSource | None
+    ErrorCount: ErrorCount | None
+    CloudWatchLogGroupArn: CloudWatchLogGroupArn | None
+    InputFormat: InputFormat | None
+    InputFormatOptions: InputFormatOptions | None
+    InputCompressionType: InputCompressionType | None
+    TableCreationParameters: TableCreationParameters | None
+    StartTime: ImportStartTime | None
+    EndTime: ImportEndTime | None
+    ProcessedSizeBytes: LongObject | None
+    ProcessedItemCount: ProcessedItemCount | None
+    ImportedItemCount: ImportedItemCount | None
+    FailureCode: FailureCode | None
+    FailureMessage: FailureMessage | None
 
 
 class DescribeImportOutput(TypedDict, total=False):
@@ -1583,18 +1581,18 @@ class DescribeKinesisStreamingDestinationInput(ServiceRequest):
 
 
 class KinesisDataStreamDestination(TypedDict, total=False):
-    StreamArn: Optional[StreamArn]
-    DestinationStatus: Optional[DestinationStatus]
-    DestinationStatusDescription: Optional[String]
-    ApproximateCreationDateTimePrecision: Optional[ApproximateCreationDateTimePrecision]
+    StreamArn: StreamArn | None
+    DestinationStatus: DestinationStatus | None
+    DestinationStatusDescription: String | None
+    ApproximateCreationDateTimePrecision: ApproximateCreationDateTimePrecision | None
 
 
-KinesisDataStreamDestinations = List[KinesisDataStreamDestination]
+KinesisDataStreamDestinations = list[KinesisDataStreamDestination]
 
 
 class DescribeKinesisStreamingDestinationOutput(TypedDict, total=False):
-    TableName: Optional[TableName]
-    KinesisDataStreamDestinations: Optional[KinesisDataStreamDestinations]
+    TableName: TableName | None
+    KinesisDataStreamDestinations: KinesisDataStreamDestinations | None
 
 
 class DescribeLimitsInput(ServiceRequest):
@@ -1602,10 +1600,10 @@ class DescribeLimitsInput(ServiceRequest):
 
 
 class DescribeLimitsOutput(TypedDict, total=False):
-    AccountMaxReadCapacityUnits: Optional[PositiveLongObject]
-    AccountMaxWriteCapacityUnits: Optional[PositiveLongObject]
-    TableMaxReadCapacityUnits: Optional[PositiveLongObject]
-    TableMaxWriteCapacityUnits: Optional[PositiveLongObject]
+    AccountMaxReadCapacityUnits: PositiveLongObject | None
+    AccountMaxWriteCapacityUnits: PositiveLongObject | None
+    TableMaxReadCapacityUnits: PositiveLongObject | None
+    TableMaxWriteCapacityUnits: PositiveLongObject | None
 
 
 class DescribeTableInput(ServiceRequest):
@@ -1613,7 +1611,7 @@ class DescribeTableInput(ServiceRequest):
 
 
 class DescribeTableOutput(TypedDict, total=False):
-    Table: Optional[TableDescription]
+    Table: TableDescription | None
 
 
 class DescribeTableReplicaAutoScalingInput(ServiceRequest):
@@ -1621,36 +1619,36 @@ class DescribeTableReplicaAutoScalingInput(ServiceRequest):
 
 
 class ReplicaGlobalSecondaryIndexAutoScalingDescription(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    IndexStatus: Optional[IndexStatus]
-    ProvisionedReadCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
-    ProvisionedWriteCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
+    IndexName: IndexName | None
+    IndexStatus: IndexStatus | None
+    ProvisionedReadCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
+    ProvisionedWriteCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
 
 
-ReplicaGlobalSecondaryIndexAutoScalingDescriptionList = List[
+ReplicaGlobalSecondaryIndexAutoScalingDescriptionList = list[
     ReplicaGlobalSecondaryIndexAutoScalingDescription
 ]
 
 
 class ReplicaAutoScalingDescription(TypedDict, total=False):
-    RegionName: Optional[RegionName]
-    GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexAutoScalingDescriptionList]
-    ReplicaProvisionedReadCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
-    ReplicaProvisionedWriteCapacityAutoScalingSettings: Optional[AutoScalingSettingsDescription]
-    ReplicaStatus: Optional[ReplicaStatus]
+    RegionName: RegionName | None
+    GlobalSecondaryIndexes: ReplicaGlobalSecondaryIndexAutoScalingDescriptionList | None
+    ReplicaProvisionedReadCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
+    ReplicaProvisionedWriteCapacityAutoScalingSettings: AutoScalingSettingsDescription | None
+    ReplicaStatus: ReplicaStatus | None
 
 
-ReplicaAutoScalingDescriptionList = List[ReplicaAutoScalingDescription]
+ReplicaAutoScalingDescriptionList = list[ReplicaAutoScalingDescription]
 
 
 class TableAutoScalingDescription(TypedDict, total=False):
-    TableName: Optional[TableName]
-    TableStatus: Optional[TableStatus]
-    Replicas: Optional[ReplicaAutoScalingDescriptionList]
+    TableName: TableName | None
+    TableStatus: TableStatus | None
+    Replicas: ReplicaAutoScalingDescriptionList | None
 
 
 class DescribeTableReplicaAutoScalingOutput(TypedDict, total=False):
-    TableAutoScalingDescription: Optional[TableAutoScalingDescription]
+    TableAutoScalingDescription: TableAutoScalingDescription | None
 
 
 class DescribeTimeToLiveInput(ServiceRequest):
@@ -1658,107 +1656,107 @@ class DescribeTimeToLiveInput(ServiceRequest):
 
 
 class DescribeTimeToLiveOutput(TypedDict, total=False):
-    TimeToLiveDescription: Optional[TimeToLiveDescription]
+    TimeToLiveDescription: TimeToLiveDescription | None
 
 
 class EnableKinesisStreamingConfiguration(TypedDict, total=False):
-    ApproximateCreationDateTimePrecision: Optional[ApproximateCreationDateTimePrecision]
+    ApproximateCreationDateTimePrecision: ApproximateCreationDateTimePrecision | None
 
 
 class ExecuteStatementInput(ServiceRequest):
     Statement: PartiQLStatement
-    Parameters: Optional[PreparedStatementParameters]
-    ConsistentRead: Optional[ConsistentRead]
-    NextToken: Optional[PartiQLNextToken]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    Limit: Optional[PositiveIntegerObject]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    Parameters: PreparedStatementParameters | None
+    ConsistentRead: ConsistentRead | None
+    NextToken: PartiQLNextToken | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    Limit: PositiveIntegerObject | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class ExecuteStatementOutput(TypedDict, total=False):
-    Items: Optional[ItemList]
-    NextToken: Optional[PartiQLNextToken]
-    ConsumedCapacity: Optional[ConsumedCapacity]
-    LastEvaluatedKey: Optional[Key]
+    Items: ItemList | None
+    NextToken: PartiQLNextToken | None
+    ConsumedCapacity: ConsumedCapacity | None
+    LastEvaluatedKey: Key | None
 
 
 class ParameterizedStatement(TypedDict, total=False):
     Statement: PartiQLStatement
-    Parameters: Optional[PreparedStatementParameters]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    Parameters: PreparedStatementParameters | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
-ParameterizedStatements = List[ParameterizedStatement]
+ParameterizedStatements = list[ParameterizedStatement]
 
 
 class ExecuteTransactionInput(ServiceRequest):
     TransactStatements: ParameterizedStatements
-    ClientRequestToken: Optional[ClientRequestToken]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
+    ClientRequestToken: ClientRequestToken | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
 
 
 class ItemResponse(TypedDict, total=False):
-    Item: Optional[AttributeMap]
+    Item: AttributeMap | None
 
 
-ItemResponseList = List[ItemResponse]
+ItemResponseList = list[ItemResponse]
 
 
 class ExecuteTransactionOutput(TypedDict, total=False):
-    Responses: Optional[ItemResponseList]
-    ConsumedCapacity: Optional[ConsumedCapacityMultiple]
+    Responses: ItemResponseList | None
+    ConsumedCapacity: ConsumedCapacityMultiple | None
 
 
 class ExportSummary(TypedDict, total=False):
-    ExportArn: Optional[ExportArn]
-    ExportStatus: Optional[ExportStatus]
-    ExportType: Optional[ExportType]
+    ExportArn: ExportArn | None
+    ExportStatus: ExportStatus | None
+    ExportType: ExportType | None
 
 
-ExportSummaries = List[ExportSummary]
+ExportSummaries = list[ExportSummary]
 
 
 class ExportTableToPointInTimeInput(ServiceRequest):
     TableArn: TableArn
-    ExportTime: Optional[ExportTime]
-    ClientToken: Optional[ClientToken]
+    ExportTime: ExportTime | None
+    ClientToken: ClientToken | None
     S3Bucket: S3Bucket
-    S3BucketOwner: Optional[S3BucketOwner]
-    S3Prefix: Optional[S3Prefix]
-    S3SseAlgorithm: Optional[S3SseAlgorithm]
-    S3SseKmsKeyId: Optional[S3SseKmsKeyId]
-    ExportFormat: Optional[ExportFormat]
-    ExportType: Optional[ExportType]
-    IncrementalExportSpecification: Optional[IncrementalExportSpecification]
+    S3BucketOwner: S3BucketOwner | None
+    S3Prefix: S3Prefix | None
+    S3SseAlgorithm: S3SseAlgorithm | None
+    S3SseKmsKeyId: S3SseKmsKeyId | None
+    ExportFormat: ExportFormat | None
+    ExportType: ExportType | None
+    IncrementalExportSpecification: IncrementalExportSpecification | None
 
 
 class ExportTableToPointInTimeOutput(TypedDict, total=False):
-    ExportDescription: Optional[ExportDescription]
+    ExportDescription: ExportDescription | None
 
 
-FilterConditionMap = Dict[AttributeName, Condition]
+FilterConditionMap = dict[AttributeName, Condition]
 
 
 class Get(TypedDict, total=False):
     Key: Key
     TableName: TableArn
-    ProjectionExpression: Optional[ProjectionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
+    ProjectionExpression: ProjectionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
 
 
 class GetItemInput(ServiceRequest):
     TableName: TableArn
     Key: Key
-    AttributesToGet: Optional[AttributeNameList]
-    ConsistentRead: Optional[ConsistentRead]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ProjectionExpression: Optional[ProjectionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
+    AttributesToGet: AttributeNameList | None
+    ConsistentRead: ConsistentRead | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ProjectionExpression: ProjectionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
 
 
 class GetItemOutput(TypedDict, total=False):
-    Item: Optional[AttributeMap]
-    ConsumedCapacity: Optional[ConsumedCapacity]
+    Item: AttributeMap | None
+    ConsumedCapacity: ConsumedCapacity | None
 
 
 class GetResourcePolicyInput(ServiceRequest):
@@ -1766,79 +1764,79 @@ class GetResourcePolicyInput(ServiceRequest):
 
 
 class GetResourcePolicyOutput(TypedDict, total=False):
-    Policy: Optional[ResourcePolicy]
-    RevisionId: Optional[PolicyRevisionId]
+    Policy: ResourcePolicy | None
+    RevisionId: PolicyRevisionId | None
 
 
 class GlobalSecondaryIndexAutoScalingUpdate(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    ProvisionedWriteCapacityAutoScalingUpdate: Optional[AutoScalingSettingsUpdate]
+    IndexName: IndexName | None
+    ProvisionedWriteCapacityAutoScalingUpdate: AutoScalingSettingsUpdate | None
 
 
-GlobalSecondaryIndexAutoScalingUpdateList = List[GlobalSecondaryIndexAutoScalingUpdate]
+GlobalSecondaryIndexAutoScalingUpdateList = list[GlobalSecondaryIndexAutoScalingUpdate]
 
 
 class UpdateGlobalSecondaryIndexAction(TypedDict, total=False):
     IndexName: IndexName
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    WarmThroughput: Optional[WarmThroughput]
+    ProvisionedThroughput: ProvisionedThroughput | None
+    OnDemandThroughput: OnDemandThroughput | None
+    WarmThroughput: WarmThroughput | None
 
 
 class GlobalSecondaryIndexUpdate(TypedDict, total=False):
-    Update: Optional[UpdateGlobalSecondaryIndexAction]
-    Create: Optional[CreateGlobalSecondaryIndexAction]
-    Delete: Optional[DeleteGlobalSecondaryIndexAction]
+    Update: UpdateGlobalSecondaryIndexAction | None
+    Create: CreateGlobalSecondaryIndexAction | None
+    Delete: DeleteGlobalSecondaryIndexAction | None
 
 
-GlobalSecondaryIndexUpdateList = List[GlobalSecondaryIndexUpdate]
+GlobalSecondaryIndexUpdateList = list[GlobalSecondaryIndexUpdate]
 
 
 class GlobalTable(TypedDict, total=False):
-    GlobalTableName: Optional[TableName]
-    ReplicationGroup: Optional[ReplicaList]
+    GlobalTableName: TableName | None
+    ReplicationGroup: ReplicaList | None
 
 
 class GlobalTableGlobalSecondaryIndexSettingsUpdate(TypedDict, total=False):
     IndexName: IndexName
-    ProvisionedWriteCapacityUnits: Optional[PositiveLongObject]
-    ProvisionedWriteCapacityAutoScalingSettingsUpdate: Optional[AutoScalingSettingsUpdate]
+    ProvisionedWriteCapacityUnits: PositiveLongObject | None
+    ProvisionedWriteCapacityAutoScalingSettingsUpdate: AutoScalingSettingsUpdate | None
 
 
-GlobalTableGlobalSecondaryIndexSettingsUpdateList = List[
+GlobalTableGlobalSecondaryIndexSettingsUpdateList = list[
     GlobalTableGlobalSecondaryIndexSettingsUpdate
 ]
-GlobalTableList = List[GlobalTable]
+GlobalTableList = list[GlobalTable]
 
 
 class GlobalTableWitnessGroupUpdate(TypedDict, total=False):
-    Create: Optional[CreateGlobalTableWitnessGroupMemberAction]
-    Delete: Optional[DeleteGlobalTableWitnessGroupMemberAction]
+    Create: CreateGlobalTableWitnessGroupMemberAction | None
+    Delete: DeleteGlobalTableWitnessGroupMemberAction | None
 
 
-GlobalTableWitnessGroupUpdateList = List[GlobalTableWitnessGroupUpdate]
+GlobalTableWitnessGroupUpdateList = list[GlobalTableWitnessGroupUpdate]
 
 
 class ImportSummary(TypedDict, total=False):
-    ImportArn: Optional[ImportArn]
-    ImportStatus: Optional[ImportStatus]
-    TableArn: Optional[TableArn]
-    S3BucketSource: Optional[S3BucketSource]
-    CloudWatchLogGroupArn: Optional[CloudWatchLogGroupArn]
-    InputFormat: Optional[InputFormat]
-    StartTime: Optional[ImportStartTime]
-    EndTime: Optional[ImportEndTime]
+    ImportArn: ImportArn | None
+    ImportStatus: ImportStatus | None
+    TableArn: TableArn | None
+    S3BucketSource: S3BucketSource | None
+    CloudWatchLogGroupArn: CloudWatchLogGroupArn | None
+    InputFormat: InputFormat | None
+    StartTime: ImportStartTime | None
+    EndTime: ImportEndTime | None
 
 
-ImportSummaryList = List[ImportSummary]
+ImportSummaryList = list[ImportSummary]
 
 
 class ImportTableInput(ServiceRequest):
-    ClientToken: Optional[ClientToken]
+    ClientToken: ClientToken | None
     S3BucketSource: S3BucketSource
     InputFormat: InputFormat
-    InputFormatOptions: Optional[InputFormatOptions]
-    InputCompressionType: Optional[InputCompressionType]
+    InputFormatOptions: InputFormatOptions | None
+    InputCompressionType: InputCompressionType | None
     TableCreationParameters: TableCreationParameters
 
 
@@ -1846,20 +1844,20 @@ class ImportTableOutput(TypedDict, total=False):
     ImportTableDescription: ImportTableDescription
 
 
-KeyConditions = Dict[AttributeName, Condition]
+KeyConditions = dict[AttributeName, Condition]
 
 
 class KinesisStreamingDestinationInput(ServiceRequest):
     TableName: TableArn
     StreamArn: StreamArn
-    EnableKinesisStreamingConfiguration: Optional[EnableKinesisStreamingConfiguration]
+    EnableKinesisStreamingConfiguration: EnableKinesisStreamingConfiguration | None
 
 
 class KinesisStreamingDestinationOutput(TypedDict, total=False):
-    TableName: Optional[TableName]
-    StreamArn: Optional[StreamArn]
-    DestinationStatus: Optional[DestinationStatus]
-    EnableKinesisStreamingConfiguration: Optional[EnableKinesisStreamingConfiguration]
+    TableName: TableName | None
+    StreamArn: StreamArn | None
+    DestinationStatus: DestinationStatus | None
+    EnableKinesisStreamingConfiguration: EnableKinesisStreamingConfiguration | None
 
 
 TimeRangeUpperBound = datetime
@@ -1867,287 +1865,285 @@ TimeRangeLowerBound = datetime
 
 
 class ListBackupsInput(ServiceRequest):
-    TableName: Optional[TableArn]
-    Limit: Optional[BackupsInputLimit]
-    TimeRangeLowerBound: Optional[TimeRangeLowerBound]
-    TimeRangeUpperBound: Optional[TimeRangeUpperBound]
-    ExclusiveStartBackupArn: Optional[BackupArn]
-    BackupType: Optional[BackupTypeFilter]
+    TableName: TableArn | None
+    Limit: BackupsInputLimit | None
+    TimeRangeLowerBound: TimeRangeLowerBound | None
+    TimeRangeUpperBound: TimeRangeUpperBound | None
+    ExclusiveStartBackupArn: BackupArn | None
+    BackupType: BackupTypeFilter | None
 
 
 class ListBackupsOutput(TypedDict, total=False):
-    BackupSummaries: Optional[BackupSummaries]
-    LastEvaluatedBackupArn: Optional[BackupArn]
+    BackupSummaries: BackupSummaries | None
+    LastEvaluatedBackupArn: BackupArn | None
 
 
 class ListContributorInsightsInput(ServiceRequest):
-    TableName: Optional[TableArn]
-    NextToken: Optional[NextTokenString]
-    MaxResults: Optional[ListContributorInsightsLimit]
+    TableName: TableArn | None
+    NextToken: NextTokenString | None
+    MaxResults: ListContributorInsightsLimit | None
 
 
 class ListContributorInsightsOutput(TypedDict, total=False):
-    ContributorInsightsSummaries: Optional[ContributorInsightsSummaries]
-    NextToken: Optional[NextTokenString]
+    ContributorInsightsSummaries: ContributorInsightsSummaries | None
+    NextToken: NextTokenString | None
 
 
 class ListExportsInput(ServiceRequest):
-    TableArn: Optional[TableArn]
-    MaxResults: Optional[ListExportsMaxLimit]
-    NextToken: Optional[ExportNextToken]
+    TableArn: TableArn | None
+    MaxResults: ListExportsMaxLimit | None
+    NextToken: ExportNextToken | None
 
 
 class ListExportsOutput(TypedDict, total=False):
-    ExportSummaries: Optional[ExportSummaries]
-    NextToken: Optional[ExportNextToken]
+    ExportSummaries: ExportSummaries | None
+    NextToken: ExportNextToken | None
 
 
 class ListGlobalTablesInput(ServiceRequest):
-    ExclusiveStartGlobalTableName: Optional[TableName]
-    Limit: Optional[PositiveIntegerObject]
-    RegionName: Optional[RegionName]
+    ExclusiveStartGlobalTableName: TableName | None
+    Limit: PositiveIntegerObject | None
+    RegionName: RegionName | None
 
 
 class ListGlobalTablesOutput(TypedDict, total=False):
-    GlobalTables: Optional[GlobalTableList]
-    LastEvaluatedGlobalTableName: Optional[TableName]
+    GlobalTables: GlobalTableList | None
+    LastEvaluatedGlobalTableName: TableName | None
 
 
 class ListImportsInput(ServiceRequest):
-    TableArn: Optional[TableArn]
-    PageSize: Optional[ListImportsMaxLimit]
-    NextToken: Optional[ImportNextToken]
+    TableArn: TableArn | None
+    PageSize: ListImportsMaxLimit | None
+    NextToken: ImportNextToken | None
 
 
 class ListImportsOutput(TypedDict, total=False):
-    ImportSummaryList: Optional[ImportSummaryList]
-    NextToken: Optional[ImportNextToken]
+    ImportSummaryList: ImportSummaryList | None
+    NextToken: ImportNextToken | None
 
 
 class ListTablesInput(ServiceRequest):
-    ExclusiveStartTableName: Optional[TableName]
-    Limit: Optional[ListTablesInputLimit]
+    ExclusiveStartTableName: TableName | None
+    Limit: ListTablesInputLimit | None
 
 
-TableNameList = List[TableName]
+TableNameList = list[TableName]
 
 
 class ListTablesOutput(TypedDict, total=False):
-    TableNames: Optional[TableNameList]
-    LastEvaluatedTableName: Optional[TableName]
+    TableNames: TableNameList | None
+    LastEvaluatedTableName: TableName | None
 
 
 class ListTagsOfResourceInput(ServiceRequest):
     ResourceArn: ResourceArnString
-    NextToken: Optional[NextTokenString]
+    NextToken: NextTokenString | None
 
 
 class ListTagsOfResourceOutput(TypedDict, total=False):
-    Tags: Optional[TagList]
-    NextToken: Optional[NextTokenString]
+    Tags: TagList | None
+    NextToken: NextTokenString | None
 
 
 class PointInTimeRecoverySpecification(TypedDict, total=False):
     PointInTimeRecoveryEnabled: BooleanObject
-    RecoveryPeriodInDays: Optional[RecoveryPeriodInDays]
+    RecoveryPeriodInDays: RecoveryPeriodInDays | None
 
 
 class Put(TypedDict, total=False):
     Item: PutItemInputAttributeMap
     TableName: TableArn
-    ConditionExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    ConditionExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class PutItemInput(ServiceRequest):
     TableName: TableArn
     Item: PutItemInputAttributeMap
-    Expected: Optional[ExpectedAttributeMap]
-    ReturnValues: Optional[ReturnValue]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ReturnItemCollectionMetrics: Optional[ReturnItemCollectionMetrics]
-    ConditionalOperator: Optional[ConditionalOperator]
-    ConditionExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    Expected: ExpectedAttributeMap | None
+    ReturnValues: ReturnValue | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ReturnItemCollectionMetrics: ReturnItemCollectionMetrics | None
+    ConditionalOperator: ConditionalOperator | None
+    ConditionExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class PutItemOutput(TypedDict, total=False):
-    Attributes: Optional[AttributeMap]
-    ConsumedCapacity: Optional[ConsumedCapacity]
-    ItemCollectionMetrics: Optional[ItemCollectionMetrics]
+    Attributes: AttributeMap | None
+    ConsumedCapacity: ConsumedCapacity | None
+    ItemCollectionMetrics: ItemCollectionMetrics | None
 
 
 class PutResourcePolicyInput(ServiceRequest):
     ResourceArn: ResourceArnString
     Policy: ResourcePolicy
-    ExpectedRevisionId: Optional[PolicyRevisionId]
-    ConfirmRemoveSelfResourceAccess: Optional[ConfirmRemoveSelfResourceAccess]
+    ExpectedRevisionId: PolicyRevisionId | None
+    ConfirmRemoveSelfResourceAccess: ConfirmRemoveSelfResourceAccess | None
 
 
 class PutResourcePolicyOutput(TypedDict, total=False):
-    RevisionId: Optional[PolicyRevisionId]
+    RevisionId: PolicyRevisionId | None
 
 
 class QueryInput(ServiceRequest):
     TableName: TableArn
-    IndexName: Optional[IndexName]
-    Select: Optional[Select]
-    AttributesToGet: Optional[AttributeNameList]
-    Limit: Optional[PositiveIntegerObject]
-    ConsistentRead: Optional[ConsistentRead]
-    KeyConditions: Optional[KeyConditions]
-    QueryFilter: Optional[FilterConditionMap]
-    ConditionalOperator: Optional[ConditionalOperator]
-    ScanIndexForward: Optional[BooleanObject]
-    ExclusiveStartKey: Optional[Key]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ProjectionExpression: Optional[ProjectionExpression]
-    FilterExpression: Optional[ConditionExpression]
-    KeyConditionExpression: Optional[KeyExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
+    IndexName: IndexName | None
+    Select: Select | None
+    AttributesToGet: AttributeNameList | None
+    Limit: PositiveIntegerObject | None
+    ConsistentRead: ConsistentRead | None
+    KeyConditions: KeyConditions | None
+    QueryFilter: FilterConditionMap | None
+    ConditionalOperator: ConditionalOperator | None
+    ScanIndexForward: BooleanObject | None
+    ExclusiveStartKey: Key | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ProjectionExpression: ProjectionExpression | None
+    FilterExpression: ConditionExpression | None
+    KeyConditionExpression: KeyExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
 
 
 class QueryOutput(TypedDict, total=False):
-    Items: Optional[ItemList]
-    Count: Optional[Integer]
-    ScannedCount: Optional[Integer]
-    LastEvaluatedKey: Optional[Key]
-    ConsumedCapacity: Optional[ConsumedCapacity]
+    Items: ItemList | None
+    Count: Integer | None
+    ScannedCount: Integer | None
+    LastEvaluatedKey: Key | None
+    ConsumedCapacity: ConsumedCapacity | None
 
 
 class ReplicaGlobalSecondaryIndexAutoScalingUpdate(TypedDict, total=False):
-    IndexName: Optional[IndexName]
-    ProvisionedReadCapacityAutoScalingUpdate: Optional[AutoScalingSettingsUpdate]
+    IndexName: IndexName | None
+    ProvisionedReadCapacityAutoScalingUpdate: AutoScalingSettingsUpdate | None
 
 
-ReplicaGlobalSecondaryIndexAutoScalingUpdateList = List[
+ReplicaGlobalSecondaryIndexAutoScalingUpdateList = list[
     ReplicaGlobalSecondaryIndexAutoScalingUpdate
 ]
 
 
 class ReplicaAutoScalingUpdate(TypedDict, total=False):
     RegionName: RegionName
-    ReplicaGlobalSecondaryIndexUpdates: Optional[ReplicaGlobalSecondaryIndexAutoScalingUpdateList]
-    ReplicaProvisionedReadCapacityAutoScalingUpdate: Optional[AutoScalingSettingsUpdate]
+    ReplicaGlobalSecondaryIndexUpdates: ReplicaGlobalSecondaryIndexAutoScalingUpdateList | None
+    ReplicaProvisionedReadCapacityAutoScalingUpdate: AutoScalingSettingsUpdate | None
 
 
-ReplicaAutoScalingUpdateList = List[ReplicaAutoScalingUpdate]
+ReplicaAutoScalingUpdateList = list[ReplicaAutoScalingUpdate]
 
 
 class ReplicaGlobalSecondaryIndexSettingsUpdate(TypedDict, total=False):
     IndexName: IndexName
-    ProvisionedReadCapacityUnits: Optional[PositiveLongObject]
-    ProvisionedReadCapacityAutoScalingSettingsUpdate: Optional[AutoScalingSettingsUpdate]
+    ProvisionedReadCapacityUnits: PositiveLongObject | None
+    ProvisionedReadCapacityAutoScalingSettingsUpdate: AutoScalingSettingsUpdate | None
 
 
-ReplicaGlobalSecondaryIndexSettingsUpdateList = List[ReplicaGlobalSecondaryIndexSettingsUpdate]
+ReplicaGlobalSecondaryIndexSettingsUpdateList = list[ReplicaGlobalSecondaryIndexSettingsUpdate]
 
 
 class ReplicaSettingsUpdate(TypedDict, total=False):
     RegionName: RegionName
-    ReplicaProvisionedReadCapacityUnits: Optional[PositiveLongObject]
-    ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate: Optional[AutoScalingSettingsUpdate]
-    ReplicaGlobalSecondaryIndexSettingsUpdate: Optional[
-        ReplicaGlobalSecondaryIndexSettingsUpdateList
-    ]
-    ReplicaTableClass: Optional[TableClass]
+    ReplicaProvisionedReadCapacityUnits: PositiveLongObject | None
+    ReplicaProvisionedReadCapacityAutoScalingSettingsUpdate: AutoScalingSettingsUpdate | None
+    ReplicaGlobalSecondaryIndexSettingsUpdate: ReplicaGlobalSecondaryIndexSettingsUpdateList | None
+    ReplicaTableClass: TableClass | None
 
 
-ReplicaSettingsUpdateList = List[ReplicaSettingsUpdate]
+ReplicaSettingsUpdateList = list[ReplicaSettingsUpdate]
 
 
 class ReplicaUpdate(TypedDict, total=False):
-    Create: Optional[CreateReplicaAction]
-    Delete: Optional[DeleteReplicaAction]
+    Create: CreateReplicaAction | None
+    Delete: DeleteReplicaAction | None
 
 
-ReplicaUpdateList = List[ReplicaUpdate]
+ReplicaUpdateList = list[ReplicaUpdate]
 
 
 class UpdateReplicationGroupMemberAction(TypedDict, total=False):
     RegionName: RegionName
-    KMSMasterKeyId: Optional[KMSMasterKeyId]
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughputOverride]
-    OnDemandThroughputOverride: Optional[OnDemandThroughputOverride]
-    GlobalSecondaryIndexes: Optional[ReplicaGlobalSecondaryIndexList]
-    TableClassOverride: Optional[TableClass]
+    KMSMasterKeyId: KMSMasterKeyId | None
+    ProvisionedThroughputOverride: ProvisionedThroughputOverride | None
+    OnDemandThroughputOverride: OnDemandThroughputOverride | None
+    GlobalSecondaryIndexes: ReplicaGlobalSecondaryIndexList | None
+    TableClassOverride: TableClass | None
 
 
 class ReplicationGroupUpdate(TypedDict, total=False):
-    Create: Optional[CreateReplicationGroupMemberAction]
-    Update: Optional[UpdateReplicationGroupMemberAction]
-    Delete: Optional[DeleteReplicationGroupMemberAction]
+    Create: CreateReplicationGroupMemberAction | None
+    Update: UpdateReplicationGroupMemberAction | None
+    Delete: DeleteReplicationGroupMemberAction | None
 
 
-ReplicationGroupUpdateList = List[ReplicationGroupUpdate]
+ReplicationGroupUpdateList = list[ReplicationGroupUpdate]
 
 
 class RestoreTableFromBackupInput(ServiceRequest):
     TargetTableName: TableName
     BackupArn: BackupArn
-    BillingModeOverride: Optional[BillingMode]
-    GlobalSecondaryIndexOverride: Optional[GlobalSecondaryIndexList]
-    LocalSecondaryIndexOverride: Optional[LocalSecondaryIndexList]
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughput]
-    OnDemandThroughputOverride: Optional[OnDemandThroughput]
-    SSESpecificationOverride: Optional[SSESpecification]
+    BillingModeOverride: BillingMode | None
+    GlobalSecondaryIndexOverride: GlobalSecondaryIndexList | None
+    LocalSecondaryIndexOverride: LocalSecondaryIndexList | None
+    ProvisionedThroughputOverride: ProvisionedThroughput | None
+    OnDemandThroughputOverride: OnDemandThroughput | None
+    SSESpecificationOverride: SSESpecification | None
 
 
 class RestoreTableFromBackupOutput(TypedDict, total=False):
-    TableDescription: Optional[TableDescription]
+    TableDescription: TableDescription | None
 
 
 class RestoreTableToPointInTimeInput(ServiceRequest):
-    SourceTableArn: Optional[TableArn]
-    SourceTableName: Optional[TableName]
+    SourceTableArn: TableArn | None
+    SourceTableName: TableName | None
     TargetTableName: TableName
-    UseLatestRestorableTime: Optional[BooleanObject]
-    RestoreDateTime: Optional[Date]
-    BillingModeOverride: Optional[BillingMode]
-    GlobalSecondaryIndexOverride: Optional[GlobalSecondaryIndexList]
-    LocalSecondaryIndexOverride: Optional[LocalSecondaryIndexList]
-    ProvisionedThroughputOverride: Optional[ProvisionedThroughput]
-    OnDemandThroughputOverride: Optional[OnDemandThroughput]
-    SSESpecificationOverride: Optional[SSESpecification]
+    UseLatestRestorableTime: BooleanObject | None
+    RestoreDateTime: Date | None
+    BillingModeOverride: BillingMode | None
+    GlobalSecondaryIndexOverride: GlobalSecondaryIndexList | None
+    LocalSecondaryIndexOverride: LocalSecondaryIndexList | None
+    ProvisionedThroughputOverride: ProvisionedThroughput | None
+    OnDemandThroughputOverride: OnDemandThroughput | None
+    SSESpecificationOverride: SSESpecification | None
 
 
 class RestoreTableToPointInTimeOutput(TypedDict, total=False):
-    TableDescription: Optional[TableDescription]
+    TableDescription: TableDescription | None
 
 
 class ScanInput(ServiceRequest):
     TableName: TableArn
-    IndexName: Optional[IndexName]
-    AttributesToGet: Optional[AttributeNameList]
-    Limit: Optional[PositiveIntegerObject]
-    Select: Optional[Select]
-    ScanFilter: Optional[FilterConditionMap]
-    ConditionalOperator: Optional[ConditionalOperator]
-    ExclusiveStartKey: Optional[Key]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    TotalSegments: Optional[ScanTotalSegments]
-    Segment: Optional[ScanSegment]
-    ProjectionExpression: Optional[ProjectionExpression]
-    FilterExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ConsistentRead: Optional[ConsistentRead]
+    IndexName: IndexName | None
+    AttributesToGet: AttributeNameList | None
+    Limit: PositiveIntegerObject | None
+    Select: Select | None
+    ScanFilter: FilterConditionMap | None
+    ConditionalOperator: ConditionalOperator | None
+    ExclusiveStartKey: Key | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    TotalSegments: ScanTotalSegments | None
+    Segment: ScanSegment | None
+    ProjectionExpression: ProjectionExpression | None
+    FilterExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ConsistentRead: ConsistentRead | None
 
 
 class ScanOutput(TypedDict, total=False):
-    Items: Optional[ItemList]
-    Count: Optional[Integer]
-    ScannedCount: Optional[Integer]
-    LastEvaluatedKey: Optional[Key]
-    ConsumedCapacity: Optional[ConsumedCapacity]
+    Items: ItemList | None
+    Count: Integer | None
+    ScannedCount: Integer | None
+    LastEvaluatedKey: Key | None
+    ConsumedCapacity: ConsumedCapacity | None
 
 
-TagKeyList = List[TagKeyString]
+TagKeyList = list[TagKeyString]
 
 
 class TagResourceInput(ServiceRequest):
@@ -2164,49 +2160,49 @@ class TransactGetItem(TypedDict, total=False):
     Get: Get
 
 
-TransactGetItemList = List[TransactGetItem]
+TransactGetItemList = list[TransactGetItem]
 
 
 class TransactGetItemsInput(ServiceRequest):
     TransactItems: TransactGetItemList
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
 
 
 class TransactGetItemsOutput(TypedDict, total=False):
-    ConsumedCapacity: Optional[ConsumedCapacityMultiple]
-    Responses: Optional[ItemResponseList]
+    ConsumedCapacity: ConsumedCapacityMultiple | None
+    Responses: ItemResponseList | None
 
 
 class Update(TypedDict, total=False):
     Key: Key
     UpdateExpression: UpdateExpression
     TableName: TableArn
-    ConditionExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    ConditionExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class TransactWriteItem(TypedDict, total=False):
-    ConditionCheck: Optional[ConditionCheck]
-    Put: Optional[Put]
-    Delete: Optional[Delete]
-    Update: Optional[Update]
+    ConditionCheck: ConditionCheck | None
+    Put: Put | None
+    Delete: Delete | None
+    Update: Update | None
 
 
-TransactWriteItemList = List[TransactWriteItem]
+TransactWriteItemList = list[TransactWriteItem]
 
 
 class TransactWriteItemsInput(ServiceRequest):
     TransactItems: TransactWriteItemList
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ReturnItemCollectionMetrics: Optional[ReturnItemCollectionMetrics]
-    ClientRequestToken: Optional[ClientRequestToken]
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ReturnItemCollectionMetrics: ReturnItemCollectionMetrics | None
+    ClientRequestToken: ClientRequestToken | None
 
 
 class TransactWriteItemsOutput(TypedDict, total=False):
-    ConsumedCapacity: Optional[ConsumedCapacityMultiple]
-    ItemCollectionMetrics: Optional[ItemCollectionMetricsPerTable]
+    ConsumedCapacity: ConsumedCapacityMultiple | None
+    ItemCollectionMetrics: ItemCollectionMetricsPerTable | None
 
 
 class UntagResourceInput(ServiceRequest):
@@ -2220,21 +2216,21 @@ class UpdateContinuousBackupsInput(ServiceRequest):
 
 
 class UpdateContinuousBackupsOutput(TypedDict, total=False):
-    ContinuousBackupsDescription: Optional[ContinuousBackupsDescription]
+    ContinuousBackupsDescription: ContinuousBackupsDescription | None
 
 
 class UpdateContributorInsightsInput(ServiceRequest):
     TableName: TableArn
-    IndexName: Optional[IndexName]
+    IndexName: IndexName | None
     ContributorInsightsAction: ContributorInsightsAction
-    ContributorInsightsMode: Optional[ContributorInsightsMode]
+    ContributorInsightsMode: ContributorInsightsMode | None
 
 
 class UpdateContributorInsightsOutput(TypedDict, total=False):
-    TableName: Optional[TableName]
-    IndexName: Optional[IndexName]
-    ContributorInsightsStatus: Optional[ContributorInsightsStatus]
-    ContributorInsightsMode: Optional[ContributorInsightsMode]
+    TableName: TableName | None
+    IndexName: IndexName | None
+    ContributorInsightsStatus: ContributorInsightsStatus | None
+    ContributorInsightsMode: ContributorInsightsMode | None
 
 
 class UpdateGlobalTableInput(ServiceRequest):
@@ -2243,96 +2239,94 @@ class UpdateGlobalTableInput(ServiceRequest):
 
 
 class UpdateGlobalTableOutput(TypedDict, total=False):
-    GlobalTableDescription: Optional[GlobalTableDescription]
+    GlobalTableDescription: GlobalTableDescription | None
 
 
 class UpdateGlobalTableSettingsInput(ServiceRequest):
     GlobalTableName: TableName
-    GlobalTableBillingMode: Optional[BillingMode]
-    GlobalTableProvisionedWriteCapacityUnits: Optional[PositiveLongObject]
-    GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate: Optional[
-        AutoScalingSettingsUpdate
-    ]
-    GlobalTableGlobalSecondaryIndexSettingsUpdate: Optional[
-        GlobalTableGlobalSecondaryIndexSettingsUpdateList
-    ]
-    ReplicaSettingsUpdate: Optional[ReplicaSettingsUpdateList]
+    GlobalTableBillingMode: BillingMode | None
+    GlobalTableProvisionedWriteCapacityUnits: PositiveLongObject | None
+    GlobalTableProvisionedWriteCapacityAutoScalingSettingsUpdate: AutoScalingSettingsUpdate | None
+    GlobalTableGlobalSecondaryIndexSettingsUpdate: (
+        GlobalTableGlobalSecondaryIndexSettingsUpdateList | None
+    )
+    ReplicaSettingsUpdate: ReplicaSettingsUpdateList | None
 
 
 class UpdateGlobalTableSettingsOutput(TypedDict, total=False):
-    GlobalTableName: Optional[TableName]
-    ReplicaSettings: Optional[ReplicaSettingsDescriptionList]
+    GlobalTableName: TableName | None
+    ReplicaSettings: ReplicaSettingsDescriptionList | None
 
 
 class UpdateItemInput(ServiceRequest):
     TableName: TableArn
     Key: Key
-    AttributeUpdates: Optional[AttributeUpdates]
-    Expected: Optional[ExpectedAttributeMap]
-    ConditionalOperator: Optional[ConditionalOperator]
-    ReturnValues: Optional[ReturnValue]
-    ReturnConsumedCapacity: Optional[ReturnConsumedCapacity]
-    ReturnItemCollectionMetrics: Optional[ReturnItemCollectionMetrics]
-    UpdateExpression: Optional[UpdateExpression]
-    ConditionExpression: Optional[ConditionExpression]
-    ExpressionAttributeNames: Optional[ExpressionAttributeNameMap]
-    ExpressionAttributeValues: Optional[ExpressionAttributeValueMap]
-    ReturnValuesOnConditionCheckFailure: Optional[ReturnValuesOnConditionCheckFailure]
+    AttributeUpdates: AttributeUpdates | None
+    Expected: ExpectedAttributeMap | None
+    ConditionalOperator: ConditionalOperator | None
+    ReturnValues: ReturnValue | None
+    ReturnConsumedCapacity: ReturnConsumedCapacity | None
+    ReturnItemCollectionMetrics: ReturnItemCollectionMetrics | None
+    UpdateExpression: UpdateExpression | None
+    ConditionExpression: ConditionExpression | None
+    ExpressionAttributeNames: ExpressionAttributeNameMap | None
+    ExpressionAttributeValues: ExpressionAttributeValueMap | None
+    ReturnValuesOnConditionCheckFailure: ReturnValuesOnConditionCheckFailure | None
 
 
 class UpdateItemOutput(TypedDict, total=False):
-    Attributes: Optional[AttributeMap]
-    ConsumedCapacity: Optional[ConsumedCapacity]
-    ItemCollectionMetrics: Optional[ItemCollectionMetrics]
+    Attributes: AttributeMap | None
+    ConsumedCapacity: ConsumedCapacity | None
+    ItemCollectionMetrics: ItemCollectionMetrics | None
 
 
 class UpdateKinesisStreamingConfiguration(TypedDict, total=False):
-    ApproximateCreationDateTimePrecision: Optional[ApproximateCreationDateTimePrecision]
+    ApproximateCreationDateTimePrecision: ApproximateCreationDateTimePrecision | None
 
 
 class UpdateKinesisStreamingDestinationInput(ServiceRequest):
     TableName: TableArn
     StreamArn: StreamArn
-    UpdateKinesisStreamingConfiguration: Optional[UpdateKinesisStreamingConfiguration]
+    UpdateKinesisStreamingConfiguration: UpdateKinesisStreamingConfiguration | None
 
 
 class UpdateKinesisStreamingDestinationOutput(TypedDict, total=False):
-    TableName: Optional[TableName]
-    StreamArn: Optional[StreamArn]
-    DestinationStatus: Optional[DestinationStatus]
-    UpdateKinesisStreamingConfiguration: Optional[UpdateKinesisStreamingConfiguration]
+    TableName: TableName | None
+    StreamArn: StreamArn | None
+    DestinationStatus: DestinationStatus | None
+    UpdateKinesisStreamingConfiguration: UpdateKinesisStreamingConfiguration | None
 
 
 class UpdateTableInput(ServiceRequest):
-    AttributeDefinitions: Optional[AttributeDefinitions]
+    AttributeDefinitions: AttributeDefinitions | None
     TableName: TableArn
-    BillingMode: Optional[BillingMode]
-    ProvisionedThroughput: Optional[ProvisionedThroughput]
-    GlobalSecondaryIndexUpdates: Optional[GlobalSecondaryIndexUpdateList]
-    StreamSpecification: Optional[StreamSpecification]
-    SSESpecification: Optional[SSESpecification]
-    ReplicaUpdates: Optional[ReplicationGroupUpdateList]
-    TableClass: Optional[TableClass]
-    DeletionProtectionEnabled: Optional[DeletionProtectionEnabled]
-    MultiRegionConsistency: Optional[MultiRegionConsistency]
-    GlobalTableWitnessUpdates: Optional[GlobalTableWitnessGroupUpdateList]
-    OnDemandThroughput: Optional[OnDemandThroughput]
-    WarmThroughput: Optional[WarmThroughput]
+    BillingMode: BillingMode | None
+    ProvisionedThroughput: ProvisionedThroughput | None
+    GlobalSecondaryIndexUpdates: GlobalSecondaryIndexUpdateList | None
+    StreamSpecification: StreamSpecification | None
+    SSESpecification: SSESpecification | None
+    ReplicaUpdates: ReplicationGroupUpdateList | None
+    TableClass: TableClass | None
+    DeletionProtectionEnabled: DeletionProtectionEnabled | None
+    MultiRegionConsistency: MultiRegionConsistency | None
+    GlobalTableWitnessUpdates: GlobalTableWitnessGroupUpdateList | None
+    OnDemandThroughput: OnDemandThroughput | None
+    WarmThroughput: WarmThroughput | None
 
 
 class UpdateTableOutput(TypedDict, total=False):
-    TableDescription: Optional[TableDescription]
+    TableDescription: TableDescription | None
 
 
 class UpdateTableReplicaAutoScalingInput(ServiceRequest):
-    GlobalSecondaryIndexUpdates: Optional[GlobalSecondaryIndexAutoScalingUpdateList]
+    GlobalSecondaryIndexUpdates: GlobalSecondaryIndexAutoScalingUpdateList | None
     TableName: TableArn
-    ProvisionedWriteCapacityAutoScalingUpdate: Optional[AutoScalingSettingsUpdate]
-    ReplicaUpdates: Optional[ReplicaAutoScalingUpdateList]
+    ProvisionedWriteCapacityAutoScalingUpdate: AutoScalingSettingsUpdate | None
+    ReplicaUpdates: ReplicaAutoScalingUpdateList | None
 
 
 class UpdateTableReplicaAutoScalingOutput(TypedDict, total=False):
-    TableAutoScalingDescription: Optional[TableAutoScalingDescription]
+    TableAutoScalingDescription: TableAutoScalingDescription | None
 
 
 class UpdateTimeToLiveInput(ServiceRequest):
@@ -2341,12 +2335,12 @@ class UpdateTimeToLiveInput(ServiceRequest):
 
 
 class UpdateTimeToLiveOutput(TypedDict, total=False):
-    TimeToLiveSpecification: Optional[TimeToLiveSpecification]
+    TimeToLiveSpecification: TimeToLiveSpecification | None
 
 
 class DynamodbApi:
-    service = "dynamodb"
-    version = "2012-08-10"
+    service: str = "dynamodb"
+    version: str = "2012-08-10"
 
     @handler("BatchExecuteStatement")
     def batch_execute_statement(

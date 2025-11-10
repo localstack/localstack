@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -78,13 +78,13 @@ class ThrottledException(ServiceException):
     status_code: int = 400
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class ComplianceDetails(TypedDict, total=False):
-    NoncompliantKeys: Optional[TagKeyList]
-    KeysWithNoncompliantValues: Optional[TagKeyList]
-    ComplianceStatus: Optional[ComplianceStatus]
+    NoncompliantKeys: TagKeyList | None
+    KeysWithNoncompliantValues: TagKeyList | None
+    ComplianceStatus: ComplianceStatus | None
 
 
 class DescribeReportCreationInput(ServiceRequest):
@@ -92,76 +92,76 @@ class DescribeReportCreationInput(ServiceRequest):
 
 
 class DescribeReportCreationOutput(TypedDict, total=False):
-    Status: Optional[Status]
-    S3Location: Optional[S3Location]
-    ErrorMessage: Optional[ErrorMessage]
+    Status: Status | None
+    S3Location: S3Location | None
+    ErrorMessage: ErrorMessage | None
 
 
 class FailureInfo(TypedDict, total=False):
-    StatusCode: Optional[StatusCode]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    StatusCode: StatusCode | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-FailedResourcesMap = Dict[ResourceARN, FailureInfo]
-GroupBy = List[GroupByAttribute]
-TagKeyFilterList = List[TagKey]
-ResourceTypeFilterList = List[AmazonResourceType]
-RegionFilterList = List[Region]
-TargetIdFilterList = List[TargetId]
+FailedResourcesMap = dict[ResourceARN, FailureInfo]
+GroupBy = list[GroupByAttribute]
+TagKeyFilterList = list[TagKey]
+ResourceTypeFilterList = list[AmazonResourceType]
+RegionFilterList = list[Region]
+TargetIdFilterList = list[TargetId]
 
 
 class GetComplianceSummaryInput(ServiceRequest):
-    TargetIdFilters: Optional[TargetIdFilterList]
-    RegionFilters: Optional[RegionFilterList]
-    ResourceTypeFilters: Optional[ResourceTypeFilterList]
-    TagKeyFilters: Optional[TagKeyFilterList]
-    GroupBy: Optional[GroupBy]
-    MaxResults: Optional[MaxResultsGetComplianceSummary]
-    PaginationToken: Optional[PaginationToken]
+    TargetIdFilters: TargetIdFilterList | None
+    RegionFilters: RegionFilterList | None
+    ResourceTypeFilters: ResourceTypeFilterList | None
+    TagKeyFilters: TagKeyFilterList | None
+    GroupBy: GroupBy | None
+    MaxResults: MaxResultsGetComplianceSummary | None
+    PaginationToken: PaginationToken | None
 
 
 NonCompliantResources = int
 
 
 class Summary(TypedDict, total=False):
-    LastUpdated: Optional[LastUpdated]
-    TargetId: Optional[TargetId]
-    TargetIdType: Optional[TargetIdType]
-    Region: Optional[Region]
-    ResourceType: Optional[AmazonResourceType]
-    NonCompliantResources: Optional[NonCompliantResources]
+    LastUpdated: LastUpdated | None
+    TargetId: TargetId | None
+    TargetIdType: TargetIdType | None
+    Region: Region | None
+    ResourceType: AmazonResourceType | None
+    NonCompliantResources: NonCompliantResources | None
 
 
-SummaryList = List[Summary]
+SummaryList = list[Summary]
 
 
 class GetComplianceSummaryOutput(TypedDict, total=False):
-    SummaryList: Optional[SummaryList]
-    PaginationToken: Optional[PaginationToken]
+    SummaryList: SummaryList | None
+    PaginationToken: PaginationToken | None
 
 
-ResourceARNListForGet = List[ResourceARN]
-TagValueList = List[TagValue]
+ResourceARNListForGet = list[ResourceARN]
+TagValueList = list[TagValue]
 
 
 class TagFilter(TypedDict, total=False):
-    Key: Optional[TagKey]
-    Values: Optional[TagValueList]
+    Key: TagKey | None
+    Values: TagValueList | None
 
 
-TagFilterList = List[TagFilter]
+TagFilterList = list[TagFilter]
 
 
 class GetResourcesInput(ServiceRequest):
-    PaginationToken: Optional[PaginationToken]
-    TagFilters: Optional[TagFilterList]
-    ResourcesPerPage: Optional[ResourcesPerPage]
-    TagsPerPage: Optional[TagsPerPage]
-    ResourceTypeFilters: Optional[ResourceTypeFilterList]
-    IncludeComplianceDetails: Optional[IncludeComplianceDetails]
-    ExcludeCompliantResources: Optional[ExcludeCompliantResources]
-    ResourceARNList: Optional[ResourceARNListForGet]
+    PaginationToken: PaginationToken | None
+    TagFilters: TagFilterList | None
+    ResourcesPerPage: ResourcesPerPage | None
+    TagsPerPage: TagsPerPage | None
+    ResourceTypeFilters: ResourceTypeFilterList | None
+    IncludeComplianceDetails: IncludeComplianceDetails | None
+    ExcludeCompliantResources: ExcludeCompliantResources | None
+    ResourceARNList: ResourceARNListForGet | None
 
 
 class Tag(TypedDict, total=False):
@@ -169,46 +169,46 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ResourceTagMapping(TypedDict, total=False):
-    ResourceARN: Optional[ResourceARN]
-    Tags: Optional[TagList]
-    ComplianceDetails: Optional[ComplianceDetails]
+    ResourceARN: ResourceARN | None
+    Tags: TagList | None
+    ComplianceDetails: ComplianceDetails | None
 
 
-ResourceTagMappingList = List[ResourceTagMapping]
+ResourceTagMappingList = list[ResourceTagMapping]
 
 
 class GetResourcesOutput(TypedDict, total=False):
-    PaginationToken: Optional[PaginationToken]
-    ResourceTagMappingList: Optional[ResourceTagMappingList]
+    PaginationToken: PaginationToken | None
+    ResourceTagMappingList: ResourceTagMappingList | None
 
 
 class GetTagKeysInput(ServiceRequest):
-    PaginationToken: Optional[PaginationToken]
+    PaginationToken: PaginationToken | None
 
 
 class GetTagKeysOutput(TypedDict, total=False):
-    PaginationToken: Optional[PaginationToken]
-    TagKeys: Optional[TagKeyList]
+    PaginationToken: PaginationToken | None
+    TagKeys: TagKeyList | None
 
 
 class GetTagValuesInput(ServiceRequest):
-    PaginationToken: Optional[PaginationToken]
+    PaginationToken: PaginationToken | None
     Key: TagKey
 
 
-TagValuesOutputList = List[TagValue]
+TagValuesOutputList = list[TagValue]
 
 
 class GetTagValuesOutput(TypedDict, total=False):
-    PaginationToken: Optional[PaginationToken]
-    TagValues: Optional[TagValuesOutputList]
+    PaginationToken: PaginationToken | None
+    TagValues: TagValuesOutputList | None
 
 
-ResourceARNListForTagUntag = List[ResourceARN]
+ResourceARNListForTagUntag = list[ResourceARN]
 
 
 class StartReportCreationInput(ServiceRequest):
@@ -219,8 +219,8 @@ class StartReportCreationOutput(TypedDict, total=False):
     pass
 
 
-TagKeyListForUntag = List[TagKey]
-TagMap = Dict[TagKey, TagValue]
+TagKeyListForUntag = list[TagKey]
+TagMap = dict[TagKey, TagValue]
 
 
 class TagResourcesInput(ServiceRequest):
@@ -229,7 +229,7 @@ class TagResourcesInput(ServiceRequest):
 
 
 class TagResourcesOutput(TypedDict, total=False):
-    FailedResourcesMap: Optional[FailedResourcesMap]
+    FailedResourcesMap: FailedResourcesMap | None
 
 
 class UntagResourcesInput(ServiceRequest):
@@ -238,12 +238,12 @@ class UntagResourcesInput(ServiceRequest):
 
 
 class UntagResourcesOutput(TypedDict, total=False):
-    FailedResourcesMap: Optional[FailedResourcesMap]
+    FailedResourcesMap: FailedResourcesMap | None
 
 
 class ResourcegroupstaggingapiApi:
-    service = "resourcegroupstaggingapi"
-    version = "2017-01-26"
+    service: str = "resourcegroupstaggingapi"
+    version: str = "2017-01-26"
 
     @handler("DescribeReportCreation")
     def describe_report_creation(

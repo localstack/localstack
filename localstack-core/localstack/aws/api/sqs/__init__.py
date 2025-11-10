@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -224,8 +224,8 @@ class UnsupportedOperation(ServiceException):
     status_code: int = 400
 
 
-AWSAccountIdList = List[String]
-ActionNameList = List[String]
+AWSAccountIdList = list[String]
+ActionNameList = list[String]
 
 
 class AddPermissionRequest(ServiceRequest):
@@ -235,19 +235,19 @@ class AddPermissionRequest(ServiceRequest):
     Actions: ActionNameList
 
 
-AttributeNameList = List[QueueAttributeName]
+AttributeNameList = list[QueueAttributeName]
 
 
 class BatchResultErrorEntry(TypedDict, total=False):
     Id: String
     SenderFault: Boolean
     Code: String
-    Message: Optional[String]
+    Message: String | None
 
 
-BatchResultErrorEntryList = List[BatchResultErrorEntry]
+BatchResultErrorEntryList = list[BatchResultErrorEntry]
 Binary = bytes
-BinaryList = List[Binary]
+BinaryList = list[Binary]
 
 
 class CancelMessageMoveTaskRequest(ServiceRequest):
@@ -258,16 +258,16 @@ Long = int
 
 
 class CancelMessageMoveTaskResult(TypedDict, total=False):
-    ApproximateNumberOfMessagesMoved: Optional[Long]
+    ApproximateNumberOfMessagesMoved: Long | None
 
 
 class ChangeMessageVisibilityBatchRequestEntry(TypedDict, total=False):
     Id: String
     ReceiptHandle: String
-    VisibilityTimeout: Optional[NullableInteger]
+    VisibilityTimeout: NullableInteger | None
 
 
-ChangeMessageVisibilityBatchRequestEntryList = List[ChangeMessageVisibilityBatchRequestEntry]
+ChangeMessageVisibilityBatchRequestEntryList = list[ChangeMessageVisibilityBatchRequestEntry]
 
 
 class ChangeMessageVisibilityBatchRequest(ServiceRequest):
@@ -279,7 +279,7 @@ class ChangeMessageVisibilityBatchResultEntry(TypedDict, total=False):
     Id: String
 
 
-ChangeMessageVisibilityBatchResultEntryList = List[ChangeMessageVisibilityBatchResultEntry]
+ChangeMessageVisibilityBatchResultEntryList = list[ChangeMessageVisibilityBatchResultEntry]
 
 
 class ChangeMessageVisibilityBatchResult(TypedDict, total=False):
@@ -293,18 +293,18 @@ class ChangeMessageVisibilityRequest(ServiceRequest):
     VisibilityTimeout: NullableInteger
 
 
-TagMap = Dict[TagKey, TagValue]
-QueueAttributeMap = Dict[QueueAttributeName, String]
+TagMap = dict[TagKey, TagValue]
+QueueAttributeMap = dict[QueueAttributeName, String]
 
 
 class CreateQueueRequest(ServiceRequest):
     QueueName: String
-    Attributes: Optional[QueueAttributeMap]
-    tags: Optional[TagMap]
+    Attributes: QueueAttributeMap | None
+    tags: TagMap | None
 
 
 class CreateQueueResult(TypedDict, total=False):
-    QueueUrl: Optional[String]
+    QueueUrl: String | None
 
 
 class DeleteMessageBatchRequestEntry(TypedDict, total=False):
@@ -312,7 +312,7 @@ class DeleteMessageBatchRequestEntry(TypedDict, total=False):
     ReceiptHandle: String
 
 
-DeleteMessageBatchRequestEntryList = List[DeleteMessageBatchRequestEntry]
+DeleteMessageBatchRequestEntryList = list[DeleteMessageBatchRequestEntry]
 
 
 class DeleteMessageBatchRequest(ServiceRequest):
@@ -324,7 +324,7 @@ class DeleteMessageBatchResultEntry(TypedDict, total=False):
     Id: String
 
 
-DeleteMessageBatchResultEntryList = List[DeleteMessageBatchResultEntry]
+DeleteMessageBatchResultEntryList = list[DeleteMessageBatchResultEntry]
 
 
 class DeleteMessageBatchResult(TypedDict, total=False):
@@ -343,61 +343,61 @@ class DeleteQueueRequest(ServiceRequest):
 
 class GetQueueAttributesRequest(ServiceRequest):
     QueueUrl: String
-    AttributeNames: Optional[AttributeNameList]
+    AttributeNames: AttributeNameList | None
 
 
 class GetQueueAttributesResult(TypedDict, total=False):
-    Attributes: Optional[QueueAttributeMap]
+    Attributes: QueueAttributeMap | None
 
 
 class GetQueueUrlRequest(ServiceRequest):
     QueueName: String
-    QueueOwnerAWSAccountId: Optional[String]
+    QueueOwnerAWSAccountId: String | None
 
 
 class GetQueueUrlResult(TypedDict, total=False):
-    QueueUrl: Optional[String]
+    QueueUrl: String | None
 
 
 class ListDeadLetterSourceQueuesRequest(ServiceRequest):
     QueueUrl: String
-    NextToken: Optional[Token]
-    MaxResults: Optional[BoxedInteger]
+    NextToken: Token | None
+    MaxResults: BoxedInteger | None
 
 
-QueueUrlList = List[String]
+QueueUrlList = list[String]
 
 
 class ListDeadLetterSourceQueuesResult(TypedDict, total=False):
     queueUrls: QueueUrlList
-    NextToken: Optional[Token]
+    NextToken: Token | None
 
 
 class ListMessageMoveTasksRequest(ServiceRequest):
     SourceArn: String
-    MaxResults: Optional[NullableInteger]
+    MaxResults: NullableInteger | None
 
 
 NullableLong = int
 
 
 class ListMessageMoveTasksResultEntry(TypedDict, total=False):
-    TaskHandle: Optional[String]
-    Status: Optional[String]
-    SourceArn: Optional[String]
-    DestinationArn: Optional[String]
-    MaxNumberOfMessagesPerSecond: Optional[NullableInteger]
-    ApproximateNumberOfMessagesMoved: Optional[Long]
-    ApproximateNumberOfMessagesToMove: Optional[NullableLong]
-    FailureReason: Optional[String]
-    StartedTimestamp: Optional[Long]
+    TaskHandle: String | None
+    Status: String | None
+    SourceArn: String | None
+    DestinationArn: String | None
+    MaxNumberOfMessagesPerSecond: NullableInteger | None
+    ApproximateNumberOfMessagesMoved: Long | None
+    ApproximateNumberOfMessagesToMove: NullableLong | None
+    FailureReason: String | None
+    StartedTimestamp: Long | None
 
 
-ListMessageMoveTasksResultEntryList = List[ListMessageMoveTasksResultEntry]
+ListMessageMoveTasksResultEntryList = list[ListMessageMoveTasksResultEntry]
 
 
 class ListMessageMoveTasksResult(TypedDict, total=False):
-    Results: Optional[ListMessageMoveTasksResultEntryList]
+    Results: ListMessageMoveTasksResultEntryList | None
 
 
 class ListQueueTagsRequest(ServiceRequest):
@@ -405,61 +405,61 @@ class ListQueueTagsRequest(ServiceRequest):
 
 
 class ListQueueTagsResult(TypedDict, total=False):
-    Tags: Optional[TagMap]
+    Tags: TagMap | None
 
 
 class ListQueuesRequest(ServiceRequest):
-    QueueNamePrefix: Optional[String]
-    NextToken: Optional[Token]
-    MaxResults: Optional[BoxedInteger]
+    QueueNamePrefix: String | None
+    NextToken: Token | None
+    MaxResults: BoxedInteger | None
 
 
 class ListQueuesResult(TypedDict, total=False):
-    QueueUrls: Optional[QueueUrlList]
-    NextToken: Optional[Token]
+    QueueUrls: QueueUrlList | None
+    NextToken: Token | None
 
 
-StringList = List[String]
+StringList = list[String]
 
 
 class MessageAttributeValue(TypedDict, total=False):
-    StringValue: Optional[String]
-    BinaryValue: Optional[Binary]
-    StringListValues: Optional[StringList]
-    BinaryListValues: Optional[BinaryList]
+    StringValue: String | None
+    BinaryValue: Binary | None
+    StringListValues: StringList | None
+    BinaryListValues: BinaryList | None
     DataType: String
 
 
-MessageBodyAttributeMap = Dict[String, MessageAttributeValue]
-MessageSystemAttributeMap = Dict[MessageSystemAttributeName, String]
+MessageBodyAttributeMap = dict[String, MessageAttributeValue]
+MessageSystemAttributeMap = dict[MessageSystemAttributeName, String]
 
 
 class Message(TypedDict, total=False):
-    MessageId: Optional[String]
-    ReceiptHandle: Optional[String]
-    MD5OfBody: Optional[String]
-    Body: Optional[String]
-    Attributes: Optional[MessageSystemAttributeMap]
-    MD5OfMessageAttributes: Optional[String]
-    MessageAttributes: Optional[MessageBodyAttributeMap]
+    MessageId: String | None
+    ReceiptHandle: String | None
+    MD5OfBody: String | None
+    Body: String | None
+    Attributes: MessageSystemAttributeMap | None
+    MD5OfMessageAttributes: String | None
+    MessageAttributes: MessageBodyAttributeMap | None
 
 
-MessageAttributeNameList = List[MessageAttributeName]
+MessageAttributeNameList = list[MessageAttributeName]
 
 
 class MessageSystemAttributeValue(TypedDict, total=False):
-    StringValue: Optional[String]
-    BinaryValue: Optional[Binary]
-    StringListValues: Optional[StringList]
-    BinaryListValues: Optional[BinaryList]
+    StringValue: String | None
+    BinaryValue: Binary | None
+    StringListValues: StringList | None
+    BinaryListValues: BinaryList | None
     DataType: String
 
 
-MessageBodySystemAttributeMap = Dict[
+MessageBodySystemAttributeMap = dict[
     MessageSystemAttributeNameForSends, MessageSystemAttributeValue
 ]
-MessageList = List[Message]
-MessageSystemAttributeList = List[MessageSystemAttributeName]
+MessageList = list[Message]
+MessageSystemAttributeList = list[MessageSystemAttributeName]
 
 
 class PurgeQueueRequest(ServiceRequest):
@@ -468,17 +468,17 @@ class PurgeQueueRequest(ServiceRequest):
 
 class ReceiveMessageRequest(ServiceRequest):
     QueueUrl: String
-    AttributeNames: Optional[AttributeNameList]
-    MessageSystemAttributeNames: Optional[MessageSystemAttributeList]
-    MessageAttributeNames: Optional[MessageAttributeNameList]
-    MaxNumberOfMessages: Optional[NullableInteger]
-    VisibilityTimeout: Optional[NullableInteger]
-    WaitTimeSeconds: Optional[NullableInteger]
-    ReceiveRequestAttemptId: Optional[String]
+    AttributeNames: AttributeNameList | None
+    MessageSystemAttributeNames: MessageSystemAttributeList | None
+    MessageAttributeNames: MessageAttributeNameList | None
+    MaxNumberOfMessages: NullableInteger | None
+    VisibilityTimeout: NullableInteger | None
+    WaitTimeSeconds: NullableInteger | None
+    ReceiveRequestAttemptId: String | None
 
 
 class ReceiveMessageResult(TypedDict, total=False):
-    Messages: Optional[MessageList]
+    Messages: MessageList | None
 
 
 class RemovePermissionRequest(ServiceRequest):
@@ -489,14 +489,14 @@ class RemovePermissionRequest(ServiceRequest):
 class SendMessageBatchRequestEntry(TypedDict, total=False):
     Id: String
     MessageBody: String
-    DelaySeconds: Optional[NullableInteger]
-    MessageAttributes: Optional[MessageBodyAttributeMap]
-    MessageSystemAttributes: Optional[MessageBodySystemAttributeMap]
-    MessageDeduplicationId: Optional[String]
-    MessageGroupId: Optional[String]
+    DelaySeconds: NullableInteger | None
+    MessageAttributes: MessageBodyAttributeMap | None
+    MessageSystemAttributes: MessageBodySystemAttributeMap | None
+    MessageDeduplicationId: String | None
+    MessageGroupId: String | None
 
 
-SendMessageBatchRequestEntryList = List[SendMessageBatchRequestEntry]
+SendMessageBatchRequestEntryList = list[SendMessageBatchRequestEntry]
 
 
 class SendMessageBatchRequest(ServiceRequest):
@@ -508,12 +508,12 @@ class SendMessageBatchResultEntry(TypedDict, total=False):
     Id: String
     MessageId: String
     MD5OfMessageBody: String
-    MD5OfMessageAttributes: Optional[String]
-    MD5OfMessageSystemAttributes: Optional[String]
-    SequenceNumber: Optional[String]
+    MD5OfMessageAttributes: String | None
+    MD5OfMessageSystemAttributes: String | None
+    SequenceNumber: String | None
 
 
-SendMessageBatchResultEntryList = List[SendMessageBatchResultEntry]
+SendMessageBatchResultEntryList = list[SendMessageBatchResultEntry]
 
 
 class SendMessageBatchResult(TypedDict, total=False):
@@ -524,19 +524,19 @@ class SendMessageBatchResult(TypedDict, total=False):
 class SendMessageRequest(ServiceRequest):
     QueueUrl: String
     MessageBody: String
-    DelaySeconds: Optional[NullableInteger]
-    MessageAttributes: Optional[MessageBodyAttributeMap]
-    MessageSystemAttributes: Optional[MessageBodySystemAttributeMap]
-    MessageDeduplicationId: Optional[String]
-    MessageGroupId: Optional[String]
+    DelaySeconds: NullableInteger | None
+    MessageAttributes: MessageBodyAttributeMap | None
+    MessageSystemAttributes: MessageBodySystemAttributeMap | None
+    MessageDeduplicationId: String | None
+    MessageGroupId: String | None
 
 
 class SendMessageResult(TypedDict, total=False):
-    MD5OfMessageBody: Optional[String]
-    MD5OfMessageAttributes: Optional[String]
-    MD5OfMessageSystemAttributes: Optional[String]
-    MessageId: Optional[String]
-    SequenceNumber: Optional[String]
+    MD5OfMessageBody: String | None
+    MD5OfMessageAttributes: String | None
+    MD5OfMessageSystemAttributes: String | None
+    MessageId: String | None
+    SequenceNumber: String | None
 
 
 class SetQueueAttributesRequest(ServiceRequest):
@@ -546,15 +546,15 @@ class SetQueueAttributesRequest(ServiceRequest):
 
 class StartMessageMoveTaskRequest(ServiceRequest):
     SourceArn: String
-    DestinationArn: Optional[String]
-    MaxNumberOfMessagesPerSecond: Optional[NullableInteger]
+    DestinationArn: String | None
+    MaxNumberOfMessagesPerSecond: NullableInteger | None
 
 
 class StartMessageMoveTaskResult(TypedDict, total=False):
-    TaskHandle: Optional[String]
+    TaskHandle: String | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagQueueRequest(ServiceRequest):
@@ -568,8 +568,8 @@ class UntagQueueRequest(ServiceRequest):
 
 
 class SqsApi:
-    service = "sqs"
-    version = "2012-11-05"
+    service: str = "sqs"
+    version: str = "2012-11-05"
 
     @handler("AddPermission")
     def add_permission(

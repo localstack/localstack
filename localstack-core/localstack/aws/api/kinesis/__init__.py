@@ -1,6 +1,7 @@
+from collections.abc import Iterator
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, Iterator, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -19,6 +20,7 @@ ListStreamConsumersInputLimit = int
 ListStreamsInputLimit = int
 ListTagsForStreamInputLimit = int
 MaxRecordSizeInKiB = int
+NaturalIntegerObject = int
 NextToken = str
 OnDemandStreamCountLimitObject = int
 OnDemandStreamCountObject = int
@@ -57,6 +59,17 @@ class MetricsName(StrEnum):
     ReadProvisionedThroughputExceeded = "ReadProvisionedThroughputExceeded"
     IteratorAgeMilliseconds = "IteratorAgeMilliseconds"
     ALL = "ALL"
+
+
+class MinimumThroughputBillingCommitmentInputStatus(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+
+
+class MinimumThroughputBillingCommitmentOutputStatus(StrEnum):
+    ENABLED = "ENABLED"
+    DISABLED = "DISABLED"
+    ENABLED_UNTIL_EARLIEST_ALLOWED_END = "ENABLED_UNTIL_EARLIEST_ALLOWED_END"
 
 
 class ScalingType(StrEnum):
@@ -188,13 +201,13 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
-TagMap = Dict[TagKey, TagValue]
+TagMap = dict[TagKey, TagValue]
 
 
 class AddTagsToStreamInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     Tags: TagMap
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class HashKeyRange(TypedDict, total=False):
@@ -202,7 +215,7 @@ class HashKeyRange(TypedDict, total=False):
     EndingHashKey: HashKey
 
 
-ShardIdList = List[ShardId]
+ShardIdList = list[ShardId]
 
 
 class ChildShard(TypedDict, total=False):
@@ -211,7 +224,7 @@ class ChildShard(TypedDict, total=False):
     HashKeyRange: HashKeyRange
 
 
-ChildShardList = List[ChildShard]
+ChildShardList = list[ChildShard]
 Timestamp = datetime
 
 
@@ -230,7 +243,7 @@ class ConsumerDescription(TypedDict, total=False):
     StreamARN: StreamARN
 
 
-ConsumerList = List[Consumer]
+ConsumerList = list[Consumer]
 
 
 class StreamModeDetails(TypedDict, total=False):
@@ -239,19 +252,20 @@ class StreamModeDetails(TypedDict, total=False):
 
 class CreateStreamInput(ServiceRequest):
     StreamName: StreamName
-    ShardCount: Optional[PositiveIntegerObject]
-    StreamModeDetails: Optional[StreamModeDetails]
-    Tags: Optional[TagMap]
-    MaxRecordSizeInKiB: Optional[MaxRecordSizeInKiB]
+    ShardCount: PositiveIntegerObject | None
+    StreamModeDetails: StreamModeDetails | None
+    Tags: TagMap | None
+    WarmThroughputMiBps: NaturalIntegerObject | None
+    MaxRecordSizeInKiB: MaxRecordSizeInKiB | None
 
 
 Data = bytes
 
 
 class DecreaseStreamRetentionPeriodInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     RetentionPeriodHours: RetentionPeriodHours
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class DeleteResourcePolicyInput(ServiceRequest):
@@ -259,15 +273,30 @@ class DeleteResourcePolicyInput(ServiceRequest):
 
 
 class DeleteStreamInput(ServiceRequest):
-    StreamName: Optional[StreamName]
-    EnforceConsumerDeletion: Optional[BooleanObject]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    EnforceConsumerDeletion: BooleanObject | None
+    StreamARN: StreamARN | None
 
 
 class DeregisterStreamConsumerInput(ServiceRequest):
-    StreamARN: Optional[StreamARN]
-    ConsumerName: Optional[ConsumerName]
-    ConsumerARN: Optional[ConsumerARN]
+    StreamARN: StreamARN | None
+    ConsumerName: ConsumerName | None
+    ConsumerARN: ConsumerARN | None
+
+
+class DescribeAccountSettingsInput(ServiceRequest):
+    pass
+
+
+class MinimumThroughputBillingCommitmentOutput(TypedDict, total=False):
+    Status: MinimumThroughputBillingCommitmentOutputStatus
+    StartedAt: Timestamp | None
+    EndedAt: Timestamp | None
+    EarliestAllowedEndAt: Timestamp | None
+
+
+class DescribeAccountSettingsOutput(TypedDict, total=False):
+    MinimumThroughputBillingCommitment: MinimumThroughputBillingCommitmentOutput | None
 
 
 class DescribeLimitsInput(ServiceRequest):
@@ -282,9 +311,9 @@ class DescribeLimitsOutput(TypedDict, total=False):
 
 
 class DescribeStreamConsumerInput(ServiceRequest):
-    StreamARN: Optional[StreamARN]
-    ConsumerName: Optional[ConsumerName]
-    ConsumerARN: Optional[ConsumerARN]
+    StreamARN: StreamARN | None
+    ConsumerName: ConsumerName | None
+    ConsumerARN: ConsumerARN | None
 
 
 class DescribeStreamConsumerOutput(TypedDict, total=False):
@@ -292,50 +321,50 @@ class DescribeStreamConsumerOutput(TypedDict, total=False):
 
 
 class DescribeStreamInput(ServiceRequest):
-    StreamName: Optional[StreamName]
-    Limit: Optional[DescribeStreamInputLimit]
-    ExclusiveStartShardId: Optional[ShardId]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    Limit: DescribeStreamInputLimit | None
+    ExclusiveStartShardId: ShardId | None
+    StreamARN: StreamARN | None
 
 
-MetricsNameList = List[MetricsName]
+MetricsNameList = list[MetricsName]
 
 
 class EnhancedMetrics(TypedDict, total=False):
-    ShardLevelMetrics: Optional[MetricsNameList]
+    ShardLevelMetrics: MetricsNameList | None
 
 
-EnhancedMonitoringList = List[EnhancedMetrics]
+EnhancedMonitoringList = list[EnhancedMetrics]
 
 
 class SequenceNumberRange(TypedDict, total=False):
     StartingSequenceNumber: SequenceNumber
-    EndingSequenceNumber: Optional[SequenceNumber]
+    EndingSequenceNumber: SequenceNumber | None
 
 
 class Shard(TypedDict, total=False):
     ShardId: ShardId
-    ParentShardId: Optional[ShardId]
-    AdjacentParentShardId: Optional[ShardId]
+    ParentShardId: ShardId | None
+    AdjacentParentShardId: ShardId | None
     HashKeyRange: HashKeyRange
     SequenceNumberRange: SequenceNumberRange
 
 
-ShardList = List[Shard]
+ShardList = list[Shard]
 
 
 class StreamDescription(TypedDict, total=False):
     StreamName: StreamName
     StreamARN: StreamARN
     StreamStatus: StreamStatus
-    StreamModeDetails: Optional[StreamModeDetails]
+    StreamModeDetails: StreamModeDetails | None
     Shards: ShardList
     HasMoreShards: BooleanObject
     RetentionPeriodHours: RetentionPeriodHours
     StreamCreationTimestamp: Timestamp
     EnhancedMonitoring: EnhancedMonitoringList
-    EncryptionType: Optional[EncryptionType]
-    KeyId: Optional[KeyId]
+    EncryptionType: EncryptionType | None
+    KeyId: KeyId | None
 
 
 class DescribeStreamOutput(TypedDict, total=False):
@@ -343,23 +372,29 @@ class DescribeStreamOutput(TypedDict, total=False):
 
 
 class DescribeStreamSummaryInput(ServiceRequest):
-    StreamName: Optional[StreamName]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    StreamARN: StreamARN | None
+
+
+class WarmThroughputObject(TypedDict, total=False):
+    TargetMiBps: NaturalIntegerObject | None
+    CurrentMiBps: NaturalIntegerObject | None
 
 
 class StreamDescriptionSummary(TypedDict, total=False):
     StreamName: StreamName
     StreamARN: StreamARN
     StreamStatus: StreamStatus
-    StreamModeDetails: Optional[StreamModeDetails]
+    StreamModeDetails: StreamModeDetails | None
     RetentionPeriodHours: RetentionPeriodHours
     StreamCreationTimestamp: Timestamp
     EnhancedMonitoring: EnhancedMonitoringList
-    EncryptionType: Optional[EncryptionType]
-    KeyId: Optional[KeyId]
+    EncryptionType: EncryptionType | None
+    KeyId: KeyId | None
     OpenShardCount: ShardCountObject
-    ConsumerCount: Optional[ConsumerCountObject]
-    MaxRecordSizeInKiB: Optional[MaxRecordSizeInKiB]
+    ConsumerCount: ConsumerCountObject | None
+    WarmThroughput: WarmThroughputObject | None
+    MaxRecordSizeInKiB: MaxRecordSizeInKiB | None
 
 
 class DescribeStreamSummaryOutput(TypedDict, total=False):
@@ -367,28 +402,28 @@ class DescribeStreamSummaryOutput(TypedDict, total=False):
 
 
 class DisableEnhancedMonitoringInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     ShardLevelMetrics: MetricsNameList
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class EnableEnhancedMonitoringInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     ShardLevelMetrics: MetricsNameList
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class EnhancedMonitoringOutput(TypedDict, total=False):
-    StreamName: Optional[StreamName]
-    CurrentShardLevelMetrics: Optional[MetricsNameList]
-    DesiredShardLevelMetrics: Optional[MetricsNameList]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    CurrentShardLevelMetrics: MetricsNameList | None
+    DesiredShardLevelMetrics: MetricsNameList | None
+    StreamARN: StreamARN | None
 
 
 class GetRecordsInput(ServiceRequest):
     ShardIterator: ShardIterator
-    Limit: Optional[GetRecordsInputLimit]
-    StreamARN: Optional[StreamARN]
+    Limit: GetRecordsInputLimit | None
+    StreamARN: StreamARN | None
 
 
 MillisBehindLatest = int
@@ -396,20 +431,20 @@ MillisBehindLatest = int
 
 class Record(TypedDict, total=False):
     SequenceNumber: SequenceNumber
-    ApproximateArrivalTimestamp: Optional[Timestamp]
+    ApproximateArrivalTimestamp: Timestamp | None
     Data: Data
     PartitionKey: PartitionKey
-    EncryptionType: Optional[EncryptionType]
+    EncryptionType: EncryptionType | None
 
 
-RecordList = List[Record]
+RecordList = list[Record]
 
 
 class GetRecordsOutput(TypedDict, total=False):
     Records: RecordList
-    NextShardIterator: Optional[ShardIterator]
-    MillisBehindLatest: Optional[MillisBehindLatest]
-    ChildShards: Optional[ChildShardList]
+    NextShardIterator: ShardIterator | None
+    MillisBehindLatest: MillisBehindLatest | None
+    ChildShards: ChildShardList | None
 
 
 class GetResourcePolicyInput(ServiceRequest):
@@ -421,80 +456,80 @@ class GetResourcePolicyOutput(TypedDict, total=False):
 
 
 class GetShardIteratorInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     ShardId: ShardId
     ShardIteratorType: ShardIteratorType
-    StartingSequenceNumber: Optional[SequenceNumber]
-    Timestamp: Optional[Timestamp]
-    StreamARN: Optional[StreamARN]
+    StartingSequenceNumber: SequenceNumber | None
+    Timestamp: Timestamp | None
+    StreamARN: StreamARN | None
 
 
 class GetShardIteratorOutput(TypedDict, total=False):
-    ShardIterator: Optional[ShardIterator]
+    ShardIterator: ShardIterator | None
 
 
 class IncreaseStreamRetentionPeriodInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     RetentionPeriodHours: RetentionPeriodHours
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class ShardFilter(TypedDict, total=False):
     Type: ShardFilterType
-    ShardId: Optional[ShardId]
-    Timestamp: Optional[Timestamp]
+    ShardId: ShardId | None
+    Timestamp: Timestamp | None
 
 
 class ListShardsInput(ServiceRequest):
-    StreamName: Optional[StreamName]
-    NextToken: Optional[NextToken]
-    ExclusiveStartShardId: Optional[ShardId]
-    MaxResults: Optional[ListShardsInputLimit]
-    StreamCreationTimestamp: Optional[Timestamp]
-    ShardFilter: Optional[ShardFilter]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    NextToken: NextToken | None
+    ExclusiveStartShardId: ShardId | None
+    MaxResults: ListShardsInputLimit | None
+    StreamCreationTimestamp: Timestamp | None
+    ShardFilter: ShardFilter | None
+    StreamARN: StreamARN | None
 
 
 class ListShardsOutput(TypedDict, total=False):
-    Shards: Optional[ShardList]
-    NextToken: Optional[NextToken]
+    Shards: ShardList | None
+    NextToken: NextToken | None
 
 
 class ListStreamConsumersInput(ServiceRequest):
     StreamARN: StreamARN
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[ListStreamConsumersInputLimit]
-    StreamCreationTimestamp: Optional[Timestamp]
+    NextToken: NextToken | None
+    MaxResults: ListStreamConsumersInputLimit | None
+    StreamCreationTimestamp: Timestamp | None
 
 
 class ListStreamConsumersOutput(TypedDict, total=False):
-    Consumers: Optional[ConsumerList]
-    NextToken: Optional[NextToken]
+    Consumers: ConsumerList | None
+    NextToken: NextToken | None
 
 
 class ListStreamsInput(ServiceRequest):
-    Limit: Optional[ListStreamsInputLimit]
-    ExclusiveStartStreamName: Optional[StreamName]
-    NextToken: Optional[NextToken]
+    Limit: ListStreamsInputLimit | None
+    ExclusiveStartStreamName: StreamName | None
+    NextToken: NextToken | None
 
 
 class StreamSummary(TypedDict, total=False):
     StreamName: StreamName
     StreamARN: StreamARN
     StreamStatus: StreamStatus
-    StreamModeDetails: Optional[StreamModeDetails]
-    StreamCreationTimestamp: Optional[Timestamp]
+    StreamModeDetails: StreamModeDetails | None
+    StreamCreationTimestamp: Timestamp | None
 
 
-StreamSummaryList = List[StreamSummary]
-StreamNameList = List[StreamName]
+StreamSummaryList = list[StreamSummary]
+StreamNameList = list[StreamName]
 
 
 class ListStreamsOutput(TypedDict, total=False):
     StreamNames: StreamNameList
     HasMoreStreams: BooleanObject
-    NextToken: Optional[NextToken]
-    StreamSummaries: Optional[StreamSummaryList]
+    NextToken: NextToken | None
+    StreamSummaries: StreamSummaryList | None
 
 
 class ListTagsForResourceInput(ServiceRequest):
@@ -503,21 +538,21 @@ class ListTagsForResourceInput(ServiceRequest):
 
 class Tag(TypedDict, total=False):
     Key: TagKey
-    Value: Optional[TagValue]
+    Value: TagValue | None
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ListTagsForResourceOutput(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class ListTagsForStreamInput(ServiceRequest):
-    StreamName: Optional[StreamName]
-    ExclusiveStartTagKey: Optional[TagKey]
-    Limit: Optional[ListTagsForStreamInputLimit]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    ExclusiveStartTagKey: TagKey | None
+    Limit: ListTagsForStreamInputLimit | None
+    StreamARN: StreamARN | None
 
 
 class ListTagsForStreamOutput(TypedDict, total=False):
@@ -526,56 +561,60 @@ class ListTagsForStreamOutput(TypedDict, total=False):
 
 
 class MergeShardsInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     ShardToMerge: ShardId
     AdjacentShardToMerge: ShardId
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
+
+
+class MinimumThroughputBillingCommitmentInput(TypedDict, total=False):
+    Status: MinimumThroughputBillingCommitmentInputStatus
 
 
 class PutRecordInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     Data: Data
     PartitionKey: PartitionKey
-    ExplicitHashKey: Optional[HashKey]
-    SequenceNumberForOrdering: Optional[SequenceNumber]
-    StreamARN: Optional[StreamARN]
+    ExplicitHashKey: HashKey | None
+    SequenceNumberForOrdering: SequenceNumber | None
+    StreamARN: StreamARN | None
 
 
 class PutRecordOutput(TypedDict, total=False):
     ShardId: ShardId
     SequenceNumber: SequenceNumber
-    EncryptionType: Optional[EncryptionType]
+    EncryptionType: EncryptionType | None
 
 
 class PutRecordsRequestEntry(TypedDict, total=False):
     Data: Data
-    ExplicitHashKey: Optional[HashKey]
+    ExplicitHashKey: HashKey | None
     PartitionKey: PartitionKey
 
 
-PutRecordsRequestEntryList = List[PutRecordsRequestEntry]
+PutRecordsRequestEntryList = list[PutRecordsRequestEntry]
 
 
 class PutRecordsInput(ServiceRequest):
     Records: PutRecordsRequestEntryList
-    StreamName: Optional[StreamName]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    StreamARN: StreamARN | None
 
 
 class PutRecordsResultEntry(TypedDict, total=False):
-    SequenceNumber: Optional[SequenceNumber]
-    ShardId: Optional[ShardId]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    SequenceNumber: SequenceNumber | None
+    ShardId: ShardId | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-PutRecordsResultEntryList = List[PutRecordsResultEntry]
+PutRecordsResultEntryList = list[PutRecordsResultEntry]
 
 
 class PutRecordsOutput(TypedDict, total=False):
-    FailedRecordCount: Optional[PositiveIntegerObject]
+    FailedRecordCount: PositiveIntegerObject | None
     Records: PutRecordsResultEntryList
-    EncryptionType: Optional[EncryptionType]
+    EncryptionType: EncryptionType | None
 
 
 class PutResourcePolicyInput(ServiceRequest):
@@ -586,67 +625,67 @@ class PutResourcePolicyInput(ServiceRequest):
 class RegisterStreamConsumerInput(ServiceRequest):
     StreamARN: StreamARN
     ConsumerName: ConsumerName
-    Tags: Optional[TagMap]
+    Tags: TagMap | None
 
 
 class RegisterStreamConsumerOutput(TypedDict, total=False):
     Consumer: Consumer
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class RemoveTagsFromStreamInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     TagKeys: TagKeyList
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class SplitShardInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     ShardToSplit: ShardId
     NewStartingHashKey: HashKey
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class StartStreamEncryptionInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     EncryptionType: EncryptionType
     KeyId: KeyId
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class StartingPosition(TypedDict, total=False):
     Type: ShardIteratorType
-    SequenceNumber: Optional[SequenceNumber]
-    Timestamp: Optional[Timestamp]
+    SequenceNumber: SequenceNumber | None
+    Timestamp: Timestamp | None
 
 
 class StopStreamEncryptionInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     EncryptionType: EncryptionType
     KeyId: KeyId
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class SubscribeToShardEvent(TypedDict, total=False):
     Records: RecordList
     ContinuationSequenceNumber: SequenceNumber
     MillisBehindLatest: MillisBehindLatest
-    ChildShards: Optional[ChildShardList]
+    ChildShards: ChildShardList | None
 
 
 class SubscribeToShardEventStream(TypedDict, total=False):
     SubscribeToShardEvent: SubscribeToShardEvent
-    ResourceNotFoundException: Optional[ResourceNotFoundException]
-    ResourceInUseException: Optional[ResourceInUseException]
-    KMSDisabledException: Optional[KMSDisabledException]
-    KMSInvalidStateException: Optional[KMSInvalidStateException]
-    KMSAccessDeniedException: Optional[KMSAccessDeniedException]
-    KMSNotFoundException: Optional[KMSNotFoundException]
-    KMSOptInRequired: Optional[KMSOptInRequired]
-    KMSThrottlingException: Optional[KMSThrottlingException]
-    InternalFailureException: Optional[InternalFailureException]
+    ResourceNotFoundException: ResourceNotFoundException | None
+    ResourceInUseException: ResourceInUseException | None
+    KMSDisabledException: KMSDisabledException | None
+    KMSInvalidStateException: KMSInvalidStateException | None
+    KMSAccessDeniedException: KMSAccessDeniedException | None
+    KMSNotFoundException: KMSNotFoundException | None
+    KMSOptInRequired: KMSOptInRequired | None
+    KMSThrottlingException: KMSThrottlingException | None
+    InternalFailureException: InternalFailureException | None
 
 
 class SubscribeToShardInput(ServiceRequest):
@@ -669,33 +708,54 @@ class UntagResourceInput(ServiceRequest):
     ResourceARN: ResourceARN
 
 
+class UpdateAccountSettingsInput(ServiceRequest):
+    MinimumThroughputBillingCommitment: MinimumThroughputBillingCommitmentInput
+
+
+class UpdateAccountSettingsOutput(TypedDict, total=False):
+    MinimumThroughputBillingCommitment: MinimumThroughputBillingCommitmentOutput | None
+
+
 class UpdateMaxRecordSizeInput(ServiceRequest):
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
     MaxRecordSizeInKiB: MaxRecordSizeInKiB
 
 
 class UpdateShardCountInput(ServiceRequest):
-    StreamName: Optional[StreamName]
+    StreamName: StreamName | None
     TargetShardCount: PositiveIntegerObject
     ScalingType: ScalingType
-    StreamARN: Optional[StreamARN]
+    StreamARN: StreamARN | None
 
 
 class UpdateShardCountOutput(TypedDict, total=False):
-    StreamName: Optional[StreamName]
-    CurrentShardCount: Optional[PositiveIntegerObject]
-    TargetShardCount: Optional[PositiveIntegerObject]
-    StreamARN: Optional[StreamARN]
+    StreamName: StreamName | None
+    CurrentShardCount: PositiveIntegerObject | None
+    TargetShardCount: PositiveIntegerObject | None
+    StreamARN: StreamARN | None
 
 
 class UpdateStreamModeInput(ServiceRequest):
     StreamARN: StreamARN
     StreamModeDetails: StreamModeDetails
+    WarmThroughputMiBps: NaturalIntegerObject | None
+
+
+class UpdateStreamWarmThroughputInput(ServiceRequest):
+    StreamARN: StreamARN | None
+    StreamName: StreamName | None
+    WarmThroughputMiBps: NaturalIntegerObject
+
+
+class UpdateStreamWarmThroughputOutput(TypedDict, total=False):
+    StreamARN: StreamARN | None
+    StreamName: StreamName | None
+    WarmThroughput: WarmThroughputObject | None
 
 
 class KinesisApi:
-    service = "kinesis"
-    version = "2013-12-02"
+    service: str = "kinesis"
+    version: str = "2013-12-02"
 
     @handler("AddTagsToStream")
     def add_tags_to_stream(
@@ -716,6 +776,7 @@ class KinesisApi:
         shard_count: PositiveIntegerObject | None = None,
         stream_mode_details: StreamModeDetails | None = None,
         tags: TagMap | None = None,
+        warm_throughput_mi_bps: NaturalIntegerObject | None = None,
         max_record_size_in_ki_b: MaxRecordSizeInKiB | None = None,
         **kwargs,
     ) -> None:
@@ -758,6 +819,12 @@ class KinesisApi:
         consumer_arn: ConsumerARN | None = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("DescribeAccountSettings")
+    def describe_account_settings(
+        self, context: RequestContext, **kwargs
+    ) -> DescribeAccountSettingsOutput:
         raise NotImplementedError
 
     @handler("DescribeLimits")
@@ -1041,6 +1108,15 @@ class KinesisApi:
     ) -> None:
         raise NotImplementedError
 
+    @handler("UpdateAccountSettings")
+    def update_account_settings(
+        self,
+        context: RequestContext,
+        minimum_throughput_billing_commitment: MinimumThroughputBillingCommitmentInput,
+        **kwargs,
+    ) -> UpdateAccountSettingsOutput:
+        raise NotImplementedError
+
     @handler("UpdateMaxRecordSize")
     def update_max_record_size(
         self,
@@ -1069,6 +1145,18 @@ class KinesisApi:
         context: RequestContext,
         stream_arn: StreamARN,
         stream_mode_details: StreamModeDetails,
+        warm_throughput_mi_bps: NaturalIntegerObject | None = None,
         **kwargs,
     ) -> None:
+        raise NotImplementedError
+
+    @handler("UpdateStreamWarmThroughput")
+    def update_stream_warm_throughput(
+        self,
+        context: RequestContext,
+        warm_throughput_mi_bps: NaturalIntegerObject,
+        stream_arn: StreamARN | None = None,
+        stream_name: StreamName | None = None,
+        **kwargs,
+    ) -> UpdateStreamWarmThroughputOutput:
         raise NotImplementedError

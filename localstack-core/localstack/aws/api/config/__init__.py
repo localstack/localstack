@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -1131,120 +1131,120 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
-AggregatorRegionList = List[String]
-AccountAggregationSourceAccountList = List[AccountId]
+AggregatorRegionList = list[String]
+AccountAggregationSourceAccountList = list[AccountId]
 
 
 class AccountAggregationSource(TypedDict, total=False):
     AccountIds: AccountAggregationSourceAccountList
-    AllAwsRegions: Optional[Boolean]
-    AwsRegions: Optional[AggregatorRegionList]
+    AllAwsRegions: Boolean | None
+    AwsRegions: AggregatorRegionList | None
 
 
-AccountAggregationSourceList = List[AccountAggregationSource]
+AccountAggregationSourceList = list[AccountAggregationSource]
 
 
 class ComplianceContributorCount(TypedDict, total=False):
-    CappedCount: Optional[Integer]
-    CapExceeded: Optional[Boolean]
+    CappedCount: Integer | None
+    CapExceeded: Boolean | None
 
 
 class Compliance(TypedDict, total=False):
-    ComplianceType: Optional[ComplianceType]
-    ComplianceContributorCount: Optional[ComplianceContributorCount]
+    ComplianceType: ComplianceType | None
+    ComplianceContributorCount: ComplianceContributorCount | None
 
 
 class AggregateComplianceByConfigRule(TypedDict, total=False):
-    ConfigRuleName: Optional[ConfigRuleName]
-    Compliance: Optional[Compliance]
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    ConfigRuleName: ConfigRuleName | None
+    Compliance: Compliance | None
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
-AggregateComplianceByConfigRuleList = List[AggregateComplianceByConfigRule]
+AggregateComplianceByConfigRuleList = list[AggregateComplianceByConfigRule]
 
 
 class AggregateConformancePackCompliance(TypedDict, total=False):
-    ComplianceType: Optional[ConformancePackComplianceType]
-    CompliantRuleCount: Optional[Integer]
-    NonCompliantRuleCount: Optional[Integer]
-    TotalRuleCount: Optional[Integer]
+    ComplianceType: ConformancePackComplianceType | None
+    CompliantRuleCount: Integer | None
+    NonCompliantRuleCount: Integer | None
+    TotalRuleCount: Integer | None
 
 
 class AggregateComplianceByConformancePack(TypedDict, total=False):
-    ConformancePackName: Optional[ConformancePackName]
-    Compliance: Optional[AggregateConformancePackCompliance]
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    ConformancePackName: ConformancePackName | None
+    Compliance: AggregateConformancePackCompliance | None
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
-AggregateComplianceByConformancePackList = List[AggregateComplianceByConformancePack]
+AggregateComplianceByConformancePackList = list[AggregateComplianceByConformancePack]
 Date = datetime
 
 
 class ComplianceSummary(TypedDict, total=False):
-    CompliantResourceCount: Optional[ComplianceContributorCount]
-    NonCompliantResourceCount: Optional[ComplianceContributorCount]
-    ComplianceSummaryTimestamp: Optional[Date]
+    CompliantResourceCount: ComplianceContributorCount | None
+    NonCompliantResourceCount: ComplianceContributorCount | None
+    ComplianceSummaryTimestamp: Date | None
 
 
 class AggregateComplianceCount(TypedDict, total=False):
-    GroupName: Optional[StringWithCharLimit256]
-    ComplianceSummary: Optional[ComplianceSummary]
+    GroupName: StringWithCharLimit256 | None
+    ComplianceSummary: ComplianceSummary | None
 
 
-AggregateComplianceCountList = List[AggregateComplianceCount]
+AggregateComplianceCountList = list[AggregateComplianceCount]
 
 
 class AggregateConformancePackComplianceCount(TypedDict, total=False):
-    CompliantConformancePackCount: Optional[Integer]
-    NonCompliantConformancePackCount: Optional[Integer]
+    CompliantConformancePackCount: Integer | None
+    NonCompliantConformancePackCount: Integer | None
 
 
 class AggregateConformancePackComplianceFilters(TypedDict, total=False):
-    ConformancePackName: Optional[ConformancePackName]
-    ComplianceType: Optional[ConformancePackComplianceType]
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    ConformancePackName: ConformancePackName | None
+    ComplianceType: ConformancePackComplianceType | None
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
 class AggregateConformancePackComplianceSummary(TypedDict, total=False):
-    ComplianceSummary: Optional[AggregateConformancePackComplianceCount]
-    GroupName: Optional[StringWithCharLimit256]
+    ComplianceSummary: AggregateConformancePackComplianceCount | None
+    GroupName: StringWithCharLimit256 | None
 
 
 class AggregateConformancePackComplianceSummaryFilters(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
-AggregateConformancePackComplianceSummaryList = List[AggregateConformancePackComplianceSummary]
+AggregateConformancePackComplianceSummaryList = list[AggregateConformancePackComplianceSummary]
 
 
 class EvaluationResultQualifier(TypedDict, total=False):
-    ConfigRuleName: Optional[ConfigRuleName]
-    ResourceType: Optional[StringWithCharLimit256]
-    ResourceId: Optional[BaseResourceId]
-    EvaluationMode: Optional[EvaluationMode]
+    ConfigRuleName: ConfigRuleName | None
+    ResourceType: StringWithCharLimit256 | None
+    ResourceId: BaseResourceId | None
+    EvaluationMode: EvaluationMode | None
 
 
 class EvaluationResultIdentifier(TypedDict, total=False):
-    EvaluationResultQualifier: Optional[EvaluationResultQualifier]
-    OrderingTimestamp: Optional[Date]
-    ResourceEvaluationId: Optional[ResourceEvaluationId]
+    EvaluationResultQualifier: EvaluationResultQualifier | None
+    OrderingTimestamp: Date | None
+    ResourceEvaluationId: ResourceEvaluationId | None
 
 
 class AggregateEvaluationResult(TypedDict, total=False):
-    EvaluationResultIdentifier: Optional[EvaluationResultIdentifier]
-    ComplianceType: Optional[ComplianceType]
-    ResultRecordedTime: Optional[Date]
-    ConfigRuleInvokedTime: Optional[Date]
-    Annotation: Optional[StringWithCharLimit256]
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    EvaluationResultIdentifier: EvaluationResultIdentifier | None
+    ComplianceType: ComplianceType | None
+    ResultRecordedTime: Date | None
+    ConfigRuleInvokedTime: Date | None
+    Annotation: StringWithCharLimit256 | None
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
-AggregateEvaluationResultList = List[AggregateEvaluationResult]
+AggregateEvaluationResultList = list[AggregateEvaluationResult]
 
 
 class AggregateResourceIdentifier(TypedDict, total=False):
@@ -1252,53 +1252,53 @@ class AggregateResourceIdentifier(TypedDict, total=False):
     SourceRegion: AwsRegion
     ResourceId: ResourceId
     ResourceType: ResourceType
-    ResourceName: Optional[ResourceName]
+    ResourceName: ResourceName | None
 
 
 class AggregatedSourceStatus(TypedDict, total=False):
-    SourceId: Optional[String]
-    SourceType: Optional[AggregatedSourceType]
-    AwsRegion: Optional[AwsRegion]
-    LastUpdateStatus: Optional[AggregatedSourceStatusType]
-    LastUpdateTime: Optional[Date]
-    LastErrorCode: Optional[String]
-    LastErrorMessage: Optional[String]
+    SourceId: String | None
+    SourceType: AggregatedSourceType | None
+    AwsRegion: AwsRegion | None
+    LastUpdateStatus: AggregatedSourceStatusType | None
+    LastUpdateTime: Date | None
+    LastErrorCode: String | None
+    LastErrorMessage: String | None
 
 
-AggregatedSourceStatusList = List[AggregatedSourceStatus]
-AggregatedSourceStatusTypeList = List[AggregatedSourceStatusType]
+AggregatedSourceStatusList = list[AggregatedSourceStatus]
+AggregatedSourceStatusTypeList = list[AggregatedSourceStatusType]
 
 
 class AggregationAuthorization(TypedDict, total=False):
-    AggregationAuthorizationArn: Optional[String]
-    AuthorizedAccountId: Optional[AccountId]
-    AuthorizedAwsRegion: Optional[AwsRegion]
-    CreationTime: Optional[Date]
+    AggregationAuthorizationArn: String | None
+    AuthorizedAccountId: AccountId | None
+    AuthorizedAwsRegion: AwsRegion | None
+    CreationTime: Date | None
 
 
-AggregationAuthorizationList = List[AggregationAuthorization]
-ResourceTypeValueList = List[ResourceTypeValue]
+AggregationAuthorizationList = list[AggregationAuthorization]
+ResourceTypeValueList = list[ResourceTypeValue]
 
 
 class AggregatorFilterResourceType(TypedDict, total=False):
-    Type: Optional[AggregatorFilterType]
-    Value: Optional[ResourceTypeValueList]
+    Type: AggregatorFilterType | None
+    Value: ResourceTypeValueList | None
 
 
-ServicePrincipalValueList = List[ServicePrincipalValue]
+ServicePrincipalValueList = list[ServicePrincipalValue]
 
 
 class AggregatorFilterServicePrincipal(TypedDict, total=False):
-    Type: Optional[AggregatorFilterType]
-    Value: Optional[ServicePrincipalValueList]
+    Type: AggregatorFilterType | None
+    Value: ServicePrincipalValueList | None
 
 
 class AggregatorFilters(TypedDict, total=False):
-    ResourceType: Optional[AggregatorFilterResourceType]
-    ServicePrincipal: Optional[AggregatorFilterServicePrincipal]
+    ResourceType: AggregatorFilterResourceType | None
+    ServicePrincipal: AggregatorFilterServicePrincipal | None
 
 
-ResourceTypeList = List[ResourceType]
+ResourceTypeList = list[ResourceType]
 
 
 class AssociateResourceTypesRequest(ServiceRequest):
@@ -1306,47 +1306,47 @@ class AssociateResourceTypesRequest(ServiceRequest):
     ResourceTypes: ResourceTypeList
 
 
-RecordingModeResourceTypesList = List[ResourceType]
+RecordingModeResourceTypesList = list[ResourceType]
 
 
 class RecordingModeOverride(TypedDict, total=False):
-    description: Optional[Description]
+    description: Description | None
     resourceTypes: RecordingModeResourceTypesList
     recordingFrequency: RecordingFrequency
 
 
-RecordingModeOverrides = List[RecordingModeOverride]
+RecordingModeOverrides = list[RecordingModeOverride]
 
 
 class RecordingMode(TypedDict, total=False):
     recordingFrequency: RecordingFrequency
-    recordingModeOverrides: Optional[RecordingModeOverrides]
+    recordingModeOverrides: RecordingModeOverrides | None
 
 
 class RecordingStrategy(TypedDict, total=False):
-    useOnly: Optional[RecordingStrategyType]
+    useOnly: RecordingStrategyType | None
 
 
 class ExclusionByResourceTypes(TypedDict, total=False):
-    resourceTypes: Optional[ResourceTypeList]
+    resourceTypes: ResourceTypeList | None
 
 
 class RecordingGroup(TypedDict, total=False):
-    allSupported: Optional[AllSupported]
-    includeGlobalResourceTypes: Optional[IncludeGlobalResourceTypes]
-    resourceTypes: Optional[ResourceTypeList]
-    exclusionByResourceTypes: Optional[ExclusionByResourceTypes]
-    recordingStrategy: Optional[RecordingStrategy]
+    allSupported: AllSupported | None
+    includeGlobalResourceTypes: IncludeGlobalResourceTypes | None
+    resourceTypes: ResourceTypeList | None
+    exclusionByResourceTypes: ExclusionByResourceTypes | None
+    recordingStrategy: RecordingStrategy | None
 
 
 class ConfigurationRecorder(TypedDict, total=False):
-    arn: Optional[AmazonResourceName]
-    name: Optional[RecorderName]
-    roleARN: Optional[String]
-    recordingGroup: Optional[RecordingGroup]
-    recordingMode: Optional[RecordingMode]
-    recordingScope: Optional[RecordingScope]
-    servicePrincipal: Optional[ServicePrincipal]
+    arn: AmazonResourceName | None
+    name: RecorderName | None
+    roleARN: String | None
+    recordingGroup: RecordingGroup | None
+    recordingMode: RecordingMode | None
+    recordingScope: RecordingScope | None
+    servicePrincipal: ServicePrincipal | None
 
 
 class AssociateResourceTypesResponse(TypedDict, total=False):
@@ -1355,32 +1355,32 @@ class AssociateResourceTypesResponse(TypedDict, total=False):
 
 AutoRemediationAttemptSeconds = int
 ConfigurationItemDeliveryTime = datetime
-SupplementaryConfiguration = Dict[SupplementaryConfigurationName, SupplementaryConfigurationValue]
+SupplementaryConfiguration = dict[SupplementaryConfigurationName, SupplementaryConfigurationValue]
 ResourceCreationTime = datetime
 ConfigurationItemCaptureTime = datetime
 
 
 class BaseConfigurationItem(TypedDict, total=False):
-    version: Optional[Version]
-    accountId: Optional[AccountId]
-    configurationItemCaptureTime: Optional[ConfigurationItemCaptureTime]
-    configurationItemStatus: Optional[ConfigurationItemStatus]
-    configurationStateId: Optional[ConfigurationStateId]
-    arn: Optional[ARN]
-    resourceType: Optional[ResourceType]
-    resourceId: Optional[ResourceId]
-    resourceName: Optional[ResourceName]
-    awsRegion: Optional[AwsRegion]
-    availabilityZone: Optional[AvailabilityZone]
-    resourceCreationTime: Optional[ResourceCreationTime]
-    configuration: Optional[Configuration]
-    supplementaryConfiguration: Optional[SupplementaryConfiguration]
-    recordingFrequency: Optional[RecordingFrequency]
-    configurationItemDeliveryTime: Optional[ConfigurationItemDeliveryTime]
+    version: Version | None
+    accountId: AccountId | None
+    configurationItemCaptureTime: ConfigurationItemCaptureTime | None
+    configurationItemStatus: ConfigurationItemStatus | None
+    configurationStateId: ConfigurationStateId | None
+    arn: ARN | None
+    resourceType: ResourceType | None
+    resourceId: ResourceId | None
+    resourceName: ResourceName | None
+    awsRegion: AwsRegion | None
+    availabilityZone: AvailabilityZone | None
+    resourceCreationTime: ResourceCreationTime | None
+    configuration: Configuration | None
+    supplementaryConfiguration: SupplementaryConfiguration | None
+    recordingFrequency: RecordingFrequency | None
+    configurationItemDeliveryTime: ConfigurationItemDeliveryTime | None
 
 
-BaseConfigurationItems = List[BaseConfigurationItem]
-ResourceIdentifiersList = List[AggregateResourceIdentifier]
+BaseConfigurationItems = list[BaseConfigurationItem]
+ResourceIdentifiersList = list[AggregateResourceIdentifier]
 
 
 class BatchGetAggregateResourceConfigRequest(ServiceRequest):
@@ -1388,12 +1388,12 @@ class BatchGetAggregateResourceConfigRequest(ServiceRequest):
     ResourceIdentifiers: ResourceIdentifiersList
 
 
-UnprocessedResourceIdentifierList = List[AggregateResourceIdentifier]
+UnprocessedResourceIdentifierList = list[AggregateResourceIdentifier]
 
 
 class BatchGetAggregateResourceConfigResponse(TypedDict, total=False):
-    BaseConfigurationItems: Optional[BaseConfigurationItems]
-    UnprocessedResourceIdentifiers: Optional[UnprocessedResourceIdentifierList]
+    BaseConfigurationItems: BaseConfigurationItems | None
+    UnprocessedResourceIdentifiers: UnprocessedResourceIdentifierList | None
 
 
 class ResourceKey(TypedDict, total=False):
@@ -1401,7 +1401,7 @@ class ResourceKey(TypedDict, total=False):
     resourceId: ResourceId
 
 
-ResourceKeys = List[ResourceKey]
+ResourceKeys = list[ResourceKey]
 
 
 class BatchGetResourceConfigRequest(ServiceRequest):
@@ -1409,256 +1409,256 @@ class BatchGetResourceConfigRequest(ServiceRequest):
 
 
 class BatchGetResourceConfigResponse(TypedDict, total=False):
-    baseConfigurationItems: Optional[BaseConfigurationItems]
-    unprocessedResourceKeys: Optional[ResourceKeys]
+    baseConfigurationItems: BaseConfigurationItems | None
+    unprocessedResourceKeys: ResourceKeys | None
 
 
 class ComplianceByConfigRule(TypedDict, total=False):
-    ConfigRuleName: Optional[StringWithCharLimit64]
-    Compliance: Optional[Compliance]
+    ConfigRuleName: StringWithCharLimit64 | None
+    Compliance: Compliance | None
 
 
-ComplianceByConfigRules = List[ComplianceByConfigRule]
+ComplianceByConfigRules = list[ComplianceByConfigRule]
 
 
 class ComplianceByResource(TypedDict, total=False):
-    ResourceType: Optional[StringWithCharLimit256]
-    ResourceId: Optional[BaseResourceId]
-    Compliance: Optional[Compliance]
+    ResourceType: StringWithCharLimit256 | None
+    ResourceId: BaseResourceId | None
+    Compliance: Compliance | None
 
 
-ComplianceByResources = List[ComplianceByResource]
-ComplianceResourceTypes = List[StringWithCharLimit256]
+ComplianceByResources = list[ComplianceByResource]
+ComplianceResourceTypes = list[StringWithCharLimit256]
 
 
 class ComplianceSummaryByResourceType(TypedDict, total=False):
-    ResourceType: Optional[StringWithCharLimit256]
-    ComplianceSummary: Optional[ComplianceSummary]
+    ResourceType: StringWithCharLimit256 | None
+    ComplianceSummary: ComplianceSummary | None
 
 
-ComplianceSummariesByResourceType = List[ComplianceSummaryByResourceType]
-ComplianceTypes = List[ComplianceType]
+ComplianceSummariesByResourceType = list[ComplianceSummaryByResourceType]
+ComplianceTypes = list[ComplianceType]
 
 
 class ConfigExportDeliveryInfo(TypedDict, total=False):
-    lastStatus: Optional[DeliveryStatus]
-    lastErrorCode: Optional[String]
-    lastErrorMessage: Optional[String]
-    lastAttemptTime: Optional[Date]
-    lastSuccessfulTime: Optional[Date]
-    nextDeliveryTime: Optional[Date]
+    lastStatus: DeliveryStatus | None
+    lastErrorCode: String | None
+    lastErrorMessage: String | None
+    lastAttemptTime: Date | None
+    lastSuccessfulTime: Date | None
+    nextDeliveryTime: Date | None
 
 
 class EvaluationModeConfiguration(TypedDict, total=False):
-    Mode: Optional[EvaluationMode]
+    Mode: EvaluationMode | None
 
 
-EvaluationModes = List[EvaluationModeConfiguration]
+EvaluationModes = list[EvaluationModeConfiguration]
 
 
 class CustomPolicyDetails(TypedDict, total=False):
     PolicyRuntime: PolicyRuntime
     PolicyText: PolicyText
-    EnableDebugLogDelivery: Optional[Boolean]
+    EnableDebugLogDelivery: Boolean | None
 
 
 class SourceDetail(TypedDict, total=False):
-    EventSource: Optional[EventSource]
-    MessageType: Optional[MessageType]
-    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
+    EventSource: EventSource | None
+    MessageType: MessageType | None
+    MaximumExecutionFrequency: MaximumExecutionFrequency | None
 
 
-SourceDetails = List[SourceDetail]
+SourceDetails = list[SourceDetail]
 
 
 class Source(TypedDict, total=False):
     Owner: Owner
-    SourceIdentifier: Optional[StringWithCharLimit256]
-    SourceDetails: Optional[SourceDetails]
-    CustomPolicyDetails: Optional[CustomPolicyDetails]
+    SourceIdentifier: StringWithCharLimit256 | None
+    SourceDetails: SourceDetails | None
+    CustomPolicyDetails: CustomPolicyDetails | None
 
 
 class Scope(TypedDict, total=False):
-    ComplianceResourceTypes: Optional[ComplianceResourceTypes]
-    TagKey: Optional[StringWithCharLimit128]
-    TagValue: Optional[StringWithCharLimit256]
-    ComplianceResourceId: Optional[BaseResourceId]
+    ComplianceResourceTypes: ComplianceResourceTypes | None
+    TagKey: StringWithCharLimit128 | None
+    TagValue: StringWithCharLimit256 | None
+    ComplianceResourceId: BaseResourceId | None
 
 
 class ConfigRule(TypedDict, total=False):
-    ConfigRuleName: Optional[ConfigRuleName]
-    ConfigRuleArn: Optional[StringWithCharLimit256]
-    ConfigRuleId: Optional[StringWithCharLimit64]
-    Description: Optional[EmptiableStringWithCharLimit256]
-    Scope: Optional[Scope]
+    ConfigRuleName: ConfigRuleName | None
+    ConfigRuleArn: StringWithCharLimit256 | None
+    ConfigRuleId: StringWithCharLimit64 | None
+    Description: EmptiableStringWithCharLimit256 | None
+    Scope: Scope | None
     Source: Source
-    InputParameters: Optional[StringWithCharLimit1024]
-    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
-    ConfigRuleState: Optional[ConfigRuleState]
-    CreatedBy: Optional[StringWithCharLimit256]
-    EvaluationModes: Optional[EvaluationModes]
+    InputParameters: StringWithCharLimit1024 | None
+    MaximumExecutionFrequency: MaximumExecutionFrequency | None
+    ConfigRuleState: ConfigRuleState | None
+    CreatedBy: StringWithCharLimit256 | None
+    EvaluationModes: EvaluationModes | None
 
 
 class ConfigRuleComplianceFilters(TypedDict, total=False):
-    ConfigRuleName: Optional[ConfigRuleName]
-    ComplianceType: Optional[ComplianceType]
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    ConfigRuleName: ConfigRuleName | None
+    ComplianceType: ComplianceType | None
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
 class ConfigRuleComplianceSummaryFilters(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    AwsRegion: Optional[AwsRegion]
+    AccountId: AccountId | None
+    AwsRegion: AwsRegion | None
 
 
 class ConfigRuleEvaluationStatus(TypedDict, total=False):
-    ConfigRuleName: Optional[ConfigRuleName]
-    ConfigRuleArn: Optional[String]
-    ConfigRuleId: Optional[String]
-    LastSuccessfulInvocationTime: Optional[Date]
-    LastFailedInvocationTime: Optional[Date]
-    LastSuccessfulEvaluationTime: Optional[Date]
-    LastFailedEvaluationTime: Optional[Date]
-    FirstActivatedTime: Optional[Date]
-    LastDeactivatedTime: Optional[Date]
-    LastErrorCode: Optional[String]
-    LastErrorMessage: Optional[String]
-    FirstEvaluationStarted: Optional[Boolean]
-    LastDebugLogDeliveryStatus: Optional[String]
-    LastDebugLogDeliveryStatusReason: Optional[String]
-    LastDebugLogDeliveryTime: Optional[Date]
+    ConfigRuleName: ConfigRuleName | None
+    ConfigRuleArn: String | None
+    ConfigRuleId: String | None
+    LastSuccessfulInvocationTime: Date | None
+    LastFailedInvocationTime: Date | None
+    LastSuccessfulEvaluationTime: Date | None
+    LastFailedEvaluationTime: Date | None
+    FirstActivatedTime: Date | None
+    LastDeactivatedTime: Date | None
+    LastErrorCode: String | None
+    LastErrorMessage: String | None
+    FirstEvaluationStarted: Boolean | None
+    LastDebugLogDeliveryStatus: String | None
+    LastDebugLogDeliveryStatusReason: String | None
+    LastDebugLogDeliveryTime: Date | None
 
 
-ConfigRuleEvaluationStatusList = List[ConfigRuleEvaluationStatus]
-ConfigRuleNames = List[ConfigRuleName]
-ConfigRules = List[ConfigRule]
+ConfigRuleEvaluationStatusList = list[ConfigRuleEvaluationStatus]
+ConfigRuleNames = list[ConfigRuleName]
+ConfigRules = list[ConfigRule]
 
 
 class ConfigSnapshotDeliveryProperties(TypedDict, total=False):
-    deliveryFrequency: Optional[MaximumExecutionFrequency]
+    deliveryFrequency: MaximumExecutionFrequency | None
 
 
 class ConfigStreamDeliveryInfo(TypedDict, total=False):
-    lastStatus: Optional[DeliveryStatus]
-    lastErrorCode: Optional[String]
-    lastErrorMessage: Optional[String]
-    lastStatusChangeTime: Optional[Date]
+    lastStatus: DeliveryStatus | None
+    lastErrorCode: String | None
+    lastErrorMessage: String | None
+    lastStatusChangeTime: Date | None
 
 
 class OrganizationAggregationSource(TypedDict, total=False):
     RoleArn: String
-    AwsRegions: Optional[AggregatorRegionList]
-    AllAwsRegions: Optional[Boolean]
+    AwsRegions: AggregatorRegionList | None
+    AllAwsRegions: Boolean | None
 
 
 class ConfigurationAggregator(TypedDict, total=False):
-    ConfigurationAggregatorName: Optional[ConfigurationAggregatorName]
-    ConfigurationAggregatorArn: Optional[ConfigurationAggregatorArn]
-    AccountAggregationSources: Optional[AccountAggregationSourceList]
-    OrganizationAggregationSource: Optional[OrganizationAggregationSource]
-    CreationTime: Optional[Date]
-    LastUpdatedTime: Optional[Date]
-    CreatedBy: Optional[StringWithCharLimit256]
-    AggregatorFilters: Optional[AggregatorFilters]
+    ConfigurationAggregatorName: ConfigurationAggregatorName | None
+    ConfigurationAggregatorArn: ConfigurationAggregatorArn | None
+    AccountAggregationSources: AccountAggregationSourceList | None
+    OrganizationAggregationSource: OrganizationAggregationSource | None
+    CreationTime: Date | None
+    LastUpdatedTime: Date | None
+    CreatedBy: StringWithCharLimit256 | None
+    AggregatorFilters: AggregatorFilters | None
 
 
-ConfigurationAggregatorList = List[ConfigurationAggregator]
-ConfigurationAggregatorNameList = List[ConfigurationAggregatorName]
+ConfigurationAggregatorList = list[ConfigurationAggregator]
+ConfigurationAggregatorNameList = list[ConfigurationAggregatorName]
 
 
 class Relationship(TypedDict, total=False):
-    resourceType: Optional[ResourceType]
-    resourceId: Optional[ResourceId]
-    resourceName: Optional[ResourceName]
-    relationshipName: Optional[RelationshipName]
+    resourceType: ResourceType | None
+    resourceId: ResourceId | None
+    resourceName: ResourceName | None
+    relationshipName: RelationshipName | None
 
 
-RelationshipList = List[Relationship]
-RelatedEventList = List[RelatedEvent]
-Tags = Dict[Name, Value]
+RelationshipList = list[Relationship]
+RelatedEventList = list[RelatedEvent]
+Tags = dict[Name, Value]
 
 
 class ConfigurationItem(TypedDict, total=False):
-    version: Optional[Version]
-    accountId: Optional[AccountId]
-    configurationItemCaptureTime: Optional[ConfigurationItemCaptureTime]
-    configurationItemStatus: Optional[ConfigurationItemStatus]
-    configurationStateId: Optional[ConfigurationStateId]
-    configurationItemMD5Hash: Optional[ConfigurationItemMD5Hash]
-    arn: Optional[ARN]
-    resourceType: Optional[ResourceType]
-    resourceId: Optional[ResourceId]
-    resourceName: Optional[ResourceName]
-    awsRegion: Optional[AwsRegion]
-    availabilityZone: Optional[AvailabilityZone]
-    resourceCreationTime: Optional[ResourceCreationTime]
-    tags: Optional[Tags]
-    relatedEvents: Optional[RelatedEventList]
-    relationships: Optional[RelationshipList]
-    configuration: Optional[Configuration]
-    supplementaryConfiguration: Optional[SupplementaryConfiguration]
-    recordingFrequency: Optional[RecordingFrequency]
-    configurationItemDeliveryTime: Optional[ConfigurationItemDeliveryTime]
+    version: Version | None
+    accountId: AccountId | None
+    configurationItemCaptureTime: ConfigurationItemCaptureTime | None
+    configurationItemStatus: ConfigurationItemStatus | None
+    configurationStateId: ConfigurationStateId | None
+    configurationItemMD5Hash: ConfigurationItemMD5Hash | None
+    arn: ARN | None
+    resourceType: ResourceType | None
+    resourceId: ResourceId | None
+    resourceName: ResourceName | None
+    awsRegion: AwsRegion | None
+    availabilityZone: AvailabilityZone | None
+    resourceCreationTime: ResourceCreationTime | None
+    tags: Tags | None
+    relatedEvents: RelatedEventList | None
+    relationships: RelationshipList | None
+    configuration: Configuration | None
+    supplementaryConfiguration: SupplementaryConfiguration | None
+    recordingFrequency: RecordingFrequency | None
+    configurationItemDeliveryTime: ConfigurationItemDeliveryTime | None
 
 
-ConfigurationItemList = List[ConfigurationItem]
-ConfigurationRecorderFilterValues = List[ConfigurationRecorderFilterValue]
+ConfigurationItemList = list[ConfigurationItem]
+ConfigurationRecorderFilterValues = list[ConfigurationRecorderFilterValue]
 
 
 class ConfigurationRecorderFilter(TypedDict, total=False):
-    filterName: Optional[ConfigurationRecorderFilterName]
-    filterValue: Optional[ConfigurationRecorderFilterValues]
+    filterName: ConfigurationRecorderFilterName | None
+    filterValue: ConfigurationRecorderFilterValues | None
 
 
-ConfigurationRecorderFilterList = List[ConfigurationRecorderFilter]
-ConfigurationRecorderList = List[ConfigurationRecorder]
-ConfigurationRecorderNameList = List[RecorderName]
+ConfigurationRecorderFilterList = list[ConfigurationRecorderFilter]
+ConfigurationRecorderList = list[ConfigurationRecorder]
+ConfigurationRecorderNameList = list[RecorderName]
 
 
 class ConfigurationRecorderStatus(TypedDict, total=False):
-    arn: Optional[AmazonResourceName]
-    name: Optional[String]
-    lastStartTime: Optional[Date]
-    lastStopTime: Optional[Date]
-    recording: Optional[Boolean]
-    lastStatus: Optional[RecorderStatus]
-    lastErrorCode: Optional[String]
-    lastErrorMessage: Optional[String]
-    lastStatusChangeTime: Optional[Date]
-    servicePrincipal: Optional[ServicePrincipal]
+    arn: AmazonResourceName | None
+    name: String | None
+    lastStartTime: Date | None
+    lastStopTime: Date | None
+    recording: Boolean | None
+    lastStatus: RecorderStatus | None
+    lastErrorCode: String | None
+    lastErrorMessage: String | None
+    lastStatusChangeTime: Date | None
+    servicePrincipal: ServicePrincipal | None
 
 
-ConfigurationRecorderStatusList = List[ConfigurationRecorderStatus]
+ConfigurationRecorderStatusList = list[ConfigurationRecorderStatus]
 
 
 class ConfigurationRecorderSummary(TypedDict, total=False):
     arn: AmazonResourceName
     name: RecorderName
-    servicePrincipal: Optional[ServicePrincipal]
+    servicePrincipal: ServicePrincipal | None
     recordingScope: RecordingScope
 
 
-ConfigurationRecorderSummaries = List[ConfigurationRecorderSummary]
-ConformancePackConfigRuleNames = List[StringWithCharLimit64]
+ConfigurationRecorderSummaries = list[ConfigurationRecorderSummary]
+ConformancePackConfigRuleNames = list[StringWithCharLimit64]
 
 
 class ConformancePackComplianceFilters(TypedDict, total=False):
-    ConfigRuleNames: Optional[ConformancePackConfigRuleNames]
-    ComplianceType: Optional[ConformancePackComplianceType]
+    ConfigRuleNames: ConformancePackConfigRuleNames | None
+    ComplianceType: ConformancePackComplianceType | None
 
 
-ConformancePackComplianceResourceIds = List[StringWithCharLimit256]
+ConformancePackComplianceResourceIds = list[StringWithCharLimit256]
 LastUpdatedTime = datetime
 
 
 class ConformancePackComplianceScore(TypedDict, total=False):
-    Score: Optional[ComplianceScore]
-    ConformancePackName: Optional[ConformancePackName]
-    LastUpdatedTime: Optional[LastUpdatedTime]
+    Score: ComplianceScore | None
+    ConformancePackName: ConformancePackName | None
+    LastUpdatedTime: LastUpdatedTime | None
 
 
-ConformancePackComplianceScores = List[ConformancePackComplianceScore]
-ConformancePackNameFilter = List[ConformancePackName]
+ConformancePackComplianceScores = list[ConformancePackComplianceScore]
+ConformancePackNameFilter = list[ConformancePackName]
 
 
 class ConformancePackComplianceScoresFilters(TypedDict, total=False):
@@ -1670,12 +1670,12 @@ class ConformancePackComplianceSummary(TypedDict, total=False):
     ConformancePackComplianceStatus: ConformancePackComplianceType
 
 
-ConformancePackComplianceSummaryList = List[ConformancePackComplianceSummary]
+ConformancePackComplianceSummaryList = list[ConformancePackComplianceSummary]
 
 
 class TemplateSSMDocumentDetails(TypedDict, total=False):
     DocumentName: SSMDocumentName
-    DocumentVersion: Optional[SSMDocumentVersion]
+    DocumentVersion: SSMDocumentVersion | None
 
 
 class ConformancePackInputParameter(TypedDict, total=False):
@@ -1683,29 +1683,29 @@ class ConformancePackInputParameter(TypedDict, total=False):
     ParameterValue: ParameterValue
 
 
-ConformancePackInputParameters = List[ConformancePackInputParameter]
+ConformancePackInputParameters = list[ConformancePackInputParameter]
 
 
 class ConformancePackDetail(TypedDict, total=False):
     ConformancePackName: ConformancePackName
     ConformancePackArn: ConformancePackArn
     ConformancePackId: ConformancePackId
-    DeliveryS3Bucket: Optional[DeliveryS3Bucket]
-    DeliveryS3KeyPrefix: Optional[DeliveryS3KeyPrefix]
-    ConformancePackInputParameters: Optional[ConformancePackInputParameters]
-    LastUpdateRequestedTime: Optional[Date]
-    CreatedBy: Optional[StringWithCharLimit256]
-    TemplateSSMDocumentDetails: Optional[TemplateSSMDocumentDetails]
+    DeliveryS3Bucket: DeliveryS3Bucket | None
+    DeliveryS3KeyPrefix: DeliveryS3KeyPrefix | None
+    ConformancePackInputParameters: ConformancePackInputParameters | None
+    LastUpdateRequestedTime: Date | None
+    CreatedBy: StringWithCharLimit256 | None
+    TemplateSSMDocumentDetails: TemplateSSMDocumentDetails | None
 
 
-ConformancePackDetailList = List[ConformancePackDetail]
+ConformancePackDetailList = list[ConformancePackDetail]
 
 
 class ConformancePackEvaluationFilters(TypedDict, total=False):
-    ConfigRuleNames: Optional[ConformancePackConfigRuleNames]
-    ComplianceType: Optional[ConformancePackComplianceType]
-    ResourceType: Optional[StringWithCharLimit256]
-    ResourceIds: Optional[ConformancePackComplianceResourceIds]
+    ConfigRuleNames: ConformancePackConfigRuleNames | None
+    ComplianceType: ConformancePackComplianceType | None
+    ResourceType: StringWithCharLimit256 | None
+    ResourceIds: ConformancePackComplianceResourceIds | None
 
 
 class ConformancePackEvaluationResult(TypedDict, total=False):
@@ -1713,22 +1713,22 @@ class ConformancePackEvaluationResult(TypedDict, total=False):
     EvaluationResultIdentifier: EvaluationResultIdentifier
     ConfigRuleInvokedTime: Date
     ResultRecordedTime: Date
-    Annotation: Optional[Annotation]
+    Annotation: Annotation | None
 
 
-ConformancePackNamesList = List[ConformancePackName]
-ConformancePackNamesToSummarizeList = List[ConformancePackName]
-ControlsList = List[StringWithCharLimit128]
+ConformancePackNamesList = list[ConformancePackName]
+ConformancePackNamesToSummarizeList = list[ConformancePackName]
+ControlsList = list[StringWithCharLimit128]
 
 
 class ConformancePackRuleCompliance(TypedDict, total=False):
-    ConfigRuleName: Optional[ConfigRuleName]
-    ComplianceType: Optional[ConformancePackComplianceType]
-    Controls: Optional[ControlsList]
+    ConfigRuleName: ConfigRuleName | None
+    ComplianceType: ConformancePackComplianceType | None
+    Controls: ControlsList | None
 
 
-ConformancePackRuleComplianceList = List[ConformancePackRuleCompliance]
-ConformancePackRuleEvaluationResultsList = List[ConformancePackEvaluationResult]
+ConformancePackRuleComplianceList = list[ConformancePackRuleCompliance]
+ConformancePackRuleEvaluationResultsList = list[ConformancePackEvaluationResult]
 
 
 class ConformancePackStatusDetail(TypedDict, total=False):
@@ -1737,13 +1737,13 @@ class ConformancePackStatusDetail(TypedDict, total=False):
     ConformancePackArn: ConformancePackArn
     ConformancePackState: ConformancePackState
     StackArn: StackArn
-    ConformancePackStatusReason: Optional[ConformancePackStatusReason]
+    ConformancePackStatusReason: ConformancePackStatusReason | None
     LastUpdateRequestedTime: Date
-    LastUpdateCompletedTime: Optional[Date]
+    LastUpdateCompletedTime: Date | None
 
 
-ConformancePackStatusDetailsList = List[ConformancePackStatusDetail]
-DebugLogDeliveryAccounts = List[AccountId]
+ConformancePackStatusDetailsList = list[ConformancePackStatusDetail]
+DebugLogDeliveryAccounts = list[AccountId]
 
 
 class DeleteAggregationAuthorizationRequest(ServiceRequest):
@@ -1794,7 +1794,7 @@ class DeletePendingAggregationRequestRequest(ServiceRequest):
 
 class DeleteRemediationConfigurationRequest(ServiceRequest):
     ConfigRuleName: ConfigRuleName
-    ResourceType: Optional[String]
+    ResourceType: String | None
 
 
 class DeleteRemediationConfigurationResponse(TypedDict, total=False):
@@ -1802,11 +1802,11 @@ class DeleteRemediationConfigurationResponse(TypedDict, total=False):
 
 
 class RemediationExceptionResourceKey(TypedDict, total=False):
-    ResourceType: Optional[StringWithCharLimit256]
-    ResourceId: Optional[StringWithCharLimit1024]
+    ResourceType: StringWithCharLimit256 | None
+    ResourceId: StringWithCharLimit1024 | None
 
 
-RemediationExceptionResourceKeys = List[RemediationExceptionResourceKey]
+RemediationExceptionResourceKeys = list[RemediationExceptionResourceKey]
 
 
 class DeleteRemediationExceptionsRequest(ServiceRequest):
@@ -1815,15 +1815,15 @@ class DeleteRemediationExceptionsRequest(ServiceRequest):
 
 
 class FailedDeleteRemediationExceptionsBatch(TypedDict, total=False):
-    FailureMessage: Optional[String]
-    FailedItems: Optional[RemediationExceptionResourceKeys]
+    FailureMessage: String | None
+    FailedItems: RemediationExceptionResourceKeys | None
 
 
-FailedDeleteRemediationExceptionsBatches = List[FailedDeleteRemediationExceptionsBatch]
+FailedDeleteRemediationExceptionsBatches = list[FailedDeleteRemediationExceptionsBatch]
 
 
 class DeleteRemediationExceptionsResponse(TypedDict, total=False):
-    FailedBatches: Optional[FailedDeleteRemediationExceptionsBatches]
+    FailedBatches: FailedDeleteRemediationExceptionsBatches | None
 
 
 class DeleteResourceConfigRequest(ServiceRequest):
@@ -1857,368 +1857,368 @@ class DeliverConfigSnapshotRequest(ServiceRequest):
 
 
 class DeliverConfigSnapshotResponse(TypedDict, total=False):
-    configSnapshotId: Optional[String]
+    configSnapshotId: String | None
 
 
 class DeliveryChannel(TypedDict, total=False):
-    name: Optional[ChannelName]
-    s3BucketName: Optional[String]
-    s3KeyPrefix: Optional[String]
-    s3KmsKeyArn: Optional[String]
-    snsTopicARN: Optional[String]
-    configSnapshotDeliveryProperties: Optional[ConfigSnapshotDeliveryProperties]
+    name: ChannelName | None
+    s3BucketName: String | None
+    s3KeyPrefix: String | None
+    s3KmsKeyArn: String | None
+    snsTopicARN: String | None
+    configSnapshotDeliveryProperties: ConfigSnapshotDeliveryProperties | None
 
 
-DeliveryChannelList = List[DeliveryChannel]
-DeliveryChannelNameList = List[ChannelName]
+DeliveryChannelList = list[DeliveryChannel]
+DeliveryChannelNameList = list[ChannelName]
 
 
 class DeliveryChannelStatus(TypedDict, total=False):
-    name: Optional[String]
-    configSnapshotDeliveryInfo: Optional[ConfigExportDeliveryInfo]
-    configHistoryDeliveryInfo: Optional[ConfigExportDeliveryInfo]
-    configStreamDeliveryInfo: Optional[ConfigStreamDeliveryInfo]
+    name: String | None
+    configSnapshotDeliveryInfo: ConfigExportDeliveryInfo | None
+    configHistoryDeliveryInfo: ConfigExportDeliveryInfo | None
+    configStreamDeliveryInfo: ConfigStreamDeliveryInfo | None
 
 
-DeliveryChannelStatusList = List[DeliveryChannelStatus]
+DeliveryChannelStatusList = list[DeliveryChannelStatus]
 
 
 class DescribeAggregateComplianceByConfigRulesRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    Filters: Optional[ConfigRuleComplianceFilters]
-    Limit: Optional[GroupByAPILimit]
-    NextToken: Optional[NextToken]
+    Filters: ConfigRuleComplianceFilters | None
+    Limit: GroupByAPILimit | None
+    NextToken: NextToken | None
 
 
 class DescribeAggregateComplianceByConfigRulesResponse(TypedDict, total=False):
-    AggregateComplianceByConfigRules: Optional[AggregateComplianceByConfigRuleList]
-    NextToken: Optional[NextToken]
+    AggregateComplianceByConfigRules: AggregateComplianceByConfigRuleList | None
+    NextToken: NextToken | None
 
 
 class DescribeAggregateComplianceByConformancePacksRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    Filters: Optional[AggregateConformancePackComplianceFilters]
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    Filters: AggregateConformancePackComplianceFilters | None
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class DescribeAggregateComplianceByConformancePacksResponse(TypedDict, total=False):
-    AggregateComplianceByConformancePacks: Optional[AggregateComplianceByConformancePackList]
-    NextToken: Optional[NextToken]
+    AggregateComplianceByConformancePacks: AggregateComplianceByConformancePackList | None
+    NextToken: NextToken | None
 
 
 class DescribeAggregationAuthorizationsRequest(ServiceRequest):
-    Limit: Optional[Limit]
-    NextToken: Optional[String]
+    Limit: Limit | None
+    NextToken: String | None
 
 
 class DescribeAggregationAuthorizationsResponse(TypedDict, total=False):
-    AggregationAuthorizations: Optional[AggregationAuthorizationList]
-    NextToken: Optional[String]
+    AggregationAuthorizations: AggregationAuthorizationList | None
+    NextToken: String | None
 
 
 class DescribeComplianceByConfigRuleRequest(ServiceRequest):
-    ConfigRuleNames: Optional[ConfigRuleNames]
-    ComplianceTypes: Optional[ComplianceTypes]
-    NextToken: Optional[String]
+    ConfigRuleNames: ConfigRuleNames | None
+    ComplianceTypes: ComplianceTypes | None
+    NextToken: String | None
 
 
 class DescribeComplianceByConfigRuleResponse(TypedDict, total=False):
-    ComplianceByConfigRules: Optional[ComplianceByConfigRules]
-    NextToken: Optional[String]
+    ComplianceByConfigRules: ComplianceByConfigRules | None
+    NextToken: String | None
 
 
 class DescribeComplianceByResourceRequest(ServiceRequest):
-    ResourceType: Optional[StringWithCharLimit256]
-    ResourceId: Optional[BaseResourceId]
-    ComplianceTypes: Optional[ComplianceTypes]
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    ResourceType: StringWithCharLimit256 | None
+    ResourceId: BaseResourceId | None
+    ComplianceTypes: ComplianceTypes | None
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class DescribeComplianceByResourceResponse(TypedDict, total=False):
-    ComplianceByResources: Optional[ComplianceByResources]
-    NextToken: Optional[NextToken]
+    ComplianceByResources: ComplianceByResources | None
+    NextToken: NextToken | None
 
 
 class DescribeConfigRuleEvaluationStatusRequest(ServiceRequest):
-    ConfigRuleNames: Optional[ConfigRuleNames]
-    NextToken: Optional[String]
-    Limit: Optional[RuleLimit]
+    ConfigRuleNames: ConfigRuleNames | None
+    NextToken: String | None
+    Limit: RuleLimit | None
 
 
 class DescribeConfigRuleEvaluationStatusResponse(TypedDict, total=False):
-    ConfigRulesEvaluationStatus: Optional[ConfigRuleEvaluationStatusList]
-    NextToken: Optional[String]
+    ConfigRulesEvaluationStatus: ConfigRuleEvaluationStatusList | None
+    NextToken: String | None
 
 
 class DescribeConfigRulesFilters(TypedDict, total=False):
-    EvaluationMode: Optional[EvaluationMode]
+    EvaluationMode: EvaluationMode | None
 
 
 class DescribeConfigRulesRequest(ServiceRequest):
-    ConfigRuleNames: Optional[ConfigRuleNames]
-    NextToken: Optional[String]
-    Filters: Optional[DescribeConfigRulesFilters]
+    ConfigRuleNames: ConfigRuleNames | None
+    NextToken: String | None
+    Filters: DescribeConfigRulesFilters | None
 
 
 class DescribeConfigRulesResponse(TypedDict, total=False):
-    ConfigRules: Optional[ConfigRules]
-    NextToken: Optional[String]
+    ConfigRules: ConfigRules | None
+    NextToken: String | None
 
 
 class DescribeConfigurationAggregatorSourcesStatusRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    UpdateStatus: Optional[AggregatedSourceStatusTypeList]
-    NextToken: Optional[String]
-    Limit: Optional[Limit]
+    UpdateStatus: AggregatedSourceStatusTypeList | None
+    NextToken: String | None
+    Limit: Limit | None
 
 
 class DescribeConfigurationAggregatorSourcesStatusResponse(TypedDict, total=False):
-    AggregatedSourceStatusList: Optional[AggregatedSourceStatusList]
-    NextToken: Optional[String]
+    AggregatedSourceStatusList: AggregatedSourceStatusList | None
+    NextToken: String | None
 
 
 class DescribeConfigurationAggregatorsRequest(ServiceRequest):
-    ConfigurationAggregatorNames: Optional[ConfigurationAggregatorNameList]
-    NextToken: Optional[String]
-    Limit: Optional[Limit]
+    ConfigurationAggregatorNames: ConfigurationAggregatorNameList | None
+    NextToken: String | None
+    Limit: Limit | None
 
 
 class DescribeConfigurationAggregatorsResponse(TypedDict, total=False):
-    ConfigurationAggregators: Optional[ConfigurationAggregatorList]
-    NextToken: Optional[String]
+    ConfigurationAggregators: ConfigurationAggregatorList | None
+    NextToken: String | None
 
 
 class DescribeConfigurationRecorderStatusRequest(ServiceRequest):
-    ConfigurationRecorderNames: Optional[ConfigurationRecorderNameList]
-    ServicePrincipal: Optional[ServicePrincipal]
-    Arn: Optional[AmazonResourceName]
+    ConfigurationRecorderNames: ConfigurationRecorderNameList | None
+    ServicePrincipal: ServicePrincipal | None
+    Arn: AmazonResourceName | None
 
 
 class DescribeConfigurationRecorderStatusResponse(TypedDict, total=False):
-    ConfigurationRecordersStatus: Optional[ConfigurationRecorderStatusList]
+    ConfigurationRecordersStatus: ConfigurationRecorderStatusList | None
 
 
 class DescribeConfigurationRecordersRequest(ServiceRequest):
-    ConfigurationRecorderNames: Optional[ConfigurationRecorderNameList]
-    ServicePrincipal: Optional[ServicePrincipal]
-    Arn: Optional[AmazonResourceName]
+    ConfigurationRecorderNames: ConfigurationRecorderNameList | None
+    ServicePrincipal: ServicePrincipal | None
+    Arn: AmazonResourceName | None
 
 
 class DescribeConfigurationRecordersResponse(TypedDict, total=False):
-    ConfigurationRecorders: Optional[ConfigurationRecorderList]
+    ConfigurationRecorders: ConfigurationRecorderList | None
 
 
 class DescribeConformancePackComplianceRequest(ServiceRequest):
     ConformancePackName: ConformancePackName
-    Filters: Optional[ConformancePackComplianceFilters]
-    Limit: Optional[DescribeConformancePackComplianceLimit]
-    NextToken: Optional[NextToken]
+    Filters: ConformancePackComplianceFilters | None
+    Limit: DescribeConformancePackComplianceLimit | None
+    NextToken: NextToken | None
 
 
 class DescribeConformancePackComplianceResponse(TypedDict, total=False):
     ConformancePackName: ConformancePackName
     ConformancePackRuleComplianceList: ConformancePackRuleComplianceList
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class DescribeConformancePackStatusRequest(ServiceRequest):
-    ConformancePackNames: Optional[ConformancePackNamesList]
-    Limit: Optional[PageSizeLimit]
-    NextToken: Optional[NextToken]
+    ConformancePackNames: ConformancePackNamesList | None
+    Limit: PageSizeLimit | None
+    NextToken: NextToken | None
 
 
 class DescribeConformancePackStatusResponse(TypedDict, total=False):
-    ConformancePackStatusDetails: Optional[ConformancePackStatusDetailsList]
-    NextToken: Optional[NextToken]
+    ConformancePackStatusDetails: ConformancePackStatusDetailsList | None
+    NextToken: NextToken | None
 
 
 class DescribeConformancePacksRequest(ServiceRequest):
-    ConformancePackNames: Optional[ConformancePackNamesList]
-    Limit: Optional[PageSizeLimit]
-    NextToken: Optional[NextToken]
+    ConformancePackNames: ConformancePackNamesList | None
+    Limit: PageSizeLimit | None
+    NextToken: NextToken | None
 
 
 class DescribeConformancePacksResponse(TypedDict, total=False):
-    ConformancePackDetails: Optional[ConformancePackDetailList]
-    NextToken: Optional[NextToken]
+    ConformancePackDetails: ConformancePackDetailList | None
+    NextToken: NextToken | None
 
 
 class DescribeDeliveryChannelStatusRequest(ServiceRequest):
-    DeliveryChannelNames: Optional[DeliveryChannelNameList]
+    DeliveryChannelNames: DeliveryChannelNameList | None
 
 
 class DescribeDeliveryChannelStatusResponse(TypedDict, total=False):
-    DeliveryChannelsStatus: Optional[DeliveryChannelStatusList]
+    DeliveryChannelsStatus: DeliveryChannelStatusList | None
 
 
 class DescribeDeliveryChannelsRequest(ServiceRequest):
-    DeliveryChannelNames: Optional[DeliveryChannelNameList]
+    DeliveryChannelNames: DeliveryChannelNameList | None
 
 
 class DescribeDeliveryChannelsResponse(TypedDict, total=False):
-    DeliveryChannels: Optional[DeliveryChannelList]
+    DeliveryChannels: DeliveryChannelList | None
 
 
-OrganizationConfigRuleNames = List[StringWithCharLimit64]
+OrganizationConfigRuleNames = list[StringWithCharLimit64]
 
 
 class DescribeOrganizationConfigRuleStatusesRequest(ServiceRequest):
-    OrganizationConfigRuleNames: Optional[OrganizationConfigRuleNames]
-    Limit: Optional[CosmosPageLimit]
-    NextToken: Optional[String]
+    OrganizationConfigRuleNames: OrganizationConfigRuleNames | None
+    Limit: CosmosPageLimit | None
+    NextToken: String | None
 
 
 class OrganizationConfigRuleStatus(TypedDict, total=False):
     OrganizationConfigRuleName: OrganizationConfigRuleName
     OrganizationRuleStatus: OrganizationRuleStatus
-    ErrorCode: Optional[String]
-    ErrorMessage: Optional[String]
-    LastUpdateTime: Optional[Date]
+    ErrorCode: String | None
+    ErrorMessage: String | None
+    LastUpdateTime: Date | None
 
 
-OrganizationConfigRuleStatuses = List[OrganizationConfigRuleStatus]
+OrganizationConfigRuleStatuses = list[OrganizationConfigRuleStatus]
 
 
 class DescribeOrganizationConfigRuleStatusesResponse(TypedDict, total=False):
-    OrganizationConfigRuleStatuses: Optional[OrganizationConfigRuleStatuses]
-    NextToken: Optional[String]
+    OrganizationConfigRuleStatuses: OrganizationConfigRuleStatuses | None
+    NextToken: String | None
 
 
 class DescribeOrganizationConfigRulesRequest(ServiceRequest):
-    OrganizationConfigRuleNames: Optional[OrganizationConfigRuleNames]
-    Limit: Optional[CosmosPageLimit]
-    NextToken: Optional[String]
+    OrganizationConfigRuleNames: OrganizationConfigRuleNames | None
+    Limit: CosmosPageLimit | None
+    NextToken: String | None
 
 
-ResourceTypesScope = List[StringWithCharLimit256]
-OrganizationConfigRuleTriggerTypeNoSNs = List[OrganizationConfigRuleTriggerTypeNoSN]
+ResourceTypesScope = list[StringWithCharLimit256]
+OrganizationConfigRuleTriggerTypeNoSNs = list[OrganizationConfigRuleTriggerTypeNoSN]
 
 
 class OrganizationCustomPolicyRuleMetadataNoPolicy(TypedDict, total=False):
-    Description: Optional[StringWithCharLimit256Min0]
-    OrganizationConfigRuleTriggerTypes: Optional[OrganizationConfigRuleTriggerTypeNoSNs]
-    InputParameters: Optional[StringWithCharLimit2048]
-    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
-    ResourceTypesScope: Optional[ResourceTypesScope]
-    ResourceIdScope: Optional[StringWithCharLimit768]
-    TagKeyScope: Optional[StringWithCharLimit128]
-    TagValueScope: Optional[StringWithCharLimit256]
-    PolicyRuntime: Optional[PolicyRuntime]
-    DebugLogDeliveryAccounts: Optional[DebugLogDeliveryAccounts]
+    Description: StringWithCharLimit256Min0 | None
+    OrganizationConfigRuleTriggerTypes: OrganizationConfigRuleTriggerTypeNoSNs | None
+    InputParameters: StringWithCharLimit2048 | None
+    MaximumExecutionFrequency: MaximumExecutionFrequency | None
+    ResourceTypesScope: ResourceTypesScope | None
+    ResourceIdScope: StringWithCharLimit768 | None
+    TagKeyScope: StringWithCharLimit128 | None
+    TagValueScope: StringWithCharLimit256 | None
+    PolicyRuntime: PolicyRuntime | None
+    DebugLogDeliveryAccounts: DebugLogDeliveryAccounts | None
 
 
-ExcludedAccounts = List[AccountId]
-OrganizationConfigRuleTriggerTypes = List[OrganizationConfigRuleTriggerType]
+ExcludedAccounts = list[AccountId]
+OrganizationConfigRuleTriggerTypes = list[OrganizationConfigRuleTriggerType]
 
 
 class OrganizationCustomRuleMetadata(TypedDict, total=False):
-    Description: Optional[StringWithCharLimit256Min0]
+    Description: StringWithCharLimit256Min0 | None
     LambdaFunctionArn: StringWithCharLimit256
     OrganizationConfigRuleTriggerTypes: OrganizationConfigRuleTriggerTypes
-    InputParameters: Optional[StringWithCharLimit2048]
-    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
-    ResourceTypesScope: Optional[ResourceTypesScope]
-    ResourceIdScope: Optional[StringWithCharLimit768]
-    TagKeyScope: Optional[StringWithCharLimit128]
-    TagValueScope: Optional[StringWithCharLimit256]
+    InputParameters: StringWithCharLimit2048 | None
+    MaximumExecutionFrequency: MaximumExecutionFrequency | None
+    ResourceTypesScope: ResourceTypesScope | None
+    ResourceIdScope: StringWithCharLimit768 | None
+    TagKeyScope: StringWithCharLimit128 | None
+    TagValueScope: StringWithCharLimit256 | None
 
 
 class OrganizationManagedRuleMetadata(TypedDict, total=False):
-    Description: Optional[StringWithCharLimit256Min0]
+    Description: StringWithCharLimit256Min0 | None
     RuleIdentifier: StringWithCharLimit256
-    InputParameters: Optional[StringWithCharLimit2048]
-    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
-    ResourceTypesScope: Optional[ResourceTypesScope]
-    ResourceIdScope: Optional[StringWithCharLimit768]
-    TagKeyScope: Optional[StringWithCharLimit128]
-    TagValueScope: Optional[StringWithCharLimit256]
+    InputParameters: StringWithCharLimit2048 | None
+    MaximumExecutionFrequency: MaximumExecutionFrequency | None
+    ResourceTypesScope: ResourceTypesScope | None
+    ResourceIdScope: StringWithCharLimit768 | None
+    TagKeyScope: StringWithCharLimit128 | None
+    TagValueScope: StringWithCharLimit256 | None
 
 
 class OrganizationConfigRule(TypedDict, total=False):
     OrganizationConfigRuleName: OrganizationConfigRuleName
     OrganizationConfigRuleArn: StringWithCharLimit256
-    OrganizationManagedRuleMetadata: Optional[OrganizationManagedRuleMetadata]
-    OrganizationCustomRuleMetadata: Optional[OrganizationCustomRuleMetadata]
-    ExcludedAccounts: Optional[ExcludedAccounts]
-    LastUpdateTime: Optional[Date]
-    OrganizationCustomPolicyRuleMetadata: Optional[OrganizationCustomPolicyRuleMetadataNoPolicy]
+    OrganizationManagedRuleMetadata: OrganizationManagedRuleMetadata | None
+    OrganizationCustomRuleMetadata: OrganizationCustomRuleMetadata | None
+    ExcludedAccounts: ExcludedAccounts | None
+    LastUpdateTime: Date | None
+    OrganizationCustomPolicyRuleMetadata: OrganizationCustomPolicyRuleMetadataNoPolicy | None
 
 
-OrganizationConfigRules = List[OrganizationConfigRule]
+OrganizationConfigRules = list[OrganizationConfigRule]
 
 
 class DescribeOrganizationConfigRulesResponse(TypedDict, total=False):
-    OrganizationConfigRules: Optional[OrganizationConfigRules]
-    NextToken: Optional[String]
+    OrganizationConfigRules: OrganizationConfigRules | None
+    NextToken: String | None
 
 
-OrganizationConformancePackNames = List[OrganizationConformancePackName]
+OrganizationConformancePackNames = list[OrganizationConformancePackName]
 
 
 class DescribeOrganizationConformancePackStatusesRequest(ServiceRequest):
-    OrganizationConformancePackNames: Optional[OrganizationConformancePackNames]
-    Limit: Optional[CosmosPageLimit]
-    NextToken: Optional[String]
+    OrganizationConformancePackNames: OrganizationConformancePackNames | None
+    Limit: CosmosPageLimit | None
+    NextToken: String | None
 
 
 class OrganizationConformancePackStatus(TypedDict, total=False):
     OrganizationConformancePackName: OrganizationConformancePackName
     Status: OrganizationResourceStatus
-    ErrorCode: Optional[String]
-    ErrorMessage: Optional[String]
-    LastUpdateTime: Optional[Date]
+    ErrorCode: String | None
+    ErrorMessage: String | None
+    LastUpdateTime: Date | None
 
 
-OrganizationConformancePackStatuses = List[OrganizationConformancePackStatus]
+OrganizationConformancePackStatuses = list[OrganizationConformancePackStatus]
 
 
 class DescribeOrganizationConformancePackStatusesResponse(TypedDict, total=False):
-    OrganizationConformancePackStatuses: Optional[OrganizationConformancePackStatuses]
-    NextToken: Optional[String]
+    OrganizationConformancePackStatuses: OrganizationConformancePackStatuses | None
+    NextToken: String | None
 
 
 class DescribeOrganizationConformancePacksRequest(ServiceRequest):
-    OrganizationConformancePackNames: Optional[OrganizationConformancePackNames]
-    Limit: Optional[CosmosPageLimit]
-    NextToken: Optional[String]
+    OrganizationConformancePackNames: OrganizationConformancePackNames | None
+    Limit: CosmosPageLimit | None
+    NextToken: String | None
 
 
 class OrganizationConformancePack(TypedDict, total=False):
     OrganizationConformancePackName: OrganizationConformancePackName
     OrganizationConformancePackArn: StringWithCharLimit256
-    DeliveryS3Bucket: Optional[DeliveryS3Bucket]
-    DeliveryS3KeyPrefix: Optional[DeliveryS3KeyPrefix]
-    ConformancePackInputParameters: Optional[ConformancePackInputParameters]
-    ExcludedAccounts: Optional[ExcludedAccounts]
+    DeliveryS3Bucket: DeliveryS3Bucket | None
+    DeliveryS3KeyPrefix: DeliveryS3KeyPrefix | None
+    ConformancePackInputParameters: ConformancePackInputParameters | None
+    ExcludedAccounts: ExcludedAccounts | None
     LastUpdateTime: Date
 
 
-OrganizationConformancePacks = List[OrganizationConformancePack]
+OrganizationConformancePacks = list[OrganizationConformancePack]
 
 
 class DescribeOrganizationConformancePacksResponse(TypedDict, total=False):
-    OrganizationConformancePacks: Optional[OrganizationConformancePacks]
-    NextToken: Optional[String]
+    OrganizationConformancePacks: OrganizationConformancePacks | None
+    NextToken: String | None
 
 
 class DescribePendingAggregationRequestsRequest(ServiceRequest):
-    Limit: Optional[DescribePendingAggregationRequestsLimit]
-    NextToken: Optional[String]
+    Limit: DescribePendingAggregationRequestsLimit | None
+    NextToken: String | None
 
 
 class PendingAggregationRequest(TypedDict, total=False):
-    RequesterAccountId: Optional[AccountId]
-    RequesterAwsRegion: Optional[AwsRegion]
+    RequesterAccountId: AccountId | None
+    RequesterAwsRegion: AwsRegion | None
 
 
-PendingAggregationRequestList = List[PendingAggregationRequest]
+PendingAggregationRequestList = list[PendingAggregationRequest]
 
 
 class DescribePendingAggregationRequestsResponse(TypedDict, total=False):
-    PendingAggregationRequests: Optional[PendingAggregationRequestList]
-    NextToken: Optional[String]
+    PendingAggregationRequests: PendingAggregationRequestList | None
+    NextToken: String | None
 
 
 class DescribeRemediationConfigurationsRequest(ServiceRequest):
@@ -2226,15 +2226,15 @@ class DescribeRemediationConfigurationsRequest(ServiceRequest):
 
 
 class SsmControls(TypedDict, total=False):
-    ConcurrentExecutionRatePercentage: Optional[Percentage]
-    ErrorPercentage: Optional[Percentage]
+    ConcurrentExecutionRatePercentage: Percentage | None
+    ErrorPercentage: Percentage | None
 
 
 class ExecutionControls(TypedDict, total=False):
-    SsmControls: Optional[SsmControls]
+    SsmControls: SsmControls | None
 
 
-StaticParameterValues = List[StringWithCharLimit256]
+StaticParameterValues = list[StringWithCharLimit256]
 
 
 class StaticValue(TypedDict, total=False):
@@ -2246,98 +2246,98 @@ class ResourceValue(TypedDict, total=False):
 
 
 class RemediationParameterValue(TypedDict, total=False):
-    ResourceValue: Optional[ResourceValue]
-    StaticValue: Optional[StaticValue]
+    ResourceValue: ResourceValue | None
+    StaticValue: StaticValue | None
 
 
-RemediationParameters = Dict[StringWithCharLimit256, RemediationParameterValue]
+RemediationParameters = dict[StringWithCharLimit256, RemediationParameterValue]
 
 
 class RemediationConfiguration(TypedDict, total=False):
     ConfigRuleName: ConfigRuleName
     TargetType: RemediationTargetType
     TargetId: StringWithCharLimit256
-    TargetVersion: Optional[String]
-    Parameters: Optional[RemediationParameters]
-    ResourceType: Optional[String]
-    Automatic: Optional[Boolean]
-    ExecutionControls: Optional[ExecutionControls]
-    MaximumAutomaticAttempts: Optional[AutoRemediationAttempts]
-    RetryAttemptSeconds: Optional[AutoRemediationAttemptSeconds]
-    Arn: Optional[StringWithCharLimit1024]
-    CreatedByService: Optional[StringWithCharLimit1024]
+    TargetVersion: String | None
+    Parameters: RemediationParameters | None
+    ResourceType: String | None
+    Automatic: Boolean | None
+    ExecutionControls: ExecutionControls | None
+    MaximumAutomaticAttempts: AutoRemediationAttempts | None
+    RetryAttemptSeconds: AutoRemediationAttemptSeconds | None
+    Arn: StringWithCharLimit1024 | None
+    CreatedByService: StringWithCharLimit1024 | None
 
 
-RemediationConfigurations = List[RemediationConfiguration]
+RemediationConfigurations = list[RemediationConfiguration]
 
 
 class DescribeRemediationConfigurationsResponse(TypedDict, total=False):
-    RemediationConfigurations: Optional[RemediationConfigurations]
+    RemediationConfigurations: RemediationConfigurations | None
 
 
 class DescribeRemediationExceptionsRequest(ServiceRequest):
     ConfigRuleName: ConfigRuleName
-    ResourceKeys: Optional[RemediationExceptionResourceKeys]
-    Limit: Optional[Limit]
-    NextToken: Optional[String]
+    ResourceKeys: RemediationExceptionResourceKeys | None
+    Limit: Limit | None
+    NextToken: String | None
 
 
 class RemediationException(TypedDict, total=False):
     ConfigRuleName: ConfigRuleName
     ResourceType: StringWithCharLimit256
     ResourceId: StringWithCharLimit1024
-    Message: Optional[StringWithCharLimit1024]
-    ExpirationTime: Optional[Date]
+    Message: StringWithCharLimit1024 | None
+    ExpirationTime: Date | None
 
 
-RemediationExceptions = List[RemediationException]
+RemediationExceptions = list[RemediationException]
 
 
 class DescribeRemediationExceptionsResponse(TypedDict, total=False):
-    RemediationExceptions: Optional[RemediationExceptions]
-    NextToken: Optional[String]
+    RemediationExceptions: RemediationExceptions | None
+    NextToken: String | None
 
 
 class DescribeRemediationExecutionStatusRequest(ServiceRequest):
     ConfigRuleName: ConfigRuleName
-    ResourceKeys: Optional[ResourceKeys]
-    Limit: Optional[Limit]
-    NextToken: Optional[String]
+    ResourceKeys: ResourceKeys | None
+    Limit: Limit | None
+    NextToken: String | None
 
 
 class RemediationExecutionStep(TypedDict, total=False):
-    Name: Optional[String]
-    State: Optional[RemediationExecutionStepState]
-    ErrorMessage: Optional[String]
-    StartTime: Optional[Date]
-    StopTime: Optional[Date]
+    Name: String | None
+    State: RemediationExecutionStepState | None
+    ErrorMessage: String | None
+    StartTime: Date | None
+    StopTime: Date | None
 
 
-RemediationExecutionSteps = List[RemediationExecutionStep]
+RemediationExecutionSteps = list[RemediationExecutionStep]
 
 
 class RemediationExecutionStatus(TypedDict, total=False):
-    ResourceKey: Optional[ResourceKey]
-    State: Optional[RemediationExecutionState]
-    StepDetails: Optional[RemediationExecutionSteps]
-    InvocationTime: Optional[Date]
-    LastUpdatedTime: Optional[Date]
+    ResourceKey: ResourceKey | None
+    State: RemediationExecutionState | None
+    StepDetails: RemediationExecutionSteps | None
+    InvocationTime: Date | None
+    LastUpdatedTime: Date | None
 
 
-RemediationExecutionStatuses = List[RemediationExecutionStatus]
+RemediationExecutionStatuses = list[RemediationExecutionStatus]
 
 
 class DescribeRemediationExecutionStatusResponse(TypedDict, total=False):
-    RemediationExecutionStatuses: Optional[RemediationExecutionStatuses]
-    NextToken: Optional[String]
+    RemediationExecutionStatuses: RemediationExecutionStatuses | None
+    NextToken: String | None
 
 
-RetentionConfigurationNameList = List[RetentionConfigurationName]
+RetentionConfigurationNameList = list[RetentionConfigurationName]
 
 
 class DescribeRetentionConfigurationsRequest(ServiceRequest):
-    RetentionConfigurationNames: Optional[RetentionConfigurationNameList]
-    NextToken: Optional[NextToken]
+    RetentionConfigurationNames: RetentionConfigurationNameList | None
+    NextToken: NextToken | None
 
 
 class RetentionConfiguration(TypedDict, total=False):
@@ -2345,12 +2345,12 @@ class RetentionConfiguration(TypedDict, total=False):
     RetentionPeriodInDays: RetentionPeriodInDays
 
 
-RetentionConfigurationList = List[RetentionConfiguration]
+RetentionConfigurationList = list[RetentionConfiguration]
 
 
 class DescribeRetentionConfigurationsResponse(TypedDict, total=False):
-    RetentionConfigurations: Optional[RetentionConfigurationList]
-    NextToken: Optional[NextToken]
+    RetentionConfigurations: RetentionConfigurationList | None
+    NextToken: NextToken | None
 
 
 class DisassociateResourceTypesRequest(ServiceRequest):
@@ -2362,7 +2362,7 @@ class DisassociateResourceTypesResponse(TypedDict, total=False):
     ConfigurationRecorder: ConfigurationRecorder
 
 
-DiscoveredResourceIdentifierList = List[AggregateResourceIdentifier]
+DiscoveredResourceIdentifierList = list[AggregateResourceIdentifier]
 EarlierTime = datetime
 OrderingTimestamp = datetime
 
@@ -2371,63 +2371,63 @@ class Evaluation(TypedDict, total=False):
     ComplianceResourceType: StringWithCharLimit256
     ComplianceResourceId: BaseResourceId
     ComplianceType: ComplianceType
-    Annotation: Optional[StringWithCharLimit256]
+    Annotation: StringWithCharLimit256 | None
     OrderingTimestamp: OrderingTimestamp
 
 
 class EvaluationContext(TypedDict, total=False):
-    EvaluationContextIdentifier: Optional[EvaluationContextIdentifier]
+    EvaluationContextIdentifier: EvaluationContextIdentifier | None
 
 
 class EvaluationResult(TypedDict, total=False):
-    EvaluationResultIdentifier: Optional[EvaluationResultIdentifier]
-    ComplianceType: Optional[ComplianceType]
-    ResultRecordedTime: Optional[Date]
-    ConfigRuleInvokedTime: Optional[Date]
-    Annotation: Optional[StringWithCharLimit256]
-    ResultToken: Optional[String]
+    EvaluationResultIdentifier: EvaluationResultIdentifier | None
+    ComplianceType: ComplianceType | None
+    ResultRecordedTime: Date | None
+    ConfigRuleInvokedTime: Date | None
+    Annotation: StringWithCharLimit256 | None
+    ResultToken: String | None
 
 
-EvaluationResults = List[EvaluationResult]
+EvaluationResults = list[EvaluationResult]
 
 
 class EvaluationStatus(TypedDict, total=False):
     Status: ResourceEvaluationStatus
-    FailureReason: Optional[StringWithCharLimit1024]
+    FailureReason: StringWithCharLimit1024 | None
 
 
-Evaluations = List[Evaluation]
+Evaluations = list[Evaluation]
 
 
 class ExternalEvaluation(TypedDict, total=False):
     ComplianceResourceType: StringWithCharLimit256
     ComplianceResourceId: BaseResourceId
     ComplianceType: ComplianceType
-    Annotation: Optional[StringWithCharLimit256]
+    Annotation: StringWithCharLimit256 | None
     OrderingTimestamp: OrderingTimestamp
 
 
 class FailedRemediationBatch(TypedDict, total=False):
-    FailureMessage: Optional[String]
-    FailedItems: Optional[RemediationConfigurations]
+    FailureMessage: String | None
+    FailedItems: RemediationConfigurations | None
 
 
-FailedRemediationBatches = List[FailedRemediationBatch]
+FailedRemediationBatches = list[FailedRemediationBatch]
 
 
 class FailedRemediationExceptionBatch(TypedDict, total=False):
-    FailureMessage: Optional[String]
-    FailedItems: Optional[RemediationExceptions]
+    FailureMessage: String | None
+    FailedItems: RemediationExceptions | None
 
 
-FailedRemediationExceptionBatches = List[FailedRemediationExceptionBatch]
+FailedRemediationExceptionBatches = list[FailedRemediationExceptionBatch]
 
 
 class FieldInfo(TypedDict, total=False):
-    Name: Optional[FieldName]
+    Name: FieldName | None
 
 
-FieldInfoList = List[FieldInfo]
+FieldInfoList = list[FieldInfo]
 
 
 class GetAggregateComplianceDetailsByConfigRuleRequest(ServiceRequest):
@@ -2435,58 +2435,58 @@ class GetAggregateComplianceDetailsByConfigRuleRequest(ServiceRequest):
     ConfigRuleName: ConfigRuleName
     AccountId: AccountId
     AwsRegion: AwsRegion
-    ComplianceType: Optional[ComplianceType]
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    ComplianceType: ComplianceType | None
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class GetAggregateComplianceDetailsByConfigRuleResponse(TypedDict, total=False):
-    AggregateEvaluationResults: Optional[AggregateEvaluationResultList]
-    NextToken: Optional[NextToken]
+    AggregateEvaluationResults: AggregateEvaluationResultList | None
+    NextToken: NextToken | None
 
 
 class GetAggregateConfigRuleComplianceSummaryRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    Filters: Optional[ConfigRuleComplianceSummaryFilters]
-    GroupByKey: Optional[ConfigRuleComplianceSummaryGroupKey]
-    Limit: Optional[GroupByAPILimit]
-    NextToken: Optional[NextToken]
+    Filters: ConfigRuleComplianceSummaryFilters | None
+    GroupByKey: ConfigRuleComplianceSummaryGroupKey | None
+    Limit: GroupByAPILimit | None
+    NextToken: NextToken | None
 
 
 class GetAggregateConfigRuleComplianceSummaryResponse(TypedDict, total=False):
-    GroupByKey: Optional[StringWithCharLimit256]
-    AggregateComplianceCounts: Optional[AggregateComplianceCountList]
-    NextToken: Optional[NextToken]
+    GroupByKey: StringWithCharLimit256 | None
+    AggregateComplianceCounts: AggregateComplianceCountList | None
+    NextToken: NextToken | None
 
 
 class GetAggregateConformancePackComplianceSummaryRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    Filters: Optional[AggregateConformancePackComplianceSummaryFilters]
-    GroupByKey: Optional[AggregateConformancePackComplianceSummaryGroupKey]
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    Filters: AggregateConformancePackComplianceSummaryFilters | None
+    GroupByKey: AggregateConformancePackComplianceSummaryGroupKey | None
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class GetAggregateConformancePackComplianceSummaryResponse(TypedDict, total=False):
-    AggregateConformancePackComplianceSummaries: Optional[
-        AggregateConformancePackComplianceSummaryList
-    ]
-    GroupByKey: Optional[StringWithCharLimit256]
-    NextToken: Optional[NextToken]
+    AggregateConformancePackComplianceSummaries: (
+        AggregateConformancePackComplianceSummaryList | None
+    )
+    GroupByKey: StringWithCharLimit256 | None
+    NextToken: NextToken | None
 
 
 class ResourceCountFilters(TypedDict, total=False):
-    ResourceType: Optional[ResourceType]
-    AccountId: Optional[AccountId]
-    Region: Optional[AwsRegion]
+    ResourceType: ResourceType | None
+    AccountId: AccountId | None
+    Region: AwsRegion | None
 
 
 class GetAggregateDiscoveredResourceCountsRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    Filters: Optional[ResourceCountFilters]
-    GroupByKey: Optional[ResourceCountGroupKey]
-    Limit: Optional[GroupByAPILimit]
-    NextToken: Optional[NextToken]
+    Filters: ResourceCountFilters | None
+    GroupByKey: ResourceCountGroupKey | None
+    Limit: GroupByAPILimit | None
+    NextToken: NextToken | None
 
 
 Long = int
@@ -2497,14 +2497,14 @@ class GroupedResourceCount(TypedDict, total=False):
     ResourceCount: Long
 
 
-GroupedResourceCountList = List[GroupedResourceCount]
+GroupedResourceCountList = list[GroupedResourceCount]
 
 
 class GetAggregateDiscoveredResourceCountsResponse(TypedDict, total=False):
     TotalDiscoveredResources: Long
-    GroupByKey: Optional[StringWithCharLimit256]
-    GroupedResourceCounts: Optional[GroupedResourceCountList]
-    NextToken: Optional[NextToken]
+    GroupByKey: StringWithCharLimit256 | None
+    GroupedResourceCounts: GroupedResourceCountList | None
+    NextToken: NextToken | None
 
 
 class GetAggregateResourceConfigRequest(ServiceRequest):
@@ -2513,159 +2513,157 @@ class GetAggregateResourceConfigRequest(ServiceRequest):
 
 
 class GetAggregateResourceConfigResponse(TypedDict, total=False):
-    ConfigurationItem: Optional[ConfigurationItem]
+    ConfigurationItem: ConfigurationItem | None
 
 
 class GetComplianceDetailsByConfigRuleRequest(ServiceRequest):
     ConfigRuleName: StringWithCharLimit64
-    ComplianceTypes: Optional[ComplianceTypes]
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    ComplianceTypes: ComplianceTypes | None
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class GetComplianceDetailsByConfigRuleResponse(TypedDict, total=False):
-    EvaluationResults: Optional[EvaluationResults]
-    NextToken: Optional[NextToken]
+    EvaluationResults: EvaluationResults | None
+    NextToken: NextToken | None
 
 
 class GetComplianceDetailsByResourceRequest(ServiceRequest):
-    ResourceType: Optional[StringWithCharLimit256]
-    ResourceId: Optional[BaseResourceId]
-    ComplianceTypes: Optional[ComplianceTypes]
-    NextToken: Optional[String]
-    ResourceEvaluationId: Optional[ResourceEvaluationId]
+    ResourceType: StringWithCharLimit256 | None
+    ResourceId: BaseResourceId | None
+    ComplianceTypes: ComplianceTypes | None
+    NextToken: String | None
+    ResourceEvaluationId: ResourceEvaluationId | None
 
 
 class GetComplianceDetailsByResourceResponse(TypedDict, total=False):
-    EvaluationResults: Optional[EvaluationResults]
-    NextToken: Optional[String]
+    EvaluationResults: EvaluationResults | None
+    NextToken: String | None
 
 
 class GetComplianceSummaryByConfigRuleResponse(TypedDict, total=False):
-    ComplianceSummary: Optional[ComplianceSummary]
+    ComplianceSummary: ComplianceSummary | None
 
 
-ResourceTypes = List[StringWithCharLimit256]
+ResourceTypes = list[StringWithCharLimit256]
 
 
 class GetComplianceSummaryByResourceTypeRequest(ServiceRequest):
-    ResourceTypes: Optional[ResourceTypes]
+    ResourceTypes: ResourceTypes | None
 
 
 class GetComplianceSummaryByResourceTypeResponse(TypedDict, total=False):
-    ComplianceSummariesByResourceType: Optional[ComplianceSummariesByResourceType]
+    ComplianceSummariesByResourceType: ComplianceSummariesByResourceType | None
 
 
 class GetConformancePackComplianceDetailsRequest(ServiceRequest):
     ConformancePackName: ConformancePackName
-    Filters: Optional[ConformancePackEvaluationFilters]
-    Limit: Optional[GetConformancePackComplianceDetailsLimit]
-    NextToken: Optional[NextToken]
+    Filters: ConformancePackEvaluationFilters | None
+    Limit: GetConformancePackComplianceDetailsLimit | None
+    NextToken: NextToken | None
 
 
 class GetConformancePackComplianceDetailsResponse(TypedDict, total=False):
     ConformancePackName: ConformancePackName
-    ConformancePackRuleEvaluationResults: Optional[ConformancePackRuleEvaluationResultsList]
-    NextToken: Optional[NextToken]
+    ConformancePackRuleEvaluationResults: ConformancePackRuleEvaluationResultsList | None
+    NextToken: NextToken | None
 
 
 class GetConformancePackComplianceSummaryRequest(ServiceRequest):
     ConformancePackNames: ConformancePackNamesToSummarizeList
-    Limit: Optional[PageSizeLimit]
-    NextToken: Optional[NextToken]
+    Limit: PageSizeLimit | None
+    NextToken: NextToken | None
 
 
 class GetConformancePackComplianceSummaryResponse(TypedDict, total=False):
-    ConformancePackComplianceSummaryList: Optional[ConformancePackComplianceSummaryList]
-    NextToken: Optional[NextToken]
+    ConformancePackComplianceSummaryList: ConformancePackComplianceSummaryList | None
+    NextToken: NextToken | None
 
 
 class GetCustomRulePolicyRequest(ServiceRequest):
-    ConfigRuleName: Optional[ConfigRuleName]
+    ConfigRuleName: ConfigRuleName | None
 
 
 class GetCustomRulePolicyResponse(TypedDict, total=False):
-    PolicyText: Optional[PolicyText]
+    PolicyText: PolicyText | None
 
 
 class GetDiscoveredResourceCountsRequest(ServiceRequest):
-    resourceTypes: Optional[ResourceTypes]
-    limit: Optional[Limit]
-    nextToken: Optional[NextToken]
+    resourceTypes: ResourceTypes | None
+    limit: Limit | None
+    nextToken: NextToken | None
 
 
 class ResourceCount(TypedDict, total=False):
-    resourceType: Optional[ResourceType]
-    count: Optional[Long]
+    resourceType: ResourceType | None
+    count: Long | None
 
 
-ResourceCounts = List[ResourceCount]
+ResourceCounts = list[ResourceCount]
 
 
 class GetDiscoveredResourceCountsResponse(TypedDict, total=False):
-    totalDiscoveredResources: Optional[Long]
-    resourceCounts: Optional[ResourceCounts]
-    nextToken: Optional[NextToken]
+    totalDiscoveredResources: Long | None
+    resourceCounts: ResourceCounts | None
+    nextToken: NextToken | None
 
 
 class StatusDetailFilters(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    MemberAccountRuleStatus: Optional[MemberAccountRuleStatus]
+    AccountId: AccountId | None
+    MemberAccountRuleStatus: MemberAccountRuleStatus | None
 
 
 class GetOrganizationConfigRuleDetailedStatusRequest(ServiceRequest):
     OrganizationConfigRuleName: OrganizationConfigRuleName
-    Filters: Optional[StatusDetailFilters]
-    Limit: Optional[CosmosPageLimit]
-    NextToken: Optional[String]
+    Filters: StatusDetailFilters | None
+    Limit: CosmosPageLimit | None
+    NextToken: String | None
 
 
 class MemberAccountStatus(TypedDict, total=False):
     AccountId: AccountId
     ConfigRuleName: StringWithCharLimit64
     MemberAccountRuleStatus: MemberAccountRuleStatus
-    ErrorCode: Optional[String]
-    ErrorMessage: Optional[String]
-    LastUpdateTime: Optional[Date]
+    ErrorCode: String | None
+    ErrorMessage: String | None
+    LastUpdateTime: Date | None
 
 
-OrganizationConfigRuleDetailedStatus = List[MemberAccountStatus]
+OrganizationConfigRuleDetailedStatus = list[MemberAccountStatus]
 
 
 class GetOrganizationConfigRuleDetailedStatusResponse(TypedDict, total=False):
-    OrganizationConfigRuleDetailedStatus: Optional[OrganizationConfigRuleDetailedStatus]
-    NextToken: Optional[String]
+    OrganizationConfigRuleDetailedStatus: OrganizationConfigRuleDetailedStatus | None
+    NextToken: String | None
 
 
 class OrganizationResourceDetailedStatusFilters(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    Status: Optional[OrganizationResourceDetailedStatus]
+    AccountId: AccountId | None
+    Status: OrganizationResourceDetailedStatus | None
 
 
 class GetOrganizationConformancePackDetailedStatusRequest(ServiceRequest):
     OrganizationConformancePackName: OrganizationConformancePackName
-    Filters: Optional[OrganizationResourceDetailedStatusFilters]
-    Limit: Optional[CosmosPageLimit]
-    NextToken: Optional[String]
+    Filters: OrganizationResourceDetailedStatusFilters | None
+    Limit: CosmosPageLimit | None
+    NextToken: String | None
 
 
 class OrganizationConformancePackDetailedStatus(TypedDict, total=False):
     AccountId: AccountId
     ConformancePackName: StringWithCharLimit256
     Status: OrganizationResourceDetailedStatus
-    ErrorCode: Optional[String]
-    ErrorMessage: Optional[String]
-    LastUpdateTime: Optional[Date]
+    ErrorCode: String | None
+    ErrorMessage: String | None
+    LastUpdateTime: Date | None
 
 
-OrganizationConformancePackDetailedStatuses = List[OrganizationConformancePackDetailedStatus]
+OrganizationConformancePackDetailedStatuses = list[OrganizationConformancePackDetailedStatus]
 
 
 class GetOrganizationConformancePackDetailedStatusResponse(TypedDict, total=False):
-    OrganizationConformancePackDetailedStatuses: Optional[
-        OrganizationConformancePackDetailedStatuses
-    ]
-    NextToken: Optional[String]
+    OrganizationConformancePackDetailedStatuses: OrganizationConformancePackDetailedStatuses | None
+    NextToken: String | None
 
 
 class GetOrganizationCustomRulePolicyRequest(ServiceRequest):
@@ -2673,7 +2671,7 @@ class GetOrganizationCustomRulePolicyRequest(ServiceRequest):
 
 
 class GetOrganizationCustomRulePolicyResponse(TypedDict, total=False):
-    PolicyText: Optional[PolicyText]
+    PolicyText: PolicyText | None
 
 
 LaterTime = datetime
@@ -2682,16 +2680,16 @@ LaterTime = datetime
 class GetResourceConfigHistoryRequest(ServiceRequest):
     resourceType: ResourceType
     resourceId: ResourceId
-    laterTime: Optional[LaterTime]
-    earlierTime: Optional[EarlierTime]
-    chronologicalOrder: Optional[ChronologicalOrder]
-    limit: Optional[Limit]
-    nextToken: Optional[NextToken]
+    laterTime: LaterTime | None
+    earlierTime: EarlierTime | None
+    chronologicalOrder: ChronologicalOrder | None
+    limit: Limit | None
+    nextToken: NextToken | None
 
 
 class GetResourceConfigHistoryResponse(TypedDict, total=False):
-    configurationItems: Optional[ConfigurationItemList]
-    nextToken: Optional[NextToken]
+    configurationItems: ConfigurationItemList | None
+    nextToken: NextToken | None
 
 
 class GetResourceEvaluationSummaryRequest(ServiceRequest):
@@ -2702,17 +2700,17 @@ class ResourceDetails(TypedDict, total=False):
     ResourceId: BaseResourceId
     ResourceType: StringWithCharLimit256
     ResourceConfiguration: ResourceConfiguration
-    ResourceConfigurationSchemaType: Optional[ResourceConfigurationSchemaType]
+    ResourceConfigurationSchemaType: ResourceConfigurationSchemaType | None
 
 
 class GetResourceEvaluationSummaryResponse(TypedDict, total=False):
-    ResourceEvaluationId: Optional[ResourceEvaluationId]
-    EvaluationMode: Optional[EvaluationMode]
-    EvaluationStatus: Optional[EvaluationStatus]
-    EvaluationStartTimestamp: Optional[Date]
-    Compliance: Optional[ComplianceType]
-    EvaluationContext: Optional[EvaluationContext]
-    ResourceDetails: Optional[ResourceDetails]
+    ResourceEvaluationId: ResourceEvaluationId | None
+    EvaluationMode: EvaluationMode | None
+    EvaluationStatus: EvaluationStatus | None
+    EvaluationStartTimestamp: Date | None
+    Compliance: ComplianceType | None
+    EvaluationContext: EvaluationContext | None
+    ResourceDetails: ResourceDetails | None
 
 
 class GetStoredQueryRequest(ServiceRequest):
@@ -2720,222 +2718,222 @@ class GetStoredQueryRequest(ServiceRequest):
 
 
 class StoredQuery(TypedDict, total=False):
-    QueryId: Optional[QueryId]
-    QueryArn: Optional[QueryArn]
+    QueryId: QueryId | None
+    QueryArn: QueryArn | None
     QueryName: QueryName
-    Description: Optional[QueryDescription]
-    Expression: Optional[QueryExpression]
+    Description: QueryDescription | None
+    Expression: QueryExpression | None
 
 
 class GetStoredQueryResponse(TypedDict, total=False):
-    StoredQuery: Optional[StoredQuery]
+    StoredQuery: StoredQuery | None
 
 
 class ResourceFilters(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    ResourceId: Optional[ResourceId]
-    ResourceName: Optional[ResourceName]
-    Region: Optional[AwsRegion]
+    AccountId: AccountId | None
+    ResourceId: ResourceId | None
+    ResourceName: ResourceName | None
+    Region: AwsRegion | None
 
 
 class ListAggregateDiscoveredResourcesRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
     ResourceType: ResourceType
-    Filters: Optional[ResourceFilters]
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    Filters: ResourceFilters | None
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class ListAggregateDiscoveredResourcesResponse(TypedDict, total=False):
-    ResourceIdentifiers: Optional[DiscoveredResourceIdentifierList]
-    NextToken: Optional[NextToken]
+    ResourceIdentifiers: DiscoveredResourceIdentifierList | None
+    NextToken: NextToken | None
 
 
 class ListConfigurationRecordersRequest(ServiceRequest):
-    Filters: Optional[ConfigurationRecorderFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: ConfigurationRecorderFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListConfigurationRecordersResponse(TypedDict, total=False):
     ConfigurationRecorderSummaries: ConfigurationRecorderSummaries
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListConformancePackComplianceScoresRequest(ServiceRequest):
-    Filters: Optional[ConformancePackComplianceScoresFilters]
-    SortOrder: Optional[SortOrder]
-    SortBy: Optional[SortBy]
-    Limit: Optional[PageSizeLimit]
-    NextToken: Optional[NextToken]
+    Filters: ConformancePackComplianceScoresFilters | None
+    SortOrder: SortOrder | None
+    SortBy: SortBy | None
+    Limit: PageSizeLimit | None
+    NextToken: NextToken | None
 
 
 class ListConformancePackComplianceScoresResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
     ConformancePackComplianceScores: ConformancePackComplianceScores
 
 
-ResourceIdList = List[ResourceId]
+ResourceIdList = list[ResourceId]
 
 
 class ListDiscoveredResourcesRequest(ServiceRequest):
     resourceType: ResourceType
-    resourceIds: Optional[ResourceIdList]
-    resourceName: Optional[ResourceName]
-    limit: Optional[Limit]
-    includeDeletedResources: Optional[Boolean]
-    nextToken: Optional[NextToken]
+    resourceIds: ResourceIdList | None
+    resourceName: ResourceName | None
+    limit: Limit | None
+    includeDeletedResources: Boolean | None
+    nextToken: NextToken | None
 
 
 ResourceDeletionTime = datetime
 
 
 class ResourceIdentifier(TypedDict, total=False):
-    resourceType: Optional[ResourceType]
-    resourceId: Optional[ResourceId]
-    resourceName: Optional[ResourceName]
-    resourceDeletionTime: Optional[ResourceDeletionTime]
+    resourceType: ResourceType | None
+    resourceId: ResourceId | None
+    resourceName: ResourceName | None
+    resourceDeletionTime: ResourceDeletionTime | None
 
 
-ResourceIdentifierList = List[ResourceIdentifier]
+ResourceIdentifierList = list[ResourceIdentifier]
 
 
 class ListDiscoveredResourcesResponse(TypedDict, total=False):
-    resourceIdentifiers: Optional[ResourceIdentifierList]
-    nextToken: Optional[NextToken]
+    resourceIdentifiers: ResourceIdentifierList | None
+    nextToken: NextToken | None
 
 
 class TimeWindow(TypedDict, total=False):
-    StartTime: Optional[Date]
-    EndTime: Optional[Date]
+    StartTime: Date | None
+    EndTime: Date | None
 
 
 class ResourceEvaluationFilters(TypedDict, total=False):
-    EvaluationMode: Optional[EvaluationMode]
-    TimeWindow: Optional[TimeWindow]
-    EvaluationContextIdentifier: Optional[EvaluationContextIdentifier]
+    EvaluationMode: EvaluationMode | None
+    TimeWindow: TimeWindow | None
+    EvaluationContextIdentifier: EvaluationContextIdentifier | None
 
 
 class ListResourceEvaluationsRequest(ServiceRequest):
-    Filters: Optional[ResourceEvaluationFilters]
-    Limit: Optional[ListResourceEvaluationsPageItemLimit]
-    NextToken: Optional[String]
+    Filters: ResourceEvaluationFilters | None
+    Limit: ListResourceEvaluationsPageItemLimit | None
+    NextToken: String | None
 
 
 class ResourceEvaluation(TypedDict, total=False):
-    ResourceEvaluationId: Optional[ResourceEvaluationId]
-    EvaluationMode: Optional[EvaluationMode]
-    EvaluationStartTimestamp: Optional[Date]
+    ResourceEvaluationId: ResourceEvaluationId | None
+    EvaluationMode: EvaluationMode | None
+    EvaluationStartTimestamp: Date | None
 
 
-ResourceEvaluations = List[ResourceEvaluation]
+ResourceEvaluations = list[ResourceEvaluation]
 
 
 class ListResourceEvaluationsResponse(TypedDict, total=False):
-    ResourceEvaluations: Optional[ResourceEvaluations]
-    NextToken: Optional[String]
+    ResourceEvaluations: ResourceEvaluations | None
+    NextToken: String | None
 
 
 class ListStoredQueriesRequest(ServiceRequest):
-    NextToken: Optional[String]
-    MaxResults: Optional[Limit]
+    NextToken: String | None
+    MaxResults: Limit | None
 
 
 class StoredQueryMetadata(TypedDict, total=False):
     QueryId: QueryId
     QueryArn: QueryArn
     QueryName: QueryName
-    Description: Optional[QueryDescription]
+    Description: QueryDescription | None
 
 
-StoredQueryMetadataList = List[StoredQueryMetadata]
+StoredQueryMetadataList = list[StoredQueryMetadata]
 
 
 class ListStoredQueriesResponse(TypedDict, total=False):
-    StoredQueryMetadata: Optional[StoredQueryMetadataList]
-    NextToken: Optional[String]
+    StoredQueryMetadata: StoredQueryMetadataList | None
+    NextToken: String | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
     ResourceArn: AmazonResourceName
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class Tag(TypedDict, total=False):
-    Key: Optional[TagKey]
-    Value: Optional[TagValue]
+    Key: TagKey | None
+    Value: TagValue | None
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    Tags: Optional[TagList]
-    NextToken: Optional[NextToken]
+    Tags: TagList | None
+    NextToken: NextToken | None
 
 
 class OrganizationCustomPolicyRuleMetadata(TypedDict, total=False):
-    Description: Optional[StringWithCharLimit256Min0]
-    OrganizationConfigRuleTriggerTypes: Optional[OrganizationConfigRuleTriggerTypeNoSNs]
-    InputParameters: Optional[StringWithCharLimit2048]
-    MaximumExecutionFrequency: Optional[MaximumExecutionFrequency]
-    ResourceTypesScope: Optional[ResourceTypesScope]
-    ResourceIdScope: Optional[StringWithCharLimit768]
-    TagKeyScope: Optional[StringWithCharLimit128]
-    TagValueScope: Optional[StringWithCharLimit256]
+    Description: StringWithCharLimit256Min0 | None
+    OrganizationConfigRuleTriggerTypes: OrganizationConfigRuleTriggerTypeNoSNs | None
+    InputParameters: StringWithCharLimit2048 | None
+    MaximumExecutionFrequency: MaximumExecutionFrequency | None
+    ResourceTypesScope: ResourceTypesScope | None
+    ResourceIdScope: StringWithCharLimit768 | None
+    TagKeyScope: StringWithCharLimit128 | None
+    TagValueScope: StringWithCharLimit256 | None
     PolicyRuntime: PolicyRuntime
     PolicyText: PolicyText
-    DebugLogDeliveryAccounts: Optional[DebugLogDeliveryAccounts]
+    DebugLogDeliveryAccounts: DebugLogDeliveryAccounts | None
 
 
-TagsList = List[Tag]
+TagsList = list[Tag]
 
 
 class PutAggregationAuthorizationRequest(ServiceRequest):
     AuthorizedAccountId: AccountId
     AuthorizedAwsRegion: AwsRegion
-    Tags: Optional[TagsList]
+    Tags: TagsList | None
 
 
 class PutAggregationAuthorizationResponse(TypedDict, total=False):
-    AggregationAuthorization: Optional[AggregationAuthorization]
+    AggregationAuthorization: AggregationAuthorization | None
 
 
 class PutConfigRuleRequest(ServiceRequest):
     ConfigRule: ConfigRule
-    Tags: Optional[TagsList]
+    Tags: TagsList | None
 
 
 class PutConfigurationAggregatorRequest(ServiceRequest):
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    AccountAggregationSources: Optional[AccountAggregationSourceList]
-    OrganizationAggregationSource: Optional[OrganizationAggregationSource]
-    Tags: Optional[TagsList]
-    AggregatorFilters: Optional[AggregatorFilters]
+    AccountAggregationSources: AccountAggregationSourceList | None
+    OrganizationAggregationSource: OrganizationAggregationSource | None
+    Tags: TagsList | None
+    AggregatorFilters: AggregatorFilters | None
 
 
 class PutConfigurationAggregatorResponse(TypedDict, total=False):
-    ConfigurationAggregator: Optional[ConfigurationAggregator]
+    ConfigurationAggregator: ConfigurationAggregator | None
 
 
 class PutConfigurationRecorderRequest(ServiceRequest):
     ConfigurationRecorder: ConfigurationRecorder
-    Tags: Optional[TagsList]
+    Tags: TagsList | None
 
 
 class PutConformancePackRequest(ServiceRequest):
     ConformancePackName: ConformancePackName
-    TemplateS3Uri: Optional[TemplateS3Uri]
-    TemplateBody: Optional[TemplateBody]
-    DeliveryS3Bucket: Optional[DeliveryS3Bucket]
-    DeliveryS3KeyPrefix: Optional[DeliveryS3KeyPrefix]
-    ConformancePackInputParameters: Optional[ConformancePackInputParameters]
-    TemplateSSMDocumentDetails: Optional[TemplateSSMDocumentDetails]
+    TemplateS3Uri: TemplateS3Uri | None
+    TemplateBody: TemplateBody | None
+    DeliveryS3Bucket: DeliveryS3Bucket | None
+    DeliveryS3KeyPrefix: DeliveryS3KeyPrefix | None
+    ConformancePackInputParameters: ConformancePackInputParameters | None
+    TemplateSSMDocumentDetails: TemplateSSMDocumentDetails | None
 
 
 class PutConformancePackResponse(TypedDict, total=False):
-    ConformancePackArn: Optional[ConformancePackArn]
+    ConformancePackArn: ConformancePackArn | None
 
 
 class PutDeliveryChannelRequest(ServiceRequest):
@@ -2943,13 +2941,13 @@ class PutDeliveryChannelRequest(ServiceRequest):
 
 
 class PutEvaluationsRequest(ServiceRequest):
-    Evaluations: Optional[Evaluations]
+    Evaluations: Evaluations | None
     ResultToken: String
-    TestMode: Optional[Boolean]
+    TestMode: Boolean | None
 
 
 class PutEvaluationsResponse(TypedDict, total=False):
-    FailedEvaluations: Optional[Evaluations]
+    FailedEvaluations: Evaluations | None
 
 
 class PutExternalEvaluationRequest(ServiceRequest):
@@ -2963,28 +2961,28 @@ class PutExternalEvaluationResponse(TypedDict, total=False):
 
 class PutOrganizationConfigRuleRequest(ServiceRequest):
     OrganizationConfigRuleName: OrganizationConfigRuleName
-    OrganizationManagedRuleMetadata: Optional[OrganizationManagedRuleMetadata]
-    OrganizationCustomRuleMetadata: Optional[OrganizationCustomRuleMetadata]
-    ExcludedAccounts: Optional[ExcludedAccounts]
-    OrganizationCustomPolicyRuleMetadata: Optional[OrganizationCustomPolicyRuleMetadata]
+    OrganizationManagedRuleMetadata: OrganizationManagedRuleMetadata | None
+    OrganizationCustomRuleMetadata: OrganizationCustomRuleMetadata | None
+    ExcludedAccounts: ExcludedAccounts | None
+    OrganizationCustomPolicyRuleMetadata: OrganizationCustomPolicyRuleMetadata | None
 
 
 class PutOrganizationConfigRuleResponse(TypedDict, total=False):
-    OrganizationConfigRuleArn: Optional[StringWithCharLimit256]
+    OrganizationConfigRuleArn: StringWithCharLimit256 | None
 
 
 class PutOrganizationConformancePackRequest(ServiceRequest):
     OrganizationConformancePackName: OrganizationConformancePackName
-    TemplateS3Uri: Optional[TemplateS3Uri]
-    TemplateBody: Optional[TemplateBody]
-    DeliveryS3Bucket: Optional[DeliveryS3Bucket]
-    DeliveryS3KeyPrefix: Optional[DeliveryS3KeyPrefix]
-    ConformancePackInputParameters: Optional[ConformancePackInputParameters]
-    ExcludedAccounts: Optional[ExcludedAccounts]
+    TemplateS3Uri: TemplateS3Uri | None
+    TemplateBody: TemplateBody | None
+    DeliveryS3Bucket: DeliveryS3Bucket | None
+    DeliveryS3KeyPrefix: DeliveryS3KeyPrefix | None
+    ConformancePackInputParameters: ConformancePackInputParameters | None
+    ExcludedAccounts: ExcludedAccounts | None
 
 
 class PutOrganizationConformancePackResponse(TypedDict, total=False):
-    OrganizationConformancePackArn: Optional[StringWithCharLimit256]
+    OrganizationConformancePackArn: StringWithCharLimit256 | None
 
 
 class PutRemediationConfigurationsRequest(ServiceRequest):
@@ -2992,27 +2990,27 @@ class PutRemediationConfigurationsRequest(ServiceRequest):
 
 
 class PutRemediationConfigurationsResponse(TypedDict, total=False):
-    FailedBatches: Optional[FailedRemediationBatches]
+    FailedBatches: FailedRemediationBatches | None
 
 
 class PutRemediationExceptionsRequest(ServiceRequest):
     ConfigRuleName: ConfigRuleName
     ResourceKeys: RemediationExceptionResourceKeys
-    Message: Optional[StringWithCharLimit1024]
-    ExpirationTime: Optional[Date]
+    Message: StringWithCharLimit1024 | None
+    ExpirationTime: Date | None
 
 
 class PutRemediationExceptionsResponse(TypedDict, total=False):
-    FailedBatches: Optional[FailedRemediationExceptionBatches]
+    FailedBatches: FailedRemediationExceptionBatches | None
 
 
 class PutResourceConfigRequest(ServiceRequest):
     ResourceType: ResourceTypeString
     SchemaVersionId: SchemaVersionId
     ResourceId: ResourceId
-    ResourceName: Optional[ResourceName]
+    ResourceName: ResourceName | None
     Configuration: Configuration
-    Tags: Optional[Tags]
+    Tags: Tags | None
 
 
 class PutRetentionConfigurationRequest(ServiceRequest):
@@ -3020,64 +3018,64 @@ class PutRetentionConfigurationRequest(ServiceRequest):
 
 
 class PutRetentionConfigurationResponse(TypedDict, total=False):
-    RetentionConfiguration: Optional[RetentionConfiguration]
+    RetentionConfiguration: RetentionConfiguration | None
 
 
 class PutServiceLinkedConfigurationRecorderRequest(ServiceRequest):
     ServicePrincipal: ServicePrincipal
-    Tags: Optional[TagsList]
+    Tags: TagsList | None
 
 
 class PutServiceLinkedConfigurationRecorderResponse(TypedDict, total=False):
-    Arn: Optional[AmazonResourceName]
-    Name: Optional[RecorderName]
+    Arn: AmazonResourceName | None
+    Name: RecorderName | None
 
 
 class PutStoredQueryRequest(ServiceRequest):
     StoredQuery: StoredQuery
-    Tags: Optional[TagsList]
+    Tags: TagsList | None
 
 
 class PutStoredQueryResponse(TypedDict, total=False):
-    QueryArn: Optional[QueryArn]
+    QueryArn: QueryArn | None
 
 
 class QueryInfo(TypedDict, total=False):
-    SelectFields: Optional[FieldInfoList]
+    SelectFields: FieldInfoList | None
 
 
-ReevaluateConfigRuleNames = List[ConfigRuleName]
-Results = List[String]
+ReevaluateConfigRuleNames = list[ConfigRuleName]
+Results = list[String]
 
 
 class SelectAggregateResourceConfigRequest(ServiceRequest):
     Expression: Expression
     ConfigurationAggregatorName: ConfigurationAggregatorName
-    Limit: Optional[Limit]
-    MaxResults: Optional[Limit]
-    NextToken: Optional[NextToken]
+    Limit: Limit | None
+    MaxResults: Limit | None
+    NextToken: NextToken | None
 
 
 class SelectAggregateResourceConfigResponse(TypedDict, total=False):
-    Results: Optional[Results]
-    QueryInfo: Optional[QueryInfo]
-    NextToken: Optional[NextToken]
+    Results: Results | None
+    QueryInfo: QueryInfo | None
+    NextToken: NextToken | None
 
 
 class SelectResourceConfigRequest(ServiceRequest):
     Expression: Expression
-    Limit: Optional[Limit]
-    NextToken: Optional[NextToken]
+    Limit: Limit | None
+    NextToken: NextToken | None
 
 
 class SelectResourceConfigResponse(TypedDict, total=False):
-    Results: Optional[Results]
-    QueryInfo: Optional[QueryInfo]
-    NextToken: Optional[NextToken]
+    Results: Results | None
+    QueryInfo: QueryInfo | None
+    NextToken: NextToken | None
 
 
 class StartConfigRulesEvaluationRequest(ServiceRequest):
-    ConfigRuleNames: Optional[ReevaluateConfigRuleNames]
+    ConfigRuleNames: ReevaluateConfigRuleNames | None
 
 
 class StartConfigRulesEvaluationResponse(TypedDict, total=False):
@@ -3094,27 +3092,27 @@ class StartRemediationExecutionRequest(ServiceRequest):
 
 
 class StartRemediationExecutionResponse(TypedDict, total=False):
-    FailureMessage: Optional[String]
-    FailedItems: Optional[ResourceKeys]
+    FailureMessage: String | None
+    FailedItems: ResourceKeys | None
 
 
 class StartResourceEvaluationRequest(ServiceRequest):
     ResourceDetails: ResourceDetails
-    EvaluationContext: Optional[EvaluationContext]
+    EvaluationContext: EvaluationContext | None
     EvaluationMode: EvaluationMode
-    EvaluationTimeout: Optional[EvaluationTimeout]
-    ClientToken: Optional[ClientToken]
+    EvaluationTimeout: EvaluationTimeout | None
+    ClientToken: ClientToken | None
 
 
 class StartResourceEvaluationResponse(TypedDict, total=False):
-    ResourceEvaluationId: Optional[ResourceEvaluationId]
+    ResourceEvaluationId: ResourceEvaluationId | None
 
 
 class StopConfigurationRecorderRequest(ServiceRequest):
     ConfigurationRecorderName: RecorderName
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -3128,8 +3126,8 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class ConfigApi:
-    service = "config"
-    version = "2014-11-12"
+    service: str = "config"
+    version: str = "2014-11-12"
 
     @handler("AssociateResourceTypes")
     def associate_resource_types(

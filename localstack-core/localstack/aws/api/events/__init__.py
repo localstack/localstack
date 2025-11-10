@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -319,61 +319,61 @@ Timestamp = datetime
 
 
 class ApiDestination(TypedDict, total=False):
-    ApiDestinationArn: Optional[ApiDestinationArn]
-    Name: Optional[ApiDestinationName]
-    ApiDestinationState: Optional[ApiDestinationState]
-    ConnectionArn: Optional[ConnectionArn]
-    InvocationEndpoint: Optional[HttpsEndpoint]
-    HttpMethod: Optional[ApiDestinationHttpMethod]
-    InvocationRateLimitPerSecond: Optional[ApiDestinationInvocationRateLimitPerSecond]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    ApiDestinationArn: ApiDestinationArn | None
+    Name: ApiDestinationName | None
+    ApiDestinationState: ApiDestinationState | None
+    ConnectionArn: ConnectionArn | None
+    InvocationEndpoint: HttpsEndpoint | None
+    HttpMethod: ApiDestinationHttpMethod | None
+    InvocationRateLimitPerSecond: ApiDestinationInvocationRateLimitPerSecond | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
-ApiDestinationResponseList = List[ApiDestination]
+ApiDestinationResponseList = list[ApiDestination]
 
 
 class AppSyncParameters(TypedDict, total=False):
-    GraphQLOperation: Optional[GraphQLOperation]
+    GraphQLOperation: GraphQLOperation | None
 
 
 Long = int
 
 
 class Archive(TypedDict, total=False):
-    ArchiveName: Optional[ArchiveName]
-    EventSourceArn: Optional[EventBusArn]
-    State: Optional[ArchiveState]
-    StateReason: Optional[ArchiveStateReason]
-    RetentionDays: Optional[RetentionDays]
-    SizeBytes: Optional[Long]
-    EventCount: Optional[Long]
-    CreationTime: Optional[Timestamp]
+    ArchiveName: ArchiveName | None
+    EventSourceArn: EventBusArn | None
+    State: ArchiveState | None
+    StateReason: ArchiveStateReason | None
+    RetentionDays: RetentionDays | None
+    SizeBytes: Long | None
+    EventCount: Long | None
+    CreationTime: Timestamp | None
 
 
-ArchiveResponseList = List[Archive]
-StringList = List[String]
+ArchiveResponseList = list[Archive]
+StringList = list[String]
 
 
 class AwsVpcConfiguration(TypedDict, total=False):
     Subnets: StringList
-    SecurityGroups: Optional[StringList]
-    AssignPublicIp: Optional[AssignPublicIp]
+    SecurityGroups: StringList | None
+    AssignPublicIp: AssignPublicIp | None
 
 
 class BatchArrayProperties(TypedDict, total=False):
-    Size: Optional[Integer]
+    Size: Integer | None
 
 
 class BatchRetryStrategy(TypedDict, total=False):
-    Attempts: Optional[Integer]
+    Attempts: Integer | None
 
 
 class BatchParameters(TypedDict, total=False):
     JobDefinition: String
     JobName: String
-    ArrayProperties: Optional[BatchArrayProperties]
-    RetryStrategy: Optional[BatchRetryStrategy]
+    ArrayProperties: BatchArrayProperties | None
+    RetryStrategy: BatchRetryStrategy | None
 
 
 class CancelReplayRequest(ServiceRequest):
@@ -381,18 +381,18 @@ class CancelReplayRequest(ServiceRequest):
 
 
 class CancelReplayResponse(TypedDict, total=False):
-    ReplayArn: Optional[ReplayArn]
-    State: Optional[ReplayState]
-    StateReason: Optional[ReplayStateReason]
+    ReplayArn: ReplayArn | None
+    State: ReplayState | None
+    StateReason: ReplayStateReason | None
 
 
 class CapacityProviderStrategyItem(TypedDict, total=False):
     capacityProvider: CapacityProvider
-    weight: Optional[CapacityProviderStrategyItemWeight]
-    base: Optional[CapacityProviderStrategyItemBase]
+    weight: CapacityProviderStrategyItemWeight | None
+    base: CapacityProviderStrategyItemBase | None
 
 
-CapacityProviderStrategy = List[CapacityProviderStrategyItem]
+CapacityProviderStrategy = list[CapacityProviderStrategyItem]
 
 
 class Condition(TypedDict, total=False):
@@ -402,18 +402,18 @@ class Condition(TypedDict, total=False):
 
 
 class Connection(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    Name: Optional[ConnectionName]
-    ConnectionState: Optional[ConnectionState]
-    StateReason: Optional[ConnectionStateReason]
-    AuthorizationType: Optional[ConnectionAuthorizationType]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LastAuthorizedTime: Optional[Timestamp]
+    ConnectionArn: ConnectionArn | None
+    Name: ConnectionName | None
+    ConnectionState: ConnectionState | None
+    StateReason: ConnectionStateReason | None
+    AuthorizationType: ConnectionAuthorizationType | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    LastAuthorizedTime: Timestamp | None
 
 
 class ConnectionApiKeyAuthResponseParameters(TypedDict, total=False):
-    ApiKeyName: Optional[AuthHeaderParameters]
+    ApiKeyName: AuthHeaderParameters | None
 
 
 class DescribeConnectionResourceParameters(TypedDict, total=False):
@@ -426,62 +426,62 @@ class DescribeConnectionConnectivityParameters(TypedDict, total=False):
 
 
 class ConnectionBodyParameter(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[SensitiveString]
-    IsValueSecret: Optional[Boolean]
+    Key: String | None
+    Value: SensitiveString | None
+    IsValueSecret: Boolean | None
 
 
-ConnectionBodyParametersList = List[ConnectionBodyParameter]
+ConnectionBodyParametersList = list[ConnectionBodyParameter]
 
 
 class ConnectionQueryStringParameter(TypedDict, total=False):
-    Key: Optional[QueryStringKey]
-    Value: Optional[QueryStringValueSensitive]
-    IsValueSecret: Optional[Boolean]
+    Key: QueryStringKey | None
+    Value: QueryStringValueSensitive | None
+    IsValueSecret: Boolean | None
 
 
-ConnectionQueryStringParametersList = List[ConnectionQueryStringParameter]
+ConnectionQueryStringParametersList = list[ConnectionQueryStringParameter]
 
 
 class ConnectionHeaderParameter(TypedDict, total=False):
-    Key: Optional[HeaderKey]
-    Value: Optional[HeaderValueSensitive]
-    IsValueSecret: Optional[Boolean]
+    Key: HeaderKey | None
+    Value: HeaderValueSensitive | None
+    IsValueSecret: Boolean | None
 
 
-ConnectionHeaderParametersList = List[ConnectionHeaderParameter]
+ConnectionHeaderParametersList = list[ConnectionHeaderParameter]
 
 
 class ConnectionHttpParameters(TypedDict, total=False):
-    HeaderParameters: Optional[ConnectionHeaderParametersList]
-    QueryStringParameters: Optional[ConnectionQueryStringParametersList]
-    BodyParameters: Optional[ConnectionBodyParametersList]
+    HeaderParameters: ConnectionHeaderParametersList | None
+    QueryStringParameters: ConnectionQueryStringParametersList | None
+    BodyParameters: ConnectionBodyParametersList | None
 
 
 class ConnectionOAuthClientResponseParameters(TypedDict, total=False):
-    ClientID: Optional[AuthHeaderParameters]
+    ClientID: AuthHeaderParameters | None
 
 
 class ConnectionOAuthResponseParameters(TypedDict, total=False):
-    ClientParameters: Optional[ConnectionOAuthClientResponseParameters]
-    AuthorizationEndpoint: Optional[HttpsEndpoint]
-    HttpMethod: Optional[ConnectionOAuthHttpMethod]
-    OAuthHttpParameters: Optional[ConnectionHttpParameters]
+    ClientParameters: ConnectionOAuthClientResponseParameters | None
+    AuthorizationEndpoint: HttpsEndpoint | None
+    HttpMethod: ConnectionOAuthHttpMethod | None
+    OAuthHttpParameters: ConnectionHttpParameters | None
 
 
 class ConnectionBasicAuthResponseParameters(TypedDict, total=False):
-    Username: Optional[AuthHeaderParameters]
+    Username: AuthHeaderParameters | None
 
 
 class ConnectionAuthResponseParameters(TypedDict, total=False):
-    BasicAuthParameters: Optional[ConnectionBasicAuthResponseParameters]
-    OAuthParameters: Optional[ConnectionOAuthResponseParameters]
-    ApiKeyAuthParameters: Optional[ConnectionApiKeyAuthResponseParameters]
-    InvocationHttpParameters: Optional[ConnectionHttpParameters]
-    ConnectivityParameters: Optional[DescribeConnectionConnectivityParameters]
+    BasicAuthParameters: ConnectionBasicAuthResponseParameters | None
+    OAuthParameters: ConnectionOAuthResponseParameters | None
+    ApiKeyAuthParameters: ConnectionApiKeyAuthResponseParameters | None
+    InvocationHttpParameters: ConnectionHttpParameters | None
+    ConnectivityParameters: DescribeConnectionConnectivityParameters | None
 
 
-ConnectionResponseList = List[Connection]
+ConnectionResponseList = list[Connection]
 
 
 class ConnectivityResourceConfigurationArn(TypedDict, total=False):
@@ -494,34 +494,34 @@ class ConnectivityResourceParameters(TypedDict, total=False):
 
 class CreateApiDestinationRequest(ServiceRequest):
     Name: ApiDestinationName
-    Description: Optional[ApiDestinationDescription]
+    Description: ApiDestinationDescription | None
     ConnectionArn: ConnectionArn
     InvocationEndpoint: HttpsEndpoint
     HttpMethod: ApiDestinationHttpMethod
-    InvocationRateLimitPerSecond: Optional[ApiDestinationInvocationRateLimitPerSecond]
+    InvocationRateLimitPerSecond: ApiDestinationInvocationRateLimitPerSecond | None
 
 
 class CreateApiDestinationResponse(TypedDict, total=False):
-    ApiDestinationArn: Optional[ApiDestinationArn]
-    ApiDestinationState: Optional[ApiDestinationState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    ApiDestinationArn: ApiDestinationArn | None
+    ApiDestinationState: ApiDestinationState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class CreateArchiveRequest(ServiceRequest):
     ArchiveName: ArchiveName
     EventSourceArn: EventBusArn
-    Description: Optional[ArchiveDescription]
-    EventPattern: Optional[EventPattern]
-    RetentionDays: Optional[RetentionDays]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Description: ArchiveDescription | None
+    EventPattern: EventPattern | None
+    RetentionDays: RetentionDays | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class CreateArchiveResponse(TypedDict, total=False):
-    ArchiveArn: Optional[ArchiveArn]
-    State: Optional[ArchiveState]
-    StateReason: Optional[ArchiveStateReason]
-    CreationTime: Optional[Timestamp]
+    ArchiveArn: ArchiveArn | None
+    State: ArchiveState | None
+    StateReason: ArchiveStateReason | None
+    CreationTime: Timestamp | None
 
 
 class CreateConnectionApiKeyAuthRequestParameters(TypedDict, total=False):
@@ -538,7 +538,7 @@ class CreateConnectionOAuthRequestParameters(TypedDict, total=False):
     ClientParameters: CreateConnectionOAuthClientRequestParameters
     AuthorizationEndpoint: HttpsEndpoint
     HttpMethod: ConnectionOAuthHttpMethod
-    OAuthHttpParameters: Optional[ConnectionHttpParameters]
+    OAuthHttpParameters: ConnectionHttpParameters | None
 
 
 class CreateConnectionBasicAuthRequestParameters(TypedDict, total=False):
@@ -547,38 +547,38 @@ class CreateConnectionBasicAuthRequestParameters(TypedDict, total=False):
 
 
 class CreateConnectionAuthRequestParameters(TypedDict, total=False):
-    BasicAuthParameters: Optional[CreateConnectionBasicAuthRequestParameters]
-    OAuthParameters: Optional[CreateConnectionOAuthRequestParameters]
-    ApiKeyAuthParameters: Optional[CreateConnectionApiKeyAuthRequestParameters]
-    InvocationHttpParameters: Optional[ConnectionHttpParameters]
-    ConnectivityParameters: Optional[ConnectivityResourceParameters]
+    BasicAuthParameters: CreateConnectionBasicAuthRequestParameters | None
+    OAuthParameters: CreateConnectionOAuthRequestParameters | None
+    ApiKeyAuthParameters: CreateConnectionApiKeyAuthRequestParameters | None
+    InvocationHttpParameters: ConnectionHttpParameters | None
+    ConnectivityParameters: ConnectivityResourceParameters | None
 
 
 class CreateConnectionRequest(ServiceRequest):
     Name: ConnectionName
-    Description: Optional[ConnectionDescription]
+    Description: ConnectionDescription | None
     AuthorizationType: ConnectionAuthorizationType
     AuthParameters: CreateConnectionAuthRequestParameters
-    InvocationConnectivityParameters: Optional[ConnectivityResourceParameters]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    InvocationConnectivityParameters: ConnectivityResourceParameters | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class CreateConnectionResponse(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    ConnectionState: Optional[ConnectionState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    ConnectionArn: ConnectionArn | None
+    ConnectionState: ConnectionState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class EndpointEventBus(TypedDict, total=False):
     EventBusArn: NonPartnerEventBusArn
 
 
-EndpointEventBusList = List[EndpointEventBus]
+EndpointEventBusList = list[EndpointEventBus]
 
 
 class ReplicationConfig(TypedDict, total=False):
-    State: Optional[ReplicationState]
+    State: ReplicationState | None
 
 
 class Secondary(TypedDict, total=False):
@@ -600,21 +600,21 @@ class RoutingConfig(TypedDict, total=False):
 
 class CreateEndpointRequest(ServiceRequest):
     Name: EndpointName
-    Description: Optional[EndpointDescription]
+    Description: EndpointDescription | None
     RoutingConfig: RoutingConfig
-    ReplicationConfig: Optional[ReplicationConfig]
+    ReplicationConfig: ReplicationConfig | None
     EventBuses: EndpointEventBusList
-    RoleArn: Optional[IamRoleArn]
+    RoleArn: IamRoleArn | None
 
 
 class CreateEndpointResponse(TypedDict, total=False):
-    Name: Optional[EndpointName]
-    Arn: Optional[EndpointArn]
-    RoutingConfig: Optional[RoutingConfig]
-    ReplicationConfig: Optional[ReplicationConfig]
-    EventBuses: Optional[EndpointEventBusList]
-    RoleArn: Optional[IamRoleArn]
-    State: Optional[EndpointState]
+    Name: EndpointName | None
+    Arn: EndpointArn | None
+    RoutingConfig: RoutingConfig | None
+    ReplicationConfig: ReplicationConfig | None
+    EventBuses: EndpointEventBusList | None
+    RoleArn: IamRoleArn | None
+    State: EndpointState | None
 
 
 class Tag(TypedDict, total=False):
@@ -622,34 +622,34 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class LogConfig(TypedDict, total=False):
-    IncludeDetail: Optional[IncludeDetail]
-    Level: Optional[Level]
+    IncludeDetail: IncludeDetail | None
+    Level: Level | None
 
 
 class DeadLetterConfig(TypedDict, total=False):
-    Arn: Optional[ResourceArn]
+    Arn: ResourceArn | None
 
 
 class CreateEventBusRequest(ServiceRequest):
     Name: EventBusName
-    EventSourceName: Optional[EventSourceName]
-    Description: Optional[EventBusDescription]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    LogConfig: Optional[LogConfig]
-    Tags: Optional[TagList]
+    EventSourceName: EventSourceName | None
+    Description: EventBusDescription | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    DeadLetterConfig: DeadLetterConfig | None
+    LogConfig: LogConfig | None
+    Tags: TagList | None
 
 
 class CreateEventBusResponse(TypedDict, total=False):
-    EventBusArn: Optional[String]
-    Description: Optional[EventBusDescription]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    LogConfig: Optional[LogConfig]
+    EventBusArn: String | None
+    Description: EventBusDescription | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    DeadLetterConfig: DeadLetterConfig | None
+    LogConfig: LogConfig | None
 
 
 class CreatePartnerEventSourceRequest(ServiceRequest):
@@ -658,7 +658,7 @@ class CreatePartnerEventSourceRequest(ServiceRequest):
 
 
 class CreatePartnerEventSourceResponse(TypedDict, total=False):
-    EventSourceArn: Optional[String]
+    EventSourceArn: String | None
 
 
 class DeactivateEventSourceRequest(ServiceRequest):
@@ -670,11 +670,11 @@ class DeauthorizeConnectionRequest(ServiceRequest):
 
 
 class DeauthorizeConnectionResponse(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    ConnectionState: Optional[ConnectionState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LastAuthorizedTime: Optional[Timestamp]
+    ConnectionArn: ConnectionArn | None
+    ConnectionState: ConnectionState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    LastAuthorizedTime: Timestamp | None
 
 
 class DeleteApiDestinationRequest(ServiceRequest):
@@ -698,11 +698,11 @@ class DeleteConnectionRequest(ServiceRequest):
 
 
 class DeleteConnectionResponse(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    ConnectionState: Optional[ConnectionState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LastAuthorizedTime: Optional[Timestamp]
+    ConnectionArn: ConnectionArn | None
+    ConnectionState: ConnectionState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    LastAuthorizedTime: Timestamp | None
 
 
 class DeleteEndpointRequest(ServiceRequest):
@@ -724,8 +724,8 @@ class DeletePartnerEventSourceRequest(ServiceRequest):
 
 class DeleteRuleRequest(ServiceRequest):
     Name: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
-    Force: Optional[Boolean]
+    EventBusName: EventBusNameOrArn | None
+    Force: Boolean | None
 
 
 class DescribeApiDestinationRequest(ServiceRequest):
@@ -733,16 +733,16 @@ class DescribeApiDestinationRequest(ServiceRequest):
 
 
 class DescribeApiDestinationResponse(TypedDict, total=False):
-    ApiDestinationArn: Optional[ApiDestinationArn]
-    Name: Optional[ApiDestinationName]
-    Description: Optional[ApiDestinationDescription]
-    ApiDestinationState: Optional[ApiDestinationState]
-    ConnectionArn: Optional[ConnectionArn]
-    InvocationEndpoint: Optional[HttpsEndpoint]
-    HttpMethod: Optional[ApiDestinationHttpMethod]
-    InvocationRateLimitPerSecond: Optional[ApiDestinationInvocationRateLimitPerSecond]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    ApiDestinationArn: ApiDestinationArn | None
+    Name: ApiDestinationName | None
+    Description: ApiDestinationDescription | None
+    ApiDestinationState: ApiDestinationState | None
+    ConnectionArn: ConnectionArn | None
+    InvocationEndpoint: HttpsEndpoint | None
+    HttpMethod: ApiDestinationHttpMethod | None
+    InvocationRateLimitPerSecond: ApiDestinationInvocationRateLimitPerSecond | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class DescribeArchiveRequest(ServiceRequest):
@@ -750,18 +750,18 @@ class DescribeArchiveRequest(ServiceRequest):
 
 
 class DescribeArchiveResponse(TypedDict, total=False):
-    ArchiveArn: Optional[ArchiveArn]
-    ArchiveName: Optional[ArchiveName]
-    EventSourceArn: Optional[EventBusArn]
-    Description: Optional[ArchiveDescription]
-    EventPattern: Optional[EventPattern]
-    State: Optional[ArchiveState]
-    StateReason: Optional[ArchiveStateReason]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    RetentionDays: Optional[RetentionDays]
-    SizeBytes: Optional[Long]
-    EventCount: Optional[Long]
-    CreationTime: Optional[Timestamp]
+    ArchiveArn: ArchiveArn | None
+    ArchiveName: ArchiveName | None
+    EventSourceArn: EventBusArn | None
+    Description: ArchiveDescription | None
+    EventPattern: EventPattern | None
+    State: ArchiveState | None
+    StateReason: ArchiveStateReason | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    RetentionDays: RetentionDays | None
+    SizeBytes: Long | None
+    EventCount: Long | None
+    CreationTime: Timestamp | None
 
 
 class DescribeConnectionRequest(ServiceRequest):
@@ -769,56 +769,56 @@ class DescribeConnectionRequest(ServiceRequest):
 
 
 class DescribeConnectionResponse(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    Name: Optional[ConnectionName]
-    Description: Optional[ConnectionDescription]
-    InvocationConnectivityParameters: Optional[DescribeConnectionConnectivityParameters]
-    ConnectionState: Optional[ConnectionState]
-    StateReason: Optional[ConnectionStateReason]
-    AuthorizationType: Optional[ConnectionAuthorizationType]
-    SecretArn: Optional[SecretsManagerSecretArn]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    AuthParameters: Optional[ConnectionAuthResponseParameters]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LastAuthorizedTime: Optional[Timestamp]
+    ConnectionArn: ConnectionArn | None
+    Name: ConnectionName | None
+    Description: ConnectionDescription | None
+    InvocationConnectivityParameters: DescribeConnectionConnectivityParameters | None
+    ConnectionState: ConnectionState | None
+    StateReason: ConnectionStateReason | None
+    AuthorizationType: ConnectionAuthorizationType | None
+    SecretArn: SecretsManagerSecretArn | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    AuthParameters: ConnectionAuthResponseParameters | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    LastAuthorizedTime: Timestamp | None
 
 
 class DescribeEndpointRequest(ServiceRequest):
     Name: EndpointName
-    HomeRegion: Optional[HomeRegion]
+    HomeRegion: HomeRegion | None
 
 
 class DescribeEndpointResponse(TypedDict, total=False):
-    Name: Optional[EndpointName]
-    Description: Optional[EndpointDescription]
-    Arn: Optional[EndpointArn]
-    RoutingConfig: Optional[RoutingConfig]
-    ReplicationConfig: Optional[ReplicationConfig]
-    EventBuses: Optional[EndpointEventBusList]
-    RoleArn: Optional[IamRoleArn]
-    EndpointId: Optional[EndpointId]
-    EndpointUrl: Optional[EndpointUrl]
-    State: Optional[EndpointState]
-    StateReason: Optional[EndpointStateReason]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Name: EndpointName | None
+    Description: EndpointDescription | None
+    Arn: EndpointArn | None
+    RoutingConfig: RoutingConfig | None
+    ReplicationConfig: ReplicationConfig | None
+    EventBuses: EndpointEventBusList | None
+    RoleArn: IamRoleArn | None
+    EndpointId: EndpointId | None
+    EndpointUrl: EndpointUrl | None
+    State: EndpointState | None
+    StateReason: EndpointStateReason | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class DescribeEventBusRequest(ServiceRequest):
-    Name: Optional[EventBusNameOrArn]
+    Name: EventBusNameOrArn | None
 
 
 class DescribeEventBusResponse(TypedDict, total=False):
-    Name: Optional[String]
-    Arn: Optional[String]
-    Description: Optional[EventBusDescription]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    Policy: Optional[String]
-    LogConfig: Optional[LogConfig]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Name: String | None
+    Arn: String | None
+    Description: EventBusDescription | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    DeadLetterConfig: DeadLetterConfig | None
+    Policy: String | None
+    LogConfig: LogConfig | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class DescribeEventSourceRequest(ServiceRequest):
@@ -826,12 +826,12 @@ class DescribeEventSourceRequest(ServiceRequest):
 
 
 class DescribeEventSourceResponse(TypedDict, total=False):
-    Arn: Optional[String]
-    CreatedBy: Optional[String]
-    CreationTime: Optional[Timestamp]
-    ExpirationTime: Optional[Timestamp]
-    Name: Optional[String]
-    State: Optional[EventSourceState]
+    Arn: String | None
+    CreatedBy: String | None
+    CreationTime: Timestamp | None
+    ExpirationTime: Timestamp | None
+    Name: String | None
+    State: EventSourceState | None
 
 
 class DescribePartnerEventSourceRequest(ServiceRequest):
@@ -839,161 +839,161 @@ class DescribePartnerEventSourceRequest(ServiceRequest):
 
 
 class DescribePartnerEventSourceResponse(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[String]
+    Arn: String | None
+    Name: String | None
 
 
 class DescribeReplayRequest(ServiceRequest):
     ReplayName: ReplayName
 
 
-ReplayDestinationFilters = List[Arn]
+ReplayDestinationFilters = list[Arn]
 
 
 class ReplayDestination(TypedDict, total=False):
     Arn: Arn
-    FilterArns: Optional[ReplayDestinationFilters]
+    FilterArns: ReplayDestinationFilters | None
 
 
 class DescribeReplayResponse(TypedDict, total=False):
-    ReplayName: Optional[ReplayName]
-    ReplayArn: Optional[ReplayArn]
-    Description: Optional[ReplayDescription]
-    State: Optional[ReplayState]
-    StateReason: Optional[ReplayStateReason]
-    EventSourceArn: Optional[ArchiveArn]
-    Destination: Optional[ReplayDestination]
-    EventStartTime: Optional[Timestamp]
-    EventEndTime: Optional[Timestamp]
-    EventLastReplayedTime: Optional[Timestamp]
-    ReplayStartTime: Optional[Timestamp]
-    ReplayEndTime: Optional[Timestamp]
+    ReplayName: ReplayName | None
+    ReplayArn: ReplayArn | None
+    Description: ReplayDescription | None
+    State: ReplayState | None
+    StateReason: ReplayStateReason | None
+    EventSourceArn: ArchiveArn | None
+    Destination: ReplayDestination | None
+    EventStartTime: Timestamp | None
+    EventEndTime: Timestamp | None
+    EventLastReplayedTime: Timestamp | None
+    ReplayStartTime: Timestamp | None
+    ReplayEndTime: Timestamp | None
 
 
 class DescribeRuleRequest(ServiceRequest):
     Name: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
+    EventBusName: EventBusNameOrArn | None
 
 
 class DescribeRuleResponse(TypedDict, total=False):
-    Name: Optional[RuleName]
-    Arn: Optional[RuleArn]
-    EventPattern: Optional[EventPattern]
-    ScheduleExpression: Optional[ScheduleExpression]
-    State: Optional[RuleState]
-    Description: Optional[RuleDescription]
-    RoleArn: Optional[RoleArn]
-    ManagedBy: Optional[ManagedBy]
-    EventBusName: Optional[EventBusName]
-    CreatedBy: Optional[CreatedBy]
+    Name: RuleName | None
+    Arn: RuleArn | None
+    EventPattern: EventPattern | None
+    ScheduleExpression: ScheduleExpression | None
+    State: RuleState | None
+    Description: RuleDescription | None
+    RoleArn: RoleArn | None
+    ManagedBy: ManagedBy | None
+    EventBusName: EventBusName | None
+    CreatedBy: CreatedBy | None
 
 
 class DisableRuleRequest(ServiceRequest):
     Name: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
+    EventBusName: EventBusNameOrArn | None
 
 
 class PlacementStrategy(TypedDict, total=False):
-    type: Optional[PlacementStrategyType]
-    field: Optional[PlacementStrategyField]
+    type: PlacementStrategyType | None
+    field: PlacementStrategyField | None
 
 
-PlacementStrategies = List[PlacementStrategy]
+PlacementStrategies = list[PlacementStrategy]
 
 
 class PlacementConstraint(TypedDict, total=False):
-    type: Optional[PlacementConstraintType]
-    expression: Optional[PlacementConstraintExpression]
+    type: PlacementConstraintType | None
+    expression: PlacementConstraintExpression | None
 
 
-PlacementConstraints = List[PlacementConstraint]
+PlacementConstraints = list[PlacementConstraint]
 
 
 class NetworkConfiguration(TypedDict, total=False):
-    awsvpcConfiguration: Optional[AwsVpcConfiguration]
+    awsvpcConfiguration: AwsVpcConfiguration | None
 
 
 class EcsParameters(TypedDict, total=False):
     TaskDefinitionArn: Arn
-    TaskCount: Optional[LimitMin1]
-    LaunchType: Optional[LaunchType]
-    NetworkConfiguration: Optional[NetworkConfiguration]
-    PlatformVersion: Optional[String]
-    Group: Optional[String]
-    CapacityProviderStrategy: Optional[CapacityProviderStrategy]
-    EnableECSManagedTags: Optional[Boolean]
-    EnableExecuteCommand: Optional[Boolean]
-    PlacementConstraints: Optional[PlacementConstraints]
-    PlacementStrategy: Optional[PlacementStrategies]
-    PropagateTags: Optional[PropagateTags]
-    ReferenceId: Optional[ReferenceId]
-    Tags: Optional[TagList]
+    TaskCount: LimitMin1 | None
+    LaunchType: LaunchType | None
+    NetworkConfiguration: NetworkConfiguration | None
+    PlatformVersion: String | None
+    Group: String | None
+    CapacityProviderStrategy: CapacityProviderStrategy | None
+    EnableECSManagedTags: Boolean | None
+    EnableExecuteCommand: Boolean | None
+    PlacementConstraints: PlacementConstraints | None
+    PlacementStrategy: PlacementStrategies | None
+    PropagateTags: PropagateTags | None
+    ReferenceId: ReferenceId | None
+    Tags: TagList | None
 
 
 class EnableRuleRequest(ServiceRequest):
     Name: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
+    EventBusName: EventBusNameOrArn | None
 
 
 class Endpoint(TypedDict, total=False):
-    Name: Optional[EndpointName]
-    Description: Optional[EndpointDescription]
-    Arn: Optional[EndpointArn]
-    RoutingConfig: Optional[RoutingConfig]
-    ReplicationConfig: Optional[ReplicationConfig]
-    EventBuses: Optional[EndpointEventBusList]
-    RoleArn: Optional[IamRoleArn]
-    EndpointId: Optional[EndpointId]
-    EndpointUrl: Optional[EndpointUrl]
-    State: Optional[EndpointState]
-    StateReason: Optional[EndpointStateReason]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Name: EndpointName | None
+    Description: EndpointDescription | None
+    Arn: EndpointArn | None
+    RoutingConfig: RoutingConfig | None
+    ReplicationConfig: ReplicationConfig | None
+    EventBuses: EndpointEventBusList | None
+    RoleArn: IamRoleArn | None
+    EndpointId: EndpointId | None
+    EndpointUrl: EndpointUrl | None
+    State: EndpointState | None
+    StateReason: EndpointStateReason | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
-EndpointList = List[Endpoint]
+EndpointList = list[Endpoint]
 
 
 class EventBus(TypedDict, total=False):
-    Name: Optional[String]
-    Arn: Optional[String]
-    Description: Optional[EventBusDescription]
-    Policy: Optional[String]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Name: String | None
+    Arn: String | None
+    Description: EventBusDescription | None
+    Policy: String | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
-EventBusList = List[EventBus]
-EventResourceList = List[EventResource]
+EventBusList = list[EventBus]
+EventResourceList = list[EventResource]
 
 
 class EventSource(TypedDict, total=False):
-    Arn: Optional[String]
-    CreatedBy: Optional[String]
-    CreationTime: Optional[Timestamp]
-    ExpirationTime: Optional[Timestamp]
-    Name: Optional[String]
-    State: Optional[EventSourceState]
+    Arn: String | None
+    CreatedBy: String | None
+    CreationTime: Timestamp | None
+    ExpirationTime: Timestamp | None
+    Name: String | None
+    State: EventSourceState | None
 
 
-EventSourceList = List[EventSource]
+EventSourceList = list[EventSource]
 EventTime = datetime
-HeaderParametersMap = Dict[HeaderKey, HeaderValue]
-QueryStringParametersMap = Dict[QueryStringKey, QueryStringValue]
-PathParameterList = List[PathParameter]
+HeaderParametersMap = dict[HeaderKey, HeaderValue]
+QueryStringParametersMap = dict[QueryStringKey, QueryStringValue]
+PathParameterList = list[PathParameter]
 
 
 class HttpParameters(TypedDict, total=False):
-    PathParameterValues: Optional[PathParameterList]
-    HeaderParameters: Optional[HeaderParametersMap]
-    QueryStringParameters: Optional[QueryStringParametersMap]
+    PathParameterValues: PathParameterList | None
+    HeaderParameters: HeaderParametersMap | None
+    QueryStringParameters: QueryStringParametersMap | None
 
 
-TransformerPaths = Dict[InputTransformerPathKey, TargetInputPath]
+TransformerPaths = dict[InputTransformerPathKey, TargetInputPath]
 
 
 class InputTransformer(TypedDict, total=False):
-    InputPathsMap: Optional[TransformerPaths]
+    InputPathsMap: TransformerPaths | None
     InputTemplate: TransformerInput
 
 
@@ -1002,184 +1002,184 @@ class KinesisParameters(TypedDict, total=False):
 
 
 class ListApiDestinationsRequest(ServiceRequest):
-    NamePrefix: Optional[ApiDestinationName]
-    ConnectionArn: Optional[ConnectionArn]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: ApiDestinationName | None
+    ConnectionArn: ConnectionArn | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class ListApiDestinationsResponse(TypedDict, total=False):
-    ApiDestinations: Optional[ApiDestinationResponseList]
-    NextToken: Optional[NextToken]
+    ApiDestinations: ApiDestinationResponseList | None
+    NextToken: NextToken | None
 
 
 class ListArchivesRequest(ServiceRequest):
-    NamePrefix: Optional[ArchiveName]
-    EventSourceArn: Optional[EventBusArn]
-    State: Optional[ArchiveState]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: ArchiveName | None
+    EventSourceArn: EventBusArn | None
+    State: ArchiveState | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class ListArchivesResponse(TypedDict, total=False):
-    Archives: Optional[ArchiveResponseList]
-    NextToken: Optional[NextToken]
+    Archives: ArchiveResponseList | None
+    NextToken: NextToken | None
 
 
 class ListConnectionsRequest(ServiceRequest):
-    NamePrefix: Optional[ConnectionName]
-    ConnectionState: Optional[ConnectionState]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: ConnectionName | None
+    ConnectionState: ConnectionState | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class ListConnectionsResponse(TypedDict, total=False):
-    Connections: Optional[ConnectionResponseList]
-    NextToken: Optional[NextToken]
+    Connections: ConnectionResponseList | None
+    NextToken: NextToken | None
 
 
 class ListEndpointsRequest(ServiceRequest):
-    NamePrefix: Optional[EndpointName]
-    HomeRegion: Optional[HomeRegion]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[LimitMax100]
+    NamePrefix: EndpointName | None
+    HomeRegion: HomeRegion | None
+    NextToken: NextToken | None
+    MaxResults: LimitMax100 | None
 
 
 class ListEndpointsResponse(TypedDict, total=False):
-    Endpoints: Optional[EndpointList]
-    NextToken: Optional[NextToken]
+    Endpoints: EndpointList | None
+    NextToken: NextToken | None
 
 
 class ListEventBusesRequest(ServiceRequest):
-    NamePrefix: Optional[EventBusName]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: EventBusName | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class ListEventBusesResponse(TypedDict, total=False):
-    EventBuses: Optional[EventBusList]
-    NextToken: Optional[NextToken]
+    EventBuses: EventBusList | None
+    NextToken: NextToken | None
 
 
 class ListEventSourcesRequest(ServiceRequest):
-    NamePrefix: Optional[EventSourceNamePrefix]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: EventSourceNamePrefix | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class ListEventSourcesResponse(TypedDict, total=False):
-    EventSources: Optional[EventSourceList]
-    NextToken: Optional[NextToken]
+    EventSources: EventSourceList | None
+    NextToken: NextToken | None
 
 
 class ListPartnerEventSourceAccountsRequest(ServiceRequest):
     EventSourceName: EventSourceName
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class PartnerEventSourceAccount(TypedDict, total=False):
-    Account: Optional[AccountId]
-    CreationTime: Optional[Timestamp]
-    ExpirationTime: Optional[Timestamp]
-    State: Optional[EventSourceState]
+    Account: AccountId | None
+    CreationTime: Timestamp | None
+    ExpirationTime: Timestamp | None
+    State: EventSourceState | None
 
 
-PartnerEventSourceAccountList = List[PartnerEventSourceAccount]
+PartnerEventSourceAccountList = list[PartnerEventSourceAccount]
 
 
 class ListPartnerEventSourceAccountsResponse(TypedDict, total=False):
-    PartnerEventSourceAccounts: Optional[PartnerEventSourceAccountList]
-    NextToken: Optional[NextToken]
+    PartnerEventSourceAccounts: PartnerEventSourceAccountList | None
+    NextToken: NextToken | None
 
 
 class ListPartnerEventSourcesRequest(ServiceRequest):
     NamePrefix: PartnerEventSourceNamePrefix
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class PartnerEventSource(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[String]
+    Arn: String | None
+    Name: String | None
 
 
-PartnerEventSourceList = List[PartnerEventSource]
+PartnerEventSourceList = list[PartnerEventSource]
 
 
 class ListPartnerEventSourcesResponse(TypedDict, total=False):
-    PartnerEventSources: Optional[PartnerEventSourceList]
-    NextToken: Optional[NextToken]
+    PartnerEventSources: PartnerEventSourceList | None
+    NextToken: NextToken | None
 
 
 class ListReplaysRequest(ServiceRequest):
-    NamePrefix: Optional[ReplayName]
-    State: Optional[ReplayState]
-    EventSourceArn: Optional[ArchiveArn]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: ReplayName | None
+    State: ReplayState | None
+    EventSourceArn: ArchiveArn | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class Replay(TypedDict, total=False):
-    ReplayName: Optional[ReplayName]
-    EventSourceArn: Optional[ArchiveArn]
-    State: Optional[ReplayState]
-    StateReason: Optional[ReplayStateReason]
-    EventStartTime: Optional[Timestamp]
-    EventEndTime: Optional[Timestamp]
-    EventLastReplayedTime: Optional[Timestamp]
-    ReplayStartTime: Optional[Timestamp]
-    ReplayEndTime: Optional[Timestamp]
+    ReplayName: ReplayName | None
+    EventSourceArn: ArchiveArn | None
+    State: ReplayState | None
+    StateReason: ReplayStateReason | None
+    EventStartTime: Timestamp | None
+    EventEndTime: Timestamp | None
+    EventLastReplayedTime: Timestamp | None
+    ReplayStartTime: Timestamp | None
+    ReplayEndTime: Timestamp | None
 
 
-ReplayList = List[Replay]
+ReplayList = list[Replay]
 
 
 class ListReplaysResponse(TypedDict, total=False):
-    Replays: Optional[ReplayList]
-    NextToken: Optional[NextToken]
+    Replays: ReplayList | None
+    NextToken: NextToken | None
 
 
 class ListRuleNamesByTargetRequest(ServiceRequest):
     TargetArn: TargetArn
-    EventBusName: Optional[EventBusNameOrArn]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    EventBusName: EventBusNameOrArn | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
-RuleNameList = List[RuleName]
+RuleNameList = list[RuleName]
 
 
 class ListRuleNamesByTargetResponse(TypedDict, total=False):
-    RuleNames: Optional[RuleNameList]
-    NextToken: Optional[NextToken]
+    RuleNames: RuleNameList | None
+    NextToken: NextToken | None
 
 
 class ListRulesRequest(ServiceRequest):
-    NamePrefix: Optional[RuleName]
-    EventBusName: Optional[EventBusNameOrArn]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: RuleName | None
+    EventBusName: EventBusNameOrArn | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class Rule(TypedDict, total=False):
-    Name: Optional[RuleName]
-    Arn: Optional[RuleArn]
-    EventPattern: Optional[EventPattern]
-    State: Optional[RuleState]
-    Description: Optional[RuleDescription]
-    ScheduleExpression: Optional[ScheduleExpression]
-    RoleArn: Optional[RoleArn]
-    ManagedBy: Optional[ManagedBy]
-    EventBusName: Optional[EventBusName]
+    Name: RuleName | None
+    Arn: RuleArn | None
+    EventPattern: EventPattern | None
+    State: RuleState | None
+    Description: RuleDescription | None
+    ScheduleExpression: ScheduleExpression | None
+    RoleArn: RoleArn | None
+    ManagedBy: ManagedBy | None
+    EventBusName: EventBusName | None
 
 
-RuleResponseList = List[Rule]
+RuleResponseList = list[Rule]
 
 
 class ListRulesResponse(TypedDict, total=False):
-    Rules: Optional[RuleResponseList]
-    NextToken: Optional[NextToken]
+    Rules: RuleResponseList | None
+    NextToken: NextToken | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -1187,19 +1187,19 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class ListTargetsByRuleRequest(ServiceRequest):
     Rule: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    EventBusName: EventBusNameOrArn | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class RetryPolicy(TypedDict, total=False):
-    MaximumRetryAttempts: Optional[MaximumRetryAttempts]
-    MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
+    MaximumRetryAttempts: MaximumRetryAttempts | None
+    MaximumEventAgeInSeconds: MaximumEventAgeInSeconds | None
 
 
 class SageMakerPipelineParameter(TypedDict, total=False):
@@ -1207,31 +1207,31 @@ class SageMakerPipelineParameter(TypedDict, total=False):
     Value: SageMakerPipelineParameterValue
 
 
-SageMakerPipelineParameterList = List[SageMakerPipelineParameter]
+SageMakerPipelineParameterList = list[SageMakerPipelineParameter]
 
 
 class SageMakerPipelineParameters(TypedDict, total=False):
-    PipelineParameterList: Optional[SageMakerPipelineParameterList]
+    PipelineParameterList: SageMakerPipelineParameterList | None
 
 
-Sqls = List[Sql]
+Sqls = list[Sql]
 
 
 class RedshiftDataParameters(TypedDict, total=False):
-    SecretManagerArn: Optional[RedshiftSecretManagerArn]
+    SecretManagerArn: RedshiftSecretManagerArn | None
     Database: Database
-    DbUser: Optional[DbUser]
-    Sql: Optional[Sql]
-    StatementName: Optional[StatementName]
-    WithEvent: Optional[Boolean]
-    Sqls: Optional[Sqls]
+    DbUser: DbUser | None
+    Sql: Sql | None
+    StatementName: StatementName | None
+    WithEvent: Boolean | None
+    Sqls: Sqls | None
 
 
 class SqsParameters(TypedDict, total=False):
-    MessageGroupId: Optional[MessageGroupId]
+    MessageGroupId: MessageGroupId | None
 
 
-RunCommandTargetValues = List[RunCommandTargetValue]
+RunCommandTargetValues = list[RunCommandTargetValue]
 
 
 class RunCommandTarget(TypedDict, total=False):
@@ -1239,7 +1239,7 @@ class RunCommandTarget(TypedDict, total=False):
     Values: RunCommandTargetValues
 
 
-RunCommandTargets = List[RunCommandTarget]
+RunCommandTargets = list[RunCommandTarget]
 
 
 class RunCommandParameters(TypedDict, total=False):
@@ -1249,72 +1249,72 @@ class RunCommandParameters(TypedDict, total=False):
 class Target(TypedDict, total=False):
     Id: TargetId
     Arn: TargetArn
-    RoleArn: Optional[RoleArn]
-    Input: Optional[TargetInput]
-    InputPath: Optional[TargetInputPath]
-    InputTransformer: Optional[InputTransformer]
-    KinesisParameters: Optional[KinesisParameters]
-    RunCommandParameters: Optional[RunCommandParameters]
-    EcsParameters: Optional[EcsParameters]
-    BatchParameters: Optional[BatchParameters]
-    SqsParameters: Optional[SqsParameters]
-    HttpParameters: Optional[HttpParameters]
-    RedshiftDataParameters: Optional[RedshiftDataParameters]
-    SageMakerPipelineParameters: Optional[SageMakerPipelineParameters]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    RetryPolicy: Optional[RetryPolicy]
-    AppSyncParameters: Optional[AppSyncParameters]
+    RoleArn: RoleArn | None
+    Input: TargetInput | None
+    InputPath: TargetInputPath | None
+    InputTransformer: InputTransformer | None
+    KinesisParameters: KinesisParameters | None
+    RunCommandParameters: RunCommandParameters | None
+    EcsParameters: EcsParameters | None
+    BatchParameters: BatchParameters | None
+    SqsParameters: SqsParameters | None
+    HttpParameters: HttpParameters | None
+    RedshiftDataParameters: RedshiftDataParameters | None
+    SageMakerPipelineParameters: SageMakerPipelineParameters | None
+    DeadLetterConfig: DeadLetterConfig | None
+    RetryPolicy: RetryPolicy | None
+    AppSyncParameters: AppSyncParameters | None
 
 
-TargetList = List[Target]
+TargetList = list[Target]
 
 
 class ListTargetsByRuleResponse(TypedDict, total=False):
-    Targets: Optional[TargetList]
-    NextToken: Optional[NextToken]
+    Targets: TargetList | None
+    NextToken: NextToken | None
 
 
 class PutEventsRequestEntry(TypedDict, total=False):
-    Time: Optional[EventTime]
-    Source: Optional[String]
-    Resources: Optional[EventResourceList]
-    DetailType: Optional[String]
-    Detail: Optional[String]
-    EventBusName: Optional[NonPartnerEventBusNameOrArn]
-    TraceHeader: Optional[TraceHeader]
+    Time: EventTime | None
+    Source: String | None
+    Resources: EventResourceList | None
+    DetailType: String | None
+    Detail: String | None
+    EventBusName: NonPartnerEventBusNameOrArn | None
+    TraceHeader: TraceHeader | None
 
 
-PutEventsRequestEntryList = List[PutEventsRequestEntry]
+PutEventsRequestEntryList = list[PutEventsRequestEntry]
 
 
 class PutEventsRequest(ServiceRequest):
     Entries: PutEventsRequestEntryList
-    EndpointId: Optional[EndpointId]
+    EndpointId: EndpointId | None
 
 
 class PutEventsResultEntry(TypedDict, total=False):
-    EventId: Optional[EventId]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    EventId: EventId | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-PutEventsResultEntryList = List[PutEventsResultEntry]
+PutEventsResultEntryList = list[PutEventsResultEntry]
 
 
 class PutEventsResponse(TypedDict, total=False):
-    FailedEntryCount: Optional[Integer]
-    Entries: Optional[PutEventsResultEntryList]
+    FailedEntryCount: Integer | None
+    Entries: PutEventsResultEntryList | None
 
 
 class PutPartnerEventsRequestEntry(TypedDict, total=False):
-    Time: Optional[EventTime]
-    Source: Optional[EventSourceName]
-    Resources: Optional[EventResourceList]
-    DetailType: Optional[String]
-    Detail: Optional[String]
+    Time: EventTime | None
+    Source: EventSourceName | None
+    Resources: EventResourceList | None
+    DetailType: String | None
+    Detail: String | None
 
 
-PutPartnerEventsRequestEntryList = List[PutPartnerEventsRequestEntry]
+PutPartnerEventsRequestEntryList = list[PutPartnerEventsRequestEntry]
 
 
 class PutPartnerEventsRequest(ServiceRequest):
@@ -1322,96 +1322,96 @@ class PutPartnerEventsRequest(ServiceRequest):
 
 
 class PutPartnerEventsResultEntry(TypedDict, total=False):
-    EventId: Optional[EventId]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    EventId: EventId | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-PutPartnerEventsResultEntryList = List[PutPartnerEventsResultEntry]
+PutPartnerEventsResultEntryList = list[PutPartnerEventsResultEntry]
 
 
 class PutPartnerEventsResponse(TypedDict, total=False):
-    FailedEntryCount: Optional[Integer]
-    Entries: Optional[PutPartnerEventsResultEntryList]
+    FailedEntryCount: Integer | None
+    Entries: PutPartnerEventsResultEntryList | None
 
 
 class PutPermissionRequest(ServiceRequest):
-    EventBusName: Optional[NonPartnerEventBusName]
-    Action: Optional[Action]
-    Principal: Optional[Principal]
-    StatementId: Optional[StatementId]
-    Condition: Optional[Condition]
-    Policy: Optional[String]
+    EventBusName: NonPartnerEventBusName | None
+    Action: Action | None
+    Principal: Principal | None
+    StatementId: StatementId | None
+    Condition: Condition | None
+    Policy: String | None
 
 
 class PutRuleRequest(ServiceRequest):
     Name: RuleName
-    ScheduleExpression: Optional[ScheduleExpression]
-    EventPattern: Optional[EventPattern]
-    State: Optional[RuleState]
-    Description: Optional[RuleDescription]
-    RoleArn: Optional[RoleArn]
-    Tags: Optional[TagList]
-    EventBusName: Optional[EventBusNameOrArn]
+    ScheduleExpression: ScheduleExpression | None
+    EventPattern: EventPattern | None
+    State: RuleState | None
+    Description: RuleDescription | None
+    RoleArn: RoleArn | None
+    Tags: TagList | None
+    EventBusName: EventBusNameOrArn | None
 
 
 class PutRuleResponse(TypedDict, total=False):
-    RuleArn: Optional[RuleArn]
+    RuleArn: RuleArn | None
 
 
 class PutTargetsRequest(ServiceRequest):
     Rule: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
+    EventBusName: EventBusNameOrArn | None
     Targets: TargetList
 
 
 class PutTargetsResultEntry(TypedDict, total=False):
-    TargetId: Optional[TargetId]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    TargetId: TargetId | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-PutTargetsResultEntryList = List[PutTargetsResultEntry]
+PutTargetsResultEntryList = list[PutTargetsResultEntry]
 
 
 class PutTargetsResponse(TypedDict, total=False):
-    FailedEntryCount: Optional[Integer]
-    FailedEntries: Optional[PutTargetsResultEntryList]
+    FailedEntryCount: Integer | None
+    FailedEntries: PutTargetsResultEntryList | None
 
 
 class RemovePermissionRequest(ServiceRequest):
-    StatementId: Optional[StatementId]
-    RemoveAllPermissions: Optional[Boolean]
-    EventBusName: Optional[NonPartnerEventBusName]
+    StatementId: StatementId | None
+    RemoveAllPermissions: Boolean | None
+    EventBusName: NonPartnerEventBusName | None
 
 
-TargetIdList = List[TargetId]
+TargetIdList = list[TargetId]
 
 
 class RemoveTargetsRequest(ServiceRequest):
     Rule: RuleName
-    EventBusName: Optional[EventBusNameOrArn]
+    EventBusName: EventBusNameOrArn | None
     Ids: TargetIdList
-    Force: Optional[Boolean]
+    Force: Boolean | None
 
 
 class RemoveTargetsResultEntry(TypedDict, total=False):
-    TargetId: Optional[TargetId]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    TargetId: TargetId | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-RemoveTargetsResultEntryList = List[RemoveTargetsResultEntry]
+RemoveTargetsResultEntryList = list[RemoveTargetsResultEntry]
 
 
 class RemoveTargetsResponse(TypedDict, total=False):
-    FailedEntryCount: Optional[Integer]
-    FailedEntries: Optional[RemoveTargetsResultEntryList]
+    FailedEntryCount: Integer | None
+    FailedEntries: RemoveTargetsResultEntryList | None
 
 
 class StartReplayRequest(ServiceRequest):
     ReplayName: ReplayName
-    Description: Optional[ReplayDescription]
+    Description: ReplayDescription | None
     EventSourceArn: ArchiveArn
     EventStartTime: Timestamp
     EventEndTime: Timestamp
@@ -1419,13 +1419,13 @@ class StartReplayRequest(ServiceRequest):
 
 
 class StartReplayResponse(TypedDict, total=False):
-    ReplayArn: Optional[ReplayArn]
-    State: Optional[ReplayState]
-    StateReason: Optional[ReplayStateReason]
-    ReplayStartTime: Optional[Timestamp]
+    ReplayArn: ReplayArn | None
+    State: ReplayState | None
+    StateReason: ReplayStateReason | None
+    ReplayStartTime: Timestamp | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -1443,7 +1443,7 @@ class TestEventPatternRequest(ServiceRequest):
 
 
 class TestEventPatternResponse(TypedDict, total=False):
-    Result: Optional[Boolean]
+    Result: Boolean | None
 
 
 class UntagResourceRequest(ServiceRequest):
@@ -1457,123 +1457,123 @@ class UntagResourceResponse(TypedDict, total=False):
 
 class UpdateApiDestinationRequest(ServiceRequest):
     Name: ApiDestinationName
-    Description: Optional[ApiDestinationDescription]
-    ConnectionArn: Optional[ConnectionArn]
-    InvocationEndpoint: Optional[HttpsEndpoint]
-    HttpMethod: Optional[ApiDestinationHttpMethod]
-    InvocationRateLimitPerSecond: Optional[ApiDestinationInvocationRateLimitPerSecond]
+    Description: ApiDestinationDescription | None
+    ConnectionArn: ConnectionArn | None
+    InvocationEndpoint: HttpsEndpoint | None
+    HttpMethod: ApiDestinationHttpMethod | None
+    InvocationRateLimitPerSecond: ApiDestinationInvocationRateLimitPerSecond | None
 
 
 class UpdateApiDestinationResponse(TypedDict, total=False):
-    ApiDestinationArn: Optional[ApiDestinationArn]
-    ApiDestinationState: Optional[ApiDestinationState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    ApiDestinationArn: ApiDestinationArn | None
+    ApiDestinationState: ApiDestinationState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class UpdateArchiveRequest(ServiceRequest):
     ArchiveName: ArchiveName
-    Description: Optional[ArchiveDescription]
-    EventPattern: Optional[EventPattern]
-    RetentionDays: Optional[RetentionDays]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Description: ArchiveDescription | None
+    EventPattern: EventPattern | None
+    RetentionDays: RetentionDays | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class UpdateArchiveResponse(TypedDict, total=False):
-    ArchiveArn: Optional[ArchiveArn]
-    State: Optional[ArchiveState]
-    StateReason: Optional[ArchiveStateReason]
-    CreationTime: Optional[Timestamp]
+    ArchiveArn: ArchiveArn | None
+    State: ArchiveState | None
+    StateReason: ArchiveStateReason | None
+    CreationTime: Timestamp | None
 
 
 class UpdateConnectionApiKeyAuthRequestParameters(TypedDict, total=False):
-    ApiKeyName: Optional[AuthHeaderParameters]
-    ApiKeyValue: Optional[AuthHeaderParametersSensitive]
+    ApiKeyName: AuthHeaderParameters | None
+    ApiKeyValue: AuthHeaderParametersSensitive | None
 
 
 class UpdateConnectionOAuthClientRequestParameters(TypedDict, total=False):
-    ClientID: Optional[AuthHeaderParameters]
-    ClientSecret: Optional[AuthHeaderParametersSensitive]
+    ClientID: AuthHeaderParameters | None
+    ClientSecret: AuthHeaderParametersSensitive | None
 
 
 class UpdateConnectionOAuthRequestParameters(TypedDict, total=False):
-    ClientParameters: Optional[UpdateConnectionOAuthClientRequestParameters]
-    AuthorizationEndpoint: Optional[HttpsEndpoint]
-    HttpMethod: Optional[ConnectionOAuthHttpMethod]
-    OAuthHttpParameters: Optional[ConnectionHttpParameters]
+    ClientParameters: UpdateConnectionOAuthClientRequestParameters | None
+    AuthorizationEndpoint: HttpsEndpoint | None
+    HttpMethod: ConnectionOAuthHttpMethod | None
+    OAuthHttpParameters: ConnectionHttpParameters | None
 
 
 class UpdateConnectionBasicAuthRequestParameters(TypedDict, total=False):
-    Username: Optional[AuthHeaderParameters]
-    Password: Optional[AuthHeaderParametersSensitive]
+    Username: AuthHeaderParameters | None
+    Password: AuthHeaderParametersSensitive | None
 
 
 class UpdateConnectionAuthRequestParameters(TypedDict, total=False):
-    BasicAuthParameters: Optional[UpdateConnectionBasicAuthRequestParameters]
-    OAuthParameters: Optional[UpdateConnectionOAuthRequestParameters]
-    ApiKeyAuthParameters: Optional[UpdateConnectionApiKeyAuthRequestParameters]
-    InvocationHttpParameters: Optional[ConnectionHttpParameters]
-    ConnectivityParameters: Optional[ConnectivityResourceParameters]
+    BasicAuthParameters: UpdateConnectionBasicAuthRequestParameters | None
+    OAuthParameters: UpdateConnectionOAuthRequestParameters | None
+    ApiKeyAuthParameters: UpdateConnectionApiKeyAuthRequestParameters | None
+    InvocationHttpParameters: ConnectionHttpParameters | None
+    ConnectivityParameters: ConnectivityResourceParameters | None
 
 
 class UpdateConnectionRequest(ServiceRequest):
     Name: ConnectionName
-    Description: Optional[ConnectionDescription]
-    AuthorizationType: Optional[ConnectionAuthorizationType]
-    AuthParameters: Optional[UpdateConnectionAuthRequestParameters]
-    InvocationConnectivityParameters: Optional[ConnectivityResourceParameters]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Description: ConnectionDescription | None
+    AuthorizationType: ConnectionAuthorizationType | None
+    AuthParameters: UpdateConnectionAuthRequestParameters | None
+    InvocationConnectivityParameters: ConnectivityResourceParameters | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class UpdateConnectionResponse(TypedDict, total=False):
-    ConnectionArn: Optional[ConnectionArn]
-    ConnectionState: Optional[ConnectionState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LastAuthorizedTime: Optional[Timestamp]
+    ConnectionArn: ConnectionArn | None
+    ConnectionState: ConnectionState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    LastAuthorizedTime: Timestamp | None
 
 
 class UpdateEndpointRequest(ServiceRequest):
     Name: EndpointName
-    Description: Optional[EndpointDescription]
-    RoutingConfig: Optional[RoutingConfig]
-    ReplicationConfig: Optional[ReplicationConfig]
-    EventBuses: Optional[EndpointEventBusList]
-    RoleArn: Optional[IamRoleArn]
+    Description: EndpointDescription | None
+    RoutingConfig: RoutingConfig | None
+    ReplicationConfig: ReplicationConfig | None
+    EventBuses: EndpointEventBusList | None
+    RoleArn: IamRoleArn | None
 
 
 class UpdateEndpointResponse(TypedDict, total=False):
-    Name: Optional[EndpointName]
-    Arn: Optional[EndpointArn]
-    RoutingConfig: Optional[RoutingConfig]
-    ReplicationConfig: Optional[ReplicationConfig]
-    EventBuses: Optional[EndpointEventBusList]
-    RoleArn: Optional[IamRoleArn]
-    EndpointId: Optional[EndpointId]
-    EndpointUrl: Optional[EndpointUrl]
-    State: Optional[EndpointState]
+    Name: EndpointName | None
+    Arn: EndpointArn | None
+    RoutingConfig: RoutingConfig | None
+    ReplicationConfig: ReplicationConfig | None
+    EventBuses: EndpointEventBusList | None
+    RoleArn: IamRoleArn | None
+    EndpointId: EndpointId | None
+    EndpointUrl: EndpointUrl | None
+    State: EndpointState | None
 
 
 class UpdateEventBusRequest(ServiceRequest):
-    Name: Optional[EventBusName]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    Description: Optional[EventBusDescription]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    LogConfig: Optional[LogConfig]
+    Name: EventBusName | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    Description: EventBusDescription | None
+    DeadLetterConfig: DeadLetterConfig | None
+    LogConfig: LogConfig | None
 
 
 class UpdateEventBusResponse(TypedDict, total=False):
-    Arn: Optional[String]
-    Name: Optional[EventBusName]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
-    Description: Optional[EventBusDescription]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    LogConfig: Optional[LogConfig]
+    Arn: String | None
+    Name: EventBusName | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
+    Description: EventBusDescription | None
+    DeadLetterConfig: DeadLetterConfig | None
+    LogConfig: LogConfig | None
 
 
 class EventsApi:
-    service = "events"
-    version = "2015-10-07"
+    service: str = "events"
+    version: str = "2015-10-07"
 
     @handler("ActivateEventSource")
     def activate_event_source(

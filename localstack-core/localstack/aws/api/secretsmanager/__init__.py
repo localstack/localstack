@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -136,62 +136,62 @@ class ResourceNotFoundException(ServiceException):
 
 
 class APIErrorType(TypedDict, total=False):
-    SecretId: Optional[SecretIdType]
-    ErrorCode: Optional[ErrorCode]
-    Message: Optional[ErrorMessage]
+    SecretId: SecretIdType | None
+    ErrorCode: ErrorCode | None
+    Message: ErrorMessage | None
 
 
-APIErrorListType = List[APIErrorType]
+APIErrorListType = list[APIErrorType]
 
 
 class ReplicaRegionType(TypedDict, total=False):
-    Region: Optional[RegionType]
-    KmsKeyId: Optional[KmsKeyIdType]
+    Region: RegionType | None
+    KmsKeyId: KmsKeyIdType | None
 
 
-AddReplicaRegionListType = List[ReplicaRegionType]
+AddReplicaRegionListType = list[ReplicaRegionType]
 AutomaticallyRotateAfterDaysType = int
-FilterValuesStringList = List[FilterValueStringType]
+FilterValuesStringList = list[FilterValueStringType]
 
 
 class Filter(TypedDict, total=False):
-    Key: Optional[FilterNameStringType]
-    Values: Optional[FilterValuesStringList]
+    Key: FilterNameStringType | None
+    Values: FilterValuesStringList | None
 
 
-FiltersListType = List[Filter]
-SecretIdListType = List[SecretIdType]
+FiltersListType = list[Filter]
+SecretIdListType = list[SecretIdType]
 
 
 class BatchGetSecretValueRequest(ServiceRequest):
-    SecretIdList: Optional[SecretIdListType]
-    Filters: Optional[FiltersListType]
-    MaxResults: Optional[MaxResultsBatchType]
-    NextToken: Optional[NextTokenType]
+    SecretIdList: SecretIdListType | None
+    Filters: FiltersListType | None
+    MaxResults: MaxResultsBatchType | None
+    NextToken: NextTokenType | None
 
 
 CreatedDateType = datetime
-SecretVersionStagesType = List[SecretVersionStageType]
+SecretVersionStagesType = list[SecretVersionStageType]
 SecretBinaryType = bytes
 
 
 class SecretValueEntry(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
-    SecretBinary: Optional[SecretBinaryType]
-    SecretString: Optional[SecretStringType]
-    VersionStages: Optional[SecretVersionStagesType]
-    CreatedDate: Optional[CreatedDateType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
+    SecretBinary: SecretBinaryType | None
+    SecretString: SecretStringType | None
+    VersionStages: SecretVersionStagesType | None
+    CreatedDate: CreatedDateType | None
 
 
-SecretValuesType = List[SecretValueEntry]
+SecretValuesType = list[SecretValueEntry]
 
 
 class BatchGetSecretValueResponse(TypedDict, total=False):
-    SecretValues: Optional[SecretValuesType]
-    NextToken: Optional[NextTokenType]
-    Errors: Optional[APIErrorListType]
+    SecretValues: SecretValuesType | None
+    NextToken: NextTokenType | None
+    Errors: APIErrorListType | None
 
 
 class CancelRotateSecretRequest(ServiceRequest):
@@ -199,50 +199,50 @@ class CancelRotateSecretRequest(ServiceRequest):
 
 
 class CancelRotateSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
 
 
 class Tag(TypedDict, total=False):
-    Key: Optional[TagKeyType]
-    Value: Optional[TagValueType]
+    Key: TagKeyType | None
+    Value: TagValueType | None
 
 
-TagListType = List[Tag]
+TagListType = list[Tag]
 
 
 class CreateSecretRequest(ServiceRequest):
     Name: NameType
-    ClientRequestToken: Optional[ClientRequestTokenType]
-    Description: Optional[DescriptionType]
-    KmsKeyId: Optional[KmsKeyIdType]
-    SecretBinary: Optional[SecretBinaryType]
-    SecretString: Optional[SecretStringType]
-    Tags: Optional[TagListType]
-    AddReplicaRegions: Optional[AddReplicaRegionListType]
-    ForceOverwriteReplicaSecret: Optional[BooleanType]
+    ClientRequestToken: ClientRequestTokenType | None
+    Description: DescriptionType | None
+    KmsKeyId: KmsKeyIdType | None
+    SecretBinary: SecretBinaryType | None
+    SecretString: SecretStringType | None
+    Tags: TagListType | None
+    AddReplicaRegions: AddReplicaRegionListType | None
+    ForceOverwriteReplicaSecret: BooleanType | None
 
 
 LastAccessedDateType = datetime
 
 
 class ReplicationStatusType(TypedDict, total=False):
-    Region: Optional[RegionType]
-    KmsKeyId: Optional[KmsKeyIdType]
-    Status: Optional[StatusType]
-    StatusMessage: Optional[StatusMessageType]
-    LastAccessedDate: Optional[LastAccessedDateType]
+    Region: RegionType | None
+    KmsKeyId: KmsKeyIdType | None
+    Status: StatusType | None
+    StatusMessage: StatusMessageType | None
+    LastAccessedDate: LastAccessedDateType | None
 
 
-ReplicationStatusListType = List[ReplicationStatusType]
+ReplicationStatusListType = list[ReplicationStatusType]
 
 
 class CreateSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
-    ReplicationStatus: Optional[ReplicationStatusListType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
+    ReplicationStatus: ReplicationStatusListType | None
 
 
 class DeleteResourcePolicyRequest(ServiceRequest):
@@ -250,8 +250,8 @@ class DeleteResourcePolicyRequest(ServiceRequest):
 
 
 class DeleteResourcePolicyResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[NameType]
+    ARN: SecretARNType | None
+    Name: NameType | None
 
 
 RecoveryWindowInDaysType = int
@@ -259,17 +259,17 @@ RecoveryWindowInDaysType = int
 
 class DeleteSecretRequest(ServiceRequest):
     SecretId: SecretIdType
-    RecoveryWindowInDays: Optional[RecoveryWindowInDaysType]
-    ForceDeleteWithoutRecovery: Optional[BooleanType]
+    RecoveryWindowInDays: RecoveryWindowInDaysType | None
+    ForceDeleteWithoutRecovery: BooleanType | None
 
 
 DeletionDateType = datetime
 
 
 class DeleteSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    DeletionDate: Optional[DeletionDateType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    DeletionDate: DeletionDateType | None
 
 
 DeletedDateType = datetime
@@ -280,55 +280,55 @@ class DescribeSecretRequest(ServiceRequest):
 
 
 TimestampType = datetime
-SecretVersionsToStagesMapType = Dict[SecretVersionIdType, SecretVersionStagesType]
+SecretVersionsToStagesMapType = dict[SecretVersionIdType, SecretVersionStagesType]
 NextRotationDateType = datetime
 LastChangedDateType = datetime
 LastRotatedDateType = datetime
 
 
 class RotationRulesType(TypedDict, total=False):
-    AutomaticallyAfterDays: Optional[AutomaticallyRotateAfterDaysType]
-    Duration: Optional[DurationType]
-    ScheduleExpression: Optional[ScheduleExpressionType]
+    AutomaticallyAfterDays: AutomaticallyRotateAfterDaysType | None
+    Duration: DurationType | None
+    ScheduleExpression: ScheduleExpressionType | None
 
 
 class DescribeSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    Description: Optional[DescriptionType]
-    KmsKeyId: Optional[KmsKeyIdType]
-    RotationEnabled: Optional[RotationEnabledType]
-    RotationLambdaARN: Optional[RotationLambdaARNType]
-    RotationRules: Optional[RotationRulesType]
-    LastRotatedDate: Optional[LastRotatedDateType]
-    LastChangedDate: Optional[LastChangedDateType]
-    LastAccessedDate: Optional[LastAccessedDateType]
-    DeletedDate: Optional[DeletedDateType]
-    NextRotationDate: Optional[NextRotationDateType]
-    Tags: Optional[TagListType]
-    VersionIdsToStages: Optional[SecretVersionsToStagesMapType]
-    OwningService: Optional[OwningServiceType]
-    CreatedDate: Optional[TimestampType]
-    PrimaryRegion: Optional[RegionType]
-    ReplicationStatus: Optional[ReplicationStatusListType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    Description: DescriptionType | None
+    KmsKeyId: KmsKeyIdType | None
+    RotationEnabled: RotationEnabledType | None
+    RotationLambdaARN: RotationLambdaARNType | None
+    RotationRules: RotationRulesType | None
+    LastRotatedDate: LastRotatedDateType | None
+    LastChangedDate: LastChangedDateType | None
+    LastAccessedDate: LastAccessedDateType | None
+    DeletedDate: DeletedDateType | None
+    NextRotationDate: NextRotationDateType | None
+    Tags: TagListType | None
+    VersionIdsToStages: SecretVersionsToStagesMapType | None
+    OwningService: OwningServiceType | None
+    CreatedDate: TimestampType | None
+    PrimaryRegion: RegionType | None
+    ReplicationStatus: ReplicationStatusListType | None
 
 
 PasswordLengthType = int
 
 
 class GetRandomPasswordRequest(ServiceRequest):
-    PasswordLength: Optional[PasswordLengthType]
-    ExcludeCharacters: Optional[ExcludeCharactersType]
-    ExcludeNumbers: Optional[ExcludeNumbersType]
-    ExcludePunctuation: Optional[ExcludePunctuationType]
-    ExcludeUppercase: Optional[ExcludeUppercaseType]
-    ExcludeLowercase: Optional[ExcludeLowercaseType]
-    IncludeSpace: Optional[IncludeSpaceType]
-    RequireEachIncludedType: Optional[RequireEachIncludedTypeType]
+    PasswordLength: PasswordLengthType | None
+    ExcludeCharacters: ExcludeCharactersType | None
+    ExcludeNumbers: ExcludeNumbersType | None
+    ExcludePunctuation: ExcludePunctuationType | None
+    ExcludeUppercase: ExcludeUppercaseType | None
+    ExcludeLowercase: ExcludeLowercaseType | None
+    IncludeSpace: IncludeSpaceType | None
+    RequireEachIncludedType: RequireEachIncludedTypeType | None
 
 
 class GetRandomPasswordResponse(TypedDict, total=False):
-    RandomPassword: Optional[RandomPasswordType]
+    RandomPassword: RandomPasswordType | None
 
 
 class GetResourcePolicyRequest(ServiceRequest):
@@ -336,119 +336,119 @@ class GetResourcePolicyRequest(ServiceRequest):
 
 
 class GetResourcePolicyResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[NameType]
-    ResourcePolicy: Optional[NonEmptyResourcePolicyType]
+    ARN: SecretARNType | None
+    Name: NameType | None
+    ResourcePolicy: NonEmptyResourcePolicyType | None
 
 
 class GetSecretValueRequest(ServiceRequest):
     SecretId: SecretIdType
-    VersionId: Optional[SecretVersionIdType]
-    VersionStage: Optional[SecretVersionStageType]
+    VersionId: SecretVersionIdType | None
+    VersionStage: SecretVersionStageType | None
 
 
 class GetSecretValueResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
-    SecretBinary: Optional[SecretBinaryType]
-    SecretString: Optional[SecretStringType]
-    VersionStages: Optional[SecretVersionStagesType]
-    CreatedDate: Optional[CreatedDateType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
+    SecretBinary: SecretBinaryType | None
+    SecretString: SecretStringType | None
+    VersionStages: SecretVersionStagesType | None
+    CreatedDate: CreatedDateType | None
 
 
-KmsKeyIdListType = List[KmsKeyIdType]
+KmsKeyIdListType = list[KmsKeyIdType]
 
 
 class ListSecretVersionIdsRequest(ServiceRequest):
     SecretId: SecretIdType
-    MaxResults: Optional[MaxResultsType]
-    NextToken: Optional[NextTokenType]
-    IncludeDeprecated: Optional[BooleanType]
+    MaxResults: MaxResultsType | None
+    NextToken: NextTokenType | None
+    IncludeDeprecated: BooleanType | None
 
 
 class SecretVersionsListEntry(TypedDict, total=False):
-    VersionId: Optional[SecretVersionIdType]
-    VersionStages: Optional[SecretVersionStagesType]
-    LastAccessedDate: Optional[LastAccessedDateType]
-    CreatedDate: Optional[CreatedDateType]
-    KmsKeyIds: Optional[KmsKeyIdListType]
+    VersionId: SecretVersionIdType | None
+    VersionStages: SecretVersionStagesType | None
+    LastAccessedDate: LastAccessedDateType | None
+    CreatedDate: CreatedDateType | None
+    KmsKeyIds: KmsKeyIdListType | None
 
 
-SecretVersionsListType = List[SecretVersionsListEntry]
+SecretVersionsListType = list[SecretVersionsListEntry]
 
 
 class ListSecretVersionIdsResponse(TypedDict, total=False):
-    Versions: Optional[SecretVersionsListType]
-    NextToken: Optional[NextTokenType]
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
+    Versions: SecretVersionsListType | None
+    NextToken: NextTokenType | None
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
 
 
 class ListSecretsRequest(ServiceRequest):
-    IncludePlannedDeletion: Optional[BooleanType]
-    MaxResults: Optional[MaxResultsType]
-    NextToken: Optional[NextTokenType]
-    Filters: Optional[FiltersListType]
-    SortOrder: Optional[SortOrderType]
+    IncludePlannedDeletion: BooleanType | None
+    MaxResults: MaxResultsType | None
+    NextToken: NextTokenType | None
+    Filters: FiltersListType | None
+    SortOrder: SortOrderType | None
 
 
 class SecretListEntry(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    Description: Optional[DescriptionType]
-    KmsKeyId: Optional[KmsKeyIdType]
-    RotationEnabled: Optional[RotationEnabledType]
-    RotationLambdaARN: Optional[RotationLambdaARNType]
-    RotationRules: Optional[RotationRulesType]
-    LastRotatedDate: Optional[LastRotatedDateType]
-    LastChangedDate: Optional[LastChangedDateType]
-    LastAccessedDate: Optional[LastAccessedDateType]
-    DeletedDate: Optional[DeletedDateType]
-    NextRotationDate: Optional[NextRotationDateType]
-    Tags: Optional[TagListType]
-    SecretVersionsToStages: Optional[SecretVersionsToStagesMapType]
-    OwningService: Optional[OwningServiceType]
-    CreatedDate: Optional[TimestampType]
-    PrimaryRegion: Optional[RegionType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    Description: DescriptionType | None
+    KmsKeyId: KmsKeyIdType | None
+    RotationEnabled: RotationEnabledType | None
+    RotationLambdaARN: RotationLambdaARNType | None
+    RotationRules: RotationRulesType | None
+    LastRotatedDate: LastRotatedDateType | None
+    LastChangedDate: LastChangedDateType | None
+    LastAccessedDate: LastAccessedDateType | None
+    DeletedDate: DeletedDateType | None
+    NextRotationDate: NextRotationDateType | None
+    Tags: TagListType | None
+    SecretVersionsToStages: SecretVersionsToStagesMapType | None
+    OwningService: OwningServiceType | None
+    CreatedDate: TimestampType | None
+    PrimaryRegion: RegionType | None
 
 
-SecretListType = List[SecretListEntry]
+SecretListType = list[SecretListEntry]
 
 
 class ListSecretsResponse(TypedDict, total=False):
-    SecretList: Optional[SecretListType]
-    NextToken: Optional[NextTokenType]
+    SecretList: SecretListType | None
+    NextToken: NextTokenType | None
 
 
 class PutResourcePolicyRequest(ServiceRequest):
     SecretId: SecretIdType
     ResourcePolicy: NonEmptyResourcePolicyType
-    BlockPublicPolicy: Optional[BooleanType]
+    BlockPublicPolicy: BooleanType | None
 
 
 class PutResourcePolicyResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[NameType]
+    ARN: SecretARNType | None
+    Name: NameType | None
 
 
 class PutSecretValueRequest(ServiceRequest):
     SecretId: SecretIdType
-    ClientRequestToken: Optional[ClientRequestTokenType]
-    SecretBinary: Optional[SecretBinaryType]
-    SecretString: Optional[SecretStringType]
-    VersionStages: Optional[SecretVersionStagesType]
-    RotationToken: Optional[RotationTokenType]
+    ClientRequestToken: ClientRequestTokenType | None
+    SecretBinary: SecretBinaryType | None
+    SecretString: SecretStringType | None
+    VersionStages: SecretVersionStagesType | None
+    RotationToken: RotationTokenType | None
 
 
 class PutSecretValueResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
-    VersionStages: Optional[SecretVersionStagesType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
+    VersionStages: SecretVersionStagesType | None
 
 
-RemoveReplicaRegionListType = List[RegionType]
+RemoveReplicaRegionListType = list[RegionType]
 
 
 class RemoveRegionsFromReplicationRequest(ServiceRequest):
@@ -457,19 +457,19 @@ class RemoveRegionsFromReplicationRequest(ServiceRequest):
 
 
 class RemoveRegionsFromReplicationResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    ReplicationStatus: Optional[ReplicationStatusListType]
+    ARN: SecretARNType | None
+    ReplicationStatus: ReplicationStatusListType | None
 
 
 class ReplicateSecretToRegionsRequest(ServiceRequest):
     SecretId: SecretIdType
     AddReplicaRegions: AddReplicaRegionListType
-    ForceOverwriteReplicaSecret: Optional[BooleanType]
+    ForceOverwriteReplicaSecret: BooleanType | None
 
 
 class ReplicateSecretToRegionsResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    ReplicationStatus: Optional[ReplicationStatusListType]
+    ARN: SecretARNType | None
+    ReplicationStatus: ReplicationStatusListType | None
 
 
 class RestoreSecretRequest(ServiceRequest):
@@ -477,22 +477,22 @@ class RestoreSecretRequest(ServiceRequest):
 
 
 class RestoreSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
 
 
 class RotateSecretRequest(ServiceRequest):
     SecretId: SecretIdType
-    ClientRequestToken: Optional[ClientRequestTokenType]
-    RotationLambdaARN: Optional[RotationLambdaARNType]
-    RotationRules: Optional[RotationRulesType]
-    RotateImmediately: Optional[BooleanType]
+    ClientRequestToken: ClientRequestTokenType | None
+    RotationLambdaARN: RotationLambdaARNType | None
+    RotationRules: RotationRulesType | None
+    RotateImmediately: BooleanType | None
 
 
 class RotateSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
 
 
 class StopReplicationToReplicaRequest(ServiceRequest):
@@ -500,10 +500,10 @@ class StopReplicationToReplicaRequest(ServiceRequest):
 
 
 class StopReplicationToReplicaResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
+    ARN: SecretARNType | None
 
 
-TagKeyListType = List[TagKeyType]
+TagKeyListType = list[TagKeyType]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -518,52 +518,52 @@ class UntagResourceRequest(ServiceRequest):
 
 class UpdateSecretRequest(ServiceRequest):
     SecretId: SecretIdType
-    ClientRequestToken: Optional[ClientRequestTokenType]
-    Description: Optional[DescriptionType]
-    KmsKeyId: Optional[KmsKeyIdType]
-    SecretBinary: Optional[SecretBinaryType]
-    SecretString: Optional[SecretStringType]
+    ClientRequestToken: ClientRequestTokenType | None
+    Description: DescriptionType | None
+    KmsKeyId: KmsKeyIdType | None
+    SecretBinary: SecretBinaryType | None
+    SecretString: SecretStringType | None
 
 
 class UpdateSecretResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
-    VersionId: Optional[SecretVersionIdType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
+    VersionId: SecretVersionIdType | None
 
 
 class UpdateSecretVersionStageRequest(ServiceRequest):
     SecretId: SecretIdType
     VersionStage: SecretVersionStageType
-    RemoveFromVersionId: Optional[SecretVersionIdType]
-    MoveToVersionId: Optional[SecretVersionIdType]
+    RemoveFromVersionId: SecretVersionIdType | None
+    MoveToVersionId: SecretVersionIdType | None
 
 
 class UpdateSecretVersionStageResponse(TypedDict, total=False):
-    ARN: Optional[SecretARNType]
-    Name: Optional[SecretNameType]
+    ARN: SecretARNType | None
+    Name: SecretNameType | None
 
 
 class ValidateResourcePolicyRequest(ServiceRequest):
-    SecretId: Optional[SecretIdType]
+    SecretId: SecretIdType | None
     ResourcePolicy: NonEmptyResourcePolicyType
 
 
 class ValidationErrorsEntry(TypedDict, total=False):
-    CheckName: Optional[NameType]
-    ErrorMessage: Optional[ErrorMessage]
+    CheckName: NameType | None
+    ErrorMessage: ErrorMessage | None
 
 
-ValidationErrorsType = List[ValidationErrorsEntry]
+ValidationErrorsType = list[ValidationErrorsEntry]
 
 
 class ValidateResourcePolicyResponse(TypedDict, total=False):
-    PolicyValidationPassed: Optional[BooleanType]
-    ValidationErrors: Optional[ValidationErrorsType]
+    PolicyValidationPassed: BooleanType | None
+    ValidationErrors: ValidationErrorsType | None
 
 
 class SecretsmanagerApi:
-    service = "secretsmanager"
-    version = "2017-10-17"
+    service: str = "secretsmanager"
+    version: str = "2017-10-17"
 
     @handler("BatchGetSecretValue")
     def batch_get_secret_value(

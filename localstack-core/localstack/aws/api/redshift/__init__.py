@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -1108,256 +1108,256 @@ class AcceptReservedNodeExchangeInputMessage(ServiceRequest):
 
 
 class RecurringCharge(TypedDict, total=False):
-    RecurringChargeAmount: Optional[Double]
-    RecurringChargeFrequency: Optional[String]
+    RecurringChargeAmount: Double | None
+    RecurringChargeFrequency: String | None
 
 
-RecurringChargeList = List[RecurringCharge]
+RecurringChargeList = list[RecurringCharge]
 TStamp = datetime
 
 
 class ReservedNode(TypedDict, total=False):
-    ReservedNodeId: Optional[String]
-    ReservedNodeOfferingId: Optional[String]
-    NodeType: Optional[String]
-    StartTime: Optional[TStamp]
-    Duration: Optional[Integer]
-    FixedPrice: Optional[Double]
-    UsagePrice: Optional[Double]
-    CurrencyCode: Optional[String]
-    NodeCount: Optional[Integer]
-    State: Optional[String]
-    OfferingType: Optional[String]
-    RecurringCharges: Optional[RecurringChargeList]
-    ReservedNodeOfferingType: Optional[ReservedNodeOfferingType]
+    ReservedNodeId: String | None
+    ReservedNodeOfferingId: String | None
+    NodeType: String | None
+    StartTime: TStamp | None
+    Duration: Integer | None
+    FixedPrice: Double | None
+    UsagePrice: Double | None
+    CurrencyCode: String | None
+    NodeCount: Integer | None
+    State: String | None
+    OfferingType: String | None
+    RecurringCharges: RecurringChargeList | None
+    ReservedNodeOfferingType: ReservedNodeOfferingType | None
 
 
 class AcceptReservedNodeExchangeOutputMessage(TypedDict, total=False):
-    ExchangedReservedNode: Optional[ReservedNode]
+    ExchangedReservedNode: ReservedNode | None
 
 
 class AttributeValueTarget(TypedDict, total=False):
-    AttributeValue: Optional[String]
+    AttributeValue: String | None
 
 
-AttributeValueList = List[AttributeValueTarget]
+AttributeValueList = list[AttributeValueTarget]
 
 
 class AccountAttribute(TypedDict, total=False):
-    AttributeName: Optional[String]
-    AttributeValues: Optional[AttributeValueList]
+    AttributeName: String | None
+    AttributeValues: AttributeValueList | None
 
 
-AttributeList = List[AccountAttribute]
+AttributeList = list[AccountAttribute]
 
 
 class AccountAttributeList(TypedDict, total=False):
-    AccountAttributes: Optional[AttributeList]
+    AccountAttributes: AttributeList | None
 
 
 class AccountWithRestoreAccess(TypedDict, total=False):
-    AccountId: Optional[String]
-    AccountAlias: Optional[String]
+    AccountId: String | None
+    AccountAlias: String | None
 
 
-AccountsWithRestoreAccessList = List[AccountWithRestoreAccess]
+AccountsWithRestoreAccessList = list[AccountWithRestoreAccess]
 
 
 class AquaConfiguration(TypedDict, total=False):
-    AquaStatus: Optional[AquaStatus]
-    AquaConfigurationStatus: Optional[AquaConfigurationStatus]
+    AquaStatus: AquaStatus | None
+    AquaConfigurationStatus: AquaConfigurationStatus | None
 
 
 class AssociateDataShareConsumerMessage(ServiceRequest):
     DataShareArn: String
-    AssociateEntireAccount: Optional[BooleanOptional]
-    ConsumerArn: Optional[String]
-    ConsumerRegion: Optional[String]
-    AllowWrites: Optional[BooleanOptional]
+    AssociateEntireAccount: BooleanOptional | None
+    ConsumerArn: String | None
+    ConsumerRegion: String | None
+    AllowWrites: BooleanOptional | None
 
 
 class ClusterAssociatedToSchedule(TypedDict, total=False):
-    ClusterIdentifier: Optional[String]
-    ScheduleAssociationState: Optional[ScheduleState]
+    ClusterIdentifier: String | None
+    ScheduleAssociationState: ScheduleState | None
 
 
-AssociatedClusterList = List[ClusterAssociatedToSchedule]
+AssociatedClusterList = list[ClusterAssociatedToSchedule]
 
 
 class CertificateAssociation(TypedDict, total=False):
-    CustomDomainName: Optional[String]
-    ClusterIdentifier: Optional[String]
+    CustomDomainName: String | None
+    ClusterIdentifier: String | None
 
 
-CertificateAssociationList = List[CertificateAssociation]
+CertificateAssociationList = list[CertificateAssociation]
 
 
 class Association(TypedDict, total=False):
-    CustomDomainCertificateArn: Optional[String]
-    CustomDomainCertificateExpiryDate: Optional[TStamp]
-    CertificateAssociations: Optional[CertificateAssociationList]
+    CustomDomainCertificateArn: String | None
+    CustomDomainCertificateExpiryDate: TStamp | None
+    CertificateAssociations: CertificateAssociationList | None
 
 
-AssociationList = List[Association]
-AttributeNameList = List[String]
+AssociationList = list[Association]
+AttributeNameList = list[String]
 
 
 class AuthenticationProfile(TypedDict, total=False):
-    AuthenticationProfileName: Optional[AuthenticationProfileNameString]
-    AuthenticationProfileContent: Optional[String]
+    AuthenticationProfileName: AuthenticationProfileNameString | None
+    AuthenticationProfileContent: String | None
 
 
-AuthenticationProfileList = List[AuthenticationProfile]
+AuthenticationProfileList = list[AuthenticationProfile]
 
 
 class AuthorizeClusterSecurityGroupIngressMessage(ServiceRequest):
     ClusterSecurityGroupName: String
-    CIDRIP: Optional[String]
-    EC2SecurityGroupName: Optional[String]
-    EC2SecurityGroupOwnerId: Optional[String]
+    CIDRIP: String | None
+    EC2SecurityGroupName: String | None
+    EC2SecurityGroupOwnerId: String | None
 
 
 class Tag(TypedDict, total=False):
-    Key: Optional[String]
-    Value: Optional[String]
+    Key: String | None
+    Value: String | None
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class IPRange(TypedDict, total=False):
-    Status: Optional[String]
-    CIDRIP: Optional[String]
-    Tags: Optional[TagList]
+    Status: String | None
+    CIDRIP: String | None
+    Tags: TagList | None
 
 
-IPRangeList = List[IPRange]
+IPRangeList = list[IPRange]
 
 
 class EC2SecurityGroup(TypedDict, total=False):
-    Status: Optional[String]
-    EC2SecurityGroupName: Optional[String]
-    EC2SecurityGroupOwnerId: Optional[String]
-    Tags: Optional[TagList]
+    Status: String | None
+    EC2SecurityGroupName: String | None
+    EC2SecurityGroupOwnerId: String | None
+    Tags: TagList | None
 
 
-EC2SecurityGroupList = List[EC2SecurityGroup]
+EC2SecurityGroupList = list[EC2SecurityGroup]
 
 
 class ClusterSecurityGroup(TypedDict, total=False):
-    ClusterSecurityGroupName: Optional[String]
-    Description: Optional[String]
-    EC2SecurityGroups: Optional[EC2SecurityGroupList]
-    IPRanges: Optional[IPRangeList]
-    Tags: Optional[TagList]
+    ClusterSecurityGroupName: String | None
+    Description: String | None
+    EC2SecurityGroups: EC2SecurityGroupList | None
+    IPRanges: IPRangeList | None
+    Tags: TagList | None
 
 
 class AuthorizeClusterSecurityGroupIngressResult(TypedDict, total=False):
-    ClusterSecurityGroup: Optional[ClusterSecurityGroup]
+    ClusterSecurityGroup: ClusterSecurityGroup | None
 
 
 class AuthorizeDataShareMessage(ServiceRequest):
     DataShareArn: String
     ConsumerIdentifier: String
-    AllowWrites: Optional[BooleanOptional]
+    AllowWrites: BooleanOptional | None
 
 
-VpcIdentifierList = List[String]
+VpcIdentifierList = list[String]
 
 
 class AuthorizeEndpointAccessMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
+    ClusterIdentifier: String | None
     Account: String
-    VpcIds: Optional[VpcIdentifierList]
+    VpcIds: VpcIdentifierList | None
 
 
 class AuthorizeSnapshotAccessMessage(ServiceRequest):
-    SnapshotIdentifier: Optional[String]
-    SnapshotArn: Optional[String]
-    SnapshotClusterIdentifier: Optional[String]
+    SnapshotIdentifier: String | None
+    SnapshotArn: String | None
+    SnapshotClusterIdentifier: String | None
     AccountWithRestoreAccess: String
 
 
-RestorableNodeTypeList = List[String]
+RestorableNodeTypeList = list[String]
 Long = int
 
 
 class Snapshot(TypedDict, total=False):
-    SnapshotIdentifier: Optional[String]
-    ClusterIdentifier: Optional[String]
-    SnapshotCreateTime: Optional[TStamp]
-    Status: Optional[String]
-    Port: Optional[Integer]
-    AvailabilityZone: Optional[String]
-    ClusterCreateTime: Optional[TStamp]
-    MasterUsername: Optional[String]
-    ClusterVersion: Optional[String]
-    EngineFullVersion: Optional[String]
-    SnapshotType: Optional[String]
-    NodeType: Optional[String]
-    NumberOfNodes: Optional[Integer]
-    DBName: Optional[String]
-    VpcId: Optional[String]
-    Encrypted: Optional[Boolean]
-    KmsKeyId: Optional[String]
-    EncryptedWithHSM: Optional[Boolean]
-    AccountsWithRestoreAccess: Optional[AccountsWithRestoreAccessList]
-    OwnerAccount: Optional[String]
-    TotalBackupSizeInMegaBytes: Optional[Double]
-    ActualIncrementalBackupSizeInMegaBytes: Optional[Double]
-    BackupProgressInMegaBytes: Optional[Double]
-    CurrentBackupRateInMegaBytesPerSecond: Optional[Double]
-    EstimatedSecondsToCompletion: Optional[Long]
-    ElapsedTimeInSeconds: Optional[Long]
-    SourceRegion: Optional[String]
-    Tags: Optional[TagList]
-    RestorableNodeTypes: Optional[RestorableNodeTypeList]
-    EnhancedVpcRouting: Optional[Boolean]
-    MaintenanceTrackName: Optional[String]
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    ManualSnapshotRemainingDays: Optional[IntegerOptional]
-    SnapshotRetentionStartTime: Optional[TStamp]
-    MasterPasswordSecretArn: Optional[String]
-    MasterPasswordSecretKmsKeyId: Optional[String]
-    SnapshotArn: Optional[String]
+    SnapshotIdentifier: String | None
+    ClusterIdentifier: String | None
+    SnapshotCreateTime: TStamp | None
+    Status: String | None
+    Port: Integer | None
+    AvailabilityZone: String | None
+    ClusterCreateTime: TStamp | None
+    MasterUsername: String | None
+    ClusterVersion: String | None
+    EngineFullVersion: String | None
+    SnapshotType: String | None
+    NodeType: String | None
+    NumberOfNodes: Integer | None
+    DBName: String | None
+    VpcId: String | None
+    Encrypted: Boolean | None
+    KmsKeyId: String | None
+    EncryptedWithHSM: Boolean | None
+    AccountsWithRestoreAccess: AccountsWithRestoreAccessList | None
+    OwnerAccount: String | None
+    TotalBackupSizeInMegaBytes: Double | None
+    ActualIncrementalBackupSizeInMegaBytes: Double | None
+    BackupProgressInMegaBytes: Double | None
+    CurrentBackupRateInMegaBytesPerSecond: Double | None
+    EstimatedSecondsToCompletion: Long | None
+    ElapsedTimeInSeconds: Long | None
+    SourceRegion: String | None
+    Tags: TagList | None
+    RestorableNodeTypes: RestorableNodeTypeList | None
+    EnhancedVpcRouting: Boolean | None
+    MaintenanceTrackName: String | None
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    ManualSnapshotRemainingDays: IntegerOptional | None
+    SnapshotRetentionStartTime: TStamp | None
+    MasterPasswordSecretArn: String | None
+    MasterPasswordSecretKmsKeyId: String | None
+    SnapshotArn: String | None
 
 
 class AuthorizeSnapshotAccessResult(TypedDict, total=False):
-    Snapshot: Optional[Snapshot]
+    Snapshot: Snapshot | None
 
 
-AuthorizedAudienceList = List[String]
+AuthorizedAudienceList = list[String]
 
 
 class AuthorizedTokenIssuer(TypedDict, total=False):
-    TrustedTokenIssuerArn: Optional[String]
-    AuthorizedAudiencesList: Optional[AuthorizedAudienceList]
+    TrustedTokenIssuerArn: String | None
+    AuthorizedAudiencesList: AuthorizedAudienceList | None
 
 
-AuthorizedTokenIssuerList = List[AuthorizedTokenIssuer]
+AuthorizedTokenIssuerList = list[AuthorizedTokenIssuer]
 
 
 class SupportedPlatform(TypedDict, total=False):
-    Name: Optional[String]
+    Name: String | None
 
 
-SupportedPlatformsList = List[SupportedPlatform]
+SupportedPlatformsList = list[SupportedPlatform]
 
 
 class AvailabilityZone(TypedDict, total=False):
-    Name: Optional[String]
-    SupportedPlatforms: Optional[SupportedPlatformsList]
+    Name: String | None
+    SupportedPlatforms: SupportedPlatformsList | None
 
 
-AvailabilityZoneList = List[AvailabilityZone]
+AvailabilityZoneList = list[AvailabilityZone]
 
 
 class DeleteClusterSnapshotMessage(ServiceRequest):
     SnapshotIdentifier: String
-    SnapshotClusterIdentifier: Optional[String]
+    SnapshotClusterIdentifier: String | None
 
 
-DeleteClusterSnapshotMessageList = List[DeleteClusterSnapshotMessage]
+DeleteClusterSnapshotMessageList = list[DeleteClusterSnapshotMessage]
 
 
 class BatchDeleteClusterSnapshotsRequest(ServiceRequest):
@@ -1365,33 +1365,33 @@ class BatchDeleteClusterSnapshotsRequest(ServiceRequest):
 
 
 class SnapshotErrorMessage(TypedDict, total=False):
-    SnapshotIdentifier: Optional[String]
-    SnapshotClusterIdentifier: Optional[String]
-    FailureCode: Optional[String]
-    FailureReason: Optional[String]
+    SnapshotIdentifier: String | None
+    SnapshotClusterIdentifier: String | None
+    FailureCode: String | None
+    FailureReason: String | None
 
 
-BatchSnapshotOperationErrorList = List[SnapshotErrorMessage]
-SnapshotIdentifierList = List[String]
+BatchSnapshotOperationErrorList = list[SnapshotErrorMessage]
+SnapshotIdentifierList = list[String]
 
 
 class BatchDeleteClusterSnapshotsResult(TypedDict, total=False):
-    Resources: Optional[SnapshotIdentifierList]
-    Errors: Optional[BatchSnapshotOperationErrorList]
+    Resources: SnapshotIdentifierList | None
+    Errors: BatchSnapshotOperationErrorList | None
 
 
 class BatchModifyClusterSnapshotsMessage(ServiceRequest):
     SnapshotIdentifierList: SnapshotIdentifierList
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    Force: Optional[Boolean]
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    Force: Boolean | None
 
 
-BatchSnapshotOperationErrors = List[SnapshotErrorMessage]
+BatchSnapshotOperationErrors = list[SnapshotErrorMessage]
 
 
 class BatchModifyClusterSnapshotsOutputMessage(TypedDict, total=False):
-    Resources: Optional[SnapshotIdentifierList]
-    Errors: Optional[BatchSnapshotOperationErrors]
+    Resources: SnapshotIdentifierList | None
+    Errors: BatchSnapshotOperationErrors | None
 
 
 class CancelResizeMessage(ServiceRequest):
@@ -1399,380 +1399,380 @@ class CancelResizeMessage(ServiceRequest):
 
 
 class ClusterNode(TypedDict, total=False):
-    NodeRole: Optional[String]
-    PrivateIPAddress: Optional[String]
-    PublicIPAddress: Optional[String]
+    NodeRole: String | None
+    PrivateIPAddress: String | None
+    PublicIPAddress: String | None
 
 
-ClusterNodesList = List[ClusterNode]
+ClusterNodesList = list[ClusterNode]
 
 
 class SecondaryClusterInfo(TypedDict, total=False):
-    AvailabilityZone: Optional[String]
-    ClusterNodes: Optional[ClusterNodesList]
+    AvailabilityZone: String | None
+    ClusterNodes: ClusterNodesList | None
 
 
 class ReservedNodeExchangeStatus(TypedDict, total=False):
-    ReservedNodeExchangeRequestId: Optional[String]
-    Status: Optional[ReservedNodeExchangeStatusType]
-    RequestTime: Optional[TStamp]
-    SourceReservedNodeId: Optional[String]
-    SourceReservedNodeType: Optional[String]
-    SourceReservedNodeCount: Optional[Integer]
-    TargetReservedNodeOfferingId: Optional[String]
-    TargetReservedNodeType: Optional[String]
-    TargetReservedNodeCount: Optional[Integer]
+    ReservedNodeExchangeRequestId: String | None
+    Status: ReservedNodeExchangeStatusType | None
+    RequestTime: TStamp | None
+    SourceReservedNodeId: String | None
+    SourceReservedNodeType: String | None
+    SourceReservedNodeCount: Integer | None
+    TargetReservedNodeOfferingId: String | None
+    TargetReservedNodeType: String | None
+    TargetReservedNodeCount: Integer | None
 
 
 LongOptional = int
 
 
 class ResizeInfo(TypedDict, total=False):
-    ResizeType: Optional[String]
-    AllowCancelResize: Optional[Boolean]
+    ResizeType: String | None
+    AllowCancelResize: Boolean | None
 
 
 class DeferredMaintenanceWindow(TypedDict, total=False):
-    DeferMaintenanceIdentifier: Optional[String]
-    DeferMaintenanceStartTime: Optional[TStamp]
-    DeferMaintenanceEndTime: Optional[TStamp]
+    DeferMaintenanceIdentifier: String | None
+    DeferMaintenanceStartTime: TStamp | None
+    DeferMaintenanceEndTime: TStamp | None
 
 
-DeferredMaintenanceWindowsList = List[DeferredMaintenanceWindow]
-PendingActionsList = List[String]
+DeferredMaintenanceWindowsList = list[DeferredMaintenanceWindow]
+PendingActionsList = list[String]
 
 
 class ClusterIamRole(TypedDict, total=False):
-    IamRoleArn: Optional[String]
-    ApplyStatus: Optional[String]
+    IamRoleArn: String | None
+    ApplyStatus: String | None
 
 
-ClusterIamRoleList = List[ClusterIamRole]
+ClusterIamRoleList = list[ClusterIamRole]
 
 
 class ElasticIpStatus(TypedDict, total=False):
-    ElasticIp: Optional[String]
-    Status: Optional[String]
+    ElasticIp: String | None
+    Status: String | None
 
 
 class ClusterSnapshotCopyStatus(TypedDict, total=False):
-    DestinationRegion: Optional[String]
-    RetentionPeriod: Optional[Long]
-    ManualSnapshotRetentionPeriod: Optional[Integer]
-    SnapshotCopyGrantName: Optional[String]
+    DestinationRegion: String | None
+    RetentionPeriod: Long | None
+    ManualSnapshotRetentionPeriod: Integer | None
+    SnapshotCopyGrantName: String | None
 
 
 class HsmStatus(TypedDict, total=False):
-    HsmClientCertificateIdentifier: Optional[String]
-    HsmConfigurationIdentifier: Optional[String]
-    Status: Optional[String]
+    HsmClientCertificateIdentifier: String | None
+    HsmConfigurationIdentifier: String | None
+    Status: String | None
 
 
 class DataTransferProgress(TypedDict, total=False):
-    Status: Optional[String]
-    CurrentRateInMegaBytesPerSecond: Optional[DoubleOptional]
-    TotalDataInMegaBytes: Optional[Long]
-    DataTransferredInMegaBytes: Optional[Long]
-    EstimatedTimeToCompletionInSeconds: Optional[LongOptional]
-    ElapsedTimeInSeconds: Optional[LongOptional]
+    Status: String | None
+    CurrentRateInMegaBytesPerSecond: DoubleOptional | None
+    TotalDataInMegaBytes: Long | None
+    DataTransferredInMegaBytes: Long | None
+    EstimatedTimeToCompletionInSeconds: LongOptional | None
+    ElapsedTimeInSeconds: LongOptional | None
 
 
 class RestoreStatus(TypedDict, total=False):
-    Status: Optional[String]
-    CurrentRestoreRateInMegaBytesPerSecond: Optional[Double]
-    SnapshotSizeInMegaBytes: Optional[Long]
-    ProgressInMegaBytes: Optional[Long]
-    ElapsedTimeInSeconds: Optional[Long]
-    EstimatedTimeToCompletionInSeconds: Optional[Long]
+    Status: String | None
+    CurrentRestoreRateInMegaBytesPerSecond: Double | None
+    SnapshotSizeInMegaBytes: Long | None
+    ProgressInMegaBytes: Long | None
+    ElapsedTimeInSeconds: Long | None
+    EstimatedTimeToCompletionInSeconds: Long | None
 
 
 class PendingModifiedValues(TypedDict, total=False):
-    MasterUserPassword: Optional[SensitiveString]
-    NodeType: Optional[String]
-    NumberOfNodes: Optional[IntegerOptional]
-    ClusterType: Optional[String]
-    ClusterVersion: Optional[String]
-    AutomatedSnapshotRetentionPeriod: Optional[IntegerOptional]
-    ClusterIdentifier: Optional[String]
-    PubliclyAccessible: Optional[BooleanOptional]
-    EnhancedVpcRouting: Optional[BooleanOptional]
-    MaintenanceTrackName: Optional[String]
-    EncryptionType: Optional[String]
+    MasterUserPassword: SensitiveString | None
+    NodeType: String | None
+    NumberOfNodes: IntegerOptional | None
+    ClusterType: String | None
+    ClusterVersion: String | None
+    AutomatedSnapshotRetentionPeriod: IntegerOptional | None
+    ClusterIdentifier: String | None
+    PubliclyAccessible: BooleanOptional | None
+    EnhancedVpcRouting: BooleanOptional | None
+    MaintenanceTrackName: String | None
+    EncryptionType: String | None
 
 
 class ClusterParameterStatus(TypedDict, total=False):
-    ParameterName: Optional[String]
-    ParameterApplyStatus: Optional[String]
-    ParameterApplyErrorDescription: Optional[String]
+    ParameterName: String | None
+    ParameterApplyStatus: String | None
+    ParameterApplyErrorDescription: String | None
 
 
-ClusterParameterStatusList = List[ClusterParameterStatus]
+ClusterParameterStatusList = list[ClusterParameterStatus]
 
 
 class ClusterParameterGroupStatus(TypedDict, total=False):
-    ParameterGroupName: Optional[String]
-    ParameterApplyStatus: Optional[String]
-    ClusterParameterStatusList: Optional[ClusterParameterStatusList]
+    ParameterGroupName: String | None
+    ParameterApplyStatus: String | None
+    ClusterParameterStatusList: ClusterParameterStatusList | None
 
 
-ClusterParameterGroupStatusList = List[ClusterParameterGroupStatus]
+ClusterParameterGroupStatusList = list[ClusterParameterGroupStatus]
 
 
 class VpcSecurityGroupMembership(TypedDict, total=False):
-    VpcSecurityGroupId: Optional[String]
-    Status: Optional[String]
+    VpcSecurityGroupId: String | None
+    Status: String | None
 
 
-VpcSecurityGroupMembershipList = List[VpcSecurityGroupMembership]
+VpcSecurityGroupMembershipList = list[VpcSecurityGroupMembership]
 
 
 class ClusterSecurityGroupMembership(TypedDict, total=False):
-    ClusterSecurityGroupName: Optional[String]
-    Status: Optional[String]
+    ClusterSecurityGroupName: String | None
+    Status: String | None
 
 
-ClusterSecurityGroupMembershipList = List[ClusterSecurityGroupMembership]
+ClusterSecurityGroupMembershipList = list[ClusterSecurityGroupMembership]
 
 
 class NetworkInterface(TypedDict, total=False):
-    NetworkInterfaceId: Optional[String]
-    SubnetId: Optional[String]
-    PrivateIpAddress: Optional[String]
-    AvailabilityZone: Optional[String]
-    Ipv6Address: Optional[String]
+    NetworkInterfaceId: String | None
+    SubnetId: String | None
+    PrivateIpAddress: String | None
+    AvailabilityZone: String | None
+    Ipv6Address: String | None
 
 
-NetworkInterfaceList = List[NetworkInterface]
+NetworkInterfaceList = list[NetworkInterface]
 
 
 class VpcEndpoint(TypedDict, total=False):
-    VpcEndpointId: Optional[String]
-    VpcId: Optional[String]
-    NetworkInterfaces: Optional[NetworkInterfaceList]
+    VpcEndpointId: String | None
+    VpcId: String | None
+    NetworkInterfaces: NetworkInterfaceList | None
 
 
-VpcEndpointsList = List[VpcEndpoint]
+VpcEndpointsList = list[VpcEndpoint]
 
 
 class Endpoint(TypedDict, total=False):
-    Address: Optional[String]
-    Port: Optional[Integer]
-    VpcEndpoints: Optional[VpcEndpointsList]
+    Address: String | None
+    Port: Integer | None
+    VpcEndpoints: VpcEndpointsList | None
 
 
 class Cluster(TypedDict, total=False):
-    ClusterIdentifier: Optional[String]
-    NodeType: Optional[String]
-    ClusterStatus: Optional[String]
-    ClusterAvailabilityStatus: Optional[String]
-    ModifyStatus: Optional[String]
-    MasterUsername: Optional[String]
-    DBName: Optional[String]
-    Endpoint: Optional[Endpoint]
-    ClusterCreateTime: Optional[TStamp]
-    AutomatedSnapshotRetentionPeriod: Optional[Integer]
-    ManualSnapshotRetentionPeriod: Optional[Integer]
-    ClusterSecurityGroups: Optional[ClusterSecurityGroupMembershipList]
-    VpcSecurityGroups: Optional[VpcSecurityGroupMembershipList]
-    ClusterParameterGroups: Optional[ClusterParameterGroupStatusList]
-    ClusterSubnetGroupName: Optional[String]
-    VpcId: Optional[String]
-    AvailabilityZone: Optional[String]
-    PreferredMaintenanceWindow: Optional[String]
-    PendingModifiedValues: Optional[PendingModifiedValues]
-    ClusterVersion: Optional[String]
-    AllowVersionUpgrade: Optional[Boolean]
-    NumberOfNodes: Optional[Integer]
-    PubliclyAccessible: Optional[Boolean]
-    Encrypted: Optional[Boolean]
-    RestoreStatus: Optional[RestoreStatus]
-    DataTransferProgress: Optional[DataTransferProgress]
-    HsmStatus: Optional[HsmStatus]
-    ClusterSnapshotCopyStatus: Optional[ClusterSnapshotCopyStatus]
-    ClusterPublicKey: Optional[String]
-    ClusterNodes: Optional[ClusterNodesList]
-    ElasticIpStatus: Optional[ElasticIpStatus]
-    ClusterRevisionNumber: Optional[String]
-    Tags: Optional[TagList]
-    KmsKeyId: Optional[String]
-    EnhancedVpcRouting: Optional[Boolean]
-    IamRoles: Optional[ClusterIamRoleList]
-    PendingActions: Optional[PendingActionsList]
-    MaintenanceTrackName: Optional[String]
-    ElasticResizeNumberOfNodeOptions: Optional[String]
-    DeferredMaintenanceWindows: Optional[DeferredMaintenanceWindowsList]
-    SnapshotScheduleIdentifier: Optional[String]
-    SnapshotScheduleState: Optional[ScheduleState]
-    ExpectedNextSnapshotScheduleTime: Optional[TStamp]
-    ExpectedNextSnapshotScheduleTimeStatus: Optional[String]
-    NextMaintenanceWindowStartTime: Optional[TStamp]
-    ResizeInfo: Optional[ResizeInfo]
-    AvailabilityZoneRelocationStatus: Optional[String]
-    ClusterNamespaceArn: Optional[String]
-    TotalStorageCapacityInMegaBytes: Optional[LongOptional]
-    AquaConfiguration: Optional[AquaConfiguration]
-    DefaultIamRoleArn: Optional[String]
-    ReservedNodeExchangeStatus: Optional[ReservedNodeExchangeStatus]
-    CustomDomainName: Optional[String]
-    CustomDomainCertificateArn: Optional[String]
-    CustomDomainCertificateExpiryDate: Optional[TStamp]
-    MasterPasswordSecretArn: Optional[String]
-    MasterPasswordSecretKmsKeyId: Optional[String]
-    IpAddressType: Optional[String]
-    MultiAZ: Optional[String]
-    MultiAZSecondary: Optional[SecondaryClusterInfo]
+    ClusterIdentifier: String | None
+    NodeType: String | None
+    ClusterStatus: String | None
+    ClusterAvailabilityStatus: String | None
+    ModifyStatus: String | None
+    MasterUsername: String | None
+    DBName: String | None
+    Endpoint: Endpoint | None
+    ClusterCreateTime: TStamp | None
+    AutomatedSnapshotRetentionPeriod: Integer | None
+    ManualSnapshotRetentionPeriod: Integer | None
+    ClusterSecurityGroups: ClusterSecurityGroupMembershipList | None
+    VpcSecurityGroups: VpcSecurityGroupMembershipList | None
+    ClusterParameterGroups: ClusterParameterGroupStatusList | None
+    ClusterSubnetGroupName: String | None
+    VpcId: String | None
+    AvailabilityZone: String | None
+    PreferredMaintenanceWindow: String | None
+    PendingModifiedValues: PendingModifiedValues | None
+    ClusterVersion: String | None
+    AllowVersionUpgrade: Boolean | None
+    NumberOfNodes: Integer | None
+    PubliclyAccessible: Boolean | None
+    Encrypted: Boolean | None
+    RestoreStatus: RestoreStatus | None
+    DataTransferProgress: DataTransferProgress | None
+    HsmStatus: HsmStatus | None
+    ClusterSnapshotCopyStatus: ClusterSnapshotCopyStatus | None
+    ClusterPublicKey: String | None
+    ClusterNodes: ClusterNodesList | None
+    ElasticIpStatus: ElasticIpStatus | None
+    ClusterRevisionNumber: String | None
+    Tags: TagList | None
+    KmsKeyId: String | None
+    EnhancedVpcRouting: Boolean | None
+    IamRoles: ClusterIamRoleList | None
+    PendingActions: PendingActionsList | None
+    MaintenanceTrackName: String | None
+    ElasticResizeNumberOfNodeOptions: String | None
+    DeferredMaintenanceWindows: DeferredMaintenanceWindowsList | None
+    SnapshotScheduleIdentifier: String | None
+    SnapshotScheduleState: ScheduleState | None
+    ExpectedNextSnapshotScheduleTime: TStamp | None
+    ExpectedNextSnapshotScheduleTimeStatus: String | None
+    NextMaintenanceWindowStartTime: TStamp | None
+    ResizeInfo: ResizeInfo | None
+    AvailabilityZoneRelocationStatus: String | None
+    ClusterNamespaceArn: String | None
+    TotalStorageCapacityInMegaBytes: LongOptional | None
+    AquaConfiguration: AquaConfiguration | None
+    DefaultIamRoleArn: String | None
+    ReservedNodeExchangeStatus: ReservedNodeExchangeStatus | None
+    CustomDomainName: String | None
+    CustomDomainCertificateArn: String | None
+    CustomDomainCertificateExpiryDate: TStamp | None
+    MasterPasswordSecretArn: String | None
+    MasterPasswordSecretKmsKeyId: String | None
+    IpAddressType: String | None
+    MultiAZ: String | None
+    MultiAZSecondary: SecondaryClusterInfo | None
 
 
 class ClusterCredentials(TypedDict, total=False):
-    DbUser: Optional[String]
-    DbPassword: Optional[SensitiveString]
-    Expiration: Optional[TStamp]
+    DbUser: String | None
+    DbPassword: SensitiveString | None
+    Expiration: TStamp | None
 
 
 class RevisionTarget(TypedDict, total=False):
-    DatabaseRevision: Optional[String]
-    Description: Optional[String]
-    DatabaseRevisionReleaseDate: Optional[TStamp]
+    DatabaseRevision: String | None
+    Description: String | None
+    DatabaseRevisionReleaseDate: TStamp | None
 
 
-RevisionTargetsList = List[RevisionTarget]
+RevisionTargetsList = list[RevisionTarget]
 
 
 class ClusterDbRevision(TypedDict, total=False):
-    ClusterIdentifier: Optional[String]
-    CurrentDatabaseRevision: Optional[String]
-    DatabaseRevisionReleaseDate: Optional[TStamp]
-    RevisionTargets: Optional[RevisionTargetsList]
+    ClusterIdentifier: String | None
+    CurrentDatabaseRevision: String | None
+    DatabaseRevisionReleaseDate: TStamp | None
+    RevisionTargets: RevisionTargetsList | None
 
 
-ClusterDbRevisionsList = List[ClusterDbRevision]
+ClusterDbRevisionsList = list[ClusterDbRevision]
 
 
 class ClusterDbRevisionsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ClusterDbRevisions: Optional[ClusterDbRevisionsList]
+    Marker: String | None
+    ClusterDbRevisions: ClusterDbRevisionsList | None
 
 
 class ClusterExtendedCredentials(TypedDict, total=False):
-    DbUser: Optional[String]
-    DbPassword: Optional[SensitiveString]
-    Expiration: Optional[TStamp]
-    NextRefreshTime: Optional[TStamp]
+    DbUser: String | None
+    DbPassword: SensitiveString | None
+    Expiration: TStamp | None
+    NextRefreshTime: TStamp | None
 
 
-ClusterList = List[Cluster]
+ClusterList = list[Cluster]
 
 
 class ClusterParameterGroup(TypedDict, total=False):
-    ParameterGroupName: Optional[String]
-    ParameterGroupFamily: Optional[String]
-    Description: Optional[String]
-    Tags: Optional[TagList]
+    ParameterGroupName: String | None
+    ParameterGroupFamily: String | None
+    Description: String | None
+    Tags: TagList | None
 
 
 class Parameter(TypedDict, total=False):
-    ParameterName: Optional[String]
-    ParameterValue: Optional[String]
-    Description: Optional[String]
-    Source: Optional[String]
-    DataType: Optional[String]
-    AllowedValues: Optional[String]
-    ApplyType: Optional[ParameterApplyType]
-    IsModifiable: Optional[Boolean]
-    MinimumEngineVersion: Optional[String]
+    ParameterName: String | None
+    ParameterValue: String | None
+    Description: String | None
+    Source: String | None
+    DataType: String | None
+    AllowedValues: String | None
+    ApplyType: ParameterApplyType | None
+    IsModifiable: Boolean | None
+    MinimumEngineVersion: String | None
 
 
-ParametersList = List[Parameter]
+ParametersList = list[Parameter]
 
 
 class ClusterParameterGroupDetails(TypedDict, total=False):
-    Parameters: Optional[ParametersList]
-    Marker: Optional[String]
+    Parameters: ParametersList | None
+    Marker: String | None
 
 
 class ClusterParameterGroupNameMessage(TypedDict, total=False):
-    ParameterGroupName: Optional[String]
-    ParameterGroupStatus: Optional[String]
+    ParameterGroupName: String | None
+    ParameterGroupStatus: String | None
 
 
-ParameterGroupList = List[ClusterParameterGroup]
+ParameterGroupList = list[ClusterParameterGroup]
 
 
 class ClusterParameterGroupsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ParameterGroups: Optional[ParameterGroupList]
+    Marker: String | None
+    ParameterGroups: ParameterGroupList | None
 
 
-ClusterSecurityGroups = List[ClusterSecurityGroup]
+ClusterSecurityGroups = list[ClusterSecurityGroup]
 
 
 class ClusterSecurityGroupMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ClusterSecurityGroups: Optional[ClusterSecurityGroups]
+    Marker: String | None
+    ClusterSecurityGroups: ClusterSecurityGroups | None
 
 
-ClusterSecurityGroupNameList = List[String]
-ValueStringList = List[String]
+ClusterSecurityGroupNameList = list[String]
+ValueStringList = list[String]
 
 
 class Subnet(TypedDict, total=False):
-    SubnetIdentifier: Optional[String]
-    SubnetAvailabilityZone: Optional[AvailabilityZone]
-    SubnetStatus: Optional[String]
+    SubnetIdentifier: String | None
+    SubnetAvailabilityZone: AvailabilityZone | None
+    SubnetStatus: String | None
 
 
-SubnetList = List[Subnet]
+SubnetList = list[Subnet]
 
 
 class ClusterSubnetGroup(TypedDict, total=False):
-    ClusterSubnetGroupName: Optional[String]
-    Description: Optional[String]
-    VpcId: Optional[String]
-    SubnetGroupStatus: Optional[String]
-    Subnets: Optional[SubnetList]
-    Tags: Optional[TagList]
-    SupportedClusterIpAddressTypes: Optional[ValueStringList]
+    ClusterSubnetGroupName: String | None
+    Description: String | None
+    VpcId: String | None
+    SubnetGroupStatus: String | None
+    Subnets: SubnetList | None
+    Tags: TagList | None
+    SupportedClusterIpAddressTypes: ValueStringList | None
 
 
-ClusterSubnetGroups = List[ClusterSubnetGroup]
+ClusterSubnetGroups = list[ClusterSubnetGroup]
 
 
 class ClusterSubnetGroupMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ClusterSubnetGroups: Optional[ClusterSubnetGroups]
+    Marker: String | None
+    ClusterSubnetGroups: ClusterSubnetGroups | None
 
 
 class ClusterVersion(TypedDict, total=False):
-    ClusterVersion: Optional[String]
-    ClusterParameterGroupFamily: Optional[String]
-    Description: Optional[String]
+    ClusterVersion: String | None
+    ClusterParameterGroupFamily: String | None
+    Description: String | None
 
 
-ClusterVersionList = List[ClusterVersion]
+ClusterVersionList = list[ClusterVersion]
 
 
 class ClusterVersionsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ClusterVersions: Optional[ClusterVersionList]
+    Marker: String | None
+    ClusterVersions: ClusterVersionList | None
 
 
 class ClustersMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    Clusters: Optional[ClusterList]
+    Marker: String | None
+    Clusters: ClusterList | None
 
 
-ConsumerIdentifierList = List[String]
+ConsumerIdentifierList = list[String]
 
 
 class CopyClusterSnapshotMessage(ServiceRequest):
     SourceSnapshotIdentifier: String
-    SourceSnapshotClusterIdentifier: Optional[String]
+    SourceSnapshotClusterIdentifier: String | None
     TargetSnapshotIdentifier: String
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
 
 
 class CopyClusterSnapshotResult(TypedDict, total=False):
-    Snapshot: Optional[Snapshot]
+    Snapshot: Snapshot | None
 
 
 class CreateAuthenticationProfileMessage(ServiceRequest):
@@ -1781,104 +1781,104 @@ class CreateAuthenticationProfileMessage(ServiceRequest):
 
 
 class CreateAuthenticationProfileResult(TypedDict, total=False):
-    AuthenticationProfileName: Optional[AuthenticationProfileNameString]
-    AuthenticationProfileContent: Optional[String]
+    AuthenticationProfileName: AuthenticationProfileNameString | None
+    AuthenticationProfileContent: String | None
 
 
-IamRoleArnList = List[String]
-VpcSecurityGroupIdList = List[String]
+IamRoleArnList = list[String]
+VpcSecurityGroupIdList = list[String]
 
 
 class CreateClusterMessage(ServiceRequest):
-    DBName: Optional[String]
+    DBName: String | None
     ClusterIdentifier: String
-    ClusterType: Optional[String]
+    ClusterType: String | None
     NodeType: String
     MasterUsername: String
-    MasterUserPassword: Optional[SensitiveString]
-    ClusterSecurityGroups: Optional[ClusterSecurityGroupNameList]
-    VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
-    ClusterSubnetGroupName: Optional[String]
-    AvailabilityZone: Optional[String]
-    PreferredMaintenanceWindow: Optional[String]
-    ClusterParameterGroupName: Optional[String]
-    AutomatedSnapshotRetentionPeriod: Optional[IntegerOptional]
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    Port: Optional[IntegerOptional]
-    ClusterVersion: Optional[String]
-    AllowVersionUpgrade: Optional[BooleanOptional]
-    NumberOfNodes: Optional[IntegerOptional]
-    PubliclyAccessible: Optional[BooleanOptional]
-    Encrypted: Optional[BooleanOptional]
-    HsmClientCertificateIdentifier: Optional[String]
-    HsmConfigurationIdentifier: Optional[String]
-    ElasticIp: Optional[String]
-    Tags: Optional[TagList]
-    KmsKeyId: Optional[String]
-    EnhancedVpcRouting: Optional[BooleanOptional]
-    AdditionalInfo: Optional[String]
-    IamRoles: Optional[IamRoleArnList]
-    MaintenanceTrackName: Optional[String]
-    SnapshotScheduleIdentifier: Optional[String]
-    AvailabilityZoneRelocation: Optional[BooleanOptional]
-    AquaConfigurationStatus: Optional[AquaConfigurationStatus]
-    DefaultIamRoleArn: Optional[String]
-    LoadSampleData: Optional[String]
-    ManageMasterPassword: Optional[BooleanOptional]
-    MasterPasswordSecretKmsKeyId: Optional[String]
-    IpAddressType: Optional[String]
-    MultiAZ: Optional[BooleanOptional]
-    RedshiftIdcApplicationArn: Optional[String]
+    MasterUserPassword: SensitiveString | None
+    ClusterSecurityGroups: ClusterSecurityGroupNameList | None
+    VpcSecurityGroupIds: VpcSecurityGroupIdList | None
+    ClusterSubnetGroupName: String | None
+    AvailabilityZone: String | None
+    PreferredMaintenanceWindow: String | None
+    ClusterParameterGroupName: String | None
+    AutomatedSnapshotRetentionPeriod: IntegerOptional | None
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    Port: IntegerOptional | None
+    ClusterVersion: String | None
+    AllowVersionUpgrade: BooleanOptional | None
+    NumberOfNodes: IntegerOptional | None
+    PubliclyAccessible: BooleanOptional | None
+    Encrypted: BooleanOptional | None
+    HsmClientCertificateIdentifier: String | None
+    HsmConfigurationIdentifier: String | None
+    ElasticIp: String | None
+    Tags: TagList | None
+    KmsKeyId: String | None
+    EnhancedVpcRouting: BooleanOptional | None
+    AdditionalInfo: String | None
+    IamRoles: IamRoleArnList | None
+    MaintenanceTrackName: String | None
+    SnapshotScheduleIdentifier: String | None
+    AvailabilityZoneRelocation: BooleanOptional | None
+    AquaConfigurationStatus: AquaConfigurationStatus | None
+    DefaultIamRoleArn: String | None
+    LoadSampleData: String | None
+    ManageMasterPassword: BooleanOptional | None
+    MasterPasswordSecretKmsKeyId: String | None
+    IpAddressType: String | None
+    MultiAZ: BooleanOptional | None
+    RedshiftIdcApplicationArn: String | None
 
 
 class CreateClusterParameterGroupMessage(ServiceRequest):
     ParameterGroupName: String
     ParameterGroupFamily: String
     Description: String
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateClusterParameterGroupResult(TypedDict, total=False):
-    ClusterParameterGroup: Optional[ClusterParameterGroup]
+    ClusterParameterGroup: ClusterParameterGroup | None
 
 
 class CreateClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class CreateClusterSecurityGroupMessage(ServiceRequest):
     ClusterSecurityGroupName: String
     Description: String
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateClusterSecurityGroupResult(TypedDict, total=False):
-    ClusterSecurityGroup: Optional[ClusterSecurityGroup]
+    ClusterSecurityGroup: ClusterSecurityGroup | None
 
 
 class CreateClusterSnapshotMessage(ServiceRequest):
     SnapshotIdentifier: String
     ClusterIdentifier: String
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    Tags: Optional[TagList]
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    Tags: TagList | None
 
 
 class CreateClusterSnapshotResult(TypedDict, total=False):
-    Snapshot: Optional[Snapshot]
+    Snapshot: Snapshot | None
 
 
-SubnetIdentifierList = List[String]
+SubnetIdentifierList = list[String]
 
 
 class CreateClusterSubnetGroupMessage(ServiceRequest):
     ClusterSubnetGroupName: String
     Description: String
     SubnetIds: SubnetIdentifierList
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateClusterSubnetGroupResult(TypedDict, total=False):
-    ClusterSubnetGroup: Optional[ClusterSubnetGroup]
+    ClusterSubnetGroup: ClusterSubnetGroup | None
 
 
 class CreateCustomDomainAssociationMessage(ServiceRequest):
@@ -1888,66 +1888,66 @@ class CreateCustomDomainAssociationMessage(ServiceRequest):
 
 
 class CreateCustomDomainAssociationResult(TypedDict, total=False):
-    CustomDomainName: Optional[CustomDomainNameString]
-    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
-    ClusterIdentifier: Optional[String]
-    CustomDomainCertExpiryTime: Optional[String]
+    CustomDomainName: CustomDomainNameString | None
+    CustomDomainCertificateArn: CustomDomainCertificateArnString | None
+    ClusterIdentifier: String | None
+    CustomDomainCertExpiryTime: String | None
 
 
 class CreateEndpointAccessMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    ResourceOwner: Optional[String]
+    ClusterIdentifier: String | None
+    ResourceOwner: String | None
     EndpointName: String
     SubnetGroupName: String
-    VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
+    VpcSecurityGroupIds: VpcSecurityGroupIdList | None
 
 
-EventCategoriesList = List[String]
-SourceIdsList = List[String]
+EventCategoriesList = list[String]
+SourceIdsList = list[String]
 
 
 class CreateEventSubscriptionMessage(ServiceRequest):
     SubscriptionName: String
     SnsTopicArn: String
-    SourceType: Optional[String]
-    SourceIds: Optional[SourceIdsList]
-    EventCategories: Optional[EventCategoriesList]
-    Severity: Optional[String]
-    Enabled: Optional[BooleanOptional]
-    Tags: Optional[TagList]
+    SourceType: String | None
+    SourceIds: SourceIdsList | None
+    EventCategories: EventCategoriesList | None
+    Severity: String | None
+    Enabled: BooleanOptional | None
+    Tags: TagList | None
 
 
 class EventSubscription(TypedDict, total=False):
-    CustomerAwsId: Optional[String]
-    CustSubscriptionId: Optional[String]
-    SnsTopicArn: Optional[String]
-    Status: Optional[String]
-    SubscriptionCreationTime: Optional[TStamp]
-    SourceType: Optional[String]
-    SourceIdsList: Optional[SourceIdsList]
-    EventCategoriesList: Optional[EventCategoriesList]
-    Severity: Optional[String]
-    Enabled: Optional[Boolean]
-    Tags: Optional[TagList]
+    CustomerAwsId: String | None
+    CustSubscriptionId: String | None
+    SnsTopicArn: String | None
+    Status: String | None
+    SubscriptionCreationTime: TStamp | None
+    SourceType: String | None
+    SourceIdsList: SourceIdsList | None
+    EventCategoriesList: EventCategoriesList | None
+    Severity: String | None
+    Enabled: Boolean | None
+    Tags: TagList | None
 
 
 class CreateEventSubscriptionResult(TypedDict, total=False):
-    EventSubscription: Optional[EventSubscription]
+    EventSubscription: EventSubscription | None
 
 
 class CreateHsmClientCertificateMessage(ServiceRequest):
     HsmClientCertificateIdentifier: String
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class HsmClientCertificate(TypedDict, total=False):
-    HsmClientCertificateIdentifier: Optional[String]
-    HsmClientCertificatePublicKey: Optional[String]
-    Tags: Optional[TagList]
+    HsmClientCertificateIdentifier: String | None
+    HsmClientCertificatePublicKey: String | None
+    Tags: TagList | None
 
 
 class CreateHsmClientCertificateResult(TypedDict, total=False):
-    HsmClientCertificate: Optional[HsmClientCertificate]
+    HsmClientCertificate: HsmClientCertificate | None
 
 
 class CreateHsmConfigurationMessage(ServiceRequest):
@@ -1957,35 +1957,35 @@ class CreateHsmConfigurationMessage(ServiceRequest):
     HsmPartitionName: String
     HsmPartitionPassword: String
     HsmServerPublicCertificate: String
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class HsmConfiguration(TypedDict, total=False):
-    HsmConfigurationIdentifier: Optional[String]
-    Description: Optional[String]
-    HsmIpAddress: Optional[String]
-    HsmPartitionName: Optional[String]
-    Tags: Optional[TagList]
+    HsmConfigurationIdentifier: String | None
+    Description: String | None
+    HsmIpAddress: String | None
+    HsmPartitionName: String | None
+    Tags: TagList | None
 
 
 class CreateHsmConfigurationResult(TypedDict, total=False):
-    HsmConfiguration: Optional[HsmConfiguration]
+    HsmConfiguration: HsmConfiguration | None
 
 
-EncryptionContextMap = Dict[String, String]
+EncryptionContextMap = dict[String, String]
 
 
 class CreateIntegrationMessage(ServiceRequest):
     SourceArn: SourceArn
     TargetArn: TargetArn
     IntegrationName: IntegrationName
-    KMSKeyId: Optional[String]
-    TagList: Optional[TagList]
-    AdditionalEncryptionContext: Optional[EncryptionContextMap]
-    Description: Optional[IntegrationDescription]
+    KMSKeyId: String | None
+    TagList: TagList | None
+    AdditionalEncryptionContext: EncryptionContextMap | None
+    Description: IntegrationDescription | None
 
 
-TagKeyList = List[String]
+TagKeyList = list[String]
 
 
 class ReadWriteAccess(TypedDict, total=False):
@@ -1993,10 +1993,10 @@ class ReadWriteAccess(TypedDict, total=False):
 
 
 class S3AccessGrantsScopeUnion(TypedDict, total=False):
-    ReadWriteAccess: Optional[ReadWriteAccess]
+    ReadWriteAccess: ReadWriteAccess | None
 
 
-S3AccessGrantsServiceIntegrations = List[S3AccessGrantsScopeUnion]
+S3AccessGrantsServiceIntegrations = list[S3AccessGrantsScopeUnion]
 
 
 class LakeFormationQuery(TypedDict, total=False):
@@ -2004,49 +2004,49 @@ class LakeFormationQuery(TypedDict, total=False):
 
 
 class LakeFormationScopeUnion(TypedDict, total=False):
-    LakeFormationQuery: Optional[LakeFormationQuery]
+    LakeFormationQuery: LakeFormationQuery | None
 
 
-LakeFormationServiceIntegrations = List[LakeFormationScopeUnion]
+LakeFormationServiceIntegrations = list[LakeFormationScopeUnion]
 
 
 class ServiceIntegrationsUnion(TypedDict, total=False):
-    LakeFormation: Optional[LakeFormationServiceIntegrations]
-    S3AccessGrants: Optional[S3AccessGrantsServiceIntegrations]
+    LakeFormation: LakeFormationServiceIntegrations | None
+    S3AccessGrants: S3AccessGrantsServiceIntegrations | None
 
 
-ServiceIntegrationList = List[ServiceIntegrationsUnion]
+ServiceIntegrationList = list[ServiceIntegrationsUnion]
 
 
 class CreateRedshiftIdcApplicationMessage(ServiceRequest):
     IdcInstanceArn: String
     RedshiftIdcApplicationName: RedshiftIdcApplicationName
-    IdentityNamespace: Optional[IdentityNamespaceString]
+    IdentityNamespace: IdentityNamespaceString | None
     IdcDisplayName: IdcDisplayNameString
     IamRoleArn: String
-    AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
-    ServiceIntegrations: Optional[ServiceIntegrationList]
-    Tags: Optional[TagList]
-    SsoTagKeys: Optional[TagKeyList]
+    AuthorizedTokenIssuerList: AuthorizedTokenIssuerList | None
+    ServiceIntegrations: ServiceIntegrationList | None
+    Tags: TagList | None
+    SsoTagKeys: TagKeyList | None
 
 
 class RedshiftIdcApplication(TypedDict, total=False):
-    IdcInstanceArn: Optional[String]
-    RedshiftIdcApplicationName: Optional[RedshiftIdcApplicationName]
-    RedshiftIdcApplicationArn: Optional[String]
-    IdentityNamespace: Optional[IdentityNamespaceString]
-    IdcDisplayName: Optional[IdcDisplayNameString]
-    IamRoleArn: Optional[String]
-    IdcManagedApplicationArn: Optional[String]
-    IdcOnboardStatus: Optional[String]
-    AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
-    ServiceIntegrations: Optional[ServiceIntegrationList]
-    Tags: Optional[TagList]
-    SsoTagKeys: Optional[TagKeyList]
+    IdcInstanceArn: String | None
+    RedshiftIdcApplicationName: RedshiftIdcApplicationName | None
+    RedshiftIdcApplicationArn: String | None
+    IdentityNamespace: IdentityNamespaceString | None
+    IdcDisplayName: IdcDisplayNameString | None
+    IamRoleArn: String | None
+    IdcManagedApplicationArn: String | None
+    IdcOnboardStatus: String | None
+    AuthorizedTokenIssuerList: AuthorizedTokenIssuerList | None
+    ServiceIntegrations: ServiceIntegrationList | None
+    Tags: TagList | None
+    SsoTagKeys: TagKeyList | None
 
 
 class CreateRedshiftIdcApplicationResult(TypedDict, total=False):
-    RedshiftIdcApplication: Optional[RedshiftIdcApplication]
+    RedshiftIdcApplication: RedshiftIdcApplication | None
 
 
 class ResumeClusterMessage(ServiceRequest):
@@ -2059,18 +2059,18 @@ class PauseClusterMessage(ServiceRequest):
 
 class ResizeClusterMessage(ServiceRequest):
     ClusterIdentifier: String
-    ClusterType: Optional[String]
-    NodeType: Optional[String]
-    NumberOfNodes: Optional[IntegerOptional]
-    Classic: Optional[BooleanOptional]
-    ReservedNodeId: Optional[String]
-    TargetReservedNodeOfferingId: Optional[String]
+    ClusterType: String | None
+    NodeType: String | None
+    NumberOfNodes: IntegerOptional | None
+    Classic: BooleanOptional | None
+    ReservedNodeId: String | None
+    TargetReservedNodeOfferingId: String | None
 
 
 class ScheduledActionType(TypedDict, total=False):
-    ResizeCluster: Optional[ResizeClusterMessage]
-    PauseCluster: Optional[PauseClusterMessage]
-    ResumeCluster: Optional[ResumeClusterMessage]
+    ResizeCluster: ResizeClusterMessage | None
+    PauseCluster: PauseClusterMessage | None
+    ResumeCluster: ResumeClusterMessage | None
 
 
 class CreateScheduledActionMessage(ServiceRequest):
@@ -2078,38 +2078,38 @@ class CreateScheduledActionMessage(ServiceRequest):
     TargetAction: ScheduledActionType
     Schedule: String
     IamRole: String
-    ScheduledActionDescription: Optional[String]
-    StartTime: Optional[TStamp]
-    EndTime: Optional[TStamp]
-    Enable: Optional[BooleanOptional]
+    ScheduledActionDescription: String | None
+    StartTime: TStamp | None
+    EndTime: TStamp | None
+    Enable: BooleanOptional | None
 
 
 class CreateSnapshotCopyGrantMessage(ServiceRequest):
     SnapshotCopyGrantName: String
-    KmsKeyId: Optional[String]
-    Tags: Optional[TagList]
+    KmsKeyId: String | None
+    Tags: TagList | None
 
 
 class SnapshotCopyGrant(TypedDict, total=False):
-    SnapshotCopyGrantName: Optional[String]
-    KmsKeyId: Optional[String]
-    Tags: Optional[TagList]
+    SnapshotCopyGrantName: String | None
+    KmsKeyId: String | None
+    Tags: TagList | None
 
 
 class CreateSnapshotCopyGrantResult(TypedDict, total=False):
-    SnapshotCopyGrant: Optional[SnapshotCopyGrant]
+    SnapshotCopyGrant: SnapshotCopyGrant | None
 
 
-ScheduleDefinitionList = List[String]
+ScheduleDefinitionList = list[String]
 
 
 class CreateSnapshotScheduleMessage(ServiceRequest):
-    ScheduleDefinitions: Optional[ScheduleDefinitionList]
-    ScheduleIdentifier: Optional[String]
-    ScheduleDescription: Optional[String]
-    Tags: Optional[TagList]
-    DryRun: Optional[BooleanOptional]
-    NextInvocations: Optional[IntegerOptional]
+    ScheduleDefinitions: ScheduleDefinitionList | None
+    ScheduleIdentifier: String | None
+    ScheduleDescription: String | None
+    Tags: TagList | None
+    DryRun: BooleanOptional | None
+    NextInvocations: IntegerOptional | None
 
 
 class CreateTagsMessage(ServiceRequest):
@@ -2122,45 +2122,45 @@ class CreateUsageLimitMessage(ServiceRequest):
     FeatureType: UsageLimitFeatureType
     LimitType: UsageLimitLimitType
     Amount: Long
-    Period: Optional[UsageLimitPeriod]
-    BreachAction: Optional[UsageLimitBreachAction]
-    Tags: Optional[TagList]
+    Period: UsageLimitPeriod | None
+    BreachAction: UsageLimitBreachAction | None
+    Tags: TagList | None
 
 
 class CustomDomainAssociationsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    Associations: Optional[AssociationList]
+    Marker: String | None
+    Associations: AssociationList | None
 
 
 class CustomerStorageMessage(TypedDict, total=False):
-    TotalBackupSizeInMegaBytes: Optional[Double]
-    TotalProvisionedStorageInMegaBytes: Optional[Double]
+    TotalBackupSizeInMegaBytes: Double | None
+    TotalProvisionedStorageInMegaBytes: Double | None
 
 
 class DataShareAssociation(TypedDict, total=False):
-    ConsumerIdentifier: Optional[String]
-    Status: Optional[DataShareStatus]
-    ConsumerRegion: Optional[String]
-    CreatedDate: Optional[TStamp]
-    StatusChangeDate: Optional[TStamp]
-    ProducerAllowedWrites: Optional[BooleanOptional]
-    ConsumerAcceptedWrites: Optional[BooleanOptional]
+    ConsumerIdentifier: String | None
+    Status: DataShareStatus | None
+    ConsumerRegion: String | None
+    CreatedDate: TStamp | None
+    StatusChangeDate: TStamp | None
+    ProducerAllowedWrites: BooleanOptional | None
+    ConsumerAcceptedWrites: BooleanOptional | None
 
 
-DataShareAssociationList = List[DataShareAssociation]
+DataShareAssociationList = list[DataShareAssociation]
 
 
 class DataShare(TypedDict, total=False):
-    DataShareArn: Optional[String]
-    ProducerArn: Optional[String]
-    AllowPubliclyAccessibleConsumers: Optional[Boolean]
-    DataShareAssociations: Optional[DataShareAssociationList]
-    ManagedBy: Optional[String]
-    DataShareType: Optional[DataShareType]
+    DataShareArn: String | None
+    ProducerArn: String | None
+    AllowPubliclyAccessibleConsumers: Boolean | None
+    DataShareAssociations: DataShareAssociationList | None
+    ManagedBy: String | None
+    DataShareType: DataShareType | None
 
 
-DataShareList = List[DataShare]
-DbGroupList = List[String]
+DataShareList = list[DataShare]
+DbGroupList = list[String]
 
 
 class DeauthorizeDataShareMessage(ServiceRequest):
@@ -2169,9 +2169,9 @@ class DeauthorizeDataShareMessage(ServiceRequest):
 
 
 class DefaultClusterParameters(TypedDict, total=False):
-    ParameterGroupFamily: Optional[String]
-    Marker: Optional[String]
-    Parameters: Optional[ParametersList]
+    ParameterGroupFamily: String | None
+    Marker: String | None
+    Parameters: ParametersList | None
 
 
 class DeleteAuthenticationProfileMessage(ServiceRequest):
@@ -2179,14 +2179,14 @@ class DeleteAuthenticationProfileMessage(ServiceRequest):
 
 
 class DeleteAuthenticationProfileResult(TypedDict, total=False):
-    AuthenticationProfileName: Optional[AuthenticationProfileNameString]
+    AuthenticationProfileName: AuthenticationProfileNameString | None
 
 
 class DeleteClusterMessage(ServiceRequest):
     ClusterIdentifier: String
-    SkipFinalClusterSnapshot: Optional[Boolean]
-    FinalClusterSnapshotIdentifier: Optional[String]
-    FinalClusterSnapshotRetentionPeriod: Optional[IntegerOptional]
+    SkipFinalClusterSnapshot: Boolean | None
+    FinalClusterSnapshotIdentifier: String | None
+    FinalClusterSnapshotRetentionPeriod: IntegerOptional | None
 
 
 class DeleteClusterParameterGroupMessage(ServiceRequest):
@@ -2194,7 +2194,7 @@ class DeleteClusterParameterGroupMessage(ServiceRequest):
 
 
 class DeleteClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class DeleteClusterSecurityGroupMessage(ServiceRequest):
@@ -2202,7 +2202,7 @@ class DeleteClusterSecurityGroupMessage(ServiceRequest):
 
 
 class DeleteClusterSnapshotResult(TypedDict, total=False):
-    Snapshot: Optional[Snapshot]
+    Snapshot: Snapshot | None
 
 
 class DeleteClusterSubnetGroupMessage(ServiceRequest):
@@ -2273,8 +2273,8 @@ class ServerlessIdentifier(TypedDict, total=False):
 
 
 class NamespaceIdentifierUnion(TypedDict, total=False):
-    ServerlessIdentifier: Optional[ServerlessIdentifier]
-    ProvisionedIdentifier: Optional[ProvisionedIdentifier]
+    ServerlessIdentifier: ServerlessIdentifier | None
+    ProvisionedIdentifier: ProvisionedIdentifier | None
 
 
 class DeregisterNamespaceInputMessage(ServiceRequest):
@@ -2283,221 +2283,221 @@ class DeregisterNamespaceInputMessage(ServiceRequest):
 
 
 class DeregisterNamespaceOutputMessage(TypedDict, total=False):
-    Status: Optional[NamespaceRegistrationStatus]
+    Status: NamespaceRegistrationStatus | None
 
 
 class DescribeAccountAttributesMessage(ServiceRequest):
-    AttributeNames: Optional[AttributeNameList]
+    AttributeNames: AttributeNameList | None
 
 
 class DescribeAuthenticationProfilesMessage(ServiceRequest):
-    AuthenticationProfileName: Optional[AuthenticationProfileNameString]
+    AuthenticationProfileName: AuthenticationProfileNameString | None
 
 
 class DescribeAuthenticationProfilesResult(TypedDict, total=False):
-    AuthenticationProfiles: Optional[AuthenticationProfileList]
+    AuthenticationProfiles: AuthenticationProfileList | None
 
 
 class DescribeClusterDbRevisionsMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterIdentifier: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
-TagValueList = List[String]
+TagValueList = list[String]
 
 
 class DescribeClusterParameterGroupsMessage(ServiceRequest):
-    ParameterGroupName: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    ParameterGroupName: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeClusterParametersMessage(ServiceRequest):
     ParameterGroupName: String
-    Source: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    Source: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeClusterSecurityGroupsMessage(ServiceRequest):
-    ClusterSecurityGroupName: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    ClusterSecurityGroupName: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class SnapshotSortingEntity(TypedDict, total=False):
     Attribute: SnapshotAttributeToSortBy
-    SortOrder: Optional[SortByOrder]
+    SortOrder: SortByOrder | None
 
 
-SnapshotSortingEntityList = List[SnapshotSortingEntity]
+SnapshotSortingEntityList = list[SnapshotSortingEntity]
 
 
 class DescribeClusterSnapshotsMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    SnapshotIdentifier: Optional[String]
-    SnapshotArn: Optional[String]
-    SnapshotType: Optional[String]
-    StartTime: Optional[TStamp]
-    EndTime: Optional[TStamp]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    OwnerAccount: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
-    ClusterExists: Optional[BooleanOptional]
-    SortingEntities: Optional[SnapshotSortingEntityList]
+    ClusterIdentifier: String | None
+    SnapshotIdentifier: String | None
+    SnapshotArn: String | None
+    SnapshotType: String | None
+    StartTime: TStamp | None
+    EndTime: TStamp | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    OwnerAccount: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
+    ClusterExists: BooleanOptional | None
+    SortingEntities: SnapshotSortingEntityList | None
 
 
 class DescribeClusterSubnetGroupsMessage(ServiceRequest):
-    ClusterSubnetGroupName: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    ClusterSubnetGroupName: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeClusterTracksMessage(ServiceRequest):
-    MaintenanceTrackName: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    MaintenanceTrackName: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeClusterVersionsMessage(ServiceRequest):
-    ClusterVersion: Optional[String]
-    ClusterParameterGroupFamily: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterVersion: String | None
+    ClusterParameterGroupFamily: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeClustersMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    ClusterIdentifier: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeCustomDomainAssociationsMessage(ServiceRequest):
-    CustomDomainName: Optional[CustomDomainNameString]
-    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    CustomDomainName: CustomDomainNameString | None
+    CustomDomainCertificateArn: CustomDomainCertificateArnString | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeDataSharesForConsumerMessage(ServiceRequest):
-    ConsumerArn: Optional[String]
-    Status: Optional[DataShareStatusForConsumer]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ConsumerArn: String | None
+    Status: DataShareStatusForConsumer | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeDataSharesForConsumerResult(TypedDict, total=False):
-    DataShares: Optional[DataShareList]
-    Marker: Optional[String]
+    DataShares: DataShareList | None
+    Marker: String | None
 
 
 class DescribeDataSharesForProducerMessage(ServiceRequest):
-    ProducerArn: Optional[String]
-    Status: Optional[DataShareStatusForProducer]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ProducerArn: String | None
+    Status: DataShareStatusForProducer | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeDataSharesForProducerResult(TypedDict, total=False):
-    DataShares: Optional[DataShareList]
-    Marker: Optional[String]
+    DataShares: DataShareList | None
+    Marker: String | None
 
 
 class DescribeDataSharesMessage(ServiceRequest):
-    DataShareArn: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    DataShareArn: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeDataSharesResult(TypedDict, total=False):
-    DataShares: Optional[DataShareList]
-    Marker: Optional[String]
+    DataShares: DataShareList | None
+    Marker: String | None
 
 
 class DescribeDefaultClusterParametersMessage(ServiceRequest):
     ParameterGroupFamily: String
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeDefaultClusterParametersResult(TypedDict, total=False):
-    DefaultClusterParameters: Optional[DefaultClusterParameters]
+    DefaultClusterParameters: DefaultClusterParameters | None
 
 
 class DescribeEndpointAccessMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    ResourceOwner: Optional[String]
-    EndpointName: Optional[String]
-    VpcId: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterIdentifier: String | None
+    ResourceOwner: String | None
+    EndpointName: String | None
+    VpcId: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeEndpointAuthorizationMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    Account: Optional[String]
-    Grantee: Optional[BooleanOptional]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterIdentifier: String | None
+    Account: String | None
+    Grantee: BooleanOptional | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeEventCategoriesMessage(ServiceRequest):
-    SourceType: Optional[String]
+    SourceType: String | None
 
 
 class DescribeEventSubscriptionsMessage(ServiceRequest):
-    SubscriptionName: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    SubscriptionName: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeEventsMessage(ServiceRequest):
-    SourceIdentifier: Optional[String]
-    SourceType: Optional[SourceType]
-    StartTime: Optional[TStamp]
-    EndTime: Optional[TStamp]
-    Duration: Optional[IntegerOptional]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    SourceIdentifier: String | None
+    SourceType: SourceType | None
+    StartTime: TStamp | None
+    EndTime: TStamp | None
+    Duration: IntegerOptional | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeHsmClientCertificatesMessage(ServiceRequest):
-    HsmClientCertificateIdentifier: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    HsmClientCertificateIdentifier: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeHsmConfigurationsMessage(ServiceRequest):
-    HsmConfigurationIdentifier: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    HsmConfigurationIdentifier: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeInboundIntegrationsMessage(ServiceRequest):
-    IntegrationArn: Optional[InboundIntegrationArn]
-    TargetArn: Optional[TargetArn]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    IntegrationArn: InboundIntegrationArn | None
+    TargetArn: TargetArn | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
-DescribeIntegrationsFilterValueList = List[String]
+DescribeIntegrationsFilterValueList = list[String]
 
 
 class DescribeIntegrationsFilter(TypedDict, total=False):
@@ -2505,14 +2505,14 @@ class DescribeIntegrationsFilter(TypedDict, total=False):
     Values: DescribeIntegrationsFilterValueList
 
 
-DescribeIntegrationsFilterList = List[DescribeIntegrationsFilter]
+DescribeIntegrationsFilterList = list[DescribeIntegrationsFilter]
 
 
 class DescribeIntegrationsMessage(ServiceRequest):
-    IntegrationArn: Optional[IntegrationArn]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    Filters: Optional[DescribeIntegrationsFilterList]
+    IntegrationArn: IntegrationArn | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    Filters: DescribeIntegrationsFilterList | None
 
 
 class DescribeLoggingStatusMessage(ServiceRequest):
@@ -2520,94 +2520,94 @@ class DescribeLoggingStatusMessage(ServiceRequest):
 
 
 class NodeConfigurationOptionsFilter(TypedDict, total=False):
-    Name: Optional[NodeConfigurationOptionsFilterName]
-    Operator: Optional[OperatorType]
-    Values: Optional[ValueStringList]
+    Name: NodeConfigurationOptionsFilterName | None
+    Operator: OperatorType | None
+    Values: ValueStringList | None
 
 
-NodeConfigurationOptionsFilterList = List[NodeConfigurationOptionsFilter]
+NodeConfigurationOptionsFilterList = list[NodeConfigurationOptionsFilter]
 
 
 class DescribeNodeConfigurationOptionsMessage(ServiceRequest):
     ActionType: ActionType
-    ClusterIdentifier: Optional[String]
-    SnapshotIdentifier: Optional[String]
-    SnapshotArn: Optional[String]
-    OwnerAccount: Optional[String]
-    Filters: Optional[NodeConfigurationOptionsFilterList]
-    Marker: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
+    ClusterIdentifier: String | None
+    SnapshotIdentifier: String | None
+    SnapshotArn: String | None
+    OwnerAccount: String | None
+    Filters: NodeConfigurationOptionsFilterList | None
+    Marker: String | None
+    MaxRecords: IntegerOptional | None
 
 
 class DescribeOrderableClusterOptionsMessage(ServiceRequest):
-    ClusterVersion: Optional[String]
-    NodeType: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterVersion: String | None
+    NodeType: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribePartnersInputMessage(ServiceRequest):
     AccountId: PartnerIntegrationAccountId
     ClusterIdentifier: PartnerIntegrationClusterIdentifier
-    DatabaseName: Optional[PartnerIntegrationDatabaseName]
-    PartnerName: Optional[PartnerIntegrationPartnerName]
+    DatabaseName: PartnerIntegrationDatabaseName | None
+    PartnerName: PartnerIntegrationPartnerName | None
 
 
 class PartnerIntegrationInfo(TypedDict, total=False):
-    DatabaseName: Optional[PartnerIntegrationDatabaseName]
-    PartnerName: Optional[PartnerIntegrationPartnerName]
-    Status: Optional[PartnerIntegrationStatus]
-    StatusMessage: Optional[PartnerIntegrationStatusMessage]
-    CreatedAt: Optional[TStamp]
-    UpdatedAt: Optional[TStamp]
+    DatabaseName: PartnerIntegrationDatabaseName | None
+    PartnerName: PartnerIntegrationPartnerName | None
+    Status: PartnerIntegrationStatus | None
+    StatusMessage: PartnerIntegrationStatusMessage | None
+    CreatedAt: TStamp | None
+    UpdatedAt: TStamp | None
 
 
-PartnerIntegrationInfoList = List[PartnerIntegrationInfo]
+PartnerIntegrationInfoList = list[PartnerIntegrationInfo]
 
 
 class DescribePartnersOutputMessage(TypedDict, total=False):
-    PartnerIntegrationInfoList: Optional[PartnerIntegrationInfoList]
+    PartnerIntegrationInfoList: PartnerIntegrationInfoList | None
 
 
 class DescribeRedshiftIdcApplicationsMessage(ServiceRequest):
-    RedshiftIdcApplicationArn: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    RedshiftIdcApplicationArn: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
-RedshiftIdcApplicationList = List[RedshiftIdcApplication]
+RedshiftIdcApplicationList = list[RedshiftIdcApplication]
 
 
 class DescribeRedshiftIdcApplicationsResult(TypedDict, total=False):
-    RedshiftIdcApplications: Optional[RedshiftIdcApplicationList]
-    Marker: Optional[String]
+    RedshiftIdcApplications: RedshiftIdcApplicationList | None
+    Marker: String | None
 
 
 class DescribeReservedNodeExchangeStatusInputMessage(ServiceRequest):
-    ReservedNodeId: Optional[String]
-    ReservedNodeExchangeRequestId: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ReservedNodeId: String | None
+    ReservedNodeExchangeRequestId: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
-ReservedNodeExchangeStatusList = List[ReservedNodeExchangeStatus]
+ReservedNodeExchangeStatusList = list[ReservedNodeExchangeStatus]
 
 
 class DescribeReservedNodeExchangeStatusOutputMessage(TypedDict, total=False):
-    ReservedNodeExchangeStatusDetails: Optional[ReservedNodeExchangeStatusList]
-    Marker: Optional[String]
+    ReservedNodeExchangeStatusDetails: ReservedNodeExchangeStatusList | None
+    Marker: String | None
 
 
 class DescribeReservedNodeOfferingsMessage(ServiceRequest):
-    ReservedNodeOfferingId: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ReservedNodeOfferingId: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeReservedNodesMessage(ServiceRequest):
-    ReservedNodeId: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ReservedNodeId: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeResizeMessage(ServiceRequest):
@@ -2619,82 +2619,82 @@ class ScheduledActionFilter(TypedDict, total=False):
     Values: ValueStringList
 
 
-ScheduledActionFilterList = List[ScheduledActionFilter]
+ScheduledActionFilterList = list[ScheduledActionFilter]
 
 
 class DescribeScheduledActionsMessage(ServiceRequest):
-    ScheduledActionName: Optional[String]
-    TargetActionType: Optional[ScheduledActionTypeValues]
-    StartTime: Optional[TStamp]
-    EndTime: Optional[TStamp]
-    Active: Optional[BooleanOptional]
-    Filters: Optional[ScheduledActionFilterList]
-    Marker: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
+    ScheduledActionName: String | None
+    TargetActionType: ScheduledActionTypeValues | None
+    StartTime: TStamp | None
+    EndTime: TStamp | None
+    Active: BooleanOptional | None
+    Filters: ScheduledActionFilterList | None
+    Marker: String | None
+    MaxRecords: IntegerOptional | None
 
 
 class DescribeSnapshotCopyGrantsMessage(ServiceRequest):
-    SnapshotCopyGrantName: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    SnapshotCopyGrantName: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeSnapshotSchedulesMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    ScheduleIdentifier: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
-    Marker: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
+    ClusterIdentifier: String | None
+    ScheduleIdentifier: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
+    Marker: String | None
+    MaxRecords: IntegerOptional | None
 
 
-ScheduledSnapshotTimeList = List[TStamp]
+ScheduledSnapshotTimeList = list[TStamp]
 
 
 class SnapshotSchedule(TypedDict, total=False):
-    ScheduleDefinitions: Optional[ScheduleDefinitionList]
-    ScheduleIdentifier: Optional[String]
-    ScheduleDescription: Optional[String]
-    Tags: Optional[TagList]
-    NextInvocations: Optional[ScheduledSnapshotTimeList]
-    AssociatedClusterCount: Optional[IntegerOptional]
-    AssociatedClusters: Optional[AssociatedClusterList]
+    ScheduleDefinitions: ScheduleDefinitionList | None
+    ScheduleIdentifier: String | None
+    ScheduleDescription: String | None
+    Tags: TagList | None
+    NextInvocations: ScheduledSnapshotTimeList | None
+    AssociatedClusterCount: IntegerOptional | None
+    AssociatedClusters: AssociatedClusterList | None
 
 
-SnapshotScheduleList = List[SnapshotSchedule]
+SnapshotScheduleList = list[SnapshotSchedule]
 
 
 class DescribeSnapshotSchedulesOutputMessage(TypedDict, total=False):
-    SnapshotSchedules: Optional[SnapshotScheduleList]
-    Marker: Optional[String]
+    SnapshotSchedules: SnapshotScheduleList | None
+    Marker: String | None
 
 
 class DescribeTableRestoreStatusMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    TableRestoreRequestId: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterIdentifier: String | None
+    TableRestoreRequestId: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class DescribeTagsMessage(ServiceRequest):
-    ResourceName: Optional[String]
-    ResourceType: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    ResourceName: String | None
+    ResourceType: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DescribeUsageLimitsMessage(ServiceRequest):
-    UsageLimitId: Optional[String]
-    ClusterIdentifier: Optional[String]
-    FeatureType: Optional[UsageLimitFeatureType]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
-    TagKeys: Optional[TagKeyList]
-    TagValues: Optional[TagValueList]
+    UsageLimitId: String | None
+    ClusterIdentifier: String | None
+    FeatureType: UsageLimitFeatureType | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
+    TagKeys: TagKeyList | None
+    TagValues: TagValueList | None
 
 
 class DisableLoggingMessage(ServiceRequest):
@@ -2706,138 +2706,138 @@ class DisableSnapshotCopyMessage(ServiceRequest):
 
 
 class DisableSnapshotCopyResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class DisassociateDataShareConsumerMessage(ServiceRequest):
     DataShareArn: String
-    DisassociateEntireAccount: Optional[BooleanOptional]
-    ConsumerArn: Optional[String]
-    ConsumerRegion: Optional[String]
+    DisassociateEntireAccount: BooleanOptional | None
+    ConsumerArn: String | None
+    ConsumerRegion: String | None
 
 
 class SupportedOperation(TypedDict, total=False):
-    OperationName: Optional[String]
+    OperationName: String | None
 
 
-SupportedOperationList = List[SupportedOperation]
+SupportedOperationList = list[SupportedOperation]
 
 
 class UpdateTarget(TypedDict, total=False):
-    MaintenanceTrackName: Optional[String]
-    DatabaseVersion: Optional[String]
-    SupportedOperations: Optional[SupportedOperationList]
+    MaintenanceTrackName: String | None
+    DatabaseVersion: String | None
+    SupportedOperations: SupportedOperationList | None
 
 
-EligibleTracksToUpdateList = List[UpdateTarget]
-LogTypeList = List[String]
+EligibleTracksToUpdateList = list[UpdateTarget]
+LogTypeList = list[String]
 
 
 class EnableLoggingMessage(ServiceRequest):
     ClusterIdentifier: String
-    BucketName: Optional[String]
-    S3KeyPrefix: Optional[S3KeyPrefixValue]
-    LogDestinationType: Optional[LogDestinationType]
-    LogExports: Optional[LogTypeList]
+    BucketName: String | None
+    S3KeyPrefix: S3KeyPrefixValue | None
+    LogDestinationType: LogDestinationType | None
+    LogExports: LogTypeList | None
 
 
 class EnableSnapshotCopyMessage(ServiceRequest):
     ClusterIdentifier: String
     DestinationRegion: String
-    RetentionPeriod: Optional[IntegerOptional]
-    SnapshotCopyGrantName: Optional[String]
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
+    RetentionPeriod: IntegerOptional | None
+    SnapshotCopyGrantName: String | None
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
 
 
 class EnableSnapshotCopyResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class EndpointAccess(TypedDict, total=False):
-    ClusterIdentifier: Optional[String]
-    ResourceOwner: Optional[String]
-    SubnetGroupName: Optional[String]
-    EndpointStatus: Optional[String]
-    EndpointName: Optional[String]
-    EndpointCreateTime: Optional[TStamp]
-    Port: Optional[Integer]
-    Address: Optional[String]
-    VpcSecurityGroups: Optional[VpcSecurityGroupMembershipList]
-    VpcEndpoint: Optional[VpcEndpoint]
+    ClusterIdentifier: String | None
+    ResourceOwner: String | None
+    SubnetGroupName: String | None
+    EndpointStatus: String | None
+    EndpointName: String | None
+    EndpointCreateTime: TStamp | None
+    Port: Integer | None
+    Address: String | None
+    VpcSecurityGroups: VpcSecurityGroupMembershipList | None
+    VpcEndpoint: VpcEndpoint | None
 
 
-EndpointAccesses = List[EndpointAccess]
+EndpointAccesses = list[EndpointAccess]
 
 
 class EndpointAccessList(TypedDict, total=False):
-    EndpointAccessList: Optional[EndpointAccesses]
-    Marker: Optional[String]
+    EndpointAccessList: EndpointAccesses | None
+    Marker: String | None
 
 
 class EndpointAuthorization(TypedDict, total=False):
-    Grantor: Optional[String]
-    Grantee: Optional[String]
-    ClusterIdentifier: Optional[String]
-    AuthorizeTime: Optional[TStamp]
-    ClusterStatus: Optional[String]
-    Status: Optional[AuthorizationStatus]
-    AllowedAllVPCs: Optional[Boolean]
-    AllowedVPCs: Optional[VpcIdentifierList]
-    EndpointCount: Optional[Integer]
+    Grantor: String | None
+    Grantee: String | None
+    ClusterIdentifier: String | None
+    AuthorizeTime: TStamp | None
+    ClusterStatus: String | None
+    Status: AuthorizationStatus | None
+    AllowedAllVPCs: Boolean | None
+    AllowedVPCs: VpcIdentifierList | None
+    EndpointCount: Integer | None
 
 
-EndpointAuthorizations = List[EndpointAuthorization]
+EndpointAuthorizations = list[EndpointAuthorization]
 
 
 class EndpointAuthorizationList(TypedDict, total=False):
-    EndpointAuthorizationList: Optional[EndpointAuthorizations]
-    Marker: Optional[String]
+    EndpointAuthorizationList: EndpointAuthorizations | None
+    Marker: String | None
 
 
 class Event(TypedDict, total=False):
-    SourceIdentifier: Optional[String]
-    SourceType: Optional[SourceType]
-    Message: Optional[String]
-    EventCategories: Optional[EventCategoriesList]
-    Severity: Optional[String]
-    Date: Optional[TStamp]
-    EventId: Optional[String]
+    SourceIdentifier: String | None
+    SourceType: SourceType | None
+    Message: String | None
+    EventCategories: EventCategoriesList | None
+    Severity: String | None
+    Date: TStamp | None
+    EventId: String | None
 
 
 class EventInfoMap(TypedDict, total=False):
-    EventId: Optional[String]
-    EventCategories: Optional[EventCategoriesList]
-    EventDescription: Optional[String]
-    Severity: Optional[String]
+    EventId: String | None
+    EventCategories: EventCategoriesList | None
+    EventDescription: String | None
+    Severity: String | None
 
 
-EventInfoMapList = List[EventInfoMap]
+EventInfoMapList = list[EventInfoMap]
 
 
 class EventCategoriesMap(TypedDict, total=False):
-    SourceType: Optional[String]
-    Events: Optional[EventInfoMapList]
+    SourceType: String | None
+    Events: EventInfoMapList | None
 
 
-EventCategoriesMapList = List[EventCategoriesMap]
+EventCategoriesMapList = list[EventCategoriesMap]
 
 
 class EventCategoriesMessage(TypedDict, total=False):
-    EventCategoriesMapList: Optional[EventCategoriesMapList]
+    EventCategoriesMapList: EventCategoriesMapList | None
 
 
-EventList = List[Event]
-EventSubscriptionsList = List[EventSubscription]
+EventList = list[Event]
+EventSubscriptionsList = list[EventSubscription]
 
 
 class EventSubscriptionsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    EventSubscriptionsList: Optional[EventSubscriptionsList]
+    Marker: String | None
+    EventSubscriptionsList: EventSubscriptionsList | None
 
 
 class EventsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    Events: Optional[EventList]
+    Marker: String | None
+    Events: EventList | None
 
 
 class FailoverPrimaryComputeInputMessage(ServiceRequest):
@@ -2845,72 +2845,72 @@ class FailoverPrimaryComputeInputMessage(ServiceRequest):
 
 
 class FailoverPrimaryComputeResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class GetClusterCredentialsMessage(ServiceRequest):
     DbUser: String
-    DbName: Optional[String]
-    ClusterIdentifier: Optional[String]
-    DurationSeconds: Optional[IntegerOptional]
-    AutoCreate: Optional[BooleanOptional]
-    DbGroups: Optional[DbGroupList]
-    CustomDomainName: Optional[String]
+    DbName: String | None
+    ClusterIdentifier: String | None
+    DurationSeconds: IntegerOptional | None
+    AutoCreate: BooleanOptional | None
+    DbGroups: DbGroupList | None
+    CustomDomainName: String | None
 
 
 class GetClusterCredentialsWithIAMMessage(ServiceRequest):
-    DbName: Optional[String]
-    ClusterIdentifier: Optional[String]
-    DurationSeconds: Optional[IntegerOptional]
-    CustomDomainName: Optional[String]
+    DbName: String | None
+    ClusterIdentifier: String | None
+    DurationSeconds: IntegerOptional | None
+    CustomDomainName: String | None
 
 
 class GetReservedNodeExchangeConfigurationOptionsInputMessage(ServiceRequest):
     ActionType: ReservedNodeExchangeActionType
-    ClusterIdentifier: Optional[String]
-    SnapshotIdentifier: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterIdentifier: String | None
+    SnapshotIdentifier: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class ReservedNodeOffering(TypedDict, total=False):
-    ReservedNodeOfferingId: Optional[String]
-    NodeType: Optional[String]
-    Duration: Optional[Integer]
-    FixedPrice: Optional[Double]
-    UsagePrice: Optional[Double]
-    CurrencyCode: Optional[String]
-    OfferingType: Optional[String]
-    RecurringCharges: Optional[RecurringChargeList]
-    ReservedNodeOfferingType: Optional[ReservedNodeOfferingType]
+    ReservedNodeOfferingId: String | None
+    NodeType: String | None
+    Duration: Integer | None
+    FixedPrice: Double | None
+    UsagePrice: Double | None
+    CurrencyCode: String | None
+    OfferingType: String | None
+    RecurringCharges: RecurringChargeList | None
+    ReservedNodeOfferingType: ReservedNodeOfferingType | None
 
 
 class ReservedNodeConfigurationOption(TypedDict, total=False):
-    SourceReservedNode: Optional[ReservedNode]
-    TargetReservedNodeCount: Optional[Integer]
-    TargetReservedNodeOffering: Optional[ReservedNodeOffering]
+    SourceReservedNode: ReservedNode | None
+    TargetReservedNodeCount: Integer | None
+    TargetReservedNodeOffering: ReservedNodeOffering | None
 
 
-ReservedNodeConfigurationOptionList = List[ReservedNodeConfigurationOption]
+ReservedNodeConfigurationOptionList = list[ReservedNodeConfigurationOption]
 
 
 class GetReservedNodeExchangeConfigurationOptionsOutputMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ReservedNodeConfigurationOptionList: Optional[ReservedNodeConfigurationOptionList]
+    Marker: String | None
+    ReservedNodeConfigurationOptionList: ReservedNodeConfigurationOptionList | None
 
 
 class GetReservedNodeExchangeOfferingsInputMessage(ServiceRequest):
     ReservedNodeId: String
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
-ReservedNodeOfferingList = List[ReservedNodeOffering]
+ReservedNodeOfferingList = list[ReservedNodeOffering]
 
 
 class GetReservedNodeExchangeOfferingsOutputMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ReservedNodeOfferings: Optional[ReservedNodeOfferingList]
+    Marker: String | None
+    ReservedNodeOfferings: ReservedNodeOfferingList | None
 
 
 class GetResourcePolicyMessage(ServiceRequest):
@@ -2918,154 +2918,154 @@ class GetResourcePolicyMessage(ServiceRequest):
 
 
 class ResourcePolicy(TypedDict, total=False):
-    ResourceArn: Optional[String]
-    Policy: Optional[String]
+    ResourceArn: String | None
+    Policy: String | None
 
 
 class GetResourcePolicyResult(TypedDict, total=False):
-    ResourcePolicy: Optional[ResourcePolicy]
+    ResourcePolicy: ResourcePolicy | None
 
 
-HsmClientCertificateList = List[HsmClientCertificate]
+HsmClientCertificateList = list[HsmClientCertificate]
 
 
 class HsmClientCertificateMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    HsmClientCertificates: Optional[HsmClientCertificateList]
+    Marker: String | None
+    HsmClientCertificates: HsmClientCertificateList | None
 
 
-HsmConfigurationList = List[HsmConfiguration]
+HsmConfigurationList = list[HsmConfiguration]
 
 
 class HsmConfigurationMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    HsmConfigurations: Optional[HsmConfigurationList]
+    Marker: String | None
+    HsmConfigurations: HsmConfigurationList | None
 
 
-ImportTablesCompleted = List[String]
-ImportTablesInProgress = List[String]
-ImportTablesNotStarted = List[String]
+ImportTablesCompleted = list[String]
+ImportTablesInProgress = list[String]
+ImportTablesNotStarted = list[String]
 
 
 class IntegrationError(TypedDict, total=False):
     ErrorCode: String
-    ErrorMessage: Optional[String]
+    ErrorMessage: String | None
 
 
-IntegrationErrorList = List[IntegrationError]
+IntegrationErrorList = list[IntegrationError]
 
 
 class InboundIntegration(TypedDict, total=False):
-    IntegrationArn: Optional[InboundIntegrationArn]
-    SourceArn: Optional[String]
-    TargetArn: Optional[TargetArn]
-    Status: Optional[ZeroETLIntegrationStatus]
-    Errors: Optional[IntegrationErrorList]
-    CreateTime: Optional[TStamp]
+    IntegrationArn: InboundIntegrationArn | None
+    SourceArn: String | None
+    TargetArn: TargetArn | None
+    Status: ZeroETLIntegrationStatus | None
+    Errors: IntegrationErrorList | None
+    CreateTime: TStamp | None
 
 
-InboundIntegrationList = List[InboundIntegration]
+InboundIntegrationList = list[InboundIntegration]
 
 
 class InboundIntegrationsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    InboundIntegrations: Optional[InboundIntegrationList]
+    Marker: String | None
+    InboundIntegrations: InboundIntegrationList | None
 
 
 class Integration(TypedDict, total=False):
-    IntegrationArn: Optional[IntegrationArn]
-    IntegrationName: Optional[IntegrationName]
-    SourceArn: Optional[SourceArn]
-    TargetArn: Optional[TargetArn]
-    Status: Optional[ZeroETLIntegrationStatus]
-    Errors: Optional[IntegrationErrorList]
-    CreateTime: Optional[TStamp]
-    Description: Optional[Description]
-    KMSKeyId: Optional[String]
-    AdditionalEncryptionContext: Optional[EncryptionContextMap]
-    Tags: Optional[TagList]
+    IntegrationArn: IntegrationArn | None
+    IntegrationName: IntegrationName | None
+    SourceArn: SourceArn | None
+    TargetArn: TargetArn | None
+    Status: ZeroETLIntegrationStatus | None
+    Errors: IntegrationErrorList | None
+    CreateTime: TStamp | None
+    Description: Description | None
+    KMSKeyId: String | None
+    AdditionalEncryptionContext: EncryptionContextMap | None
+    Tags: TagList | None
 
 
-IntegrationList = List[Integration]
+IntegrationList = list[Integration]
 
 
 class IntegrationsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    Integrations: Optional[IntegrationList]
+    Marker: String | None
+    Integrations: IntegrationList | None
 
 
 class ListRecommendationsMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    NamespaceArn: Optional[String]
-    MaxRecords: Optional[IntegerOptional]
-    Marker: Optional[String]
+    ClusterIdentifier: String | None
+    NamespaceArn: String | None
+    MaxRecords: IntegerOptional | None
+    Marker: String | None
 
 
 class ReferenceLink(TypedDict, total=False):
-    Text: Optional[String]
-    Link: Optional[String]
+    Text: String | None
+    Link: String | None
 
 
-ReferenceLinkList = List[ReferenceLink]
+ReferenceLinkList = list[ReferenceLink]
 
 
 class RecommendedAction(TypedDict, total=False):
-    Text: Optional[String]
-    Database: Optional[String]
-    Command: Optional[String]
-    Type: Optional[RecommendedActionType]
+    Text: String | None
+    Database: String | None
+    Command: String | None
+    Type: RecommendedActionType | None
 
 
-RecommendedActionList = List[RecommendedAction]
+RecommendedActionList = list[RecommendedAction]
 
 
 class Recommendation(TypedDict, total=False):
-    Id: Optional[String]
-    ClusterIdentifier: Optional[String]
-    NamespaceArn: Optional[String]
-    CreatedAt: Optional[TStamp]
-    RecommendationType: Optional[String]
-    Title: Optional[String]
-    Description: Optional[String]
-    Observation: Optional[String]
-    ImpactRanking: Optional[ImpactRankingType]
-    RecommendationText: Optional[String]
-    RecommendedActions: Optional[RecommendedActionList]
-    ReferenceLinks: Optional[ReferenceLinkList]
+    Id: String | None
+    ClusterIdentifier: String | None
+    NamespaceArn: String | None
+    CreatedAt: TStamp | None
+    RecommendationType: String | None
+    Title: String | None
+    Description: String | None
+    Observation: String | None
+    ImpactRanking: ImpactRankingType | None
+    RecommendationText: String | None
+    RecommendedActions: RecommendedActionList | None
+    ReferenceLinks: ReferenceLinkList | None
 
 
-RecommendationList = List[Recommendation]
+RecommendationList = list[Recommendation]
 
 
 class ListRecommendationsResult(TypedDict, total=False):
-    Recommendations: Optional[RecommendationList]
-    Marker: Optional[String]
+    Recommendations: RecommendationList | None
+    Marker: String | None
 
 
 class LoggingStatus(TypedDict, total=False):
-    LoggingEnabled: Optional[Boolean]
-    BucketName: Optional[String]
-    S3KeyPrefix: Optional[S3KeyPrefixValue]
-    LastSuccessfulDeliveryTime: Optional[TStamp]
-    LastFailureTime: Optional[TStamp]
-    LastFailureMessage: Optional[String]
-    LogDestinationType: Optional[LogDestinationType]
-    LogExports: Optional[LogTypeList]
+    LoggingEnabled: Boolean | None
+    BucketName: String | None
+    S3KeyPrefix: S3KeyPrefixValue | None
+    LastSuccessfulDeliveryTime: TStamp | None
+    LastFailureTime: TStamp | None
+    LastFailureMessage: String | None
+    LogDestinationType: LogDestinationType | None
+    LogExports: LogTypeList | None
 
 
 class MaintenanceTrack(TypedDict, total=False):
-    MaintenanceTrackName: Optional[String]
-    DatabaseVersion: Optional[String]
-    UpdateTargets: Optional[EligibleTracksToUpdateList]
+    MaintenanceTrackName: String | None
+    DatabaseVersion: String | None
+    UpdateTargets: EligibleTracksToUpdateList | None
 
 
 class ModifyAquaInputMessage(ServiceRequest):
     ClusterIdentifier: String
-    AquaConfigurationStatus: Optional[AquaConfigurationStatus]
+    AquaConfigurationStatus: AquaConfigurationStatus | None
 
 
 class ModifyAquaOutputMessage(TypedDict, total=False):
-    AquaConfiguration: Optional[AquaConfiguration]
+    AquaConfiguration: AquaConfiguration | None
 
 
 class ModifyAuthenticationProfileMessage(ServiceRequest):
@@ -3074,8 +3074,8 @@ class ModifyAuthenticationProfileMessage(ServiceRequest):
 
 
 class ModifyAuthenticationProfileResult(TypedDict, total=False):
-    AuthenticationProfileName: Optional[AuthenticationProfileNameString]
-    AuthenticationProfileContent: Optional[String]
+    AuthenticationProfileName: AuthenticationProfileNameString | None
+    AuthenticationProfileContent: String | None
 
 
 class ModifyClusterDbRevisionMessage(ServiceRequest):
@@ -3084,63 +3084,63 @@ class ModifyClusterDbRevisionMessage(ServiceRequest):
 
 
 class ModifyClusterDbRevisionResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class ModifyClusterIamRolesMessage(ServiceRequest):
     ClusterIdentifier: String
-    AddIamRoles: Optional[IamRoleArnList]
-    RemoveIamRoles: Optional[IamRoleArnList]
-    DefaultIamRoleArn: Optional[String]
+    AddIamRoles: IamRoleArnList | None
+    RemoveIamRoles: IamRoleArnList | None
+    DefaultIamRoleArn: String | None
 
 
 class ModifyClusterIamRolesResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class ModifyClusterMaintenanceMessage(ServiceRequest):
     ClusterIdentifier: String
-    DeferMaintenance: Optional[BooleanOptional]
-    DeferMaintenanceIdentifier: Optional[String]
-    DeferMaintenanceStartTime: Optional[TStamp]
-    DeferMaintenanceEndTime: Optional[TStamp]
-    DeferMaintenanceDuration: Optional[IntegerOptional]
+    DeferMaintenance: BooleanOptional | None
+    DeferMaintenanceIdentifier: String | None
+    DeferMaintenanceStartTime: TStamp | None
+    DeferMaintenanceEndTime: TStamp | None
+    DeferMaintenanceDuration: IntegerOptional | None
 
 
 class ModifyClusterMaintenanceResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class ModifyClusterMessage(ServiceRequest):
     ClusterIdentifier: String
-    ClusterType: Optional[String]
-    NodeType: Optional[String]
-    NumberOfNodes: Optional[IntegerOptional]
-    ClusterSecurityGroups: Optional[ClusterSecurityGroupNameList]
-    VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
-    MasterUserPassword: Optional[SensitiveString]
-    ClusterParameterGroupName: Optional[String]
-    AutomatedSnapshotRetentionPeriod: Optional[IntegerOptional]
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    PreferredMaintenanceWindow: Optional[String]
-    ClusterVersion: Optional[String]
-    AllowVersionUpgrade: Optional[BooleanOptional]
-    HsmClientCertificateIdentifier: Optional[String]
-    HsmConfigurationIdentifier: Optional[String]
-    NewClusterIdentifier: Optional[String]
-    PubliclyAccessible: Optional[BooleanOptional]
-    ElasticIp: Optional[String]
-    EnhancedVpcRouting: Optional[BooleanOptional]
-    MaintenanceTrackName: Optional[String]
-    Encrypted: Optional[BooleanOptional]
-    KmsKeyId: Optional[String]
-    AvailabilityZoneRelocation: Optional[BooleanOptional]
-    AvailabilityZone: Optional[String]
-    Port: Optional[IntegerOptional]
-    ManageMasterPassword: Optional[BooleanOptional]
-    MasterPasswordSecretKmsKeyId: Optional[String]
-    IpAddressType: Optional[String]
-    MultiAZ: Optional[BooleanOptional]
+    ClusterType: String | None
+    NodeType: String | None
+    NumberOfNodes: IntegerOptional | None
+    ClusterSecurityGroups: ClusterSecurityGroupNameList | None
+    VpcSecurityGroupIds: VpcSecurityGroupIdList | None
+    MasterUserPassword: SensitiveString | None
+    ClusterParameterGroupName: String | None
+    AutomatedSnapshotRetentionPeriod: IntegerOptional | None
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    PreferredMaintenanceWindow: String | None
+    ClusterVersion: String | None
+    AllowVersionUpgrade: BooleanOptional | None
+    HsmClientCertificateIdentifier: String | None
+    HsmConfigurationIdentifier: String | None
+    NewClusterIdentifier: String | None
+    PubliclyAccessible: BooleanOptional | None
+    ElasticIp: String | None
+    EnhancedVpcRouting: BooleanOptional | None
+    MaintenanceTrackName: String | None
+    Encrypted: BooleanOptional | None
+    KmsKeyId: String | None
+    AvailabilityZoneRelocation: BooleanOptional | None
+    AvailabilityZone: String | None
+    Port: IntegerOptional | None
+    ManageMasterPassword: BooleanOptional | None
+    MasterPasswordSecretKmsKeyId: String | None
+    IpAddressType: String | None
+    MultiAZ: BooleanOptional | None
 
 
 class ModifyClusterParameterGroupMessage(ServiceRequest):
@@ -3149,33 +3149,33 @@ class ModifyClusterParameterGroupMessage(ServiceRequest):
 
 
 class ModifyClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class ModifyClusterSnapshotMessage(ServiceRequest):
     SnapshotIdentifier: String
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    Force: Optional[Boolean]
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    Force: Boolean | None
 
 
 class ModifyClusterSnapshotResult(TypedDict, total=False):
-    Snapshot: Optional[Snapshot]
+    Snapshot: Snapshot | None
 
 
 class ModifyClusterSnapshotScheduleMessage(ServiceRequest):
     ClusterIdentifier: String
-    ScheduleIdentifier: Optional[String]
-    DisassociateSchedule: Optional[BooleanOptional]
+    ScheduleIdentifier: String | None
+    DisassociateSchedule: BooleanOptional | None
 
 
 class ModifyClusterSubnetGroupMessage(ServiceRequest):
     ClusterSubnetGroupName: String
-    Description: Optional[String]
+    Description: String | None
     SubnetIds: SubnetIdentifierList
 
 
 class ModifyClusterSubnetGroupResult(TypedDict, total=False):
-    ClusterSubnetGroup: Optional[ClusterSubnetGroup]
+    ClusterSubnetGroup: ClusterSubnetGroup | None
 
 
 class ModifyCustomDomainAssociationMessage(ServiceRequest):
@@ -3185,69 +3185,69 @@ class ModifyCustomDomainAssociationMessage(ServiceRequest):
 
 
 class ModifyCustomDomainAssociationResult(TypedDict, total=False):
-    CustomDomainName: Optional[CustomDomainNameString]
-    CustomDomainCertificateArn: Optional[CustomDomainCertificateArnString]
-    ClusterIdentifier: Optional[String]
-    CustomDomainCertExpiryTime: Optional[String]
+    CustomDomainName: CustomDomainNameString | None
+    CustomDomainCertificateArn: CustomDomainCertificateArnString | None
+    ClusterIdentifier: String | None
+    CustomDomainCertExpiryTime: String | None
 
 
 class ModifyEndpointAccessMessage(ServiceRequest):
     EndpointName: String
-    VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
+    VpcSecurityGroupIds: VpcSecurityGroupIdList | None
 
 
 class ModifyEventSubscriptionMessage(ServiceRequest):
     SubscriptionName: String
-    SnsTopicArn: Optional[String]
-    SourceType: Optional[String]
-    SourceIds: Optional[SourceIdsList]
-    EventCategories: Optional[EventCategoriesList]
-    Severity: Optional[String]
-    Enabled: Optional[BooleanOptional]
+    SnsTopicArn: String | None
+    SourceType: String | None
+    SourceIds: SourceIdsList | None
+    EventCategories: EventCategoriesList | None
+    Severity: String | None
+    Enabled: BooleanOptional | None
 
 
 class ModifyEventSubscriptionResult(TypedDict, total=False):
-    EventSubscription: Optional[EventSubscription]
+    EventSubscription: EventSubscription | None
 
 
 class ModifyIntegrationMessage(ServiceRequest):
     IntegrationArn: IntegrationArn
-    Description: Optional[IntegrationDescription]
-    IntegrationName: Optional[IntegrationName]
+    Description: IntegrationDescription | None
+    IntegrationName: IntegrationName | None
 
 
 class ModifyRedshiftIdcApplicationMessage(ServiceRequest):
     RedshiftIdcApplicationArn: String
-    IdentityNamespace: Optional[IdentityNamespaceString]
-    IamRoleArn: Optional[String]
-    IdcDisplayName: Optional[IdcDisplayNameString]
-    AuthorizedTokenIssuerList: Optional[AuthorizedTokenIssuerList]
-    ServiceIntegrations: Optional[ServiceIntegrationList]
+    IdentityNamespace: IdentityNamespaceString | None
+    IamRoleArn: String | None
+    IdcDisplayName: IdcDisplayNameString | None
+    AuthorizedTokenIssuerList: AuthorizedTokenIssuerList | None
+    ServiceIntegrations: ServiceIntegrationList | None
 
 
 class ModifyRedshiftIdcApplicationResult(TypedDict, total=False):
-    RedshiftIdcApplication: Optional[RedshiftIdcApplication]
+    RedshiftIdcApplication: RedshiftIdcApplication | None
 
 
 class ModifyScheduledActionMessage(ServiceRequest):
     ScheduledActionName: String
-    TargetAction: Optional[ScheduledActionType]
-    Schedule: Optional[String]
-    IamRole: Optional[String]
-    ScheduledActionDescription: Optional[String]
-    StartTime: Optional[TStamp]
-    EndTime: Optional[TStamp]
-    Enable: Optional[BooleanOptional]
+    TargetAction: ScheduledActionType | None
+    Schedule: String | None
+    IamRole: String | None
+    ScheduledActionDescription: String | None
+    StartTime: TStamp | None
+    EndTime: TStamp | None
+    Enable: BooleanOptional | None
 
 
 class ModifySnapshotCopyRetentionPeriodMessage(ServiceRequest):
     ClusterIdentifier: String
     RetentionPeriod: Integer
-    Manual: Optional[Boolean]
+    Manual: Boolean | None
 
 
 class ModifySnapshotCopyRetentionPeriodResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class ModifySnapshotScheduleMessage(ServiceRequest):
@@ -3257,38 +3257,38 @@ class ModifySnapshotScheduleMessage(ServiceRequest):
 
 class ModifyUsageLimitMessage(ServiceRequest):
     UsageLimitId: String
-    Amount: Optional[LongOptional]
-    BreachAction: Optional[UsageLimitBreachAction]
+    Amount: LongOptional | None
+    BreachAction: UsageLimitBreachAction | None
 
 
 class NodeConfigurationOption(TypedDict, total=False):
-    NodeType: Optional[String]
-    NumberOfNodes: Optional[Integer]
-    EstimatedDiskUtilizationPercent: Optional[DoubleOptional]
-    Mode: Optional[Mode]
+    NodeType: String | None
+    NumberOfNodes: Integer | None
+    EstimatedDiskUtilizationPercent: DoubleOptional | None
+    Mode: Mode | None
 
 
-NodeConfigurationOptionList = List[NodeConfigurationOption]
+NodeConfigurationOptionList = list[NodeConfigurationOption]
 
 
 class NodeConfigurationOptionsMessage(TypedDict, total=False):
-    NodeConfigurationOptionList: Optional[NodeConfigurationOptionList]
-    Marker: Optional[String]
+    NodeConfigurationOptionList: NodeConfigurationOptionList | None
+    Marker: String | None
 
 
 class OrderableClusterOption(TypedDict, total=False):
-    ClusterVersion: Optional[String]
-    ClusterType: Optional[String]
-    NodeType: Optional[String]
-    AvailabilityZones: Optional[AvailabilityZoneList]
+    ClusterVersion: String | None
+    ClusterType: String | None
+    NodeType: String | None
+    AvailabilityZones: AvailabilityZoneList | None
 
 
-OrderableClusterOptionsList = List[OrderableClusterOption]
+OrderableClusterOptionsList = list[OrderableClusterOption]
 
 
 class OrderableClusterOptionsMessage(TypedDict, total=False):
-    OrderableClusterOptions: Optional[OrderableClusterOptionsList]
-    Marker: Optional[String]
+    OrderableClusterOptions: OrderableClusterOptionsList | None
+    Marker: String | None
 
 
 class PartnerIntegrationInputMessage(ServiceRequest):
@@ -3299,21 +3299,21 @@ class PartnerIntegrationInputMessage(ServiceRequest):
 
 
 class PartnerIntegrationOutputMessage(TypedDict, total=False):
-    DatabaseName: Optional[PartnerIntegrationDatabaseName]
-    PartnerName: Optional[PartnerIntegrationPartnerName]
+    DatabaseName: PartnerIntegrationDatabaseName | None
+    PartnerName: PartnerIntegrationPartnerName | None
 
 
 class PauseClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class PurchaseReservedNodeOfferingMessage(ServiceRequest):
     ReservedNodeOfferingId: String
-    NodeCount: Optional[IntegerOptional]
+    NodeCount: IntegerOptional | None
 
 
 class PurchaseReservedNodeOfferingResult(TypedDict, total=False):
-    ReservedNode: Optional[ReservedNode]
+    ReservedNode: ReservedNode | None
 
 
 class PutResourcePolicyMessage(ServiceRequest):
@@ -3322,7 +3322,7 @@ class PutResourcePolicyMessage(ServiceRequest):
 
 
 class PutResourcePolicyResult(TypedDict, total=False):
-    ResourcePolicy: Optional[ResourcePolicy]
+    ResourcePolicy: ResourcePolicy | None
 
 
 class RebootClusterMessage(ServiceRequest):
@@ -3330,7 +3330,7 @@ class RebootClusterMessage(ServiceRequest):
 
 
 class RebootClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class RegisterNamespaceInputMessage(ServiceRequest):
@@ -3339,163 +3339,163 @@ class RegisterNamespaceInputMessage(ServiceRequest):
 
 
 class RegisterNamespaceOutputMessage(TypedDict, total=False):
-    Status: Optional[NamespaceRegistrationStatus]
+    Status: NamespaceRegistrationStatus | None
 
 
 class RejectDataShareMessage(ServiceRequest):
     DataShareArn: String
 
 
-ReservedNodeList = List[ReservedNode]
+ReservedNodeList = list[ReservedNode]
 
 
 class ReservedNodeOfferingsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ReservedNodeOfferings: Optional[ReservedNodeOfferingList]
+    Marker: String | None
+    ReservedNodeOfferings: ReservedNodeOfferingList | None
 
 
 class ReservedNodesMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ReservedNodes: Optional[ReservedNodeList]
+    Marker: String | None
+    ReservedNodes: ReservedNodeList | None
 
 
 class ResetClusterParameterGroupMessage(ServiceRequest):
     ParameterGroupName: String
-    ResetAllParameters: Optional[Boolean]
-    Parameters: Optional[ParametersList]
+    ResetAllParameters: Boolean | None
+    Parameters: ParametersList | None
 
 
 class ResizeClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class ResizeProgressMessage(TypedDict, total=False):
-    TargetNodeType: Optional[String]
-    TargetNumberOfNodes: Optional[IntegerOptional]
-    TargetClusterType: Optional[String]
-    Status: Optional[String]
-    ImportTablesCompleted: Optional[ImportTablesCompleted]
-    ImportTablesInProgress: Optional[ImportTablesInProgress]
-    ImportTablesNotStarted: Optional[ImportTablesNotStarted]
-    AvgResizeRateInMegaBytesPerSecond: Optional[DoubleOptional]
-    TotalResizeDataInMegaBytes: Optional[LongOptional]
-    ProgressInMegaBytes: Optional[LongOptional]
-    ElapsedTimeInSeconds: Optional[LongOptional]
-    EstimatedTimeToCompletionInSeconds: Optional[LongOptional]
-    ResizeType: Optional[String]
-    Message: Optional[String]
-    TargetEncryptionType: Optional[String]
-    DataTransferProgressPercent: Optional[DoubleOptional]
+    TargetNodeType: String | None
+    TargetNumberOfNodes: IntegerOptional | None
+    TargetClusterType: String | None
+    Status: String | None
+    ImportTablesCompleted: ImportTablesCompleted | None
+    ImportTablesInProgress: ImportTablesInProgress | None
+    ImportTablesNotStarted: ImportTablesNotStarted | None
+    AvgResizeRateInMegaBytesPerSecond: DoubleOptional | None
+    TotalResizeDataInMegaBytes: LongOptional | None
+    ProgressInMegaBytes: LongOptional | None
+    ElapsedTimeInSeconds: LongOptional | None
+    EstimatedTimeToCompletionInSeconds: LongOptional | None
+    ResizeType: String | None
+    Message: String | None
+    TargetEncryptionType: String | None
+    DataTransferProgressPercent: DoubleOptional | None
 
 
 class RestoreFromClusterSnapshotMessage(ServiceRequest):
     ClusterIdentifier: String
-    SnapshotIdentifier: Optional[String]
-    SnapshotArn: Optional[String]
-    SnapshotClusterIdentifier: Optional[String]
-    Port: Optional[IntegerOptional]
-    AvailabilityZone: Optional[String]
-    AllowVersionUpgrade: Optional[BooleanOptional]
-    ClusterSubnetGroupName: Optional[String]
-    PubliclyAccessible: Optional[BooleanOptional]
-    OwnerAccount: Optional[String]
-    HsmClientCertificateIdentifier: Optional[String]
-    HsmConfigurationIdentifier: Optional[String]
-    ElasticIp: Optional[String]
-    ClusterParameterGroupName: Optional[String]
-    ClusterSecurityGroups: Optional[ClusterSecurityGroupNameList]
-    VpcSecurityGroupIds: Optional[VpcSecurityGroupIdList]
-    PreferredMaintenanceWindow: Optional[String]
-    AutomatedSnapshotRetentionPeriod: Optional[IntegerOptional]
-    ManualSnapshotRetentionPeriod: Optional[IntegerOptional]
-    KmsKeyId: Optional[String]
-    NodeType: Optional[String]
-    EnhancedVpcRouting: Optional[BooleanOptional]
-    AdditionalInfo: Optional[String]
-    IamRoles: Optional[IamRoleArnList]
-    MaintenanceTrackName: Optional[String]
-    SnapshotScheduleIdentifier: Optional[String]
-    NumberOfNodes: Optional[IntegerOptional]
-    AvailabilityZoneRelocation: Optional[BooleanOptional]
-    AquaConfigurationStatus: Optional[AquaConfigurationStatus]
-    DefaultIamRoleArn: Optional[String]
-    ReservedNodeId: Optional[String]
-    TargetReservedNodeOfferingId: Optional[String]
-    Encrypted: Optional[BooleanOptional]
-    ManageMasterPassword: Optional[BooleanOptional]
-    MasterPasswordSecretKmsKeyId: Optional[String]
-    IpAddressType: Optional[String]
-    MultiAZ: Optional[BooleanOptional]
+    SnapshotIdentifier: String | None
+    SnapshotArn: String | None
+    SnapshotClusterIdentifier: String | None
+    Port: IntegerOptional | None
+    AvailabilityZone: String | None
+    AllowVersionUpgrade: BooleanOptional | None
+    ClusterSubnetGroupName: String | None
+    PubliclyAccessible: BooleanOptional | None
+    OwnerAccount: String | None
+    HsmClientCertificateIdentifier: String | None
+    HsmConfigurationIdentifier: String | None
+    ElasticIp: String | None
+    ClusterParameterGroupName: String | None
+    ClusterSecurityGroups: ClusterSecurityGroupNameList | None
+    VpcSecurityGroupIds: VpcSecurityGroupIdList | None
+    PreferredMaintenanceWindow: String | None
+    AutomatedSnapshotRetentionPeriod: IntegerOptional | None
+    ManualSnapshotRetentionPeriod: IntegerOptional | None
+    KmsKeyId: String | None
+    NodeType: String | None
+    EnhancedVpcRouting: BooleanOptional | None
+    AdditionalInfo: String | None
+    IamRoles: IamRoleArnList | None
+    MaintenanceTrackName: String | None
+    SnapshotScheduleIdentifier: String | None
+    NumberOfNodes: IntegerOptional | None
+    AvailabilityZoneRelocation: BooleanOptional | None
+    AquaConfigurationStatus: AquaConfigurationStatus | None
+    DefaultIamRoleArn: String | None
+    ReservedNodeId: String | None
+    TargetReservedNodeOfferingId: String | None
+    Encrypted: BooleanOptional | None
+    ManageMasterPassword: BooleanOptional | None
+    MasterPasswordSecretKmsKeyId: String | None
+    IpAddressType: String | None
+    MultiAZ: BooleanOptional | None
 
 
 class RestoreFromClusterSnapshotResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class RestoreTableFromClusterSnapshotMessage(ServiceRequest):
     ClusterIdentifier: String
     SnapshotIdentifier: String
     SourceDatabaseName: String
-    SourceSchemaName: Optional[String]
+    SourceSchemaName: String | None
     SourceTableName: String
-    TargetDatabaseName: Optional[String]
-    TargetSchemaName: Optional[String]
+    TargetDatabaseName: String | None
+    TargetSchemaName: String | None
     NewTableName: String
-    EnableCaseSensitiveIdentifier: Optional[BooleanOptional]
+    EnableCaseSensitiveIdentifier: BooleanOptional | None
 
 
 class TableRestoreStatus(TypedDict, total=False):
-    TableRestoreRequestId: Optional[String]
-    Status: Optional[TableRestoreStatusType]
-    Message: Optional[String]
-    RequestTime: Optional[TStamp]
-    ProgressInMegaBytes: Optional[LongOptional]
-    TotalDataInMegaBytes: Optional[LongOptional]
-    ClusterIdentifier: Optional[String]
-    SnapshotIdentifier: Optional[String]
-    SourceDatabaseName: Optional[String]
-    SourceSchemaName: Optional[String]
-    SourceTableName: Optional[String]
-    TargetDatabaseName: Optional[String]
-    TargetSchemaName: Optional[String]
-    NewTableName: Optional[String]
+    TableRestoreRequestId: String | None
+    Status: TableRestoreStatusType | None
+    Message: String | None
+    RequestTime: TStamp | None
+    ProgressInMegaBytes: LongOptional | None
+    TotalDataInMegaBytes: LongOptional | None
+    ClusterIdentifier: String | None
+    SnapshotIdentifier: String | None
+    SourceDatabaseName: String | None
+    SourceSchemaName: String | None
+    SourceTableName: String | None
+    TargetDatabaseName: String | None
+    TargetSchemaName: String | None
+    NewTableName: String | None
 
 
 class RestoreTableFromClusterSnapshotResult(TypedDict, total=False):
-    TableRestoreStatus: Optional[TableRestoreStatus]
+    TableRestoreStatus: TableRestoreStatus | None
 
 
 class ResumeClusterResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
 class RevokeClusterSecurityGroupIngressMessage(ServiceRequest):
     ClusterSecurityGroupName: String
-    CIDRIP: Optional[String]
-    EC2SecurityGroupName: Optional[String]
-    EC2SecurityGroupOwnerId: Optional[String]
+    CIDRIP: String | None
+    EC2SecurityGroupName: String | None
+    EC2SecurityGroupOwnerId: String | None
 
 
 class RevokeClusterSecurityGroupIngressResult(TypedDict, total=False):
-    ClusterSecurityGroup: Optional[ClusterSecurityGroup]
+    ClusterSecurityGroup: ClusterSecurityGroup | None
 
 
 class RevokeEndpointAccessMessage(ServiceRequest):
-    ClusterIdentifier: Optional[String]
-    Account: Optional[String]
-    VpcIds: Optional[VpcIdentifierList]
-    Force: Optional[Boolean]
+    ClusterIdentifier: String | None
+    Account: String | None
+    VpcIds: VpcIdentifierList | None
+    Force: Boolean | None
 
 
 class RevokeSnapshotAccessMessage(ServiceRequest):
-    SnapshotIdentifier: Optional[String]
-    SnapshotArn: Optional[String]
-    SnapshotClusterIdentifier: Optional[String]
+    SnapshotIdentifier: String | None
+    SnapshotArn: String | None
+    SnapshotClusterIdentifier: String | None
     AccountWithRestoreAccess: String
 
 
 class RevokeSnapshotAccessResult(TypedDict, total=False):
-    Snapshot: Optional[Snapshot]
+    Snapshot: Snapshot | None
 
 
 class RotateEncryptionKeyMessage(ServiceRequest):
@@ -3503,76 +3503,76 @@ class RotateEncryptionKeyMessage(ServiceRequest):
 
 
 class RotateEncryptionKeyResult(TypedDict, total=False):
-    Cluster: Optional[Cluster]
+    Cluster: Cluster | None
 
 
-ScheduledActionTimeList = List[TStamp]
+ScheduledActionTimeList = list[TStamp]
 
 
 class ScheduledAction(TypedDict, total=False):
-    ScheduledActionName: Optional[String]
-    TargetAction: Optional[ScheduledActionType]
-    Schedule: Optional[String]
-    IamRole: Optional[String]
-    ScheduledActionDescription: Optional[String]
-    State: Optional[ScheduledActionState]
-    NextInvocations: Optional[ScheduledActionTimeList]
-    StartTime: Optional[TStamp]
-    EndTime: Optional[TStamp]
+    ScheduledActionName: String | None
+    TargetAction: ScheduledActionType | None
+    Schedule: String | None
+    IamRole: String | None
+    ScheduledActionDescription: String | None
+    State: ScheduledActionState | None
+    NextInvocations: ScheduledActionTimeList | None
+    StartTime: TStamp | None
+    EndTime: TStamp | None
 
 
-ScheduledActionList = List[ScheduledAction]
+ScheduledActionList = list[ScheduledAction]
 
 
 class ScheduledActionsMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    ScheduledActions: Optional[ScheduledActionList]
+    Marker: String | None
+    ScheduledActions: ScheduledActionList | None
 
 
-SnapshotCopyGrantList = List[SnapshotCopyGrant]
+SnapshotCopyGrantList = list[SnapshotCopyGrant]
 
 
 class SnapshotCopyGrantMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    SnapshotCopyGrants: Optional[SnapshotCopyGrantList]
+    Marker: String | None
+    SnapshotCopyGrants: SnapshotCopyGrantList | None
 
 
-SnapshotList = List[Snapshot]
+SnapshotList = list[Snapshot]
 
 
 class SnapshotMessage(TypedDict, total=False):
-    Marker: Optional[String]
-    Snapshots: Optional[SnapshotList]
+    Marker: String | None
+    Snapshots: SnapshotList | None
 
 
-TableRestoreStatusList = List[TableRestoreStatus]
+TableRestoreStatusList = list[TableRestoreStatus]
 
 
 class TableRestoreStatusMessage(TypedDict, total=False):
-    TableRestoreStatusDetails: Optional[TableRestoreStatusList]
-    Marker: Optional[String]
+    TableRestoreStatusDetails: TableRestoreStatusList | None
+    Marker: String | None
 
 
 class TaggedResource(TypedDict, total=False):
-    Tag: Optional[Tag]
-    ResourceName: Optional[String]
-    ResourceType: Optional[String]
+    Tag: Tag | None
+    ResourceName: String | None
+    ResourceType: String | None
 
 
-TaggedResourceList = List[TaggedResource]
+TaggedResourceList = list[TaggedResource]
 
 
 class TaggedResourceListMessage(TypedDict, total=False):
-    TaggedResources: Optional[TaggedResourceList]
-    Marker: Optional[String]
+    TaggedResources: TaggedResourceList | None
+    Marker: String | None
 
 
-TrackList = List[MaintenanceTrack]
+TrackList = list[MaintenanceTrack]
 
 
 class TrackListMessage(TypedDict, total=False):
-    MaintenanceTracks: Optional[TrackList]
-    Marker: Optional[String]
+    MaintenanceTracks: TrackList | None
+    Marker: String | None
 
 
 class UpdatePartnerStatusInputMessage(ServiceRequest):
@@ -3581,31 +3581,31 @@ class UpdatePartnerStatusInputMessage(ServiceRequest):
     DatabaseName: PartnerIntegrationDatabaseName
     PartnerName: PartnerIntegrationPartnerName
     Status: PartnerIntegrationStatus
-    StatusMessage: Optional[PartnerIntegrationStatusMessage]
+    StatusMessage: PartnerIntegrationStatusMessage | None
 
 
 class UsageLimit(TypedDict, total=False):
-    UsageLimitId: Optional[String]
-    ClusterIdentifier: Optional[String]
-    FeatureType: Optional[UsageLimitFeatureType]
-    LimitType: Optional[UsageLimitLimitType]
-    Amount: Optional[Long]
-    Period: Optional[UsageLimitPeriod]
-    BreachAction: Optional[UsageLimitBreachAction]
-    Tags: Optional[TagList]
+    UsageLimitId: String | None
+    ClusterIdentifier: String | None
+    FeatureType: UsageLimitFeatureType | None
+    LimitType: UsageLimitLimitType | None
+    Amount: Long | None
+    Period: UsageLimitPeriod | None
+    BreachAction: UsageLimitBreachAction | None
+    Tags: TagList | None
 
 
-UsageLimits = List[UsageLimit]
+UsageLimits = list[UsageLimit]
 
 
 class UsageLimitList(TypedDict, total=False):
-    UsageLimits: Optional[UsageLimits]
-    Marker: Optional[String]
+    UsageLimits: UsageLimits | None
+    Marker: String | None
 
 
 class RedshiftApi:
-    service = "redshift"
-    version = "2012-12-01"
+    service: str = "redshift"
+    version: str = "2012-12-01"
 
     @handler("AcceptReservedNodeExchange")
     def accept_reserved_node_exchange(

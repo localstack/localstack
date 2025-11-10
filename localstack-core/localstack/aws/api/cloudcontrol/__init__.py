@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -191,62 +191,62 @@ Timestamp = datetime
 
 
 class ProgressEvent(TypedDict, total=False):
-    TypeName: Optional[TypeName]
-    Identifier: Optional[Identifier]
-    RequestToken: Optional[RequestToken]
-    HooksRequestToken: Optional[RequestToken]
-    Operation: Optional[Operation]
-    OperationStatus: Optional[OperationStatus]
-    EventTime: Optional[Timestamp]
-    ResourceModel: Optional[Properties]
-    StatusMessage: Optional[StatusMessage]
-    ErrorCode: Optional[HandlerErrorCode]
-    RetryAfter: Optional[Timestamp]
+    TypeName: TypeName | None
+    Identifier: Identifier | None
+    RequestToken: RequestToken | None
+    HooksRequestToken: RequestToken | None
+    Operation: Operation | None
+    OperationStatus: OperationStatus | None
+    EventTime: Timestamp | None
+    ResourceModel: Properties | None
+    StatusMessage: StatusMessage | None
+    ErrorCode: HandlerErrorCode | None
+    RetryAfter: Timestamp | None
 
 
 class CancelResourceRequestOutput(TypedDict, total=False):
-    ProgressEvent: Optional[ProgressEvent]
+    ProgressEvent: ProgressEvent | None
 
 
 class CreateResourceInput(ServiceRequest):
     TypeName: TypeName
-    TypeVersionId: Optional[TypeVersionId]
-    RoleArn: Optional[RoleArn]
-    ClientToken: Optional[ClientToken]
+    TypeVersionId: TypeVersionId | None
+    RoleArn: RoleArn | None
+    ClientToken: ClientToken | None
     DesiredState: Properties
 
 
 class CreateResourceOutput(TypedDict, total=False):
-    ProgressEvent: Optional[ProgressEvent]
+    ProgressEvent: ProgressEvent | None
 
 
 class DeleteResourceInput(ServiceRequest):
     TypeName: TypeName
-    TypeVersionId: Optional[TypeVersionId]
-    RoleArn: Optional[RoleArn]
-    ClientToken: Optional[ClientToken]
+    TypeVersionId: TypeVersionId | None
+    RoleArn: RoleArn | None
+    ClientToken: ClientToken | None
     Identifier: Identifier
 
 
 class DeleteResourceOutput(TypedDict, total=False):
-    ProgressEvent: Optional[ProgressEvent]
+    ProgressEvent: ProgressEvent | None
 
 
 class GetResourceInput(ServiceRequest):
     TypeName: TypeName
-    TypeVersionId: Optional[TypeVersionId]
-    RoleArn: Optional[RoleArn]
+    TypeVersionId: TypeVersionId | None
+    RoleArn: RoleArn | None
     Identifier: Identifier
 
 
 class ResourceDescription(TypedDict, total=False):
-    Identifier: Optional[Identifier]
-    Properties: Optional[Properties]
+    Identifier: Identifier | None
+    Properties: Properties | None
 
 
 class GetResourceOutput(TypedDict, total=False):
-    TypeName: Optional[TypeName]
-    ResourceDescription: Optional[ResourceDescription]
+    TypeName: TypeName | None
+    ResourceDescription: ResourceDescription | None
 
 
 class GetResourceRequestStatusInput(ServiceRequest):
@@ -254,81 +254,81 @@ class GetResourceRequestStatusInput(ServiceRequest):
 
 
 class HookProgressEvent(TypedDict, total=False):
-    HookTypeName: Optional[TypeName]
-    HookTypeVersionId: Optional[TypeVersionId]
-    HookTypeArn: Optional[HookTypeArn]
-    InvocationPoint: Optional[HookInvocationPoint]
-    HookStatus: Optional[HookStatus]
-    HookEventTime: Optional[Timestamp]
-    HookStatusMessage: Optional[StatusMessage]
-    FailureMode: Optional[HookFailureMode]
+    HookTypeName: TypeName | None
+    HookTypeVersionId: TypeVersionId | None
+    HookTypeArn: HookTypeArn | None
+    InvocationPoint: HookInvocationPoint | None
+    HookStatus: HookStatus | None
+    HookEventTime: Timestamp | None
+    HookStatusMessage: StatusMessage | None
+    FailureMode: HookFailureMode | None
 
 
-HooksProgressEvent = List[HookProgressEvent]
+HooksProgressEvent = list[HookProgressEvent]
 
 
 class GetResourceRequestStatusOutput(TypedDict, total=False):
-    ProgressEvent: Optional[ProgressEvent]
-    HooksProgressEvent: Optional[HooksProgressEvent]
+    ProgressEvent: ProgressEvent | None
+    HooksProgressEvent: HooksProgressEvent | None
 
 
-OperationStatuses = List[OperationStatus]
-Operations = List[Operation]
+OperationStatuses = list[OperationStatus]
+Operations = list[Operation]
 
 
 class ResourceRequestStatusFilter(TypedDict, total=False):
-    Operations: Optional[Operations]
-    OperationStatuses: Optional[OperationStatuses]
+    Operations: Operations | None
+    OperationStatuses: OperationStatuses | None
 
 
 class ListResourceRequestsInput(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    ResourceRequestStatusFilter: Optional[ResourceRequestStatusFilter]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    ResourceRequestStatusFilter: ResourceRequestStatusFilter | None
 
 
-ResourceRequestStatusSummaries = List[ProgressEvent]
+ResourceRequestStatusSummaries = list[ProgressEvent]
 
 
 class ListResourceRequestsOutput(TypedDict, total=False):
-    ResourceRequestStatusSummaries: Optional[ResourceRequestStatusSummaries]
-    NextToken: Optional[NextToken]
+    ResourceRequestStatusSummaries: ResourceRequestStatusSummaries | None
+    NextToken: NextToken | None
 
 
 class ListResourcesInput(ServiceRequest):
     TypeName: TypeName
-    TypeVersionId: Optional[TypeVersionId]
-    RoleArn: Optional[RoleArn]
-    NextToken: Optional[HandlerNextToken]
-    MaxResults: Optional[MaxResults]
-    ResourceModel: Optional[Properties]
+    TypeVersionId: TypeVersionId | None
+    RoleArn: RoleArn | None
+    NextToken: HandlerNextToken | None
+    MaxResults: MaxResults | None
+    ResourceModel: Properties | None
 
 
-ResourceDescriptions = List[ResourceDescription]
+ResourceDescriptions = list[ResourceDescription]
 
 
 class ListResourcesOutput(TypedDict, total=False):
-    TypeName: Optional[TypeName]
-    ResourceDescriptions: Optional[ResourceDescriptions]
-    NextToken: Optional[HandlerNextToken]
+    TypeName: TypeName | None
+    ResourceDescriptions: ResourceDescriptions | None
+    NextToken: HandlerNextToken | None
 
 
 class UpdateResourceInput(ServiceRequest):
     TypeName: TypeName
-    TypeVersionId: Optional[TypeVersionId]
-    RoleArn: Optional[RoleArn]
-    ClientToken: Optional[ClientToken]
+    TypeVersionId: TypeVersionId | None
+    RoleArn: RoleArn | None
+    ClientToken: ClientToken | None
     Identifier: Identifier
     PatchDocument: PatchDocument
 
 
 class UpdateResourceOutput(TypedDict, total=False):
-    ProgressEvent: Optional[ProgressEvent]
+    ProgressEvent: ProgressEvent | None
 
 
 class CloudcontrolApi:
-    service = "cloudcontrol"
-    version = "2021-09-30"
+    service: str = "cloudcontrol"
+    version: str = "2021-09-30"
 
     @handler("CancelResourceRequest")
     def cancel_resource_request(

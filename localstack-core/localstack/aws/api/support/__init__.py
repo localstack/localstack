@@ -1,4 +1,4 @@
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -113,127 +113,127 @@ Data = bytes
 
 
 class Attachment(TypedDict, total=False):
-    fileName: Optional[FileName]
-    data: Optional[Data]
+    fileName: FileName | None
+    data: Data | None
 
 
-Attachments = List[Attachment]
+Attachments = list[Attachment]
 
 
 class AddAttachmentsToSetRequest(ServiceRequest):
-    attachmentSetId: Optional[AttachmentSetId]
+    attachmentSetId: AttachmentSetId | None
     attachments: Attachments
 
 
 class AddAttachmentsToSetResponse(TypedDict, total=False):
-    attachmentSetId: Optional[AttachmentSetId]
-    expiryTime: Optional[ExpiryTime]
+    attachmentSetId: AttachmentSetId | None
+    expiryTime: ExpiryTime | None
 
 
-CcEmailAddressList = List[CcEmailAddress]
+CcEmailAddressList = list[CcEmailAddress]
 
 
 class AddCommunicationToCaseRequest(ServiceRequest):
-    caseId: Optional[CaseId]
+    caseId: CaseId | None
     communicationBody: CommunicationBody
-    ccEmailAddresses: Optional[CcEmailAddressList]
-    attachmentSetId: Optional[AttachmentSetId]
+    ccEmailAddresses: CcEmailAddressList | None
+    attachmentSetId: AttachmentSetId | None
 
 
 class AddCommunicationToCaseResponse(TypedDict, total=False):
-    result: Optional[Result]
+    result: Result | None
 
 
 class AttachmentDetails(TypedDict, total=False):
-    attachmentId: Optional[AttachmentId]
-    fileName: Optional[FileName]
+    attachmentId: AttachmentId | None
+    fileName: FileName | None
 
 
-AttachmentSet = List[AttachmentDetails]
+AttachmentSet = list[AttachmentDetails]
 
 
 class Communication(TypedDict, total=False):
-    caseId: Optional[CaseId]
-    body: Optional[ValidatedCommunicationBody]
-    submittedBy: Optional[SubmittedBy]
-    timeCreated: Optional[TimeCreated]
-    attachmentSet: Optional[AttachmentSet]
+    caseId: CaseId | None
+    body: ValidatedCommunicationBody | None
+    submittedBy: SubmittedBy | None
+    timeCreated: TimeCreated | None
+    attachmentSet: AttachmentSet | None
 
 
-CommunicationList = List[Communication]
+CommunicationList = list[Communication]
 
 
 class RecentCaseCommunications(TypedDict, total=False):
-    communications: Optional[CommunicationList]
-    nextToken: Optional[NextToken]
+    communications: CommunicationList | None
+    nextToken: NextToken | None
 
 
 class CaseDetails(TypedDict, total=False):
-    caseId: Optional[CaseId]
-    displayId: Optional[DisplayId]
-    subject: Optional[Subject]
-    status: Optional[Status]
-    serviceCode: Optional[ServiceCode]
-    categoryCode: Optional[CategoryCode]
-    severityCode: Optional[SeverityCode]
-    submittedBy: Optional[SubmittedBy]
-    timeCreated: Optional[TimeCreated]
-    recentCommunications: Optional[RecentCaseCommunications]
-    ccEmailAddresses: Optional[CcEmailAddressList]
-    language: Optional[Language]
+    caseId: CaseId | None
+    displayId: DisplayId | None
+    subject: Subject | None
+    status: Status | None
+    serviceCode: ServiceCode | None
+    categoryCode: CategoryCode | None
+    severityCode: SeverityCode | None
+    submittedBy: SubmittedBy | None
+    timeCreated: TimeCreated | None
+    recentCommunications: RecentCaseCommunications | None
+    ccEmailAddresses: CcEmailAddressList | None
+    language: Language | None
 
 
-CaseIdList = List[CaseId]
-CaseList = List[CaseDetails]
+CaseIdList = list[CaseId]
+CaseList = list[CaseDetails]
 
 
 class Category(TypedDict, total=False):
-    code: Optional[CategoryCode]
-    name: Optional[CategoryName]
+    code: CategoryCode | None
+    name: CategoryName | None
 
 
-CategoryList = List[Category]
+CategoryList = list[Category]
 
 
 class DateInterval(TypedDict, total=False):
-    startDateTime: Optional[ValidatedDateTime]
-    endDateTime: Optional[ValidatedDateTime]
+    startDateTime: ValidatedDateTime | None
+    endDateTime: ValidatedDateTime | None
 
 
-DatesWithoutSupportList = List[DateInterval]
+DatesWithoutSupportList = list[DateInterval]
 
 
 class SupportedHour(TypedDict, total=False):
-    startTime: Optional[StartTime]
-    endTime: Optional[EndTime]
+    startTime: StartTime | None
+    endTime: EndTime | None
 
 
-SupportedHoursList = List[SupportedHour]
+SupportedHoursList = list[SupportedHour]
 
 
 class CommunicationTypeOptions(TypedDict, total=False):
-    type: Optional[Type]
-    supportedHours: Optional[SupportedHoursList]
-    datesWithoutSupport: Optional[DatesWithoutSupportList]
+    type: Type | None
+    supportedHours: SupportedHoursList | None
+    datesWithoutSupport: DatesWithoutSupportList | None
 
 
-CommunicationTypeOptionsList = List[CommunicationTypeOptions]
+CommunicationTypeOptionsList = list[CommunicationTypeOptions]
 
 
 class CreateCaseRequest(ServiceRequest):
     subject: Subject
-    serviceCode: Optional[ServiceCode]
-    severityCode: Optional[SeverityCode]
-    categoryCode: Optional[CategoryCode]
+    serviceCode: ServiceCode | None
+    severityCode: SeverityCode | None
+    categoryCode: CategoryCode | None
     communicationBody: CommunicationBody
-    ccEmailAddresses: Optional[CcEmailAddressList]
-    language: Optional[Language]
-    issueType: Optional[IssueType]
-    attachmentSetId: Optional[AttachmentSetId]
+    ccEmailAddresses: CcEmailAddressList | None
+    language: Language | None
+    issueType: IssueType | None
+    attachmentSetId: AttachmentSetId | None
 
 
 class CreateCaseResponse(TypedDict, total=False):
-    caseId: Optional[CaseId]
+    caseId: CaseId | None
 
 
 class DescribeAttachmentRequest(ServiceRequest):
@@ -241,37 +241,37 @@ class DescribeAttachmentRequest(ServiceRequest):
 
 
 class DescribeAttachmentResponse(TypedDict, total=False):
-    attachment: Optional[Attachment]
+    attachment: Attachment | None
 
 
 class DescribeCasesRequest(ServiceRequest):
-    caseIdList: Optional[CaseIdList]
-    displayId: Optional[DisplayId]
-    afterTime: Optional[AfterTime]
-    beforeTime: Optional[BeforeTime]
-    includeResolvedCases: Optional[IncludeResolvedCases]
-    nextToken: Optional[NextToken]
-    maxResults: Optional[MaxResults]
-    language: Optional[Language]
-    includeCommunications: Optional[IncludeCommunications]
+    caseIdList: CaseIdList | None
+    displayId: DisplayId | None
+    afterTime: AfterTime | None
+    beforeTime: BeforeTime | None
+    includeResolvedCases: IncludeResolvedCases | None
+    nextToken: NextToken | None
+    maxResults: MaxResults | None
+    language: Language | None
+    includeCommunications: IncludeCommunications | None
 
 
 class DescribeCasesResponse(TypedDict, total=False):
-    cases: Optional[CaseList]
-    nextToken: Optional[NextToken]
+    cases: CaseList | None
+    nextToken: NextToken | None
 
 
 class DescribeCommunicationsRequest(ServiceRequest):
     caseId: CaseId
-    beforeTime: Optional[BeforeTime]
-    afterTime: Optional[AfterTime]
-    nextToken: Optional[NextToken]
-    maxResults: Optional[MaxResults]
+    beforeTime: BeforeTime | None
+    afterTime: AfterTime | None
+    nextToken: NextToken | None
+    maxResults: MaxResults | None
 
 
 class DescribeCommunicationsResponse(TypedDict, total=False):
-    communications: Optional[CommunicationList]
-    nextToken: Optional[NextToken]
+    communications: CommunicationList | None
+    nextToken: NextToken | None
 
 
 class DescribeCreateCaseOptionsRequest(ServiceRequest):
@@ -282,45 +282,45 @@ class DescribeCreateCaseOptionsRequest(ServiceRequest):
 
 
 class DescribeCreateCaseOptionsResponse(TypedDict, total=False):
-    languageAvailability: Optional[ValidatedLanguageAvailability]
-    communicationTypes: Optional[CommunicationTypeOptionsList]
+    languageAvailability: ValidatedLanguageAvailability | None
+    communicationTypes: CommunicationTypeOptionsList | None
 
 
-ServiceCodeList = List[ServiceCode]
+ServiceCodeList = list[ServiceCode]
 
 
 class DescribeServicesRequest(ServiceRequest):
-    serviceCodeList: Optional[ServiceCodeList]
-    language: Optional[Language]
+    serviceCodeList: ServiceCodeList | None
+    language: Language | None
 
 
 class Service(TypedDict, total=False):
-    code: Optional[ServiceCode]
-    name: Optional[ServiceName]
-    categories: Optional[CategoryList]
+    code: ServiceCode | None
+    name: ServiceName | None
+    categories: CategoryList | None
 
 
-ServiceList = List[Service]
+ServiceList = list[Service]
 
 
 class DescribeServicesResponse(TypedDict, total=False):
-    services: Optional[ServiceList]
+    services: ServiceList | None
 
 
 class DescribeSeverityLevelsRequest(ServiceRequest):
-    language: Optional[Language]
+    language: Language | None
 
 
 class SeverityLevel(TypedDict, total=False):
-    code: Optional[SeverityLevelCode]
-    name: Optional[SeverityLevelName]
+    code: SeverityLevelCode | None
+    name: SeverityLevelName | None
 
 
-SeverityLevelsList = List[SeverityLevel]
+SeverityLevelsList = list[SeverityLevel]
 
 
 class DescribeSeverityLevelsResponse(TypedDict, total=False):
-    severityLevels: Optional[SeverityLevelsList]
+    severityLevels: SeverityLevelsList | None
 
 
 class DescribeSupportedLanguagesRequest(ServiceRequest):
@@ -330,19 +330,19 @@ class DescribeSupportedLanguagesRequest(ServiceRequest):
 
 
 class SupportedLanguage(TypedDict, total=False):
-    code: Optional[Code]
-    language: Optional[Language]
-    display: Optional[Display]
+    code: Code | None
+    language: Language | None
+    display: Display | None
 
 
-SupportedLanguagesList = List[SupportedLanguage]
+SupportedLanguagesList = list[SupportedLanguage]
 
 
 class DescribeSupportedLanguagesResponse(TypedDict, total=False):
-    supportedLanguages: Optional[SupportedLanguagesList]
+    supportedLanguages: SupportedLanguagesList | None
 
 
-StringList = List[String]
+StringList = list[String]
 
 
 class DescribeTrustedAdvisorCheckRefreshStatusesRequest(ServiceRequest):
@@ -358,7 +358,7 @@ class TrustedAdvisorCheckRefreshStatus(TypedDict, total=False):
     millisUntilNextRefreshable: Long
 
 
-TrustedAdvisorCheckRefreshStatusList = List[TrustedAdvisorCheckRefreshStatus]
+TrustedAdvisorCheckRefreshStatusList = list[TrustedAdvisorCheckRefreshStatus]
 
 
 class DescribeTrustedAdvisorCheckRefreshStatusesResponse(TypedDict, total=False):
@@ -367,18 +367,18 @@ class DescribeTrustedAdvisorCheckRefreshStatusesResponse(TypedDict, total=False)
 
 class DescribeTrustedAdvisorCheckResultRequest(ServiceRequest):
     checkId: String
-    language: Optional[String]
+    language: String | None
 
 
 class TrustedAdvisorResourceDetail(TypedDict, total=False):
     status: String
-    region: Optional[String]
+    region: String | None
     resourceId: String
-    isSuppressed: Optional[Boolean]
+    isSuppressed: Boolean | None
     metadata: StringList
 
 
-TrustedAdvisorResourceDetailList = List[TrustedAdvisorResourceDetail]
+TrustedAdvisorResourceDetailList = list[TrustedAdvisorResourceDetail]
 
 
 class TrustedAdvisorCostOptimizingSummary(TypedDict, total=False):
@@ -387,7 +387,7 @@ class TrustedAdvisorCostOptimizingSummary(TypedDict, total=False):
 
 
 class TrustedAdvisorCategorySpecificSummary(TypedDict, total=False):
-    costOptimizing: Optional[TrustedAdvisorCostOptimizingSummary]
+    costOptimizing: TrustedAdvisorCostOptimizingSummary | None
 
 
 class TrustedAdvisorResourcesSummary(TypedDict, total=False):
@@ -407,7 +407,7 @@ class TrustedAdvisorCheckResult(TypedDict, total=False):
 
 
 class DescribeTrustedAdvisorCheckResultResponse(TypedDict, total=False):
-    result: Optional[TrustedAdvisorCheckResult]
+    result: TrustedAdvisorCheckResult | None
 
 
 class DescribeTrustedAdvisorCheckSummariesRequest(ServiceRequest):
@@ -418,12 +418,12 @@ class TrustedAdvisorCheckSummary(TypedDict, total=False):
     checkId: String
     timestamp: String
     status: String
-    hasFlaggedResources: Optional[Boolean]
+    hasFlaggedResources: Boolean | None
     resourcesSummary: TrustedAdvisorResourcesSummary
     categorySpecificSummary: TrustedAdvisorCategorySpecificSummary
 
 
-TrustedAdvisorCheckSummaryList = List[TrustedAdvisorCheckSummary]
+TrustedAdvisorCheckSummaryList = list[TrustedAdvisorCheckSummary]
 
 
 class DescribeTrustedAdvisorCheckSummariesResponse(TypedDict, total=False):
@@ -442,7 +442,7 @@ class TrustedAdvisorCheckDescription(TypedDict, total=False):
     metadata: StringList
 
 
-TrustedAdvisorCheckList = List[TrustedAdvisorCheckDescription]
+TrustedAdvisorCheckList = list[TrustedAdvisorCheckDescription]
 
 
 class DescribeTrustedAdvisorChecksResponse(TypedDict, total=False):
@@ -458,17 +458,17 @@ class RefreshTrustedAdvisorCheckResponse(TypedDict, total=False):
 
 
 class ResolveCaseRequest(ServiceRequest):
-    caseId: Optional[CaseId]
+    caseId: CaseId | None
 
 
 class ResolveCaseResponse(TypedDict, total=False):
-    initialCaseStatus: Optional[CaseStatus]
-    finalCaseStatus: Optional[CaseStatus]
+    initialCaseStatus: CaseStatus | None
+    finalCaseStatus: CaseStatus | None
 
 
 class SupportApi:
-    service = "support"
-    version = "2013-04-15"
+    service: str = "support"
+    version: str = "2013-04-15"
 
     @handler("AddAttachmentsToSet")
     def add_attachments_to_set(

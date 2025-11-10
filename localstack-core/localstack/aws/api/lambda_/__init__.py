@@ -1,6 +1,7 @@
+from collections.abc import Iterable, Iterator
 from datetime import datetime
 from enum import StrEnum
-from typing import IO, Dict, Iterable, Iterator, List, Optional, TypedDict, Union
+from typing import IO, TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -384,292 +385,292 @@ class CodeSigningConfigNotFoundException(ServiceException):
     code: str = "CodeSigningConfigNotFoundException"
     sender_fault: bool = True
     status_code: int = 404
-    Type: Optional[String]
+    Type: String | None
 
 
 class CodeStorageExceededException(ServiceException):
     code: str = "CodeStorageExceededException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class CodeVerificationFailedException(ServiceException):
     code: str = "CodeVerificationFailedException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class EC2AccessDeniedException(ServiceException):
     code: str = "EC2AccessDeniedException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class EC2ThrottledException(ServiceException):
     code: str = "EC2ThrottledException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class EC2UnexpectedException(ServiceException):
     code: str = "EC2UnexpectedException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
-    EC2ErrorCode: Optional[String]
+    Type: String | None
+    EC2ErrorCode: String | None
 
 
 class EFSIOException(ServiceException):
     code: str = "EFSIOException"
     sender_fault: bool = True
     status_code: int = 410
-    Type: Optional[String]
+    Type: String | None
 
 
 class EFSMountConnectivityException(ServiceException):
     code: str = "EFSMountConnectivityException"
     sender_fault: bool = True
     status_code: int = 408
-    Type: Optional[String]
+    Type: String | None
 
 
 class EFSMountFailureException(ServiceException):
     code: str = "EFSMountFailureException"
     sender_fault: bool = True
     status_code: int = 403
-    Type: Optional[String]
+    Type: String | None
 
 
 class EFSMountTimeoutException(ServiceException):
     code: str = "EFSMountTimeoutException"
     sender_fault: bool = True
     status_code: int = 408
-    Type: Optional[String]
+    Type: String | None
 
 
 class ENILimitReachedException(ServiceException):
     code: str = "ENILimitReachedException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidCodeSignatureException(ServiceException):
     code: str = "InvalidCodeSignatureException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidParameterValueException(ServiceException):
     code: str = "InvalidParameterValueException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidRequestContentException(ServiceException):
     code: str = "InvalidRequestContentException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidRuntimeException(ServiceException):
     code: str = "InvalidRuntimeException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidSecurityGroupIDException(ServiceException):
     code: str = "InvalidSecurityGroupIDException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidSubnetIDException(ServiceException):
     code: str = "InvalidSubnetIDException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class InvalidZipFileException(ServiceException):
     code: str = "InvalidZipFileException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class KMSAccessDeniedException(ServiceException):
     code: str = "KMSAccessDeniedException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class KMSDisabledException(ServiceException):
     code: str = "KMSDisabledException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class KMSInvalidStateException(ServiceException):
     code: str = "KMSInvalidStateException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class KMSNotFoundException(ServiceException):
     code: str = "KMSNotFoundException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class PolicyLengthExceededException(ServiceException):
     code: str = "PolicyLengthExceededException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class PreconditionFailedException(ServiceException):
     code: str = "PreconditionFailedException"
     sender_fault: bool = True
     status_code: int = 412
-    Type: Optional[String]
+    Type: String | None
 
 
 class ProvisionedConcurrencyConfigNotFoundException(ServiceException):
     code: str = "ProvisionedConcurrencyConfigNotFoundException"
     sender_fault: bool = True
     status_code: int = 404
-    Type: Optional[String]
+    Type: String | None
 
 
 class RecursiveInvocationException(ServiceException):
     code: str = "RecursiveInvocationException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class RequestTooLargeException(ServiceException):
     code: str = "RequestTooLargeException"
     sender_fault: bool = True
     status_code: int = 413
-    Type: Optional[String]
+    Type: String | None
 
 
 class ResourceConflictException(ServiceException):
     code: str = "ResourceConflictException"
     sender_fault: bool = True
     status_code: int = 409
-    Type: Optional[String]
+    Type: String | None
 
 
 class ResourceInUseException(ServiceException):
     code: str = "ResourceInUseException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class ResourceNotFoundException(ServiceException):
     code: str = "ResourceNotFoundException"
     sender_fault: bool = True
     status_code: int = 404
-    Type: Optional[String]
+    Type: String | None
 
 
 class ResourceNotReadyException(ServiceException):
     code: str = "ResourceNotReadyException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class SerializedRequestEntityTooLargeException(ServiceException):
     code: str = "SerializedRequestEntityTooLargeException"
     sender_fault: bool = True
     status_code: int = 413
-    Type: Optional[String]
+    Type: String | None
 
 
 class ServiceException(ServiceException):
     code: str = "ServiceException"
     sender_fault: bool = False
     status_code: int = 500
-    Type: Optional[String]
+    Type: String | None
 
 
 class SnapStartException(ServiceException):
     code: str = "SnapStartException"
     sender_fault: bool = True
     status_code: int = 400
-    Type: Optional[String]
+    Type: String | None
 
 
 class SnapStartNotReadyException(ServiceException):
     code: str = "SnapStartNotReadyException"
     sender_fault: bool = True
     status_code: int = 409
-    Type: Optional[String]
+    Type: String | None
 
 
 class SnapStartTimeoutException(ServiceException):
     code: str = "SnapStartTimeoutException"
     sender_fault: bool = True
     status_code: int = 408
-    Type: Optional[String]
+    Type: String | None
 
 
 class SubnetIPAddressLimitReachedException(ServiceException):
     code: str = "SubnetIPAddressLimitReachedException"
     sender_fault: bool = False
     status_code: int = 502
-    Type: Optional[String]
+    Type: String | None
 
 
 class TooManyRequestsException(ServiceException):
     code: str = "TooManyRequestsException"
     sender_fault: bool = True
     status_code: int = 429
-    retryAfterSeconds: Optional[String]
-    Type: Optional[String]
-    Reason: Optional[ThrottleReason]
+    retryAfterSeconds: String | None
+    Type: String | None
+    Reason: ThrottleReason | None
 
 
 class UnsupportedMediaTypeException(ServiceException):
     code: str = "UnsupportedMediaTypeException"
     sender_fault: bool = True
     status_code: int = 415
-    Type: Optional[String]
+    Type: String | None
 
 
 Long = int
 
 
 class AccountLimit(TypedDict, total=False):
-    TotalCodeSize: Optional[Long]
-    CodeSizeUnzipped: Optional[Long]
-    CodeSizeZipped: Optional[Long]
-    ConcurrentExecutions: Optional[Integer]
-    UnreservedConcurrentExecutions: Optional[UnreservedConcurrentExecutions]
+    TotalCodeSize: Long | None
+    CodeSizeUnzipped: Long | None
+    CodeSizeZipped: Long | None
+    ConcurrentExecutions: Integer | None
+    UnreservedConcurrentExecutions: UnreservedConcurrentExecutions | None
 
 
 class AccountUsage(TypedDict, total=False):
-    TotalCodeSize: Optional[Long]
-    FunctionCount: Optional[Long]
+    TotalCodeSize: Long | None
+    FunctionCount: Long | None
 
 
 LayerVersionNumber = int
@@ -681,13 +682,13 @@ class AddLayerVersionPermissionRequest(ServiceRequest):
     StatementId: StatementId
     Action: LayerPermissionAllowedAction
     Principal: LayerPermissionAllowedPrincipal
-    OrganizationId: Optional[OrganizationId]
-    RevisionId: Optional[String]
+    OrganizationId: OrganizationId | None
+    RevisionId: String | None
 
 
 class AddLayerVersionPermissionResponse(TypedDict, total=False):
-    Statement: Optional[String]
-    RevisionId: Optional[String]
+    Statement: String | None
+    RevisionId: String | None
 
 
 class AddPermissionRequest(ServiceRequest):
@@ -695,40 +696,40 @@ class AddPermissionRequest(ServiceRequest):
     StatementId: StatementId
     Action: Action
     Principal: Principal
-    SourceArn: Optional[Arn]
-    SourceAccount: Optional[SourceOwner]
-    EventSourceToken: Optional[EventSourceToken]
-    Qualifier: Optional[Qualifier]
-    RevisionId: Optional[String]
-    PrincipalOrgID: Optional[PrincipalOrgID]
-    FunctionUrlAuthType: Optional[FunctionUrlAuthType]
-    InvokedViaFunctionUrl: Optional[InvokedViaFunctionUrl]
+    SourceArn: Arn | None
+    SourceAccount: SourceOwner | None
+    EventSourceToken: EventSourceToken | None
+    Qualifier: Qualifier | None
+    RevisionId: String | None
+    PrincipalOrgID: PrincipalOrgID | None
+    FunctionUrlAuthType: FunctionUrlAuthType | None
+    InvokedViaFunctionUrl: InvokedViaFunctionUrl | None
 
 
 class AddPermissionResponse(TypedDict, total=False):
-    Statement: Optional[String]
+    Statement: String | None
 
 
-AdditionalVersionWeights = Dict[AdditionalVersion, Weight]
+AdditionalVersionWeights = dict[AdditionalVersion, Weight]
 
 
 class AliasRoutingConfiguration(TypedDict, total=False):
-    AdditionalVersionWeights: Optional[AdditionalVersionWeights]
+    AdditionalVersionWeights: AdditionalVersionWeights | None
 
 
 class AliasConfiguration(TypedDict, total=False):
-    AliasArn: Optional[FunctionArn]
-    Name: Optional[Alias]
-    FunctionVersion: Optional[Version]
-    Description: Optional[Description]
-    RoutingConfig: Optional[AliasRoutingConfiguration]
-    RevisionId: Optional[String]
+    AliasArn: FunctionArn | None
+    Name: Alias | None
+    FunctionVersion: Version | None
+    Description: Description | None
+    RoutingConfig: AliasRoutingConfiguration | None
+    RevisionId: String | None
 
 
-AliasList = List[AliasConfiguration]
-AllowMethodsList = List[Method]
-AllowOriginsList = List[Origin]
-SigningProfileVersionArns = List[Arn]
+AliasList = list[AliasConfiguration]
+AllowMethodsList = list[Method]
+AllowOriginsList = list[Origin]
+SigningProfileVersionArns = list[Arn]
 
 
 class AllowedPublishers(TypedDict, total=False):
@@ -736,87 +737,87 @@ class AllowedPublishers(TypedDict, total=False):
 
 
 class KafkaSchemaValidationConfig(TypedDict, total=False):
-    Attribute: Optional[KafkaSchemaValidationAttribute]
+    Attribute: KafkaSchemaValidationAttribute | None
 
 
-KafkaSchemaValidationConfigList = List[KafkaSchemaValidationConfig]
+KafkaSchemaValidationConfigList = list[KafkaSchemaValidationConfig]
 
 
 class KafkaSchemaRegistryAccessConfig(TypedDict, total=False):
-    Type: Optional[KafkaSchemaRegistryAuthType]
-    URI: Optional[Arn]
+    Type: KafkaSchemaRegistryAuthType | None
+    URI: Arn | None
 
 
-KafkaSchemaRegistryAccessConfigList = List[KafkaSchemaRegistryAccessConfig]
+KafkaSchemaRegistryAccessConfigList = list[KafkaSchemaRegistryAccessConfig]
 
 
 class KafkaSchemaRegistryConfig(TypedDict, total=False):
-    SchemaRegistryURI: Optional[SchemaRegistryUri]
-    EventRecordFormat: Optional[SchemaRegistryEventRecordFormat]
-    AccessConfigs: Optional[KafkaSchemaRegistryAccessConfigList]
-    SchemaValidationConfigs: Optional[KafkaSchemaValidationConfigList]
+    SchemaRegistryURI: SchemaRegistryUri | None
+    EventRecordFormat: SchemaRegistryEventRecordFormat | None
+    AccessConfigs: KafkaSchemaRegistryAccessConfigList | None
+    SchemaValidationConfigs: KafkaSchemaValidationConfigList | None
 
 
 class AmazonManagedKafkaEventSourceConfig(TypedDict, total=False):
-    ConsumerGroupId: Optional[URI]
-    SchemaRegistryConfig: Optional[KafkaSchemaRegistryConfig]
+    ConsumerGroupId: URI | None
+    SchemaRegistryConfig: KafkaSchemaRegistryConfig | None
 
 
-ArchitecturesList = List[Architecture]
+ArchitecturesList = list[Architecture]
 Blob = bytes
 BlobStream = bytes
 
 
 class CodeSigningPolicies(TypedDict, total=False):
-    UntrustedArtifactOnDeployment: Optional[CodeSigningPolicy]
+    UntrustedArtifactOnDeployment: CodeSigningPolicy | None
 
 
 class CodeSigningConfig(TypedDict, total=False):
     CodeSigningConfigId: CodeSigningConfigId
     CodeSigningConfigArn: CodeSigningConfigArn
-    Description: Optional[Description]
+    Description: Description | None
     AllowedPublishers: AllowedPublishers
     CodeSigningPolicies: CodeSigningPolicies
     LastModified: Timestamp
 
 
-CodeSigningConfigList = List[CodeSigningConfig]
-CompatibleArchitectures = List[Architecture]
-CompatibleRuntimes = List[Runtime]
+CodeSigningConfigList = list[CodeSigningConfig]
+CompatibleArchitectures = list[Architecture]
+CompatibleRuntimes = list[Runtime]
 
 
 class Concurrency(TypedDict, total=False):
-    ReservedConcurrentExecutions: Optional[ReservedConcurrentExecutions]
+    ReservedConcurrentExecutions: ReservedConcurrentExecutions | None
 
 
-HeadersList = List[Header]
+HeadersList = list[Header]
 
 
 class Cors(TypedDict, total=False):
-    AllowCredentials: Optional[AllowCredentials]
-    AllowHeaders: Optional[HeadersList]
-    AllowMethods: Optional[AllowMethodsList]
-    AllowOrigins: Optional[AllowOriginsList]
-    ExposeHeaders: Optional[HeadersList]
-    MaxAge: Optional[MaxAge]
+    AllowCredentials: AllowCredentials | None
+    AllowHeaders: HeadersList | None
+    AllowMethods: AllowMethodsList | None
+    AllowOrigins: AllowOriginsList | None
+    ExposeHeaders: HeadersList | None
+    MaxAge: MaxAge | None
 
 
 class CreateAliasRequest(ServiceRequest):
     FunctionName: FunctionName
     Name: Alias
     FunctionVersion: Version
-    Description: Optional[Description]
-    RoutingConfig: Optional[AliasRoutingConfiguration]
+    Description: Description | None
+    RoutingConfig: AliasRoutingConfiguration | None
 
 
-Tags = Dict[TagKey, TagValue]
+Tags = dict[TagKey, TagValue]
 
 
 class CreateCodeSigningConfigRequest(ServiceRequest):
-    Description: Optional[Description]
+    Description: Description | None
     AllowedPublishers: AllowedPublishers
-    CodeSigningPolicies: Optional[CodeSigningPolicies]
-    Tags: Optional[Tags]
+    CodeSigningPolicies: CodeSigningPolicies | None
+    Tags: Tags | None
 
 
 class CreateCodeSigningConfigResponse(TypedDict, total=False):
@@ -824,130 +825,130 @@ class CreateCodeSigningConfigResponse(TypedDict, total=False):
 
 
 class ProvisionedPollerConfig(TypedDict, total=False):
-    MinimumPollers: Optional[MinimumNumberOfPollers]
-    MaximumPollers: Optional[MaximumNumberOfPollers]
+    MinimumPollers: MinimumNumberOfPollers | None
+    MaximumPollers: MaximumNumberOfPollers | None
 
 
-EventSourceMappingMetricList = List[EventSourceMappingMetric]
+EventSourceMappingMetricList = list[EventSourceMappingMetric]
 
 
 class EventSourceMappingMetricsConfig(TypedDict, total=False):
-    Metrics: Optional[EventSourceMappingMetricList]
+    Metrics: EventSourceMappingMetricList | None
 
 
 class DocumentDBEventSourceConfig(TypedDict, total=False):
-    DatabaseName: Optional[DatabaseName]
-    CollectionName: Optional[CollectionName]
-    FullDocument: Optional[FullDocument]
+    DatabaseName: DatabaseName | None
+    CollectionName: CollectionName | None
+    FullDocument: FullDocument | None
 
 
 class ScalingConfig(TypedDict, total=False):
-    MaximumConcurrency: Optional[MaximumConcurrency]
+    MaximumConcurrency: MaximumConcurrency | None
 
 
 class SelfManagedKafkaEventSourceConfig(TypedDict, total=False):
-    ConsumerGroupId: Optional[URI]
-    SchemaRegistryConfig: Optional[KafkaSchemaRegistryConfig]
+    ConsumerGroupId: URI | None
+    SchemaRegistryConfig: KafkaSchemaRegistryConfig | None
 
 
-FunctionResponseTypeList = List[FunctionResponseType]
-EndpointLists = List[Endpoint]
-Endpoints = Dict[EndPointType, EndpointLists]
+FunctionResponseTypeList = list[FunctionResponseType]
+EndpointLists = list[Endpoint]
+Endpoints = dict[EndPointType, EndpointLists]
 
 
 class SelfManagedEventSource(TypedDict, total=False):
-    Endpoints: Optional[Endpoints]
+    Endpoints: Endpoints | None
 
 
 class SourceAccessConfiguration(TypedDict, total=False):
-    Type: Optional[SourceAccessType]
-    URI: Optional[URI]
+    Type: SourceAccessType | None
+    URI: URI | None
 
 
-SourceAccessConfigurations = List[SourceAccessConfiguration]
-Queues = List[Queue]
-Topics = List[Topic]
+SourceAccessConfigurations = list[SourceAccessConfiguration]
+Queues = list[Queue]
+Topics = list[Topic]
 
 
 class OnFailure(TypedDict, total=False):
-    Destination: Optional[DestinationArn]
+    Destination: DestinationArn | None
 
 
 class OnSuccess(TypedDict, total=False):
-    Destination: Optional[DestinationArn]
+    Destination: DestinationArn | None
 
 
 class DestinationConfig(TypedDict, total=False):
-    OnSuccess: Optional[OnSuccess]
-    OnFailure: Optional[OnFailure]
+    OnSuccess: OnSuccess | None
+    OnFailure: OnFailure | None
 
 
 Date = datetime
 
 
 class Filter(TypedDict, total=False):
-    Pattern: Optional[Pattern]
+    Pattern: Pattern | None
 
 
-FilterList = List[Filter]
+FilterList = list[Filter]
 
 
 class FilterCriteria(TypedDict, total=False):
-    Filters: Optional[FilterList]
+    Filters: FilterList | None
 
 
 class CreateEventSourceMappingRequest(ServiceRequest):
-    EventSourceArn: Optional[Arn]
+    EventSourceArn: Arn | None
     FunctionName: FunctionName
-    Enabled: Optional[Enabled]
-    BatchSize: Optional[BatchSize]
-    FilterCriteria: Optional[FilterCriteria]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    ParallelizationFactor: Optional[ParallelizationFactor]
-    StartingPosition: Optional[EventSourcePosition]
-    StartingPositionTimestamp: Optional[Date]
-    DestinationConfig: Optional[DestinationConfig]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    BisectBatchOnFunctionError: Optional[BisectBatchOnFunctionError]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsEventSourceMapping]
-    Tags: Optional[Tags]
-    TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
-    Topics: Optional[Topics]
-    Queues: Optional[Queues]
-    SourceAccessConfigurations: Optional[SourceAccessConfigurations]
-    SelfManagedEventSource: Optional[SelfManagedEventSource]
-    FunctionResponseTypes: Optional[FunctionResponseTypeList]
-    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
-    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
-    ScalingConfig: Optional[ScalingConfig]
-    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
-    KMSKeyArn: Optional[KMSKeyArn]
-    MetricsConfig: Optional[EventSourceMappingMetricsConfig]
-    ProvisionedPollerConfig: Optional[ProvisionedPollerConfig]
+    Enabled: Enabled | None
+    BatchSize: BatchSize | None
+    FilterCriteria: FilterCriteria | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    ParallelizationFactor: ParallelizationFactor | None
+    StartingPosition: EventSourcePosition | None
+    StartingPositionTimestamp: Date | None
+    DestinationConfig: DestinationConfig | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    BisectBatchOnFunctionError: BisectBatchOnFunctionError | None
+    MaximumRetryAttempts: MaximumRetryAttemptsEventSourceMapping | None
+    Tags: Tags | None
+    TumblingWindowInSeconds: TumblingWindowInSeconds | None
+    Topics: Topics | None
+    Queues: Queues | None
+    SourceAccessConfigurations: SourceAccessConfigurations | None
+    SelfManagedEventSource: SelfManagedEventSource | None
+    FunctionResponseTypes: FunctionResponseTypeList | None
+    AmazonManagedKafkaEventSourceConfig: AmazonManagedKafkaEventSourceConfig | None
+    SelfManagedKafkaEventSourceConfig: SelfManagedKafkaEventSourceConfig | None
+    ScalingConfig: ScalingConfig | None
+    DocumentDBEventSourceConfig: DocumentDBEventSourceConfig | None
+    KMSKeyArn: KMSKeyArn | None
+    MetricsConfig: EventSourceMappingMetricsConfig | None
+    ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
 class LoggingConfig(TypedDict, total=False):
-    LogFormat: Optional[LogFormat]
-    ApplicationLogLevel: Optional[ApplicationLogLevel]
-    SystemLogLevel: Optional[SystemLogLevel]
-    LogGroup: Optional[LogGroup]
+    LogFormat: LogFormat | None
+    ApplicationLogLevel: ApplicationLogLevel | None
+    SystemLogLevel: SystemLogLevel | None
+    LogGroup: LogGroup | None
 
 
 class SnapStart(TypedDict, total=False):
-    ApplyOn: Optional[SnapStartApplyOn]
+    ApplyOn: SnapStartApplyOn | None
 
 
 class EphemeralStorage(TypedDict, total=False):
     Size: EphemeralStorageSize
 
 
-StringList = List[String]
+StringList = list[String]
 
 
 class ImageConfig(TypedDict, total=False):
-    EntryPoint: Optional[StringList]
-    Command: Optional[StringList]
-    WorkingDirectory: Optional[WorkingDirectory]
+    EntryPoint: StringList | None
+    Command: StringList | None
+    WorkingDirectory: WorkingDirectory | None
 
 
 class FileSystemConfig(TypedDict, total=False):
@@ -955,86 +956,86 @@ class FileSystemConfig(TypedDict, total=False):
     LocalMountPath: LocalMountPath
 
 
-FileSystemConfigList = List[FileSystemConfig]
-LayerList = List[LayerVersionArn]
+FileSystemConfigList = list[FileSystemConfig]
+LayerList = list[LayerVersionArn]
 
 
 class TracingConfig(TypedDict, total=False):
-    Mode: Optional[TracingMode]
+    Mode: TracingMode | None
 
 
-EnvironmentVariables = Dict[EnvironmentVariableName, EnvironmentVariableValue]
+EnvironmentVariables = dict[EnvironmentVariableName, EnvironmentVariableValue]
 
 
 class Environment(TypedDict, total=False):
-    Variables: Optional[EnvironmentVariables]
+    Variables: EnvironmentVariables | None
 
 
 class DeadLetterConfig(TypedDict, total=False):
-    TargetArn: Optional[ResourceArn]
+    TargetArn: ResourceArn | None
 
 
-SecurityGroupIds = List[SecurityGroupId]
-SubnetIds = List[SubnetId]
+SecurityGroupIds = list[SecurityGroupId]
+SubnetIds = list[SubnetId]
 
 
 class VpcConfig(TypedDict, total=False):
-    SubnetIds: Optional[SubnetIds]
-    SecurityGroupIds: Optional[SecurityGroupIds]
-    Ipv6AllowedForDualStack: Optional[NullableBoolean]
+    SubnetIds: SubnetIds | None
+    SecurityGroupIds: SecurityGroupIds | None
+    Ipv6AllowedForDualStack: NullableBoolean | None
 
 
 class FunctionCode(TypedDict, total=False):
-    ZipFile: Optional[Blob]
-    S3Bucket: Optional[S3Bucket]
-    S3Key: Optional[S3Key]
-    S3ObjectVersion: Optional[S3ObjectVersion]
-    ImageUri: Optional[String]
-    SourceKMSKeyArn: Optional[KMSKeyArn]
+    ZipFile: Blob | None
+    S3Bucket: S3Bucket | None
+    S3Key: S3Key | None
+    S3ObjectVersion: S3ObjectVersion | None
+    ImageUri: String | None
+    SourceKMSKeyArn: KMSKeyArn | None
 
 
 class CreateFunctionRequest(ServiceRequest):
     FunctionName: FunctionName
-    Runtime: Optional[Runtime]
+    Runtime: Runtime | None
     Role: RoleArn
-    Handler: Optional[Handler]
+    Handler: Handler | None
     Code: FunctionCode
-    Description: Optional[Description]
-    Timeout: Optional[Timeout]
-    MemorySize: Optional[MemorySize]
-    Publish: Optional[Boolean]
-    VpcConfig: Optional[VpcConfig]
-    PackageType: Optional[PackageType]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    Environment: Optional[Environment]
-    KMSKeyArn: Optional[KMSKeyArn]
-    TracingConfig: Optional[TracingConfig]
-    Tags: Optional[Tags]
-    Layers: Optional[LayerList]
-    FileSystemConfigs: Optional[FileSystemConfigList]
-    ImageConfig: Optional[ImageConfig]
-    CodeSigningConfigArn: Optional[CodeSigningConfigArn]
-    Architectures: Optional[ArchitecturesList]
-    EphemeralStorage: Optional[EphemeralStorage]
-    SnapStart: Optional[SnapStart]
-    LoggingConfig: Optional[LoggingConfig]
+    Description: Description | None
+    Timeout: Timeout | None
+    MemorySize: MemorySize | None
+    Publish: Boolean | None
+    VpcConfig: VpcConfig | None
+    PackageType: PackageType | None
+    DeadLetterConfig: DeadLetterConfig | None
+    Environment: Environment | None
+    KMSKeyArn: KMSKeyArn | None
+    TracingConfig: TracingConfig | None
+    Tags: Tags | None
+    Layers: LayerList | None
+    FileSystemConfigs: FileSystemConfigList | None
+    ImageConfig: ImageConfig | None
+    CodeSigningConfigArn: CodeSigningConfigArn | None
+    Architectures: ArchitecturesList | None
+    EphemeralStorage: EphemeralStorage | None
+    SnapStart: SnapStart | None
+    LoggingConfig: LoggingConfig | None
 
 
 class CreateFunctionUrlConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
+    Qualifier: FunctionUrlQualifier | None
     AuthType: FunctionUrlAuthType
-    Cors: Optional[Cors]
-    InvokeMode: Optional[InvokeMode]
+    Cors: Cors | None
+    InvokeMode: InvokeMode | None
 
 
 class CreateFunctionUrlConfigResponse(TypedDict, total=False):
     FunctionUrl: FunctionUrl
     FunctionArn: FunctionArn
     AuthType: FunctionUrlAuthType
-    Cors: Optional[Cors]
+    Cors: Cors | None
     CreationTime: Timestamp
-    InvokeMode: Optional[InvokeMode]
+    InvokeMode: InvokeMode | None
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -1064,17 +1065,17 @@ class DeleteFunctionConcurrencyRequest(ServiceRequest):
 
 class DeleteFunctionEventInvokeConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class DeleteFunctionRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class DeleteFunctionUrlConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
+    Qualifier: FunctionUrlQualifier | None
 
 
 class DeleteLayerVersionRequest(ServiceRequest):
@@ -1088,162 +1089,162 @@ class DeleteProvisionedConcurrencyConfigRequest(ServiceRequest):
 
 
 class EnvironmentError(TypedDict, total=False):
-    ErrorCode: Optional[String]
-    Message: Optional[SensitiveString]
+    ErrorCode: String | None
+    Message: SensitiveString | None
 
 
 class EnvironmentResponse(TypedDict, total=False):
-    Variables: Optional[EnvironmentVariables]
-    Error: Optional[EnvironmentError]
+    Variables: EnvironmentVariables | None
+    Error: EnvironmentError | None
 
 
 class FilterCriteriaError(TypedDict, total=False):
-    ErrorCode: Optional[FilterCriteriaErrorCode]
-    Message: Optional[FilterCriteriaErrorMessage]
+    ErrorCode: FilterCriteriaErrorCode | None
+    Message: FilterCriteriaErrorMessage | None
 
 
 class EventSourceMappingConfiguration(TypedDict, total=False):
-    UUID: Optional[String]
-    StartingPosition: Optional[EventSourcePosition]
-    StartingPositionTimestamp: Optional[Date]
-    BatchSize: Optional[BatchSize]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    ParallelizationFactor: Optional[ParallelizationFactor]
-    EventSourceArn: Optional[Arn]
-    FilterCriteria: Optional[FilterCriteria]
-    FunctionArn: Optional[FunctionArn]
-    LastModified: Optional[Date]
-    LastProcessingResult: Optional[String]
-    State: Optional[String]
-    StateTransitionReason: Optional[String]
-    DestinationConfig: Optional[DestinationConfig]
-    Topics: Optional[Topics]
-    Queues: Optional[Queues]
-    SourceAccessConfigurations: Optional[SourceAccessConfigurations]
-    SelfManagedEventSource: Optional[SelfManagedEventSource]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    BisectBatchOnFunctionError: Optional[BisectBatchOnFunctionError]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsEventSourceMapping]
-    TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
-    FunctionResponseTypes: Optional[FunctionResponseTypeList]
-    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
-    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
-    ScalingConfig: Optional[ScalingConfig]
-    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
-    KMSKeyArn: Optional[KMSKeyArn]
-    FilterCriteriaError: Optional[FilterCriteriaError]
-    EventSourceMappingArn: Optional[EventSourceMappingArn]
-    MetricsConfig: Optional[EventSourceMappingMetricsConfig]
-    ProvisionedPollerConfig: Optional[ProvisionedPollerConfig]
+    UUID: String | None
+    StartingPosition: EventSourcePosition | None
+    StartingPositionTimestamp: Date | None
+    BatchSize: BatchSize | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    ParallelizationFactor: ParallelizationFactor | None
+    EventSourceArn: Arn | None
+    FilterCriteria: FilterCriteria | None
+    FunctionArn: FunctionArn | None
+    LastModified: Date | None
+    LastProcessingResult: String | None
+    State: String | None
+    StateTransitionReason: String | None
+    DestinationConfig: DestinationConfig | None
+    Topics: Topics | None
+    Queues: Queues | None
+    SourceAccessConfigurations: SourceAccessConfigurations | None
+    SelfManagedEventSource: SelfManagedEventSource | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    BisectBatchOnFunctionError: BisectBatchOnFunctionError | None
+    MaximumRetryAttempts: MaximumRetryAttemptsEventSourceMapping | None
+    TumblingWindowInSeconds: TumblingWindowInSeconds | None
+    FunctionResponseTypes: FunctionResponseTypeList | None
+    AmazonManagedKafkaEventSourceConfig: AmazonManagedKafkaEventSourceConfig | None
+    SelfManagedKafkaEventSourceConfig: SelfManagedKafkaEventSourceConfig | None
+    ScalingConfig: ScalingConfig | None
+    DocumentDBEventSourceConfig: DocumentDBEventSourceConfig | None
+    KMSKeyArn: KMSKeyArn | None
+    FilterCriteriaError: FilterCriteriaError | None
+    EventSourceMappingArn: EventSourceMappingArn | None
+    MetricsConfig: EventSourceMappingMetricsConfig | None
+    ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
-EventSourceMappingsList = List[EventSourceMappingConfiguration]
-FunctionArnList = List[FunctionArn]
+EventSourceMappingsList = list[EventSourceMappingConfiguration]
+FunctionArnList = list[FunctionArn]
 
 
 class FunctionCodeLocation(TypedDict, total=False):
-    RepositoryType: Optional[String]
-    Location: Optional[String]
-    ImageUri: Optional[String]
-    ResolvedImageUri: Optional[String]
-    SourceKMSKeyArn: Optional[String]
+    RepositoryType: String | None
+    Location: String | None
+    ImageUri: String | None
+    ResolvedImageUri: String | None
+    SourceKMSKeyArn: String | None
 
 
 class RuntimeVersionError(TypedDict, total=False):
-    ErrorCode: Optional[String]
-    Message: Optional[SensitiveString]
+    ErrorCode: String | None
+    Message: SensitiveString | None
 
 
 class RuntimeVersionConfig(TypedDict, total=False):
-    RuntimeVersionArn: Optional[RuntimeVersionArn]
-    Error: Optional[RuntimeVersionError]
+    RuntimeVersionArn: RuntimeVersionArn | None
+    Error: RuntimeVersionError | None
 
 
 class SnapStartResponse(TypedDict, total=False):
-    ApplyOn: Optional[SnapStartApplyOn]
-    OptimizationStatus: Optional[SnapStartOptimizationStatus]
+    ApplyOn: SnapStartApplyOn | None
+    OptimizationStatus: SnapStartOptimizationStatus | None
 
 
 class ImageConfigError(TypedDict, total=False):
-    ErrorCode: Optional[String]
-    Message: Optional[SensitiveString]
+    ErrorCode: String | None
+    Message: SensitiveString | None
 
 
 class ImageConfigResponse(TypedDict, total=False):
-    ImageConfig: Optional[ImageConfig]
-    Error: Optional[ImageConfigError]
+    ImageConfig: ImageConfig | None
+    Error: ImageConfigError | None
 
 
 class Layer(TypedDict, total=False):
-    Arn: Optional[LayerVersionArn]
-    CodeSize: Optional[Long]
-    SigningProfileVersionArn: Optional[Arn]
-    SigningJobArn: Optional[Arn]
+    Arn: LayerVersionArn | None
+    CodeSize: Long | None
+    SigningProfileVersionArn: Arn | None
+    SigningJobArn: Arn | None
 
 
-LayersReferenceList = List[Layer]
+LayersReferenceList = list[Layer]
 
 
 class TracingConfigResponse(TypedDict, total=False):
-    Mode: Optional[TracingMode]
+    Mode: TracingMode | None
 
 
 class VpcConfigResponse(TypedDict, total=False):
-    SubnetIds: Optional[SubnetIds]
-    SecurityGroupIds: Optional[SecurityGroupIds]
-    VpcId: Optional[VpcId]
-    Ipv6AllowedForDualStack: Optional[NullableBoolean]
+    SubnetIds: SubnetIds | None
+    SecurityGroupIds: SecurityGroupIds | None
+    VpcId: VpcId | None
+    Ipv6AllowedForDualStack: NullableBoolean | None
 
 
 class FunctionConfiguration(TypedDict, total=False):
-    FunctionName: Optional[NamespacedFunctionName]
-    FunctionArn: Optional[NameSpacedFunctionArn]
-    Runtime: Optional[Runtime]
-    Role: Optional[RoleArn]
-    Handler: Optional[Handler]
-    CodeSize: Optional[Long]
-    Description: Optional[Description]
-    Timeout: Optional[Timeout]
-    MemorySize: Optional[MemorySize]
-    LastModified: Optional[Timestamp]
-    CodeSha256: Optional[String]
-    Version: Optional[Version]
-    VpcConfig: Optional[VpcConfigResponse]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    Environment: Optional[EnvironmentResponse]
-    KMSKeyArn: Optional[KMSKeyArn]
-    TracingConfig: Optional[TracingConfigResponse]
-    MasterArn: Optional[FunctionArn]
-    RevisionId: Optional[String]
-    Layers: Optional[LayersReferenceList]
-    State: Optional[State]
-    StateReason: Optional[StateReason]
-    StateReasonCode: Optional[StateReasonCode]
-    LastUpdateStatus: Optional[LastUpdateStatus]
-    LastUpdateStatusReason: Optional[LastUpdateStatusReason]
-    LastUpdateStatusReasonCode: Optional[LastUpdateStatusReasonCode]
-    FileSystemConfigs: Optional[FileSystemConfigList]
-    PackageType: Optional[PackageType]
-    ImageConfigResponse: Optional[ImageConfigResponse]
-    SigningProfileVersionArn: Optional[Arn]
-    SigningJobArn: Optional[Arn]
-    Architectures: Optional[ArchitecturesList]
-    EphemeralStorage: Optional[EphemeralStorage]
-    SnapStart: Optional[SnapStartResponse]
-    RuntimeVersionConfig: Optional[RuntimeVersionConfig]
-    LoggingConfig: Optional[LoggingConfig]
+    FunctionName: NamespacedFunctionName | None
+    FunctionArn: NameSpacedFunctionArn | None
+    Runtime: Runtime | None
+    Role: RoleArn | None
+    Handler: Handler | None
+    CodeSize: Long | None
+    Description: Description | None
+    Timeout: Timeout | None
+    MemorySize: MemorySize | None
+    LastModified: Timestamp | None
+    CodeSha256: String | None
+    Version: Version | None
+    VpcConfig: VpcConfigResponse | None
+    DeadLetterConfig: DeadLetterConfig | None
+    Environment: EnvironmentResponse | None
+    KMSKeyArn: KMSKeyArn | None
+    TracingConfig: TracingConfigResponse | None
+    MasterArn: FunctionArn | None
+    RevisionId: String | None
+    Layers: LayersReferenceList | None
+    State: State | None
+    StateReason: StateReason | None
+    StateReasonCode: StateReasonCode | None
+    LastUpdateStatus: LastUpdateStatus | None
+    LastUpdateStatusReason: LastUpdateStatusReason | None
+    LastUpdateStatusReasonCode: LastUpdateStatusReasonCode | None
+    FileSystemConfigs: FileSystemConfigList | None
+    PackageType: PackageType | None
+    ImageConfigResponse: ImageConfigResponse | None
+    SigningProfileVersionArn: Arn | None
+    SigningJobArn: Arn | None
+    Architectures: ArchitecturesList | None
+    EphemeralStorage: EphemeralStorage | None
+    SnapStart: SnapStartResponse | None
+    RuntimeVersionConfig: RuntimeVersionConfig | None
+    LoggingConfig: LoggingConfig | None
 
 
 class FunctionEventInvokeConfig(TypedDict, total=False):
-    LastModified: Optional[Date]
-    FunctionArn: Optional[FunctionArn]
-    MaximumRetryAttempts: Optional[MaximumRetryAttempts]
-    MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
-    DestinationConfig: Optional[DestinationConfig]
+    LastModified: Date | None
+    FunctionArn: FunctionArn | None
+    MaximumRetryAttempts: MaximumRetryAttempts | None
+    MaximumEventAgeInSeconds: MaximumEventAgeInSeconds | None
+    DestinationConfig: DestinationConfig | None
 
 
-FunctionEventInvokeConfigList = List[FunctionEventInvokeConfig]
-FunctionList = List[FunctionConfiguration]
+FunctionEventInvokeConfigList = list[FunctionEventInvokeConfig]
+FunctionList = list[FunctionConfiguration]
 
 
 class FunctionUrlConfig(TypedDict, total=False):
@@ -1251,12 +1252,12 @@ class FunctionUrlConfig(TypedDict, total=False):
     FunctionArn: FunctionArn
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
-    Cors: Optional[Cors]
+    Cors: Cors | None
     AuthType: FunctionUrlAuthType
-    InvokeMode: Optional[InvokeMode]
+    InvokeMode: InvokeMode | None
 
 
-FunctionUrlConfigList = List[FunctionUrlConfig]
+FunctionUrlConfigList = list[FunctionUrlConfig]
 
 
 class GetAccountSettingsRequest(ServiceRequest):
@@ -1264,8 +1265,8 @@ class GetAccountSettingsRequest(ServiceRequest):
 
 
 class GetAccountSettingsResponse(TypedDict, total=False):
-    AccountLimit: Optional[AccountLimit]
-    AccountUsage: Optional[AccountUsage]
+    AccountLimit: AccountLimit | None
+    AccountUsage: AccountUsage | None
 
 
 class GetAliasRequest(ServiceRequest):
@@ -1299,17 +1300,17 @@ class GetFunctionConcurrencyRequest(ServiceRequest):
 
 
 class GetFunctionConcurrencyResponse(TypedDict, total=False):
-    ReservedConcurrentExecutions: Optional[ReservedConcurrentExecutions]
+    ReservedConcurrentExecutions: ReservedConcurrentExecutions | None
 
 
 class GetFunctionConfigurationRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class GetFunctionEventInvokeConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class GetFunctionRecursionConfigRequest(ServiceRequest):
@@ -1317,12 +1318,12 @@ class GetFunctionRecursionConfigRequest(ServiceRequest):
 
 
 class GetFunctionRecursionConfigResponse(TypedDict, total=False):
-    RecursiveLoop: Optional[RecursiveLoop]
+    RecursiveLoop: RecursiveLoop | None
 
 
 class GetFunctionRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class TagsError(TypedDict, total=False):
@@ -1331,26 +1332,26 @@ class TagsError(TypedDict, total=False):
 
 
 class GetFunctionResponse(TypedDict, total=False):
-    Configuration: Optional[FunctionConfiguration]
-    Code: Optional[FunctionCodeLocation]
-    Tags: Optional[Tags]
-    TagsError: Optional[TagsError]
-    Concurrency: Optional[Concurrency]
+    Configuration: FunctionConfiguration | None
+    Code: FunctionCodeLocation | None
+    Tags: Tags | None
+    TagsError: TagsError | None
+    Concurrency: Concurrency | None
 
 
 class GetFunctionUrlConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
+    Qualifier: FunctionUrlQualifier | None
 
 
 class GetFunctionUrlConfigResponse(TypedDict, total=False):
     FunctionUrl: FunctionUrl
     FunctionArn: FunctionArn
     AuthType: FunctionUrlAuthType
-    Cors: Optional[Cors]
+    Cors: Cors | None
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
-    InvokeMode: Optional[InvokeMode]
+    InvokeMode: InvokeMode | None
 
 
 class GetLayerVersionByArnRequest(ServiceRequest):
@@ -1363,8 +1364,8 @@ class GetLayerVersionPolicyRequest(ServiceRequest):
 
 
 class GetLayerVersionPolicyResponse(TypedDict, total=False):
-    Policy: Optional[String]
-    RevisionId: Optional[String]
+    Policy: String | None
+    RevisionId: String | None
 
 
 class GetLayerVersionRequest(ServiceRequest):
@@ -1373,33 +1374,33 @@ class GetLayerVersionRequest(ServiceRequest):
 
 
 class LayerVersionContentOutput(TypedDict, total=False):
-    Location: Optional[String]
-    CodeSha256: Optional[String]
-    CodeSize: Optional[Long]
-    SigningProfileVersionArn: Optional[String]
-    SigningJobArn: Optional[String]
+    Location: String | None
+    CodeSha256: String | None
+    CodeSize: Long | None
+    SigningProfileVersionArn: String | None
+    SigningJobArn: String | None
 
 
 class GetLayerVersionResponse(TypedDict, total=False):
-    Content: Optional[LayerVersionContentOutput]
-    LayerArn: Optional[LayerArn]
-    LayerVersionArn: Optional[LayerVersionArn]
-    Description: Optional[Description]
-    CreatedDate: Optional[Timestamp]
-    Version: Optional[LayerVersionNumber]
-    CompatibleRuntimes: Optional[CompatibleRuntimes]
-    LicenseInfo: Optional[LicenseInfo]
-    CompatibleArchitectures: Optional[CompatibleArchitectures]
+    Content: LayerVersionContentOutput | None
+    LayerArn: LayerArn | None
+    LayerVersionArn: LayerVersionArn | None
+    Description: Description | None
+    CreatedDate: Timestamp | None
+    Version: LayerVersionNumber | None
+    CompatibleRuntimes: CompatibleRuntimes | None
+    LicenseInfo: LicenseInfo | None
+    CompatibleArchitectures: CompatibleArchitectures | None
 
 
 class GetPolicyRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class GetPolicyResponse(TypedDict, total=False):
-    Policy: Optional[String]
-    RevisionId: Optional[String]
+    Policy: String | None
+    RevisionId: String | None
 
 
 class GetProvisionedConcurrencyConfigRequest(ServiceRequest):
@@ -1408,40 +1409,40 @@ class GetProvisionedConcurrencyConfigRequest(ServiceRequest):
 
 
 class GetProvisionedConcurrencyConfigResponse(TypedDict, total=False):
-    RequestedProvisionedConcurrentExecutions: Optional[PositiveInteger]
-    AvailableProvisionedConcurrentExecutions: Optional[NonNegativeInteger]
-    AllocatedProvisionedConcurrentExecutions: Optional[NonNegativeInteger]
-    Status: Optional[ProvisionedConcurrencyStatusEnum]
-    StatusReason: Optional[String]
-    LastModified: Optional[Timestamp]
+    RequestedProvisionedConcurrentExecutions: PositiveInteger | None
+    AvailableProvisionedConcurrentExecutions: NonNegativeInteger | None
+    AllocatedProvisionedConcurrentExecutions: NonNegativeInteger | None
+    Status: ProvisionedConcurrencyStatusEnum | None
+    StatusReason: String | None
+    LastModified: Timestamp | None
 
 
 class GetRuntimeManagementConfigRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
 
 
 class GetRuntimeManagementConfigResponse(TypedDict, total=False):
-    UpdateRuntimeOn: Optional[UpdateRuntimeOn]
-    RuntimeVersionArn: Optional[RuntimeVersionArn]
-    FunctionArn: Optional[NameSpacedFunctionArn]
+    UpdateRuntimeOn: UpdateRuntimeOn | None
+    RuntimeVersionArn: RuntimeVersionArn | None
+    FunctionArn: NameSpacedFunctionArn | None
 
 
 class InvocationRequest(ServiceRequest):
-    Payload: Optional[IO[Blob]]
+    Payload: IO[Blob] | None
     FunctionName: NamespacedFunctionName
-    InvocationType: Optional[InvocationType]
-    LogType: Optional[LogType]
-    ClientContext: Optional[String]
-    Qualifier: Optional[Qualifier]
+    InvocationType: InvocationType | None
+    LogType: LogType | None
+    ClientContext: String | None
+    Qualifier: Qualifier | None
 
 
 class InvocationResponse(TypedDict, total=False):
-    Payload: Optional[Union[Blob, IO[Blob], Iterable[Blob]]]
-    StatusCode: Optional[Integer]
-    FunctionError: Optional[String]
-    LogResult: Optional[String]
-    ExecutedVersion: Optional[Version]
+    Payload: Blob | IO[Blob] | Iterable[Blob] | None
+    StatusCode: Integer | None
+    FunctionError: String | None
+    LogResult: String | None
+    ExecutedVersion: Version | None
 
 
 class InvokeAsyncRequest(ServiceRequest):
@@ -1450,195 +1451,195 @@ class InvokeAsyncRequest(ServiceRequest):
 
 
 class InvokeAsyncResponse(TypedDict, total=False):
-    Status: Optional[HttpStatus]
+    Status: HttpStatus | None
 
 
 class InvokeResponseStreamUpdate(TypedDict, total=False):
-    Payload: Optional[Blob]
+    Payload: Blob | None
 
 
 class InvokeWithResponseStreamCompleteEvent(TypedDict, total=False):
-    ErrorCode: Optional[String]
-    ErrorDetails: Optional[String]
-    LogResult: Optional[String]
+    ErrorCode: String | None
+    ErrorDetails: String | None
+    LogResult: String | None
 
 
 class InvokeWithResponseStreamRequest(ServiceRequest):
-    Payload: Optional[IO[Blob]]
+    Payload: IO[Blob] | None
     FunctionName: NamespacedFunctionName
-    InvocationType: Optional[ResponseStreamingInvocationType]
-    LogType: Optional[LogType]
-    ClientContext: Optional[String]
-    Qualifier: Optional[Qualifier]
+    InvocationType: ResponseStreamingInvocationType | None
+    LogType: LogType | None
+    ClientContext: String | None
+    Qualifier: Qualifier | None
 
 
 class InvokeWithResponseStreamResponseEvent(TypedDict, total=False):
-    PayloadChunk: Optional[InvokeResponseStreamUpdate]
-    InvokeComplete: Optional[InvokeWithResponseStreamCompleteEvent]
+    PayloadChunk: InvokeResponseStreamUpdate | None
+    InvokeComplete: InvokeWithResponseStreamCompleteEvent | None
 
 
 class InvokeWithResponseStreamResponse(TypedDict, total=False):
-    StatusCode: Optional[Integer]
-    ExecutedVersion: Optional[Version]
+    StatusCode: Integer | None
+    ExecutedVersion: Version | None
     EventStream: Iterator[InvokeWithResponseStreamResponseEvent]
-    ResponseStreamContentType: Optional[String]
+    ResponseStreamContentType: String | None
 
 
 class LayerVersionContentInput(TypedDict, total=False):
-    S3Bucket: Optional[S3Bucket]
-    S3Key: Optional[S3Key]
-    S3ObjectVersion: Optional[S3ObjectVersion]
-    ZipFile: Optional[Blob]
+    S3Bucket: S3Bucket | None
+    S3Key: S3Key | None
+    S3ObjectVersion: S3ObjectVersion | None
+    ZipFile: Blob | None
 
 
 class LayerVersionsListItem(TypedDict, total=False):
-    LayerVersionArn: Optional[LayerVersionArn]
-    Version: Optional[LayerVersionNumber]
-    Description: Optional[Description]
-    CreatedDate: Optional[Timestamp]
-    CompatibleRuntimes: Optional[CompatibleRuntimes]
-    LicenseInfo: Optional[LicenseInfo]
-    CompatibleArchitectures: Optional[CompatibleArchitectures]
+    LayerVersionArn: LayerVersionArn | None
+    Version: LayerVersionNumber | None
+    Description: Description | None
+    CreatedDate: Timestamp | None
+    CompatibleRuntimes: CompatibleRuntimes | None
+    LicenseInfo: LicenseInfo | None
+    CompatibleArchitectures: CompatibleArchitectures | None
 
 
-LayerVersionsList = List[LayerVersionsListItem]
+LayerVersionsList = list[LayerVersionsListItem]
 
 
 class LayersListItem(TypedDict, total=False):
-    LayerName: Optional[LayerName]
-    LayerArn: Optional[LayerArn]
-    LatestMatchingVersion: Optional[LayerVersionsListItem]
+    LayerName: LayerName | None
+    LayerArn: LayerArn | None
+    LatestMatchingVersion: LayerVersionsListItem | None
 
 
-LayersList = List[LayersListItem]
+LayersList = list[LayersListItem]
 
 
 class ListAliasesRequest(ServiceRequest):
     FunctionName: FunctionName
-    FunctionVersion: Optional[Version]
-    Marker: Optional[String]
-    MaxItems: Optional[MaxListItems]
+    FunctionVersion: Version | None
+    Marker: String | None
+    MaxItems: MaxListItems | None
 
 
 class ListAliasesResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    Aliases: Optional[AliasList]
+    NextMarker: String | None
+    Aliases: AliasList | None
 
 
 class ListCodeSigningConfigsRequest(ServiceRequest):
-    Marker: Optional[String]
-    MaxItems: Optional[MaxListItems]
+    Marker: String | None
+    MaxItems: MaxListItems | None
 
 
 class ListCodeSigningConfigsResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    CodeSigningConfigs: Optional[CodeSigningConfigList]
+    NextMarker: String | None
+    CodeSigningConfigs: CodeSigningConfigList | None
 
 
 class ListEventSourceMappingsRequest(ServiceRequest):
-    EventSourceArn: Optional[Arn]
-    FunctionName: Optional[FunctionName]
-    Marker: Optional[String]
-    MaxItems: Optional[MaxListItems]
+    EventSourceArn: Arn | None
+    FunctionName: FunctionName | None
+    Marker: String | None
+    MaxItems: MaxListItems | None
 
 
 class ListEventSourceMappingsResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    EventSourceMappings: Optional[EventSourceMappingsList]
+    NextMarker: String | None
+    EventSourceMappings: EventSourceMappingsList | None
 
 
 class ListFunctionEventInvokeConfigsRequest(ServiceRequest):
     FunctionName: FunctionName
-    Marker: Optional[String]
-    MaxItems: Optional[MaxFunctionEventInvokeConfigListItems]
+    Marker: String | None
+    MaxItems: MaxFunctionEventInvokeConfigListItems | None
 
 
 class ListFunctionEventInvokeConfigsResponse(TypedDict, total=False):
-    FunctionEventInvokeConfigs: Optional[FunctionEventInvokeConfigList]
-    NextMarker: Optional[String]
+    FunctionEventInvokeConfigs: FunctionEventInvokeConfigList | None
+    NextMarker: String | None
 
 
 class ListFunctionUrlConfigsRequest(ServiceRequest):
     FunctionName: FunctionName
-    Marker: Optional[String]
-    MaxItems: Optional[MaxItems]
+    Marker: String | None
+    MaxItems: MaxItems | None
 
 
 class ListFunctionUrlConfigsResponse(TypedDict, total=False):
     FunctionUrlConfigs: FunctionUrlConfigList
-    NextMarker: Optional[String]
+    NextMarker: String | None
 
 
 class ListFunctionsByCodeSigningConfigRequest(ServiceRequest):
     CodeSigningConfigArn: CodeSigningConfigArn
-    Marker: Optional[String]
-    MaxItems: Optional[MaxListItems]
+    Marker: String | None
+    MaxItems: MaxListItems | None
 
 
 class ListFunctionsByCodeSigningConfigResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    FunctionArns: Optional[FunctionArnList]
+    NextMarker: String | None
+    FunctionArns: FunctionArnList | None
 
 
 class ListFunctionsRequest(ServiceRequest):
-    MasterRegion: Optional[MasterRegion]
-    FunctionVersion: Optional[FunctionVersion]
-    Marker: Optional[String]
-    MaxItems: Optional[MaxListItems]
+    MasterRegion: MasterRegion | None
+    FunctionVersion: FunctionVersion | None
+    Marker: String | None
+    MaxItems: MaxListItems | None
 
 
 class ListFunctionsResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    Functions: Optional[FunctionList]
+    NextMarker: String | None
+    Functions: FunctionList | None
 
 
 class ListLayerVersionsRequest(ServiceRequest):
-    CompatibleRuntime: Optional[Runtime]
+    CompatibleRuntime: Runtime | None
     LayerName: LayerName
-    Marker: Optional[String]
-    MaxItems: Optional[MaxLayerListItems]
-    CompatibleArchitecture: Optional[Architecture]
+    Marker: String | None
+    MaxItems: MaxLayerListItems | None
+    CompatibleArchitecture: Architecture | None
 
 
 class ListLayerVersionsResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    LayerVersions: Optional[LayerVersionsList]
+    NextMarker: String | None
+    LayerVersions: LayerVersionsList | None
 
 
 class ListLayersRequest(ServiceRequest):
-    CompatibleRuntime: Optional[Runtime]
-    Marker: Optional[String]
-    MaxItems: Optional[MaxLayerListItems]
-    CompatibleArchitecture: Optional[Architecture]
+    CompatibleRuntime: Runtime | None
+    Marker: String | None
+    MaxItems: MaxLayerListItems | None
+    CompatibleArchitecture: Architecture | None
 
 
 class ListLayersResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    Layers: Optional[LayersList]
+    NextMarker: String | None
+    Layers: LayersList | None
 
 
 class ListProvisionedConcurrencyConfigsRequest(ServiceRequest):
     FunctionName: FunctionName
-    Marker: Optional[String]
-    MaxItems: Optional[MaxProvisionedConcurrencyConfigListItems]
+    Marker: String | None
+    MaxItems: MaxProvisionedConcurrencyConfigListItems | None
 
 
 class ProvisionedConcurrencyConfigListItem(TypedDict, total=False):
-    FunctionArn: Optional[FunctionArn]
-    RequestedProvisionedConcurrentExecutions: Optional[PositiveInteger]
-    AvailableProvisionedConcurrentExecutions: Optional[NonNegativeInteger]
-    AllocatedProvisionedConcurrentExecutions: Optional[NonNegativeInteger]
-    Status: Optional[ProvisionedConcurrencyStatusEnum]
-    StatusReason: Optional[String]
-    LastModified: Optional[Timestamp]
+    FunctionArn: FunctionArn | None
+    RequestedProvisionedConcurrentExecutions: PositiveInteger | None
+    AvailableProvisionedConcurrentExecutions: NonNegativeInteger | None
+    AllocatedProvisionedConcurrentExecutions: NonNegativeInteger | None
+    Status: ProvisionedConcurrencyStatusEnum | None
+    StatusReason: String | None
+    LastModified: Timestamp | None
 
 
-ProvisionedConcurrencyConfigList = List[ProvisionedConcurrencyConfigListItem]
+ProvisionedConcurrencyConfigList = list[ProvisionedConcurrencyConfigListItem]
 
 
 class ListProvisionedConcurrencyConfigsResponse(TypedDict, total=False):
-    ProvisionedConcurrencyConfigs: Optional[ProvisionedConcurrencyConfigList]
-    NextMarker: Optional[String]
+    ProvisionedConcurrencyConfigs: ProvisionedConcurrencyConfigList | None
+    NextMarker: String | None
 
 
 class ListTagsRequest(ServiceRequest):
@@ -1646,46 +1647,46 @@ class ListTagsRequest(ServiceRequest):
 
 
 class ListTagsResponse(TypedDict, total=False):
-    Tags: Optional[Tags]
+    Tags: Tags | None
 
 
 class ListVersionsByFunctionRequest(ServiceRequest):
     FunctionName: NamespacedFunctionName
-    Marker: Optional[String]
-    MaxItems: Optional[MaxListItems]
+    Marker: String | None
+    MaxItems: MaxListItems | None
 
 
 class ListVersionsByFunctionResponse(TypedDict, total=False):
-    NextMarker: Optional[String]
-    Versions: Optional[FunctionList]
+    NextMarker: String | None
+    Versions: FunctionList | None
 
 
 class PublishLayerVersionRequest(ServiceRequest):
     LayerName: LayerName
-    Description: Optional[Description]
+    Description: Description | None
     Content: LayerVersionContentInput
-    CompatibleRuntimes: Optional[CompatibleRuntimes]
-    LicenseInfo: Optional[LicenseInfo]
-    CompatibleArchitectures: Optional[CompatibleArchitectures]
+    CompatibleRuntimes: CompatibleRuntimes | None
+    LicenseInfo: LicenseInfo | None
+    CompatibleArchitectures: CompatibleArchitectures | None
 
 
 class PublishLayerVersionResponse(TypedDict, total=False):
-    Content: Optional[LayerVersionContentOutput]
-    LayerArn: Optional[LayerArn]
-    LayerVersionArn: Optional[LayerVersionArn]
-    Description: Optional[Description]
-    CreatedDate: Optional[Timestamp]
-    Version: Optional[LayerVersionNumber]
-    CompatibleRuntimes: Optional[CompatibleRuntimes]
-    LicenseInfo: Optional[LicenseInfo]
-    CompatibleArchitectures: Optional[CompatibleArchitectures]
+    Content: LayerVersionContentOutput | None
+    LayerArn: LayerArn | None
+    LayerVersionArn: LayerVersionArn | None
+    Description: Description | None
+    CreatedDate: Timestamp | None
+    Version: LayerVersionNumber | None
+    CompatibleRuntimes: CompatibleRuntimes | None
+    LicenseInfo: LicenseInfo | None
+    CompatibleArchitectures: CompatibleArchitectures | None
 
 
 class PublishVersionRequest(ServiceRequest):
     FunctionName: FunctionName
-    CodeSha256: Optional[String]
-    Description: Optional[Description]
-    RevisionId: Optional[String]
+    CodeSha256: String | None
+    Description: Description | None
+    RevisionId: String | None
 
 
 class PutFunctionCodeSigningConfigRequest(ServiceRequest):
@@ -1705,10 +1706,10 @@ class PutFunctionConcurrencyRequest(ServiceRequest):
 
 class PutFunctionEventInvokeConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[Qualifier]
-    MaximumRetryAttempts: Optional[MaximumRetryAttempts]
-    MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
-    DestinationConfig: Optional[DestinationConfig]
+    Qualifier: Qualifier | None
+    MaximumRetryAttempts: MaximumRetryAttempts | None
+    MaximumEventAgeInSeconds: MaximumEventAgeInSeconds | None
+    DestinationConfig: DestinationConfig | None
 
 
 class PutFunctionRecursionConfigRequest(ServiceRequest):
@@ -1717,7 +1718,7 @@ class PutFunctionRecursionConfigRequest(ServiceRequest):
 
 
 class PutFunctionRecursionConfigResponse(TypedDict, total=False):
-    RecursiveLoop: Optional[RecursiveLoop]
+    RecursiveLoop: RecursiveLoop | None
 
 
 class PutProvisionedConcurrencyConfigRequest(ServiceRequest):
@@ -1727,42 +1728,42 @@ class PutProvisionedConcurrencyConfigRequest(ServiceRequest):
 
 
 class PutProvisionedConcurrencyConfigResponse(TypedDict, total=False):
-    RequestedProvisionedConcurrentExecutions: Optional[PositiveInteger]
-    AvailableProvisionedConcurrentExecutions: Optional[NonNegativeInteger]
-    AllocatedProvisionedConcurrentExecutions: Optional[NonNegativeInteger]
-    Status: Optional[ProvisionedConcurrencyStatusEnum]
-    StatusReason: Optional[String]
-    LastModified: Optional[Timestamp]
+    RequestedProvisionedConcurrentExecutions: PositiveInteger | None
+    AvailableProvisionedConcurrentExecutions: NonNegativeInteger | None
+    AllocatedProvisionedConcurrentExecutions: NonNegativeInteger | None
+    Status: ProvisionedConcurrencyStatusEnum | None
+    StatusReason: String | None
+    LastModified: Timestamp | None
 
 
 class PutRuntimeManagementConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[Qualifier]
+    Qualifier: Qualifier | None
     UpdateRuntimeOn: UpdateRuntimeOn
-    RuntimeVersionArn: Optional[RuntimeVersionArn]
+    RuntimeVersionArn: RuntimeVersionArn | None
 
 
 class PutRuntimeManagementConfigResponse(TypedDict, total=False):
     UpdateRuntimeOn: UpdateRuntimeOn
     FunctionArn: FunctionArn
-    RuntimeVersionArn: Optional[RuntimeVersionArn]
+    RuntimeVersionArn: RuntimeVersionArn | None
 
 
 class RemoveLayerVersionPermissionRequest(ServiceRequest):
     LayerName: LayerName
     VersionNumber: LayerVersionNumber
     StatementId: StatementId
-    RevisionId: Optional[String]
+    RevisionId: String | None
 
 
 class RemovePermissionRequest(ServiceRequest):
     FunctionName: FunctionName
     StatementId: NamespacedStatementId
-    Qualifier: Optional[Qualifier]
-    RevisionId: Optional[String]
+    Qualifier: Qualifier | None
+    RevisionId: String | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -1778,17 +1779,17 @@ class UntagResourceRequest(ServiceRequest):
 class UpdateAliasRequest(ServiceRequest):
     FunctionName: FunctionName
     Name: Alias
-    FunctionVersion: Optional[Version]
-    Description: Optional[Description]
-    RoutingConfig: Optional[AliasRoutingConfiguration]
-    RevisionId: Optional[String]
+    FunctionVersion: Version | None
+    Description: Description | None
+    RoutingConfig: AliasRoutingConfiguration | None
+    RevisionId: String | None
 
 
 class UpdateCodeSigningConfigRequest(ServiceRequest):
     CodeSigningConfigArn: CodeSigningConfigArn
-    Description: Optional[Description]
-    AllowedPublishers: Optional[AllowedPublishers]
-    CodeSigningPolicies: Optional[CodeSigningPolicies]
+    Description: Description | None
+    AllowedPublishers: AllowedPublishers | None
+    CodeSigningPolicies: CodeSigningPolicies | None
 
 
 class UpdateCodeSigningConfigResponse(TypedDict, total=False):
@@ -1797,93 +1798,93 @@ class UpdateCodeSigningConfigResponse(TypedDict, total=False):
 
 class UpdateEventSourceMappingRequest(ServiceRequest):
     UUID: String
-    FunctionName: Optional[FunctionName]
-    Enabled: Optional[Enabled]
-    BatchSize: Optional[BatchSize]
-    FilterCriteria: Optional[FilterCriteria]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    DestinationConfig: Optional[DestinationConfig]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    BisectBatchOnFunctionError: Optional[BisectBatchOnFunctionError]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsEventSourceMapping]
-    ParallelizationFactor: Optional[ParallelizationFactor]
-    SourceAccessConfigurations: Optional[SourceAccessConfigurations]
-    TumblingWindowInSeconds: Optional[TumblingWindowInSeconds]
-    FunctionResponseTypes: Optional[FunctionResponseTypeList]
-    ScalingConfig: Optional[ScalingConfig]
-    AmazonManagedKafkaEventSourceConfig: Optional[AmazonManagedKafkaEventSourceConfig]
-    SelfManagedKafkaEventSourceConfig: Optional[SelfManagedKafkaEventSourceConfig]
-    DocumentDBEventSourceConfig: Optional[DocumentDBEventSourceConfig]
-    KMSKeyArn: Optional[KMSKeyArn]
-    MetricsConfig: Optional[EventSourceMappingMetricsConfig]
-    ProvisionedPollerConfig: Optional[ProvisionedPollerConfig]
+    FunctionName: FunctionName | None
+    Enabled: Enabled | None
+    BatchSize: BatchSize | None
+    FilterCriteria: FilterCriteria | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    DestinationConfig: DestinationConfig | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    BisectBatchOnFunctionError: BisectBatchOnFunctionError | None
+    MaximumRetryAttempts: MaximumRetryAttemptsEventSourceMapping | None
+    ParallelizationFactor: ParallelizationFactor | None
+    SourceAccessConfigurations: SourceAccessConfigurations | None
+    TumblingWindowInSeconds: TumblingWindowInSeconds | None
+    FunctionResponseTypes: FunctionResponseTypeList | None
+    ScalingConfig: ScalingConfig | None
+    AmazonManagedKafkaEventSourceConfig: AmazonManagedKafkaEventSourceConfig | None
+    SelfManagedKafkaEventSourceConfig: SelfManagedKafkaEventSourceConfig | None
+    DocumentDBEventSourceConfig: DocumentDBEventSourceConfig | None
+    KMSKeyArn: KMSKeyArn | None
+    MetricsConfig: EventSourceMappingMetricsConfig | None
+    ProvisionedPollerConfig: ProvisionedPollerConfig | None
 
 
 class UpdateFunctionCodeRequest(ServiceRequest):
     FunctionName: FunctionName
-    ZipFile: Optional[Blob]
-    S3Bucket: Optional[S3Bucket]
-    S3Key: Optional[S3Key]
-    S3ObjectVersion: Optional[S3ObjectVersion]
-    ImageUri: Optional[String]
-    Publish: Optional[Boolean]
-    DryRun: Optional[Boolean]
-    RevisionId: Optional[String]
-    Architectures: Optional[ArchitecturesList]
-    SourceKMSKeyArn: Optional[KMSKeyArn]
+    ZipFile: Blob | None
+    S3Bucket: S3Bucket | None
+    S3Key: S3Key | None
+    S3ObjectVersion: S3ObjectVersion | None
+    ImageUri: String | None
+    Publish: Boolean | None
+    DryRun: Boolean | None
+    RevisionId: String | None
+    Architectures: ArchitecturesList | None
+    SourceKMSKeyArn: KMSKeyArn | None
 
 
 class UpdateFunctionConfigurationRequest(ServiceRequest):
     FunctionName: FunctionName
-    Role: Optional[RoleArn]
-    Handler: Optional[Handler]
-    Description: Optional[Description]
-    Timeout: Optional[Timeout]
-    MemorySize: Optional[MemorySize]
-    VpcConfig: Optional[VpcConfig]
-    Environment: Optional[Environment]
-    Runtime: Optional[Runtime]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    KMSKeyArn: Optional[KMSKeyArn]
-    TracingConfig: Optional[TracingConfig]
-    RevisionId: Optional[String]
-    Layers: Optional[LayerList]
-    FileSystemConfigs: Optional[FileSystemConfigList]
-    ImageConfig: Optional[ImageConfig]
-    EphemeralStorage: Optional[EphemeralStorage]
-    SnapStart: Optional[SnapStart]
-    LoggingConfig: Optional[LoggingConfig]
+    Role: RoleArn | None
+    Handler: Handler | None
+    Description: Description | None
+    Timeout: Timeout | None
+    MemorySize: MemorySize | None
+    VpcConfig: VpcConfig | None
+    Environment: Environment | None
+    Runtime: Runtime | None
+    DeadLetterConfig: DeadLetterConfig | None
+    KMSKeyArn: KMSKeyArn | None
+    TracingConfig: TracingConfig | None
+    RevisionId: String | None
+    Layers: LayerList | None
+    FileSystemConfigs: FileSystemConfigList | None
+    ImageConfig: ImageConfig | None
+    EphemeralStorage: EphemeralStorage | None
+    SnapStart: SnapStart | None
+    LoggingConfig: LoggingConfig | None
 
 
 class UpdateFunctionEventInvokeConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[Qualifier]
-    MaximumRetryAttempts: Optional[MaximumRetryAttempts]
-    MaximumEventAgeInSeconds: Optional[MaximumEventAgeInSeconds]
-    DestinationConfig: Optional[DestinationConfig]
+    Qualifier: Qualifier | None
+    MaximumRetryAttempts: MaximumRetryAttempts | None
+    MaximumEventAgeInSeconds: MaximumEventAgeInSeconds | None
+    DestinationConfig: DestinationConfig | None
 
 
 class UpdateFunctionUrlConfigRequest(ServiceRequest):
     FunctionName: FunctionName
-    Qualifier: Optional[FunctionUrlQualifier]
-    AuthType: Optional[FunctionUrlAuthType]
-    Cors: Optional[Cors]
-    InvokeMode: Optional[InvokeMode]
+    Qualifier: FunctionUrlQualifier | None
+    AuthType: FunctionUrlAuthType | None
+    Cors: Cors | None
+    InvokeMode: InvokeMode | None
 
 
 class UpdateFunctionUrlConfigResponse(TypedDict, total=False):
     FunctionUrl: FunctionUrl
     FunctionArn: FunctionArn
     AuthType: FunctionUrlAuthType
-    Cors: Optional[Cors]
+    Cors: Cors | None
     CreationTime: Timestamp
     LastModifiedTime: Timestamp
-    InvokeMode: Optional[InvokeMode]
+    InvokeMode: InvokeMode | None
 
 
 class LambdaApi:
-    service = "lambda"
-    version = "2015-03-31"
+    service: str = "lambda"
+    version: str = "2015-03-31"
 
     @handler("AddLayerVersionPermission")
     def add_layer_version_permission(

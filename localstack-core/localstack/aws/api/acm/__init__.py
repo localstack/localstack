@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -261,10 +261,10 @@ class ValidationException(ServiceException):
 
 class Tag(TypedDict, total=False):
     Key: TagKey
-    Value: Optional[TagValue]
+    Value: TagValue | None
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class AddTagsToCertificateRequest(ServiceRequest):
@@ -277,29 +277,29 @@ CertificateChainBlob = bytes
 
 
 class CertificateOptions(TypedDict, total=False):
-    CertificateTransparencyLoggingPreference: Optional[CertificateTransparencyLoggingPreference]
-    Export: Optional[CertificateExport]
+    CertificateTransparencyLoggingPreference: CertificateTransparencyLoggingPreference | None
+    Export: CertificateExport | None
 
 
 class ExtendedKeyUsage(TypedDict, total=False):
-    Name: Optional[ExtendedKeyUsageName]
-    OID: Optional[String]
+    Name: ExtendedKeyUsageName | None
+    OID: String | None
 
 
-ExtendedKeyUsageList = List[ExtendedKeyUsage]
+ExtendedKeyUsageList = list[ExtendedKeyUsage]
 
 
 class KeyUsage(TypedDict, total=False):
-    Name: Optional[KeyUsageName]
+    Name: KeyUsageName | None
 
 
-KeyUsageList = List[KeyUsage]
+KeyUsageList = list[KeyUsage]
 TStamp = datetime
 
 
 class HttpRedirect(TypedDict, total=False):
-    RedirectFrom: Optional[String]
-    RedirectTo: Optional[String]
+    RedirectFrom: String | None
+    RedirectTo: String | None
 
 
 class ResourceRecord(TypedDict, total=False):
@@ -308,92 +308,92 @@ class ResourceRecord(TypedDict, total=False):
     Value: String
 
 
-ValidationEmailList = List[String]
+ValidationEmailList = list[String]
 
 
 class DomainValidation(TypedDict, total=False):
     DomainName: DomainNameString
-    ValidationEmails: Optional[ValidationEmailList]
-    ValidationDomain: Optional[DomainNameString]
-    ValidationStatus: Optional[DomainStatus]
-    ResourceRecord: Optional[ResourceRecord]
-    HttpRedirect: Optional[HttpRedirect]
-    ValidationMethod: Optional[ValidationMethod]
+    ValidationEmails: ValidationEmailList | None
+    ValidationDomain: DomainNameString | None
+    ValidationStatus: DomainStatus | None
+    ResourceRecord: ResourceRecord | None
+    HttpRedirect: HttpRedirect | None
+    ValidationMethod: ValidationMethod | None
 
 
-DomainValidationList = List[DomainValidation]
+DomainValidationList = list[DomainValidation]
 
 
 class RenewalSummary(TypedDict, total=False):
     RenewalStatus: RenewalStatus
     DomainValidationOptions: DomainValidationList
-    RenewalStatusReason: Optional[FailureReason]
+    RenewalStatusReason: FailureReason | None
     UpdatedAt: TStamp
 
 
-InUseList = List[String]
-DomainList = List[DomainNameString]
+InUseList = list[String]
+DomainList = list[DomainNameString]
 
 
 class CertificateDetail(TypedDict, total=False):
-    CertificateArn: Optional[Arn]
-    DomainName: Optional[DomainNameString]
-    SubjectAlternativeNames: Optional[DomainList]
-    ManagedBy: Optional[CertificateManagedBy]
-    DomainValidationOptions: Optional[DomainValidationList]
-    Serial: Optional[String]
-    Subject: Optional[String]
-    Issuer: Optional[String]
-    CreatedAt: Optional[TStamp]
-    IssuedAt: Optional[TStamp]
-    ImportedAt: Optional[TStamp]
-    Status: Optional[CertificateStatus]
-    RevokedAt: Optional[TStamp]
-    RevocationReason: Optional[RevocationReason]
-    NotBefore: Optional[TStamp]
-    NotAfter: Optional[TStamp]
-    KeyAlgorithm: Optional[KeyAlgorithm]
-    SignatureAlgorithm: Optional[String]
-    InUseBy: Optional[InUseList]
-    FailureReason: Optional[FailureReason]
-    Type: Optional[CertificateType]
-    RenewalSummary: Optional[RenewalSummary]
-    KeyUsages: Optional[KeyUsageList]
-    ExtendedKeyUsages: Optional[ExtendedKeyUsageList]
-    CertificateAuthorityArn: Optional[Arn]
-    RenewalEligibility: Optional[RenewalEligibility]
-    Options: Optional[CertificateOptions]
+    CertificateArn: Arn | None
+    DomainName: DomainNameString | None
+    SubjectAlternativeNames: DomainList | None
+    ManagedBy: CertificateManagedBy | None
+    DomainValidationOptions: DomainValidationList | None
+    Serial: String | None
+    Subject: String | None
+    Issuer: String | None
+    CreatedAt: TStamp | None
+    IssuedAt: TStamp | None
+    ImportedAt: TStamp | None
+    Status: CertificateStatus | None
+    RevokedAt: TStamp | None
+    RevocationReason: RevocationReason | None
+    NotBefore: TStamp | None
+    NotAfter: TStamp | None
+    KeyAlgorithm: KeyAlgorithm | None
+    SignatureAlgorithm: String | None
+    InUseBy: InUseList | None
+    FailureReason: FailureReason | None
+    Type: CertificateType | None
+    RenewalSummary: RenewalSummary | None
+    KeyUsages: KeyUsageList | None
+    ExtendedKeyUsages: ExtendedKeyUsageList | None
+    CertificateAuthorityArn: Arn | None
+    RenewalEligibility: RenewalEligibility | None
+    Options: CertificateOptions | None
 
 
-CertificateStatuses = List[CertificateStatus]
-ExtendedKeyUsageNames = List[ExtendedKeyUsageName]
-KeyUsageNames = List[KeyUsageName]
+CertificateStatuses = list[CertificateStatus]
+ExtendedKeyUsageNames = list[ExtendedKeyUsageName]
+KeyUsageNames = list[KeyUsageName]
 
 
 class CertificateSummary(TypedDict, total=False):
-    CertificateArn: Optional[Arn]
-    DomainName: Optional[DomainNameString]
-    SubjectAlternativeNameSummaries: Optional[DomainList]
-    HasAdditionalSubjectAlternativeNames: Optional[NullableBoolean]
-    Status: Optional[CertificateStatus]
-    Type: Optional[CertificateType]
-    KeyAlgorithm: Optional[KeyAlgorithm]
-    KeyUsages: Optional[KeyUsageNames]
-    ExtendedKeyUsages: Optional[ExtendedKeyUsageNames]
-    ExportOption: Optional[CertificateExport]
-    InUse: Optional[NullableBoolean]
-    Exported: Optional[NullableBoolean]
-    RenewalEligibility: Optional[RenewalEligibility]
-    NotBefore: Optional[TStamp]
-    NotAfter: Optional[TStamp]
-    CreatedAt: Optional[TStamp]
-    IssuedAt: Optional[TStamp]
-    ImportedAt: Optional[TStamp]
-    RevokedAt: Optional[TStamp]
-    ManagedBy: Optional[CertificateManagedBy]
+    CertificateArn: Arn | None
+    DomainName: DomainNameString | None
+    SubjectAlternativeNameSummaries: DomainList | None
+    HasAdditionalSubjectAlternativeNames: NullableBoolean | None
+    Status: CertificateStatus | None
+    Type: CertificateType | None
+    KeyAlgorithm: KeyAlgorithm | None
+    KeyUsages: KeyUsageNames | None
+    ExtendedKeyUsages: ExtendedKeyUsageNames | None
+    ExportOption: CertificateExport | None
+    InUse: NullableBoolean | None
+    Exported: NullableBoolean | None
+    RenewalEligibility: RenewalEligibility | None
+    NotBefore: TStamp | None
+    NotAfter: TStamp | None
+    CreatedAt: TStamp | None
+    IssuedAt: TStamp | None
+    ImportedAt: TStamp | None
+    RevokedAt: TStamp | None
+    ManagedBy: CertificateManagedBy | None
 
 
-CertificateSummaryList = List[CertificateSummary]
+CertificateSummaryList = list[CertificateSummary]
 
 
 class DeleteCertificateRequest(ServiceRequest):
@@ -405,7 +405,7 @@ class DescribeCertificateRequest(ServiceRequest):
 
 
 class DescribeCertificateResponse(TypedDict, total=False):
-    Certificate: Optional[CertificateDetail]
+    Certificate: CertificateDetail | None
 
 
 class DomainValidationOption(TypedDict, total=False):
@@ -413,11 +413,11 @@ class DomainValidationOption(TypedDict, total=False):
     ValidationDomain: DomainNameString
 
 
-DomainValidationOptionList = List[DomainValidationOption]
+DomainValidationOptionList = list[DomainValidationOption]
 
 
 class ExpiryEventsConfiguration(TypedDict, total=False):
-    DaysBeforeExpiry: Optional[PositiveInteger]
+    DaysBeforeExpiry: PositiveInteger | None
 
 
 PassphraseBlob = bytes
@@ -429,26 +429,26 @@ class ExportCertificateRequest(ServiceRequest):
 
 
 class ExportCertificateResponse(TypedDict, total=False):
-    Certificate: Optional[CertificateBody]
-    CertificateChain: Optional[CertificateChain]
-    PrivateKey: Optional[PrivateKey]
+    Certificate: CertificateBody | None
+    CertificateChain: CertificateChain | None
+    PrivateKey: PrivateKey | None
 
 
-ExtendedKeyUsageFilterList = List[ExtendedKeyUsageName]
-KeyAlgorithmList = List[KeyAlgorithm]
-KeyUsageFilterList = List[KeyUsageName]
+ExtendedKeyUsageFilterList = list[ExtendedKeyUsageName]
+KeyAlgorithmList = list[KeyAlgorithm]
+KeyUsageFilterList = list[KeyUsageName]
 
 
 class Filters(TypedDict, total=False):
-    extendedKeyUsage: Optional[ExtendedKeyUsageFilterList]
-    keyUsage: Optional[KeyUsageFilterList]
-    keyTypes: Optional[KeyAlgorithmList]
-    exportOption: Optional[CertificateExport]
-    managedBy: Optional[CertificateManagedBy]
+    extendedKeyUsage: ExtendedKeyUsageFilterList | None
+    keyUsage: KeyUsageFilterList | None
+    keyTypes: KeyAlgorithmList | None
+    exportOption: CertificateExport | None
+    managedBy: CertificateManagedBy | None
 
 
 class GetAccountConfigurationResponse(TypedDict, total=False):
-    ExpiryEvents: Optional[ExpiryEventsConfiguration]
+    ExpiryEvents: ExpiryEventsConfiguration | None
 
 
 class GetCertificateRequest(ServiceRequest):
@@ -456,37 +456,37 @@ class GetCertificateRequest(ServiceRequest):
 
 
 class GetCertificateResponse(TypedDict, total=False):
-    Certificate: Optional[CertificateBody]
-    CertificateChain: Optional[CertificateChain]
+    Certificate: CertificateBody | None
+    CertificateChain: CertificateChain | None
 
 
 PrivateKeyBlob = bytes
 
 
 class ImportCertificateRequest(ServiceRequest):
-    CertificateArn: Optional[Arn]
+    CertificateArn: Arn | None
     Certificate: CertificateBodyBlob
     PrivateKey: PrivateKeyBlob
-    CertificateChain: Optional[CertificateChainBlob]
-    Tags: Optional[TagList]
+    CertificateChain: CertificateChainBlob | None
+    Tags: TagList | None
 
 
 class ImportCertificateResponse(TypedDict, total=False):
-    CertificateArn: Optional[Arn]
+    CertificateArn: Arn | None
 
 
 class ListCertificatesRequest(ServiceRequest):
-    CertificateStatuses: Optional[CertificateStatuses]
-    Includes: Optional[Filters]
-    NextToken: Optional[NextToken]
-    MaxItems: Optional[MaxItems]
-    SortBy: Optional[SortBy]
-    SortOrder: Optional[SortOrder]
+    CertificateStatuses: CertificateStatuses | None
+    Includes: Filters | None
+    NextToken: NextToken | None
+    MaxItems: MaxItems | None
+    SortBy: SortBy | None
+    SortOrder: SortOrder | None
 
 
 class ListCertificatesResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    CertificateSummaryList: Optional[CertificateSummaryList]
+    NextToken: NextToken | None
+    CertificateSummaryList: CertificateSummaryList | None
 
 
 class ListTagsForCertificateRequest(ServiceRequest):
@@ -494,11 +494,11 @@ class ListTagsForCertificateRequest(ServiceRequest):
 
 
 class ListTagsForCertificateResponse(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class PutAccountConfigurationRequest(ServiceRequest):
-    ExpiryEvents: Optional[ExpiryEventsConfiguration]
+    ExpiryEvents: ExpiryEventsConfiguration | None
     IdempotencyToken: IdempotencyToken
 
 
@@ -513,19 +513,19 @@ class RenewCertificateRequest(ServiceRequest):
 
 class RequestCertificateRequest(ServiceRequest):
     DomainName: DomainNameString
-    ValidationMethod: Optional[ValidationMethod]
-    SubjectAlternativeNames: Optional[DomainList]
-    IdempotencyToken: Optional[IdempotencyToken]
-    DomainValidationOptions: Optional[DomainValidationOptionList]
-    Options: Optional[CertificateOptions]
-    CertificateAuthorityArn: Optional[PcaArn]
-    Tags: Optional[TagList]
-    KeyAlgorithm: Optional[KeyAlgorithm]
-    ManagedBy: Optional[CertificateManagedBy]
+    ValidationMethod: ValidationMethod | None
+    SubjectAlternativeNames: DomainList | None
+    IdempotencyToken: IdempotencyToken | None
+    DomainValidationOptions: DomainValidationOptionList | None
+    Options: CertificateOptions | None
+    CertificateAuthorityArn: PcaArn | None
+    Tags: TagList | None
+    KeyAlgorithm: KeyAlgorithm | None
+    ManagedBy: CertificateManagedBy | None
 
 
 class RequestCertificateResponse(TypedDict, total=False):
-    CertificateArn: Optional[Arn]
+    CertificateArn: Arn | None
 
 
 class ResendValidationEmailRequest(ServiceRequest):
@@ -540,7 +540,7 @@ class RevokeCertificateRequest(ServiceRequest):
 
 
 class RevokeCertificateResponse(TypedDict, total=False):
-    CertificateArn: Optional[Arn]
+    CertificateArn: Arn | None
 
 
 class UpdateCertificateOptionsRequest(ServiceRequest):
@@ -549,8 +549,8 @@ class UpdateCertificateOptionsRequest(ServiceRequest):
 
 
 class AcmApi:
-    service = "acm"
-    version = "2015-12-08"
+    service: str = "acm"
+    version: str = "2015-12-08"
 
     @handler("AddTagsToCertificate")
     def add_tags_to_certificate(
