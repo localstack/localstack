@@ -1402,7 +1402,8 @@ class TemplateDeployer:
             "requestData": {
                 "logicalResourceId": logical_resource_id,
                 "resourceProperties": resource["Properties"],
-                "previousResourceProperties": resource.get("_last_deployed_state"),  # TODO
+                # _last_deployed_state stores the previous state for update/delete operations
+                "previousResourceProperties": resource.get("_last_deployed_state"),
                 "callerCredentials": creds,
                 "providerCredentials": creds,
                 "systemTags": {},
