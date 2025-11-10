@@ -522,7 +522,12 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
 
         self.update_primary_key_with_replica_keys(primary_key, replica_key, replica_region)
 
-        return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key.metadata)
+        # CurrentKeyMaterialId is not returned in the ReplicaKeyMetadata. May be due to not being evaluated until
+        # the key has been successfully replicated as it does not show up in DescribeKey immediately either.
+        replica_key_metadata_response = copy.deepcopy(replica_key.metadata)
+        del replica_key_metadata_response["CurrentKeyMaterialId"]
+
+        return ReplicateKeyResponse(ReplicaKeyMetadata=replica_key_metadata_response)
 
     @staticmethod
     # Adds new multi region replica key to the primary key's metadata.
