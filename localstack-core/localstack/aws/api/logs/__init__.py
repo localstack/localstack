@@ -1,5 +1,6 @@
+from collections.abc import Iterator
 from enum import StrEnum
-from typing import Dict, Iterator, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -381,7 +382,7 @@ class DataAlreadyAcceptedException(ServiceException):
     code: str = "DataAlreadyAcceptedException"
     sender_fault: bool = False
     status_code: int = 400
-    expectedSequenceToken: Optional[SequenceToken]
+    expectedSequenceToken: SequenceToken | None
 
 
 class InternalStreamingException(ServiceException):
@@ -406,7 +407,7 @@ class InvalidSequenceTokenException(ServiceException):
     code: str = "InvalidSequenceTokenException"
     sender_fault: bool = False
     status_code: int = 400
-    expectedSequenceToken: Optional[SequenceToken]
+    expectedSequenceToken: SequenceToken | None
 
 
 class LimitExceededException(ServiceException):
@@ -416,20 +417,20 @@ class LimitExceededException(ServiceException):
 
 
 class QueryCompileErrorLocation(TypedDict, total=False):
-    startCharOffset: Optional[QueryCharOffset]
-    endCharOffset: Optional[QueryCharOffset]
+    startCharOffset: QueryCharOffset | None
+    endCharOffset: QueryCharOffset | None
 
 
 class QueryCompileError(TypedDict, total=False):
-    location: Optional[QueryCompileErrorLocation]
-    message: Optional[Message]
+    location: QueryCompileErrorLocation | None
+    message: Message | None
 
 
 class MalformedQueryException(ServiceException):
     code: str = "MalformedQueryException"
     sender_fault: bool = False
     status_code: int = 400
-    queryCompileError: Optional[QueryCompileError]
+    queryCompileError: QueryCompileError | None
 
 
 class OperationAbortedException(ServiceException):
@@ -484,7 +485,7 @@ class TooManyTagsException(ServiceException):
     code: str = "TooManyTagsException"
     sender_fault: bool = False
     status_code: int = 400
-    resourceName: Optional[AmazonResourceName]
+    resourceName: AmazonResourceName | None
 
 
 class UnrecognizedClientException(ServiceException):
@@ -499,70 +500,70 @@ class ValidationException(ServiceException):
     status_code: int = 400
 
 
-AccountIds = List[AccountId]
+AccountIds = list[AccountId]
 Timestamp = int
 
 
 class AccountPolicy(TypedDict, total=False):
-    policyName: Optional[PolicyName]
-    policyDocument: Optional[AccountPolicyDocument]
-    lastUpdatedTime: Optional[Timestamp]
-    policyType: Optional[PolicyType]
-    scope: Optional[Scope]
-    selectionCriteria: Optional[SelectionCriteria]
-    accountId: Optional[AccountId]
+    policyName: PolicyName | None
+    policyDocument: AccountPolicyDocument | None
+    lastUpdatedTime: Timestamp | None
+    policyType: PolicyType | None
+    scope: Scope | None
+    selectionCriteria: SelectionCriteria | None
+    accountId: AccountId | None
 
 
-AccountPolicies = List[AccountPolicy]
+AccountPolicies = list[AccountPolicy]
 
 
 class AddKeyEntry(TypedDict, total=False):
     key: Key
     value: AddKeyValue
-    overwriteIfExists: Optional[OverwriteIfExists]
+    overwriteIfExists: OverwriteIfExists | None
 
 
-AddKeyEntries = List[AddKeyEntry]
+AddKeyEntries = list[AddKeyEntry]
 
 
 class AddKeys(TypedDict, total=False):
     entries: AddKeyEntries
 
 
-AllowedFieldDelimiters = List[FieldDelimiter]
+AllowedFieldDelimiters = list[FieldDelimiter]
 
 
 class RecordField(TypedDict, total=False):
-    name: Optional[FieldHeader]
-    mandatory: Optional[Boolean]
+    name: FieldHeader | None
+    mandatory: Boolean | None
 
 
-AllowedFields = List[RecordField]
+AllowedFields = list[RecordField]
 EpochMillis = int
-LogGroupArnList = List[LogGroupArn]
+LogGroupArnList = list[LogGroupArn]
 TokenValue = int
-Enumerations = Dict[TokenString, TokenValue]
+Enumerations = dict[TokenString, TokenValue]
 
 
 class PatternToken(TypedDict, total=False):
-    dynamicTokenPosition: Optional[DynamicTokenPosition]
-    isDynamic: Optional[Boolean]
-    tokenString: Optional[TokenString]
-    enumerations: Optional[Enumerations]
-    inferredTokenName: Optional[InferredTokenName]
+    dynamicTokenPosition: DynamicTokenPosition | None
+    isDynamic: Boolean | None
+    tokenString: TokenString | None
+    enumerations: Enumerations | None
+    inferredTokenName: InferredTokenName | None
 
 
-PatternTokens = List[PatternToken]
+PatternTokens = list[PatternToken]
 
 
 class LogEvent(TypedDict, total=False):
-    timestamp: Optional[Timestamp]
-    message: Optional[EventMessage]
+    timestamp: Timestamp | None
+    message: EventMessage | None
 
 
-LogSamples = List[LogEvent]
+LogSamples = list[LogEvent]
 Count = int
-Histogram = Dict[Time, Count]
+Histogram = dict[Time, Count]
 
 
 class Anomaly(TypedDict, total=False):
@@ -570,8 +571,8 @@ class Anomaly(TypedDict, total=False):
     patternId: PatternId
     anomalyDetectorArn: AnomalyDetectorArn
     patternString: PatternString
-    patternRegex: Optional[PatternRegex]
-    priority: Optional[Priority]
+    patternRegex: PatternRegex | None
+    priority: Priority | None
     firstSeen: EpochMillis
     lastSeen: EpochMillis
     description: Description
@@ -581,164 +582,164 @@ class Anomaly(TypedDict, total=False):
     logSamples: LogSamples
     patternTokens: PatternTokens
     logGroupArnList: LogGroupArnList
-    suppressed: Optional[Boolean]
-    suppressedDate: Optional[EpochMillis]
-    suppressedUntil: Optional[EpochMillis]
-    isPatternLevelSuppression: Optional[Boolean]
+    suppressed: Boolean | None
+    suppressedDate: EpochMillis | None
+    suppressedUntil: EpochMillis | None
+    isPatternLevelSuppression: Boolean | None
 
 
-Anomalies = List[Anomaly]
+Anomalies = list[Anomaly]
 AnomalyVisibilityTime = int
 
 
 class AnomalyDetector(TypedDict, total=False):
-    anomalyDetectorArn: Optional[AnomalyDetectorArn]
-    detectorName: Optional[DetectorName]
-    logGroupArnList: Optional[LogGroupArnList]
-    evaluationFrequency: Optional[EvaluationFrequency]
-    filterPattern: Optional[FilterPattern]
-    anomalyDetectorStatus: Optional[AnomalyDetectorStatus]
-    kmsKeyId: Optional[KmsKeyId]
-    creationTimeStamp: Optional[EpochMillis]
-    lastModifiedTimeStamp: Optional[EpochMillis]
-    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    anomalyDetectorArn: AnomalyDetectorArn | None
+    detectorName: DetectorName | None
+    logGroupArnList: LogGroupArnList | None
+    evaluationFrequency: EvaluationFrequency | None
+    filterPattern: FilterPattern | None
+    anomalyDetectorStatus: AnomalyDetectorStatus | None
+    kmsKeyId: KmsKeyId | None
+    creationTimeStamp: EpochMillis | None
+    lastModifiedTimeStamp: EpochMillis | None
+    anomalyVisibilityTime: AnomalyVisibilityTime | None
 
 
-AnomalyDetectors = List[AnomalyDetector]
+AnomalyDetectors = list[AnomalyDetector]
 
 
 class AssociateKmsKeyRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
+    logGroupName: LogGroupName | None
     kmsKeyId: KmsKeyId
-    resourceIdentifier: Optional[ResourceIdentifier]
+    resourceIdentifier: ResourceIdentifier | None
 
 
-Columns = List[Column]
+Columns = list[Column]
 
 
 class CSV(TypedDict, total=False):
-    quoteCharacter: Optional[QuoteCharacter]
-    delimiter: Optional[Delimiter]
-    columns: Optional[Columns]
-    source: Optional[Source]
+    quoteCharacter: QuoteCharacter | None
+    delimiter: Delimiter | None
+    columns: Columns | None
+    source: Source | None
 
 
 class CancelExportTaskRequest(ServiceRequest):
     taskId: ExportTaskId
 
 
-RecordFields = List[FieldHeader]
-OutputFormats = List[OutputFormat]
+RecordFields = list[FieldHeader]
+OutputFormats = list[OutputFormat]
 
 
 class S3DeliveryConfiguration(TypedDict, total=False):
-    suffixPath: Optional[DeliverySuffixPath]
-    enableHiveCompatiblePath: Optional[Boolean]
+    suffixPath: DeliverySuffixPath | None
+    enableHiveCompatiblePath: Boolean | None
 
 
 class ConfigurationTemplateDeliveryConfigValues(TypedDict, total=False):
-    recordFields: Optional[RecordFields]
-    fieldDelimiter: Optional[FieldDelimiter]
-    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
+    recordFields: RecordFields | None
+    fieldDelimiter: FieldDelimiter | None
+    s3DeliveryConfiguration: S3DeliveryConfiguration | None
 
 
 class ConfigurationTemplate(TypedDict, total=False):
-    service: Optional[Service]
-    logType: Optional[LogType]
-    resourceType: Optional[ResourceType]
-    deliveryDestinationType: Optional[DeliveryDestinationType]
-    defaultDeliveryConfigValues: Optional[ConfigurationTemplateDeliveryConfigValues]
-    allowedFields: Optional[AllowedFields]
-    allowedOutputFormats: Optional[OutputFormats]
-    allowedActionForAllowVendedLogsDeliveryForResource: Optional[
-        AllowedActionForAllowVendedLogsDeliveryForResource
-    ]
-    allowedFieldDelimiters: Optional[AllowedFieldDelimiters]
-    allowedSuffixPathFields: Optional[RecordFields]
+    service: Service | None
+    logType: LogType | None
+    resourceType: ResourceType | None
+    deliveryDestinationType: DeliveryDestinationType | None
+    defaultDeliveryConfigValues: ConfigurationTemplateDeliveryConfigValues | None
+    allowedFields: AllowedFields | None
+    allowedOutputFormats: OutputFormats | None
+    allowedActionForAllowVendedLogsDeliveryForResource: (
+        AllowedActionForAllowVendedLogsDeliveryForResource | None
+    )
+    allowedFieldDelimiters: AllowedFieldDelimiters | None
+    allowedSuffixPathFields: RecordFields | None
 
 
-ConfigurationTemplates = List[ConfigurationTemplate]
+ConfigurationTemplates = list[ConfigurationTemplate]
 
 
 class CopyValueEntry(TypedDict, total=False):
     source: Source
     target: Target
-    overwriteIfExists: Optional[OverwriteIfExists]
+    overwriteIfExists: OverwriteIfExists | None
 
 
-CopyValueEntries = List[CopyValueEntry]
+CopyValueEntries = list[CopyValueEntry]
 
 
 class CopyValue(TypedDict, total=False):
     entries: CopyValueEntries
 
 
-Tags = Dict[TagKey, TagValue]
+Tags = dict[TagKey, TagValue]
 
 
 class CreateDeliveryRequest(ServiceRequest):
     deliverySourceName: DeliverySourceName
     deliveryDestinationArn: Arn
-    recordFields: Optional[RecordFields]
-    fieldDelimiter: Optional[FieldDelimiter]
-    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
-    tags: Optional[Tags]
+    recordFields: RecordFields | None
+    fieldDelimiter: FieldDelimiter | None
+    s3DeliveryConfiguration: S3DeliveryConfiguration | None
+    tags: Tags | None
 
 
 class Delivery(TypedDict, total=False):
-    id: Optional[DeliveryId]
-    arn: Optional[Arn]
-    deliverySourceName: Optional[DeliverySourceName]
-    deliveryDestinationArn: Optional[Arn]
-    deliveryDestinationType: Optional[DeliveryDestinationType]
-    recordFields: Optional[RecordFields]
-    fieldDelimiter: Optional[FieldDelimiter]
-    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
-    tags: Optional[Tags]
+    id: DeliveryId | None
+    arn: Arn | None
+    deliverySourceName: DeliverySourceName | None
+    deliveryDestinationArn: Arn | None
+    deliveryDestinationType: DeliveryDestinationType | None
+    recordFields: RecordFields | None
+    fieldDelimiter: FieldDelimiter | None
+    s3DeliveryConfiguration: S3DeliveryConfiguration | None
+    tags: Tags | None
 
 
 class CreateDeliveryResponse(TypedDict, total=False):
-    delivery: Optional[Delivery]
+    delivery: Delivery | None
 
 
 CreateExportTaskRequest = TypedDict(
     "CreateExportTaskRequest",
     {
-        "taskName": Optional[ExportTaskName],
+        "taskName": ExportTaskName | None,
         "logGroupName": LogGroupName,
-        "logStreamNamePrefix": Optional[LogStreamName],
+        "logStreamNamePrefix": LogStreamName | None,
         "from": Timestamp,
         "to": Timestamp,
         "destination": ExportDestinationBucket,
-        "destinationPrefix": Optional[ExportDestinationPrefix],
+        "destinationPrefix": ExportDestinationPrefix | None,
     },
     total=False,
 )
 
 
 class CreateExportTaskResponse(TypedDict, total=False):
-    taskId: Optional[ExportTaskId]
+    taskId: ExportTaskId | None
 
 
 class CreateLogAnomalyDetectorRequest(ServiceRequest):
     logGroupArnList: LogGroupArnList
-    detectorName: Optional[DetectorName]
-    evaluationFrequency: Optional[EvaluationFrequency]
-    filterPattern: Optional[FilterPattern]
-    kmsKeyId: Optional[DetectorKmsKeyArn]
-    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
-    tags: Optional[Tags]
+    detectorName: DetectorName | None
+    evaluationFrequency: EvaluationFrequency | None
+    filterPattern: FilterPattern | None
+    kmsKeyId: DetectorKmsKeyArn | None
+    anomalyVisibilityTime: AnomalyVisibilityTime | None
+    tags: Tags | None
 
 
 class CreateLogAnomalyDetectorResponse(TypedDict, total=False):
-    anomalyDetectorArn: Optional[AnomalyDetectorArn]
+    anomalyDetectorArn: AnomalyDetectorArn | None
 
 
 class CreateLogGroupRequest(ServiceRequest):
     logGroupName: LogGroupName
-    kmsKeyId: Optional[KmsKeyId]
-    tags: Optional[Tags]
-    logGroupClass: Optional[LogGroupClass]
+    kmsKeyId: KmsKeyId | None
+    tags: Tags | None
+    logGroupClass: LogGroupClass | None
 
 
 class CreateLogStreamRequest(ServiceRequest):
@@ -746,19 +747,19 @@ class CreateLogStreamRequest(ServiceRequest):
     logStreamName: LogStreamName
 
 
-DashboardViewerPrincipals = List[Arn]
+DashboardViewerPrincipals = list[Arn]
 Data = bytes
-MatchPatterns = List[MatchPattern]
+MatchPatterns = list[MatchPattern]
 
 
 class DateTimeConverter(TypedDict, total=False):
     source: Source
     target: Target
-    targetFormat: Optional[TargetFormat]
+    targetFormat: TargetFormat | None
     matchPatterns: MatchPatterns
-    sourceTimezone: Optional[SourceTimezone]
-    targetTimezone: Optional[TargetTimezone]
-    locale: Optional[Locale]
+    sourceTimezone: SourceTimezone | None
+    targetTimezone: TargetTimezone | None
+    locale: Locale | None
 
 
 class DeleteAccountPolicyRequest(ServiceRequest):
@@ -800,14 +801,14 @@ class DeleteIndexPolicyResponse(TypedDict, total=False):
 
 class DeleteIntegrationRequest(ServiceRequest):
     integrationName: IntegrationName
-    force: Optional[Force]
+    force: Force | None
 
 
 class DeleteIntegrationResponse(TypedDict, total=False):
     pass
 
 
-DeleteWithKeys = List[WithKey]
+DeleteWithKeys = list[WithKey]
 
 
 class DeleteKeys(TypedDict, total=False):
@@ -837,13 +838,13 @@ class DeleteQueryDefinitionRequest(ServiceRequest):
 
 
 class DeleteQueryDefinitionResponse(TypedDict, total=False):
-    success: Optional[Success]
+    success: Success | None
 
 
 class DeleteResourcePolicyRequest(ServiceRequest):
-    policyName: Optional[PolicyName]
-    resourceArn: Optional[Arn]
-    expectedRevisionId: Optional[ExpectedRevisionId]
+    policyName: PolicyName | None
+    resourceArn: Arn | None
+    expectedRevisionId: ExpectedRevisionId | None
 
 
 class DeleteRetentionPolicyRequest(ServiceRequest):
@@ -859,7 +860,7 @@ class DeleteTransformerRequest(ServiceRequest):
     logGroupIdentifier: LogGroupIdentifier
 
 
-Deliveries = List[Delivery]
+Deliveries = list[Delivery]
 
 
 class DeliveryDestinationConfiguration(TypedDict, total=False):
@@ -867,481 +868,481 @@ class DeliveryDestinationConfiguration(TypedDict, total=False):
 
 
 class DeliveryDestination(TypedDict, total=False):
-    name: Optional[DeliveryDestinationName]
-    arn: Optional[Arn]
-    deliveryDestinationType: Optional[DeliveryDestinationType]
-    outputFormat: Optional[OutputFormat]
-    deliveryDestinationConfiguration: Optional[DeliveryDestinationConfiguration]
-    tags: Optional[Tags]
+    name: DeliveryDestinationName | None
+    arn: Arn | None
+    deliveryDestinationType: DeliveryDestinationType | None
+    outputFormat: OutputFormat | None
+    deliveryDestinationConfiguration: DeliveryDestinationConfiguration | None
+    tags: Tags | None
 
 
-DeliveryDestinationTypes = List[DeliveryDestinationType]
-DeliveryDestinations = List[DeliveryDestination]
-ResourceArns = List[Arn]
+DeliveryDestinationTypes = list[DeliveryDestinationType]
+DeliveryDestinations = list[DeliveryDestination]
+ResourceArns = list[Arn]
 
 
 class DeliverySource(TypedDict, total=False):
-    name: Optional[DeliverySourceName]
-    arn: Optional[Arn]
-    resourceArns: Optional[ResourceArns]
-    service: Optional[Service]
-    logType: Optional[LogType]
-    tags: Optional[Tags]
+    name: DeliverySourceName | None
+    arn: Arn | None
+    resourceArns: ResourceArns | None
+    service: Service | None
+    logType: LogType | None
+    tags: Tags | None
 
 
-DeliverySources = List[DeliverySource]
+DeliverySources = list[DeliverySource]
 
 
 class DescribeAccountPoliciesRequest(ServiceRequest):
     policyType: PolicyType
-    policyName: Optional[PolicyName]
-    accountIdentifiers: Optional[AccountIds]
-    nextToken: Optional[NextToken]
+    policyName: PolicyName | None
+    accountIdentifiers: AccountIds | None
+    nextToken: NextToken | None
 
 
 class DescribeAccountPoliciesResponse(TypedDict, total=False):
-    accountPolicies: Optional[AccountPolicies]
-    nextToken: Optional[NextToken]
+    accountPolicies: AccountPolicies | None
+    nextToken: NextToken | None
 
 
-ResourceTypes = List[ResourceType]
-LogTypes = List[LogType]
+ResourceTypes = list[ResourceType]
+LogTypes = list[LogType]
 
 
 class DescribeConfigurationTemplatesRequest(ServiceRequest):
-    service: Optional[Service]
-    logTypes: Optional[LogTypes]
-    resourceTypes: Optional[ResourceTypes]
-    deliveryDestinationTypes: Optional[DeliveryDestinationTypes]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    service: Service | None
+    logTypes: LogTypes | None
+    resourceTypes: ResourceTypes | None
+    deliveryDestinationTypes: DeliveryDestinationTypes | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class DescribeConfigurationTemplatesResponse(TypedDict, total=False):
-    configurationTemplates: Optional[ConfigurationTemplates]
-    nextToken: Optional[NextToken]
+    configurationTemplates: ConfigurationTemplates | None
+    nextToken: NextToken | None
 
 
 class DescribeDeliveriesRequest(ServiceRequest):
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class DescribeDeliveriesResponse(TypedDict, total=False):
-    deliveries: Optional[Deliveries]
-    nextToken: Optional[NextToken]
+    deliveries: Deliveries | None
+    nextToken: NextToken | None
 
 
 class DescribeDeliveryDestinationsRequest(ServiceRequest):
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class DescribeDeliveryDestinationsResponse(TypedDict, total=False):
-    deliveryDestinations: Optional[DeliveryDestinations]
-    nextToken: Optional[NextToken]
+    deliveryDestinations: DeliveryDestinations | None
+    nextToken: NextToken | None
 
 
 class DescribeDeliverySourcesRequest(ServiceRequest):
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class DescribeDeliverySourcesResponse(TypedDict, total=False):
-    deliverySources: Optional[DeliverySources]
-    nextToken: Optional[NextToken]
+    deliverySources: DeliverySources | None
+    nextToken: NextToken | None
 
 
 class DescribeDestinationsRequest(ServiceRequest):
-    DestinationNamePrefix: Optional[DestinationName]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    DestinationNamePrefix: DestinationName | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class Destination(TypedDict, total=False):
-    destinationName: Optional[DestinationName]
-    targetArn: Optional[TargetArn]
-    roleArn: Optional[RoleArn]
-    accessPolicy: Optional[AccessPolicy]
-    arn: Optional[Arn]
-    creationTime: Optional[Timestamp]
+    destinationName: DestinationName | None
+    targetArn: TargetArn | None
+    roleArn: RoleArn | None
+    accessPolicy: AccessPolicy | None
+    arn: Arn | None
+    creationTime: Timestamp | None
 
 
-Destinations = List[Destination]
+Destinations = list[Destination]
 
 
 class DescribeDestinationsResponse(TypedDict, total=False):
-    destinations: Optional[Destinations]
-    nextToken: Optional[NextToken]
+    destinations: Destinations | None
+    nextToken: NextToken | None
 
 
 class DescribeExportTasksRequest(ServiceRequest):
-    taskId: Optional[ExportTaskId]
-    statusCode: Optional[ExportTaskStatusCode]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    taskId: ExportTaskId | None
+    statusCode: ExportTaskStatusCode | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class ExportTaskExecutionInfo(TypedDict, total=False):
-    creationTime: Optional[Timestamp]
-    completionTime: Optional[Timestamp]
+    creationTime: Timestamp | None
+    completionTime: Timestamp | None
 
 
 class ExportTaskStatus(TypedDict, total=False):
-    code: Optional[ExportTaskStatusCode]
-    message: Optional[ExportTaskStatusMessage]
+    code: ExportTaskStatusCode | None
+    message: ExportTaskStatusMessage | None
 
 
 ExportTask = TypedDict(
     "ExportTask",
     {
-        "taskId": Optional[ExportTaskId],
-        "taskName": Optional[ExportTaskName],
-        "logGroupName": Optional[LogGroupName],
-        "from": Optional[Timestamp],
-        "to": Optional[Timestamp],
-        "destination": Optional[ExportDestinationBucket],
-        "destinationPrefix": Optional[ExportDestinationPrefix],
-        "status": Optional[ExportTaskStatus],
-        "executionInfo": Optional[ExportTaskExecutionInfo],
+        "taskId": ExportTaskId | None,
+        "taskName": ExportTaskName | None,
+        "logGroupName": LogGroupName | None,
+        "from": Timestamp | None,
+        "to": Timestamp | None,
+        "destination": ExportDestinationBucket | None,
+        "destinationPrefix": ExportDestinationPrefix | None,
+        "status": ExportTaskStatus | None,
+        "executionInfo": ExportTaskExecutionInfo | None,
     },
     total=False,
 )
-ExportTasks = List[ExportTask]
+ExportTasks = list[ExportTask]
 
 
 class DescribeExportTasksResponse(TypedDict, total=False):
-    exportTasks: Optional[ExportTasks]
-    nextToken: Optional[NextToken]
+    exportTasks: ExportTasks | None
+    nextToken: NextToken | None
 
 
-DescribeFieldIndexesLogGroupIdentifiers = List[LogGroupIdentifier]
+DescribeFieldIndexesLogGroupIdentifiers = list[LogGroupIdentifier]
 
 
 class DescribeFieldIndexesRequest(ServiceRequest):
     logGroupIdentifiers: DescribeFieldIndexesLogGroupIdentifiers
-    nextToken: Optional[NextToken]
+    nextToken: NextToken | None
 
 
 class FieldIndex(TypedDict, total=False):
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    fieldIndexName: Optional[FieldIndexName]
-    lastScanTime: Optional[Timestamp]
-    firstEventTime: Optional[Timestamp]
-    lastEventTime: Optional[Timestamp]
+    logGroupIdentifier: LogGroupIdentifier | None
+    fieldIndexName: FieldIndexName | None
+    lastScanTime: Timestamp | None
+    firstEventTime: Timestamp | None
+    lastEventTime: Timestamp | None
 
 
-FieldIndexes = List[FieldIndex]
+FieldIndexes = list[FieldIndex]
 
 
 class DescribeFieldIndexesResponse(TypedDict, total=False):
-    fieldIndexes: Optional[FieldIndexes]
-    nextToken: Optional[NextToken]
+    fieldIndexes: FieldIndexes | None
+    nextToken: NextToken | None
 
 
-DescribeIndexPoliciesLogGroupIdentifiers = List[LogGroupIdentifier]
+DescribeIndexPoliciesLogGroupIdentifiers = list[LogGroupIdentifier]
 
 
 class DescribeIndexPoliciesRequest(ServiceRequest):
     logGroupIdentifiers: DescribeIndexPoliciesLogGroupIdentifiers
-    nextToken: Optional[NextToken]
+    nextToken: NextToken | None
 
 
 class IndexPolicy(TypedDict, total=False):
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    lastUpdateTime: Optional[Timestamp]
-    policyDocument: Optional[PolicyDocument]
-    policyName: Optional[PolicyName]
-    source: Optional[IndexSource]
+    logGroupIdentifier: LogGroupIdentifier | None
+    lastUpdateTime: Timestamp | None
+    policyDocument: PolicyDocument | None
+    policyName: PolicyName | None
+    source: IndexSource | None
 
 
-IndexPolicies = List[IndexPolicy]
+IndexPolicies = list[IndexPolicy]
 
 
 class DescribeIndexPoliciesResponse(TypedDict, total=False):
-    indexPolicies: Optional[IndexPolicies]
-    nextToken: Optional[NextToken]
+    indexPolicies: IndexPolicies | None
+    nextToken: NextToken | None
 
 
-DescribeLogGroupsLogGroupIdentifiers = List[LogGroupIdentifier]
+DescribeLogGroupsLogGroupIdentifiers = list[LogGroupIdentifier]
 
 
 class DescribeLogGroupsRequest(ServiceRequest):
-    accountIdentifiers: Optional[AccountIds]
-    logGroupNamePrefix: Optional[LogGroupName]
-    logGroupNamePattern: Optional[LogGroupNamePattern]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
-    includeLinkedAccounts: Optional[IncludeLinkedAccounts]
-    logGroupClass: Optional[LogGroupClass]
-    logGroupIdentifiers: Optional[DescribeLogGroupsLogGroupIdentifiers]
+    accountIdentifiers: AccountIds | None
+    logGroupNamePrefix: LogGroupName | None
+    logGroupNamePattern: LogGroupNamePattern | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
+    includeLinkedAccounts: IncludeLinkedAccounts | None
+    logGroupClass: LogGroupClass | None
+    logGroupIdentifiers: DescribeLogGroupsLogGroupIdentifiers | None
 
 
-InheritedProperties = List[InheritedProperty]
+InheritedProperties = list[InheritedProperty]
 StoredBytes = int
 
 
 class LogGroup(TypedDict, total=False):
-    logGroupName: Optional[LogGroupName]
-    creationTime: Optional[Timestamp]
-    retentionInDays: Optional[Days]
-    metricFilterCount: Optional[FilterCount]
-    arn: Optional[Arn]
-    storedBytes: Optional[StoredBytes]
-    kmsKeyId: Optional[KmsKeyId]
-    dataProtectionStatus: Optional[DataProtectionStatus]
-    inheritedProperties: Optional[InheritedProperties]
-    logGroupClass: Optional[LogGroupClass]
-    logGroupArn: Optional[Arn]
+    logGroupName: LogGroupName | None
+    creationTime: Timestamp | None
+    retentionInDays: Days | None
+    metricFilterCount: FilterCount | None
+    arn: Arn | None
+    storedBytes: StoredBytes | None
+    kmsKeyId: KmsKeyId | None
+    dataProtectionStatus: DataProtectionStatus | None
+    inheritedProperties: InheritedProperties | None
+    logGroupClass: LogGroupClass | None
+    logGroupArn: Arn | None
 
 
-LogGroups = List[LogGroup]
+LogGroups = list[LogGroup]
 
 
 class DescribeLogGroupsResponse(TypedDict, total=False):
-    logGroups: Optional[LogGroups]
-    nextToken: Optional[NextToken]
+    logGroups: LogGroups | None
+    nextToken: NextToken | None
 
 
 class DescribeLogStreamsRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    logStreamNamePrefix: Optional[LogStreamName]
-    orderBy: Optional[OrderBy]
-    descending: Optional[Descending]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    logGroupName: LogGroupName | None
+    logGroupIdentifier: LogGroupIdentifier | None
+    logStreamNamePrefix: LogStreamName | None
+    orderBy: OrderBy | None
+    descending: Descending | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class LogStream(TypedDict, total=False):
-    logStreamName: Optional[LogStreamName]
-    creationTime: Optional[Timestamp]
-    firstEventTimestamp: Optional[Timestamp]
-    lastEventTimestamp: Optional[Timestamp]
-    lastIngestionTime: Optional[Timestamp]
-    uploadSequenceToken: Optional[SequenceToken]
-    arn: Optional[Arn]
-    storedBytes: Optional[StoredBytes]
+    logStreamName: LogStreamName | None
+    creationTime: Timestamp | None
+    firstEventTimestamp: Timestamp | None
+    lastEventTimestamp: Timestamp | None
+    lastIngestionTime: Timestamp | None
+    uploadSequenceToken: SequenceToken | None
+    arn: Arn | None
+    storedBytes: StoredBytes | None
 
 
-LogStreams = List[LogStream]
+LogStreams = list[LogStream]
 
 
 class DescribeLogStreamsResponse(TypedDict, total=False):
-    logStreams: Optional[LogStreams]
-    nextToken: Optional[NextToken]
+    logStreams: LogStreams | None
+    nextToken: NextToken | None
 
 
 class DescribeMetricFiltersRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    filterNamePrefix: Optional[FilterName]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
-    metricName: Optional[MetricName]
-    metricNamespace: Optional[MetricNamespace]
+    logGroupName: LogGroupName | None
+    filterNamePrefix: FilterName | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
+    metricName: MetricName | None
+    metricNamespace: MetricNamespace | None
 
 
-EmitSystemFields = List[SystemField]
-Dimensions = Dict[DimensionsKey, DimensionsValue]
+EmitSystemFields = list[SystemField]
+Dimensions = dict[DimensionsKey, DimensionsValue]
 
 
 class MetricTransformation(TypedDict, total=False):
     metricName: MetricName
     metricNamespace: MetricNamespace
     metricValue: MetricValue
-    defaultValue: Optional[DefaultValue]
-    dimensions: Optional[Dimensions]
-    unit: Optional[StandardUnit]
+    defaultValue: DefaultValue | None
+    dimensions: Dimensions | None
+    unit: StandardUnit | None
 
 
-MetricTransformations = List[MetricTransformation]
+MetricTransformations = list[MetricTransformation]
 
 
 class MetricFilter(TypedDict, total=False):
-    filterName: Optional[FilterName]
-    filterPattern: Optional[FilterPattern]
-    metricTransformations: Optional[MetricTransformations]
-    creationTime: Optional[Timestamp]
-    logGroupName: Optional[LogGroupName]
-    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
-    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
-    emitSystemFieldDimensions: Optional[EmitSystemFields]
+    filterName: FilterName | None
+    filterPattern: FilterPattern | None
+    metricTransformations: MetricTransformations | None
+    creationTime: Timestamp | None
+    logGroupName: LogGroupName | None
+    applyOnTransformedLogs: ApplyOnTransformedLogs | None
+    fieldSelectionCriteria: FieldSelectionCriteria | None
+    emitSystemFieldDimensions: EmitSystemFields | None
 
 
-MetricFilters = List[MetricFilter]
+MetricFilters = list[MetricFilter]
 
 
 class DescribeMetricFiltersResponse(TypedDict, total=False):
-    metricFilters: Optional[MetricFilters]
-    nextToken: Optional[NextToken]
+    metricFilters: MetricFilters | None
+    nextToken: NextToken | None
 
 
 class DescribeQueriesRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    status: Optional[QueryStatus]
-    maxResults: Optional[DescribeQueriesMaxResults]
-    nextToken: Optional[NextToken]
-    queryLanguage: Optional[QueryLanguage]
+    logGroupName: LogGroupName | None
+    status: QueryStatus | None
+    maxResults: DescribeQueriesMaxResults | None
+    nextToken: NextToken | None
+    queryLanguage: QueryLanguage | None
 
 
 class QueryInfo(TypedDict, total=False):
-    queryLanguage: Optional[QueryLanguage]
-    queryId: Optional[QueryId]
-    queryString: Optional[QueryString]
-    status: Optional[QueryStatus]
-    createTime: Optional[Timestamp]
-    logGroupName: Optional[LogGroupName]
+    queryLanguage: QueryLanguage | None
+    queryId: QueryId | None
+    queryString: QueryString | None
+    status: QueryStatus | None
+    createTime: Timestamp | None
+    logGroupName: LogGroupName | None
 
 
-QueryInfoList = List[QueryInfo]
+QueryInfoList = list[QueryInfo]
 
 
 class DescribeQueriesResponse(TypedDict, total=False):
-    queries: Optional[QueryInfoList]
-    nextToken: Optional[NextToken]
+    queries: QueryInfoList | None
+    nextToken: NextToken | None
 
 
 class DescribeQueryDefinitionsRequest(ServiceRequest):
-    queryLanguage: Optional[QueryLanguage]
-    queryDefinitionNamePrefix: Optional[QueryDefinitionName]
-    maxResults: Optional[QueryListMaxResults]
-    nextToken: Optional[NextToken]
+    queryLanguage: QueryLanguage | None
+    queryDefinitionNamePrefix: QueryDefinitionName | None
+    maxResults: QueryListMaxResults | None
+    nextToken: NextToken | None
 
 
-LogGroupNames = List[LogGroupName]
+LogGroupNames = list[LogGroupName]
 
 
 class QueryDefinition(TypedDict, total=False):
-    queryLanguage: Optional[QueryLanguage]
-    queryDefinitionId: Optional[QueryId]
-    name: Optional[QueryDefinitionName]
-    queryString: Optional[QueryDefinitionString]
-    lastModified: Optional[Timestamp]
-    logGroupNames: Optional[LogGroupNames]
+    queryLanguage: QueryLanguage | None
+    queryDefinitionId: QueryId | None
+    name: QueryDefinitionName | None
+    queryString: QueryDefinitionString | None
+    lastModified: Timestamp | None
+    logGroupNames: LogGroupNames | None
 
 
-QueryDefinitionList = List[QueryDefinition]
+QueryDefinitionList = list[QueryDefinition]
 
 
 class DescribeQueryDefinitionsResponse(TypedDict, total=False):
-    queryDefinitions: Optional[QueryDefinitionList]
-    nextToken: Optional[NextToken]
+    queryDefinitions: QueryDefinitionList | None
+    nextToken: NextToken | None
 
 
 class DescribeResourcePoliciesRequest(ServiceRequest):
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
-    resourceArn: Optional[Arn]
-    policyScope: Optional[PolicyScope]
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
+    resourceArn: Arn | None
+    policyScope: PolicyScope | None
 
 
 class ResourcePolicy(TypedDict, total=False):
-    policyName: Optional[PolicyName]
-    policyDocument: Optional[PolicyDocument]
-    lastUpdatedTime: Optional[Timestamp]
-    policyScope: Optional[PolicyScope]
-    resourceArn: Optional[Arn]
-    revisionId: Optional[ExpectedRevisionId]
+    policyName: PolicyName | None
+    policyDocument: PolicyDocument | None
+    lastUpdatedTime: Timestamp | None
+    policyScope: PolicyScope | None
+    resourceArn: Arn | None
+    revisionId: ExpectedRevisionId | None
 
 
-ResourcePolicies = List[ResourcePolicy]
+ResourcePolicies = list[ResourcePolicy]
 
 
 class DescribeResourcePoliciesResponse(TypedDict, total=False):
-    resourcePolicies: Optional[ResourcePolicies]
-    nextToken: Optional[NextToken]
+    resourcePolicies: ResourcePolicies | None
+    nextToken: NextToken | None
 
 
 class DescribeSubscriptionFiltersRequest(ServiceRequest):
     logGroupName: LogGroupName
-    filterNamePrefix: Optional[FilterName]
-    nextToken: Optional[NextToken]
-    limit: Optional[DescribeLimit]
+    filterNamePrefix: FilterName | None
+    nextToken: NextToken | None
+    limit: DescribeLimit | None
 
 
 class SubscriptionFilter(TypedDict, total=False):
-    filterName: Optional[FilterName]
-    logGroupName: Optional[LogGroupName]
-    filterPattern: Optional[FilterPattern]
-    destinationArn: Optional[DestinationArn]
-    roleArn: Optional[RoleArn]
-    distribution: Optional[Distribution]
-    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
-    creationTime: Optional[Timestamp]
-    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
-    emitSystemFields: Optional[EmitSystemFields]
+    filterName: FilterName | None
+    logGroupName: LogGroupName | None
+    filterPattern: FilterPattern | None
+    destinationArn: DestinationArn | None
+    roleArn: RoleArn | None
+    distribution: Distribution | None
+    applyOnTransformedLogs: ApplyOnTransformedLogs | None
+    creationTime: Timestamp | None
+    fieldSelectionCriteria: FieldSelectionCriteria | None
+    emitSystemFields: EmitSystemFields | None
 
 
-SubscriptionFilters = List[SubscriptionFilter]
+SubscriptionFilters = list[SubscriptionFilter]
 
 
 class DescribeSubscriptionFiltersResponse(TypedDict, total=False):
-    subscriptionFilters: Optional[SubscriptionFilters]
-    nextToken: Optional[NextToken]
+    subscriptionFilters: SubscriptionFilters | None
+    nextToken: NextToken | None
 
 
 class DisassociateKmsKeyRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    resourceIdentifier: Optional[ResourceIdentifier]
+    logGroupName: LogGroupName | None
+    resourceIdentifier: ResourceIdentifier | None
 
 
-EntityAttributes = Dict[EntityAttributesKey, EntityAttributesValue]
-EntityKeyAttributes = Dict[EntityKeyAttributesKey, EntityKeyAttributesValue]
+EntityAttributes = dict[EntityAttributesKey, EntityAttributesValue]
+EntityKeyAttributes = dict[EntityKeyAttributesKey, EntityKeyAttributesValue]
 
 
 class Entity(TypedDict, total=False):
-    keyAttributes: Optional[EntityKeyAttributes]
-    attributes: Optional[EntityAttributes]
+    keyAttributes: EntityKeyAttributes | None
+    attributes: EntityAttributes | None
 
 
 EventNumber = int
-ExtractedValues = Dict[Token, Value]
+ExtractedValues = dict[Token, Value]
 
 
 class FieldsData(TypedDict, total=False):
-    data: Optional[Data]
+    data: Data | None
 
 
-InputLogStreamNames = List[LogStreamName]
+InputLogStreamNames = list[LogStreamName]
 
 
 class FilterLogEventsRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    logStreamNames: Optional[InputLogStreamNames]
-    logStreamNamePrefix: Optional[LogStreamName]
-    startTime: Optional[Timestamp]
-    endTime: Optional[Timestamp]
-    filterPattern: Optional[FilterPattern]
-    nextToken: Optional[NextToken]
-    limit: Optional[EventsLimit]
-    interleaved: Optional[Interleaved]
-    unmask: Optional[Unmask]
+    logGroupName: LogGroupName | None
+    logGroupIdentifier: LogGroupIdentifier | None
+    logStreamNames: InputLogStreamNames | None
+    logStreamNamePrefix: LogStreamName | None
+    startTime: Timestamp | None
+    endTime: Timestamp | None
+    filterPattern: FilterPattern | None
+    nextToken: NextToken | None
+    limit: EventsLimit | None
+    interleaved: Interleaved | None
+    unmask: Unmask | None
 
 
 class SearchedLogStream(TypedDict, total=False):
-    logStreamName: Optional[LogStreamName]
-    searchedCompletely: Optional[LogStreamSearchedCompletely]
+    logStreamName: LogStreamName | None
+    searchedCompletely: LogStreamSearchedCompletely | None
 
 
-SearchedLogStreams = List[SearchedLogStream]
+SearchedLogStreams = list[SearchedLogStream]
 
 
 class FilteredLogEvent(TypedDict, total=False):
-    logStreamName: Optional[LogStreamName]
-    timestamp: Optional[Timestamp]
-    message: Optional[EventMessage]
-    ingestionTime: Optional[Timestamp]
-    eventId: Optional[EventId]
+    logStreamName: LogStreamName | None
+    timestamp: Timestamp | None
+    message: EventMessage | None
+    ingestionTime: Timestamp | None
+    eventId: EventId | None
 
 
-FilteredLogEvents = List[FilteredLogEvent]
+FilteredLogEvents = list[FilteredLogEvent]
 
 
 class FilterLogEventsResponse(TypedDict, total=False):
-    events: Optional[FilteredLogEvents]
-    searchedLogStreams: Optional[SearchedLogStreams]
-    nextToken: Optional[NextToken]
+    events: FilteredLogEvents | None
+    searchedLogStreams: SearchedLogStreams | None
+    nextToken: NextToken | None
 
 
 class GetDataProtectionPolicyRequest(ServiceRequest):
@@ -1349,9 +1350,9 @@ class GetDataProtectionPolicyRequest(ServiceRequest):
 
 
 class GetDataProtectionPolicyResponse(TypedDict, total=False):
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    policyDocument: Optional[DataProtectionPolicyDocument]
-    lastUpdatedTime: Optional[Timestamp]
+    logGroupIdentifier: LogGroupIdentifier | None
+    policyDocument: DataProtectionPolicyDocument | None
+    lastUpdatedTime: Timestamp | None
 
 
 class GetDeliveryDestinationPolicyRequest(ServiceRequest):
@@ -1359,11 +1360,11 @@ class GetDeliveryDestinationPolicyRequest(ServiceRequest):
 
 
 class Policy(TypedDict, total=False):
-    deliveryDestinationPolicy: Optional[DeliveryDestinationPolicy]
+    deliveryDestinationPolicy: DeliveryDestinationPolicy | None
 
 
 class GetDeliveryDestinationPolicyResponse(TypedDict, total=False):
-    policy: Optional[Policy]
+    policy: Policy | None
 
 
 class GetDeliveryDestinationRequest(ServiceRequest):
@@ -1371,7 +1372,7 @@ class GetDeliveryDestinationRequest(ServiceRequest):
 
 
 class GetDeliveryDestinationResponse(TypedDict, total=False):
-    deliveryDestination: Optional[DeliveryDestination]
+    deliveryDestination: DeliveryDestination | None
 
 
 class GetDeliveryRequest(ServiceRequest):
@@ -1379,7 +1380,7 @@ class GetDeliveryRequest(ServiceRequest):
 
 
 class GetDeliveryResponse(TypedDict, total=False):
-    delivery: Optional[Delivery]
+    delivery: Delivery | None
 
 
 class GetDeliverySourceRequest(ServiceRequest):
@@ -1387,7 +1388,7 @@ class GetDeliverySourceRequest(ServiceRequest):
 
 
 class GetDeliverySourceResponse(TypedDict, total=False):
-    deliverySource: Optional[DeliverySource]
+    deliverySource: DeliverySource | None
 
 
 class GetIntegrationRequest(ServiceRequest):
@@ -1395,73 +1396,73 @@ class GetIntegrationRequest(ServiceRequest):
 
 
 class OpenSearchResourceStatus(TypedDict, total=False):
-    status: Optional[OpenSearchResourceStatusType]
-    statusMessage: Optional[IntegrationStatusMessage]
+    status: OpenSearchResourceStatusType | None
+    statusMessage: IntegrationStatusMessage | None
 
 
 class OpenSearchLifecyclePolicy(TypedDict, total=False):
-    policyName: Optional[OpenSearchPolicyName]
-    status: Optional[OpenSearchResourceStatus]
+    policyName: OpenSearchPolicyName | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchDataAccessPolicy(TypedDict, total=False):
-    policyName: Optional[OpenSearchPolicyName]
-    status: Optional[OpenSearchResourceStatus]
+    policyName: OpenSearchPolicyName | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchNetworkPolicy(TypedDict, total=False):
-    policyName: Optional[OpenSearchPolicyName]
-    status: Optional[OpenSearchResourceStatus]
+    policyName: OpenSearchPolicyName | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchEncryptionPolicy(TypedDict, total=False):
-    policyName: Optional[OpenSearchPolicyName]
-    status: Optional[OpenSearchResourceStatus]
+    policyName: OpenSearchPolicyName | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchWorkspace(TypedDict, total=False):
-    workspaceId: Optional[OpenSearchWorkspaceId]
-    status: Optional[OpenSearchResourceStatus]
+    workspaceId: OpenSearchWorkspaceId | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchCollection(TypedDict, total=False):
-    collectionEndpoint: Optional[OpenSearchCollectionEndpoint]
-    collectionArn: Optional[Arn]
-    status: Optional[OpenSearchResourceStatus]
+    collectionEndpoint: OpenSearchCollectionEndpoint | None
+    collectionArn: Arn | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchApplication(TypedDict, total=False):
-    applicationEndpoint: Optional[OpenSearchApplicationEndpoint]
-    applicationArn: Optional[Arn]
-    applicationId: Optional[OpenSearchApplicationId]
-    status: Optional[OpenSearchResourceStatus]
+    applicationEndpoint: OpenSearchApplicationEndpoint | None
+    applicationArn: Arn | None
+    applicationId: OpenSearchApplicationId | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchDataSource(TypedDict, total=False):
-    dataSourceName: Optional[OpenSearchDataSourceName]
-    status: Optional[OpenSearchResourceStatus]
+    dataSourceName: OpenSearchDataSourceName | None
+    status: OpenSearchResourceStatus | None
 
 
 class OpenSearchIntegrationDetails(TypedDict, total=False):
-    dataSource: Optional[OpenSearchDataSource]
-    application: Optional[OpenSearchApplication]
-    collection: Optional[OpenSearchCollection]
-    workspace: Optional[OpenSearchWorkspace]
-    encryptionPolicy: Optional[OpenSearchEncryptionPolicy]
-    networkPolicy: Optional[OpenSearchNetworkPolicy]
-    accessPolicy: Optional[OpenSearchDataAccessPolicy]
-    lifecyclePolicy: Optional[OpenSearchLifecyclePolicy]
+    dataSource: OpenSearchDataSource | None
+    application: OpenSearchApplication | None
+    collection: OpenSearchCollection | None
+    workspace: OpenSearchWorkspace | None
+    encryptionPolicy: OpenSearchEncryptionPolicy | None
+    networkPolicy: OpenSearchNetworkPolicy | None
+    accessPolicy: OpenSearchDataAccessPolicy | None
+    lifecyclePolicy: OpenSearchLifecyclePolicy | None
 
 
 class IntegrationDetails(TypedDict, total=False):
-    openSearchIntegrationDetails: Optional[OpenSearchIntegrationDetails]
+    openSearchIntegrationDetails: OpenSearchIntegrationDetails | None
 
 
 class GetIntegrationResponse(TypedDict, total=False):
-    integrationName: Optional[IntegrationName]
-    integrationType: Optional[IntegrationType]
-    integrationStatus: Optional[IntegrationStatus]
-    integrationDetails: Optional[IntegrationDetails]
+    integrationName: IntegrationName | None
+    integrationType: IntegrationType | None
+    integrationStatus: IntegrationStatus | None
+    integrationDetails: IntegrationDetails | None
 
 
 class GetLogAnomalyDetectorRequest(ServiceRequest):
@@ -1469,70 +1470,70 @@ class GetLogAnomalyDetectorRequest(ServiceRequest):
 
 
 class GetLogAnomalyDetectorResponse(TypedDict, total=False):
-    detectorName: Optional[DetectorName]
-    logGroupArnList: Optional[LogGroupArnList]
-    evaluationFrequency: Optional[EvaluationFrequency]
-    filterPattern: Optional[FilterPattern]
-    anomalyDetectorStatus: Optional[AnomalyDetectorStatus]
-    kmsKeyId: Optional[KmsKeyId]
-    creationTimeStamp: Optional[EpochMillis]
-    lastModifiedTimeStamp: Optional[EpochMillis]
-    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    detectorName: DetectorName | None
+    logGroupArnList: LogGroupArnList | None
+    evaluationFrequency: EvaluationFrequency | None
+    filterPattern: FilterPattern | None
+    anomalyDetectorStatus: AnomalyDetectorStatus | None
+    kmsKeyId: KmsKeyId | None
+    creationTimeStamp: EpochMillis | None
+    lastModifiedTimeStamp: EpochMillis | None
+    anomalyVisibilityTime: AnomalyVisibilityTime | None
 
 
 class GetLogEventsRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    logGroupIdentifier: Optional[LogGroupIdentifier]
+    logGroupName: LogGroupName | None
+    logGroupIdentifier: LogGroupIdentifier | None
     logStreamName: LogStreamName
-    startTime: Optional[Timestamp]
-    endTime: Optional[Timestamp]
-    nextToken: Optional[NextToken]
-    limit: Optional[EventsLimit]
-    startFromHead: Optional[StartFromHead]
-    unmask: Optional[Unmask]
+    startTime: Timestamp | None
+    endTime: Timestamp | None
+    nextToken: NextToken | None
+    limit: EventsLimit | None
+    startFromHead: StartFromHead | None
+    unmask: Unmask | None
 
 
 class OutputLogEvent(TypedDict, total=False):
-    timestamp: Optional[Timestamp]
-    message: Optional[EventMessage]
-    ingestionTime: Optional[Timestamp]
+    timestamp: Timestamp | None
+    message: EventMessage | None
+    ingestionTime: Timestamp | None
 
 
-OutputLogEvents = List[OutputLogEvent]
+OutputLogEvents = list[OutputLogEvent]
 
 
 class GetLogEventsResponse(TypedDict, total=False):
-    events: Optional[OutputLogEvents]
-    nextForwardToken: Optional[NextToken]
-    nextBackwardToken: Optional[NextToken]
+    events: OutputLogEvents | None
+    nextForwardToken: NextToken | None
+    nextBackwardToken: NextToken | None
 
 
 class GetLogGroupFieldsRequest(ServiceRequest):
-    logGroupName: Optional[LogGroupName]
-    time: Optional[Timestamp]
-    logGroupIdentifier: Optional[LogGroupIdentifier]
+    logGroupName: LogGroupName | None
+    time: Timestamp | None
+    logGroupIdentifier: LogGroupIdentifier | None
 
 
 class LogGroupField(TypedDict, total=False):
-    name: Optional[Field]
-    percent: Optional[Percentage]
+    name: Field | None
+    percent: Percentage | None
 
 
-LogGroupFieldList = List[LogGroupField]
+LogGroupFieldList = list[LogGroupField]
 
 
 class GetLogGroupFieldsResponse(TypedDict, total=False):
-    logGroupFields: Optional[LogGroupFieldList]
+    logGroupFields: LogGroupFieldList | None
 
 
 class GetLogObjectRequest(ServiceRequest):
-    unmask: Optional[Unmask]
+    unmask: Unmask | None
     logObjectPointer: LogObjectPointer
 
 
 class GetLogObjectResponseStream(TypedDict, total=False):
-    fields: Optional[FieldsData]
-    InternalStreamingException: Optional[InternalStreamingException]
+    fields: FieldsData | None
+    InternalStreamingException: InternalStreamingException | None
 
 
 class GetLogObjectResponse(TypedDict, total=False):
@@ -1541,14 +1542,14 @@ class GetLogObjectResponse(TypedDict, total=False):
 
 class GetLogRecordRequest(ServiceRequest):
     logRecordPointer: LogRecordPointer
-    unmask: Optional[Unmask]
+    unmask: Unmask | None
 
 
-LogRecord = Dict[Field, Value]
+LogRecord = dict[Field, Value]
 
 
 class GetLogRecordResponse(TypedDict, total=False):
-    logRecord: Optional[LogRecord]
+    logRecord: LogRecord | None
 
 
 class GetQueryResultsRequest(ServiceRequest):
@@ -1556,36 +1557,36 @@ class GetQueryResultsRequest(ServiceRequest):
 
 
 class QueryStatistics(TypedDict, total=False):
-    recordsMatched: Optional[StatsValue]
-    recordsScanned: Optional[StatsValue]
-    estimatedRecordsSkipped: Optional[StatsValue]
-    bytesScanned: Optional[StatsValue]
-    estimatedBytesSkipped: Optional[StatsValue]
-    logGroupsScanned: Optional[StatsValue]
+    recordsMatched: StatsValue | None
+    recordsScanned: StatsValue | None
+    estimatedRecordsSkipped: StatsValue | None
+    bytesScanned: StatsValue | None
+    estimatedBytesSkipped: StatsValue | None
+    logGroupsScanned: StatsValue | None
 
 
 class ResultField(TypedDict, total=False):
-    field: Optional[Field]
-    value: Optional[Value]
+    field: Field | None
+    value: Value | None
 
 
-ResultRows = List[ResultField]
-QueryResults = List[ResultRows]
+ResultRows = list[ResultField]
+QueryResults = list[ResultRows]
 
 
 class GetQueryResultsResponse(TypedDict, total=False):
-    queryLanguage: Optional[QueryLanguage]
-    results: Optional[QueryResults]
-    statistics: Optional[QueryStatistics]
-    status: Optional[QueryStatus]
-    encryptionKey: Optional[EncryptionKey]
+    queryLanguage: QueryLanguage | None
+    results: QueryResults | None
+    statistics: QueryStatistics | None
+    status: QueryStatus | None
+    encryptionKey: EncryptionKey | None
 
 
 class GetTransformerRequest(ServiceRequest):
     logGroupIdentifier: LogGroupIdentifier
 
 
-UpperCaseStringWithKeys = List[WithKey]
+UpperCaseStringWithKeys = list[WithKey]
 
 
 class UpperCaseString(TypedDict, total=False):
@@ -1597,14 +1598,14 @@ class TypeConverterEntry(TypedDict, total=False):
     type: Type
 
 
-TypeConverterEntries = List[TypeConverterEntry]
+TypeConverterEntries = list[TypeConverterEntry]
 
 
 class TypeConverter(TypedDict, total=False):
     entries: TypeConverterEntries
 
 
-TrimStringWithKeys = List[WithKey]
+TrimStringWithKeys = list[WithKey]
 
 
 class TrimString(TypedDict, total=False):
@@ -1620,7 +1621,7 @@ SubstituteStringEntry = TypedDict(
     },
     total=False,
 )
-SubstituteStringEntries = List[SubstituteStringEntry]
+SubstituteStringEntries = list[SubstituteStringEntry]
 
 
 class SubstituteString(TypedDict, total=False):
@@ -1632,7 +1633,7 @@ class SplitStringEntry(TypedDict, total=False):
     delimiter: SplitStringDelimiter
 
 
-SplitStringEntries = List[SplitStringEntry]
+SplitStringEntries = list[SplitStringEntry]
 
 
 class SplitString(TypedDict, total=False):
@@ -1642,10 +1643,10 @@ class SplitString(TypedDict, total=False):
 class RenameKeyEntry(TypedDict, total=False):
     key: Key
     renameTo: RenameTo
-    overwriteIfExists: Optional[OverwriteIfExists]
+    overwriteIfExists: OverwriteIfExists | None
 
 
-RenameKeyEntries = List[RenameKeyEntry]
+RenameKeyEntries = list[RenameKeyEntry]
 
 
 class RenameKeys(TypedDict, total=False):
@@ -1653,60 +1654,60 @@ class RenameKeys(TypedDict, total=False):
 
 
 class ParseWAF(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
 
 
 class ParseVPC(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
 
 
 class ParsePostgres(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
 
 
 class ParseToOCSF(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
     eventSource: EventSource
     ocsfVersion: OCSFVersion
 
 
 class ParseRoute53(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
 
 
 class ParseKeyValue(TypedDict, total=False):
-    source: Optional[Source]
-    destination: Optional[DestinationField]
-    fieldDelimiter: Optional[ParserFieldDelimiter]
-    keyValueDelimiter: Optional[KeyValueDelimiter]
-    keyPrefix: Optional[KeyPrefix]
-    nonMatchValue: Optional[NonMatchValue]
-    overwriteIfExists: Optional[OverwriteIfExists]
+    source: Source | None
+    destination: DestinationField | None
+    fieldDelimiter: ParserFieldDelimiter | None
+    keyValueDelimiter: KeyValueDelimiter | None
+    keyPrefix: KeyPrefix | None
+    nonMatchValue: NonMatchValue | None
+    overwriteIfExists: OverwriteIfExists | None
 
 
 class ParseJSON(TypedDict, total=False):
-    source: Optional[Source]
-    destination: Optional[DestinationField]
+    source: Source | None
+    destination: DestinationField | None
 
 
 class ParseCloudfront(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
 
 
 class MoveKeyEntry(TypedDict, total=False):
     source: Source
     target: Target
-    overwriteIfExists: Optional[OverwriteIfExists]
+    overwriteIfExists: OverwriteIfExists | None
 
 
-MoveKeyEntries = List[MoveKeyEntry]
+MoveKeyEntries = list[MoveKeyEntry]
 
 
 class MoveKeys(TypedDict, total=False):
     entries: MoveKeyEntries
 
 
-LowerCaseStringWithKeys = List[WithKey]
+LowerCaseStringWithKeys = list[WithKey]
 
 
 class LowerCaseString(TypedDict, total=False):
@@ -1716,51 +1717,51 @@ class LowerCaseString(TypedDict, total=False):
 class ListToMap(TypedDict, total=False):
     source: Source
     key: Key
-    valueKey: Optional[ValueKey]
-    target: Optional[Target]
-    flatten: Optional[Flatten]
-    flattenedElement: Optional[FlattenedElement]
+    valueKey: ValueKey | None
+    target: Target | None
+    flatten: Flatten | None
+    flattenedElement: FlattenedElement | None
 
 
 class Grok(TypedDict, total=False):
-    source: Optional[Source]
+    source: Source | None
     match: GrokMatch
 
 
 class Processor(TypedDict, total=False):
-    addKeys: Optional[AddKeys]
-    copyValue: Optional[CopyValue]
-    csv: Optional[CSV]
-    dateTimeConverter: Optional[DateTimeConverter]
-    deleteKeys: Optional[DeleteKeys]
-    grok: Optional[Grok]
-    listToMap: Optional[ListToMap]
-    lowerCaseString: Optional[LowerCaseString]
-    moveKeys: Optional[MoveKeys]
-    parseCloudfront: Optional[ParseCloudfront]
-    parseJSON: Optional[ParseJSON]
-    parseKeyValue: Optional[ParseKeyValue]
-    parseRoute53: Optional[ParseRoute53]
-    parseToOCSF: Optional[ParseToOCSF]
-    parsePostgres: Optional[ParsePostgres]
-    parseVPC: Optional[ParseVPC]
-    parseWAF: Optional[ParseWAF]
-    renameKeys: Optional[RenameKeys]
-    splitString: Optional[SplitString]
-    substituteString: Optional[SubstituteString]
-    trimString: Optional[TrimString]
-    typeConverter: Optional[TypeConverter]
-    upperCaseString: Optional[UpperCaseString]
+    addKeys: AddKeys | None
+    copyValue: CopyValue | None
+    csv: CSV | None
+    dateTimeConverter: DateTimeConverter | None
+    deleteKeys: DeleteKeys | None
+    grok: Grok | None
+    listToMap: ListToMap | None
+    lowerCaseString: LowerCaseString | None
+    moveKeys: MoveKeys | None
+    parseCloudfront: ParseCloudfront | None
+    parseJSON: ParseJSON | None
+    parseKeyValue: ParseKeyValue | None
+    parseRoute53: ParseRoute53 | None
+    parseToOCSF: ParseToOCSF | None
+    parsePostgres: ParsePostgres | None
+    parseVPC: ParseVPC | None
+    parseWAF: ParseWAF | None
+    renameKeys: RenameKeys | None
+    splitString: SplitString | None
+    substituteString: SubstituteString | None
+    trimString: TrimString | None
+    typeConverter: TypeConverter | None
+    upperCaseString: UpperCaseString | None
 
 
-Processors = List[Processor]
+Processors = list[Processor]
 
 
 class GetTransformerResponse(TypedDict, total=False):
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    creationTime: Optional[Timestamp]
-    lastModifiedTime: Optional[Timestamp]
-    transformerConfig: Optional[Processors]
+    logGroupIdentifier: LogGroupIdentifier | None
+    creationTime: Timestamp | None
+    lastModifiedTime: Timestamp | None
+    transformerConfig: Processors | None
 
 
 class InputLogEvent(TypedDict, total=False):
@@ -1768,86 +1769,86 @@ class InputLogEvent(TypedDict, total=False):
     message: EventMessage
 
 
-InputLogEvents = List[InputLogEvent]
+InputLogEvents = list[InputLogEvent]
 
 
 class IntegrationSummary(TypedDict, total=False):
-    integrationName: Optional[IntegrationName]
-    integrationType: Optional[IntegrationType]
-    integrationStatus: Optional[IntegrationStatus]
+    integrationName: IntegrationName | None
+    integrationType: IntegrationType | None
+    integrationStatus: IntegrationStatus | None
 
 
-IntegrationSummaries = List[IntegrationSummary]
+IntegrationSummaries = list[IntegrationSummary]
 
 
 class ListAnomaliesRequest(ServiceRequest):
-    anomalyDetectorArn: Optional[AnomalyDetectorArn]
-    suppressionState: Optional[SuppressionState]
-    limit: Optional[ListAnomaliesLimit]
-    nextToken: Optional[NextToken]
+    anomalyDetectorArn: AnomalyDetectorArn | None
+    suppressionState: SuppressionState | None
+    limit: ListAnomaliesLimit | None
+    nextToken: NextToken | None
 
 
 class ListAnomaliesResponse(TypedDict, total=False):
-    anomalies: Optional[Anomalies]
-    nextToken: Optional[NextToken]
+    anomalies: Anomalies | None
+    nextToken: NextToken | None
 
 
 class ListIntegrationsRequest(ServiceRequest):
-    integrationNamePrefix: Optional[IntegrationNamePrefix]
-    integrationType: Optional[IntegrationType]
-    integrationStatus: Optional[IntegrationStatus]
+    integrationNamePrefix: IntegrationNamePrefix | None
+    integrationType: IntegrationType | None
+    integrationStatus: IntegrationStatus | None
 
 
 class ListIntegrationsResponse(TypedDict, total=False):
-    integrationSummaries: Optional[IntegrationSummaries]
+    integrationSummaries: IntegrationSummaries | None
 
 
 class ListLogAnomalyDetectorsRequest(ServiceRequest):
-    filterLogGroupArn: Optional[LogGroupArn]
-    limit: Optional[ListLogAnomalyDetectorsLimit]
-    nextToken: Optional[NextToken]
+    filterLogGroupArn: LogGroupArn | None
+    limit: ListLogAnomalyDetectorsLimit | None
+    nextToken: NextToken | None
 
 
 class ListLogAnomalyDetectorsResponse(TypedDict, total=False):
-    anomalyDetectors: Optional[AnomalyDetectors]
-    nextToken: Optional[NextToken]
+    anomalyDetectors: AnomalyDetectors | None
+    nextToken: NextToken | None
 
 
 class ListLogGroupsForQueryRequest(ServiceRequest):
     queryId: QueryId
-    nextToken: Optional[NextToken]
-    maxResults: Optional[ListLogGroupsForQueryMaxResults]
+    nextToken: NextToken | None
+    maxResults: ListLogGroupsForQueryMaxResults | None
 
 
-LogGroupIdentifiers = List[LogGroupIdentifier]
+LogGroupIdentifiers = list[LogGroupIdentifier]
 
 
 class ListLogGroupsForQueryResponse(TypedDict, total=False):
-    logGroupIdentifiers: Optional[LogGroupIdentifiers]
-    nextToken: Optional[NextToken]
+    logGroupIdentifiers: LogGroupIdentifiers | None
+    nextToken: NextToken | None
 
 
 class ListLogGroupsRequest(ServiceRequest):
-    logGroupNamePattern: Optional[LogGroupNameRegexPattern]
-    logGroupClass: Optional[LogGroupClass]
-    includeLinkedAccounts: Optional[IncludeLinkedAccounts]
-    accountIdentifiers: Optional[AccountIds]
-    nextToken: Optional[NextToken]
-    limit: Optional[ListLimit]
+    logGroupNamePattern: LogGroupNameRegexPattern | None
+    logGroupClass: LogGroupClass | None
+    includeLinkedAccounts: IncludeLinkedAccounts | None
+    accountIdentifiers: AccountIds | None
+    nextToken: NextToken | None
+    limit: ListLimit | None
 
 
 class LogGroupSummary(TypedDict, total=False):
-    logGroupName: Optional[LogGroupName]
-    logGroupArn: Optional[Arn]
-    logGroupClass: Optional[LogGroupClass]
+    logGroupName: LogGroupName | None
+    logGroupArn: Arn | None
+    logGroupClass: LogGroupClass | None
 
 
-LogGroupSummaries = List[LogGroupSummary]
+LogGroupSummaries = list[LogGroupSummary]
 
 
 class ListLogGroupsResponse(TypedDict, total=False):
-    logGroups: Optional[LogGroupSummaries]
-    nextToken: Optional[NextToken]
+    logGroups: LogGroupSummaries | None
+    nextToken: NextToken | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -1855,7 +1856,7 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    tags: Optional[Tags]
+    tags: Tags | None
 
 
 class ListTagsLogGroupRequest(ServiceRequest):
@@ -1863,53 +1864,53 @@ class ListTagsLogGroupRequest(ServiceRequest):
 
 
 class ListTagsLogGroupResponse(TypedDict, total=False):
-    tags: Optional[Tags]
+    tags: Tags | None
 
 
 class LiveTailSessionLogEvent(TypedDict, total=False):
-    logStreamName: Optional[LogStreamName]
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    message: Optional[EventMessage]
-    timestamp: Optional[Timestamp]
-    ingestionTime: Optional[Timestamp]
+    logStreamName: LogStreamName | None
+    logGroupIdentifier: LogGroupIdentifier | None
+    message: EventMessage | None
+    timestamp: Timestamp | None
+    ingestionTime: Timestamp | None
 
 
 class LiveTailSessionMetadata(TypedDict, total=False):
-    sampled: Optional[IsSampled]
+    sampled: IsSampled | None
 
 
-LiveTailSessionResults = List[LiveTailSessionLogEvent]
-StartLiveTailLogGroupIdentifiers = List[LogGroupIdentifier]
+LiveTailSessionResults = list[LiveTailSessionLogEvent]
+StartLiveTailLogGroupIdentifiers = list[LogGroupIdentifier]
 
 
 class LiveTailSessionStart(TypedDict, total=False):
-    requestId: Optional[RequestId]
-    sessionId: Optional[SessionId]
-    logGroupIdentifiers: Optional[StartLiveTailLogGroupIdentifiers]
-    logStreamNames: Optional[InputLogStreamNames]
-    logStreamNamePrefixes: Optional[InputLogStreamNames]
-    logEventFilterPattern: Optional[FilterPattern]
+    requestId: RequestId | None
+    sessionId: SessionId | None
+    logGroupIdentifiers: StartLiveTailLogGroupIdentifiers | None
+    logStreamNames: InputLogStreamNames | None
+    logStreamNamePrefixes: InputLogStreamNames | None
+    logEventFilterPattern: FilterPattern | None
 
 
 class LiveTailSessionUpdate(TypedDict, total=False):
-    sessionMetadata: Optional[LiveTailSessionMetadata]
-    sessionResults: Optional[LiveTailSessionResults]
+    sessionMetadata: LiveTailSessionMetadata | None
+    sessionResults: LiveTailSessionResults | None
 
 
 class MetricFilterMatchRecord(TypedDict, total=False):
-    eventNumber: Optional[EventNumber]
-    eventMessage: Optional[EventMessage]
-    extractedValues: Optional[ExtractedValues]
+    eventNumber: EventNumber | None
+    eventMessage: EventMessage | None
+    extractedValues: ExtractedValues | None
 
 
-MetricFilterMatches = List[MetricFilterMatchRecord]
+MetricFilterMatches = list[MetricFilterMatchRecord]
 
 
 class OpenSearchResourceConfig(TypedDict, total=False):
-    kmsKeyArn: Optional[Arn]
+    kmsKeyArn: Arn | None
     dataSourceRoleArn: Arn
     dashboardViewerPrincipals: DashboardViewerPrincipals
-    applicationArn: Optional[Arn]
+    applicationArn: Arn | None
     retentionDays: CollectionRetentionDays
 
 
@@ -1917,12 +1918,12 @@ class PutAccountPolicyRequest(ServiceRequest):
     policyName: PolicyName
     policyDocument: AccountPolicyDocument
     policyType: PolicyType
-    scope: Optional[Scope]
-    selectionCriteria: Optional[SelectionCriteria]
+    scope: Scope | None
+    selectionCriteria: SelectionCriteria | None
 
 
 class PutAccountPolicyResponse(TypedDict, total=False):
-    accountPolicy: Optional[AccountPolicy]
+    accountPolicy: AccountPolicy | None
 
 
 class PutDataProtectionPolicyRequest(ServiceRequest):
@@ -1931,9 +1932,9 @@ class PutDataProtectionPolicyRequest(ServiceRequest):
 
 
 class PutDataProtectionPolicyResponse(TypedDict, total=False):
-    logGroupIdentifier: Optional[LogGroupIdentifier]
-    policyDocument: Optional[DataProtectionPolicyDocument]
-    lastUpdatedTime: Optional[Timestamp]
+    logGroupIdentifier: LogGroupIdentifier | None
+    policyDocument: DataProtectionPolicyDocument | None
+    lastUpdatedTime: Timestamp | None
 
 
 class PutDeliveryDestinationPolicyRequest(ServiceRequest):
@@ -1942,47 +1943,47 @@ class PutDeliveryDestinationPolicyRequest(ServiceRequest):
 
 
 class PutDeliveryDestinationPolicyResponse(TypedDict, total=False):
-    policy: Optional[Policy]
+    policy: Policy | None
 
 
 class PutDeliveryDestinationRequest(ServiceRequest):
     name: DeliveryDestinationName
-    outputFormat: Optional[OutputFormat]
-    deliveryDestinationConfiguration: Optional[DeliveryDestinationConfiguration]
-    deliveryDestinationType: Optional[DeliveryDestinationType]
-    tags: Optional[Tags]
+    outputFormat: OutputFormat | None
+    deliveryDestinationConfiguration: DeliveryDestinationConfiguration | None
+    deliveryDestinationType: DeliveryDestinationType | None
+    tags: Tags | None
 
 
 class PutDeliveryDestinationResponse(TypedDict, total=False):
-    deliveryDestination: Optional[DeliveryDestination]
+    deliveryDestination: DeliveryDestination | None
 
 
 class PutDeliverySourceRequest(ServiceRequest):
     name: DeliverySourceName
     resourceArn: Arn
     logType: LogType
-    tags: Optional[Tags]
+    tags: Tags | None
 
 
 class PutDeliverySourceResponse(TypedDict, total=False):
-    deliverySource: Optional[DeliverySource]
+    deliverySource: DeliverySource | None
 
 
 class PutDestinationPolicyRequest(ServiceRequest):
     destinationName: DestinationName
     accessPolicy: AccessPolicy
-    forceUpdate: Optional[ForceUpdate]
+    forceUpdate: ForceUpdate | None
 
 
 class PutDestinationRequest(ServiceRequest):
     destinationName: DestinationName
     targetArn: TargetArn
     roleArn: RoleArn
-    tags: Optional[Tags]
+    tags: Tags | None
 
 
 class PutDestinationResponse(TypedDict, total=False):
-    destination: Optional[Destination]
+    destination: Destination | None
 
 
 class PutIndexPolicyRequest(ServiceRequest):
@@ -1991,11 +1992,11 @@ class PutIndexPolicyRequest(ServiceRequest):
 
 
 class PutIndexPolicyResponse(TypedDict, total=False):
-    indexPolicy: Optional[IndexPolicy]
+    indexPolicy: IndexPolicy | None
 
 
 class ResourceConfig(TypedDict, total=False):
-    openSearchResourceConfig: Optional[OpenSearchResourceConfig]
+    openSearchResourceConfig: OpenSearchResourceConfig | None
 
 
 class PutIntegrationRequest(ServiceRequest):
@@ -2005,16 +2006,16 @@ class PutIntegrationRequest(ServiceRequest):
 
 
 class PutIntegrationResponse(TypedDict, total=False):
-    integrationName: Optional[IntegrationName]
-    integrationStatus: Optional[IntegrationStatus]
+    integrationName: IntegrationName | None
+    integrationStatus: IntegrationStatus | None
 
 
 class PutLogEventsRequest(ServiceRequest):
     logGroupName: LogGroupName
     logStreamName: LogStreamName
     logEvents: InputLogEvents
-    sequenceToken: Optional[SequenceToken]
-    entity: Optional[Entity]
+    sequenceToken: SequenceToken | None
+    entity: Entity | None
 
 
 class RejectedEntityInfo(TypedDict, total=False):
@@ -2022,15 +2023,15 @@ class RejectedEntityInfo(TypedDict, total=False):
 
 
 class RejectedLogEventsInfo(TypedDict, total=False):
-    tooNewLogEventStartIndex: Optional[LogEventIndex]
-    tooOldLogEventEndIndex: Optional[LogEventIndex]
-    expiredLogEventEndIndex: Optional[LogEventIndex]
+    tooNewLogEventStartIndex: LogEventIndex | None
+    tooOldLogEventEndIndex: LogEventIndex | None
+    expiredLogEventEndIndex: LogEventIndex | None
 
 
 class PutLogEventsResponse(TypedDict, total=False):
-    nextSequenceToken: Optional[SequenceToken]
-    rejectedLogEventsInfo: Optional[RejectedLogEventsInfo]
-    rejectedEntityInfo: Optional[RejectedEntityInfo]
+    nextSequenceToken: SequenceToken | None
+    rejectedLogEventsInfo: RejectedLogEventsInfo | None
+    rejectedEntityInfo: RejectedEntityInfo | None
 
 
 class PutMetricFilterRequest(ServiceRequest):
@@ -2038,34 +2039,34 @@ class PutMetricFilterRequest(ServiceRequest):
     filterName: FilterName
     filterPattern: FilterPattern
     metricTransformations: MetricTransformations
-    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
-    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
-    emitSystemFieldDimensions: Optional[EmitSystemFields]
+    applyOnTransformedLogs: ApplyOnTransformedLogs | None
+    fieldSelectionCriteria: FieldSelectionCriteria | None
+    emitSystemFieldDimensions: EmitSystemFields | None
 
 
 class PutQueryDefinitionRequest(ServiceRequest):
-    queryLanguage: Optional[QueryLanguage]
+    queryLanguage: QueryLanguage | None
     name: QueryDefinitionName
-    queryDefinitionId: Optional[QueryId]
-    logGroupNames: Optional[LogGroupNames]
+    queryDefinitionId: QueryId | None
+    logGroupNames: LogGroupNames | None
     queryString: QueryDefinitionString
-    clientToken: Optional[ClientToken]
+    clientToken: ClientToken | None
 
 
 class PutQueryDefinitionResponse(TypedDict, total=False):
-    queryDefinitionId: Optional[QueryId]
+    queryDefinitionId: QueryId | None
 
 
 class PutResourcePolicyRequest(ServiceRequest):
-    policyName: Optional[PolicyName]
-    policyDocument: Optional[PolicyDocument]
-    resourceArn: Optional[Arn]
-    expectedRevisionId: Optional[ExpectedRevisionId]
+    policyName: PolicyName | None
+    policyDocument: PolicyDocument | None
+    resourceArn: Arn | None
+    expectedRevisionId: ExpectedRevisionId | None
 
 
 class PutResourcePolicyResponse(TypedDict, total=False):
-    resourcePolicy: Optional[ResourcePolicy]
-    revisionId: Optional[ExpectedRevisionId]
+    resourcePolicy: ResourcePolicy | None
+    revisionId: ExpectedRevisionId | None
 
 
 class PutRetentionPolicyRequest(ServiceRequest):
@@ -2078,11 +2079,11 @@ class PutSubscriptionFilterRequest(ServiceRequest):
     filterName: FilterName
     filterPattern: FilterPattern
     destinationArn: DestinationArn
-    roleArn: Optional[RoleArn]
-    distribution: Optional[Distribution]
-    applyOnTransformedLogs: Optional[ApplyOnTransformedLogs]
-    fieldSelectionCriteria: Optional[FieldSelectionCriteria]
-    emitSystemFields: Optional[EmitSystemFields]
+    roleArn: RoleArn | None
+    distribution: Distribution | None
+    applyOnTransformedLogs: ApplyOnTransformedLogs | None
+    fieldSelectionCriteria: FieldSelectionCriteria | None
+    emitSystemFields: EmitSystemFields | None
 
 
 class PutTransformerRequest(ServiceRequest):
@@ -2092,16 +2093,16 @@ class PutTransformerRequest(ServiceRequest):
 
 class StartLiveTailRequest(ServiceRequest):
     logGroupIdentifiers: StartLiveTailLogGroupIdentifiers
-    logStreamNames: Optional[InputLogStreamNames]
-    logStreamNamePrefixes: Optional[InputLogStreamNames]
-    logEventFilterPattern: Optional[FilterPattern]
+    logStreamNames: InputLogStreamNames | None
+    logStreamNamePrefixes: InputLogStreamNames | None
+    logEventFilterPattern: FilterPattern | None
 
 
 class StartLiveTailResponseStream(TypedDict, total=False):
-    sessionStart: Optional[LiveTailSessionStart]
-    sessionUpdate: Optional[LiveTailSessionUpdate]
-    SessionTimeoutException: Optional[SessionTimeoutException]
-    SessionStreamingException: Optional[SessionStreamingException]
+    sessionStart: LiveTailSessionStart | None
+    sessionUpdate: LiveTailSessionUpdate | None
+    SessionTimeoutException: SessionTimeoutException | None
+    SessionStreamingException: SessionStreamingException | None
 
 
 class StartLiveTailResponse(TypedDict, total=False):
@@ -2109,18 +2110,18 @@ class StartLiveTailResponse(TypedDict, total=False):
 
 
 class StartQueryRequest(ServiceRequest):
-    queryLanguage: Optional[QueryLanguage]
-    logGroupName: Optional[LogGroupName]
-    logGroupNames: Optional[LogGroupNames]
-    logGroupIdentifiers: Optional[LogGroupIdentifiers]
+    queryLanguage: QueryLanguage | None
+    logGroupName: LogGroupName | None
+    logGroupNames: LogGroupNames | None
+    logGroupIdentifiers: LogGroupIdentifiers | None
     startTime: Timestamp
     endTime: Timestamp
     queryString: QueryString
-    limit: Optional[EventsLimit]
+    limit: EventsLimit | None
 
 
 class StartQueryResponse(TypedDict, total=False):
-    queryId: Optional[QueryId]
+    queryId: QueryId | None
 
 
 class StopQueryRequest(ServiceRequest):
@@ -2128,16 +2129,16 @@ class StopQueryRequest(ServiceRequest):
 
 
 class StopQueryResponse(TypedDict, total=False):
-    success: Optional[Success]
+    success: Success | None
 
 
 class SuppressionPeriod(TypedDict, total=False):
-    value: Optional[Integer]
-    suppressionUnit: Optional[SuppressionUnit]
+    value: Integer | None
+    suppressionUnit: SuppressionUnit | None
 
 
-TagKeyList = List[TagKey]
-TagList = List[TagKey]
+TagKeyList = list[TagKey]
+TagList = list[TagKey]
 
 
 class TagLogGroupRequest(ServiceRequest):
@@ -2150,7 +2151,7 @@ class TagResourceRequest(ServiceRequest):
     tags: Tags
 
 
-TestEventMessages = List[EventMessage]
+TestEventMessages = list[EventMessage]
 
 
 class TestMetricFilterRequest(ServiceRequest):
@@ -2159,7 +2160,7 @@ class TestMetricFilterRequest(ServiceRequest):
 
 
 class TestMetricFilterResponse(TypedDict, total=False):
-    matches: Optional[MetricFilterMatches]
+    matches: MetricFilterMatches | None
 
 
 class TestTransformerRequest(ServiceRequest):
@@ -2168,16 +2169,16 @@ class TestTransformerRequest(ServiceRequest):
 
 
 class TransformedLogRecord(TypedDict, total=False):
-    eventNumber: Optional[EventNumber]
-    eventMessage: Optional[EventMessage]
-    transformedEventMessage: Optional[TransformedEventMessage]
+    eventNumber: EventNumber | None
+    eventMessage: EventMessage | None
+    transformedEventMessage: TransformedEventMessage | None
 
 
-TransformedLogs = List[TransformedLogRecord]
+TransformedLogs = list[TransformedLogRecord]
 
 
 class TestTransformerResponse(TypedDict, total=False):
-    transformedLogs: Optional[TransformedLogs]
+    transformedLogs: TransformedLogs | None
 
 
 class UntagLogGroupRequest(ServiceRequest):
@@ -2191,19 +2192,19 @@ class UntagResourceRequest(ServiceRequest):
 
 
 class UpdateAnomalyRequest(ServiceRequest):
-    anomalyId: Optional[AnomalyId]
-    patternId: Optional[PatternId]
+    anomalyId: AnomalyId | None
+    patternId: PatternId | None
     anomalyDetectorArn: AnomalyDetectorArn
-    suppressionType: Optional[SuppressionType]
-    suppressionPeriod: Optional[SuppressionPeriod]
-    baseline: Optional[Baseline]
+    suppressionType: SuppressionType | None
+    suppressionPeriod: SuppressionPeriod | None
+    baseline: Baseline | None
 
 
 class UpdateDeliveryConfigurationRequest(ServiceRequest):
     id: DeliveryId
-    recordFields: Optional[RecordFields]
-    fieldDelimiter: Optional[FieldDelimiter]
-    s3DeliveryConfiguration: Optional[S3DeliveryConfiguration]
+    recordFields: RecordFields | None
+    fieldDelimiter: FieldDelimiter | None
+    s3DeliveryConfiguration: S3DeliveryConfiguration | None
 
 
 class UpdateDeliveryConfigurationResponse(TypedDict, total=False):
@@ -2212,15 +2213,15 @@ class UpdateDeliveryConfigurationResponse(TypedDict, total=False):
 
 class UpdateLogAnomalyDetectorRequest(ServiceRequest):
     anomalyDetectorArn: AnomalyDetectorArn
-    evaluationFrequency: Optional[EvaluationFrequency]
-    filterPattern: Optional[FilterPattern]
-    anomalyVisibilityTime: Optional[AnomalyVisibilityTime]
+    evaluationFrequency: EvaluationFrequency | None
+    filterPattern: FilterPattern | None
+    anomalyVisibilityTime: AnomalyVisibilityTime | None
     enabled: Boolean
 
 
 class LogsApi:
-    service = "logs"
-    version = "2014-03-28"
+    service: str = "logs"
+    version: str = "2014-03-28"
 
     @handler("AssociateKmsKey")
     def associate_kms_key(

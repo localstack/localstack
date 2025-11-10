@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -418,25 +418,25 @@ class AcceptInboundCrossClusterSearchConnectionRequest(ServiceRequest):
 
 
 class InboundCrossClusterSearchConnectionStatus(TypedDict, total=False):
-    StatusCode: Optional[InboundCrossClusterSearchConnectionStatusCode]
-    Message: Optional[CrossClusterSearchConnectionStatusMessage]
+    StatusCode: InboundCrossClusterSearchConnectionStatusCode | None
+    Message: CrossClusterSearchConnectionStatusMessage | None
 
 
 class DomainInformation(TypedDict, total=False):
-    OwnerId: Optional[OwnerId]
+    OwnerId: OwnerId | None
     DomainName: DomainName
-    Region: Optional[Region]
+    Region: Region | None
 
 
 class InboundCrossClusterSearchConnection(TypedDict, total=False):
-    SourceDomainInfo: Optional[DomainInformation]
-    DestinationDomainInfo: Optional[DomainInformation]
-    CrossClusterSearchConnectionId: Optional[CrossClusterSearchConnectionId]
-    ConnectionStatus: Optional[InboundCrossClusterSearchConnectionStatus]
+    SourceDomainInfo: DomainInformation | None
+    DestinationDomainInfo: DomainInformation | None
+    CrossClusterSearchConnectionId: CrossClusterSearchConnectionId | None
+    ConnectionStatus: InboundCrossClusterSearchConnectionStatus | None
 
 
 class AcceptInboundCrossClusterSearchConnectionResponse(TypedDict, total=False):
-    CrossClusterSearchConnection: Optional[InboundCrossClusterSearchConnection]
+    CrossClusterSearchConnection: InboundCrossClusterSearchConnection | None
 
 
 UpdateTimestamp = datetime
@@ -445,9 +445,9 @@ UpdateTimestamp = datetime
 class OptionStatus(TypedDict, total=False):
     CreationDate: UpdateTimestamp
     UpdateDate: UpdateTimestamp
-    UpdateVersion: Optional[UIntValue]
+    UpdateVersion: UIntValue | None
     State: OptionState
-    PendingDeletion: Optional[Boolean]
+    PendingDeletion: Boolean | None
 
 
 class AccessPoliciesStatus(TypedDict, total=False):
@@ -460,7 +460,7 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class AddTagsRequest(ServiceRequest):
@@ -468,16 +468,16 @@ class AddTagsRequest(ServiceRequest):
     TagList: TagList
 
 
-LimitValueList = List[LimitValue]
+LimitValueList = list[LimitValue]
 
 
 class AdditionalLimit(TypedDict, total=False):
-    LimitName: Optional[LimitName]
-    LimitValues: Optional[LimitValueList]
+    LimitName: LimitName | None
+    LimitValues: LimitValueList | None
 
 
-AdditionalLimitList = List[AdditionalLimit]
-AdvancedOptions = Dict[String, String]
+AdditionalLimitList = list[AdditionalLimit]
+AdvancedOptions = dict[String, String]
 
 
 class AdvancedOptionsStatus(TypedDict, total=False):
@@ -494,43 +494,43 @@ class SAMLIdp(TypedDict, total=False):
 
 
 class SAMLOptionsOutput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    Idp: Optional[SAMLIdp]
-    SubjectKey: Optional[String]
-    RolesKey: Optional[String]
-    SessionTimeoutMinutes: Optional[IntegerClass]
+    Enabled: Boolean | None
+    Idp: SAMLIdp | None
+    SubjectKey: String | None
+    RolesKey: String | None
+    SessionTimeoutMinutes: IntegerClass | None
 
 
 class AdvancedSecurityOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    InternalUserDatabaseEnabled: Optional[Boolean]
-    SAMLOptions: Optional[SAMLOptionsOutput]
-    AnonymousAuthDisableDate: Optional[DisableTimestamp]
-    AnonymousAuthEnabled: Optional[Boolean]
+    Enabled: Boolean | None
+    InternalUserDatabaseEnabled: Boolean | None
+    SAMLOptions: SAMLOptionsOutput | None
+    AnonymousAuthDisableDate: DisableTimestamp | None
+    AnonymousAuthEnabled: Boolean | None
 
 
 class SAMLOptionsInput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    Idp: Optional[SAMLIdp]
-    MasterUserName: Optional[Username]
-    MasterBackendRole: Optional[BackendRole]
-    SubjectKey: Optional[String]
-    RolesKey: Optional[String]
-    SessionTimeoutMinutes: Optional[IntegerClass]
+    Enabled: Boolean | None
+    Idp: SAMLIdp | None
+    MasterUserName: Username | None
+    MasterBackendRole: BackendRole | None
+    SubjectKey: String | None
+    RolesKey: String | None
+    SessionTimeoutMinutes: IntegerClass | None
 
 
 class MasterUserOptions(TypedDict, total=False):
-    MasterUserARN: Optional[ARN]
-    MasterUserName: Optional[Username]
-    MasterUserPassword: Optional[Password]
+    MasterUserARN: ARN | None
+    MasterUserName: Username | None
+    MasterUserPassword: Password | None
 
 
 class AdvancedSecurityOptionsInput(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    InternalUserDatabaseEnabled: Optional[Boolean]
-    MasterUserOptions: Optional[MasterUserOptions]
-    SAMLOptions: Optional[SAMLOptionsInput]
-    AnonymousAuthEnabled: Optional[Boolean]
+    Enabled: Boolean | None
+    InternalUserDatabaseEnabled: Boolean | None
+    MasterUserOptions: MasterUserOptions | None
+    SAMLOptions: SAMLOptionsInput | None
+    AnonymousAuthEnabled: Boolean | None
 
 
 class AdvancedSecurityOptionsStatus(TypedDict, total=False):
@@ -544,27 +544,27 @@ class AssociatePackageRequest(ServiceRequest):
 
 
 class ErrorDetails(TypedDict, total=False):
-    ErrorType: Optional[ErrorType]
-    ErrorMessage: Optional[ErrorMessage]
+    ErrorType: ErrorType | None
+    ErrorMessage: ErrorMessage | None
 
 
 LastUpdated = datetime
 
 
 class DomainPackageDetails(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    PackageName: Optional[PackageName]
-    PackageType: Optional[PackageType]
-    LastUpdated: Optional[LastUpdated]
-    DomainName: Optional[DomainName]
-    DomainPackageStatus: Optional[DomainPackageStatus]
-    PackageVersion: Optional[PackageVersion]
-    ReferencePath: Optional[ReferencePath]
-    ErrorDetails: Optional[ErrorDetails]
+    PackageID: PackageID | None
+    PackageName: PackageName | None
+    PackageType: PackageType | None
+    LastUpdated: LastUpdated | None
+    DomainName: DomainName | None
+    DomainPackageStatus: DomainPackageStatus | None
+    PackageVersion: PackageVersion | None
+    ReferencePath: ReferencePath | None
+    ErrorDetails: ErrorDetails | None
 
 
 class AssociatePackageResponse(TypedDict, total=False):
-    DomainPackageDetails: Optional[DomainPackageDetails]
+    DomainPackageDetails: DomainPackageDetails | None
 
 
 class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
@@ -573,104 +573,104 @@ class AuthorizeVpcEndpointAccessRequest(ServiceRequest):
 
 
 class AuthorizedPrincipal(TypedDict, total=False):
-    PrincipalType: Optional[PrincipalType]
-    Principal: Optional[String]
+    PrincipalType: PrincipalType | None
+    Principal: String | None
 
 
 class AuthorizeVpcEndpointAccessResponse(TypedDict, total=False):
     AuthorizedPrincipal: AuthorizedPrincipal
 
 
-AuthorizedPrincipalList = List[AuthorizedPrincipal]
+AuthorizedPrincipalList = list[AuthorizedPrincipal]
 AutoTuneDate = datetime
 
 
 class ScheduledAutoTuneDetails(TypedDict, total=False):
-    Date: Optional[AutoTuneDate]
-    ActionType: Optional[ScheduledAutoTuneActionType]
-    Action: Optional[ScheduledAutoTuneDescription]
-    Severity: Optional[ScheduledAutoTuneSeverityType]
+    Date: AutoTuneDate | None
+    ActionType: ScheduledAutoTuneActionType | None
+    Action: ScheduledAutoTuneDescription | None
+    Severity: ScheduledAutoTuneSeverityType | None
 
 
 class AutoTuneDetails(TypedDict, total=False):
-    ScheduledAutoTuneDetails: Optional[ScheduledAutoTuneDetails]
+    ScheduledAutoTuneDetails: ScheduledAutoTuneDetails | None
 
 
 class AutoTune(TypedDict, total=False):
-    AutoTuneType: Optional[AutoTuneType]
-    AutoTuneDetails: Optional[AutoTuneDetails]
+    AutoTuneType: AutoTuneType | None
+    AutoTuneDetails: AutoTuneDetails | None
 
 
-AutoTuneList = List[AutoTune]
+AutoTuneList = list[AutoTune]
 DurationValue = int
 
 
 class Duration(TypedDict, total=False):
-    Value: Optional[DurationValue]
-    Unit: Optional[TimeUnit]
+    Value: DurationValue | None
+    Unit: TimeUnit | None
 
 
 StartAt = datetime
 
 
 class AutoTuneMaintenanceSchedule(TypedDict, total=False):
-    StartAt: Optional[StartAt]
-    Duration: Optional[Duration]
-    CronExpressionForRecurrence: Optional[String]
+    StartAt: StartAt | None
+    Duration: Duration | None
+    CronExpressionForRecurrence: String | None
 
 
-AutoTuneMaintenanceScheduleList = List[AutoTuneMaintenanceSchedule]
+AutoTuneMaintenanceScheduleList = list[AutoTuneMaintenanceSchedule]
 
 
 class AutoTuneOptions(TypedDict, total=False):
-    DesiredState: Optional[AutoTuneDesiredState]
-    RollbackOnDisable: Optional[RollbackOnDisable]
-    MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
+    DesiredState: AutoTuneDesiredState | None
+    RollbackOnDisable: RollbackOnDisable | None
+    MaintenanceSchedules: AutoTuneMaintenanceScheduleList | None
 
 
 class AutoTuneOptionsInput(TypedDict, total=False):
-    DesiredState: Optional[AutoTuneDesiredState]
-    MaintenanceSchedules: Optional[AutoTuneMaintenanceScheduleList]
+    DesiredState: AutoTuneDesiredState | None
+    MaintenanceSchedules: AutoTuneMaintenanceScheduleList | None
 
 
 class AutoTuneOptionsOutput(TypedDict, total=False):
-    State: Optional[AutoTuneState]
-    ErrorMessage: Optional[String]
+    State: AutoTuneState | None
+    ErrorMessage: String | None
 
 
 class AutoTuneStatus(TypedDict, total=False):
     CreationDate: UpdateTimestamp
     UpdateDate: UpdateTimestamp
-    UpdateVersion: Optional[UIntValue]
+    UpdateVersion: UIntValue | None
     State: AutoTuneState
-    ErrorMessage: Optional[String]
-    PendingDeletion: Optional[Boolean]
+    ErrorMessage: String | None
+    PendingDeletion: Boolean | None
 
 
 class AutoTuneOptionsStatus(TypedDict, total=False):
-    Options: Optional[AutoTuneOptions]
-    Status: Optional[AutoTuneStatus]
+    Options: AutoTuneOptions | None
+    Status: AutoTuneStatus | None
 
 
 class CancelDomainConfigChangeRequest(ServiceRequest):
     DomainName: DomainName
-    DryRun: Optional[DryRun]
+    DryRun: DryRun | None
 
 
 class CancelledChangeProperty(TypedDict, total=False):
-    PropertyName: Optional[String]
-    CancelledValue: Optional[String]
-    ActiveValue: Optional[String]
+    PropertyName: String | None
+    CancelledValue: String | None
+    ActiveValue: String | None
 
 
-CancelledChangePropertyList = List[CancelledChangeProperty]
-GUIDList = List[GUID]
+CancelledChangePropertyList = list[CancelledChangeProperty]
+GUIDList = list[GUID]
 
 
 class CancelDomainConfigChangeResponse(TypedDict, total=False):
-    DryRun: Optional[DryRun]
-    CancelledChangeIds: Optional[GUIDList]
-    CancelledChangeProperties: Optional[CancelledChangePropertyList]
+    DryRun: DryRun | None
+    CancelledChangeIds: GUIDList | None
+    CancelledChangeProperties: CancelledChangePropertyList | None
 
 
 class CancelElasticsearchServiceSoftwareUpdateRequest(ServiceRequest):
@@ -681,58 +681,58 @@ DeploymentCloseDateTimeStamp = datetime
 
 
 class ServiceSoftwareOptions(TypedDict, total=False):
-    CurrentVersion: Optional[String]
-    NewVersion: Optional[String]
-    UpdateAvailable: Optional[Boolean]
-    Cancellable: Optional[Boolean]
-    UpdateStatus: Optional[DeploymentStatus]
-    Description: Optional[String]
-    AutomatedUpdateDate: Optional[DeploymentCloseDateTimeStamp]
-    OptionalDeployment: Optional[Boolean]
+    CurrentVersion: String | None
+    NewVersion: String | None
+    UpdateAvailable: Boolean | None
+    Cancellable: Boolean | None
+    UpdateStatus: DeploymentStatus | None
+    Description: String | None
+    AutomatedUpdateDate: DeploymentCloseDateTimeStamp | None
+    OptionalDeployment: Boolean | None
 
 
 class CancelElasticsearchServiceSoftwareUpdateResponse(TypedDict, total=False):
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
+    ServiceSoftwareOptions: ServiceSoftwareOptions | None
 
 
 class ChangeProgressDetails(TypedDict, total=False):
-    ChangeId: Optional[GUID]
-    Message: Optional[Message]
-    ConfigChangeStatus: Optional[ConfigChangeStatus]
-    StartTime: Optional[UpdateTimestamp]
-    LastUpdatedTime: Optional[UpdateTimestamp]
-    InitiatedBy: Optional[InitiatedBy]
+    ChangeId: GUID | None
+    Message: Message | None
+    ConfigChangeStatus: ConfigChangeStatus | None
+    StartTime: UpdateTimestamp | None
+    LastUpdatedTime: UpdateTimestamp | None
+    InitiatedBy: InitiatedBy | None
 
 
 class ChangeProgressStage(TypedDict, total=False):
-    Name: Optional[ChangeProgressStageName]
-    Status: Optional[ChangeProgressStageStatus]
-    Description: Optional[Description]
-    LastUpdated: Optional[LastUpdated]
+    Name: ChangeProgressStageName | None
+    Status: ChangeProgressStageStatus | None
+    Description: Description | None
+    LastUpdated: LastUpdated | None
 
 
-ChangeProgressStageList = List[ChangeProgressStage]
-StringList = List[String]
+ChangeProgressStageList = list[ChangeProgressStage]
+StringList = list[String]
 
 
 class ChangeProgressStatusDetails(TypedDict, total=False):
-    ChangeId: Optional[GUID]
-    StartTime: Optional[UpdateTimestamp]
-    Status: Optional[OverallChangeStatus]
-    PendingProperties: Optional[StringList]
-    CompletedProperties: Optional[StringList]
-    TotalNumberOfStages: Optional[TotalNumberOfStages]
-    ChangeProgressStages: Optional[ChangeProgressStageList]
-    ConfigChangeStatus: Optional[ConfigChangeStatus]
-    LastUpdatedTime: Optional[UpdateTimestamp]
-    InitiatedBy: Optional[InitiatedBy]
+    ChangeId: GUID | None
+    StartTime: UpdateTimestamp | None
+    Status: OverallChangeStatus | None
+    PendingProperties: StringList | None
+    CompletedProperties: StringList | None
+    TotalNumberOfStages: TotalNumberOfStages | None
+    ChangeProgressStages: ChangeProgressStageList | None
+    ConfigChangeStatus: ConfigChangeStatus | None
+    LastUpdatedTime: UpdateTimestamp | None
+    InitiatedBy: InitiatedBy | None
 
 
 class CognitoOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    UserPoolId: Optional[UserPoolId]
-    IdentityPoolId: Optional[IdentityPoolId]
-    RoleArn: Optional[RoleArn]
+    Enabled: Boolean | None
+    UserPoolId: UserPoolId | None
+    IdentityPoolId: IdentityPoolId | None
+    RoleArn: RoleArn | None
 
 
 class CognitoOptionsStatus(TypedDict, total=False):
@@ -744,148 +744,148 @@ class ColdStorageOptions(TypedDict, total=False):
     Enabled: Boolean
 
 
-ElasticsearchVersionList = List[ElasticsearchVersionString]
+ElasticsearchVersionList = list[ElasticsearchVersionString]
 
 
 class CompatibleVersionsMap(TypedDict, total=False):
-    SourceVersion: Optional[ElasticsearchVersionString]
-    TargetVersions: Optional[ElasticsearchVersionList]
+    SourceVersion: ElasticsearchVersionString | None
+    TargetVersions: ElasticsearchVersionList | None
 
 
-CompatibleElasticsearchVersionsList = List[CompatibleVersionsMap]
+CompatibleElasticsearchVersionsList = list[CompatibleVersionsMap]
 
 
 class DomainEndpointOptions(TypedDict, total=False):
-    EnforceHTTPS: Optional[Boolean]
-    TLSSecurityPolicy: Optional[TLSSecurityPolicy]
-    CustomEndpointEnabled: Optional[Boolean]
-    CustomEndpoint: Optional[DomainNameFqdn]
-    CustomEndpointCertificateArn: Optional[ARN]
+    EnforceHTTPS: Boolean | None
+    TLSSecurityPolicy: TLSSecurityPolicy | None
+    CustomEndpointEnabled: Boolean | None
+    CustomEndpoint: DomainNameFqdn | None
+    CustomEndpointCertificateArn: ARN | None
 
 
 class LogPublishingOption(TypedDict, total=False):
-    CloudWatchLogsLogGroupArn: Optional[CloudWatchLogsLogGroupArn]
-    Enabled: Optional[Boolean]
+    CloudWatchLogsLogGroupArn: CloudWatchLogsLogGroupArn | None
+    Enabled: Boolean | None
 
 
-LogPublishingOptions = Dict[LogType, LogPublishingOption]
+LogPublishingOptions = dict[LogType, LogPublishingOption]
 
 
 class NodeToNodeEncryptionOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
+    Enabled: Boolean | None
 
 
 class EncryptionAtRestOptions(TypedDict, total=False):
-    Enabled: Optional[Boolean]
-    KmsKeyId: Optional[KmsKeyId]
+    Enabled: Boolean | None
+    KmsKeyId: KmsKeyId | None
 
 
 class VPCOptions(TypedDict, total=False):
-    SubnetIds: Optional[StringList]
-    SecurityGroupIds: Optional[StringList]
+    SubnetIds: StringList | None
+    SecurityGroupIds: StringList | None
 
 
 class SnapshotOptions(TypedDict, total=False):
-    AutomatedSnapshotStartHour: Optional[IntegerClass]
+    AutomatedSnapshotStartHour: IntegerClass | None
 
 
 class EBSOptions(TypedDict, total=False):
-    EBSEnabled: Optional[Boolean]
-    VolumeType: Optional[VolumeType]
-    VolumeSize: Optional[IntegerClass]
-    Iops: Optional[IntegerClass]
-    Throughput: Optional[IntegerClass]
+    EBSEnabled: Boolean | None
+    VolumeType: VolumeType | None
+    VolumeSize: IntegerClass | None
+    Iops: IntegerClass | None
+    Throughput: IntegerClass | None
 
 
 class ZoneAwarenessConfig(TypedDict, total=False):
-    AvailabilityZoneCount: Optional[IntegerClass]
+    AvailabilityZoneCount: IntegerClass | None
 
 
 class ElasticsearchClusterConfig(TypedDict, total=False):
-    InstanceType: Optional[ESPartitionInstanceType]
-    InstanceCount: Optional[IntegerClass]
-    DedicatedMasterEnabled: Optional[Boolean]
-    ZoneAwarenessEnabled: Optional[Boolean]
-    ZoneAwarenessConfig: Optional[ZoneAwarenessConfig]
-    DedicatedMasterType: Optional[ESPartitionInstanceType]
-    DedicatedMasterCount: Optional[IntegerClass]
-    WarmEnabled: Optional[Boolean]
-    WarmType: Optional[ESWarmPartitionInstanceType]
-    WarmCount: Optional[IntegerClass]
-    ColdStorageOptions: Optional[ColdStorageOptions]
+    InstanceType: ESPartitionInstanceType | None
+    InstanceCount: IntegerClass | None
+    DedicatedMasterEnabled: Boolean | None
+    ZoneAwarenessEnabled: Boolean | None
+    ZoneAwarenessConfig: ZoneAwarenessConfig | None
+    DedicatedMasterType: ESPartitionInstanceType | None
+    DedicatedMasterCount: IntegerClass | None
+    WarmEnabled: Boolean | None
+    WarmType: ESWarmPartitionInstanceType | None
+    WarmCount: IntegerClass | None
+    ColdStorageOptions: ColdStorageOptions | None
 
 
 class CreateElasticsearchDomainRequest(ServiceRequest):
     DomainName: DomainName
-    ElasticsearchVersion: Optional[ElasticsearchVersionString]
-    ElasticsearchClusterConfig: Optional[ElasticsearchClusterConfig]
-    EBSOptions: Optional[EBSOptions]
-    AccessPolicies: Optional[PolicyDocument]
-    SnapshotOptions: Optional[SnapshotOptions]
-    VPCOptions: Optional[VPCOptions]
-    CognitoOptions: Optional[CognitoOptions]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    AdvancedOptions: Optional[AdvancedOptions]
-    LogPublishingOptions: Optional[LogPublishingOptions]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
-    AutoTuneOptions: Optional[AutoTuneOptionsInput]
-    TagList: Optional[TagList]
+    ElasticsearchVersion: ElasticsearchVersionString | None
+    ElasticsearchClusterConfig: ElasticsearchClusterConfig | None
+    EBSOptions: EBSOptions | None
+    AccessPolicies: PolicyDocument | None
+    SnapshotOptions: SnapshotOptions | None
+    VPCOptions: VPCOptions | None
+    CognitoOptions: CognitoOptions | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    AdvancedOptions: AdvancedOptions | None
+    LogPublishingOptions: LogPublishingOptions | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsInput | None
+    AutoTuneOptions: AutoTuneOptionsInput | None
+    TagList: TagList | None
 
 
 class ModifyingProperties(TypedDict, total=False):
-    Name: Optional[String]
-    ActiveValue: Optional[String]
-    PendingValue: Optional[String]
-    ValueType: Optional[PropertyValueType]
+    Name: String | None
+    ActiveValue: String | None
+    PendingValue: String | None
+    ValueType: PropertyValueType | None
 
 
-ModifyingPropertiesList = List[ModifyingProperties]
+ModifyingPropertiesList = list[ModifyingProperties]
 
 
 class VPCDerivedInfo(TypedDict, total=False):
-    VPCId: Optional[String]
-    SubnetIds: Optional[StringList]
-    AvailabilityZones: Optional[StringList]
-    SecurityGroupIds: Optional[StringList]
+    VPCId: String | None
+    SubnetIds: StringList | None
+    AvailabilityZones: StringList | None
+    SecurityGroupIds: StringList | None
 
 
-EndpointsMap = Dict[String, ServiceUrl]
+EndpointsMap = dict[String, ServiceUrl]
 
 
 class ElasticsearchDomainStatus(TypedDict, total=False):
     DomainId: DomainId
     DomainName: DomainName
     ARN: ARN
-    Created: Optional[Boolean]
-    Deleted: Optional[Boolean]
-    Endpoint: Optional[ServiceUrl]
-    Endpoints: Optional[EndpointsMap]
-    Processing: Optional[Boolean]
-    UpgradeProcessing: Optional[Boolean]
-    ElasticsearchVersion: Optional[ElasticsearchVersionString]
+    Created: Boolean | None
+    Deleted: Boolean | None
+    Endpoint: ServiceUrl | None
+    Endpoints: EndpointsMap | None
+    Processing: Boolean | None
+    UpgradeProcessing: Boolean | None
+    ElasticsearchVersion: ElasticsearchVersionString | None
     ElasticsearchClusterConfig: ElasticsearchClusterConfig
-    EBSOptions: Optional[EBSOptions]
-    AccessPolicies: Optional[PolicyDocument]
-    SnapshotOptions: Optional[SnapshotOptions]
-    VPCOptions: Optional[VPCDerivedInfo]
-    CognitoOptions: Optional[CognitoOptions]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    AdvancedOptions: Optional[AdvancedOptions]
-    LogPublishingOptions: Optional[LogPublishingOptions]
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptions]
-    AutoTuneOptions: Optional[AutoTuneOptionsOutput]
-    ChangeProgressDetails: Optional[ChangeProgressDetails]
-    DomainProcessingStatus: Optional[DomainProcessingStatusType]
-    ModifyingProperties: Optional[ModifyingPropertiesList]
+    EBSOptions: EBSOptions | None
+    AccessPolicies: PolicyDocument | None
+    SnapshotOptions: SnapshotOptions | None
+    VPCOptions: VPCDerivedInfo | None
+    CognitoOptions: CognitoOptions | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    AdvancedOptions: AdvancedOptions | None
+    LogPublishingOptions: LogPublishingOptions | None
+    ServiceSoftwareOptions: ServiceSoftwareOptions | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    AdvancedSecurityOptions: AdvancedSecurityOptions | None
+    AutoTuneOptions: AutoTuneOptionsOutput | None
+    ChangeProgressDetails: ChangeProgressDetails | None
+    DomainProcessingStatus: DomainProcessingStatusType | None
+    ModifyingProperties: ModifyingPropertiesList | None
 
 
 class CreateElasticsearchDomainResponse(TypedDict, total=False):
-    DomainStatus: Optional[ElasticsearchDomainStatus]
+    DomainStatus: ElasticsearchDomainStatus | None
 
 
 class CreateOutboundCrossClusterSearchConnectionRequest(ServiceRequest):
@@ -895,27 +895,27 @@ class CreateOutboundCrossClusterSearchConnectionRequest(ServiceRequest):
 
 
 class OutboundCrossClusterSearchConnectionStatus(TypedDict, total=False):
-    StatusCode: Optional[OutboundCrossClusterSearchConnectionStatusCode]
-    Message: Optional[CrossClusterSearchConnectionStatusMessage]
+    StatusCode: OutboundCrossClusterSearchConnectionStatusCode | None
+    Message: CrossClusterSearchConnectionStatusMessage | None
 
 
 class CreateOutboundCrossClusterSearchConnectionResponse(TypedDict, total=False):
-    SourceDomainInfo: Optional[DomainInformation]
-    DestinationDomainInfo: Optional[DomainInformation]
-    ConnectionAlias: Optional[ConnectionAlias]
-    ConnectionStatus: Optional[OutboundCrossClusterSearchConnectionStatus]
-    CrossClusterSearchConnectionId: Optional[CrossClusterSearchConnectionId]
+    SourceDomainInfo: DomainInformation | None
+    DestinationDomainInfo: DomainInformation | None
+    ConnectionAlias: ConnectionAlias | None
+    ConnectionStatus: OutboundCrossClusterSearchConnectionStatus | None
+    CrossClusterSearchConnectionId: CrossClusterSearchConnectionId | None
 
 
 class PackageSource(TypedDict, total=False):
-    S3BucketName: Optional[S3BucketName]
-    S3Key: Optional[S3Key]
+    S3BucketName: S3BucketName | None
+    S3Key: S3Key | None
 
 
 class CreatePackageRequest(ServiceRequest):
     PackageName: PackageName
     PackageType: PackageType
-    PackageDescription: Optional[PackageDescription]
+    PackageDescription: PackageDescription | None
     PackageSource: PackageSource
 
 
@@ -923,34 +923,34 @@ CreatedAt = datetime
 
 
 class PackageDetails(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    PackageName: Optional[PackageName]
-    PackageType: Optional[PackageType]
-    PackageDescription: Optional[PackageDescription]
-    PackageStatus: Optional[PackageStatus]
-    CreatedAt: Optional[CreatedAt]
-    LastUpdatedAt: Optional[LastUpdated]
-    AvailablePackageVersion: Optional[PackageVersion]
-    ErrorDetails: Optional[ErrorDetails]
+    PackageID: PackageID | None
+    PackageName: PackageName | None
+    PackageType: PackageType | None
+    PackageDescription: PackageDescription | None
+    PackageStatus: PackageStatus | None
+    CreatedAt: CreatedAt | None
+    LastUpdatedAt: LastUpdated | None
+    AvailablePackageVersion: PackageVersion | None
+    ErrorDetails: ErrorDetails | None
 
 
 class CreatePackageResponse(TypedDict, total=False):
-    PackageDetails: Optional[PackageDetails]
+    PackageDetails: PackageDetails | None
 
 
 class CreateVpcEndpointRequest(ServiceRequest):
     DomainArn: DomainArn
     VpcOptions: VPCOptions
-    ClientToken: Optional[ClientToken]
+    ClientToken: ClientToken | None
 
 
 class VpcEndpoint(TypedDict, total=False):
-    VpcEndpointId: Optional[VpcEndpointId]
-    VpcEndpointOwner: Optional[AWSAccount]
-    DomainArn: Optional[DomainArn]
-    VpcOptions: Optional[VPCDerivedInfo]
-    Status: Optional[VpcEndpointStatus]
-    Endpoint: Optional[Endpoint]
+    VpcEndpointId: VpcEndpointId | None
+    VpcEndpointOwner: AWSAccount | None
+    DomainArn: DomainArn | None
+    VpcOptions: VPCDerivedInfo | None
+    Status: VpcEndpointStatus | None
+    Endpoint: Endpoint | None
 
 
 class CreateVpcEndpointResponse(TypedDict, total=False):
@@ -962,7 +962,7 @@ class DeleteElasticsearchDomainRequest(ServiceRequest):
 
 
 class DeleteElasticsearchDomainResponse(TypedDict, total=False):
-    DomainStatus: Optional[ElasticsearchDomainStatus]
+    DomainStatus: ElasticsearchDomainStatus | None
 
 
 class DeleteInboundCrossClusterSearchConnectionRequest(ServiceRequest):
@@ -970,7 +970,7 @@ class DeleteInboundCrossClusterSearchConnectionRequest(ServiceRequest):
 
 
 class DeleteInboundCrossClusterSearchConnectionResponse(TypedDict, total=False):
-    CrossClusterSearchConnection: Optional[InboundCrossClusterSearchConnection]
+    CrossClusterSearchConnection: InboundCrossClusterSearchConnection | None
 
 
 class DeleteOutboundCrossClusterSearchConnectionRequest(ServiceRequest):
@@ -978,15 +978,15 @@ class DeleteOutboundCrossClusterSearchConnectionRequest(ServiceRequest):
 
 
 class OutboundCrossClusterSearchConnection(TypedDict, total=False):
-    SourceDomainInfo: Optional[DomainInformation]
-    DestinationDomainInfo: Optional[DomainInformation]
-    CrossClusterSearchConnectionId: Optional[CrossClusterSearchConnectionId]
-    ConnectionAlias: Optional[ConnectionAlias]
-    ConnectionStatus: Optional[OutboundCrossClusterSearchConnectionStatus]
+    SourceDomainInfo: DomainInformation | None
+    DestinationDomainInfo: DomainInformation | None
+    CrossClusterSearchConnectionId: CrossClusterSearchConnectionId | None
+    ConnectionAlias: ConnectionAlias | None
+    ConnectionStatus: OutboundCrossClusterSearchConnectionStatus | None
 
 
 class DeleteOutboundCrossClusterSearchConnectionResponse(TypedDict, total=False):
-    CrossClusterSearchConnection: Optional[OutboundCrossClusterSearchConnection]
+    CrossClusterSearchConnection: OutboundCrossClusterSearchConnection | None
 
 
 class DeletePackageRequest(ServiceRequest):
@@ -994,7 +994,7 @@ class DeletePackageRequest(ServiceRequest):
 
 
 class DeletePackageResponse(TypedDict, total=False):
-    PackageDetails: Optional[PackageDetails]
+    PackageDetails: PackageDetails | None
 
 
 class DeleteVpcEndpointRequest(ServiceRequest):
@@ -1002,10 +1002,10 @@ class DeleteVpcEndpointRequest(ServiceRequest):
 
 
 class VpcEndpointSummary(TypedDict, total=False):
-    VpcEndpointId: Optional[VpcEndpointId]
-    VpcEndpointOwner: Optional[String]
-    DomainArn: Optional[DomainArn]
-    Status: Optional[VpcEndpointStatus]
+    VpcEndpointId: VpcEndpointId | None
+    VpcEndpointOwner: String | None
+    DomainArn: DomainArn | None
+    Status: VpcEndpointStatus | None
 
 
 class DeleteVpcEndpointResponse(TypedDict, total=False):
@@ -1014,22 +1014,22 @@ class DeleteVpcEndpointResponse(TypedDict, total=False):
 
 class DescribeDomainAutoTunesRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeDomainAutoTunesResponse(TypedDict, total=False):
-    AutoTunes: Optional[AutoTuneList]
-    NextToken: Optional[NextToken]
+    AutoTunes: AutoTuneList | None
+    NextToken: NextToken | None
 
 
 class DescribeDomainChangeProgressRequest(ServiceRequest):
     DomainName: DomainName
-    ChangeId: Optional[GUID]
+    ChangeId: GUID | None
 
 
 class DescribeDomainChangeProgressResponse(TypedDict, total=False):
-    ChangeProgressStatus: Optional[ChangeProgressStatusDetails]
+    ChangeProgressStatus: ChangeProgressStatusDetails | None
 
 
 class DescribeElasticsearchDomainConfigRequest(ServiceRequest):
@@ -1042,8 +1042,8 @@ class DomainEndpointOptionsStatus(TypedDict, total=False):
 
 
 class LogPublishingOptionsStatus(TypedDict, total=False):
-    Options: Optional[LogPublishingOptions]
-    Status: Optional[OptionStatus]
+    Options: LogPublishingOptions | None
+    Status: OptionStatus | None
 
 
 class NodeToNodeEncryptionOptionsStatus(TypedDict, total=False):
@@ -1082,22 +1082,22 @@ class ElasticsearchVersionStatus(TypedDict, total=False):
 
 
 class ElasticsearchDomainConfig(TypedDict, total=False):
-    ElasticsearchVersion: Optional[ElasticsearchVersionStatus]
-    ElasticsearchClusterConfig: Optional[ElasticsearchClusterConfigStatus]
-    EBSOptions: Optional[EBSOptionsStatus]
-    AccessPolicies: Optional[AccessPoliciesStatus]
-    SnapshotOptions: Optional[SnapshotOptionsStatus]
-    VPCOptions: Optional[VPCDerivedInfoStatus]
-    CognitoOptions: Optional[CognitoOptionsStatus]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptionsStatus]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptionsStatus]
-    AdvancedOptions: Optional[AdvancedOptionsStatus]
-    LogPublishingOptions: Optional[LogPublishingOptionsStatus]
-    DomainEndpointOptions: Optional[DomainEndpointOptionsStatus]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsStatus]
-    AutoTuneOptions: Optional[AutoTuneOptionsStatus]
-    ChangeProgressDetails: Optional[ChangeProgressDetails]
-    ModifyingProperties: Optional[ModifyingPropertiesList]
+    ElasticsearchVersion: ElasticsearchVersionStatus | None
+    ElasticsearchClusterConfig: ElasticsearchClusterConfigStatus | None
+    EBSOptions: EBSOptionsStatus | None
+    AccessPolicies: AccessPoliciesStatus | None
+    SnapshotOptions: SnapshotOptionsStatus | None
+    VPCOptions: VPCDerivedInfoStatus | None
+    CognitoOptions: CognitoOptionsStatus | None
+    EncryptionAtRestOptions: EncryptionAtRestOptionsStatus | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptionsStatus | None
+    AdvancedOptions: AdvancedOptionsStatus | None
+    LogPublishingOptions: LogPublishingOptionsStatus | None
+    DomainEndpointOptions: DomainEndpointOptionsStatus | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsStatus | None
+    AutoTuneOptions: AutoTuneOptionsStatus | None
+    ChangeProgressDetails: ChangeProgressDetails | None
+    ModifyingProperties: ModifyingPropertiesList | None
 
 
 class DescribeElasticsearchDomainConfigResponse(TypedDict, total=False):
@@ -1112,14 +1112,14 @@ class DescribeElasticsearchDomainResponse(TypedDict, total=False):
     DomainStatus: ElasticsearchDomainStatus
 
 
-DomainNameList = List[DomainName]
+DomainNameList = list[DomainName]
 
 
 class DescribeElasticsearchDomainsRequest(ServiceRequest):
     DomainNames: DomainNameList
 
 
-ElasticsearchDomainStatusList = List[ElasticsearchDomainStatus]
+ElasticsearchDomainStatusList = list[ElasticsearchDomainStatus]
 
 
 class DescribeElasticsearchDomainsResponse(TypedDict, total=False):
@@ -1127,178 +1127,178 @@ class DescribeElasticsearchDomainsResponse(TypedDict, total=False):
 
 
 class DescribeElasticsearchInstanceTypeLimitsRequest(ServiceRequest):
-    DomainName: Optional[DomainName]
+    DomainName: DomainName | None
     InstanceType: ESPartitionInstanceType
     ElasticsearchVersion: ElasticsearchVersionString
 
 
 class InstanceCountLimits(TypedDict, total=False):
-    MinimumInstanceCount: Optional[MinimumInstanceCount]
-    MaximumInstanceCount: Optional[MaximumInstanceCount]
+    MinimumInstanceCount: MinimumInstanceCount | None
+    MaximumInstanceCount: MaximumInstanceCount | None
 
 
 class InstanceLimits(TypedDict, total=False):
-    InstanceCountLimits: Optional[InstanceCountLimits]
+    InstanceCountLimits: InstanceCountLimits | None
 
 
 class StorageTypeLimit(TypedDict, total=False):
-    LimitName: Optional[LimitName]
-    LimitValues: Optional[LimitValueList]
+    LimitName: LimitName | None
+    LimitValues: LimitValueList | None
 
 
-StorageTypeLimitList = List[StorageTypeLimit]
+StorageTypeLimitList = list[StorageTypeLimit]
 
 
 class StorageType(TypedDict, total=False):
-    StorageTypeName: Optional[StorageTypeName]
-    StorageSubTypeName: Optional[StorageSubTypeName]
-    StorageTypeLimits: Optional[StorageTypeLimitList]
+    StorageTypeName: StorageTypeName | None
+    StorageSubTypeName: StorageSubTypeName | None
+    StorageTypeLimits: StorageTypeLimitList | None
 
 
-StorageTypeList = List[StorageType]
+StorageTypeList = list[StorageType]
 
 
 class Limits(TypedDict, total=False):
-    StorageTypes: Optional[StorageTypeList]
-    InstanceLimits: Optional[InstanceLimits]
-    AdditionalLimits: Optional[AdditionalLimitList]
+    StorageTypes: StorageTypeList | None
+    InstanceLimits: InstanceLimits | None
+    AdditionalLimits: AdditionalLimitList | None
 
 
-LimitsByRole = Dict[InstanceRole, Limits]
+LimitsByRole = dict[InstanceRole, Limits]
 
 
 class DescribeElasticsearchInstanceTypeLimitsResponse(TypedDict, total=False):
-    LimitsByRole: Optional[LimitsByRole]
+    LimitsByRole: LimitsByRole | None
 
 
-ValueStringList = List[NonEmptyString]
+ValueStringList = list[NonEmptyString]
 
 
 class Filter(TypedDict, total=False):
-    Name: Optional[NonEmptyString]
-    Values: Optional[ValueStringList]
+    Name: NonEmptyString | None
+    Values: ValueStringList | None
 
 
-FilterList = List[Filter]
+FilterList = list[Filter]
 
 
 class DescribeInboundCrossClusterSearchConnectionsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: FilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-InboundCrossClusterSearchConnections = List[InboundCrossClusterSearchConnection]
+InboundCrossClusterSearchConnections = list[InboundCrossClusterSearchConnection]
 
 
 class DescribeInboundCrossClusterSearchConnectionsResponse(TypedDict, total=False):
-    CrossClusterSearchConnections: Optional[InboundCrossClusterSearchConnections]
-    NextToken: Optional[NextToken]
+    CrossClusterSearchConnections: InboundCrossClusterSearchConnections | None
+    NextToken: NextToken | None
 
 
 class DescribeOutboundCrossClusterSearchConnectionsRequest(ServiceRequest):
-    Filters: Optional[FilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: FilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-OutboundCrossClusterSearchConnections = List[OutboundCrossClusterSearchConnection]
+OutboundCrossClusterSearchConnections = list[OutboundCrossClusterSearchConnection]
 
 
 class DescribeOutboundCrossClusterSearchConnectionsResponse(TypedDict, total=False):
-    CrossClusterSearchConnections: Optional[OutboundCrossClusterSearchConnections]
-    NextToken: Optional[NextToken]
+    CrossClusterSearchConnections: OutboundCrossClusterSearchConnections | None
+    NextToken: NextToken | None
 
 
-DescribePackagesFilterValues = List[DescribePackagesFilterValue]
+DescribePackagesFilterValues = list[DescribePackagesFilterValue]
 
 
 class DescribePackagesFilter(TypedDict, total=False):
-    Name: Optional[DescribePackagesFilterName]
-    Value: Optional[DescribePackagesFilterValues]
+    Name: DescribePackagesFilterName | None
+    Value: DescribePackagesFilterValues | None
 
 
-DescribePackagesFilterList = List[DescribePackagesFilter]
+DescribePackagesFilterList = list[DescribePackagesFilter]
 
 
 class DescribePackagesRequest(ServiceRequest):
-    Filters: Optional[DescribePackagesFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: DescribePackagesFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-PackageDetailsList = List[PackageDetails]
+PackageDetailsList = list[PackageDetails]
 
 
 class DescribePackagesResponse(TypedDict, total=False):
-    PackageDetailsList: Optional[PackageDetailsList]
-    NextToken: Optional[String]
+    PackageDetailsList: PackageDetailsList | None
+    NextToken: String | None
 
 
 class DescribeReservedElasticsearchInstanceOfferingsRequest(ServiceRequest):
-    ReservedElasticsearchInstanceOfferingId: Optional[GUID]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    ReservedElasticsearchInstanceOfferingId: GUID | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class RecurringCharge(TypedDict, total=False):
-    RecurringChargeAmount: Optional[Double]
-    RecurringChargeFrequency: Optional[String]
+    RecurringChargeAmount: Double | None
+    RecurringChargeFrequency: String | None
 
 
-RecurringChargeList = List[RecurringCharge]
+RecurringChargeList = list[RecurringCharge]
 
 
 class ReservedElasticsearchInstanceOffering(TypedDict, total=False):
-    ReservedElasticsearchInstanceOfferingId: Optional[GUID]
-    ElasticsearchInstanceType: Optional[ESPartitionInstanceType]
-    Duration: Optional[Integer]
-    FixedPrice: Optional[Double]
-    UsagePrice: Optional[Double]
-    CurrencyCode: Optional[String]
-    PaymentOption: Optional[ReservedElasticsearchInstancePaymentOption]
-    RecurringCharges: Optional[RecurringChargeList]
+    ReservedElasticsearchInstanceOfferingId: GUID | None
+    ElasticsearchInstanceType: ESPartitionInstanceType | None
+    Duration: Integer | None
+    FixedPrice: Double | None
+    UsagePrice: Double | None
+    CurrencyCode: String | None
+    PaymentOption: ReservedElasticsearchInstancePaymentOption | None
+    RecurringCharges: RecurringChargeList | None
 
 
-ReservedElasticsearchInstanceOfferingList = List[ReservedElasticsearchInstanceOffering]
+ReservedElasticsearchInstanceOfferingList = list[ReservedElasticsearchInstanceOffering]
 
 
 class DescribeReservedElasticsearchInstanceOfferingsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    ReservedElasticsearchInstanceOfferings: Optional[ReservedElasticsearchInstanceOfferingList]
+    NextToken: NextToken | None
+    ReservedElasticsearchInstanceOfferings: ReservedElasticsearchInstanceOfferingList | None
 
 
 class DescribeReservedElasticsearchInstancesRequest(ServiceRequest):
-    ReservedElasticsearchInstanceId: Optional[GUID]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    ReservedElasticsearchInstanceId: GUID | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ReservedElasticsearchInstance(TypedDict, total=False):
-    ReservationName: Optional[ReservationToken]
-    ReservedElasticsearchInstanceId: Optional[GUID]
-    ReservedElasticsearchInstanceOfferingId: Optional[String]
-    ElasticsearchInstanceType: Optional[ESPartitionInstanceType]
-    StartTime: Optional[UpdateTimestamp]
-    Duration: Optional[Integer]
-    FixedPrice: Optional[Double]
-    UsagePrice: Optional[Double]
-    CurrencyCode: Optional[String]
-    ElasticsearchInstanceCount: Optional[Integer]
-    State: Optional[String]
-    PaymentOption: Optional[ReservedElasticsearchInstancePaymentOption]
-    RecurringCharges: Optional[RecurringChargeList]
+    ReservationName: ReservationToken | None
+    ReservedElasticsearchInstanceId: GUID | None
+    ReservedElasticsearchInstanceOfferingId: String | None
+    ElasticsearchInstanceType: ESPartitionInstanceType | None
+    StartTime: UpdateTimestamp | None
+    Duration: Integer | None
+    FixedPrice: Double | None
+    UsagePrice: Double | None
+    CurrencyCode: String | None
+    ElasticsearchInstanceCount: Integer | None
+    State: String | None
+    PaymentOption: ReservedElasticsearchInstancePaymentOption | None
+    RecurringCharges: RecurringChargeList | None
 
 
-ReservedElasticsearchInstanceList = List[ReservedElasticsearchInstance]
+ReservedElasticsearchInstanceList = list[ReservedElasticsearchInstance]
 
 
 class DescribeReservedElasticsearchInstancesResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    ReservedElasticsearchInstances: Optional[ReservedElasticsearchInstanceList]
+    NextToken: String | None
+    ReservedElasticsearchInstances: ReservedElasticsearchInstanceList | None
 
 
-VpcEndpointIdList = List[VpcEndpointId]
+VpcEndpointIdList = list[VpcEndpointId]
 
 
 class DescribeVpcEndpointsRequest(ServiceRequest):
@@ -1306,13 +1306,13 @@ class DescribeVpcEndpointsRequest(ServiceRequest):
 
 
 class VpcEndpointError(TypedDict, total=False):
-    VpcEndpointId: Optional[VpcEndpointId]
-    ErrorCode: Optional[VpcEndpointErrorCode]
-    ErrorMessage: Optional[String]
+    VpcEndpointId: VpcEndpointId | None
+    ErrorCode: VpcEndpointErrorCode | None
+    ErrorMessage: String | None
 
 
-VpcEndpointErrorList = List[VpcEndpointError]
-VpcEndpoints = List[VpcEndpoint]
+VpcEndpointErrorList = list[VpcEndpointError]
+VpcEndpoints = list[VpcEndpoint]
 
 
 class DescribeVpcEndpointsResponse(TypedDict, total=False):
@@ -1326,88 +1326,88 @@ class DissociatePackageRequest(ServiceRequest):
 
 
 class DissociatePackageResponse(TypedDict, total=False):
-    DomainPackageDetails: Optional[DomainPackageDetails]
+    DomainPackageDetails: DomainPackageDetails | None
 
 
 class DomainInfo(TypedDict, total=False):
-    DomainName: Optional[DomainName]
-    EngineType: Optional[EngineType]
+    DomainName: DomainName | None
+    EngineType: EngineType | None
 
 
-DomainInfoList = List[DomainInfo]
-DomainPackageDetailsList = List[DomainPackageDetails]
+DomainInfoList = list[DomainInfo]
+DomainPackageDetailsList = list[DomainPackageDetails]
 
 
 class DryRunResults(TypedDict, total=False):
-    DeploymentType: Optional[DeploymentType]
-    Message: Optional[Message]
+    DeploymentType: DeploymentType | None
+    Message: Message | None
 
 
-ElasticsearchInstanceTypeList = List[ESPartitionInstanceType]
+ElasticsearchInstanceTypeList = list[ESPartitionInstanceType]
 
 
 class GetCompatibleElasticsearchVersionsRequest(ServiceRequest):
-    DomainName: Optional[DomainName]
+    DomainName: DomainName | None
 
 
 class GetCompatibleElasticsearchVersionsResponse(TypedDict, total=False):
-    CompatibleElasticsearchVersions: Optional[CompatibleElasticsearchVersionsList]
+    CompatibleElasticsearchVersions: CompatibleElasticsearchVersionsList | None
 
 
 class GetPackageVersionHistoryRequest(ServiceRequest):
     PackageID: PackageID
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class PackageVersionHistory(TypedDict, total=False):
-    PackageVersion: Optional[PackageVersion]
-    CommitMessage: Optional[CommitMessage]
-    CreatedAt: Optional[CreatedAt]
+    PackageVersion: PackageVersion | None
+    CommitMessage: CommitMessage | None
+    CreatedAt: CreatedAt | None
 
 
-PackageVersionHistoryList = List[PackageVersionHistory]
+PackageVersionHistoryList = list[PackageVersionHistory]
 
 
 class GetPackageVersionHistoryResponse(TypedDict, total=False):
-    PackageID: Optional[PackageID]
-    PackageVersionHistoryList: Optional[PackageVersionHistoryList]
-    NextToken: Optional[String]
+    PackageID: PackageID | None
+    PackageVersionHistoryList: PackageVersionHistoryList | None
+    NextToken: String | None
 
 
 class GetUpgradeHistoryRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-Issues = List[Issue]
+Issues = list[Issue]
 
 
 class UpgradeStepItem(TypedDict, total=False):
-    UpgradeStep: Optional[UpgradeStep]
-    UpgradeStepStatus: Optional[UpgradeStatus]
-    Issues: Optional[Issues]
-    ProgressPercent: Optional[Double]
+    UpgradeStep: UpgradeStep | None
+    UpgradeStepStatus: UpgradeStatus | None
+    Issues: Issues | None
+    ProgressPercent: Double | None
 
 
-UpgradeStepsList = List[UpgradeStepItem]
+UpgradeStepsList = list[UpgradeStepItem]
 StartTimestamp = datetime
 
 
 class UpgradeHistory(TypedDict, total=False):
-    UpgradeName: Optional[UpgradeName]
-    StartTimestamp: Optional[StartTimestamp]
-    UpgradeStatus: Optional[UpgradeStatus]
-    StepsList: Optional[UpgradeStepsList]
+    UpgradeName: UpgradeName | None
+    StartTimestamp: StartTimestamp | None
+    UpgradeStatus: UpgradeStatus | None
+    StepsList: UpgradeStepsList | None
 
 
-UpgradeHistoryList = List[UpgradeHistory]
+UpgradeHistoryList = list[UpgradeHistory]
 
 
 class GetUpgradeHistoryResponse(TypedDict, total=False):
-    UpgradeHistories: Optional[UpgradeHistoryList]
-    NextToken: Optional[String]
+    UpgradeHistories: UpgradeHistoryList | None
+    NextToken: String | None
 
 
 class GetUpgradeStatusRequest(ServiceRequest):
@@ -1415,61 +1415,61 @@ class GetUpgradeStatusRequest(ServiceRequest):
 
 
 class GetUpgradeStatusResponse(TypedDict, total=False):
-    UpgradeStep: Optional[UpgradeStep]
-    StepStatus: Optional[UpgradeStatus]
-    UpgradeName: Optional[UpgradeName]
+    UpgradeStep: UpgradeStep | None
+    StepStatus: UpgradeStatus | None
+    UpgradeName: UpgradeName | None
 
 
 class ListDomainNamesRequest(ServiceRequest):
-    EngineType: Optional[EngineType]
+    EngineType: EngineType | None
 
 
 class ListDomainNamesResponse(TypedDict, total=False):
-    DomainNames: Optional[DomainInfoList]
+    DomainNames: DomainInfoList | None
 
 
 class ListDomainsForPackageRequest(ServiceRequest):
     PackageID: PackageID
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListDomainsForPackageResponse(TypedDict, total=False):
-    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
-    NextToken: Optional[String]
+    DomainPackageDetailsList: DomainPackageDetailsList | None
+    NextToken: String | None
 
 
 class ListElasticsearchInstanceTypesRequest(ServiceRequest):
     ElasticsearchVersion: ElasticsearchVersionString
-    DomainName: Optional[DomainName]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    DomainName: DomainName | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListElasticsearchInstanceTypesResponse(TypedDict, total=False):
-    ElasticsearchInstanceTypes: Optional[ElasticsearchInstanceTypeList]
-    NextToken: Optional[NextToken]
+    ElasticsearchInstanceTypes: ElasticsearchInstanceTypeList | None
+    NextToken: NextToken | None
 
 
 class ListElasticsearchVersionsRequest(ServiceRequest):
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListElasticsearchVersionsResponse(TypedDict, total=False):
-    ElasticsearchVersions: Optional[ElasticsearchVersionList]
-    NextToken: Optional[NextToken]
+    ElasticsearchVersions: ElasticsearchVersionList | None
+    NextToken: NextToken | None
 
 
 class ListPackagesForDomainRequest(ServiceRequest):
     DomainName: DomainName
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListPackagesForDomainResponse(TypedDict, total=False):
-    DomainPackageDetailsList: Optional[DomainPackageDetailsList]
-    NextToken: Optional[String]
+    DomainPackageDetailsList: DomainPackageDetailsList | None
+    NextToken: String | None
 
 
 class ListTagsRequest(ServiceRequest):
@@ -1477,12 +1477,12 @@ class ListTagsRequest(ServiceRequest):
 
 
 class ListTagsResponse(TypedDict, total=False):
-    TagList: Optional[TagList]
+    TagList: TagList | None
 
 
 class ListVpcEndpointAccessRequest(ServiceRequest):
     DomainName: DomainName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListVpcEndpointAccessResponse(TypedDict, total=False):
@@ -1492,10 +1492,10 @@ class ListVpcEndpointAccessResponse(TypedDict, total=False):
 
 class ListVpcEndpointsForDomainRequest(ServiceRequest):
     DomainName: DomainName
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
-VpcEndpointSummaryList = List[VpcEndpointSummary]
+VpcEndpointSummaryList = list[VpcEndpointSummary]
 
 
 class ListVpcEndpointsForDomainResponse(TypedDict, total=False):
@@ -1504,7 +1504,7 @@ class ListVpcEndpointsForDomainResponse(TypedDict, total=False):
 
 
 class ListVpcEndpointsRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
+    NextToken: NextToken | None
 
 
 class ListVpcEndpointsResponse(TypedDict, total=False):
@@ -1515,12 +1515,12 @@ class ListVpcEndpointsResponse(TypedDict, total=False):
 class PurchaseReservedElasticsearchInstanceOfferingRequest(ServiceRequest):
     ReservedElasticsearchInstanceOfferingId: GUID
     ReservationName: ReservationToken
-    InstanceCount: Optional[InstanceCount]
+    InstanceCount: InstanceCount | None
 
 
 class PurchaseReservedElasticsearchInstanceOfferingResponse(TypedDict, total=False):
-    ReservedElasticsearchInstanceId: Optional[GUID]
-    ReservationName: Optional[ReservationToken]
+    ReservedElasticsearchInstanceId: GUID | None
+    ReservationName: ReservationToken | None
 
 
 class RejectInboundCrossClusterSearchConnectionRequest(ServiceRequest):
@@ -1528,7 +1528,7 @@ class RejectInboundCrossClusterSearchConnectionRequest(ServiceRequest):
 
 
 class RejectInboundCrossClusterSearchConnectionResponse(TypedDict, total=False):
-    CrossClusterSearchConnection: Optional[InboundCrossClusterSearchConnection]
+    CrossClusterSearchConnection: InboundCrossClusterSearchConnection | None
 
 
 class RemoveTagsRequest(ServiceRequest):
@@ -1550,41 +1550,41 @@ class StartElasticsearchServiceSoftwareUpdateRequest(ServiceRequest):
 
 
 class StartElasticsearchServiceSoftwareUpdateResponse(TypedDict, total=False):
-    ServiceSoftwareOptions: Optional[ServiceSoftwareOptions]
+    ServiceSoftwareOptions: ServiceSoftwareOptions | None
 
 
 class UpdateElasticsearchDomainConfigRequest(ServiceRequest):
     DomainName: DomainName
-    ElasticsearchClusterConfig: Optional[ElasticsearchClusterConfig]
-    EBSOptions: Optional[EBSOptions]
-    SnapshotOptions: Optional[SnapshotOptions]
-    VPCOptions: Optional[VPCOptions]
-    CognitoOptions: Optional[CognitoOptions]
-    AdvancedOptions: Optional[AdvancedOptions]
-    AccessPolicies: Optional[PolicyDocument]
-    LogPublishingOptions: Optional[LogPublishingOptions]
-    DomainEndpointOptions: Optional[DomainEndpointOptions]
-    AdvancedSecurityOptions: Optional[AdvancedSecurityOptionsInput]
-    NodeToNodeEncryptionOptions: Optional[NodeToNodeEncryptionOptions]
-    EncryptionAtRestOptions: Optional[EncryptionAtRestOptions]
-    AutoTuneOptions: Optional[AutoTuneOptions]
-    DryRun: Optional[DryRun]
+    ElasticsearchClusterConfig: ElasticsearchClusterConfig | None
+    EBSOptions: EBSOptions | None
+    SnapshotOptions: SnapshotOptions | None
+    VPCOptions: VPCOptions | None
+    CognitoOptions: CognitoOptions | None
+    AdvancedOptions: AdvancedOptions | None
+    AccessPolicies: PolicyDocument | None
+    LogPublishingOptions: LogPublishingOptions | None
+    DomainEndpointOptions: DomainEndpointOptions | None
+    AdvancedSecurityOptions: AdvancedSecurityOptionsInput | None
+    NodeToNodeEncryptionOptions: NodeToNodeEncryptionOptions | None
+    EncryptionAtRestOptions: EncryptionAtRestOptions | None
+    AutoTuneOptions: AutoTuneOptions | None
+    DryRun: DryRun | None
 
 
 class UpdateElasticsearchDomainConfigResponse(TypedDict, total=False):
     DomainConfig: ElasticsearchDomainConfig
-    DryRunResults: Optional[DryRunResults]
+    DryRunResults: DryRunResults | None
 
 
 class UpdatePackageRequest(ServiceRequest):
     PackageID: PackageID
     PackageSource: PackageSource
-    PackageDescription: Optional[PackageDescription]
-    CommitMessage: Optional[CommitMessage]
+    PackageDescription: PackageDescription | None
+    CommitMessage: CommitMessage | None
 
 
 class UpdatePackageResponse(TypedDict, total=False):
-    PackageDetails: Optional[PackageDetails]
+    PackageDetails: PackageDetails | None
 
 
 class UpdateVpcEndpointRequest(ServiceRequest):
@@ -1599,19 +1599,19 @@ class UpdateVpcEndpointResponse(TypedDict, total=False):
 class UpgradeElasticsearchDomainRequest(ServiceRequest):
     DomainName: DomainName
     TargetVersion: ElasticsearchVersionString
-    PerformCheckOnly: Optional[Boolean]
+    PerformCheckOnly: Boolean | None
 
 
 class UpgradeElasticsearchDomainResponse(TypedDict, total=False):
-    DomainName: Optional[DomainName]
-    TargetVersion: Optional[ElasticsearchVersionString]
-    PerformCheckOnly: Optional[Boolean]
-    ChangeProgressDetails: Optional[ChangeProgressDetails]
+    DomainName: DomainName | None
+    TargetVersion: ElasticsearchVersionString | None
+    PerformCheckOnly: Boolean | None
+    ChangeProgressDetails: ChangeProgressDetails | None
 
 
 class EsApi:
-    service = "es"
-    version = "2015-01-01"
+    service: str = "es"
+    version: str = "2015-01-01"
 
     @handler("AcceptInboundCrossClusterSearchConnection")
     def accept_inbound_cross_cluster_search_connection(

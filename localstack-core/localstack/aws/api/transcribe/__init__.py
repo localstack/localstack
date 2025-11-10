@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -351,10 +351,10 @@ TimestampMilliseconds = int
 
 
 class AbsoluteTimeRange(TypedDict, total=False):
-    StartTime: Optional[TimestampMilliseconds]
-    EndTime: Optional[TimestampMilliseconds]
-    First: Optional[TimestampMilliseconds]
-    Last: Optional[TimestampMilliseconds]
+    StartTime: TimestampMilliseconds | None
+    EndTime: TimestampMilliseconds | None
+    First: TimestampMilliseconds | None
+    Last: TimestampMilliseconds | None
 
 
 class Tag(TypedDict, total=False):
@@ -362,15 +362,15 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ChannelDefinition(TypedDict, total=False):
-    ChannelId: Optional[ChannelId]
-    ParticipantRole: Optional[ParticipantRole]
+    ChannelId: ChannelId | None
+    ParticipantRole: ParticipantRole | None
 
 
-ChannelDefinitions = List[ChannelDefinition]
+ChannelDefinitions = list[ChannelDefinition]
 
 
 class Summarization(TypedDict, total=False):
@@ -378,178 +378,178 @@ class Summarization(TypedDict, total=False):
 
 
 class LanguageIdSettings(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    LanguageModelName: Optional[ModelName]
+    VocabularyName: VocabularyName | None
+    VocabularyFilterName: VocabularyFilterName | None
+    LanguageModelName: ModelName | None
 
 
-LanguageIdSettingsMap = Dict[LanguageCode, LanguageIdSettings]
-LanguageOptions = List[LanguageCode]
-PiiEntityTypes = List[PiiEntityType]
+LanguageIdSettingsMap = dict[LanguageCode, LanguageIdSettings]
+LanguageOptions = list[LanguageCode]
+PiiEntityTypes = list[PiiEntityType]
 
 
 class ContentRedaction(TypedDict, total=False):
     RedactionType: RedactionType
     RedactionOutput: RedactionOutput
-    PiiEntityTypes: Optional[PiiEntityTypes]
+    PiiEntityTypes: PiiEntityTypes | None
 
 
 class CallAnalyticsJobSettings(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    VocabularyFilterMethod: Optional[VocabularyFilterMethod]
-    LanguageModelName: Optional[ModelName]
-    ContentRedaction: Optional[ContentRedaction]
-    LanguageOptions: Optional[LanguageOptions]
-    LanguageIdSettings: Optional[LanguageIdSettingsMap]
-    Summarization: Optional[Summarization]
+    VocabularyName: VocabularyName | None
+    VocabularyFilterName: VocabularyFilterName | None
+    VocabularyFilterMethod: VocabularyFilterMethod | None
+    LanguageModelName: ModelName | None
+    ContentRedaction: ContentRedaction | None
+    LanguageOptions: LanguageOptions | None
+    LanguageIdSettings: LanguageIdSettingsMap | None
+    Summarization: Summarization | None
 
 
 DateTime = datetime
 
 
 class Transcript(TypedDict, total=False):
-    TranscriptFileUri: Optional[Uri]
-    RedactedTranscriptFileUri: Optional[Uri]
+    TranscriptFileUri: Uri | None
+    RedactedTranscriptFileUri: Uri | None
 
 
 class Media(TypedDict, total=False):
-    MediaFileUri: Optional[Uri]
-    RedactedMediaFileUri: Optional[Uri]
+    MediaFileUri: Uri | None
+    RedactedMediaFileUri: Uri | None
 
 
 class CallAnalyticsSkippedFeature(TypedDict, total=False):
-    Feature: Optional[CallAnalyticsFeature]
-    ReasonCode: Optional[CallAnalyticsSkippedReasonCode]
-    Message: Optional[String]
+    Feature: CallAnalyticsFeature | None
+    ReasonCode: CallAnalyticsSkippedReasonCode | None
+    Message: String | None
 
 
-CallAnalyticsSkippedFeatureList = List[CallAnalyticsSkippedFeature]
+CallAnalyticsSkippedFeatureList = list[CallAnalyticsSkippedFeature]
 
 
 class CallAnalyticsJobDetails(TypedDict, total=False):
-    Skipped: Optional[CallAnalyticsSkippedFeatureList]
+    Skipped: CallAnalyticsSkippedFeatureList | None
 
 
 class CallAnalyticsJob(TypedDict, total=False):
-    CallAnalyticsJobName: Optional[CallAnalyticsJobName]
-    CallAnalyticsJobStatus: Optional[CallAnalyticsJobStatus]
-    CallAnalyticsJobDetails: Optional[CallAnalyticsJobDetails]
-    LanguageCode: Optional[LanguageCode]
-    MediaSampleRateHertz: Optional[MediaSampleRateHertz]
-    MediaFormat: Optional[MediaFormat]
-    Media: Optional[Media]
-    Transcript: Optional[Transcript]
-    StartTime: Optional[DateTime]
-    CreationTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
-    IdentifiedLanguageScore: Optional[IdentifiedLanguageScore]
-    Settings: Optional[CallAnalyticsJobSettings]
-    ChannelDefinitions: Optional[ChannelDefinitions]
-    Tags: Optional[TagList]
+    CallAnalyticsJobName: CallAnalyticsJobName | None
+    CallAnalyticsJobStatus: CallAnalyticsJobStatus | None
+    CallAnalyticsJobDetails: CallAnalyticsJobDetails | None
+    LanguageCode: LanguageCode | None
+    MediaSampleRateHertz: MediaSampleRateHertz | None
+    MediaFormat: MediaFormat | None
+    Media: Media | None
+    Transcript: Transcript | None
+    StartTime: DateTime | None
+    CreationTime: DateTime | None
+    CompletionTime: DateTime | None
+    FailureReason: FailureReason | None
+    DataAccessRoleArn: DataAccessRoleArn | None
+    IdentifiedLanguageScore: IdentifiedLanguageScore | None
+    Settings: CallAnalyticsJobSettings | None
+    ChannelDefinitions: ChannelDefinitions | None
+    Tags: TagList | None
 
 
 class CallAnalyticsJobSummary(TypedDict, total=False):
-    CallAnalyticsJobName: Optional[CallAnalyticsJobName]
-    CreationTime: Optional[DateTime]
-    StartTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    LanguageCode: Optional[LanguageCode]
-    CallAnalyticsJobStatus: Optional[CallAnalyticsJobStatus]
-    CallAnalyticsJobDetails: Optional[CallAnalyticsJobDetails]
-    FailureReason: Optional[FailureReason]
+    CallAnalyticsJobName: CallAnalyticsJobName | None
+    CreationTime: DateTime | None
+    StartTime: DateTime | None
+    CompletionTime: DateTime | None
+    LanguageCode: LanguageCode | None
+    CallAnalyticsJobStatus: CallAnalyticsJobStatus | None
+    CallAnalyticsJobDetails: CallAnalyticsJobDetails | None
+    FailureReason: FailureReason | None
 
 
-CallAnalyticsJobSummaries = List[CallAnalyticsJobSummary]
+CallAnalyticsJobSummaries = list[CallAnalyticsJobSummary]
 
 
 class RelativeTimeRange(TypedDict, total=False):
-    StartPercentage: Optional[Percentage]
-    EndPercentage: Optional[Percentage]
-    First: Optional[Percentage]
-    Last: Optional[Percentage]
+    StartPercentage: Percentage | None
+    EndPercentage: Percentage | None
+    First: Percentage | None
+    Last: Percentage | None
 
 
-SentimentValueList = List[SentimentValue]
+SentimentValueList = list[SentimentValue]
 
 
 class SentimentFilter(TypedDict, total=False):
     Sentiments: SentimentValueList
-    AbsoluteTimeRange: Optional[AbsoluteTimeRange]
-    RelativeTimeRange: Optional[RelativeTimeRange]
-    ParticipantRole: Optional[ParticipantRole]
-    Negate: Optional[Boolean]
+    AbsoluteTimeRange: AbsoluteTimeRange | None
+    RelativeTimeRange: RelativeTimeRange | None
+    ParticipantRole: ParticipantRole | None
+    Negate: Boolean | None
 
 
-StringTargetList = List[NonEmptyString]
+StringTargetList = list[NonEmptyString]
 
 
 class TranscriptFilter(TypedDict, total=False):
     TranscriptFilterType: TranscriptFilterType
-    AbsoluteTimeRange: Optional[AbsoluteTimeRange]
-    RelativeTimeRange: Optional[RelativeTimeRange]
-    ParticipantRole: Optional[ParticipantRole]
-    Negate: Optional[Boolean]
+    AbsoluteTimeRange: AbsoluteTimeRange | None
+    RelativeTimeRange: RelativeTimeRange | None
+    ParticipantRole: ParticipantRole | None
+    Negate: Boolean | None
     Targets: StringTargetList
 
 
 class InterruptionFilter(TypedDict, total=False):
-    Threshold: Optional[TimestampMilliseconds]
-    ParticipantRole: Optional[ParticipantRole]
-    AbsoluteTimeRange: Optional[AbsoluteTimeRange]
-    RelativeTimeRange: Optional[RelativeTimeRange]
-    Negate: Optional[Boolean]
+    Threshold: TimestampMilliseconds | None
+    ParticipantRole: ParticipantRole | None
+    AbsoluteTimeRange: AbsoluteTimeRange | None
+    RelativeTimeRange: RelativeTimeRange | None
+    Negate: Boolean | None
 
 
 class NonTalkTimeFilter(TypedDict, total=False):
-    Threshold: Optional[TimestampMilliseconds]
-    AbsoluteTimeRange: Optional[AbsoluteTimeRange]
-    RelativeTimeRange: Optional[RelativeTimeRange]
-    Negate: Optional[Boolean]
+    Threshold: TimestampMilliseconds | None
+    AbsoluteTimeRange: AbsoluteTimeRange | None
+    RelativeTimeRange: RelativeTimeRange | None
+    Negate: Boolean | None
 
 
 class Rule(TypedDict, total=False):
-    NonTalkTimeFilter: Optional[NonTalkTimeFilter]
-    InterruptionFilter: Optional[InterruptionFilter]
-    TranscriptFilter: Optional[TranscriptFilter]
-    SentimentFilter: Optional[SentimentFilter]
+    NonTalkTimeFilter: NonTalkTimeFilter | None
+    InterruptionFilter: InterruptionFilter | None
+    TranscriptFilter: TranscriptFilter | None
+    SentimentFilter: SentimentFilter | None
 
 
-RuleList = List[Rule]
+RuleList = list[Rule]
 
 
 class CategoryProperties(TypedDict, total=False):
-    CategoryName: Optional[CategoryName]
-    Rules: Optional[RuleList]
-    CreateTime: Optional[DateTime]
-    LastUpdateTime: Optional[DateTime]
-    Tags: Optional[TagList]
-    InputType: Optional[InputType]
+    CategoryName: CategoryName | None
+    Rules: RuleList | None
+    CreateTime: DateTime | None
+    LastUpdateTime: DateTime | None
+    Tags: TagList | None
+    InputType: InputType | None
 
 
-CategoryPropertiesList = List[CategoryProperties]
+CategoryPropertiesList = list[CategoryProperties]
 
 
 class ClinicalNoteGenerationSettings(TypedDict, total=False):
-    NoteTemplate: Optional[MedicalScribeNoteTemplate]
+    NoteTemplate: MedicalScribeNoteTemplate | None
 
 
 class CreateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
-    Tags: Optional[TagList]
-    InputType: Optional[InputType]
+    Tags: TagList | None
+    InputType: InputType | None
 
 
 class CreateCallAnalyticsCategoryResponse(TypedDict, total=False):
-    CategoryProperties: Optional[CategoryProperties]
+    CategoryProperties: CategoryProperties | None
 
 
 class InputDataConfig(TypedDict, total=False):
     S3Uri: Uri
-    TuningDataS3Uri: Optional[Uri]
+    TuningDataS3Uri: Uri | None
     DataAccessRoleArn: DataAccessRoleArn
 
 
@@ -558,68 +558,68 @@ class CreateLanguageModelRequest(ServiceRequest):
     BaseModelName: BaseModelName
     ModelName: ModelName
     InputDataConfig: InputDataConfig
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateLanguageModelResponse(TypedDict, total=False):
-    LanguageCode: Optional[CLMLanguageCode]
-    BaseModelName: Optional[BaseModelName]
-    ModelName: Optional[ModelName]
-    InputDataConfig: Optional[InputDataConfig]
-    ModelStatus: Optional[ModelStatus]
+    LanguageCode: CLMLanguageCode | None
+    BaseModelName: BaseModelName | None
+    ModelName: ModelName | None
+    InputDataConfig: InputDataConfig | None
+    ModelStatus: ModelStatus | None
 
 
 class CreateMedicalVocabularyRequest(ServiceRequest):
     VocabularyName: VocabularyName
     LanguageCode: LanguageCode
     VocabularyFileUri: Uri
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class CreateMedicalVocabularyResponse(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    VocabularyState: Optional[VocabularyState]
-    LastModifiedTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    VocabularyState: VocabularyState | None
+    LastModifiedTime: DateTime | None
+    FailureReason: FailureReason | None
 
 
-Words = List[Word]
+Words = list[Word]
 
 
 class CreateVocabularyFilterRequest(ServiceRequest):
     VocabularyFilterName: VocabularyFilterName
     LanguageCode: LanguageCode
-    Words: Optional[Words]
-    VocabularyFilterFileUri: Optional[Uri]
-    Tags: Optional[TagList]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
+    Words: Words | None
+    VocabularyFilterFileUri: Uri | None
+    Tags: TagList | None
+    DataAccessRoleArn: DataAccessRoleArn | None
 
 
 class CreateVocabularyFilterResponse(TypedDict, total=False):
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
+    VocabularyFilterName: VocabularyFilterName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
 
 
-Phrases = List[Phrase]
+Phrases = list[Phrase]
 
 
 class CreateVocabularyRequest(ServiceRequest):
     VocabularyName: VocabularyName
     LanguageCode: LanguageCode
-    Phrases: Optional[Phrases]
-    VocabularyFileUri: Optional[Uri]
-    Tags: Optional[TagList]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
+    Phrases: Phrases | None
+    VocabularyFileUri: Uri | None
+    Tags: TagList | None
+    DataAccessRoleArn: DataAccessRoleArn | None
 
 
 class CreateVocabularyResponse(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    VocabularyState: Optional[VocabularyState]
-    LastModifiedTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    VocabularyState: VocabularyState | None
+    LastModifiedTime: DateTime | None
+    FailureReason: FailureReason | None
 
 
 class DeleteCallAnalyticsCategoryRequest(ServiceRequest):
@@ -671,19 +671,19 @@ class DescribeLanguageModelRequest(ServiceRequest):
 
 
 class LanguageModel(TypedDict, total=False):
-    ModelName: Optional[ModelName]
-    CreateTime: Optional[DateTime]
-    LastModifiedTime: Optional[DateTime]
-    LanguageCode: Optional[CLMLanguageCode]
-    BaseModelName: Optional[BaseModelName]
-    ModelStatus: Optional[ModelStatus]
-    UpgradeAvailability: Optional[Boolean]
-    FailureReason: Optional[FailureReason]
-    InputDataConfig: Optional[InputDataConfig]
+    ModelName: ModelName | None
+    CreateTime: DateTime | None
+    LastModifiedTime: DateTime | None
+    LanguageCode: CLMLanguageCode | None
+    BaseModelName: BaseModelName | None
+    ModelStatus: ModelStatus | None
+    UpgradeAvailability: Boolean | None
+    FailureReason: FailureReason | None
+    InputDataConfig: InputDataConfig | None
 
 
 class DescribeLanguageModelResponse(TypedDict, total=False):
-    LanguageModel: Optional[LanguageModel]
+    LanguageModel: LanguageModel | None
 
 
 class GetCallAnalyticsCategoryRequest(ServiceRequest):
@@ -691,7 +691,7 @@ class GetCallAnalyticsCategoryRequest(ServiceRequest):
 
 
 class GetCallAnalyticsCategoryResponse(TypedDict, total=False):
-    CategoryProperties: Optional[CategoryProperties]
+    CategoryProperties: CategoryProperties | None
 
 
 class GetCallAnalyticsJobRequest(ServiceRequest):
@@ -699,7 +699,7 @@ class GetCallAnalyticsJobRequest(ServiceRequest):
 
 
 class GetCallAnalyticsJobResponse(TypedDict, total=False):
-    CallAnalyticsJob: Optional[CallAnalyticsJob]
+    CallAnalyticsJob: CallAnalyticsJob | None
 
 
 class GetMedicalScribeJobRequest(ServiceRequest):
@@ -711,17 +711,17 @@ class MedicalScribeChannelDefinition(TypedDict, total=False):
     ParticipantRole: MedicalScribeParticipantRole
 
 
-MedicalScribeChannelDefinitions = List[MedicalScribeChannelDefinition]
+MedicalScribeChannelDefinitions = list[MedicalScribeChannelDefinition]
 
 
 class MedicalScribeSettings(TypedDict, total=False):
-    ShowSpeakerLabels: Optional[Boolean]
-    MaxSpeakerLabels: Optional[MaxSpeakers]
-    ChannelIdentification: Optional[Boolean]
-    VocabularyName: Optional[VocabularyName]
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    VocabularyFilterMethod: Optional[VocabularyFilterMethod]
-    ClinicalNoteGenerationSettings: Optional[ClinicalNoteGenerationSettings]
+    ShowSpeakerLabels: Boolean | None
+    MaxSpeakerLabels: MaxSpeakers | None
+    ChannelIdentification: Boolean | None
+    VocabularyName: VocabularyName | None
+    VocabularyFilterName: VocabularyFilterName | None
+    VocabularyFilterMethod: VocabularyFilterMethod | None
+    ClinicalNoteGenerationSettings: ClinicalNoteGenerationSettings | None
 
 
 class MedicalScribeOutput(TypedDict, total=False):
@@ -730,24 +730,24 @@ class MedicalScribeOutput(TypedDict, total=False):
 
 
 class MedicalScribeJob(TypedDict, total=False):
-    MedicalScribeJobName: Optional[TranscriptionJobName]
-    MedicalScribeJobStatus: Optional[MedicalScribeJobStatus]
-    LanguageCode: Optional[MedicalScribeLanguageCode]
-    Media: Optional[Media]
-    MedicalScribeOutput: Optional[MedicalScribeOutput]
-    StartTime: Optional[DateTime]
-    CreationTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
-    Settings: Optional[MedicalScribeSettings]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
-    ChannelDefinitions: Optional[MedicalScribeChannelDefinitions]
-    MedicalScribeContextProvided: Optional[Boolean]
-    Tags: Optional[TagList]
+    MedicalScribeJobName: TranscriptionJobName | None
+    MedicalScribeJobStatus: MedicalScribeJobStatus | None
+    LanguageCode: MedicalScribeLanguageCode | None
+    Media: Media | None
+    MedicalScribeOutput: MedicalScribeOutput | None
+    StartTime: DateTime | None
+    CreationTime: DateTime | None
+    CompletionTime: DateTime | None
+    FailureReason: FailureReason | None
+    Settings: MedicalScribeSettings | None
+    DataAccessRoleArn: DataAccessRoleArn | None
+    ChannelDefinitions: MedicalScribeChannelDefinitions | None
+    MedicalScribeContextProvided: Boolean | None
+    Tags: TagList | None
 
 
 class GetMedicalScribeJobResponse(TypedDict, total=False):
-    MedicalScribeJob: Optional[MedicalScribeJob]
+    MedicalScribeJob: MedicalScribeJob | None
 
 
 class GetMedicalTranscriptionJobRequest(ServiceRequest):
@@ -755,39 +755,39 @@ class GetMedicalTranscriptionJobRequest(ServiceRequest):
 
 
 class MedicalTranscriptionSetting(TypedDict, total=False):
-    ShowSpeakerLabels: Optional[Boolean]
-    MaxSpeakerLabels: Optional[MaxSpeakers]
-    ChannelIdentification: Optional[Boolean]
-    ShowAlternatives: Optional[Boolean]
-    MaxAlternatives: Optional[MaxAlternatives]
-    VocabularyName: Optional[VocabularyName]
+    ShowSpeakerLabels: Boolean | None
+    MaxSpeakerLabels: MaxSpeakers | None
+    ChannelIdentification: Boolean | None
+    ShowAlternatives: Boolean | None
+    MaxAlternatives: MaxAlternatives | None
+    VocabularyName: VocabularyName | None
 
 
 class MedicalTranscript(TypedDict, total=False):
-    TranscriptFileUri: Optional[Uri]
+    TranscriptFileUri: Uri | None
 
 
 class MedicalTranscriptionJob(TypedDict, total=False):
-    MedicalTranscriptionJobName: Optional[TranscriptionJobName]
-    TranscriptionJobStatus: Optional[TranscriptionJobStatus]
-    LanguageCode: Optional[LanguageCode]
-    MediaSampleRateHertz: Optional[MedicalMediaSampleRateHertz]
-    MediaFormat: Optional[MediaFormat]
-    Media: Optional[Media]
-    Transcript: Optional[MedicalTranscript]
-    StartTime: Optional[DateTime]
-    CreationTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
-    Settings: Optional[MedicalTranscriptionSetting]
-    ContentIdentificationType: Optional[MedicalContentIdentificationType]
-    Specialty: Optional[Specialty]
-    Type: Optional[Type]
-    Tags: Optional[TagList]
+    MedicalTranscriptionJobName: TranscriptionJobName | None
+    TranscriptionJobStatus: TranscriptionJobStatus | None
+    LanguageCode: LanguageCode | None
+    MediaSampleRateHertz: MedicalMediaSampleRateHertz | None
+    MediaFormat: MediaFormat | None
+    Media: Media | None
+    Transcript: MedicalTranscript | None
+    StartTime: DateTime | None
+    CreationTime: DateTime | None
+    CompletionTime: DateTime | None
+    FailureReason: FailureReason | None
+    Settings: MedicalTranscriptionSetting | None
+    ContentIdentificationType: MedicalContentIdentificationType | None
+    Specialty: Specialty | None
+    Type: Type | None
+    Tags: TagList | None
 
 
 class GetMedicalTranscriptionJobResponse(TypedDict, total=False):
-    MedicalTranscriptionJob: Optional[MedicalTranscriptionJob]
+    MedicalTranscriptionJob: MedicalTranscriptionJob | None
 
 
 class GetMedicalVocabularyRequest(ServiceRequest):
@@ -795,93 +795,93 @@ class GetMedicalVocabularyRequest(ServiceRequest):
 
 
 class GetMedicalVocabularyResponse(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    VocabularyState: Optional[VocabularyState]
-    LastModifiedTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
-    DownloadUri: Optional[Uri]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    VocabularyState: VocabularyState | None
+    LastModifiedTime: DateTime | None
+    FailureReason: FailureReason | None
+    DownloadUri: Uri | None
 
 
 class GetTranscriptionJobRequest(ServiceRequest):
     TranscriptionJobName: TranscriptionJobName
 
 
-ToxicityCategories = List[ToxicityCategory]
+ToxicityCategories = list[ToxicityCategory]
 
 
 class ToxicityDetectionSettings(TypedDict, total=False):
     ToxicityCategories: ToxicityCategories
 
 
-ToxicityDetection = List[ToxicityDetectionSettings]
-SubtitleFileUris = List[Uri]
-SubtitleFormats = List[SubtitleFormat]
+ToxicityDetection = list[ToxicityDetectionSettings]
+SubtitleFileUris = list[Uri]
+SubtitleFormats = list[SubtitleFormat]
 
 
 class SubtitlesOutput(TypedDict, total=False):
-    Formats: Optional[SubtitleFormats]
-    SubtitleFileUris: Optional[SubtitleFileUris]
-    OutputStartIndex: Optional[SubtitleOutputStartIndex]
+    Formats: SubtitleFormats | None
+    SubtitleFileUris: SubtitleFileUris | None
+    OutputStartIndex: SubtitleOutputStartIndex | None
 
 
 class LanguageCodeItem(TypedDict, total=False):
-    LanguageCode: Optional[LanguageCode]
-    DurationInSeconds: Optional[DurationInSeconds]
+    LanguageCode: LanguageCode | None
+    DurationInSeconds: DurationInSeconds | None
 
 
-LanguageCodeList = List[LanguageCodeItem]
+LanguageCodeList = list[LanguageCodeItem]
 
 
 class JobExecutionSettings(TypedDict, total=False):
-    AllowDeferredExecution: Optional[Boolean]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
+    AllowDeferredExecution: Boolean | None
+    DataAccessRoleArn: DataAccessRoleArn | None
 
 
 class ModelSettings(TypedDict, total=False):
-    LanguageModelName: Optional[ModelName]
+    LanguageModelName: ModelName | None
 
 
 class Settings(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    ShowSpeakerLabels: Optional[Boolean]
-    MaxSpeakerLabels: Optional[MaxSpeakers]
-    ChannelIdentification: Optional[Boolean]
-    ShowAlternatives: Optional[Boolean]
-    MaxAlternatives: Optional[MaxAlternatives]
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    VocabularyFilterMethod: Optional[VocabularyFilterMethod]
+    VocabularyName: VocabularyName | None
+    ShowSpeakerLabels: Boolean | None
+    MaxSpeakerLabels: MaxSpeakers | None
+    ChannelIdentification: Boolean | None
+    ShowAlternatives: Boolean | None
+    MaxAlternatives: MaxAlternatives | None
+    VocabularyFilterName: VocabularyFilterName | None
+    VocabularyFilterMethod: VocabularyFilterMethod | None
 
 
 class TranscriptionJob(TypedDict, total=False):
-    TranscriptionJobName: Optional[TranscriptionJobName]
-    TranscriptionJobStatus: Optional[TranscriptionJobStatus]
-    LanguageCode: Optional[LanguageCode]
-    MediaSampleRateHertz: Optional[MediaSampleRateHertz]
-    MediaFormat: Optional[MediaFormat]
-    Media: Optional[Media]
-    Transcript: Optional[Transcript]
-    StartTime: Optional[DateTime]
-    CreationTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
-    Settings: Optional[Settings]
-    ModelSettings: Optional[ModelSettings]
-    JobExecutionSettings: Optional[JobExecutionSettings]
-    ContentRedaction: Optional[ContentRedaction]
-    IdentifyLanguage: Optional[Boolean]
-    IdentifyMultipleLanguages: Optional[Boolean]
-    LanguageOptions: Optional[LanguageOptions]
-    IdentifiedLanguageScore: Optional[IdentifiedLanguageScore]
-    LanguageCodes: Optional[LanguageCodeList]
-    Tags: Optional[TagList]
-    Subtitles: Optional[SubtitlesOutput]
-    LanguageIdSettings: Optional[LanguageIdSettingsMap]
-    ToxicityDetection: Optional[ToxicityDetection]
+    TranscriptionJobName: TranscriptionJobName | None
+    TranscriptionJobStatus: TranscriptionJobStatus | None
+    LanguageCode: LanguageCode | None
+    MediaSampleRateHertz: MediaSampleRateHertz | None
+    MediaFormat: MediaFormat | None
+    Media: Media | None
+    Transcript: Transcript | None
+    StartTime: DateTime | None
+    CreationTime: DateTime | None
+    CompletionTime: DateTime | None
+    FailureReason: FailureReason | None
+    Settings: Settings | None
+    ModelSettings: ModelSettings | None
+    JobExecutionSettings: JobExecutionSettings | None
+    ContentRedaction: ContentRedaction | None
+    IdentifyLanguage: Boolean | None
+    IdentifyMultipleLanguages: Boolean | None
+    LanguageOptions: LanguageOptions | None
+    IdentifiedLanguageScore: IdentifiedLanguageScore | None
+    LanguageCodes: LanguageCodeList | None
+    Tags: TagList | None
+    Subtitles: SubtitlesOutput | None
+    LanguageIdSettings: LanguageIdSettingsMap | None
+    ToxicityDetection: ToxicityDetection | None
 
 
 class GetTranscriptionJobResponse(TypedDict, total=False):
-    TranscriptionJob: Optional[TranscriptionJob]
+    TranscriptionJob: TranscriptionJob | None
 
 
 class GetVocabularyFilterRequest(ServiceRequest):
@@ -889,10 +889,10 @@ class GetVocabularyFilterRequest(ServiceRequest):
 
 
 class GetVocabularyFilterResponse(TypedDict, total=False):
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
-    DownloadUri: Optional[Uri]
+    VocabularyFilterName: VocabularyFilterName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
+    DownloadUri: Uri | None
 
 
 class GetVocabularyRequest(ServiceRequest):
@@ -900,132 +900,132 @@ class GetVocabularyRequest(ServiceRequest):
 
 
 class GetVocabularyResponse(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    VocabularyState: Optional[VocabularyState]
-    LastModifiedTime: Optional[DateTime]
-    FailureReason: Optional[FailureReason]
-    DownloadUri: Optional[Uri]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    VocabularyState: VocabularyState | None
+    LastModifiedTime: DateTime | None
+    FailureReason: FailureReason | None
+    DownloadUri: Uri | None
 
 
-KMSEncryptionContextMap = Dict[NonEmptyString, NonEmptyString]
+KMSEncryptionContextMap = dict[NonEmptyString, NonEmptyString]
 
 
 class ListCallAnalyticsCategoriesRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListCallAnalyticsCategoriesResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    Categories: Optional[CategoryPropertiesList]
+    NextToken: NextToken | None
+    Categories: CategoryPropertiesList | None
 
 
 class ListCallAnalyticsJobsRequest(ServiceRequest):
-    Status: Optional[CallAnalyticsJobStatus]
-    JobNameContains: Optional[CallAnalyticsJobName]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Status: CallAnalyticsJobStatus | None
+    JobNameContains: CallAnalyticsJobName | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListCallAnalyticsJobsResponse(TypedDict, total=False):
-    Status: Optional[CallAnalyticsJobStatus]
-    NextToken: Optional[NextToken]
-    CallAnalyticsJobSummaries: Optional[CallAnalyticsJobSummaries]
+    Status: CallAnalyticsJobStatus | None
+    NextToken: NextToken | None
+    CallAnalyticsJobSummaries: CallAnalyticsJobSummaries | None
 
 
 class ListLanguageModelsRequest(ServiceRequest):
-    StatusEquals: Optional[ModelStatus]
-    NameContains: Optional[ModelName]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    StatusEquals: ModelStatus | None
+    NameContains: ModelName | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
-Models = List[LanguageModel]
+Models = list[LanguageModel]
 
 
 class ListLanguageModelsResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    Models: Optional[Models]
+    NextToken: NextToken | None
+    Models: Models | None
 
 
 class ListMedicalScribeJobsRequest(ServiceRequest):
-    Status: Optional[MedicalScribeJobStatus]
-    JobNameContains: Optional[TranscriptionJobName]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Status: MedicalScribeJobStatus | None
+    JobNameContains: TranscriptionJobName | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class MedicalScribeJobSummary(TypedDict, total=False):
-    MedicalScribeJobName: Optional[TranscriptionJobName]
-    CreationTime: Optional[DateTime]
-    StartTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    LanguageCode: Optional[MedicalScribeLanguageCode]
-    MedicalScribeJobStatus: Optional[MedicalScribeJobStatus]
-    FailureReason: Optional[FailureReason]
+    MedicalScribeJobName: TranscriptionJobName | None
+    CreationTime: DateTime | None
+    StartTime: DateTime | None
+    CompletionTime: DateTime | None
+    LanguageCode: MedicalScribeLanguageCode | None
+    MedicalScribeJobStatus: MedicalScribeJobStatus | None
+    FailureReason: FailureReason | None
 
 
-MedicalScribeJobSummaries = List[MedicalScribeJobSummary]
+MedicalScribeJobSummaries = list[MedicalScribeJobSummary]
 
 
 class ListMedicalScribeJobsResponse(TypedDict, total=False):
-    Status: Optional[MedicalScribeJobStatus]
-    NextToken: Optional[NextToken]
-    MedicalScribeJobSummaries: Optional[MedicalScribeJobSummaries]
+    Status: MedicalScribeJobStatus | None
+    NextToken: NextToken | None
+    MedicalScribeJobSummaries: MedicalScribeJobSummaries | None
 
 
 class ListMedicalTranscriptionJobsRequest(ServiceRequest):
-    Status: Optional[TranscriptionJobStatus]
-    JobNameContains: Optional[TranscriptionJobName]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Status: TranscriptionJobStatus | None
+    JobNameContains: TranscriptionJobName | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class MedicalTranscriptionJobSummary(TypedDict, total=False):
-    MedicalTranscriptionJobName: Optional[TranscriptionJobName]
-    CreationTime: Optional[DateTime]
-    StartTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    LanguageCode: Optional[LanguageCode]
-    TranscriptionJobStatus: Optional[TranscriptionJobStatus]
-    FailureReason: Optional[FailureReason]
-    OutputLocationType: Optional[OutputLocationType]
-    Specialty: Optional[Specialty]
-    ContentIdentificationType: Optional[MedicalContentIdentificationType]
-    Type: Optional[Type]
+    MedicalTranscriptionJobName: TranscriptionJobName | None
+    CreationTime: DateTime | None
+    StartTime: DateTime | None
+    CompletionTime: DateTime | None
+    LanguageCode: LanguageCode | None
+    TranscriptionJobStatus: TranscriptionJobStatus | None
+    FailureReason: FailureReason | None
+    OutputLocationType: OutputLocationType | None
+    Specialty: Specialty | None
+    ContentIdentificationType: MedicalContentIdentificationType | None
+    Type: Type | None
 
 
-MedicalTranscriptionJobSummaries = List[MedicalTranscriptionJobSummary]
+MedicalTranscriptionJobSummaries = list[MedicalTranscriptionJobSummary]
 
 
 class ListMedicalTranscriptionJobsResponse(TypedDict, total=False):
-    Status: Optional[TranscriptionJobStatus]
-    NextToken: Optional[NextToken]
-    MedicalTranscriptionJobSummaries: Optional[MedicalTranscriptionJobSummaries]
+    Status: TranscriptionJobStatus | None
+    NextToken: NextToken | None
+    MedicalTranscriptionJobSummaries: MedicalTranscriptionJobSummaries | None
 
 
 class ListMedicalVocabulariesRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    StateEquals: Optional[VocabularyState]
-    NameContains: Optional[VocabularyName]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    StateEquals: VocabularyState | None
+    NameContains: VocabularyName | None
 
 
 class VocabularyInfo(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
-    VocabularyState: Optional[VocabularyState]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
+    VocabularyState: VocabularyState | None
 
 
-Vocabularies = List[VocabularyInfo]
+Vocabularies = list[VocabularyInfo]
 
 
 class ListMedicalVocabulariesResponse(TypedDict, total=False):
-    Status: Optional[VocabularyState]
-    NextToken: Optional[NextToken]
-    Vocabularies: Optional[Vocabularies]
+    Status: VocabularyState | None
+    NextToken: NextToken | None
+    Vocabularies: Vocabularies | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -1033,171 +1033,171 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    ResourceArn: Optional[TranscribeArn]
-    Tags: Optional[TagList]
+    ResourceArn: TranscribeArn | None
+    Tags: TagList | None
 
 
 class ListTranscriptionJobsRequest(ServiceRequest):
-    Status: Optional[TranscriptionJobStatus]
-    JobNameContains: Optional[TranscriptionJobName]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Status: TranscriptionJobStatus | None
+    JobNameContains: TranscriptionJobName | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class TranscriptionJobSummary(TypedDict, total=False):
-    TranscriptionJobName: Optional[TranscriptionJobName]
-    CreationTime: Optional[DateTime]
-    StartTime: Optional[DateTime]
-    CompletionTime: Optional[DateTime]
-    LanguageCode: Optional[LanguageCode]
-    TranscriptionJobStatus: Optional[TranscriptionJobStatus]
-    FailureReason: Optional[FailureReason]
-    OutputLocationType: Optional[OutputLocationType]
-    ContentRedaction: Optional[ContentRedaction]
-    ModelSettings: Optional[ModelSettings]
-    IdentifyLanguage: Optional[Boolean]
-    IdentifyMultipleLanguages: Optional[Boolean]
-    IdentifiedLanguageScore: Optional[IdentifiedLanguageScore]
-    LanguageCodes: Optional[LanguageCodeList]
-    ToxicityDetection: Optional[ToxicityDetection]
+    TranscriptionJobName: TranscriptionJobName | None
+    CreationTime: DateTime | None
+    StartTime: DateTime | None
+    CompletionTime: DateTime | None
+    LanguageCode: LanguageCode | None
+    TranscriptionJobStatus: TranscriptionJobStatus | None
+    FailureReason: FailureReason | None
+    OutputLocationType: OutputLocationType | None
+    ContentRedaction: ContentRedaction | None
+    ModelSettings: ModelSettings | None
+    IdentifyLanguage: Boolean | None
+    IdentifyMultipleLanguages: Boolean | None
+    IdentifiedLanguageScore: IdentifiedLanguageScore | None
+    LanguageCodes: LanguageCodeList | None
+    ToxicityDetection: ToxicityDetection | None
 
 
-TranscriptionJobSummaries = List[TranscriptionJobSummary]
+TranscriptionJobSummaries = list[TranscriptionJobSummary]
 
 
 class ListTranscriptionJobsResponse(TypedDict, total=False):
-    Status: Optional[TranscriptionJobStatus]
-    NextToken: Optional[NextToken]
-    TranscriptionJobSummaries: Optional[TranscriptionJobSummaries]
+    Status: TranscriptionJobStatus | None
+    NextToken: NextToken | None
+    TranscriptionJobSummaries: TranscriptionJobSummaries | None
 
 
 class ListVocabulariesRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    StateEquals: Optional[VocabularyState]
-    NameContains: Optional[VocabularyName]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    StateEquals: VocabularyState | None
+    NameContains: VocabularyName | None
 
 
 class ListVocabulariesResponse(TypedDict, total=False):
-    Status: Optional[VocabularyState]
-    NextToken: Optional[NextToken]
-    Vocabularies: Optional[Vocabularies]
+    Status: VocabularyState | None
+    NextToken: NextToken | None
+    Vocabularies: Vocabularies | None
 
 
 class ListVocabularyFiltersRequest(ServiceRequest):
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    NameContains: Optional[VocabularyFilterName]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    NameContains: VocabularyFilterName | None
 
 
 class VocabularyFilterInfo(TypedDict, total=False):
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
+    VocabularyFilterName: VocabularyFilterName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
 
 
-VocabularyFilters = List[VocabularyFilterInfo]
+VocabularyFilters = list[VocabularyFilterInfo]
 
 
 class ListVocabularyFiltersResponse(TypedDict, total=False):
-    NextToken: Optional[NextToken]
-    VocabularyFilters: Optional[VocabularyFilters]
+    NextToken: NextToken | None
+    VocabularyFilters: VocabularyFilters | None
 
 
 class MedicalScribePatientContext(TypedDict, total=False):
-    Pronouns: Optional[Pronouns]
+    Pronouns: Pronouns | None
 
 
 class MedicalScribeContext(TypedDict, total=False):
-    PatientContext: Optional[MedicalScribePatientContext]
+    PatientContext: MedicalScribePatientContext | None
 
 
 class StartCallAnalyticsJobRequest(ServiceRequest):
     CallAnalyticsJobName: CallAnalyticsJobName
     Media: Media
-    OutputLocation: Optional[Uri]
-    OutputEncryptionKMSKeyId: Optional[KMSKeyId]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
-    Settings: Optional[CallAnalyticsJobSettings]
-    Tags: Optional[TagList]
-    ChannelDefinitions: Optional[ChannelDefinitions]
+    OutputLocation: Uri | None
+    OutputEncryptionKMSKeyId: KMSKeyId | None
+    DataAccessRoleArn: DataAccessRoleArn | None
+    Settings: CallAnalyticsJobSettings | None
+    Tags: TagList | None
+    ChannelDefinitions: ChannelDefinitions | None
 
 
 class StartCallAnalyticsJobResponse(TypedDict, total=False):
-    CallAnalyticsJob: Optional[CallAnalyticsJob]
+    CallAnalyticsJob: CallAnalyticsJob | None
 
 
 class StartMedicalScribeJobRequest(ServiceRequest):
     MedicalScribeJobName: TranscriptionJobName
     Media: Media
     OutputBucketName: OutputBucketName
-    OutputEncryptionKMSKeyId: Optional[KMSKeyId]
-    KMSEncryptionContext: Optional[KMSEncryptionContextMap]
+    OutputEncryptionKMSKeyId: KMSKeyId | None
+    KMSEncryptionContext: KMSEncryptionContextMap | None
     DataAccessRoleArn: DataAccessRoleArn
     Settings: MedicalScribeSettings
-    ChannelDefinitions: Optional[MedicalScribeChannelDefinitions]
-    Tags: Optional[TagList]
-    MedicalScribeContext: Optional[MedicalScribeContext]
+    ChannelDefinitions: MedicalScribeChannelDefinitions | None
+    Tags: TagList | None
+    MedicalScribeContext: MedicalScribeContext | None
 
 
 class StartMedicalScribeJobResponse(TypedDict, total=False):
-    MedicalScribeJob: Optional[MedicalScribeJob]
+    MedicalScribeJob: MedicalScribeJob | None
 
 
 class StartMedicalTranscriptionJobRequest(ServiceRequest):
     MedicalTranscriptionJobName: TranscriptionJobName
     LanguageCode: LanguageCode
-    MediaSampleRateHertz: Optional[MedicalMediaSampleRateHertz]
-    MediaFormat: Optional[MediaFormat]
+    MediaSampleRateHertz: MedicalMediaSampleRateHertz | None
+    MediaFormat: MediaFormat | None
     Media: Media
     OutputBucketName: OutputBucketName
-    OutputKey: Optional[OutputKey]
-    OutputEncryptionKMSKeyId: Optional[KMSKeyId]
-    KMSEncryptionContext: Optional[KMSEncryptionContextMap]
-    Settings: Optional[MedicalTranscriptionSetting]
-    ContentIdentificationType: Optional[MedicalContentIdentificationType]
+    OutputKey: OutputKey | None
+    OutputEncryptionKMSKeyId: KMSKeyId | None
+    KMSEncryptionContext: KMSEncryptionContextMap | None
+    Settings: MedicalTranscriptionSetting | None
+    ContentIdentificationType: MedicalContentIdentificationType | None
     Specialty: Specialty
     Type: Type
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class StartMedicalTranscriptionJobResponse(TypedDict, total=False):
-    MedicalTranscriptionJob: Optional[MedicalTranscriptionJob]
+    MedicalTranscriptionJob: MedicalTranscriptionJob | None
 
 
 class Subtitles(TypedDict, total=False):
-    Formats: Optional[SubtitleFormats]
-    OutputStartIndex: Optional[SubtitleOutputStartIndex]
+    Formats: SubtitleFormats | None
+    OutputStartIndex: SubtitleOutputStartIndex | None
 
 
 class StartTranscriptionJobRequest(ServiceRequest):
     TranscriptionJobName: TranscriptionJobName
-    LanguageCode: Optional[LanguageCode]
-    MediaSampleRateHertz: Optional[MediaSampleRateHertz]
-    MediaFormat: Optional[MediaFormat]
+    LanguageCode: LanguageCode | None
+    MediaSampleRateHertz: MediaSampleRateHertz | None
+    MediaFormat: MediaFormat | None
     Media: Media
-    OutputBucketName: Optional[OutputBucketName]
-    OutputKey: Optional[OutputKey]
-    OutputEncryptionKMSKeyId: Optional[KMSKeyId]
-    KMSEncryptionContext: Optional[KMSEncryptionContextMap]
-    Settings: Optional[Settings]
-    ModelSettings: Optional[ModelSettings]
-    JobExecutionSettings: Optional[JobExecutionSettings]
-    ContentRedaction: Optional[ContentRedaction]
-    IdentifyLanguage: Optional[Boolean]
-    IdentifyMultipleLanguages: Optional[Boolean]
-    LanguageOptions: Optional[LanguageOptions]
-    Subtitles: Optional[Subtitles]
-    Tags: Optional[TagList]
-    LanguageIdSettings: Optional[LanguageIdSettingsMap]
-    ToxicityDetection: Optional[ToxicityDetection]
+    OutputBucketName: OutputBucketName | None
+    OutputKey: OutputKey | None
+    OutputEncryptionKMSKeyId: KMSKeyId | None
+    KMSEncryptionContext: KMSEncryptionContextMap | None
+    Settings: Settings | None
+    ModelSettings: ModelSettings | None
+    JobExecutionSettings: JobExecutionSettings | None
+    ContentRedaction: ContentRedaction | None
+    IdentifyLanguage: Boolean | None
+    IdentifyMultipleLanguages: Boolean | None
+    LanguageOptions: LanguageOptions | None
+    Subtitles: Subtitles | None
+    Tags: TagList | None
+    LanguageIdSettings: LanguageIdSettingsMap | None
+    ToxicityDetection: ToxicityDetection | None
 
 
 class StartTranscriptionJobResponse(TypedDict, total=False):
-    TranscriptionJob: Optional[TranscriptionJob]
+    TranscriptionJob: TranscriptionJob | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -1221,11 +1221,11 @@ class UntagResourceResponse(TypedDict, total=False):
 class UpdateCallAnalyticsCategoryRequest(ServiceRequest):
     CategoryName: CategoryName
     Rules: RuleList
-    InputType: Optional[InputType]
+    InputType: InputType | None
 
 
 class UpdateCallAnalyticsCategoryResponse(TypedDict, total=False):
-    CategoryProperties: Optional[CategoryProperties]
+    CategoryProperties: CategoryProperties | None
 
 
 class UpdateMedicalVocabularyRequest(ServiceRequest):
@@ -1235,43 +1235,43 @@ class UpdateMedicalVocabularyRequest(ServiceRequest):
 
 
 class UpdateMedicalVocabularyResponse(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
-    VocabularyState: Optional[VocabularyState]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
+    VocabularyState: VocabularyState | None
 
 
 class UpdateVocabularyFilterRequest(ServiceRequest):
     VocabularyFilterName: VocabularyFilterName
-    Words: Optional[Words]
-    VocabularyFilterFileUri: Optional[Uri]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
+    Words: Words | None
+    VocabularyFilterFileUri: Uri | None
+    DataAccessRoleArn: DataAccessRoleArn | None
 
 
 class UpdateVocabularyFilterResponse(TypedDict, total=False):
-    VocabularyFilterName: Optional[VocabularyFilterName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
+    VocabularyFilterName: VocabularyFilterName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
 
 
 class UpdateVocabularyRequest(ServiceRequest):
     VocabularyName: VocabularyName
     LanguageCode: LanguageCode
-    Phrases: Optional[Phrases]
-    VocabularyFileUri: Optional[Uri]
-    DataAccessRoleArn: Optional[DataAccessRoleArn]
+    Phrases: Phrases | None
+    VocabularyFileUri: Uri | None
+    DataAccessRoleArn: DataAccessRoleArn | None
 
 
 class UpdateVocabularyResponse(TypedDict, total=False):
-    VocabularyName: Optional[VocabularyName]
-    LanguageCode: Optional[LanguageCode]
-    LastModifiedTime: Optional[DateTime]
-    VocabularyState: Optional[VocabularyState]
+    VocabularyName: VocabularyName | None
+    LanguageCode: LanguageCode | None
+    LastModifiedTime: DateTime | None
+    VocabularyState: VocabularyState | None
 
 
 class TranscribeApi:
-    service = "transcribe"
-    version = "2017-10-26"
+    service: str = "transcribe"
+    version: str = "2017-10-26"
 
     @handler("CreateCallAnalyticsCategory")
     def create_call_analytics_category(

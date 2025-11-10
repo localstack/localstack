@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -371,12 +371,12 @@ class ServiceUnavailableException(ServiceException):
 
 
 class AmazonOpenSearchServerlessBufferingHints(TypedDict, total=False):
-    IntervalInSeconds: Optional[AmazonOpenSearchServerlessBufferingIntervalInSeconds]
-    SizeInMBs: Optional[AmazonOpenSearchServerlessBufferingSizeInMBs]
+    IntervalInSeconds: AmazonOpenSearchServerlessBufferingIntervalInSeconds | None
+    SizeInMBs: AmazonOpenSearchServerlessBufferingSizeInMBs | None
 
 
-SecurityGroupIdList = List[NonEmptyStringWithoutWhitespace]
-SubnetIdList = List[NonEmptyStringWithoutWhitespace]
+SecurityGroupIdList = list[NonEmptyStringWithoutWhitespace]
+SubnetIdList = list[NonEmptyStringWithoutWhitespace]
 
 
 class VpcConfiguration(TypedDict, total=False):
@@ -386,9 +386,9 @@ class VpcConfiguration(TypedDict, total=False):
 
 
 class CloudWatchLoggingOptions(TypedDict, total=False):
-    Enabled: Optional[BooleanObject]
-    LogGroupName: Optional[LogGroupName]
-    LogStreamName: Optional[LogStreamName]
+    Enabled: BooleanObject | None
+    LogGroupName: LogGroupName | None
+    LogStreamName: LogStreamName | None
 
 
 class ProcessorParameter(TypedDict, total=False):
@@ -396,20 +396,20 @@ class ProcessorParameter(TypedDict, total=False):
     ParameterValue: ProcessorParameterValue
 
 
-ProcessorParameterList = List[ProcessorParameter]
+ProcessorParameterList = list[ProcessorParameter]
 
 
 class Processor(TypedDict, total=False):
     Type: ProcessorType
-    Parameters: Optional[ProcessorParameterList]
+    Parameters: ProcessorParameterList | None
 
 
-ProcessorList = List[Processor]
+ProcessorList = list[Processor]
 
 
 class ProcessingConfiguration(TypedDict, total=False):
-    Enabled: Optional[BooleanObject]
-    Processors: Optional[ProcessorList]
+    Enabled: BooleanObject | None
+    Processors: ProcessorList | None
 
 
 class KMSEncryptionConfig(TypedDict, total=False):
@@ -417,41 +417,41 @@ class KMSEncryptionConfig(TypedDict, total=False):
 
 
 class EncryptionConfiguration(TypedDict, total=False):
-    NoEncryptionConfig: Optional[NoEncryptionConfig]
-    KMSEncryptionConfig: Optional[KMSEncryptionConfig]
+    NoEncryptionConfig: NoEncryptionConfig | None
+    KMSEncryptionConfig: KMSEncryptionConfig | None
 
 
 class BufferingHints(TypedDict, total=False):
-    SizeInMBs: Optional[SizeInMBs]
-    IntervalInSeconds: Optional[IntervalInSeconds]
+    SizeInMBs: SizeInMBs | None
+    IntervalInSeconds: IntervalInSeconds | None
 
 
 class S3DestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
     BucketARN: BucketARN
-    Prefix: Optional[Prefix]
-    ErrorOutputPrefix: Optional[ErrorOutputPrefix]
-    BufferingHints: Optional[BufferingHints]
-    CompressionFormat: Optional[CompressionFormat]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    Prefix: Prefix | None
+    ErrorOutputPrefix: ErrorOutputPrefix | None
+    BufferingHints: BufferingHints | None
+    CompressionFormat: CompressionFormat | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
 
 
 class AmazonOpenSearchServerlessRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[AmazonOpenSearchServerlessRetryDurationInSeconds]
+    DurationInSeconds: AmazonOpenSearchServerlessRetryDurationInSeconds | None
 
 
 class AmazonOpenSearchServerlessDestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
-    CollectionEndpoint: Optional[AmazonOpenSearchServerlessCollectionEndpoint]
+    CollectionEndpoint: AmazonOpenSearchServerlessCollectionEndpoint | None
     IndexName: AmazonOpenSearchServerlessIndexName
-    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
-    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
-    S3BackupMode: Optional[AmazonOpenSearchServerlessS3BackupMode]
+    BufferingHints: AmazonOpenSearchServerlessBufferingHints | None
+    RetryOptions: AmazonOpenSearchServerlessRetryOptions | None
+    S3BackupMode: AmazonOpenSearchServerlessS3BackupMode | None
     S3Configuration: S3DestinationConfiguration
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    VpcConfiguration: Optional[VpcConfiguration]
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    VpcConfiguration: VpcConfiguration | None
 
 
 class VpcConfigurationDescription(TypedDict, total=False):
@@ -464,52 +464,52 @@ class VpcConfigurationDescription(TypedDict, total=False):
 class S3DestinationDescription(TypedDict, total=False):
     RoleARN: RoleARN
     BucketARN: BucketARN
-    Prefix: Optional[Prefix]
-    ErrorOutputPrefix: Optional[ErrorOutputPrefix]
+    Prefix: Prefix | None
+    ErrorOutputPrefix: ErrorOutputPrefix | None
     BufferingHints: BufferingHints
     CompressionFormat: CompressionFormat
     EncryptionConfiguration: EncryptionConfiguration
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
 
 
 class AmazonOpenSearchServerlessDestinationDescription(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    CollectionEndpoint: Optional[AmazonOpenSearchServerlessCollectionEndpoint]
-    IndexName: Optional[AmazonOpenSearchServerlessIndexName]
-    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
-    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
-    S3BackupMode: Optional[AmazonOpenSearchServerlessS3BackupMode]
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    VpcConfigurationDescription: Optional[VpcConfigurationDescription]
+    RoleARN: RoleARN | None
+    CollectionEndpoint: AmazonOpenSearchServerlessCollectionEndpoint | None
+    IndexName: AmazonOpenSearchServerlessIndexName | None
+    BufferingHints: AmazonOpenSearchServerlessBufferingHints | None
+    RetryOptions: AmazonOpenSearchServerlessRetryOptions | None
+    S3BackupMode: AmazonOpenSearchServerlessS3BackupMode | None
+    S3DestinationDescription: S3DestinationDescription | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    VpcConfigurationDescription: VpcConfigurationDescription | None
 
 
 class S3DestinationUpdate(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    BucketARN: Optional[BucketARN]
-    Prefix: Optional[Prefix]
-    ErrorOutputPrefix: Optional[ErrorOutputPrefix]
-    BufferingHints: Optional[BufferingHints]
-    CompressionFormat: Optional[CompressionFormat]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    RoleARN: RoleARN | None
+    BucketARN: BucketARN | None
+    Prefix: Prefix | None
+    ErrorOutputPrefix: ErrorOutputPrefix | None
+    BufferingHints: BufferingHints | None
+    CompressionFormat: CompressionFormat | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
 
 
 class AmazonOpenSearchServerlessDestinationUpdate(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    CollectionEndpoint: Optional[AmazonOpenSearchServerlessCollectionEndpoint]
-    IndexName: Optional[AmazonOpenSearchServerlessIndexName]
-    BufferingHints: Optional[AmazonOpenSearchServerlessBufferingHints]
-    RetryOptions: Optional[AmazonOpenSearchServerlessRetryOptions]
-    S3Update: Optional[S3DestinationUpdate]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
+    RoleARN: RoleARN | None
+    CollectionEndpoint: AmazonOpenSearchServerlessCollectionEndpoint | None
+    IndexName: AmazonOpenSearchServerlessIndexName | None
+    BufferingHints: AmazonOpenSearchServerlessBufferingHints | None
+    RetryOptions: AmazonOpenSearchServerlessRetryOptions | None
+    S3Update: S3DestinationUpdate | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
 
 
 class AmazonopensearchserviceBufferingHints(TypedDict, total=False):
-    IntervalInSeconds: Optional[AmazonopensearchserviceBufferingIntervalInSeconds]
-    SizeInMBs: Optional[AmazonopensearchserviceBufferingSizeInMBs]
+    IntervalInSeconds: AmazonopensearchserviceBufferingIntervalInSeconds | None
+    SizeInMBs: AmazonopensearchserviceBufferingSizeInMBs | None
 
 
 class DocumentIdOptions(TypedDict, total=False):
@@ -517,56 +517,56 @@ class DocumentIdOptions(TypedDict, total=False):
 
 
 class AmazonopensearchserviceRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[AmazonopensearchserviceRetryDurationInSeconds]
+    DurationInSeconds: AmazonopensearchserviceRetryDurationInSeconds | None
 
 
 class AmazonopensearchserviceDestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
-    DomainARN: Optional[AmazonopensearchserviceDomainARN]
-    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
+    DomainARN: AmazonopensearchserviceDomainARN | None
+    ClusterEndpoint: AmazonopensearchserviceClusterEndpoint | None
     IndexName: AmazonopensearchserviceIndexName
-    TypeName: Optional[AmazonopensearchserviceTypeName]
-    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
-    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
-    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
-    S3BackupMode: Optional[AmazonopensearchserviceS3BackupMode]
+    TypeName: AmazonopensearchserviceTypeName | None
+    IndexRotationPeriod: AmazonopensearchserviceIndexRotationPeriod | None
+    BufferingHints: AmazonopensearchserviceBufferingHints | None
+    RetryOptions: AmazonopensearchserviceRetryOptions | None
+    S3BackupMode: AmazonopensearchserviceS3BackupMode | None
     S3Configuration: S3DestinationConfiguration
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    VpcConfiguration: Optional[VpcConfiguration]
-    DocumentIdOptions: Optional[DocumentIdOptions]
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    VpcConfiguration: VpcConfiguration | None
+    DocumentIdOptions: DocumentIdOptions | None
 
 
 class AmazonopensearchserviceDestinationDescription(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    DomainARN: Optional[AmazonopensearchserviceDomainARN]
-    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
-    IndexName: Optional[AmazonopensearchserviceIndexName]
-    TypeName: Optional[AmazonopensearchserviceTypeName]
-    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
-    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
-    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
-    S3BackupMode: Optional[AmazonopensearchserviceS3BackupMode]
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    VpcConfigurationDescription: Optional[VpcConfigurationDescription]
-    DocumentIdOptions: Optional[DocumentIdOptions]
+    RoleARN: RoleARN | None
+    DomainARN: AmazonopensearchserviceDomainARN | None
+    ClusterEndpoint: AmazonopensearchserviceClusterEndpoint | None
+    IndexName: AmazonopensearchserviceIndexName | None
+    TypeName: AmazonopensearchserviceTypeName | None
+    IndexRotationPeriod: AmazonopensearchserviceIndexRotationPeriod | None
+    BufferingHints: AmazonopensearchserviceBufferingHints | None
+    RetryOptions: AmazonopensearchserviceRetryOptions | None
+    S3BackupMode: AmazonopensearchserviceS3BackupMode | None
+    S3DestinationDescription: S3DestinationDescription | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    VpcConfigurationDescription: VpcConfigurationDescription | None
+    DocumentIdOptions: DocumentIdOptions | None
 
 
 class AmazonopensearchserviceDestinationUpdate(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    DomainARN: Optional[AmazonopensearchserviceDomainARN]
-    ClusterEndpoint: Optional[AmazonopensearchserviceClusterEndpoint]
-    IndexName: Optional[AmazonopensearchserviceIndexName]
-    TypeName: Optional[AmazonopensearchserviceTypeName]
-    IndexRotationPeriod: Optional[AmazonopensearchserviceIndexRotationPeriod]
-    BufferingHints: Optional[AmazonopensearchserviceBufferingHints]
-    RetryOptions: Optional[AmazonopensearchserviceRetryOptions]
-    S3Update: Optional[S3DestinationUpdate]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    DocumentIdOptions: Optional[DocumentIdOptions]
+    RoleARN: RoleARN | None
+    DomainARN: AmazonopensearchserviceDomainARN | None
+    ClusterEndpoint: AmazonopensearchserviceClusterEndpoint | None
+    IndexName: AmazonopensearchserviceIndexName | None
+    TypeName: AmazonopensearchserviceTypeName | None
+    IndexRotationPeriod: AmazonopensearchserviceIndexRotationPeriod | None
+    BufferingHints: AmazonopensearchserviceBufferingHints | None
+    RetryOptions: AmazonopensearchserviceRetryOptions | None
+    S3Update: S3DestinationUpdate | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    DocumentIdOptions: DocumentIdOptions | None
 
 
 class AuthenticationConfiguration(TypedDict, total=False):
@@ -575,17 +575,17 @@ class AuthenticationConfiguration(TypedDict, total=False):
 
 
 class CatalogConfiguration(TypedDict, total=False):
-    CatalogARN: Optional[GlueDataCatalogARN]
-    WarehouseLocation: Optional[WarehouseLocation]
+    CatalogARN: GlueDataCatalogARN | None
+    WarehouseLocation: WarehouseLocation | None
 
 
-ColumnToJsonKeyMappings = Dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
+ColumnToJsonKeyMappings = dict[NonEmptyStringWithoutWhitespace, NonEmptyString]
 
 
 class CopyCommand(TypedDict, total=False):
     DataTableName: DataTableName
-    DataTableColumns: Optional[DataTableColumns]
-    CopyOptions: Optional[CopyOptions]
+    DataTableColumns: DataTableColumns | None
+    CopyOptions: CopyOptions | None
 
 
 class DatabaseSourceVPCConfiguration(TypedDict, total=False):
@@ -593,8 +593,8 @@ class DatabaseSourceVPCConfiguration(TypedDict, total=False):
 
 
 class SecretsManagerConfiguration(TypedDict, total=False):
-    SecretARN: Optional[SecretARN]
-    RoleARN: Optional[RoleARN]
+    SecretARN: SecretARN | None
+    RoleARN: RoleARN | None
     Enabled: BooleanObject
 
 
@@ -602,47 +602,47 @@ class DatabaseSourceAuthenticationConfiguration(TypedDict, total=False):
     SecretsManagerConfiguration: SecretsManagerConfiguration
 
 
-DatabaseSurrogateKeyList = List[NonEmptyStringWithoutWhitespace]
-DatabaseColumnIncludeOrExcludeList = List[DatabaseColumnName]
+DatabaseSurrogateKeyList = list[NonEmptyStringWithoutWhitespace]
+DatabaseColumnIncludeOrExcludeList = list[DatabaseColumnName]
 
 
 class DatabaseColumnList(TypedDict, total=False):
-    Include: Optional[DatabaseColumnIncludeOrExcludeList]
-    Exclude: Optional[DatabaseColumnIncludeOrExcludeList]
+    Include: DatabaseColumnIncludeOrExcludeList | None
+    Exclude: DatabaseColumnIncludeOrExcludeList | None
 
 
-DatabaseTableIncludeOrExcludeList = List[DatabaseTableName]
+DatabaseTableIncludeOrExcludeList = list[DatabaseTableName]
 
 
 class DatabaseTableList(TypedDict, total=False):
-    Include: Optional[DatabaseTableIncludeOrExcludeList]
-    Exclude: Optional[DatabaseTableIncludeOrExcludeList]
+    Include: DatabaseTableIncludeOrExcludeList | None
+    Exclude: DatabaseTableIncludeOrExcludeList | None
 
 
-DatabaseIncludeOrExcludeList = List[DatabaseName]
+DatabaseIncludeOrExcludeList = list[DatabaseName]
 
 
 class DatabaseList(TypedDict, total=False):
-    Include: Optional[DatabaseIncludeOrExcludeList]
-    Exclude: Optional[DatabaseIncludeOrExcludeList]
+    Include: DatabaseIncludeOrExcludeList | None
+    Exclude: DatabaseIncludeOrExcludeList | None
 
 
 class DatabaseSourceConfiguration(TypedDict, total=False):
     Type: DatabaseType
     Endpoint: DatabaseEndpoint
     Port: DatabasePort
-    SSLMode: Optional[SSLMode]
+    SSLMode: SSLMode | None
     Databases: DatabaseList
     Tables: DatabaseTableList
-    Columns: Optional[DatabaseColumnList]
-    SurrogateKeys: Optional[DatabaseSurrogateKeyList]
+    Columns: DatabaseColumnList | None
+    SurrogateKeys: DatabaseSurrogateKeyList | None
     SnapshotWatermarkTable: DatabaseTableName
     DatabaseSourceAuthenticationConfiguration: DatabaseSourceAuthenticationConfiguration
     DatabaseSourceVPCConfiguration: DatabaseSourceVPCConfiguration
 
 
 class RetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[RetryDurationInSeconds]
+    DurationInSeconds: RetryDurationInSeconds | None
 
 
 class TableCreationConfiguration(TypedDict, total=False):
@@ -657,49 +657,49 @@ class PartitionField(TypedDict, total=False):
     SourceName: NonEmptyStringWithoutWhitespace
 
 
-PartitionFields = List[PartitionField]
+PartitionFields = list[PartitionField]
 
 
 class PartitionSpec(TypedDict, total=False):
-    Identity: Optional[PartitionFields]
+    Identity: PartitionFields | None
 
 
-ListOfNonEmptyStringsWithoutWhitespace = List[NonEmptyStringWithoutWhitespace]
+ListOfNonEmptyStringsWithoutWhitespace = list[NonEmptyStringWithoutWhitespace]
 
 
 class DestinationTableConfiguration(TypedDict, total=False):
     DestinationTableName: StringWithLettersDigitsUnderscoresDots
     DestinationDatabaseName: StringWithLettersDigitsUnderscoresDots
-    UniqueKeys: Optional[ListOfNonEmptyStringsWithoutWhitespace]
-    PartitionSpec: Optional[PartitionSpec]
-    S3ErrorOutputPrefix: Optional[ErrorOutputPrefix]
+    UniqueKeys: ListOfNonEmptyStringsWithoutWhitespace | None
+    PartitionSpec: PartitionSpec | None
+    S3ErrorOutputPrefix: ErrorOutputPrefix | None
 
 
-DestinationTableConfigurationList = List[DestinationTableConfiguration]
+DestinationTableConfigurationList = list[DestinationTableConfiguration]
 
 
 class IcebergDestinationConfiguration(TypedDict, total=False):
-    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
-    SchemaEvolutionConfiguration: Optional[SchemaEvolutionConfiguration]
-    TableCreationConfiguration: Optional[TableCreationConfiguration]
-    BufferingHints: Optional[BufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[IcebergS3BackupMode]
-    RetryOptions: Optional[RetryOptions]
+    DestinationTableConfigurationList: DestinationTableConfigurationList | None
+    SchemaEvolutionConfiguration: SchemaEvolutionConfiguration | None
+    TableCreationConfiguration: TableCreationConfiguration | None
+    BufferingHints: BufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: IcebergS3BackupMode | None
+    RetryOptions: RetryOptions | None
     RoleARN: RoleARN
-    AppendOnly: Optional[BooleanObject]
+    AppendOnly: BooleanObject | None
     CatalogConfiguration: CatalogConfiguration
     S3Configuration: S3DestinationConfiguration
 
 
 class SnowflakeBufferingHints(TypedDict, total=False):
-    SizeInMBs: Optional[SnowflakeBufferingSizeInMBs]
-    IntervalInSeconds: Optional[SnowflakeBufferingIntervalInSeconds]
+    SizeInMBs: SnowflakeBufferingSizeInMBs | None
+    IntervalInSeconds: SnowflakeBufferingIntervalInSeconds | None
 
 
 class SnowflakeRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[SnowflakeRetryDurationInSeconds]
+    DurationInSeconds: SnowflakeRetryDurationInSeconds | None
 
 
 class SnowflakeVpcConfiguration(TypedDict, total=False):
@@ -707,31 +707,31 @@ class SnowflakeVpcConfiguration(TypedDict, total=False):
 
 
 class SnowflakeRoleConfiguration(TypedDict, total=False):
-    Enabled: Optional[BooleanObject]
-    SnowflakeRole: Optional[SnowflakeRole]
+    Enabled: BooleanObject | None
+    SnowflakeRole: SnowflakeRole | None
 
 
 class SnowflakeDestinationConfiguration(TypedDict, total=False):
     AccountUrl: SnowflakeAccountUrl
-    PrivateKey: Optional[SnowflakePrivateKey]
-    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
-    User: Optional[SnowflakeUser]
+    PrivateKey: SnowflakePrivateKey | None
+    KeyPassphrase: SnowflakeKeyPassphrase | None
+    User: SnowflakeUser | None
     Database: SnowflakeDatabase
     Schema: SnowflakeSchema
     Table: SnowflakeTable
-    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
-    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
-    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
-    ContentColumnName: Optional[SnowflakeContentColumnName]
-    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
+    SnowflakeRoleConfiguration: SnowflakeRoleConfiguration | None
+    DataLoadingOption: SnowflakeDataLoadingOption | None
+    MetaDataColumnName: SnowflakeMetaDataColumnName | None
+    ContentColumnName: SnowflakeContentColumnName | None
+    SnowflakeVpcConfiguration: SnowflakeVpcConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
     RoleARN: RoleARN
-    RetryOptions: Optional[SnowflakeRetryOptions]
-    S3BackupMode: Optional[SnowflakeS3BackupMode]
+    RetryOptions: SnowflakeRetryOptions | None
+    S3BackupMode: SnowflakeS3BackupMode | None
     S3Configuration: S3DestinationConfiguration
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
-    BufferingHints: Optional[SnowflakeBufferingHints]
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
+    BufferingHints: SnowflakeBufferingHints | None
 
 
 ReadFromTimestamp = datetime
@@ -741,19 +741,19 @@ class MSKSourceConfiguration(TypedDict, total=False):
     MSKClusterARN: MSKClusterARN
     TopicName: TopicName
     AuthenticationConfiguration: AuthenticationConfiguration
-    ReadFromTimestamp: Optional[ReadFromTimestamp]
+    ReadFromTimestamp: ReadFromTimestamp | None
 
 
 class Tag(TypedDict, total=False):
     Key: TagKey
-    Value: Optional[TagValue]
+    Value: TagValue | None
 
 
-TagDeliveryStreamInputTagList = List[Tag]
+TagDeliveryStreamInputTagList = list[Tag]
 
 
 class HttpEndpointRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[HttpEndpointRetryDurationInSeconds]
+    DurationInSeconds: HttpEndpointRetryDurationInSeconds | None
 
 
 class HttpEndpointCommonAttribute(TypedDict, total=False):
@@ -761,200 +761,200 @@ class HttpEndpointCommonAttribute(TypedDict, total=False):
     AttributeValue: HttpEndpointAttributeValue
 
 
-HttpEndpointCommonAttributesList = List[HttpEndpointCommonAttribute]
+HttpEndpointCommonAttributesList = list[HttpEndpointCommonAttribute]
 
 
 class HttpEndpointRequestConfiguration(TypedDict, total=False):
-    ContentEncoding: Optional[ContentEncoding]
-    CommonAttributes: Optional[HttpEndpointCommonAttributesList]
+    ContentEncoding: ContentEncoding | None
+    CommonAttributes: HttpEndpointCommonAttributesList | None
 
 
 class HttpEndpointBufferingHints(TypedDict, total=False):
-    SizeInMBs: Optional[HttpEndpointBufferingSizeInMBs]
-    IntervalInSeconds: Optional[HttpEndpointBufferingIntervalInSeconds]
+    SizeInMBs: HttpEndpointBufferingSizeInMBs | None
+    IntervalInSeconds: HttpEndpointBufferingIntervalInSeconds | None
 
 
 class HttpEndpointConfiguration(TypedDict, total=False):
     Url: HttpEndpointUrl
-    Name: Optional[HttpEndpointName]
-    AccessKey: Optional[HttpEndpointAccessKey]
+    Name: HttpEndpointName | None
+    AccessKey: HttpEndpointAccessKey | None
 
 
 class HttpEndpointDestinationConfiguration(TypedDict, total=False):
     EndpointConfiguration: HttpEndpointConfiguration
-    BufferingHints: Optional[HttpEndpointBufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    RequestConfiguration: Optional[HttpEndpointRequestConfiguration]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RoleARN: Optional[RoleARN]
-    RetryOptions: Optional[HttpEndpointRetryOptions]
-    S3BackupMode: Optional[HttpEndpointS3BackupMode]
+    BufferingHints: HttpEndpointBufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    RequestConfiguration: HttpEndpointRequestConfiguration | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RoleARN: RoleARN | None
+    RetryOptions: HttpEndpointRetryOptions | None
+    S3BackupMode: HttpEndpointS3BackupMode | None
     S3Configuration: S3DestinationConfiguration
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class SplunkBufferingHints(TypedDict, total=False):
-    IntervalInSeconds: Optional[SplunkBufferingIntervalInSeconds]
-    SizeInMBs: Optional[SplunkBufferingSizeInMBs]
+    IntervalInSeconds: SplunkBufferingIntervalInSeconds | None
+    SizeInMBs: SplunkBufferingSizeInMBs | None
 
 
 class SplunkRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[SplunkRetryDurationInSeconds]
+    DurationInSeconds: SplunkRetryDurationInSeconds | None
 
 
 class SplunkDestinationConfiguration(TypedDict, total=False):
     HECEndpoint: HECEndpoint
     HECEndpointType: HECEndpointType
-    HECToken: Optional[HECToken]
-    HECAcknowledgmentTimeoutInSeconds: Optional[HECAcknowledgmentTimeoutInSeconds]
-    RetryOptions: Optional[SplunkRetryOptions]
-    S3BackupMode: Optional[SplunkS3BackupMode]
+    HECToken: HECToken | None
+    HECAcknowledgmentTimeoutInSeconds: HECAcknowledgmentTimeoutInSeconds | None
+    RetryOptions: SplunkRetryOptions | None
+    S3BackupMode: SplunkS3BackupMode | None
     S3Configuration: S3DestinationConfiguration
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    BufferingHints: Optional[SplunkBufferingHints]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    BufferingHints: SplunkBufferingHints | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class ElasticsearchRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[ElasticsearchRetryDurationInSeconds]
+    DurationInSeconds: ElasticsearchRetryDurationInSeconds | None
 
 
 class ElasticsearchBufferingHints(TypedDict, total=False):
-    IntervalInSeconds: Optional[ElasticsearchBufferingIntervalInSeconds]
-    SizeInMBs: Optional[ElasticsearchBufferingSizeInMBs]
+    IntervalInSeconds: ElasticsearchBufferingIntervalInSeconds | None
+    SizeInMBs: ElasticsearchBufferingSizeInMBs | None
 
 
 class ElasticsearchDestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
-    DomainARN: Optional[ElasticsearchDomainARN]
-    ClusterEndpoint: Optional[ElasticsearchClusterEndpoint]
+    DomainARN: ElasticsearchDomainARN | None
+    ClusterEndpoint: ElasticsearchClusterEndpoint | None
     IndexName: ElasticsearchIndexName
-    TypeName: Optional[ElasticsearchTypeName]
-    IndexRotationPeriod: Optional[ElasticsearchIndexRotationPeriod]
-    BufferingHints: Optional[ElasticsearchBufferingHints]
-    RetryOptions: Optional[ElasticsearchRetryOptions]
-    S3BackupMode: Optional[ElasticsearchS3BackupMode]
+    TypeName: ElasticsearchTypeName | None
+    IndexRotationPeriod: ElasticsearchIndexRotationPeriod | None
+    BufferingHints: ElasticsearchBufferingHints | None
+    RetryOptions: ElasticsearchRetryOptions | None
+    S3BackupMode: ElasticsearchS3BackupMode | None
     S3Configuration: S3DestinationConfiguration
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    VpcConfiguration: Optional[VpcConfiguration]
-    DocumentIdOptions: Optional[DocumentIdOptions]
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    VpcConfiguration: VpcConfiguration | None
+    DocumentIdOptions: DocumentIdOptions | None
 
 
 class RedshiftRetryOptions(TypedDict, total=False):
-    DurationInSeconds: Optional[RedshiftRetryDurationInSeconds]
+    DurationInSeconds: RedshiftRetryDurationInSeconds | None
 
 
 class RedshiftDestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
     ClusterJDBCURL: ClusterJDBCURL
     CopyCommand: CopyCommand
-    Username: Optional[Username]
-    Password: Optional[Password]
-    RetryOptions: Optional[RedshiftRetryOptions]
+    Username: Username | None
+    Password: Password | None
+    RetryOptions: RedshiftRetryOptions | None
     S3Configuration: S3DestinationConfiguration
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[RedshiftS3BackupMode]
-    S3BackupConfiguration: Optional[S3DestinationConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: RedshiftS3BackupMode | None
+    S3BackupConfiguration: S3DestinationConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class DynamicPartitioningConfiguration(TypedDict, total=False):
-    RetryOptions: Optional[RetryOptions]
-    Enabled: Optional[BooleanObject]
+    RetryOptions: RetryOptions | None
+    Enabled: BooleanObject | None
 
 
 class OrcSerDe(TypedDict, total=False):
-    StripeSizeBytes: Optional[OrcStripeSizeBytes]
-    BlockSizeBytes: Optional[BlockSizeBytes]
-    RowIndexStride: Optional[OrcRowIndexStride]
-    EnablePadding: Optional[BooleanObject]
-    PaddingTolerance: Optional[Proportion]
-    Compression: Optional[OrcCompression]
-    BloomFilterColumns: Optional[ListOfNonEmptyStringsWithoutWhitespace]
-    BloomFilterFalsePositiveProbability: Optional[Proportion]
-    DictionaryKeyThreshold: Optional[Proportion]
-    FormatVersion: Optional[OrcFormatVersion]
+    StripeSizeBytes: OrcStripeSizeBytes | None
+    BlockSizeBytes: BlockSizeBytes | None
+    RowIndexStride: OrcRowIndexStride | None
+    EnablePadding: BooleanObject | None
+    PaddingTolerance: Proportion | None
+    Compression: OrcCompression | None
+    BloomFilterColumns: ListOfNonEmptyStringsWithoutWhitespace | None
+    BloomFilterFalsePositiveProbability: Proportion | None
+    DictionaryKeyThreshold: Proportion | None
+    FormatVersion: OrcFormatVersion | None
 
 
 class ParquetSerDe(TypedDict, total=False):
-    BlockSizeBytes: Optional[BlockSizeBytes]
-    PageSizeBytes: Optional[ParquetPageSizeBytes]
-    Compression: Optional[ParquetCompression]
-    EnableDictionaryCompression: Optional[BooleanObject]
-    MaxPaddingBytes: Optional[NonNegativeIntegerObject]
-    WriterVersion: Optional[ParquetWriterVersion]
+    BlockSizeBytes: BlockSizeBytes | None
+    PageSizeBytes: ParquetPageSizeBytes | None
+    Compression: ParquetCompression | None
+    EnableDictionaryCompression: BooleanObject | None
+    MaxPaddingBytes: NonNegativeIntegerObject | None
+    WriterVersion: ParquetWriterVersion | None
 
 
 class Serializer(TypedDict, total=False):
-    ParquetSerDe: Optional[ParquetSerDe]
-    OrcSerDe: Optional[OrcSerDe]
+    ParquetSerDe: ParquetSerDe | None
+    OrcSerDe: OrcSerDe | None
 
 
 class OutputFormatConfiguration(TypedDict, total=False):
-    Serializer: Optional[Serializer]
+    Serializer: Serializer | None
 
 
-ListOfNonEmptyStrings = List[NonEmptyString]
+ListOfNonEmptyStrings = list[NonEmptyString]
 
 
 class HiveJsonSerDe(TypedDict, total=False):
-    TimestampFormats: Optional[ListOfNonEmptyStrings]
+    TimestampFormats: ListOfNonEmptyStrings | None
 
 
 class OpenXJsonSerDe(TypedDict, total=False):
-    ConvertDotsInJsonKeysToUnderscores: Optional[BooleanObject]
-    CaseInsensitive: Optional[BooleanObject]
-    ColumnToJsonKeyMappings: Optional[ColumnToJsonKeyMappings]
+    ConvertDotsInJsonKeysToUnderscores: BooleanObject | None
+    CaseInsensitive: BooleanObject | None
+    ColumnToJsonKeyMappings: ColumnToJsonKeyMappings | None
 
 
 class Deserializer(TypedDict, total=False):
-    OpenXJsonSerDe: Optional[OpenXJsonSerDe]
-    HiveJsonSerDe: Optional[HiveJsonSerDe]
+    OpenXJsonSerDe: OpenXJsonSerDe | None
+    HiveJsonSerDe: HiveJsonSerDe | None
 
 
 class InputFormatConfiguration(TypedDict, total=False):
-    Deserializer: Optional[Deserializer]
+    Deserializer: Deserializer | None
 
 
 class SchemaConfiguration(TypedDict, total=False):
-    RoleARN: Optional[NonEmptyStringWithoutWhitespace]
-    CatalogId: Optional[NonEmptyStringWithoutWhitespace]
-    DatabaseName: Optional[NonEmptyStringWithoutWhitespace]
-    TableName: Optional[NonEmptyStringWithoutWhitespace]
-    Region: Optional[NonEmptyStringWithoutWhitespace]
-    VersionId: Optional[NonEmptyStringWithoutWhitespace]
+    RoleARN: NonEmptyStringWithoutWhitespace | None
+    CatalogId: NonEmptyStringWithoutWhitespace | None
+    DatabaseName: NonEmptyStringWithoutWhitespace | None
+    TableName: NonEmptyStringWithoutWhitespace | None
+    Region: NonEmptyStringWithoutWhitespace | None
+    VersionId: NonEmptyStringWithoutWhitespace | None
 
 
 class DataFormatConversionConfiguration(TypedDict, total=False):
-    SchemaConfiguration: Optional[SchemaConfiguration]
-    InputFormatConfiguration: Optional[InputFormatConfiguration]
-    OutputFormatConfiguration: Optional[OutputFormatConfiguration]
-    Enabled: Optional[BooleanObject]
+    SchemaConfiguration: SchemaConfiguration | None
+    InputFormatConfiguration: InputFormatConfiguration | None
+    OutputFormatConfiguration: OutputFormatConfiguration | None
+    Enabled: BooleanObject | None
 
 
 class ExtendedS3DestinationConfiguration(TypedDict, total=False):
     RoleARN: RoleARN
     BucketARN: BucketARN
-    Prefix: Optional[Prefix]
-    ErrorOutputPrefix: Optional[ErrorOutputPrefix]
-    BufferingHints: Optional[BufferingHints]
-    CompressionFormat: Optional[CompressionFormat]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[S3BackupMode]
-    S3BackupConfiguration: Optional[S3DestinationConfiguration]
-    DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
-    DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
-    FileExtension: Optional[FileExtension]
-    CustomTimeZone: Optional[CustomTimeZone]
+    Prefix: Prefix | None
+    ErrorOutputPrefix: ErrorOutputPrefix | None
+    BufferingHints: BufferingHints | None
+    CompressionFormat: CompressionFormat | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: S3BackupMode | None
+    S3BackupConfiguration: S3DestinationConfiguration | None
+    DataFormatConversionConfiguration: DataFormatConversionConfiguration | None
+    DynamicPartitioningConfiguration: DynamicPartitioningConfiguration | None
+    FileExtension: FileExtension | None
+    CustomTimeZone: CustomTimeZone | None
 
 
 class DeliveryStreamEncryptionConfigurationInput(TypedDict, total=False):
-    KeyARN: Optional[AWSKMSKeyARN]
+    KeyARN: AWSKMSKeyARN | None
     KeyType: KeyType
 
 
@@ -969,31 +969,31 @@ class DirectPutSourceConfiguration(TypedDict, total=False):
 
 class CreateDeliveryStreamInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
-    DeliveryStreamType: Optional[DeliveryStreamType]
-    DirectPutSourceConfiguration: Optional[DirectPutSourceConfiguration]
-    KinesisStreamSourceConfiguration: Optional[KinesisStreamSourceConfiguration]
-    DeliveryStreamEncryptionConfigurationInput: Optional[DeliveryStreamEncryptionConfigurationInput]
-    S3DestinationConfiguration: Optional[S3DestinationConfiguration]
-    ExtendedS3DestinationConfiguration: Optional[ExtendedS3DestinationConfiguration]
-    RedshiftDestinationConfiguration: Optional[RedshiftDestinationConfiguration]
-    ElasticsearchDestinationConfiguration: Optional[ElasticsearchDestinationConfiguration]
-    AmazonopensearchserviceDestinationConfiguration: Optional[
-        AmazonopensearchserviceDestinationConfiguration
-    ]
-    SplunkDestinationConfiguration: Optional[SplunkDestinationConfiguration]
-    HttpEndpointDestinationConfiguration: Optional[HttpEndpointDestinationConfiguration]
-    Tags: Optional[TagDeliveryStreamInputTagList]
-    AmazonOpenSearchServerlessDestinationConfiguration: Optional[
-        AmazonOpenSearchServerlessDestinationConfiguration
-    ]
-    MSKSourceConfiguration: Optional[MSKSourceConfiguration]
-    SnowflakeDestinationConfiguration: Optional[SnowflakeDestinationConfiguration]
-    IcebergDestinationConfiguration: Optional[IcebergDestinationConfiguration]
-    DatabaseSourceConfiguration: Optional[DatabaseSourceConfiguration]
+    DeliveryStreamType: DeliveryStreamType | None
+    DirectPutSourceConfiguration: DirectPutSourceConfiguration | None
+    KinesisStreamSourceConfiguration: KinesisStreamSourceConfiguration | None
+    DeliveryStreamEncryptionConfigurationInput: DeliveryStreamEncryptionConfigurationInput | None
+    S3DestinationConfiguration: S3DestinationConfiguration | None
+    ExtendedS3DestinationConfiguration: ExtendedS3DestinationConfiguration | None
+    RedshiftDestinationConfiguration: RedshiftDestinationConfiguration | None
+    ElasticsearchDestinationConfiguration: ElasticsearchDestinationConfiguration | None
+    AmazonopensearchserviceDestinationConfiguration: (
+        AmazonopensearchserviceDestinationConfiguration | None
+    )
+    SplunkDestinationConfiguration: SplunkDestinationConfiguration | None
+    HttpEndpointDestinationConfiguration: HttpEndpointDestinationConfiguration | None
+    Tags: TagDeliveryStreamInputTagList | None
+    AmazonOpenSearchServerlessDestinationConfiguration: (
+        AmazonOpenSearchServerlessDestinationConfiguration | None
+    )
+    MSKSourceConfiguration: MSKSourceConfiguration | None
+    SnowflakeDestinationConfiguration: SnowflakeDestinationConfiguration | None
+    IcebergDestinationConfiguration: IcebergDestinationConfiguration | None
+    DatabaseSourceConfiguration: DatabaseSourceConfiguration | None
 
 
 class CreateDeliveryStreamOutput(TypedDict, total=False):
-    DeliveryStreamARN: Optional[DeliveryStreamARN]
+    DeliveryStreamARN: DeliveryStreamARN | None
 
 
 Data = bytes
@@ -1013,30 +1013,30 @@ class DatabaseSnapshotInfo(TypedDict, total=False):
     RequestTimestamp: Timestamp
     RequestedBy: SnapshotRequestedBy
     Status: SnapshotStatus
-    FailureDescription: Optional[FailureDescription]
+    FailureDescription: FailureDescription | None
 
 
-DatabaseSnapshotInfoList = List[DatabaseSnapshotInfo]
+DatabaseSnapshotInfoList = list[DatabaseSnapshotInfo]
 
 
 class DatabaseSourceDescription(TypedDict, total=False):
-    Type: Optional[DatabaseType]
-    Endpoint: Optional[DatabaseEndpoint]
-    Port: Optional[DatabasePort]
-    SSLMode: Optional[SSLMode]
-    Databases: Optional[DatabaseList]
-    Tables: Optional[DatabaseTableList]
-    Columns: Optional[DatabaseColumnList]
-    SurrogateKeys: Optional[DatabaseColumnIncludeOrExcludeList]
-    SnapshotWatermarkTable: Optional[DatabaseTableName]
-    SnapshotInfo: Optional[DatabaseSnapshotInfoList]
-    DatabaseSourceAuthenticationConfiguration: Optional[DatabaseSourceAuthenticationConfiguration]
-    DatabaseSourceVPCConfiguration: Optional[DatabaseSourceVPCConfiguration]
+    Type: DatabaseType | None
+    Endpoint: DatabaseEndpoint | None
+    Port: DatabasePort | None
+    SSLMode: SSLMode | None
+    Databases: DatabaseList | None
+    Tables: DatabaseTableList | None
+    Columns: DatabaseColumnList | None
+    SurrogateKeys: DatabaseColumnIncludeOrExcludeList | None
+    SnapshotWatermarkTable: DatabaseTableName | None
+    SnapshotInfo: DatabaseSnapshotInfoList | None
+    DatabaseSourceAuthenticationConfiguration: DatabaseSourceAuthenticationConfiguration | None
+    DatabaseSourceVPCConfiguration: DatabaseSourceVPCConfiguration | None
 
 
 class DeleteDeliveryStreamInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
-    AllowForceDelete: Optional[BooleanObject]
+    AllowForceDelete: BooleanObject | None
 
 
 class DeleteDeliveryStreamOutput(TypedDict, total=False):
@@ -1047,197 +1047,197 @@ DeliveryStartTimestamp = datetime
 
 
 class IcebergDestinationDescription(TypedDict, total=False):
-    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
-    SchemaEvolutionConfiguration: Optional[SchemaEvolutionConfiguration]
-    TableCreationConfiguration: Optional[TableCreationConfiguration]
-    BufferingHints: Optional[BufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[IcebergS3BackupMode]
-    RetryOptions: Optional[RetryOptions]
-    RoleARN: Optional[RoleARN]
-    AppendOnly: Optional[BooleanObject]
-    CatalogConfiguration: Optional[CatalogConfiguration]
-    S3DestinationDescription: Optional[S3DestinationDescription]
+    DestinationTableConfigurationList: DestinationTableConfigurationList | None
+    SchemaEvolutionConfiguration: SchemaEvolutionConfiguration | None
+    TableCreationConfiguration: TableCreationConfiguration | None
+    BufferingHints: BufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: IcebergS3BackupMode | None
+    RetryOptions: RetryOptions | None
+    RoleARN: RoleARN | None
+    AppendOnly: BooleanObject | None
+    CatalogConfiguration: CatalogConfiguration | None
+    S3DestinationDescription: S3DestinationDescription | None
 
 
 class SnowflakeDestinationDescription(TypedDict, total=False):
-    AccountUrl: Optional[SnowflakeAccountUrl]
-    User: Optional[SnowflakeUser]
-    Database: Optional[SnowflakeDatabase]
-    Schema: Optional[SnowflakeSchema]
-    Table: Optional[SnowflakeTable]
-    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
-    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
-    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
-    ContentColumnName: Optional[SnowflakeContentColumnName]
-    SnowflakeVpcConfiguration: Optional[SnowflakeVpcConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RoleARN: Optional[RoleARN]
-    RetryOptions: Optional[SnowflakeRetryOptions]
-    S3BackupMode: Optional[SnowflakeS3BackupMode]
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
-    BufferingHints: Optional[SnowflakeBufferingHints]
+    AccountUrl: SnowflakeAccountUrl | None
+    User: SnowflakeUser | None
+    Database: SnowflakeDatabase | None
+    Schema: SnowflakeSchema | None
+    Table: SnowflakeTable | None
+    SnowflakeRoleConfiguration: SnowflakeRoleConfiguration | None
+    DataLoadingOption: SnowflakeDataLoadingOption | None
+    MetaDataColumnName: SnowflakeMetaDataColumnName | None
+    ContentColumnName: SnowflakeContentColumnName | None
+    SnowflakeVpcConfiguration: SnowflakeVpcConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RoleARN: RoleARN | None
+    RetryOptions: SnowflakeRetryOptions | None
+    S3BackupMode: SnowflakeS3BackupMode | None
+    S3DestinationDescription: S3DestinationDescription | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
+    BufferingHints: SnowflakeBufferingHints | None
 
 
 class HttpEndpointDescription(TypedDict, total=False):
-    Url: Optional[HttpEndpointUrl]
-    Name: Optional[HttpEndpointName]
+    Url: HttpEndpointUrl | None
+    Name: HttpEndpointName | None
 
 
 class HttpEndpointDestinationDescription(TypedDict, total=False):
-    EndpointConfiguration: Optional[HttpEndpointDescription]
-    BufferingHints: Optional[HttpEndpointBufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    RequestConfiguration: Optional[HttpEndpointRequestConfiguration]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RoleARN: Optional[RoleARN]
-    RetryOptions: Optional[HttpEndpointRetryOptions]
-    S3BackupMode: Optional[HttpEndpointS3BackupMode]
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    EndpointConfiguration: HttpEndpointDescription | None
+    BufferingHints: HttpEndpointBufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    RequestConfiguration: HttpEndpointRequestConfiguration | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RoleARN: RoleARN | None
+    RetryOptions: HttpEndpointRetryOptions | None
+    S3BackupMode: HttpEndpointS3BackupMode | None
+    S3DestinationDescription: S3DestinationDescription | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class SplunkDestinationDescription(TypedDict, total=False):
-    HECEndpoint: Optional[HECEndpoint]
-    HECEndpointType: Optional[HECEndpointType]
-    HECToken: Optional[HECToken]
-    HECAcknowledgmentTimeoutInSeconds: Optional[HECAcknowledgmentTimeoutInSeconds]
-    RetryOptions: Optional[SplunkRetryOptions]
-    S3BackupMode: Optional[SplunkS3BackupMode]
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    BufferingHints: Optional[SplunkBufferingHints]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    HECEndpoint: HECEndpoint | None
+    HECEndpointType: HECEndpointType | None
+    HECToken: HECToken | None
+    HECAcknowledgmentTimeoutInSeconds: HECAcknowledgmentTimeoutInSeconds | None
+    RetryOptions: SplunkRetryOptions | None
+    S3BackupMode: SplunkS3BackupMode | None
+    S3DestinationDescription: S3DestinationDescription | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    BufferingHints: SplunkBufferingHints | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class ElasticsearchDestinationDescription(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    DomainARN: Optional[ElasticsearchDomainARN]
-    ClusterEndpoint: Optional[ElasticsearchClusterEndpoint]
-    IndexName: Optional[ElasticsearchIndexName]
-    TypeName: Optional[ElasticsearchTypeName]
-    IndexRotationPeriod: Optional[ElasticsearchIndexRotationPeriod]
-    BufferingHints: Optional[ElasticsearchBufferingHints]
-    RetryOptions: Optional[ElasticsearchRetryOptions]
-    S3BackupMode: Optional[ElasticsearchS3BackupMode]
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    VpcConfigurationDescription: Optional[VpcConfigurationDescription]
-    DocumentIdOptions: Optional[DocumentIdOptions]
+    RoleARN: RoleARN | None
+    DomainARN: ElasticsearchDomainARN | None
+    ClusterEndpoint: ElasticsearchClusterEndpoint | None
+    IndexName: ElasticsearchIndexName | None
+    TypeName: ElasticsearchTypeName | None
+    IndexRotationPeriod: ElasticsearchIndexRotationPeriod | None
+    BufferingHints: ElasticsearchBufferingHints | None
+    RetryOptions: ElasticsearchRetryOptions | None
+    S3BackupMode: ElasticsearchS3BackupMode | None
+    S3DestinationDescription: S3DestinationDescription | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    VpcConfigurationDescription: VpcConfigurationDescription | None
+    DocumentIdOptions: DocumentIdOptions | None
 
 
 class RedshiftDestinationDescription(TypedDict, total=False):
     RoleARN: RoleARN
     ClusterJDBCURL: ClusterJDBCURL
     CopyCommand: CopyCommand
-    Username: Optional[Username]
-    RetryOptions: Optional[RedshiftRetryOptions]
+    Username: Username | None
+    RetryOptions: RedshiftRetryOptions | None
     S3DestinationDescription: S3DestinationDescription
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[RedshiftS3BackupMode]
-    S3BackupDescription: Optional[S3DestinationDescription]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: RedshiftS3BackupMode | None
+    S3BackupDescription: S3DestinationDescription | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class ExtendedS3DestinationDescription(TypedDict, total=False):
     RoleARN: RoleARN
     BucketARN: BucketARN
-    Prefix: Optional[Prefix]
-    ErrorOutputPrefix: Optional[ErrorOutputPrefix]
+    Prefix: Prefix | None
+    ErrorOutputPrefix: ErrorOutputPrefix | None
     BufferingHints: BufferingHints
     CompressionFormat: CompressionFormat
     EncryptionConfiguration: EncryptionConfiguration
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[S3BackupMode]
-    S3BackupDescription: Optional[S3DestinationDescription]
-    DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
-    DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
-    FileExtension: Optional[FileExtension]
-    CustomTimeZone: Optional[CustomTimeZone]
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: S3BackupMode | None
+    S3BackupDescription: S3DestinationDescription | None
+    DataFormatConversionConfiguration: DataFormatConversionConfiguration | None
+    DynamicPartitioningConfiguration: DynamicPartitioningConfiguration | None
+    FileExtension: FileExtension | None
+    CustomTimeZone: CustomTimeZone | None
 
 
 class DestinationDescription(TypedDict, total=False):
     DestinationId: DestinationId
-    S3DestinationDescription: Optional[S3DestinationDescription]
-    ExtendedS3DestinationDescription: Optional[ExtendedS3DestinationDescription]
-    RedshiftDestinationDescription: Optional[RedshiftDestinationDescription]
-    ElasticsearchDestinationDescription: Optional[ElasticsearchDestinationDescription]
-    AmazonopensearchserviceDestinationDescription: Optional[
-        AmazonopensearchserviceDestinationDescription
-    ]
-    SplunkDestinationDescription: Optional[SplunkDestinationDescription]
-    HttpEndpointDestinationDescription: Optional[HttpEndpointDestinationDescription]
-    SnowflakeDestinationDescription: Optional[SnowflakeDestinationDescription]
-    AmazonOpenSearchServerlessDestinationDescription: Optional[
-        AmazonOpenSearchServerlessDestinationDescription
-    ]
-    IcebergDestinationDescription: Optional[IcebergDestinationDescription]
+    S3DestinationDescription: S3DestinationDescription | None
+    ExtendedS3DestinationDescription: ExtendedS3DestinationDescription | None
+    RedshiftDestinationDescription: RedshiftDestinationDescription | None
+    ElasticsearchDestinationDescription: ElasticsearchDestinationDescription | None
+    AmazonopensearchserviceDestinationDescription: (
+        AmazonopensearchserviceDestinationDescription | None
+    )
+    SplunkDestinationDescription: SplunkDestinationDescription | None
+    HttpEndpointDestinationDescription: HttpEndpointDestinationDescription | None
+    SnowflakeDestinationDescription: SnowflakeDestinationDescription | None
+    AmazonOpenSearchServerlessDestinationDescription: (
+        AmazonOpenSearchServerlessDestinationDescription | None
+    )
+    IcebergDestinationDescription: IcebergDestinationDescription | None
 
 
-DestinationDescriptionList = List[DestinationDescription]
+DestinationDescriptionList = list[DestinationDescription]
 
 
 class MSKSourceDescription(TypedDict, total=False):
-    MSKClusterARN: Optional[MSKClusterARN]
-    TopicName: Optional[TopicName]
-    AuthenticationConfiguration: Optional[AuthenticationConfiguration]
-    DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
-    ReadFromTimestamp: Optional[ReadFromTimestamp]
+    MSKClusterARN: MSKClusterARN | None
+    TopicName: TopicName | None
+    AuthenticationConfiguration: AuthenticationConfiguration | None
+    DeliveryStartTimestamp: DeliveryStartTimestamp | None
+    ReadFromTimestamp: ReadFromTimestamp | None
 
 
 class KinesisStreamSourceDescription(TypedDict, total=False):
-    KinesisStreamARN: Optional[KinesisStreamARN]
-    RoleARN: Optional[RoleARN]
-    DeliveryStartTimestamp: Optional[DeliveryStartTimestamp]
+    KinesisStreamARN: KinesisStreamARN | None
+    RoleARN: RoleARN | None
+    DeliveryStartTimestamp: DeliveryStartTimestamp | None
 
 
 class DirectPutSourceDescription(TypedDict, total=False):
-    ThroughputHintInMBs: Optional[ThroughputHintInMBs]
+    ThroughputHintInMBs: ThroughputHintInMBs | None
 
 
 class SourceDescription(TypedDict, total=False):
-    DirectPutSourceDescription: Optional[DirectPutSourceDescription]
-    KinesisStreamSourceDescription: Optional[KinesisStreamSourceDescription]
-    MSKSourceDescription: Optional[MSKSourceDescription]
-    DatabaseSourceDescription: Optional[DatabaseSourceDescription]
+    DirectPutSourceDescription: DirectPutSourceDescription | None
+    KinesisStreamSourceDescription: KinesisStreamSourceDescription | None
+    MSKSourceDescription: MSKSourceDescription | None
+    DatabaseSourceDescription: DatabaseSourceDescription | None
 
 
 class DeliveryStreamEncryptionConfiguration(TypedDict, total=False):
-    KeyARN: Optional[AWSKMSKeyARN]
-    KeyType: Optional[KeyType]
-    Status: Optional[DeliveryStreamEncryptionStatus]
-    FailureDescription: Optional[FailureDescription]
+    KeyARN: AWSKMSKeyARN | None
+    KeyType: KeyType | None
+    Status: DeliveryStreamEncryptionStatus | None
+    FailureDescription: FailureDescription | None
 
 
 class DeliveryStreamDescription(TypedDict, total=False):
     DeliveryStreamName: DeliveryStreamName
     DeliveryStreamARN: DeliveryStreamARN
     DeliveryStreamStatus: DeliveryStreamStatus
-    FailureDescription: Optional[FailureDescription]
-    DeliveryStreamEncryptionConfiguration: Optional[DeliveryStreamEncryptionConfiguration]
+    FailureDescription: FailureDescription | None
+    DeliveryStreamEncryptionConfiguration: DeliveryStreamEncryptionConfiguration | None
     DeliveryStreamType: DeliveryStreamType
     VersionId: DeliveryStreamVersionId
-    CreateTimestamp: Optional[Timestamp]
-    LastUpdateTimestamp: Optional[Timestamp]
-    Source: Optional[SourceDescription]
+    CreateTimestamp: Timestamp | None
+    LastUpdateTimestamp: Timestamp | None
+    Source: SourceDescription | None
     Destinations: DestinationDescriptionList
     HasMoreDestinations: BooleanObject
 
 
-DeliveryStreamNameList = List[DeliveryStreamName]
+DeliveryStreamNameList = list[DeliveryStreamName]
 
 
 class DescribeDeliveryStreamInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
-    Limit: Optional[DescribeDeliveryStreamInputLimit]
-    ExclusiveStartDestinationId: Optional[DestinationId]
+    Limit: DescribeDeliveryStreamInputLimit | None
+    ExclusiveStartDestinationId: DestinationId | None
 
 
 class DescribeDeliveryStreamOutput(TypedDict, total=False):
@@ -1245,70 +1245,70 @@ class DescribeDeliveryStreamOutput(TypedDict, total=False):
 
 
 class ElasticsearchDestinationUpdate(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    DomainARN: Optional[ElasticsearchDomainARN]
-    ClusterEndpoint: Optional[ElasticsearchClusterEndpoint]
-    IndexName: Optional[ElasticsearchIndexName]
-    TypeName: Optional[ElasticsearchTypeName]
-    IndexRotationPeriod: Optional[ElasticsearchIndexRotationPeriod]
-    BufferingHints: Optional[ElasticsearchBufferingHints]
-    RetryOptions: Optional[ElasticsearchRetryOptions]
-    S3Update: Optional[S3DestinationUpdate]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    DocumentIdOptions: Optional[DocumentIdOptions]
+    RoleARN: RoleARN | None
+    DomainARN: ElasticsearchDomainARN | None
+    ClusterEndpoint: ElasticsearchClusterEndpoint | None
+    IndexName: ElasticsearchIndexName | None
+    TypeName: ElasticsearchTypeName | None
+    IndexRotationPeriod: ElasticsearchIndexRotationPeriod | None
+    BufferingHints: ElasticsearchBufferingHints | None
+    RetryOptions: ElasticsearchRetryOptions | None
+    S3Update: S3DestinationUpdate | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    DocumentIdOptions: DocumentIdOptions | None
 
 
 class ExtendedS3DestinationUpdate(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    BucketARN: Optional[BucketARN]
-    Prefix: Optional[Prefix]
-    ErrorOutputPrefix: Optional[ErrorOutputPrefix]
-    BufferingHints: Optional[BufferingHints]
-    CompressionFormat: Optional[CompressionFormat]
-    EncryptionConfiguration: Optional[EncryptionConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[S3BackupMode]
-    S3BackupUpdate: Optional[S3DestinationUpdate]
-    DataFormatConversionConfiguration: Optional[DataFormatConversionConfiguration]
-    DynamicPartitioningConfiguration: Optional[DynamicPartitioningConfiguration]
-    FileExtension: Optional[FileExtension]
-    CustomTimeZone: Optional[CustomTimeZone]
+    RoleARN: RoleARN | None
+    BucketARN: BucketARN | None
+    Prefix: Prefix | None
+    ErrorOutputPrefix: ErrorOutputPrefix | None
+    BufferingHints: BufferingHints | None
+    CompressionFormat: CompressionFormat | None
+    EncryptionConfiguration: EncryptionConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: S3BackupMode | None
+    S3BackupUpdate: S3DestinationUpdate | None
+    DataFormatConversionConfiguration: DataFormatConversionConfiguration | None
+    DynamicPartitioningConfiguration: DynamicPartitioningConfiguration | None
+    FileExtension: FileExtension | None
+    CustomTimeZone: CustomTimeZone | None
 
 
 class HttpEndpointDestinationUpdate(TypedDict, total=False):
-    EndpointConfiguration: Optional[HttpEndpointConfiguration]
-    BufferingHints: Optional[HttpEndpointBufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    RequestConfiguration: Optional[HttpEndpointRequestConfiguration]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RoleARN: Optional[RoleARN]
-    RetryOptions: Optional[HttpEndpointRetryOptions]
-    S3BackupMode: Optional[HttpEndpointS3BackupMode]
-    S3Update: Optional[S3DestinationUpdate]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    EndpointConfiguration: HttpEndpointConfiguration | None
+    BufferingHints: HttpEndpointBufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    RequestConfiguration: HttpEndpointRequestConfiguration | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RoleARN: RoleARN | None
+    RetryOptions: HttpEndpointRetryOptions | None
+    S3BackupMode: HttpEndpointS3BackupMode | None
+    S3Update: S3DestinationUpdate | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class IcebergDestinationUpdate(TypedDict, total=False):
-    DestinationTableConfigurationList: Optional[DestinationTableConfigurationList]
-    SchemaEvolutionConfiguration: Optional[SchemaEvolutionConfiguration]
-    TableCreationConfiguration: Optional[TableCreationConfiguration]
-    BufferingHints: Optional[BufferingHints]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[IcebergS3BackupMode]
-    RetryOptions: Optional[RetryOptions]
-    RoleARN: Optional[RoleARN]
-    AppendOnly: Optional[BooleanObject]
-    CatalogConfiguration: Optional[CatalogConfiguration]
-    S3Configuration: Optional[S3DestinationConfiguration]
+    DestinationTableConfigurationList: DestinationTableConfigurationList | None
+    SchemaEvolutionConfiguration: SchemaEvolutionConfiguration | None
+    TableCreationConfiguration: TableCreationConfiguration | None
+    BufferingHints: BufferingHints | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: IcebergS3BackupMode | None
+    RetryOptions: RetryOptions | None
+    RoleARN: RoleARN | None
+    AppendOnly: BooleanObject | None
+    CatalogConfiguration: CatalogConfiguration | None
+    S3Configuration: S3DestinationConfiguration | None
 
 
 class ListDeliveryStreamsInput(ServiceRequest):
-    Limit: Optional[ListDeliveryStreamsInputLimit]
-    DeliveryStreamType: Optional[DeliveryStreamType]
-    ExclusiveStartDeliveryStreamName: Optional[DeliveryStreamName]
+    Limit: ListDeliveryStreamsInputLimit | None
+    DeliveryStreamType: DeliveryStreamType | None
+    ExclusiveStartDeliveryStreamName: DeliveryStreamName | None
 
 
 class ListDeliveryStreamsOutput(TypedDict, total=False):
@@ -1318,11 +1318,11 @@ class ListDeliveryStreamsOutput(TypedDict, total=False):
 
 class ListTagsForDeliveryStreamInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
-    ExclusiveStartTagKey: Optional[TagKey]
-    Limit: Optional[ListTagsForDeliveryStreamInputLimit]
+    ExclusiveStartTagKey: TagKey | None
+    Limit: ListTagsForDeliveryStreamInputLimit | None
 
 
-ListTagsForDeliveryStreamOutputTagList = List[Tag]
+ListTagsForDeliveryStreamOutputTagList = list[Tag]
 
 
 class ListTagsForDeliveryStreamOutput(TypedDict, total=False):
@@ -1334,7 +1334,7 @@ class Record(TypedDict, total=False):
     Data: Data
 
 
-PutRecordBatchRequestEntryList = List[Record]
+PutRecordBatchRequestEntryList = list[Record]
 
 
 class PutRecordBatchInput(ServiceRequest):
@@ -1343,17 +1343,17 @@ class PutRecordBatchInput(ServiceRequest):
 
 
 class PutRecordBatchResponseEntry(TypedDict, total=False):
-    RecordId: Optional[PutResponseRecordId]
-    ErrorCode: Optional[ErrorCode]
-    ErrorMessage: Optional[ErrorMessage]
+    RecordId: PutResponseRecordId | None
+    ErrorCode: ErrorCode | None
+    ErrorMessage: ErrorMessage | None
 
 
-PutRecordBatchResponseEntryList = List[PutRecordBatchResponseEntry]
+PutRecordBatchResponseEntryList = list[PutRecordBatchResponseEntry]
 
 
 class PutRecordBatchOutput(TypedDict, total=False):
     FailedPutCount: NonNegativeIntegerObject
-    Encrypted: Optional[BooleanObject]
+    Encrypted: BooleanObject | None
     RequestResponses: PutRecordBatchResponseEntryList
 
 
@@ -1364,63 +1364,63 @@ class PutRecordInput(ServiceRequest):
 
 class PutRecordOutput(TypedDict, total=False):
     RecordId: PutResponseRecordId
-    Encrypted: Optional[BooleanObject]
+    Encrypted: BooleanObject | None
 
 
 class RedshiftDestinationUpdate(TypedDict, total=False):
-    RoleARN: Optional[RoleARN]
-    ClusterJDBCURL: Optional[ClusterJDBCURL]
-    CopyCommand: Optional[CopyCommand]
-    Username: Optional[Username]
-    Password: Optional[Password]
-    RetryOptions: Optional[RedshiftRetryOptions]
-    S3Update: Optional[S3DestinationUpdate]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    S3BackupMode: Optional[RedshiftS3BackupMode]
-    S3BackupUpdate: Optional[S3DestinationUpdate]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    RoleARN: RoleARN | None
+    ClusterJDBCURL: ClusterJDBCURL | None
+    CopyCommand: CopyCommand | None
+    Username: Username | None
+    Password: Password | None
+    RetryOptions: RedshiftRetryOptions | None
+    S3Update: S3DestinationUpdate | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    S3BackupMode: RedshiftS3BackupMode | None
+    S3BackupUpdate: S3DestinationUpdate | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class SnowflakeDestinationUpdate(TypedDict, total=False):
-    AccountUrl: Optional[SnowflakeAccountUrl]
-    PrivateKey: Optional[SnowflakePrivateKey]
-    KeyPassphrase: Optional[SnowflakeKeyPassphrase]
-    User: Optional[SnowflakeUser]
-    Database: Optional[SnowflakeDatabase]
-    Schema: Optional[SnowflakeSchema]
-    Table: Optional[SnowflakeTable]
-    SnowflakeRoleConfiguration: Optional[SnowflakeRoleConfiguration]
-    DataLoadingOption: Optional[SnowflakeDataLoadingOption]
-    MetaDataColumnName: Optional[SnowflakeMetaDataColumnName]
-    ContentColumnName: Optional[SnowflakeContentColumnName]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    RoleARN: Optional[RoleARN]
-    RetryOptions: Optional[SnowflakeRetryOptions]
-    S3BackupMode: Optional[SnowflakeS3BackupMode]
-    S3Update: Optional[S3DestinationUpdate]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
-    BufferingHints: Optional[SnowflakeBufferingHints]
+    AccountUrl: SnowflakeAccountUrl | None
+    PrivateKey: SnowflakePrivateKey | None
+    KeyPassphrase: SnowflakeKeyPassphrase | None
+    User: SnowflakeUser | None
+    Database: SnowflakeDatabase | None
+    Schema: SnowflakeSchema | None
+    Table: SnowflakeTable | None
+    SnowflakeRoleConfiguration: SnowflakeRoleConfiguration | None
+    DataLoadingOption: SnowflakeDataLoadingOption | None
+    MetaDataColumnName: SnowflakeMetaDataColumnName | None
+    ContentColumnName: SnowflakeContentColumnName | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    RoleARN: RoleARN | None
+    RetryOptions: SnowflakeRetryOptions | None
+    S3BackupMode: SnowflakeS3BackupMode | None
+    S3Update: S3DestinationUpdate | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
+    BufferingHints: SnowflakeBufferingHints | None
 
 
 class SplunkDestinationUpdate(TypedDict, total=False):
-    HECEndpoint: Optional[HECEndpoint]
-    HECEndpointType: Optional[HECEndpointType]
-    HECToken: Optional[HECToken]
-    HECAcknowledgmentTimeoutInSeconds: Optional[HECAcknowledgmentTimeoutInSeconds]
-    RetryOptions: Optional[SplunkRetryOptions]
-    S3BackupMode: Optional[SplunkS3BackupMode]
-    S3Update: Optional[S3DestinationUpdate]
-    ProcessingConfiguration: Optional[ProcessingConfiguration]
-    CloudWatchLoggingOptions: Optional[CloudWatchLoggingOptions]
-    BufferingHints: Optional[SplunkBufferingHints]
-    SecretsManagerConfiguration: Optional[SecretsManagerConfiguration]
+    HECEndpoint: HECEndpoint | None
+    HECEndpointType: HECEndpointType | None
+    HECToken: HECToken | None
+    HECAcknowledgmentTimeoutInSeconds: HECAcknowledgmentTimeoutInSeconds | None
+    RetryOptions: SplunkRetryOptions | None
+    S3BackupMode: SplunkS3BackupMode | None
+    S3Update: S3DestinationUpdate | None
+    ProcessingConfiguration: ProcessingConfiguration | None
+    CloudWatchLoggingOptions: CloudWatchLoggingOptions | None
+    BufferingHints: SplunkBufferingHints | None
+    SecretsManagerConfiguration: SecretsManagerConfiguration | None
 
 
 class StartDeliveryStreamEncryptionInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
-    DeliveryStreamEncryptionConfigurationInput: Optional[DeliveryStreamEncryptionConfigurationInput]
+    DeliveryStreamEncryptionConfigurationInput: DeliveryStreamEncryptionConfigurationInput | None
 
 
 class StartDeliveryStreamEncryptionOutput(TypedDict, total=False):
@@ -1444,7 +1444,7 @@ class TagDeliveryStreamOutput(TypedDict, total=False):
     pass
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class UntagDeliveryStreamInput(ServiceRequest):
@@ -1460,18 +1460,16 @@ class UpdateDestinationInput(ServiceRequest):
     DeliveryStreamName: DeliveryStreamName
     CurrentDeliveryStreamVersionId: DeliveryStreamVersionId
     DestinationId: DestinationId
-    S3DestinationUpdate: Optional[S3DestinationUpdate]
-    ExtendedS3DestinationUpdate: Optional[ExtendedS3DestinationUpdate]
-    RedshiftDestinationUpdate: Optional[RedshiftDestinationUpdate]
-    ElasticsearchDestinationUpdate: Optional[ElasticsearchDestinationUpdate]
-    AmazonopensearchserviceDestinationUpdate: Optional[AmazonopensearchserviceDestinationUpdate]
-    SplunkDestinationUpdate: Optional[SplunkDestinationUpdate]
-    HttpEndpointDestinationUpdate: Optional[HttpEndpointDestinationUpdate]
-    AmazonOpenSearchServerlessDestinationUpdate: Optional[
-        AmazonOpenSearchServerlessDestinationUpdate
-    ]
-    SnowflakeDestinationUpdate: Optional[SnowflakeDestinationUpdate]
-    IcebergDestinationUpdate: Optional[IcebergDestinationUpdate]
+    S3DestinationUpdate: S3DestinationUpdate | None
+    ExtendedS3DestinationUpdate: ExtendedS3DestinationUpdate | None
+    RedshiftDestinationUpdate: RedshiftDestinationUpdate | None
+    ElasticsearchDestinationUpdate: ElasticsearchDestinationUpdate | None
+    AmazonopensearchserviceDestinationUpdate: AmazonopensearchserviceDestinationUpdate | None
+    SplunkDestinationUpdate: SplunkDestinationUpdate | None
+    HttpEndpointDestinationUpdate: HttpEndpointDestinationUpdate | None
+    AmazonOpenSearchServerlessDestinationUpdate: AmazonOpenSearchServerlessDestinationUpdate | None
+    SnowflakeDestinationUpdate: SnowflakeDestinationUpdate | None
+    IcebergDestinationUpdate: IcebergDestinationUpdate | None
 
 
 class UpdateDestinationOutput(TypedDict, total=False):
@@ -1479,8 +1477,8 @@ class UpdateDestinationOutput(TypedDict, total=False):
 
 
 class FirehoseApi:
-    service = "firehose"
-    version = "2015-08-04"
+    service: str = "firehose"
+    version: str = "2015-08-04"
 
     @handler("CreateDeliveryStream")
     def create_delivery_stream(

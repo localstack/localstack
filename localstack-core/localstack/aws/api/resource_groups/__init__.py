@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -149,36 +149,36 @@ class UnauthorizedException(ServiceException):
 
 
 class AccountSettings(TypedDict, total=False):
-    GroupLifecycleEventsDesiredStatus: Optional[GroupLifecycleEventsDesiredStatus]
-    GroupLifecycleEventsStatus: Optional[GroupLifecycleEventsStatus]
-    GroupLifecycleEventsStatusMessage: Optional[GroupLifecycleEventsStatusMessage]
+    GroupLifecycleEventsDesiredStatus: GroupLifecycleEventsDesiredStatus | None
+    GroupLifecycleEventsStatus: GroupLifecycleEventsStatus | None
+    GroupLifecycleEventsStatusMessage: GroupLifecycleEventsStatusMessage | None
 
 
-ApplicationTag = Dict[ApplicationTagKey, ApplicationArn]
+ApplicationTag = dict[ApplicationTagKey, ApplicationArn]
 
 
 class CancelTagSyncTaskInput(ServiceRequest):
     TaskArn: TagSyncTaskArn
 
 
-GroupConfigurationParameterValueList = List[GroupConfigurationParameterValue]
+GroupConfigurationParameterValueList = list[GroupConfigurationParameterValue]
 
 
 class GroupConfigurationParameter(TypedDict, total=False):
     Name: GroupConfigurationParameterName
-    Values: Optional[GroupConfigurationParameterValueList]
+    Values: GroupConfigurationParameterValueList | None
 
 
-GroupParameterList = List[GroupConfigurationParameter]
+GroupParameterList = list[GroupConfigurationParameter]
 
 
 class GroupConfigurationItem(TypedDict, total=False):
     Type: GroupConfigurationType
-    Parameters: Optional[GroupParameterList]
+    Parameters: GroupParameterList | None
 
 
-GroupConfigurationList = List[GroupConfigurationItem]
-Tags = Dict[TagKey, TagValue]
+GroupConfigurationList = list[GroupConfigurationItem]
+Tags = dict[TagKey, TagValue]
 
 
 class ResourceQuery(TypedDict, total=False):
@@ -188,81 +188,81 @@ class ResourceQuery(TypedDict, total=False):
 
 class CreateGroupInput(ServiceRequest):
     Name: CreateGroupName
-    Description: Optional[Description]
-    ResourceQuery: Optional[ResourceQuery]
-    Tags: Optional[Tags]
-    Configuration: Optional[GroupConfigurationList]
-    Criticality: Optional[Criticality]
-    Owner: Optional[Owner]
-    DisplayName: Optional[DisplayName]
+    Description: Description | None
+    ResourceQuery: ResourceQuery | None
+    Tags: Tags | None
+    Configuration: GroupConfigurationList | None
+    Criticality: Criticality | None
+    Owner: Owner | None
+    DisplayName: DisplayName | None
 
 
 class GroupConfiguration(TypedDict, total=False):
-    Configuration: Optional[GroupConfigurationList]
-    ProposedConfiguration: Optional[GroupConfigurationList]
-    Status: Optional[GroupConfigurationStatus]
-    FailureReason: Optional[GroupConfigurationFailureReason]
+    Configuration: GroupConfigurationList | None
+    ProposedConfiguration: GroupConfigurationList | None
+    Status: GroupConfigurationStatus | None
+    FailureReason: GroupConfigurationFailureReason | None
 
 
 class Group(TypedDict, total=False):
     GroupArn: GroupArnV2
     Name: GroupName
-    Description: Optional[Description]
-    Criticality: Optional[Criticality]
-    Owner: Optional[Owner]
-    DisplayName: Optional[DisplayName]
-    ApplicationTag: Optional[ApplicationTag]
+    Description: Description | None
+    Criticality: Criticality | None
+    Owner: Owner | None
+    DisplayName: DisplayName | None
+    ApplicationTag: ApplicationTag | None
 
 
 class CreateGroupOutput(TypedDict, total=False):
-    Group: Optional[Group]
-    ResourceQuery: Optional[ResourceQuery]
-    Tags: Optional[Tags]
-    GroupConfiguration: Optional[GroupConfiguration]
+    Group: Group | None
+    ResourceQuery: ResourceQuery | None
+    Tags: Tags | None
+    GroupConfiguration: GroupConfiguration | None
 
 
 class DeleteGroupInput(ServiceRequest):
-    GroupName: Optional[GroupName]
-    Group: Optional[GroupStringV2]
+    GroupName: GroupName | None
+    Group: GroupStringV2 | None
 
 
 class DeleteGroupOutput(TypedDict, total=False):
-    Group: Optional[Group]
+    Group: Group | None
 
 
 class FailedResource(TypedDict, total=False):
-    ResourceArn: Optional[ResourceArn]
-    ErrorMessage: Optional[ErrorMessage]
-    ErrorCode: Optional[ErrorCode]
+    ResourceArn: ResourceArn | None
+    ErrorMessage: ErrorMessage | None
+    ErrorCode: ErrorCode | None
 
 
-FailedResourceList = List[FailedResource]
+FailedResourceList = list[FailedResource]
 
 
 class GetAccountSettingsOutput(TypedDict, total=False):
-    AccountSettings: Optional[AccountSettings]
+    AccountSettings: AccountSettings | None
 
 
 class GetGroupConfigurationInput(ServiceRequest):
-    Group: Optional[GroupString]
+    Group: GroupString | None
 
 
 class GetGroupConfigurationOutput(TypedDict, total=False):
-    GroupConfiguration: Optional[GroupConfiguration]
+    GroupConfiguration: GroupConfiguration | None
 
 
 class GetGroupInput(ServiceRequest):
-    GroupName: Optional[GroupName]
-    Group: Optional[GroupStringV2]
+    GroupName: GroupName | None
+    Group: GroupStringV2 | None
 
 
 class GetGroupOutput(TypedDict, total=False):
-    Group: Optional[Group]
+    Group: Group | None
 
 
 class GetGroupQueryInput(ServiceRequest):
-    GroupName: Optional[GroupName]
-    Group: Optional[GroupString]
+    GroupName: GroupName | None
+    Group: GroupString | None
 
 
 class GroupQuery(TypedDict, total=False):
@@ -271,7 +271,7 @@ class GroupQuery(TypedDict, total=False):
 
 
 class GetGroupQueryOutput(TypedDict, total=False):
-    GroupQuery: Optional[GroupQuery]
+    GroupQuery: GroupQuery | None
 
 
 class GetTagSyncTaskInput(ServiceRequest):
@@ -282,16 +282,16 @@ timestamp = datetime
 
 
 class GetTagSyncTaskOutput(TypedDict, total=False):
-    GroupArn: Optional[GroupArnV2]
-    GroupName: Optional[GroupName]
-    TaskArn: Optional[TagSyncTaskArn]
-    TagKey: Optional[TagKey]
-    TagValue: Optional[TagValue]
-    ResourceQuery: Optional[ResourceQuery]
-    RoleArn: Optional[RoleArn]
-    Status: Optional[TagSyncTaskStatus]
-    ErrorMessage: Optional[ErrorMessage]
-    CreatedAt: Optional[timestamp]
+    GroupArn: GroupArnV2 | None
+    GroupName: GroupName | None
+    TaskArn: TagSyncTaskArn | None
+    TagKey: TagKey | None
+    TagValue: TagValue | None
+    ResourceQuery: ResourceQuery | None
+    RoleArn: RoleArn | None
+    Status: TagSyncTaskStatus | None
+    ErrorMessage: ErrorMessage | None
+    CreatedAt: timestamp | None
 
 
 class GetTagsInput(ServiceRequest):
@@ -299,11 +299,11 @@ class GetTagsInput(ServiceRequest):
 
 
 class GetTagsOutput(TypedDict, total=False):
-    Arn: Optional[GroupArnV2]
-    Tags: Optional[Tags]
+    Arn: GroupArnV2 | None
+    Tags: Tags | None
 
 
-GroupFilterValues = List[GroupFilterValue]
+GroupFilterValues = list[GroupFilterValue]
 
 
 class GroupFilter(TypedDict, total=False):
@@ -311,21 +311,21 @@ class GroupFilter(TypedDict, total=False):
     Values: GroupFilterValues
 
 
-GroupFilterList = List[GroupFilter]
+GroupFilterList = list[GroupFilter]
 
 
 class GroupIdentifier(TypedDict, total=False):
-    GroupName: Optional[GroupName]
-    GroupArn: Optional[GroupArn]
-    Description: Optional[Description]
-    Criticality: Optional[Criticality]
-    Owner: Optional[Owner]
-    DisplayName: Optional[DisplayName]
+    GroupName: GroupName | None
+    GroupArn: GroupArn | None
+    Description: Description | None
+    Criticality: Criticality | None
+    Owner: Owner | None
+    DisplayName: DisplayName | None
 
 
-GroupIdentifierList = List[GroupIdentifier]
-GroupList = List[Group]
-ResourceArnList = List[ResourceArn]
+GroupIdentifierList = list[GroupIdentifier]
+GroupList = list[Group]
+ResourceArnList = list[ResourceArn]
 
 
 class GroupResourcesInput(ServiceRequest):
@@ -334,29 +334,29 @@ class GroupResourcesInput(ServiceRequest):
 
 
 class PendingResource(TypedDict, total=False):
-    ResourceArn: Optional[ResourceArn]
+    ResourceArn: ResourceArn | None
 
 
-PendingResourceList = List[PendingResource]
+PendingResourceList = list[PendingResource]
 
 
 class GroupResourcesOutput(TypedDict, total=False):
-    Succeeded: Optional[ResourceArnList]
-    Failed: Optional[FailedResourceList]
-    Pending: Optional[PendingResourceList]
+    Succeeded: ResourceArnList | None
+    Failed: FailedResourceList | None
+    Pending: PendingResourceList | None
 
 
 class GroupingStatusesItem(TypedDict, total=False):
-    ResourceArn: Optional[ResourceArn]
-    Action: Optional[GroupingType]
-    Status: Optional[GroupingStatus]
-    ErrorMessage: Optional[ErrorMessage]
-    ErrorCode: Optional[ErrorCode]
-    UpdatedAt: Optional[timestamp]
+    ResourceArn: ResourceArn | None
+    Action: GroupingType | None
+    Status: GroupingStatus | None
+    ErrorMessage: ErrorMessage | None
+    ErrorCode: ErrorCode | None
+    UpdatedAt: timestamp | None
 
 
-GroupingStatusesList = List[GroupingStatusesItem]
-ResourceFilterValues = List[ResourceFilterValue]
+GroupingStatusesList = list[GroupingStatusesItem]
+ResourceFilterValues = list[ResourceFilterValue]
 
 
 class ResourceFilter(TypedDict, total=False):
@@ -364,51 +364,51 @@ class ResourceFilter(TypedDict, total=False):
     Values: ResourceFilterValues
 
 
-ResourceFilterList = List[ResourceFilter]
+ResourceFilterList = list[ResourceFilter]
 
 
 class ListGroupResourcesInput(ServiceRequest):
-    GroupName: Optional[GroupName]
-    Group: Optional[GroupStringV2]
-    Filters: Optional[ResourceFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    GroupName: GroupName | None
+    Group: GroupStringV2 | None
+    Filters: ResourceFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ResourceStatus(TypedDict, total=False):
-    Name: Optional[ResourceStatusValue]
+    Name: ResourceStatusValue | None
 
 
 class ResourceIdentifier(TypedDict, total=False):
-    ResourceArn: Optional[ResourceArn]
-    ResourceType: Optional[ResourceType]
+    ResourceArn: ResourceArn | None
+    ResourceType: ResourceType | None
 
 
 class ListGroupResourcesItem(TypedDict, total=False):
-    Identifier: Optional[ResourceIdentifier]
-    Status: Optional[ResourceStatus]
+    Identifier: ResourceIdentifier | None
+    Status: ResourceStatus | None
 
 
-ListGroupResourcesItemList = List[ListGroupResourcesItem]
+ListGroupResourcesItemList = list[ListGroupResourcesItem]
 
 
 class QueryError(TypedDict, total=False):
-    ErrorCode: Optional[QueryErrorCode]
-    Message: Optional[QueryErrorMessage]
+    ErrorCode: QueryErrorCode | None
+    Message: QueryErrorMessage | None
 
 
-QueryErrorList = List[QueryError]
-ResourceIdentifierList = List[ResourceIdentifier]
+QueryErrorList = list[QueryError]
+ResourceIdentifierList = list[ResourceIdentifier]
 
 
 class ListGroupResourcesOutput(TypedDict, total=False):
-    Resources: Optional[ListGroupResourcesItemList]
-    ResourceIdentifiers: Optional[ResourceIdentifierList]
-    NextToken: Optional[NextToken]
-    QueryErrors: Optional[QueryErrorList]
+    Resources: ListGroupResourcesItemList | None
+    ResourceIdentifiers: ResourceIdentifierList | None
+    NextToken: NextToken | None
+    QueryErrors: QueryErrorList | None
 
 
-ListGroupingStatusesFilterValues = List[ListGroupingStatusesFilterValue]
+ListGroupingStatusesFilterValues = list[ListGroupingStatusesFilterValue]
 
 
 class ListGroupingStatusesFilter(TypedDict, total=False):
@@ -416,72 +416,72 @@ class ListGroupingStatusesFilter(TypedDict, total=False):
     Values: ListGroupingStatusesFilterValues
 
 
-ListGroupingStatusesFilterList = List[ListGroupingStatusesFilter]
+ListGroupingStatusesFilterList = list[ListGroupingStatusesFilter]
 
 
 class ListGroupingStatusesInput(ServiceRequest):
     Group: GroupStringV2
-    MaxResults: Optional[MaxResults]
-    Filters: Optional[ListGroupingStatusesFilterList]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    Filters: ListGroupingStatusesFilterList | None
+    NextToken: NextToken | None
 
 
 class ListGroupingStatusesOutput(TypedDict, total=False):
-    Group: Optional[GroupStringV2]
-    GroupingStatuses: Optional[GroupingStatusesList]
-    NextToken: Optional[NextToken]
+    Group: GroupStringV2 | None
+    GroupingStatuses: GroupingStatusesList | None
+    NextToken: NextToken | None
 
 
 class ListGroupsInput(ServiceRequest):
-    Filters: Optional[GroupFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: GroupFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListGroupsOutput(TypedDict, total=False):
-    GroupIdentifiers: Optional[GroupIdentifierList]
-    Groups: Optional[GroupList]
-    NextToken: Optional[NextToken]
+    GroupIdentifiers: GroupIdentifierList | None
+    Groups: GroupList | None
+    NextToken: NextToken | None
 
 
 class ListTagSyncTasksFilter(TypedDict, total=False):
-    GroupArn: Optional[GroupArnV2]
-    GroupName: Optional[GroupName]
+    GroupArn: GroupArnV2 | None
+    GroupName: GroupName | None
 
 
-ListTagSyncTasksFilterList = List[ListTagSyncTasksFilter]
+ListTagSyncTasksFilterList = list[ListTagSyncTasksFilter]
 
 
 class ListTagSyncTasksInput(ServiceRequest):
-    Filters: Optional[ListTagSyncTasksFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: ListTagSyncTasksFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class TagSyncTaskItem(TypedDict, total=False):
-    GroupArn: Optional[GroupArnV2]
-    GroupName: Optional[GroupName]
-    TaskArn: Optional[TagSyncTaskArn]
-    TagKey: Optional[TagKey]
-    TagValue: Optional[TagValue]
-    ResourceQuery: Optional[ResourceQuery]
-    RoleArn: Optional[RoleArn]
-    Status: Optional[TagSyncTaskStatus]
-    ErrorMessage: Optional[ErrorMessage]
-    CreatedAt: Optional[timestamp]
+    GroupArn: GroupArnV2 | None
+    GroupName: GroupName | None
+    TaskArn: TagSyncTaskArn | None
+    TagKey: TagKey | None
+    TagValue: TagValue | None
+    ResourceQuery: ResourceQuery | None
+    RoleArn: RoleArn | None
+    Status: TagSyncTaskStatus | None
+    ErrorMessage: ErrorMessage | None
+    CreatedAt: timestamp | None
 
 
-TagSyncTaskList = List[TagSyncTaskItem]
+TagSyncTaskList = list[TagSyncTaskItem]
 
 
 class ListTagSyncTasksOutput(TypedDict, total=False):
-    TagSyncTasks: Optional[TagSyncTaskList]
-    NextToken: Optional[NextToken]
+    TagSyncTasks: TagSyncTaskList | None
+    NextToken: NextToken | None
 
 
 class PutGroupConfigurationInput(ServiceRequest):
-    Group: Optional[GroupString]
-    Configuration: Optional[GroupConfigurationList]
+    Group: GroupString | None
+    Configuration: GroupConfigurationList | None
 
 
 class PutGroupConfigurationOutput(TypedDict, total=False):
@@ -490,32 +490,32 @@ class PutGroupConfigurationOutput(TypedDict, total=False):
 
 class SearchResourcesInput(ServiceRequest):
     ResourceQuery: ResourceQuery
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class SearchResourcesOutput(TypedDict, total=False):
-    ResourceIdentifiers: Optional[ResourceIdentifierList]
-    NextToken: Optional[NextToken]
-    QueryErrors: Optional[QueryErrorList]
+    ResourceIdentifiers: ResourceIdentifierList | None
+    NextToken: NextToken | None
+    QueryErrors: QueryErrorList | None
 
 
 class StartTagSyncTaskInput(ServiceRequest):
     Group: GroupStringV2
-    TagKey: Optional[TagKey]
-    TagValue: Optional[TagValue]
-    ResourceQuery: Optional[ResourceQuery]
+    TagKey: TagKey | None
+    TagValue: TagValue | None
+    ResourceQuery: ResourceQuery | None
     RoleArn: RoleArn
 
 
 class StartTagSyncTaskOutput(TypedDict, total=False):
-    GroupArn: Optional[GroupArnV2]
-    GroupName: Optional[GroupName]
-    TaskArn: Optional[TagSyncTaskArn]
-    TagKey: Optional[TagKey]
-    TagValue: Optional[TagValue]
-    ResourceQuery: Optional[ResourceQuery]
-    RoleArn: Optional[RoleArn]
+    GroupArn: GroupArnV2 | None
+    GroupName: GroupName | None
+    TaskArn: TagSyncTaskArn | None
+    TagKey: TagKey | None
+    TagValue: TagValue | None
+    ResourceQuery: ResourceQuery | None
+    RoleArn: RoleArn | None
 
 
 class TagInput(ServiceRequest):
@@ -523,12 +523,12 @@ class TagInput(ServiceRequest):
     Tags: Tags
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagOutput(TypedDict, total=False):
-    Arn: Optional[GroupArnV2]
-    Tags: Optional[Tags]
+    Arn: GroupArnV2 | None
+    Tags: Tags | None
 
 
 class UngroupResourcesInput(ServiceRequest):
@@ -537,9 +537,9 @@ class UngroupResourcesInput(ServiceRequest):
 
 
 class UngroupResourcesOutput(TypedDict, total=False):
-    Succeeded: Optional[ResourceArnList]
-    Failed: Optional[FailedResourceList]
-    Pending: Optional[PendingResourceList]
+    Succeeded: ResourceArnList | None
+    Failed: FailedResourceList | None
+    Pending: PendingResourceList | None
 
 
 class UntagInput(ServiceRequest):
@@ -548,44 +548,44 @@ class UntagInput(ServiceRequest):
 
 
 class UntagOutput(TypedDict, total=False):
-    Arn: Optional[GroupArnV2]
-    Keys: Optional[TagKeyList]
+    Arn: GroupArnV2 | None
+    Keys: TagKeyList | None
 
 
 class UpdateAccountSettingsInput(ServiceRequest):
-    GroupLifecycleEventsDesiredStatus: Optional[GroupLifecycleEventsDesiredStatus]
+    GroupLifecycleEventsDesiredStatus: GroupLifecycleEventsDesiredStatus | None
 
 
 class UpdateAccountSettingsOutput(TypedDict, total=False):
-    AccountSettings: Optional[AccountSettings]
+    AccountSettings: AccountSettings | None
 
 
 class UpdateGroupInput(ServiceRequest):
-    GroupName: Optional[GroupName]
-    Group: Optional[GroupStringV2]
-    Description: Optional[Description]
-    Criticality: Optional[Criticality]
-    Owner: Optional[Owner]
-    DisplayName: Optional[DisplayName]
+    GroupName: GroupName | None
+    Group: GroupStringV2 | None
+    Description: Description | None
+    Criticality: Criticality | None
+    Owner: Owner | None
+    DisplayName: DisplayName | None
 
 
 class UpdateGroupOutput(TypedDict, total=False):
-    Group: Optional[Group]
+    Group: Group | None
 
 
 class UpdateGroupQueryInput(ServiceRequest):
-    GroupName: Optional[GroupName]
-    Group: Optional[GroupString]
+    GroupName: GroupName | None
+    Group: GroupString | None
     ResourceQuery: ResourceQuery
 
 
 class UpdateGroupQueryOutput(TypedDict, total=False):
-    GroupQuery: Optional[GroupQuery]
+    GroupQuery: GroupQuery | None
 
 
 class ResourceGroupsApi:
-    service = "resource-groups"
-    version = "2017-11-27"
+    service: str = "resource-groups"
+    version: str = "2017-11-27"
 
     @handler("CancelTagSyncTask")
     def cancel_tag_sync_task(

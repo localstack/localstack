@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -115,6 +115,7 @@ class DataKeyPairSpec(StrEnum):
     ECC_NIST_P521 = "ECC_NIST_P521"
     ECC_SECG_P256K1 = "ECC_SECG_P256K1"
     SM2 = "SM2"
+    ECC_NIST_EDWARDS25519 = "ECC_NIST_EDWARDS25519"
 
 
 class DataKeySpec(StrEnum):
@@ -205,6 +206,7 @@ class KeySpec(StrEnum):
     ML_DSA_44 = "ML_DSA_44"
     ML_DSA_65 = "ML_DSA_65"
     ML_DSA_87 = "ML_DSA_87"
+    ECC_NIST_EDWARDS25519 = "ECC_NIST_EDWARDS25519"
 
 
 class KeyState(StrEnum):
@@ -267,6 +269,8 @@ class SigningAlgorithmSpec(StrEnum):
     ECDSA_SHA_512 = "ECDSA_SHA_512"
     SM2DSA = "SM2DSA"
     ML_DSA_SHAKE_256 = "ML_DSA_SHAKE_256"
+    ED25519_SHA_512 = "ED25519_SHA_512"
+    ED25519_PH_SHA_512 = "ED25519_PH_SHA_512"
 
 
 class WrappingKeySpec(StrEnum):
@@ -573,14 +577,14 @@ DateType = datetime
 
 
 class AliasListEntry(TypedDict, total=False):
-    AliasName: Optional[AliasNameType]
-    AliasArn: Optional[ArnType]
-    TargetKeyId: Optional[KeyIdType]
-    CreationDate: Optional[DateType]
-    LastUpdatedDate: Optional[DateType]
+    AliasName: AliasNameType | None
+    AliasArn: ArnType | None
+    TargetKeyId: KeyIdType | None
+    CreationDate: DateType | None
+    LastUpdatedDate: DateType | None
 
 
-AliasList = List[AliasListEntry]
+AliasList = list[AliasListEntry]
 AttestationDocumentType = bytes
 
 
@@ -589,7 +593,7 @@ class CancelKeyDeletionRequest(ServiceRequest):
 
 
 class CancelKeyDeletionResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
+    KeyId: KeyIdType | None
 
 
 CiphertextType = bytes
@@ -615,48 +619,48 @@ class XksProxyAuthenticationCredentialType(TypedDict, total=False):
 
 class CreateCustomKeyStoreRequest(ServiceRequest):
     CustomKeyStoreName: CustomKeyStoreNameType
-    CloudHsmClusterId: Optional[CloudHsmClusterIdType]
-    TrustAnchorCertificate: Optional[TrustAnchorCertificateType]
-    KeyStorePassword: Optional[KeyStorePasswordType]
-    CustomKeyStoreType: Optional[CustomKeyStoreType]
-    XksProxyUriEndpoint: Optional[XksProxyUriEndpointType]
-    XksProxyUriPath: Optional[XksProxyUriPathType]
-    XksProxyVpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
-    XksProxyVpcEndpointServiceOwner: Optional[AccountIdType]
-    XksProxyAuthenticationCredential: Optional[XksProxyAuthenticationCredentialType]
-    XksProxyConnectivity: Optional[XksProxyConnectivityType]
+    CloudHsmClusterId: CloudHsmClusterIdType | None
+    TrustAnchorCertificate: TrustAnchorCertificateType | None
+    KeyStorePassword: KeyStorePasswordType | None
+    CustomKeyStoreType: CustomKeyStoreType | None
+    XksProxyUriEndpoint: XksProxyUriEndpointType | None
+    XksProxyUriPath: XksProxyUriPathType | None
+    XksProxyVpcEndpointServiceName: XksProxyVpcEndpointServiceNameType | None
+    XksProxyVpcEndpointServiceOwner: AccountIdType | None
+    XksProxyAuthenticationCredential: XksProxyAuthenticationCredentialType | None
+    XksProxyConnectivity: XksProxyConnectivityType | None
 
 
 class CreateCustomKeyStoreResponse(TypedDict, total=False):
-    CustomKeyStoreId: Optional[CustomKeyStoreIdType]
+    CustomKeyStoreId: CustomKeyStoreIdType | None
 
 
-GrantTokenList = List[GrantTokenType]
-EncryptionContextType = Dict[EncryptionContextKey, EncryptionContextValue]
+GrantTokenList = list[GrantTokenType]
+EncryptionContextType = dict[EncryptionContextKey, EncryptionContextValue]
 
 
 class GrantConstraints(TypedDict, total=False):
-    EncryptionContextSubset: Optional[EncryptionContextType]
-    EncryptionContextEquals: Optional[EncryptionContextType]
+    EncryptionContextSubset: EncryptionContextType | None
+    EncryptionContextEquals: EncryptionContextType | None
 
 
-GrantOperationList = List[GrantOperation]
+GrantOperationList = list[GrantOperation]
 
 
 class CreateGrantRequest(ServiceRequest):
     KeyId: KeyIdType
     GranteePrincipal: PrincipalIdType
-    RetiringPrincipal: Optional[PrincipalIdType]
+    RetiringPrincipal: PrincipalIdType | None
     Operations: GrantOperationList
-    Constraints: Optional[GrantConstraints]
-    GrantTokens: Optional[GrantTokenList]
-    Name: Optional[GrantNameType]
-    DryRun: Optional[NullableBooleanType]
+    Constraints: GrantConstraints | None
+    GrantTokens: GrantTokenList | None
+    Name: GrantNameType | None
+    DryRun: NullableBooleanType | None
 
 
 class CreateGrantResponse(TypedDict, total=False):
-    GrantToken: Optional[GrantTokenType]
-    GrantId: Optional[GrantIdType]
+    GrantToken: GrantTokenType | None
+    GrantId: GrantIdType | None
 
 
 class Tag(TypedDict, total=False):
@@ -664,130 +668,130 @@ class Tag(TypedDict, total=False):
     TagValue: TagValueType
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class CreateKeyRequest(ServiceRequest):
-    Policy: Optional[PolicyType]
-    Description: Optional[DescriptionType]
-    KeyUsage: Optional[KeyUsageType]
-    CustomerMasterKeySpec: Optional[CustomerMasterKeySpec]
-    KeySpec: Optional[KeySpec]
-    Origin: Optional[OriginType]
-    CustomKeyStoreId: Optional[CustomKeyStoreIdType]
-    BypassPolicyLockoutSafetyCheck: Optional[BooleanType]
-    Tags: Optional[TagList]
-    MultiRegion: Optional[NullableBooleanType]
-    XksKeyId: Optional[XksKeyIdType]
+    Policy: PolicyType | None
+    Description: DescriptionType | None
+    KeyUsage: KeyUsageType | None
+    CustomerMasterKeySpec: CustomerMasterKeySpec | None
+    KeySpec: KeySpec | None
+    Origin: OriginType | None
+    CustomKeyStoreId: CustomKeyStoreIdType | None
+    BypassPolicyLockoutSafetyCheck: BooleanType | None
+    Tags: TagList | None
+    MultiRegion: NullableBooleanType | None
+    XksKeyId: XksKeyIdType | None
 
 
 class XksKeyConfigurationType(TypedDict, total=False):
-    Id: Optional[XksKeyIdType]
+    Id: XksKeyIdType | None
 
 
-MacAlgorithmSpecList = List[MacAlgorithmSpec]
+MacAlgorithmSpecList = list[MacAlgorithmSpec]
 
 
 class MultiRegionKey(TypedDict, total=False):
-    Arn: Optional[ArnType]
-    Region: Optional[RegionType]
+    Arn: ArnType | None
+    Region: RegionType | None
 
 
-MultiRegionKeyList = List[MultiRegionKey]
+MultiRegionKeyList = list[MultiRegionKey]
 
 
 class MultiRegionConfiguration(TypedDict, total=False):
-    MultiRegionKeyType: Optional[MultiRegionKeyType]
-    PrimaryKey: Optional[MultiRegionKey]
-    ReplicaKeys: Optional[MultiRegionKeyList]
+    MultiRegionKeyType: MultiRegionKeyType | None
+    PrimaryKey: MultiRegionKey | None
+    ReplicaKeys: MultiRegionKeyList | None
 
 
-KeyAgreementAlgorithmSpecList = List[KeyAgreementAlgorithmSpec]
-SigningAlgorithmSpecList = List[SigningAlgorithmSpec]
-EncryptionAlgorithmSpecList = List[EncryptionAlgorithmSpec]
+KeyAgreementAlgorithmSpecList = list[KeyAgreementAlgorithmSpec]
+SigningAlgorithmSpecList = list[SigningAlgorithmSpec]
+EncryptionAlgorithmSpecList = list[EncryptionAlgorithmSpec]
 
 
 class KeyMetadata(TypedDict, total=False):
-    AWSAccountId: Optional[AWSAccountIdType]
+    AWSAccountId: AWSAccountIdType | None
     KeyId: KeyIdType
-    Arn: Optional[ArnType]
-    CreationDate: Optional[DateType]
-    Enabled: Optional[BooleanType]
-    Description: Optional[DescriptionType]
-    KeyUsage: Optional[KeyUsageType]
-    KeyState: Optional[KeyState]
-    DeletionDate: Optional[DateType]
-    ValidTo: Optional[DateType]
-    Origin: Optional[OriginType]
-    CustomKeyStoreId: Optional[CustomKeyStoreIdType]
-    CloudHsmClusterId: Optional[CloudHsmClusterIdType]
-    ExpirationModel: Optional[ExpirationModelType]
-    KeyManager: Optional[KeyManagerType]
-    CustomerMasterKeySpec: Optional[CustomerMasterKeySpec]
-    KeySpec: Optional[KeySpec]
-    EncryptionAlgorithms: Optional[EncryptionAlgorithmSpecList]
-    SigningAlgorithms: Optional[SigningAlgorithmSpecList]
-    KeyAgreementAlgorithms: Optional[KeyAgreementAlgorithmSpecList]
-    MultiRegion: Optional[NullableBooleanType]
-    MultiRegionConfiguration: Optional[MultiRegionConfiguration]
-    PendingDeletionWindowInDays: Optional[PendingWindowInDaysType]
-    MacAlgorithms: Optional[MacAlgorithmSpecList]
-    XksKeyConfiguration: Optional[XksKeyConfigurationType]
-    CurrentKeyMaterialId: Optional[BackingKeyIdType]
+    Arn: ArnType | None
+    CreationDate: DateType | None
+    Enabled: BooleanType | None
+    Description: DescriptionType | None
+    KeyUsage: KeyUsageType | None
+    KeyState: KeyState | None
+    DeletionDate: DateType | None
+    ValidTo: DateType | None
+    Origin: OriginType | None
+    CustomKeyStoreId: CustomKeyStoreIdType | None
+    CloudHsmClusterId: CloudHsmClusterIdType | None
+    ExpirationModel: ExpirationModelType | None
+    KeyManager: KeyManagerType | None
+    CustomerMasterKeySpec: CustomerMasterKeySpec | None
+    KeySpec: KeySpec | None
+    EncryptionAlgorithms: EncryptionAlgorithmSpecList | None
+    SigningAlgorithms: SigningAlgorithmSpecList | None
+    KeyAgreementAlgorithms: KeyAgreementAlgorithmSpecList | None
+    MultiRegion: NullableBooleanType | None
+    MultiRegionConfiguration: MultiRegionConfiguration | None
+    PendingDeletionWindowInDays: PendingWindowInDaysType | None
+    MacAlgorithms: MacAlgorithmSpecList | None
+    XksKeyConfiguration: XksKeyConfigurationType | None
+    CurrentKeyMaterialId: BackingKeyIdType | None
 
 
 class CreateKeyResponse(TypedDict, total=False):
-    KeyMetadata: Optional[KeyMetadata]
+    KeyMetadata: KeyMetadata | None
 
 
 class XksProxyConfigurationType(TypedDict, total=False):
-    Connectivity: Optional[XksProxyConnectivityType]
-    AccessKeyId: Optional[XksProxyAuthenticationAccessKeyIdType]
-    UriEndpoint: Optional[XksProxyUriEndpointType]
-    UriPath: Optional[XksProxyUriPathType]
-    VpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
-    VpcEndpointServiceOwner: Optional[AccountIdType]
+    Connectivity: XksProxyConnectivityType | None
+    AccessKeyId: XksProxyAuthenticationAccessKeyIdType | None
+    UriEndpoint: XksProxyUriEndpointType | None
+    UriPath: XksProxyUriPathType | None
+    VpcEndpointServiceName: XksProxyVpcEndpointServiceNameType | None
+    VpcEndpointServiceOwner: AccountIdType | None
 
 
 class CustomKeyStoresListEntry(TypedDict, total=False):
-    CustomKeyStoreId: Optional[CustomKeyStoreIdType]
-    CustomKeyStoreName: Optional[CustomKeyStoreNameType]
-    CloudHsmClusterId: Optional[CloudHsmClusterIdType]
-    TrustAnchorCertificate: Optional[TrustAnchorCertificateType]
-    ConnectionState: Optional[ConnectionStateType]
-    ConnectionErrorCode: Optional[ConnectionErrorCodeType]
-    CreationDate: Optional[DateType]
-    CustomKeyStoreType: Optional[CustomKeyStoreType]
-    XksProxyConfiguration: Optional[XksProxyConfigurationType]
+    CustomKeyStoreId: CustomKeyStoreIdType | None
+    CustomKeyStoreName: CustomKeyStoreNameType | None
+    CloudHsmClusterId: CloudHsmClusterIdType | None
+    TrustAnchorCertificate: TrustAnchorCertificateType | None
+    ConnectionState: ConnectionStateType | None
+    ConnectionErrorCode: ConnectionErrorCodeType | None
+    CreationDate: DateType | None
+    CustomKeyStoreType: CustomKeyStoreType | None
+    XksProxyConfiguration: XksProxyConfigurationType | None
 
 
-CustomKeyStoresList = List[CustomKeyStoresListEntry]
+CustomKeyStoresList = list[CustomKeyStoresListEntry]
 
 
 class RecipientInfo(TypedDict, total=False):
-    KeyEncryptionAlgorithm: Optional[KeyEncryptionMechanism]
-    AttestationDocument: Optional[AttestationDocumentType]
+    KeyEncryptionAlgorithm: KeyEncryptionMechanism | None
+    AttestationDocument: AttestationDocumentType | None
 
 
 class DecryptRequest(ServiceRequest):
     CiphertextBlob: CiphertextType
-    EncryptionContext: Optional[EncryptionContextType]
-    GrantTokens: Optional[GrantTokenList]
-    KeyId: Optional[KeyIdType]
-    EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    Recipient: Optional[RecipientInfo]
-    DryRun: Optional[NullableBooleanType]
+    EncryptionContext: EncryptionContextType | None
+    GrantTokens: GrantTokenList | None
+    KeyId: KeyIdType | None
+    EncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    Recipient: RecipientInfo | None
+    DryRun: NullableBooleanType | None
 
 
 PlaintextType = bytes
 
 
 class DecryptResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    Plaintext: Optional[PlaintextType]
-    EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    CiphertextForRecipient: Optional[CiphertextType]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    KeyId: KeyIdType | None
+    Plaintext: PlaintextType | None
+    EncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    CiphertextForRecipient: CiphertextType | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class DeleteAliasRequest(ServiceRequest):
@@ -804,12 +808,12 @@ class DeleteCustomKeyStoreResponse(TypedDict, total=False):
 
 class DeleteImportedKeyMaterialRequest(ServiceRequest):
     KeyId: KeyIdType
-    KeyMaterialId: Optional[BackingKeyIdType]
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class DeleteImportedKeyMaterialResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    KeyMaterialId: Optional[BackingKeyIdResponseType]
+    KeyId: KeyIdType | None
+    KeyMaterialId: BackingKeyIdResponseType | None
 
 
 PublicKeyType = bytes
@@ -819,39 +823,39 @@ class DeriveSharedSecretRequest(ServiceRequest):
     KeyId: KeyIdType
     KeyAgreementAlgorithm: KeyAgreementAlgorithmSpec
     PublicKey: PublicKeyType
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
-    Recipient: Optional[RecipientInfo]
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
+    Recipient: RecipientInfo | None
 
 
 class DeriveSharedSecretResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    SharedSecret: Optional[PlaintextType]
-    CiphertextForRecipient: Optional[CiphertextType]
-    KeyAgreementAlgorithm: Optional[KeyAgreementAlgorithmSpec]
-    KeyOrigin: Optional[OriginType]
+    KeyId: KeyIdType | None
+    SharedSecret: PlaintextType | None
+    CiphertextForRecipient: CiphertextType | None
+    KeyAgreementAlgorithm: KeyAgreementAlgorithmSpec | None
+    KeyOrigin: OriginType | None
 
 
 class DescribeCustomKeyStoresRequest(ServiceRequest):
-    CustomKeyStoreId: Optional[CustomKeyStoreIdType]
-    CustomKeyStoreName: Optional[CustomKeyStoreNameType]
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    CustomKeyStoreId: CustomKeyStoreIdType | None
+    CustomKeyStoreName: CustomKeyStoreNameType | None
+    Limit: LimitType | None
+    Marker: MarkerType | None
 
 
 class DescribeCustomKeyStoresResponse(TypedDict, total=False):
-    CustomKeyStores: Optional[CustomKeyStoresList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    CustomKeyStores: CustomKeyStoresList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class DescribeKeyRequest(ServiceRequest):
     KeyId: KeyIdType
-    GrantTokens: Optional[GrantTokenList]
+    GrantTokens: GrantTokenList | None
 
 
 class DescribeKeyResponse(TypedDict, total=False):
-    KeyMetadata: Optional[KeyMetadata]
+    KeyMetadata: KeyMetadata | None
 
 
 class DisableKeyRequest(ServiceRequest):
@@ -876,125 +880,125 @@ class EnableKeyRequest(ServiceRequest):
 
 class EnableKeyRotationRequest(ServiceRequest):
     KeyId: KeyIdType
-    RotationPeriodInDays: Optional[RotationPeriodInDaysType]
+    RotationPeriodInDays: RotationPeriodInDaysType | None
 
 
 class EncryptRequest(ServiceRequest):
     KeyId: KeyIdType
     Plaintext: PlaintextType
-    EncryptionContext: Optional[EncryptionContextType]
-    GrantTokens: Optional[GrantTokenList]
-    EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    DryRun: Optional[NullableBooleanType]
+    EncryptionContext: EncryptionContextType | None
+    GrantTokens: GrantTokenList | None
+    EncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    DryRun: NullableBooleanType | None
 
 
 class EncryptResponse(TypedDict, total=False):
-    CiphertextBlob: Optional[CiphertextType]
-    KeyId: Optional[KeyIdType]
-    EncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
+    CiphertextBlob: CiphertextType | None
+    KeyId: KeyIdType | None
+    EncryptionAlgorithm: EncryptionAlgorithmSpec | None
 
 
 class GenerateDataKeyPairRequest(ServiceRequest):
-    EncryptionContext: Optional[EncryptionContextType]
+    EncryptionContext: EncryptionContextType | None
     KeyId: KeyIdType
     KeyPairSpec: DataKeyPairSpec
-    GrantTokens: Optional[GrantTokenList]
-    Recipient: Optional[RecipientInfo]
-    DryRun: Optional[NullableBooleanType]
+    GrantTokens: GrantTokenList | None
+    Recipient: RecipientInfo | None
+    DryRun: NullableBooleanType | None
 
 
 class GenerateDataKeyPairResponse(TypedDict, total=False):
-    PrivateKeyCiphertextBlob: Optional[CiphertextType]
-    PrivateKeyPlaintext: Optional[PlaintextType]
-    PublicKey: Optional[PublicKeyType]
-    KeyId: Optional[KeyIdType]
-    KeyPairSpec: Optional[DataKeyPairSpec]
-    CiphertextForRecipient: Optional[CiphertextType]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    PrivateKeyCiphertextBlob: CiphertextType | None
+    PrivateKeyPlaintext: PlaintextType | None
+    PublicKey: PublicKeyType | None
+    KeyId: KeyIdType | None
+    KeyPairSpec: DataKeyPairSpec | None
+    CiphertextForRecipient: CiphertextType | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class GenerateDataKeyPairWithoutPlaintextRequest(ServiceRequest):
-    EncryptionContext: Optional[EncryptionContextType]
+    EncryptionContext: EncryptionContextType | None
     KeyId: KeyIdType
     KeyPairSpec: DataKeyPairSpec
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
 
 
 class GenerateDataKeyPairWithoutPlaintextResponse(TypedDict, total=False):
-    PrivateKeyCiphertextBlob: Optional[CiphertextType]
-    PublicKey: Optional[PublicKeyType]
-    KeyId: Optional[KeyIdType]
-    KeyPairSpec: Optional[DataKeyPairSpec]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    PrivateKeyCiphertextBlob: CiphertextType | None
+    PublicKey: PublicKeyType | None
+    KeyId: KeyIdType | None
+    KeyPairSpec: DataKeyPairSpec | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class GenerateDataKeyRequest(ServiceRequest):
     KeyId: KeyIdType
-    EncryptionContext: Optional[EncryptionContextType]
-    NumberOfBytes: Optional[NumberOfBytesType]
-    KeySpec: Optional[DataKeySpec]
-    GrantTokens: Optional[GrantTokenList]
-    Recipient: Optional[RecipientInfo]
-    DryRun: Optional[NullableBooleanType]
+    EncryptionContext: EncryptionContextType | None
+    NumberOfBytes: NumberOfBytesType | None
+    KeySpec: DataKeySpec | None
+    GrantTokens: GrantTokenList | None
+    Recipient: RecipientInfo | None
+    DryRun: NullableBooleanType | None
 
 
 class GenerateDataKeyResponse(TypedDict, total=False):
-    CiphertextBlob: Optional[CiphertextType]
-    Plaintext: Optional[PlaintextType]
-    KeyId: Optional[KeyIdType]
-    CiphertextForRecipient: Optional[CiphertextType]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    CiphertextBlob: CiphertextType | None
+    Plaintext: PlaintextType | None
+    KeyId: KeyIdType | None
+    CiphertextForRecipient: CiphertextType | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class GenerateDataKeyWithoutPlaintextRequest(ServiceRequest):
     KeyId: KeyIdType
-    EncryptionContext: Optional[EncryptionContextType]
-    KeySpec: Optional[DataKeySpec]
-    NumberOfBytes: Optional[NumberOfBytesType]
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
+    EncryptionContext: EncryptionContextType | None
+    KeySpec: DataKeySpec | None
+    NumberOfBytes: NumberOfBytesType | None
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
 
 
 class GenerateDataKeyWithoutPlaintextResponse(TypedDict, total=False):
-    CiphertextBlob: Optional[CiphertextType]
-    KeyId: Optional[KeyIdType]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    CiphertextBlob: CiphertextType | None
+    KeyId: KeyIdType | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class GenerateMacRequest(ServiceRequest):
     Message: PlaintextType
     KeyId: KeyIdType
     MacAlgorithm: MacAlgorithmSpec
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
 
 
 class GenerateMacResponse(TypedDict, total=False):
-    Mac: Optional[CiphertextType]
-    MacAlgorithm: Optional[MacAlgorithmSpec]
-    KeyId: Optional[KeyIdType]
+    Mac: CiphertextType | None
+    MacAlgorithm: MacAlgorithmSpec | None
+    KeyId: KeyIdType | None
 
 
 class GenerateRandomRequest(ServiceRequest):
-    NumberOfBytes: Optional[NumberOfBytesType]
-    CustomKeyStoreId: Optional[CustomKeyStoreIdType]
-    Recipient: Optional[RecipientInfo]
+    NumberOfBytes: NumberOfBytesType | None
+    CustomKeyStoreId: CustomKeyStoreIdType | None
+    Recipient: RecipientInfo | None
 
 
 class GenerateRandomResponse(TypedDict, total=False):
-    Plaintext: Optional[PlaintextType]
-    CiphertextForRecipient: Optional[CiphertextType]
+    Plaintext: PlaintextType | None
+    CiphertextForRecipient: CiphertextType | None
 
 
 class GetKeyPolicyRequest(ServiceRequest):
     KeyId: KeyIdType
-    PolicyName: Optional[PolicyNameType]
+    PolicyName: PolicyNameType | None
 
 
 class GetKeyPolicyResponse(TypedDict, total=False):
-    Policy: Optional[PolicyType]
-    PolicyName: Optional[PolicyNameType]
+    Policy: PolicyType | None
+    PolicyName: PolicyNameType | None
 
 
 class GetKeyRotationStatusRequest(ServiceRequest):
@@ -1002,11 +1006,11 @@ class GetKeyRotationStatusRequest(ServiceRequest):
 
 
 class GetKeyRotationStatusResponse(TypedDict, total=False):
-    KeyRotationEnabled: Optional[BooleanType]
-    KeyId: Optional[KeyIdType]
-    RotationPeriodInDays: Optional[RotationPeriodInDaysType]
-    NextRotationDate: Optional[DateType]
-    OnDemandRotationStartDate: Optional[DateType]
+    KeyRotationEnabled: BooleanType | None
+    KeyId: KeyIdType | None
+    RotationPeriodInDays: RotationPeriodInDaysType | None
+    NextRotationDate: DateType | None
+    OnDemandRotationStartDate: DateType | None
 
 
 class GetParametersForImportRequest(ServiceRequest):
@@ -1016,220 +1020,220 @@ class GetParametersForImportRequest(ServiceRequest):
 
 
 class GetParametersForImportResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    ImportToken: Optional[CiphertextType]
-    PublicKey: Optional[PlaintextType]
-    ParametersValidTo: Optional[DateType]
+    KeyId: KeyIdType | None
+    ImportToken: CiphertextType | None
+    PublicKey: PlaintextType | None
+    ParametersValidTo: DateType | None
 
 
 class GetPublicKeyRequest(ServiceRequest):
     KeyId: KeyIdType
-    GrantTokens: Optional[GrantTokenList]
+    GrantTokens: GrantTokenList | None
 
 
 class GetPublicKeyResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    PublicKey: Optional[PublicKeyType]
-    CustomerMasterKeySpec: Optional[CustomerMasterKeySpec]
-    KeySpec: Optional[KeySpec]
-    KeyUsage: Optional[KeyUsageType]
-    EncryptionAlgorithms: Optional[EncryptionAlgorithmSpecList]
-    SigningAlgorithms: Optional[SigningAlgorithmSpecList]
-    KeyAgreementAlgorithms: Optional[KeyAgreementAlgorithmSpecList]
+    KeyId: KeyIdType | None
+    PublicKey: PublicKeyType | None
+    CustomerMasterKeySpec: CustomerMasterKeySpec | None
+    KeySpec: KeySpec | None
+    KeyUsage: KeyUsageType | None
+    EncryptionAlgorithms: EncryptionAlgorithmSpecList | None
+    SigningAlgorithms: SigningAlgorithmSpecList | None
+    KeyAgreementAlgorithms: KeyAgreementAlgorithmSpecList | None
 
 
 class GrantListEntry(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    GrantId: Optional[GrantIdType]
-    Name: Optional[GrantNameType]
-    CreationDate: Optional[DateType]
-    GranteePrincipal: Optional[PrincipalIdType]
-    RetiringPrincipal: Optional[PrincipalIdType]
-    IssuingAccount: Optional[PrincipalIdType]
-    Operations: Optional[GrantOperationList]
-    Constraints: Optional[GrantConstraints]
+    KeyId: KeyIdType | None
+    GrantId: GrantIdType | None
+    Name: GrantNameType | None
+    CreationDate: DateType | None
+    GranteePrincipal: PrincipalIdType | None
+    RetiringPrincipal: PrincipalIdType | None
+    IssuingAccount: PrincipalIdType | None
+    Operations: GrantOperationList | None
+    Constraints: GrantConstraints | None
 
 
-GrantList = List[GrantListEntry]
+GrantList = list[GrantListEntry]
 
 
 class ImportKeyMaterialRequest(ServiceRequest):
     KeyId: KeyIdType
     ImportToken: CiphertextType
     EncryptedKeyMaterial: CiphertextType
-    ValidTo: Optional[DateType]
-    ExpirationModel: Optional[ExpirationModelType]
-    ImportType: Optional[ImportType]
-    KeyMaterialDescription: Optional[KeyMaterialDescriptionType]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    ValidTo: DateType | None
+    ExpirationModel: ExpirationModelType | None
+    ImportType: ImportType | None
+    KeyMaterialDescription: KeyMaterialDescriptionType | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class ImportKeyMaterialResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    KeyMaterialId: Optional[BackingKeyIdType]
+    KeyId: KeyIdType | None
+    KeyMaterialId: BackingKeyIdType | None
 
 
 class KeyListEntry(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    KeyArn: Optional[ArnType]
+    KeyId: KeyIdType | None
+    KeyArn: ArnType | None
 
 
-KeyList = List[KeyListEntry]
+KeyList = list[KeyListEntry]
 
 
 class ListAliasesRequest(ServiceRequest):
-    KeyId: Optional[KeyIdType]
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    KeyId: KeyIdType | None
+    Limit: LimitType | None
+    Marker: MarkerType | None
 
 
 class ListAliasesResponse(TypedDict, total=False):
-    Aliases: Optional[AliasList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    Aliases: AliasList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class ListGrantsRequest(ServiceRequest):
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    Limit: LimitType | None
+    Marker: MarkerType | None
     KeyId: KeyIdType
-    GrantId: Optional[GrantIdType]
-    GranteePrincipal: Optional[PrincipalIdType]
+    GrantId: GrantIdType | None
+    GranteePrincipal: PrincipalIdType | None
 
 
 class ListGrantsResponse(TypedDict, total=False):
-    Grants: Optional[GrantList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    Grants: GrantList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class ListKeyPoliciesRequest(ServiceRequest):
     KeyId: KeyIdType
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    Limit: LimitType | None
+    Marker: MarkerType | None
 
 
-PolicyNameList = List[PolicyNameType]
+PolicyNameList = list[PolicyNameType]
 
 
 class ListKeyPoliciesResponse(TypedDict, total=False):
-    PolicyNames: Optional[PolicyNameList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    PolicyNames: PolicyNameList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class ListKeyRotationsRequest(ServiceRequest):
     KeyId: KeyIdType
-    IncludeKeyMaterial: Optional[IncludeKeyMaterial]
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    IncludeKeyMaterial: IncludeKeyMaterial | None
+    Limit: LimitType | None
+    Marker: MarkerType | None
 
 
 class RotationsListEntry(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    KeyMaterialId: Optional[BackingKeyIdType]
-    KeyMaterialDescription: Optional[KeyMaterialDescriptionType]
-    ImportState: Optional[ImportState]
-    KeyMaterialState: Optional[KeyMaterialState]
-    ExpirationModel: Optional[ExpirationModelType]
-    ValidTo: Optional[DateType]
-    RotationDate: Optional[DateType]
-    RotationType: Optional[RotationType]
+    KeyId: KeyIdType | None
+    KeyMaterialId: BackingKeyIdType | None
+    KeyMaterialDescription: KeyMaterialDescriptionType | None
+    ImportState: ImportState | None
+    KeyMaterialState: KeyMaterialState | None
+    ExpirationModel: ExpirationModelType | None
+    ValidTo: DateType | None
+    RotationDate: DateType | None
+    RotationType: RotationType | None
 
 
-RotationsList = List[RotationsListEntry]
+RotationsList = list[RotationsListEntry]
 
 
 class ListKeyRotationsResponse(TypedDict, total=False):
-    Rotations: Optional[RotationsList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    Rotations: RotationsList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class ListKeysRequest(ServiceRequest):
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    Limit: LimitType | None
+    Marker: MarkerType | None
 
 
 class ListKeysResponse(TypedDict, total=False):
-    Keys: Optional[KeyList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    Keys: KeyList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class ListResourceTagsRequest(ServiceRequest):
     KeyId: KeyIdType
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    Limit: LimitType | None
+    Marker: MarkerType | None
 
 
 class ListResourceTagsResponse(TypedDict, total=False):
-    Tags: Optional[TagList]
-    NextMarker: Optional[MarkerType]
-    Truncated: Optional[BooleanType]
+    Tags: TagList | None
+    NextMarker: MarkerType | None
+    Truncated: BooleanType | None
 
 
 class ListRetirableGrantsRequest(ServiceRequest):
-    Limit: Optional[LimitType]
-    Marker: Optional[MarkerType]
+    Limit: LimitType | None
+    Marker: MarkerType | None
     RetiringPrincipal: PrincipalIdType
 
 
 class PutKeyPolicyRequest(ServiceRequest):
     KeyId: KeyIdType
-    PolicyName: Optional[PolicyNameType]
+    PolicyName: PolicyNameType | None
     Policy: PolicyType
-    BypassPolicyLockoutSafetyCheck: Optional[BooleanType]
+    BypassPolicyLockoutSafetyCheck: BooleanType | None
 
 
 class ReEncryptRequest(ServiceRequest):
     CiphertextBlob: CiphertextType
-    SourceEncryptionContext: Optional[EncryptionContextType]
-    SourceKeyId: Optional[KeyIdType]
+    SourceEncryptionContext: EncryptionContextType | None
+    SourceKeyId: KeyIdType | None
     DestinationKeyId: KeyIdType
-    DestinationEncryptionContext: Optional[EncryptionContextType]
-    SourceEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    DestinationEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
+    DestinationEncryptionContext: EncryptionContextType | None
+    SourceEncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    DestinationEncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
 
 
 class ReEncryptResponse(TypedDict, total=False):
-    CiphertextBlob: Optional[CiphertextType]
-    SourceKeyId: Optional[KeyIdType]
-    KeyId: Optional[KeyIdType]
-    SourceEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    DestinationEncryptionAlgorithm: Optional[EncryptionAlgorithmSpec]
-    SourceKeyMaterialId: Optional[BackingKeyIdType]
-    DestinationKeyMaterialId: Optional[BackingKeyIdType]
+    CiphertextBlob: CiphertextType | None
+    SourceKeyId: KeyIdType | None
+    KeyId: KeyIdType | None
+    SourceEncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    DestinationEncryptionAlgorithm: EncryptionAlgorithmSpec | None
+    SourceKeyMaterialId: BackingKeyIdType | None
+    DestinationKeyMaterialId: BackingKeyIdType | None
 
 
 class ReplicateKeyRequest(ServiceRequest):
     KeyId: KeyIdType
     ReplicaRegion: RegionType
-    Policy: Optional[PolicyType]
-    BypassPolicyLockoutSafetyCheck: Optional[BooleanType]
-    Description: Optional[DescriptionType]
-    Tags: Optional[TagList]
+    Policy: PolicyType | None
+    BypassPolicyLockoutSafetyCheck: BooleanType | None
+    Description: DescriptionType | None
+    Tags: TagList | None
 
 
 class ReplicateKeyResponse(TypedDict, total=False):
-    ReplicaKeyMetadata: Optional[KeyMetadata]
-    ReplicaPolicy: Optional[PolicyType]
-    ReplicaTags: Optional[TagList]
+    ReplicaKeyMetadata: KeyMetadata | None
+    ReplicaPolicy: PolicyType | None
+    ReplicaTags: TagList | None
 
 
 class RetireGrantRequest(ServiceRequest):
-    GrantToken: Optional[GrantTokenType]
-    KeyId: Optional[KeyIdType]
-    GrantId: Optional[GrantIdType]
-    DryRun: Optional[NullableBooleanType]
+    GrantToken: GrantTokenType | None
+    KeyId: KeyIdType | None
+    GrantId: GrantIdType | None
+    DryRun: NullableBooleanType | None
 
 
 class RevokeGrantRequest(ServiceRequest):
     KeyId: KeyIdType
     GrantId: GrantIdType
-    DryRun: Optional[NullableBooleanType]
+    DryRun: NullableBooleanType | None
 
 
 class RotateKeyOnDemandRequest(ServiceRequest):
@@ -1237,37 +1241,37 @@ class RotateKeyOnDemandRequest(ServiceRequest):
 
 
 class RotateKeyOnDemandResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
+    KeyId: KeyIdType | None
 
 
 class ScheduleKeyDeletionRequest(ServiceRequest):
     KeyId: KeyIdType
-    PendingWindowInDays: Optional[PendingWindowInDaysType]
+    PendingWindowInDays: PendingWindowInDaysType | None
 
 
 class ScheduleKeyDeletionResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    DeletionDate: Optional[DateType]
-    KeyState: Optional[KeyState]
-    PendingWindowInDays: Optional[PendingWindowInDaysType]
+    KeyId: KeyIdType | None
+    DeletionDate: DateType | None
+    KeyState: KeyState | None
+    PendingWindowInDays: PendingWindowInDaysType | None
 
 
 class SignRequest(ServiceRequest):
     KeyId: KeyIdType
     Message: PlaintextType
-    MessageType: Optional[MessageType]
-    GrantTokens: Optional[GrantTokenList]
+    MessageType: MessageType | None
+    GrantTokens: GrantTokenList | None
     SigningAlgorithm: SigningAlgorithmSpec
-    DryRun: Optional[NullableBooleanType]
+    DryRun: NullableBooleanType | None
 
 
 class SignResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    Signature: Optional[CiphertextType]
-    SigningAlgorithm: Optional[SigningAlgorithmSpec]
+    KeyId: KeyIdType | None
+    Signature: CiphertextType | None
+    SigningAlgorithm: SigningAlgorithmSpec | None
 
 
-TagKeyList = List[TagKeyType]
+TagKeyList = list[TagKeyType]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -1287,15 +1291,15 @@ class UpdateAliasRequest(ServiceRequest):
 
 class UpdateCustomKeyStoreRequest(ServiceRequest):
     CustomKeyStoreId: CustomKeyStoreIdType
-    NewCustomKeyStoreName: Optional[CustomKeyStoreNameType]
-    KeyStorePassword: Optional[KeyStorePasswordType]
-    CloudHsmClusterId: Optional[CloudHsmClusterIdType]
-    XksProxyUriEndpoint: Optional[XksProxyUriEndpointType]
-    XksProxyUriPath: Optional[XksProxyUriPathType]
-    XksProxyVpcEndpointServiceName: Optional[XksProxyVpcEndpointServiceNameType]
-    XksProxyVpcEndpointServiceOwner: Optional[AccountIdType]
-    XksProxyAuthenticationCredential: Optional[XksProxyAuthenticationCredentialType]
-    XksProxyConnectivity: Optional[XksProxyConnectivityType]
+    NewCustomKeyStoreName: CustomKeyStoreNameType | None
+    KeyStorePassword: KeyStorePasswordType | None
+    CloudHsmClusterId: CloudHsmClusterIdType | None
+    XksProxyUriEndpoint: XksProxyUriEndpointType | None
+    XksProxyUriPath: XksProxyUriPathType | None
+    XksProxyVpcEndpointServiceName: XksProxyVpcEndpointServiceNameType | None
+    XksProxyVpcEndpointServiceOwner: AccountIdType | None
+    XksProxyAuthenticationCredential: XksProxyAuthenticationCredentialType | None
+    XksProxyConnectivity: XksProxyConnectivityType | None
 
 
 class UpdateCustomKeyStoreResponse(TypedDict, total=False):
@@ -1317,35 +1321,35 @@ class VerifyMacRequest(ServiceRequest):
     KeyId: KeyIdType
     MacAlgorithm: MacAlgorithmSpec
     Mac: CiphertextType
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
 
 
 class VerifyMacResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    MacValid: Optional[BooleanType]
-    MacAlgorithm: Optional[MacAlgorithmSpec]
+    KeyId: KeyIdType | None
+    MacValid: BooleanType | None
+    MacAlgorithm: MacAlgorithmSpec | None
 
 
 class VerifyRequest(ServiceRequest):
     KeyId: KeyIdType
     Message: PlaintextType
-    MessageType: Optional[MessageType]
+    MessageType: MessageType | None
     Signature: CiphertextType
     SigningAlgorithm: SigningAlgorithmSpec
-    GrantTokens: Optional[GrantTokenList]
-    DryRun: Optional[NullableBooleanType]
+    GrantTokens: GrantTokenList | None
+    DryRun: NullableBooleanType | None
 
 
 class VerifyResponse(TypedDict, total=False):
-    KeyId: Optional[KeyIdType]
-    SignatureValid: Optional[BooleanType]
-    SigningAlgorithm: Optional[SigningAlgorithmSpec]
+    KeyId: KeyIdType | None
+    SignatureValid: BooleanType | None
+    SigningAlgorithm: SigningAlgorithmSpec | None
 
 
 class KmsApi:
-    service = "kms"
-    version = "2014-11-01"
+    service: str = "kms"
+    version: str = "2014-11-01"
 
     @handler("CancelKeyDeletion")
     def cancel_key_deletion(

@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -243,7 +243,7 @@ class InternalException(ServiceException):
     code: str = "InternalException"
     sender_fault: bool = False
     status_code: int = 500
-    retryAfterSeconds: Optional[Integer]
+    retryAfterSeconds: Integer | None
 
 
 class NotFoundException(ServiceException):
@@ -266,9 +266,9 @@ class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = True
     status_code: int = 429
-    serviceCode: Optional[String]
-    quotaCode: Optional[String]
-    retryAfterSeconds: Optional[Integer]
+    serviceCode: String | None
+    quotaCode: String | None
+    retryAfterSeconds: Integer | None
 
 
 class ValidationExceptionField(TypedDict, total=False):
@@ -276,28 +276,28 @@ class ValidationExceptionField(TypedDict, total=False):
     message: ErrorMessage
 
 
-ValidationExceptionFieldList = List[ValidationExceptionField]
+ValidationExceptionFieldList = list[ValidationExceptionField]
 
 
 class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = True
     status_code: int = 400
-    fieldList: Optional[ValidationExceptionFieldList]
+    fieldList: ValidationExceptionFieldList | None
 
 
-SecurityGroups = List[SecurityGroup]
-Subnets = List[Subnet]
+SecurityGroups = list[SecurityGroup]
+Subnets = list[Subnet]
 
 
 class AwsVpcConfiguration(TypedDict, total=False):
     Subnets: Subnets
-    SecurityGroups: Optional[SecurityGroups]
-    AssignPublicIp: Optional[AssignPublicIp]
+    SecurityGroups: SecurityGroups | None
+    AssignPublicIp: AssignPublicIp | None
 
 
 class BatchArrayProperties(TypedDict, total=False):
-    Size: Optional[BatchArraySize]
+    Size: BatchArraySize | None
 
 
 class BatchResourceRequirement(TypedDict, total=False):
@@ -305,56 +305,56 @@ class BatchResourceRequirement(TypedDict, total=False):
     Value: String
 
 
-BatchResourceRequirementsList = List[BatchResourceRequirement]
+BatchResourceRequirementsList = list[BatchResourceRequirement]
 
 
 class BatchEnvironmentVariable(TypedDict, total=False):
-    Name: Optional[String]
-    Value: Optional[String]
+    Name: String | None
+    Value: String | None
 
 
-BatchEnvironmentVariableList = List[BatchEnvironmentVariable]
-StringList = List[String]
+BatchEnvironmentVariableList = list[BatchEnvironmentVariable]
+StringList = list[String]
 
 
 class BatchContainerOverrides(TypedDict, total=False):
-    Command: Optional[StringList]
-    Environment: Optional[BatchEnvironmentVariableList]
-    InstanceType: Optional[String]
-    ResourceRequirements: Optional[BatchResourceRequirementsList]
+    Command: StringList | None
+    Environment: BatchEnvironmentVariableList | None
+    InstanceType: String | None
+    ResourceRequirements: BatchResourceRequirementsList | None
 
 
 class BatchJobDependency(TypedDict, total=False):
-    JobId: Optional[String]
-    Type: Optional[BatchJobDependencyType]
+    JobId: String | None
+    Type: BatchJobDependencyType | None
 
 
-BatchDependsOn = List[BatchJobDependency]
-BatchParametersMap = Dict[String, String]
+BatchDependsOn = list[BatchJobDependency]
+BatchParametersMap = dict[String, String]
 
 
 class BatchRetryStrategy(TypedDict, total=False):
-    Attempts: Optional[BatchRetryAttempts]
+    Attempts: BatchRetryAttempts | None
 
 
 class CapacityProviderStrategyItem(TypedDict, total=False):
     capacityProvider: CapacityProvider
-    weight: Optional[CapacityProviderStrategyItemWeight]
-    base: Optional[CapacityProviderStrategyItemBase]
+    weight: CapacityProviderStrategyItemWeight | None
+    base: CapacityProviderStrategyItemBase | None
 
 
-CapacityProviderStrategy = List[CapacityProviderStrategyItem]
+CapacityProviderStrategy = list[CapacityProviderStrategyItem]
 
 
 class CloudwatchLogsLogDestination(TypedDict, total=False):
-    LogGroupArn: Optional[CloudwatchLogGroupArn]
+    LogGroupArn: CloudwatchLogGroupArn | None
 
 
 class CloudwatchLogsLogDestinationParameters(TypedDict, total=False):
     LogGroupArn: CloudwatchLogGroupArn
 
 
-IncludeExecutionData = List[IncludeExecutionDataOption]
+IncludeExecutionData = list[IncludeExecutionDataOption]
 
 
 class FirehoseLogDestinationParameters(TypedDict, total=False):
@@ -364,19 +364,19 @@ class FirehoseLogDestinationParameters(TypedDict, total=False):
 class S3LogDestinationParameters(TypedDict, total=False):
     BucketName: S3LogDestinationParametersBucketNameString
     BucketOwner: S3LogDestinationParametersBucketOwnerString
-    OutputFormat: Optional[S3OutputFormat]
-    Prefix: Optional[S3LogDestinationParametersPrefixString]
+    OutputFormat: S3OutputFormat | None
+    Prefix: S3LogDestinationParametersPrefixString | None
 
 
 class PipeLogConfigurationParameters(TypedDict, total=False):
-    S3LogDestination: Optional[S3LogDestinationParameters]
-    FirehoseLogDestination: Optional[FirehoseLogDestinationParameters]
-    CloudwatchLogsLogDestination: Optional[CloudwatchLogsLogDestinationParameters]
+    S3LogDestination: S3LogDestinationParameters | None
+    FirehoseLogDestination: FirehoseLogDestinationParameters | None
+    CloudwatchLogsLogDestination: CloudwatchLogsLogDestinationParameters | None
     Level: LogLevel
-    IncludeExecutionData: Optional[IncludeExecutionData]
+    IncludeExecutionData: IncludeExecutionData | None
 
 
-TagMap = Dict[TagKey, TagValue]
+TagMap = dict[TagKey, TagValue]
 
 
 class MultiMeasureAttributeMapping(TypedDict, total=False):
@@ -385,7 +385,7 @@ class MultiMeasureAttributeMapping(TypedDict, total=False):
     MultiMeasureAttributeName: MultiMeasureAttributeName
 
 
-MultiMeasureAttributeMappings = List[MultiMeasureAttributeMapping]
+MultiMeasureAttributeMappings = list[MultiMeasureAttributeMapping]
 
 
 class MultiMeasureMapping(TypedDict, total=False):
@@ -393,7 +393,7 @@ class MultiMeasureMapping(TypedDict, total=False):
     MultiMeasureAttributeMappings: MultiMeasureAttributeMappings
 
 
-MultiMeasureMappings = List[MultiMeasureMapping]
+MultiMeasureMappings = list[MultiMeasureMapping]
 
 
 class SingleMeasureMapping(TypedDict, total=False):
@@ -402,7 +402,7 @@ class SingleMeasureMapping(TypedDict, total=False):
     MeasureName: MeasureName
 
 
-SingleMeasureMappings = List[SingleMeasureMapping]
+SingleMeasureMappings = list[SingleMeasureMapping]
 
 
 class DimensionMapping(TypedDict, total=False):
@@ -411,34 +411,34 @@ class DimensionMapping(TypedDict, total=False):
     DimensionName: DimensionName
 
 
-DimensionMappings = List[DimensionMapping]
+DimensionMappings = list[DimensionMapping]
 
 
 class PipeTargetTimestreamParameters(TypedDict, total=False):
     TimeValue: TimeValue
-    EpochTimeUnit: Optional[EpochTimeUnit]
-    TimeFieldType: Optional[TimeFieldType]
-    TimestampFormat: Optional[TimestampFormat]
+    EpochTimeUnit: EpochTimeUnit | None
+    TimeFieldType: TimeFieldType | None
+    TimestampFormat: TimestampFormat | None
     VersionValue: VersionValue
     DimensionMappings: DimensionMappings
-    SingleMeasureMappings: Optional[SingleMeasureMappings]
-    MultiMeasureMappings: Optional[MultiMeasureMappings]
+    SingleMeasureMappings: SingleMeasureMappings | None
+    MultiMeasureMappings: MultiMeasureMappings | None
 
 
 class PipeTargetCloudWatchLogsParameters(TypedDict, total=False):
-    LogStreamName: Optional[LogStreamName]
-    Timestamp: Optional[JsonPath]
+    LogStreamName: LogStreamName | None
+    Timestamp: JsonPath | None
 
 
-EventBridgeEventResourceList = List[ArnOrJsonPath]
+EventBridgeEventResourceList = list[ArnOrJsonPath]
 
 
 class PipeTargetEventBridgeEventBusParameters(TypedDict, total=False):
-    EndpointId: Optional[EventBridgeEndpointId]
-    DetailType: Optional[EventBridgeDetailType]
-    Source: Optional[EventBridgeEventSource]
-    Resources: Optional[EventBridgeEventResourceList]
-    Time: Optional[JsonPath]
+    EndpointId: EventBridgeEndpointId | None
+    DetailType: EventBridgeDetailType | None
+    Source: EventBridgeEventSource | None
+    Resources: EventBridgeEventResourceList | None
+    Time: JsonPath | None
 
 
 class SageMakerPipelineParameter(TypedDict, total=False):
@@ -446,49 +446,49 @@ class SageMakerPipelineParameter(TypedDict, total=False):
     Value: SageMakerPipelineParameterValue
 
 
-SageMakerPipelineParameterList = List[SageMakerPipelineParameter]
+SageMakerPipelineParameterList = list[SageMakerPipelineParameter]
 
 
 class PipeTargetSageMakerPipelineParameters(TypedDict, total=False):
-    PipelineParameterList: Optional[SageMakerPipelineParameterList]
+    PipelineParameterList: SageMakerPipelineParameterList | None
 
 
-Sqls = List[Sql]
+Sqls = list[Sql]
 
 
 class PipeTargetRedshiftDataParameters(TypedDict, total=False):
-    SecretManagerArn: Optional[SecretManagerArnOrJsonPath]
+    SecretManagerArn: SecretManagerArnOrJsonPath | None
     Database: Database
-    DbUser: Optional[DbUser]
-    StatementName: Optional[StatementName]
-    WithEvent: Optional[Boolean]
+    DbUser: DbUser | None
+    StatementName: StatementName | None
+    WithEvent: Boolean | None
     Sqls: Sqls
 
 
-QueryStringParametersMap = Dict[QueryStringKey, QueryStringValue]
-HeaderParametersMap = Dict[HeaderKey, HeaderValue]
-PathParameterList = List[PathParameter]
+QueryStringParametersMap = dict[QueryStringKey, QueryStringValue]
+HeaderParametersMap = dict[HeaderKey, HeaderValue]
+PathParameterList = list[PathParameter]
 
 
 class PipeTargetHttpParameters(TypedDict, total=False):
-    PathParameterValues: Optional[PathParameterList]
-    HeaderParameters: Optional[HeaderParametersMap]
-    QueryStringParameters: Optional[QueryStringParametersMap]
+    PathParameterValues: PathParameterList | None
+    HeaderParameters: HeaderParametersMap | None
+    QueryStringParameters: QueryStringParametersMap | None
 
 
 class PipeTargetSqsQueueParameters(TypedDict, total=False):
-    MessageGroupId: Optional[MessageGroupId]
-    MessageDeduplicationId: Optional[MessageDeduplicationId]
+    MessageGroupId: MessageGroupId | None
+    MessageDeduplicationId: MessageDeduplicationId | None
 
 
 class PipeTargetBatchJobParameters(TypedDict, total=False):
     JobDefinition: String
     JobName: String
-    ArrayProperties: Optional[BatchArrayProperties]
-    RetryStrategy: Optional[BatchRetryStrategy]
-    ContainerOverrides: Optional[BatchContainerOverrides]
-    DependsOn: Optional[BatchDependsOn]
-    Parameters: Optional[BatchParametersMap]
+    ArrayProperties: BatchArrayProperties | None
+    RetryStrategy: BatchRetryStrategy | None
+    ContainerOverrides: BatchContainerOverrides | None
+    DependsOn: BatchDependsOn | None
+    Parameters: BatchParametersMap | None
 
 
 class Tag(TypedDict, total=False):
@@ -496,15 +496,15 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class EcsInferenceAcceleratorOverride(TypedDict, total=False):
-    deviceName: Optional[String]
-    deviceType: Optional[String]
+    deviceName: String | None
+    deviceType: String | None
 
 
-EcsInferenceAcceleratorOverrideList = List[EcsInferenceAcceleratorOverride]
+EcsInferenceAcceleratorOverrideList = list[EcsInferenceAcceleratorOverride]
 
 
 class EcsEphemeralStorage(TypedDict, total=False):
@@ -516,7 +516,7 @@ class EcsResourceRequirement(TypedDict, total=False):
     value: String
 
 
-EcsResourceRequirementsList = List[EcsResourceRequirement]
+EcsResourceRequirementsList = list[EcsResourceRequirement]
 
 
 class EcsEnvironmentFile(TypedDict, total=False):
@@ -524,77 +524,77 @@ class EcsEnvironmentFile(TypedDict, total=False):
     value: String
 
 
-EcsEnvironmentFileList = List[EcsEnvironmentFile]
+EcsEnvironmentFileList = list[EcsEnvironmentFile]
 
 
 class EcsEnvironmentVariable(TypedDict, total=False):
-    name: Optional[String]
-    value: Optional[String]
+    name: String | None
+    value: String | None
 
 
-EcsEnvironmentVariableList = List[EcsEnvironmentVariable]
+EcsEnvironmentVariableList = list[EcsEnvironmentVariable]
 
 
 class EcsContainerOverride(TypedDict, total=False):
-    Command: Optional[StringList]
-    Cpu: Optional[Integer]
-    Environment: Optional[EcsEnvironmentVariableList]
-    EnvironmentFiles: Optional[EcsEnvironmentFileList]
-    Memory: Optional[Integer]
-    MemoryReservation: Optional[Integer]
-    Name: Optional[String]
-    ResourceRequirements: Optional[EcsResourceRequirementsList]
+    Command: StringList | None
+    Cpu: Integer | None
+    Environment: EcsEnvironmentVariableList | None
+    EnvironmentFiles: EcsEnvironmentFileList | None
+    Memory: Integer | None
+    MemoryReservation: Integer | None
+    Name: String | None
+    ResourceRequirements: EcsResourceRequirementsList | None
 
 
-EcsContainerOverrideList = List[EcsContainerOverride]
+EcsContainerOverrideList = list[EcsContainerOverride]
 
 
 class EcsTaskOverride(TypedDict, total=False):
-    ContainerOverrides: Optional[EcsContainerOverrideList]
-    Cpu: Optional[String]
-    EphemeralStorage: Optional[EcsEphemeralStorage]
-    ExecutionRoleArn: Optional[ArnOrJsonPath]
-    InferenceAcceleratorOverrides: Optional[EcsInferenceAcceleratorOverrideList]
-    Memory: Optional[String]
-    TaskRoleArn: Optional[ArnOrJsonPath]
+    ContainerOverrides: EcsContainerOverrideList | None
+    Cpu: String | None
+    EphemeralStorage: EcsEphemeralStorage | None
+    ExecutionRoleArn: ArnOrJsonPath | None
+    InferenceAcceleratorOverrides: EcsInferenceAcceleratorOverrideList | None
+    Memory: String | None
+    TaskRoleArn: ArnOrJsonPath | None
 
 
 class PlacementStrategy(TypedDict, total=False):
-    type: Optional[PlacementStrategyType]
-    field: Optional[PlacementStrategyField]
+    type: PlacementStrategyType | None
+    field: PlacementStrategyField | None
 
 
-PlacementStrategies = List[PlacementStrategy]
+PlacementStrategies = list[PlacementStrategy]
 
 
 class PlacementConstraint(TypedDict, total=False):
-    type: Optional[PlacementConstraintType]
-    expression: Optional[PlacementConstraintExpression]
+    type: PlacementConstraintType | None
+    expression: PlacementConstraintExpression | None
 
 
-PlacementConstraints = List[PlacementConstraint]
+PlacementConstraints = list[PlacementConstraint]
 
 
 class NetworkConfiguration(TypedDict, total=False):
-    awsvpcConfiguration: Optional[AwsVpcConfiguration]
+    awsvpcConfiguration: AwsVpcConfiguration | None
 
 
 class PipeTargetEcsTaskParameters(TypedDict, total=False):
     TaskDefinitionArn: ArnOrJsonPath
-    TaskCount: Optional[LimitMin1]
-    LaunchType: Optional[LaunchType]
-    NetworkConfiguration: Optional[NetworkConfiguration]
-    PlatformVersion: Optional[String]
-    Group: Optional[String]
-    CapacityProviderStrategy: Optional[CapacityProviderStrategy]
-    EnableECSManagedTags: Optional[Boolean]
-    EnableExecuteCommand: Optional[Boolean]
-    PlacementConstraints: Optional[PlacementConstraints]
-    PlacementStrategy: Optional[PlacementStrategies]
-    PropagateTags: Optional[PropagateTags]
-    ReferenceId: Optional[ReferenceId]
-    Overrides: Optional[EcsTaskOverride]
-    Tags: Optional[TagList]
+    TaskCount: LimitMin1 | None
+    LaunchType: LaunchType | None
+    NetworkConfiguration: NetworkConfiguration | None
+    PlatformVersion: String | None
+    Group: String | None
+    CapacityProviderStrategy: CapacityProviderStrategy | None
+    EnableECSManagedTags: Boolean | None
+    EnableExecuteCommand: Boolean | None
+    PlacementConstraints: PlacementConstraints | None
+    PlacementStrategy: PlacementStrategies | None
+    PropagateTags: PropagateTags | None
+    ReferenceId: ReferenceId | None
+    Overrides: EcsTaskOverride | None
+    Tags: TagList | None
 
 
 class PipeTargetKinesisStreamParameters(TypedDict, total=False):
@@ -602,121 +602,121 @@ class PipeTargetKinesisStreamParameters(TypedDict, total=False):
 
 
 class PipeTargetStateMachineParameters(TypedDict, total=False):
-    InvocationType: Optional[PipeTargetInvocationType]
+    InvocationType: PipeTargetInvocationType | None
 
 
 class PipeTargetLambdaFunctionParameters(TypedDict, total=False):
-    InvocationType: Optional[PipeTargetInvocationType]
+    InvocationType: PipeTargetInvocationType | None
 
 
 class PipeTargetParameters(TypedDict, total=False):
-    InputTemplate: Optional[InputTemplate]
-    LambdaFunctionParameters: Optional[PipeTargetLambdaFunctionParameters]
-    StepFunctionStateMachineParameters: Optional[PipeTargetStateMachineParameters]
-    KinesisStreamParameters: Optional[PipeTargetKinesisStreamParameters]
-    EcsTaskParameters: Optional[PipeTargetEcsTaskParameters]
-    BatchJobParameters: Optional[PipeTargetBatchJobParameters]
-    SqsQueueParameters: Optional[PipeTargetSqsQueueParameters]
-    HttpParameters: Optional[PipeTargetHttpParameters]
-    RedshiftDataParameters: Optional[PipeTargetRedshiftDataParameters]
-    SageMakerPipelineParameters: Optional[PipeTargetSageMakerPipelineParameters]
-    EventBridgeEventBusParameters: Optional[PipeTargetEventBridgeEventBusParameters]
-    CloudWatchLogsParameters: Optional[PipeTargetCloudWatchLogsParameters]
-    TimestreamParameters: Optional[PipeTargetTimestreamParameters]
+    InputTemplate: InputTemplate | None
+    LambdaFunctionParameters: PipeTargetLambdaFunctionParameters | None
+    StepFunctionStateMachineParameters: PipeTargetStateMachineParameters | None
+    KinesisStreamParameters: PipeTargetKinesisStreamParameters | None
+    EcsTaskParameters: PipeTargetEcsTaskParameters | None
+    BatchJobParameters: PipeTargetBatchJobParameters | None
+    SqsQueueParameters: PipeTargetSqsQueueParameters | None
+    HttpParameters: PipeTargetHttpParameters | None
+    RedshiftDataParameters: PipeTargetRedshiftDataParameters | None
+    SageMakerPipelineParameters: PipeTargetSageMakerPipelineParameters | None
+    EventBridgeEventBusParameters: PipeTargetEventBridgeEventBusParameters | None
+    CloudWatchLogsParameters: PipeTargetCloudWatchLogsParameters | None
+    TimestreamParameters: PipeTargetTimestreamParameters | None
 
 
 class PipeEnrichmentHttpParameters(TypedDict, total=False):
-    PathParameterValues: Optional[PathParameterList]
-    HeaderParameters: Optional[HeaderParametersMap]
-    QueryStringParameters: Optional[QueryStringParametersMap]
+    PathParameterValues: PathParameterList | None
+    HeaderParameters: HeaderParametersMap | None
+    QueryStringParameters: QueryStringParametersMap | None
 
 
 class PipeEnrichmentParameters(TypedDict, total=False):
-    InputTemplate: Optional[InputTemplate]
-    HttpParameters: Optional[PipeEnrichmentHttpParameters]
+    InputTemplate: InputTemplate | None
+    HttpParameters: PipeEnrichmentHttpParameters | None
 
 
-SecurityGroupIds = List[SecurityGroupId]
-SubnetIds = List[SubnetId]
+SecurityGroupIds = list[SecurityGroupId]
+SubnetIds = list[SubnetId]
 
 
 class SelfManagedKafkaAccessConfigurationVpc(TypedDict, total=False):
-    Subnets: Optional[SubnetIds]
-    SecurityGroup: Optional[SecurityGroupIds]
+    Subnets: SubnetIds | None
+    SecurityGroup: SecurityGroupIds | None
 
 
 class SelfManagedKafkaAccessConfigurationCredentials(TypedDict, total=False):
-    BasicAuth: Optional[SecretManagerArn]
-    SaslScram512Auth: Optional[SecretManagerArn]
-    SaslScram256Auth: Optional[SecretManagerArn]
-    ClientCertificateTlsAuth: Optional[SecretManagerArn]
+    BasicAuth: SecretManagerArn | None
+    SaslScram512Auth: SecretManagerArn | None
+    SaslScram256Auth: SecretManagerArn | None
+    ClientCertificateTlsAuth: SecretManagerArn | None
 
 
-KafkaBootstrapServers = List[EndpointString]
+KafkaBootstrapServers = list[EndpointString]
 
 
 class PipeSourceSelfManagedKafkaParameters(TypedDict, total=False):
     TopicName: KafkaTopicName
-    StartingPosition: Optional[SelfManagedKafkaStartPosition]
-    AdditionalBootstrapServers: Optional[KafkaBootstrapServers]
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    ConsumerGroupID: Optional[URI]
-    Credentials: Optional[SelfManagedKafkaAccessConfigurationCredentials]
-    ServerRootCaCertificate: Optional[SecretManagerArn]
-    Vpc: Optional[SelfManagedKafkaAccessConfigurationVpc]
+    StartingPosition: SelfManagedKafkaStartPosition | None
+    AdditionalBootstrapServers: KafkaBootstrapServers | None
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    ConsumerGroupID: URI | None
+    Credentials: SelfManagedKafkaAccessConfigurationCredentials | None
+    ServerRootCaCertificate: SecretManagerArn | None
+    Vpc: SelfManagedKafkaAccessConfigurationVpc | None
 
 
 class MSKAccessCredentials(TypedDict, total=False):
-    SaslScram512Auth: Optional[SecretManagerArn]
-    ClientCertificateTlsAuth: Optional[SecretManagerArn]
+    SaslScram512Auth: SecretManagerArn | None
+    ClientCertificateTlsAuth: SecretManagerArn | None
 
 
 class PipeSourceManagedStreamingKafkaParameters(TypedDict, total=False):
     TopicName: KafkaTopicName
-    StartingPosition: Optional[MSKStartPosition]
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    ConsumerGroupID: Optional[URI]
-    Credentials: Optional[MSKAccessCredentials]
+    StartingPosition: MSKStartPosition | None
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    ConsumerGroupID: URI | None
+    Credentials: MSKAccessCredentials | None
 
 
 class MQBrokerAccessCredentials(TypedDict, total=False):
-    BasicAuth: Optional[SecretManagerArn]
+    BasicAuth: SecretManagerArn | None
 
 
 class PipeSourceRabbitMQBrokerParameters(TypedDict, total=False):
     Credentials: MQBrokerAccessCredentials
     QueueName: MQBrokerQueueName
-    VirtualHost: Optional[URI]
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    VirtualHost: URI | None
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class PipeSourceActiveMQBrokerParameters(TypedDict, total=False):
     Credentials: MQBrokerAccessCredentials
     QueueName: MQBrokerQueueName
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class PipeSourceSqsQueueParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class DeadLetterConfig(TypedDict, total=False):
-    Arn: Optional[Arn]
+    Arn: Arn | None
 
 
 class PipeSourceDynamoDBStreamParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    OnPartialBatchItemFailure: Optional[OnPartialBatchItemFailureStreams]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsESM]
-    ParallelizationFactor: Optional[LimitMax10]
+    BatchSize: LimitMax10000 | None
+    DeadLetterConfig: DeadLetterConfig | None
+    OnPartialBatchItemFailure: OnPartialBatchItemFailureStreams | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    MaximumRetryAttempts: MaximumRetryAttemptsESM | None
+    ParallelizationFactor: LimitMax10 | None
     StartingPosition: DynamoDBStreamStartPosition
 
 
@@ -724,62 +724,62 @@ Timestamp = datetime
 
 
 class PipeSourceKinesisStreamParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    OnPartialBatchItemFailure: Optional[OnPartialBatchItemFailureStreams]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsESM]
-    ParallelizationFactor: Optional[LimitMax10]
+    BatchSize: LimitMax10000 | None
+    DeadLetterConfig: DeadLetterConfig | None
+    OnPartialBatchItemFailure: OnPartialBatchItemFailureStreams | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    MaximumRetryAttempts: MaximumRetryAttemptsESM | None
+    ParallelizationFactor: LimitMax10 | None
     StartingPosition: KinesisStreamStartPosition
-    StartingPositionTimestamp: Optional[Timestamp]
+    StartingPositionTimestamp: Timestamp | None
 
 
 class Filter(TypedDict, total=False):
-    Pattern: Optional[EventPattern]
+    Pattern: EventPattern | None
 
 
-FilterList = List[Filter]
+FilterList = list[Filter]
 
 
 class FilterCriteria(TypedDict, total=False):
-    Filters: Optional[FilterList]
+    Filters: FilterList | None
 
 
 class PipeSourceParameters(TypedDict, total=False):
-    FilterCriteria: Optional[FilterCriteria]
-    KinesisStreamParameters: Optional[PipeSourceKinesisStreamParameters]
-    DynamoDBStreamParameters: Optional[PipeSourceDynamoDBStreamParameters]
-    SqsQueueParameters: Optional[PipeSourceSqsQueueParameters]
-    ActiveMQBrokerParameters: Optional[PipeSourceActiveMQBrokerParameters]
-    RabbitMQBrokerParameters: Optional[PipeSourceRabbitMQBrokerParameters]
-    ManagedStreamingKafkaParameters: Optional[PipeSourceManagedStreamingKafkaParameters]
-    SelfManagedKafkaParameters: Optional[PipeSourceSelfManagedKafkaParameters]
+    FilterCriteria: FilterCriteria | None
+    KinesisStreamParameters: PipeSourceKinesisStreamParameters | None
+    DynamoDBStreamParameters: PipeSourceDynamoDBStreamParameters | None
+    SqsQueueParameters: PipeSourceSqsQueueParameters | None
+    ActiveMQBrokerParameters: PipeSourceActiveMQBrokerParameters | None
+    RabbitMQBrokerParameters: PipeSourceRabbitMQBrokerParameters | None
+    ManagedStreamingKafkaParameters: PipeSourceManagedStreamingKafkaParameters | None
+    SelfManagedKafkaParameters: PipeSourceSelfManagedKafkaParameters | None
 
 
 class CreatePipeRequest(ServiceRequest):
     Name: PipeName
-    Description: Optional[PipeDescription]
-    DesiredState: Optional[RequestedPipeState]
+    Description: PipeDescription | None
+    DesiredState: RequestedPipeState | None
     Source: ArnOrUrl
-    SourceParameters: Optional[PipeSourceParameters]
-    Enrichment: Optional[OptionalArn]
-    EnrichmentParameters: Optional[PipeEnrichmentParameters]
+    SourceParameters: PipeSourceParameters | None
+    Enrichment: OptionalArn | None
+    EnrichmentParameters: PipeEnrichmentParameters | None
     Target: Arn
-    TargetParameters: Optional[PipeTargetParameters]
+    TargetParameters: PipeTargetParameters | None
     RoleArn: RoleArn
-    Tags: Optional[TagMap]
-    LogConfiguration: Optional[PipeLogConfigurationParameters]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Tags: TagMap | None
+    LogConfiguration: PipeLogConfigurationParameters | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class CreatePipeResponse(TypedDict, total=False):
-    Arn: Optional[PipeArn]
-    Name: Optional[PipeName]
-    DesiredState: Optional[RequestedPipeState]
-    CurrentState: Optional[PipeState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Arn: PipeArn | None
+    Name: PipeName | None
+    DesiredState: RequestedPipeState | None
+    CurrentState: PipeState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class DeletePipeRequest(ServiceRequest):
@@ -787,12 +787,12 @@ class DeletePipeRequest(ServiceRequest):
 
 
 class DeletePipeResponse(TypedDict, total=False):
-    Arn: Optional[PipeArn]
-    Name: Optional[PipeName]
-    DesiredState: Optional[RequestedPipeStateDescribeResponse]
-    CurrentState: Optional[PipeState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Arn: PipeArn | None
+    Name: PipeName | None
+    DesiredState: RequestedPipeStateDescribeResponse | None
+    CurrentState: PipeState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class DescribePipeRequest(ServiceRequest):
@@ -800,74 +800,74 @@ class DescribePipeRequest(ServiceRequest):
 
 
 class FirehoseLogDestination(TypedDict, total=False):
-    DeliveryStreamArn: Optional[FirehoseArn]
+    DeliveryStreamArn: FirehoseArn | None
 
 
 class S3LogDestination(TypedDict, total=False):
-    BucketName: Optional[String]
-    Prefix: Optional[String]
-    BucketOwner: Optional[String]
-    OutputFormat: Optional[S3OutputFormat]
+    BucketName: String | None
+    Prefix: String | None
+    BucketOwner: String | None
+    OutputFormat: S3OutputFormat | None
 
 
 class PipeLogConfiguration(TypedDict, total=False):
-    S3LogDestination: Optional[S3LogDestination]
-    FirehoseLogDestination: Optional[FirehoseLogDestination]
-    CloudwatchLogsLogDestination: Optional[CloudwatchLogsLogDestination]
-    Level: Optional[LogLevel]
-    IncludeExecutionData: Optional[IncludeExecutionData]
+    S3LogDestination: S3LogDestination | None
+    FirehoseLogDestination: FirehoseLogDestination | None
+    CloudwatchLogsLogDestination: CloudwatchLogsLogDestination | None
+    Level: LogLevel | None
+    IncludeExecutionData: IncludeExecutionData | None
 
 
 class DescribePipeResponse(TypedDict, total=False):
-    Arn: Optional[PipeArn]
-    Name: Optional[PipeName]
-    Description: Optional[PipeDescription]
-    DesiredState: Optional[RequestedPipeStateDescribeResponse]
-    CurrentState: Optional[PipeState]
-    StateReason: Optional[PipeStateReason]
-    Source: Optional[ArnOrUrl]
-    SourceParameters: Optional[PipeSourceParameters]
-    Enrichment: Optional[OptionalArn]
-    EnrichmentParameters: Optional[PipeEnrichmentParameters]
-    Target: Optional[Arn]
-    TargetParameters: Optional[PipeTargetParameters]
-    RoleArn: Optional[RoleArn]
-    Tags: Optional[TagMap]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    LogConfiguration: Optional[PipeLogConfiguration]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    Arn: PipeArn | None
+    Name: PipeName | None
+    Description: PipeDescription | None
+    DesiredState: RequestedPipeStateDescribeResponse | None
+    CurrentState: PipeState | None
+    StateReason: PipeStateReason | None
+    Source: ArnOrUrl | None
+    SourceParameters: PipeSourceParameters | None
+    Enrichment: OptionalArn | None
+    EnrichmentParameters: PipeEnrichmentParameters | None
+    Target: Arn | None
+    TargetParameters: PipeTargetParameters | None
+    RoleArn: RoleArn | None
+    Tags: TagMap | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    LogConfiguration: PipeLogConfiguration | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class ListPipesRequest(ServiceRequest):
-    NamePrefix: Optional[PipeName]
-    DesiredState: Optional[RequestedPipeState]
-    CurrentState: Optional[PipeState]
-    SourcePrefix: Optional[ResourceArn]
-    TargetPrefix: Optional[ResourceArn]
-    NextToken: Optional[NextToken]
-    Limit: Optional[LimitMax100]
+    NamePrefix: PipeName | None
+    DesiredState: RequestedPipeState | None
+    CurrentState: PipeState | None
+    SourcePrefix: ResourceArn | None
+    TargetPrefix: ResourceArn | None
+    NextToken: NextToken | None
+    Limit: LimitMax100 | None
 
 
 class Pipe(TypedDict, total=False):
-    Name: Optional[PipeName]
-    Arn: Optional[PipeArn]
-    DesiredState: Optional[RequestedPipeState]
-    CurrentState: Optional[PipeState]
-    StateReason: Optional[PipeStateReason]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
-    Source: Optional[ArnOrUrl]
-    Target: Optional[Arn]
-    Enrichment: Optional[OptionalArn]
+    Name: PipeName | None
+    Arn: PipeArn | None
+    DesiredState: RequestedPipeState | None
+    CurrentState: PipeState | None
+    StateReason: PipeStateReason | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
+    Source: ArnOrUrl | None
+    Target: Arn | None
+    Enrichment: OptionalArn | None
 
 
-PipeList = List[Pipe]
+PipeList = list[Pipe]
 
 
 class ListPipesResponse(TypedDict, total=False):
-    Pipes: Optional[PipeList]
-    NextToken: Optional[NextToken]
+    Pipes: PipeList | None
+    NextToken: NextToken | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -875,7 +875,7 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    tags: Optional[TagMap]
+    tags: TagMap | None
 
 
 class StartPipeRequest(ServiceRequest):
@@ -883,12 +883,12 @@ class StartPipeRequest(ServiceRequest):
 
 
 class StartPipeResponse(TypedDict, total=False):
-    Arn: Optional[PipeArn]
-    Name: Optional[PipeName]
-    DesiredState: Optional[RequestedPipeState]
-    CurrentState: Optional[PipeState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Arn: PipeArn | None
+    Name: PipeName | None
+    DesiredState: RequestedPipeState | None
+    CurrentState: PipeState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class StopPipeRequest(ServiceRequest):
@@ -896,15 +896,15 @@ class StopPipeRequest(ServiceRequest):
 
 
 class StopPipeResponse(TypedDict, total=False):
-    Arn: Optional[PipeArn]
-    Name: Optional[PipeName]
-    DesiredState: Optional[RequestedPipeState]
-    CurrentState: Optional[PipeState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Arn: PipeArn | None
+    Name: PipeName | None
+    DesiredState: RequestedPipeState | None
+    CurrentState: PipeState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -926,93 +926,93 @@ class UntagResourceResponse(TypedDict, total=False):
 
 
 class UpdatePipeSourceSelfManagedKafkaParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    Credentials: Optional[SelfManagedKafkaAccessConfigurationCredentials]
-    ServerRootCaCertificate: Optional[SecretManagerArn]
-    Vpc: Optional[SelfManagedKafkaAccessConfigurationVpc]
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    Credentials: SelfManagedKafkaAccessConfigurationCredentials | None
+    ServerRootCaCertificate: SecretManagerArn | None
+    Vpc: SelfManagedKafkaAccessConfigurationVpc | None
 
 
 class UpdatePipeSourceManagedStreamingKafkaParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    Credentials: Optional[MSKAccessCredentials]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    BatchSize: LimitMax10000 | None
+    Credentials: MSKAccessCredentials | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class UpdatePipeSourceRabbitMQBrokerParameters(TypedDict, total=False):
     Credentials: MQBrokerAccessCredentials
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class UpdatePipeSourceActiveMQBrokerParameters(TypedDict, total=False):
     Credentials: MQBrokerAccessCredentials
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class UpdatePipeSourceSqsQueueParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
+    BatchSize: LimitMax10000 | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
 
 
 class UpdatePipeSourceDynamoDBStreamParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    OnPartialBatchItemFailure: Optional[OnPartialBatchItemFailureStreams]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsESM]
-    ParallelizationFactor: Optional[LimitMax10]
+    BatchSize: LimitMax10000 | None
+    DeadLetterConfig: DeadLetterConfig | None
+    OnPartialBatchItemFailure: OnPartialBatchItemFailureStreams | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    MaximumRetryAttempts: MaximumRetryAttemptsESM | None
+    ParallelizationFactor: LimitMax10 | None
 
 
 class UpdatePipeSourceKinesisStreamParameters(TypedDict, total=False):
-    BatchSize: Optional[LimitMax10000]
-    DeadLetterConfig: Optional[DeadLetterConfig]
-    OnPartialBatchItemFailure: Optional[OnPartialBatchItemFailureStreams]
-    MaximumBatchingWindowInSeconds: Optional[MaximumBatchingWindowInSeconds]
-    MaximumRecordAgeInSeconds: Optional[MaximumRecordAgeInSeconds]
-    MaximumRetryAttempts: Optional[MaximumRetryAttemptsESM]
-    ParallelizationFactor: Optional[LimitMax10]
+    BatchSize: LimitMax10000 | None
+    DeadLetterConfig: DeadLetterConfig | None
+    OnPartialBatchItemFailure: OnPartialBatchItemFailureStreams | None
+    MaximumBatchingWindowInSeconds: MaximumBatchingWindowInSeconds | None
+    MaximumRecordAgeInSeconds: MaximumRecordAgeInSeconds | None
+    MaximumRetryAttempts: MaximumRetryAttemptsESM | None
+    ParallelizationFactor: LimitMax10 | None
 
 
 class UpdatePipeSourceParameters(TypedDict, total=False):
-    FilterCriteria: Optional[FilterCriteria]
-    KinesisStreamParameters: Optional[UpdatePipeSourceKinesisStreamParameters]
-    DynamoDBStreamParameters: Optional[UpdatePipeSourceDynamoDBStreamParameters]
-    SqsQueueParameters: Optional[UpdatePipeSourceSqsQueueParameters]
-    ActiveMQBrokerParameters: Optional[UpdatePipeSourceActiveMQBrokerParameters]
-    RabbitMQBrokerParameters: Optional[UpdatePipeSourceRabbitMQBrokerParameters]
-    ManagedStreamingKafkaParameters: Optional[UpdatePipeSourceManagedStreamingKafkaParameters]
-    SelfManagedKafkaParameters: Optional[UpdatePipeSourceSelfManagedKafkaParameters]
+    FilterCriteria: FilterCriteria | None
+    KinesisStreamParameters: UpdatePipeSourceKinesisStreamParameters | None
+    DynamoDBStreamParameters: UpdatePipeSourceDynamoDBStreamParameters | None
+    SqsQueueParameters: UpdatePipeSourceSqsQueueParameters | None
+    ActiveMQBrokerParameters: UpdatePipeSourceActiveMQBrokerParameters | None
+    RabbitMQBrokerParameters: UpdatePipeSourceRabbitMQBrokerParameters | None
+    ManagedStreamingKafkaParameters: UpdatePipeSourceManagedStreamingKafkaParameters | None
+    SelfManagedKafkaParameters: UpdatePipeSourceSelfManagedKafkaParameters | None
 
 
 class UpdatePipeRequest(ServiceRequest):
     Name: PipeName
-    Description: Optional[PipeDescription]
-    DesiredState: Optional[RequestedPipeState]
-    SourceParameters: Optional[UpdatePipeSourceParameters]
-    Enrichment: Optional[OptionalArn]
-    EnrichmentParameters: Optional[PipeEnrichmentParameters]
-    Target: Optional[Arn]
-    TargetParameters: Optional[PipeTargetParameters]
+    Description: PipeDescription | None
+    DesiredState: RequestedPipeState | None
+    SourceParameters: UpdatePipeSourceParameters | None
+    Enrichment: OptionalArn | None
+    EnrichmentParameters: PipeEnrichmentParameters | None
+    Target: Arn | None
+    TargetParameters: PipeTargetParameters | None
     RoleArn: RoleArn
-    LogConfiguration: Optional[PipeLogConfigurationParameters]
-    KmsKeyIdentifier: Optional[KmsKeyIdentifier]
+    LogConfiguration: PipeLogConfigurationParameters | None
+    KmsKeyIdentifier: KmsKeyIdentifier | None
 
 
 class UpdatePipeResponse(TypedDict, total=False):
-    Arn: Optional[PipeArn]
-    Name: Optional[PipeName]
-    DesiredState: Optional[RequestedPipeState]
-    CurrentState: Optional[PipeState]
-    CreationTime: Optional[Timestamp]
-    LastModifiedTime: Optional[Timestamp]
+    Arn: PipeArn | None
+    Name: PipeName | None
+    DesiredState: RequestedPipeState | None
+    CurrentState: PipeState | None
+    CreationTime: Timestamp | None
+    LastModifiedTime: Timestamp | None
 
 
 class PipesApi:
-    service = "pipes"
-    version = "2015-10-07"
+    service: str = "pipes"
+    version: str = "2015-10-07"
 
     @handler("CreatePipe")
     def create_pipe(

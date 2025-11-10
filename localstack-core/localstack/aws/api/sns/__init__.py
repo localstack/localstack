@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -274,8 +274,8 @@ class VerificationException(ServiceException):
     Status: string
 
 
-ActionsList = List[action]
-DelegatesList = List[delegate]
+ActionsList = list[action]
+DelegatesList = list[delegate]
 
 
 class AddPermissionInput(ServiceRequest):
@@ -288,11 +288,11 @@ class AddPermissionInput(ServiceRequest):
 class BatchResultErrorEntry(TypedDict, total=False):
     Id: String
     Code: String
-    Message: Optional[String]
+    Message: String | None
     SenderFault: boolean
 
 
-BatchResultErrorEntryList = List[BatchResultErrorEntry]
+BatchResultErrorEntryList = list[BatchResultErrorEntry]
 Binary = bytes
 
 
@@ -301,24 +301,24 @@ class CheckIfPhoneNumberIsOptedOutInput(ServiceRequest):
 
 
 class CheckIfPhoneNumberIsOptedOutResponse(TypedDict, total=False):
-    isOptedOut: Optional[boolean]
+    isOptedOut: boolean | None
 
 
 class ConfirmSubscriptionInput(ServiceRequest):
     TopicArn: topicARN
     Token: token
-    AuthenticateOnUnsubscribe: Optional[authenticateOnUnsubscribe]
+    AuthenticateOnUnsubscribe: authenticateOnUnsubscribe | None
 
 
 class ConfirmSubscriptionResponse(TypedDict, total=False):
-    SubscriptionArn: Optional[subscriptionARN]
+    SubscriptionArn: subscriptionARN | None
 
 
 class CreateEndpointResponse(TypedDict, total=False):
-    EndpointArn: Optional[String]
+    EndpointArn: String | None
 
 
-MapStringToString = Dict[String, String]
+MapStringToString = dict[String, String]
 
 
 class CreatePlatformApplicationInput(ServiceRequest):
@@ -328,19 +328,19 @@ class CreatePlatformApplicationInput(ServiceRequest):
 
 
 class CreatePlatformApplicationResponse(TypedDict, total=False):
-    PlatformApplicationArn: Optional[String]
+    PlatformApplicationArn: String | None
 
 
 class CreatePlatformEndpointInput(ServiceRequest):
     PlatformApplicationArn: String
     Token: String
-    CustomUserData: Optional[String]
-    Attributes: Optional[MapStringToString]
+    CustomUserData: String | None
+    Attributes: MapStringToString | None
 
 
 class CreateSMSSandboxPhoneNumberInput(ServiceRequest):
     PhoneNumber: PhoneNumberString
-    LanguageCode: Optional[LanguageCodeString]
+    LanguageCode: LanguageCodeString | None
 
 
 class CreateSMSSandboxPhoneNumberResult(TypedDict, total=False):
@@ -352,19 +352,19 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
-TopicAttributesMap = Dict[attributeName, attributeValue]
+TagList = list[Tag]
+TopicAttributesMap = dict[attributeName, attributeValue]
 
 
 class CreateTopicInput(ServiceRequest):
     Name: topicName
-    Attributes: Optional[TopicAttributesMap]
-    Tags: Optional[TagList]
-    DataProtectionPolicy: Optional[attributeValue]
+    Attributes: TopicAttributesMap | None
+    Tags: TagList | None
+    DataProtectionPolicy: attributeValue | None
 
 
 class CreateTopicResponse(TypedDict, total=False):
-    TopicArn: Optional[topicARN]
+    TopicArn: topicARN | None
 
 
 class DeleteEndpointInput(ServiceRequest):
@@ -388,8 +388,8 @@ class DeleteTopicInput(ServiceRequest):
 
 
 class Endpoint(TypedDict, total=False):
-    EndpointArn: Optional[String]
-    Attributes: Optional[MapStringToString]
+    EndpointArn: String | None
+    Attributes: MapStringToString | None
 
 
 class GetDataProtectionPolicyInput(ServiceRequest):
@@ -397,7 +397,7 @@ class GetDataProtectionPolicyInput(ServiceRequest):
 
 
 class GetDataProtectionPolicyResponse(TypedDict, total=False):
-    DataProtectionPolicy: Optional[attributeValue]
+    DataProtectionPolicy: attributeValue | None
 
 
 class GetEndpointAttributesInput(ServiceRequest):
@@ -405,7 +405,7 @@ class GetEndpointAttributesInput(ServiceRequest):
 
 
 class GetEndpointAttributesResponse(TypedDict, total=False):
-    Attributes: Optional[MapStringToString]
+    Attributes: MapStringToString | None
 
 
 class GetPlatformApplicationAttributesInput(ServiceRequest):
@@ -413,18 +413,18 @@ class GetPlatformApplicationAttributesInput(ServiceRequest):
 
 
 class GetPlatformApplicationAttributesResponse(TypedDict, total=False):
-    Attributes: Optional[MapStringToString]
+    Attributes: MapStringToString | None
 
 
-ListString = List[String]
+ListString = list[String]
 
 
 class GetSMSAttributesInput(ServiceRequest):
-    attributes: Optional[ListString]
+    attributes: ListString | None
 
 
 class GetSMSAttributesResponse(TypedDict, total=False):
-    attributes: Optional[MapStringToString]
+    attributes: MapStringToString | None
 
 
 class GetSMSSandboxAccountStatusInput(ServiceRequest):
@@ -439,11 +439,11 @@ class GetSubscriptionAttributesInput(ServiceRequest):
     SubscriptionArn: subscriptionARN
 
 
-SubscriptionAttributesMap = Dict[attributeName, attributeValue]
+SubscriptionAttributesMap = dict[attributeName, attributeValue]
 
 
 class GetSubscriptionAttributesResponse(TypedDict, total=False):
-    Attributes: Optional[SubscriptionAttributesMap]
+    Attributes: SubscriptionAttributesMap | None
 
 
 class GetTopicAttributesInput(ServiceRequest):
@@ -451,123 +451,123 @@ class GetTopicAttributesInput(ServiceRequest):
 
 
 class GetTopicAttributesResponse(TypedDict, total=False):
-    Attributes: Optional[TopicAttributesMap]
+    Attributes: TopicAttributesMap | None
 
 
 class ListEndpointsByPlatformApplicationInput(ServiceRequest):
     PlatformApplicationArn: String
-    NextToken: Optional[String]
+    NextToken: String | None
 
 
-ListOfEndpoints = List[Endpoint]
+ListOfEndpoints = list[Endpoint]
 
 
 class ListEndpointsByPlatformApplicationResponse(TypedDict, total=False):
-    Endpoints: Optional[ListOfEndpoints]
-    NextToken: Optional[String]
+    Endpoints: ListOfEndpoints | None
+    NextToken: String | None
 
 
 class PlatformApplication(TypedDict, total=False):
-    PlatformApplicationArn: Optional[String]
-    Attributes: Optional[MapStringToString]
+    PlatformApplicationArn: String | None
+    Attributes: MapStringToString | None
 
 
-ListOfPlatformApplications = List[PlatformApplication]
+ListOfPlatformApplications = list[PlatformApplication]
 
 
 class ListOriginationNumbersRequest(ServiceRequest):
-    NextToken: Optional[nextToken]
-    MaxResults: Optional[MaxItemsListOriginationNumbers]
+    NextToken: nextToken | None
+    MaxResults: MaxItemsListOriginationNumbers | None
 
 
-NumberCapabilityList = List[NumberCapability]
+NumberCapabilityList = list[NumberCapability]
 Timestamp = datetime
 
 
 class PhoneNumberInformation(TypedDict, total=False):
-    CreatedAt: Optional[Timestamp]
-    PhoneNumber: Optional[PhoneNumber]
-    Status: Optional[String]
-    Iso2CountryCode: Optional[Iso2CountryCode]
-    RouteType: Optional[RouteType]
-    NumberCapabilities: Optional[NumberCapabilityList]
+    CreatedAt: Timestamp | None
+    PhoneNumber: PhoneNumber | None
+    Status: String | None
+    Iso2CountryCode: Iso2CountryCode | None
+    RouteType: RouteType | None
+    NumberCapabilities: NumberCapabilityList | None
 
 
-PhoneNumberInformationList = List[PhoneNumberInformation]
+PhoneNumberInformationList = list[PhoneNumberInformation]
 
 
 class ListOriginationNumbersResult(TypedDict, total=False):
-    NextToken: Optional[nextToken]
-    PhoneNumbers: Optional[PhoneNumberInformationList]
+    NextToken: nextToken | None
+    PhoneNumbers: PhoneNumberInformationList | None
 
 
 class ListPhoneNumbersOptedOutInput(ServiceRequest):
-    nextToken: Optional[string]
+    nextToken: string | None
 
 
-PhoneNumberList = List[PhoneNumber]
+PhoneNumberList = list[PhoneNumber]
 
 
 class ListPhoneNumbersOptedOutResponse(TypedDict, total=False):
-    phoneNumbers: Optional[PhoneNumberList]
-    nextToken: Optional[string]
+    phoneNumbers: PhoneNumberList | None
+    nextToken: string | None
 
 
 class ListPlatformApplicationsInput(ServiceRequest):
-    NextToken: Optional[String]
+    NextToken: String | None
 
 
 class ListPlatformApplicationsResponse(TypedDict, total=False):
-    PlatformApplications: Optional[ListOfPlatformApplications]
-    NextToken: Optional[String]
+    PlatformApplications: ListOfPlatformApplications | None
+    NextToken: String | None
 
 
 class ListSMSSandboxPhoneNumbersInput(ServiceRequest):
-    NextToken: Optional[nextToken]
-    MaxResults: Optional[MaxItems]
+    NextToken: nextToken | None
+    MaxResults: MaxItems | None
 
 
 class SMSSandboxPhoneNumber(TypedDict, total=False):
-    PhoneNumber: Optional[PhoneNumberString]
-    Status: Optional[SMSSandboxPhoneNumberVerificationStatus]
+    PhoneNumber: PhoneNumberString | None
+    Status: SMSSandboxPhoneNumberVerificationStatus | None
 
 
-SMSSandboxPhoneNumberList = List[SMSSandboxPhoneNumber]
+SMSSandboxPhoneNumberList = list[SMSSandboxPhoneNumber]
 
 
 class ListSMSSandboxPhoneNumbersResult(TypedDict, total=False):
     PhoneNumbers: SMSSandboxPhoneNumberList
-    NextToken: Optional[string]
+    NextToken: string | None
 
 
 class ListSubscriptionsByTopicInput(ServiceRequest):
     TopicArn: topicARN
-    NextToken: Optional[nextToken]
+    NextToken: nextToken | None
 
 
 class Subscription(TypedDict, total=False):
-    SubscriptionArn: Optional[subscriptionARN]
-    Owner: Optional[account]
-    Protocol: Optional[protocol]
-    Endpoint: Optional[endpoint]
-    TopicArn: Optional[topicARN]
+    SubscriptionArn: subscriptionARN | None
+    Owner: account | None
+    Protocol: protocol | None
+    Endpoint: endpoint | None
+    TopicArn: topicARN | None
 
 
-SubscriptionsList = List[Subscription]
+SubscriptionsList = list[Subscription]
 
 
 class ListSubscriptionsByTopicResponse(TypedDict, total=False):
-    Subscriptions: Optional[SubscriptionsList]
-    NextToken: Optional[nextToken]
+    Subscriptions: SubscriptionsList | None
+    NextToken: nextToken | None
 
 
 class ListSubscriptionsInput(ServiceRequest):
-    NextToken: Optional[nextToken]
+    NextToken: nextToken | None
 
 
 class ListSubscriptionsResponse(TypedDict, total=False):
-    Subscriptions: Optional[SubscriptionsList]
-    NextToken: Optional[nextToken]
+    Subscriptions: SubscriptionsList | None
+    NextToken: nextToken | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -575,32 +575,32 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class ListTopicsInput(ServiceRequest):
-    NextToken: Optional[nextToken]
+    NextToken: nextToken | None
 
 
 class Topic(TypedDict, total=False):
-    TopicArn: Optional[topicARN]
+    TopicArn: topicARN | None
 
 
-TopicsList = List[Topic]
+TopicsList = list[Topic]
 
 
 class ListTopicsResponse(TypedDict, total=False):
-    Topics: Optional[TopicsList]
-    NextToken: Optional[nextToken]
+    Topics: TopicsList | None
+    NextToken: nextToken | None
 
 
 class MessageAttributeValue(TypedDict, total=False):
     DataType: String
-    StringValue: Optional[String]
-    BinaryValue: Optional[Binary]
+    StringValue: String | None
+    BinaryValue: Binary | None
 
 
-MessageAttributeMap = Dict[String, MessageAttributeValue]
+MessageAttributeMap = dict[String, MessageAttributeValue]
 
 
 class OptInPhoneNumberInput(ServiceRequest):
@@ -614,14 +614,14 @@ class OptInPhoneNumberResponse(TypedDict, total=False):
 class PublishBatchRequestEntry(TypedDict, total=False):
     Id: String
     Message: message
-    Subject: Optional[subject]
-    MessageStructure: Optional[messageStructure]
-    MessageAttributes: Optional[MessageAttributeMap]
-    MessageDeduplicationId: Optional[String]
-    MessageGroupId: Optional[String]
+    Subject: subject | None
+    MessageStructure: messageStructure | None
+    MessageAttributes: MessageAttributeMap | None
+    MessageDeduplicationId: String | None
+    MessageGroupId: String | None
 
 
-PublishBatchRequestEntryList = List[PublishBatchRequestEntry]
+PublishBatchRequestEntryList = list[PublishBatchRequestEntry]
 
 
 class PublishBatchInput(ServiceRequest):
@@ -630,34 +630,34 @@ class PublishBatchInput(ServiceRequest):
 
 
 class PublishBatchResultEntry(TypedDict, total=False):
-    Id: Optional[String]
-    MessageId: Optional[messageId]
-    SequenceNumber: Optional[String]
+    Id: String | None
+    MessageId: messageId | None
+    SequenceNumber: String | None
 
 
-PublishBatchResultEntryList = List[PublishBatchResultEntry]
+PublishBatchResultEntryList = list[PublishBatchResultEntry]
 
 
 class PublishBatchResponse(TypedDict, total=False):
-    Successful: Optional[PublishBatchResultEntryList]
-    Failed: Optional[BatchResultErrorEntryList]
+    Successful: PublishBatchResultEntryList | None
+    Failed: BatchResultErrorEntryList | None
 
 
 class PublishInput(ServiceRequest):
-    TopicArn: Optional[topicARN]
-    TargetArn: Optional[String]
-    PhoneNumber: Optional[PhoneNumber]
+    TopicArn: topicARN | None
+    TargetArn: String | None
+    PhoneNumber: PhoneNumber | None
     Message: message
-    Subject: Optional[subject]
-    MessageStructure: Optional[messageStructure]
-    MessageAttributes: Optional[MessageAttributeMap]
-    MessageDeduplicationId: Optional[String]
-    MessageGroupId: Optional[String]
+    Subject: subject | None
+    MessageStructure: messageStructure | None
+    MessageAttributes: MessageAttributeMap | None
+    MessageDeduplicationId: String | None
+    MessageGroupId: String | None
 
 
 class PublishResponse(TypedDict, total=False):
-    MessageId: Optional[messageId]
-    SequenceNumber: Optional[String]
+    MessageId: messageId | None
+    SequenceNumber: String | None
 
 
 class PutDataProtectionPolicyInput(ServiceRequest):
@@ -691,28 +691,28 @@ class SetSMSAttributesResponse(TypedDict, total=False):
 class SetSubscriptionAttributesInput(ServiceRequest):
     SubscriptionArn: subscriptionARN
     AttributeName: attributeName
-    AttributeValue: Optional[attributeValue]
+    AttributeValue: attributeValue | None
 
 
 class SetTopicAttributesInput(ServiceRequest):
     TopicArn: topicARN
     AttributeName: attributeName
-    AttributeValue: Optional[attributeValue]
+    AttributeValue: attributeValue | None
 
 
 class SubscribeInput(ServiceRequest):
     TopicArn: topicARN
     Protocol: protocol
-    Endpoint: Optional[endpoint]
-    Attributes: Optional[SubscriptionAttributesMap]
-    ReturnSubscriptionArn: Optional[boolean]
+    Endpoint: endpoint | None
+    Attributes: SubscriptionAttributesMap | None
+    ReturnSubscriptionArn: boolean | None
 
 
 class SubscribeResponse(TypedDict, total=False):
-    SubscriptionArn: Optional[subscriptionARN]
+    SubscriptionArn: subscriptionARN | None
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class TagResourceRequest(ServiceRequest):
@@ -747,8 +747,8 @@ class VerifySMSSandboxPhoneNumberResult(TypedDict, total=False):
 
 
 class SnsApi:
-    service = "sns"
-    version = "2010-03-31"
+    service: str = "sns"
+    version: str = "2010-03-31"
 
     @handler("AddPermission")
     def add_permission(

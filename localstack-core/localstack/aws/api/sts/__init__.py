@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -97,12 +97,12 @@ class RegionDisabledException(ServiceException):
 
 
 class ProvidedContext(TypedDict, total=False):
-    ProviderArn: Optional[arnType]
-    ContextAssertion: Optional[contextAssertionType]
+    ProviderArn: arnType | None
+    ContextAssertion: contextAssertionType | None
 
 
-ProvidedContextsListType = List[ProvidedContext]
-tagKeyListType = List[tagKeyType]
+ProvidedContextsListType = list[ProvidedContext]
+tagKeyListType = list[tagKeyType]
 
 
 class Tag(TypedDict, total=False):
@@ -110,29 +110,29 @@ class Tag(TypedDict, total=False):
     Value: tagValueType
 
 
-tagListType = List[Tag]
+tagListType = list[Tag]
 
 
 class PolicyDescriptorType(TypedDict, total=False):
-    arn: Optional[arnType]
+    arn: arnType | None
 
 
-policyDescriptorListType = List[PolicyDescriptorType]
+policyDescriptorListType = list[PolicyDescriptorType]
 
 
 class AssumeRoleRequest(ServiceRequest):
     RoleArn: arnType
     RoleSessionName: roleSessionNameType
-    PolicyArns: Optional[policyDescriptorListType]
-    Policy: Optional[unrestrictedSessionPolicyDocumentType]
-    DurationSeconds: Optional[roleDurationSecondsType]
-    Tags: Optional[tagListType]
-    TransitiveTagKeys: Optional[tagKeyListType]
-    ExternalId: Optional[externalIdType]
-    SerialNumber: Optional[serialNumberType]
-    TokenCode: Optional[tokenCodeType]
-    SourceIdentity: Optional[sourceIdentityType]
-    ProvidedContexts: Optional[ProvidedContextsListType]
+    PolicyArns: policyDescriptorListType | None
+    Policy: unrestrictedSessionPolicyDocumentType | None
+    DurationSeconds: roleDurationSecondsType | None
+    Tags: tagListType | None
+    TransitiveTagKeys: tagKeyListType | None
+    ExternalId: externalIdType | None
+    SerialNumber: serialNumberType | None
+    TokenCode: tokenCodeType | None
+    SourceIdentity: sourceIdentityType | None
+    ProvidedContexts: ProvidedContextsListType | None
 
 
 class AssumedRoleUser(TypedDict, total=False):
@@ -151,62 +151,62 @@ class Credentials(TypedDict, total=False):
 
 
 class AssumeRoleResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    AssumedRoleUser: Optional[AssumedRoleUser]
-    PackedPolicySize: Optional[nonNegativeIntegerType]
-    SourceIdentity: Optional[sourceIdentityType]
+    Credentials: Credentials | None
+    AssumedRoleUser: AssumedRoleUser | None
+    PackedPolicySize: nonNegativeIntegerType | None
+    SourceIdentity: sourceIdentityType | None
 
 
 class AssumeRoleWithSAMLRequest(ServiceRequest):
     RoleArn: arnType
     PrincipalArn: arnType
     SAMLAssertion: SAMLAssertionType
-    PolicyArns: Optional[policyDescriptorListType]
-    Policy: Optional[sessionPolicyDocumentType]
-    DurationSeconds: Optional[roleDurationSecondsType]
+    PolicyArns: policyDescriptorListType | None
+    Policy: sessionPolicyDocumentType | None
+    DurationSeconds: roleDurationSecondsType | None
 
 
 class AssumeRoleWithSAMLResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    AssumedRoleUser: Optional[AssumedRoleUser]
-    PackedPolicySize: Optional[nonNegativeIntegerType]
-    Subject: Optional[Subject]
-    SubjectType: Optional[SubjectType]
-    Issuer: Optional[Issuer]
-    Audience: Optional[Audience]
-    NameQualifier: Optional[NameQualifier]
-    SourceIdentity: Optional[sourceIdentityType]
+    Credentials: Credentials | None
+    AssumedRoleUser: AssumedRoleUser | None
+    PackedPolicySize: nonNegativeIntegerType | None
+    Subject: Subject | None
+    SubjectType: SubjectType | None
+    Issuer: Issuer | None
+    Audience: Audience | None
+    NameQualifier: NameQualifier | None
+    SourceIdentity: sourceIdentityType | None
 
 
 class AssumeRoleWithWebIdentityRequest(ServiceRequest):
     RoleArn: arnType
     RoleSessionName: roleSessionNameType
     WebIdentityToken: clientTokenType
-    ProviderId: Optional[urlType]
-    PolicyArns: Optional[policyDescriptorListType]
-    Policy: Optional[sessionPolicyDocumentType]
-    DurationSeconds: Optional[roleDurationSecondsType]
+    ProviderId: urlType | None
+    PolicyArns: policyDescriptorListType | None
+    Policy: sessionPolicyDocumentType | None
+    DurationSeconds: roleDurationSecondsType | None
 
 
 class AssumeRoleWithWebIdentityResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    SubjectFromWebIdentityToken: Optional[webIdentitySubjectType]
-    AssumedRoleUser: Optional[AssumedRoleUser]
-    PackedPolicySize: Optional[nonNegativeIntegerType]
-    Provider: Optional[Issuer]
-    Audience: Optional[Audience]
-    SourceIdentity: Optional[sourceIdentityType]
+    Credentials: Credentials | None
+    SubjectFromWebIdentityToken: webIdentitySubjectType | None
+    AssumedRoleUser: AssumedRoleUser | None
+    PackedPolicySize: nonNegativeIntegerType | None
+    Provider: Issuer | None
+    Audience: Audience | None
+    SourceIdentity: sourceIdentityType | None
 
 
 class AssumeRootRequest(ServiceRequest):
     TargetPrincipal: TargetPrincipalType
     TaskPolicyArn: PolicyDescriptorType
-    DurationSeconds: Optional[RootDurationSecondsType]
+    DurationSeconds: RootDurationSecondsType | None
 
 
 class AssumeRootResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    SourceIdentity: Optional[sourceIdentityType]
+    Credentials: Credentials | None
+    SourceIdentity: sourceIdentityType | None
 
 
 class DecodeAuthorizationMessageRequest(ServiceRequest):
@@ -214,7 +214,7 @@ class DecodeAuthorizationMessageRequest(ServiceRequest):
 
 
 class DecodeAuthorizationMessageResponse(TypedDict, total=False):
-    DecodedMessage: Optional[decodedMessageType]
+    DecodedMessage: decodedMessageType | None
 
 
 class FederatedUser(TypedDict, total=False):
@@ -227,7 +227,7 @@ class GetAccessKeyInfoRequest(ServiceRequest):
 
 
 class GetAccessKeyInfoResponse(TypedDict, total=False):
-    Account: Optional[accountType]
+    Account: accountType | None
 
 
 class GetCallerIdentityRequest(ServiceRequest):
@@ -235,38 +235,38 @@ class GetCallerIdentityRequest(ServiceRequest):
 
 
 class GetCallerIdentityResponse(TypedDict, total=False):
-    UserId: Optional[userIdType]
-    Account: Optional[accountType]
-    Arn: Optional[arnType]
+    UserId: userIdType | None
+    Account: accountType | None
+    Arn: arnType | None
 
 
 class GetFederationTokenRequest(ServiceRequest):
     Name: userNameType
-    Policy: Optional[sessionPolicyDocumentType]
-    PolicyArns: Optional[policyDescriptorListType]
-    DurationSeconds: Optional[durationSecondsType]
-    Tags: Optional[tagListType]
+    Policy: sessionPolicyDocumentType | None
+    PolicyArns: policyDescriptorListType | None
+    DurationSeconds: durationSecondsType | None
+    Tags: tagListType | None
 
 
 class GetFederationTokenResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    FederatedUser: Optional[FederatedUser]
-    PackedPolicySize: Optional[nonNegativeIntegerType]
+    Credentials: Credentials | None
+    FederatedUser: FederatedUser | None
+    PackedPolicySize: nonNegativeIntegerType | None
 
 
 class GetSessionTokenRequest(ServiceRequest):
-    DurationSeconds: Optional[durationSecondsType]
-    SerialNumber: Optional[serialNumberType]
-    TokenCode: Optional[tokenCodeType]
+    DurationSeconds: durationSecondsType | None
+    SerialNumber: serialNumberType | None
+    TokenCode: tokenCodeType | None
 
 
 class GetSessionTokenResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
+    Credentials: Credentials | None
 
 
 class StsApi:
-    service = "sts"
-    version = "2011-06-15"
+    service: str = "sts"
+    version: str = "2011-06-15"
 
     @handler("AssumeRole")
     def assume_role(

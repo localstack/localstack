@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -489,13 +489,13 @@ dateType = datetime
 class AccessDetail(TypedDict, total=False):
     ServiceName: serviceNameType
     ServiceNamespace: serviceNamespaceType
-    Region: Optional[stringType]
-    EntityPath: Optional[organizationsEntityPathType]
-    LastAuthenticatedTime: Optional[dateType]
-    TotalAuthenticatedEntities: Optional[integerType]
+    Region: stringType | None
+    EntityPath: organizationsEntityPathType | None
+    LastAuthenticatedTime: dateType | None
+    TotalAuthenticatedEntities: integerType | None
 
 
-AccessDetails = List[AccessDetail]
+AccessDetails = list[AccessDetail]
 
 
 class AccessKey(TypedDict, total=False):
@@ -503,23 +503,23 @@ class AccessKey(TypedDict, total=False):
     AccessKeyId: accessKeyIdType
     Status: statusType
     SecretAccessKey: accessKeySecretType
-    CreateDate: Optional[dateType]
+    CreateDate: dateType | None
 
 
 class AccessKeyLastUsed(TypedDict, total=False):
-    LastUsedDate: Optional[dateType]
+    LastUsedDate: dateType | None
     ServiceName: stringType
     Region: stringType
 
 
 class AccessKeyMetadata(TypedDict, total=False):
-    UserName: Optional[userNameType]
-    AccessKeyId: Optional[accessKeyIdType]
-    Status: Optional[statusType]
-    CreateDate: Optional[dateType]
+    UserName: userNameType | None
+    AccessKeyId: accessKeyIdType | None
+    Status: statusType | None
+    CreateDate: dateType | None
 
 
-ActionNameListType = List[ActionNameType]
+ActionNameListType = list[ActionNameType]
 
 
 class AddClientIDToOpenIDConnectProviderRequest(ServiceRequest):
@@ -537,7 +537,7 @@ class AddUserToGroupRequest(ServiceRequest):
     UserName: existingUserNameType
 
 
-ArnListType = List[arnType]
+ArnListType = list[arnType]
 
 
 class AttachGroupPolicyRequest(ServiceRequest):
@@ -556,17 +556,17 @@ class AttachUserPolicyRequest(ServiceRequest):
 
 
 class AttachedPermissionsBoundary(TypedDict, total=False):
-    PermissionsBoundaryType: Optional[PermissionsBoundaryAttachmentType]
-    PermissionsBoundaryArn: Optional[arnType]
+    PermissionsBoundaryType: PermissionsBoundaryAttachmentType | None
+    PermissionsBoundaryArn: arnType | None
 
 
 class AttachedPolicy(TypedDict, total=False):
-    PolicyName: Optional[policyNameType]
-    PolicyArn: Optional[arnType]
+    PolicyName: policyNameType | None
+    PolicyArn: arnType | None
 
 
 BootstrapDatum = bytes
-CertificationMapType = Dict[CertificationKeyType, CertificationValueType]
+CertificationMapType = dict[CertificationKeyType, CertificationValueType]
 
 
 class ChangePasswordRequest(ServiceRequest):
@@ -574,21 +574,21 @@ class ChangePasswordRequest(ServiceRequest):
     NewPassword: passwordType
 
 
-ContextKeyValueListType = List[ContextKeyValueType]
+ContextKeyValueListType = list[ContextKeyValueType]
 
 
 class ContextEntry(TypedDict, total=False):
-    ContextKeyName: Optional[ContextKeyNameType]
-    ContextKeyValues: Optional[ContextKeyValueListType]
-    ContextKeyType: Optional[ContextKeyTypeEnum]
+    ContextKeyName: ContextKeyNameType | None
+    ContextKeyValues: ContextKeyValueListType | None
+    ContextKeyType: ContextKeyTypeEnum | None
 
 
-ContextEntryListType = List[ContextEntry]
-ContextKeyNamesResultListType = List[ContextKeyNameType]
+ContextEntryListType = list[ContextEntry]
+ContextKeyNamesResultListType = list[ContextKeyNameType]
 
 
 class CreateAccessKeyRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
 
 
 class CreateAccessKeyResponse(TypedDict, total=False):
@@ -600,7 +600,7 @@ class CreateAccountAliasRequest(ServiceRequest):
 
 
 class CreateGroupRequest(ServiceRequest):
-    Path: Optional[pathType]
+    Path: pathType | None
     GroupName: groupNameType
 
 
@@ -621,18 +621,18 @@ class Tag(TypedDict, total=False):
     Value: tagValueType
 
 
-tagListType = List[Tag]
+tagListType = list[Tag]
 
 
 class CreateInstanceProfileRequest(ServiceRequest):
     InstanceProfileName: instanceProfileNameType
-    Path: Optional[pathType]
-    Tags: Optional[tagListType]
+    Path: pathType | None
+    Tags: tagListType | None
 
 
 class RoleLastUsed(TypedDict, total=False):
-    LastUsedDate: Optional[dateType]
-    Region: Optional[stringType]
+    LastUsedDate: dateType | None
+    Region: stringType | None
 
 
 class Role(TypedDict, total=False):
@@ -641,15 +641,15 @@ class Role(TypedDict, total=False):
     RoleId: idType
     Arn: arnType
     CreateDate: dateType
-    AssumeRolePolicyDocument: Optional[policyDocumentType]
-    Description: Optional[roleDescriptionType]
-    MaxSessionDuration: Optional[roleMaxSessionDurationType]
-    PermissionsBoundary: Optional[AttachedPermissionsBoundary]
-    Tags: Optional[tagListType]
-    RoleLastUsed: Optional[RoleLastUsed]
+    AssumeRolePolicyDocument: policyDocumentType | None
+    Description: roleDescriptionType | None
+    MaxSessionDuration: roleMaxSessionDurationType | None
+    PermissionsBoundary: AttachedPermissionsBoundary | None
+    Tags: tagListType | None
+    RoleLastUsed: RoleLastUsed | None
 
 
-roleListType = List[Role]
+roleListType = list[Role]
 
 
 class InstanceProfile(TypedDict, total=False):
@@ -659,7 +659,7 @@ class InstanceProfile(TypedDict, total=False):
     Arn: arnType
     CreateDate: dateType
     Roles: roleListType
-    Tags: Optional[tagListType]
+    Tags: tagListType | None
 
 
 class CreateInstanceProfileResponse(TypedDict, total=False):
@@ -667,89 +667,89 @@ class CreateInstanceProfileResponse(TypedDict, total=False):
 
 
 class CreateLoginProfileRequest(ServiceRequest):
-    UserName: Optional[userNameType]
-    Password: Optional[passwordType]
-    PasswordResetRequired: Optional[booleanType]
+    UserName: userNameType | None
+    Password: passwordType | None
+    PasswordResetRequired: booleanType | None
 
 
 class LoginProfile(TypedDict, total=False):
     UserName: userNameType
     CreateDate: dateType
-    PasswordResetRequired: Optional[booleanType]
+    PasswordResetRequired: booleanType | None
 
 
 class CreateLoginProfileResponse(TypedDict, total=False):
     LoginProfile: LoginProfile
 
 
-thumbprintListType = List[thumbprintType]
-clientIDListType = List[clientIDType]
+thumbprintListType = list[thumbprintType]
+clientIDListType = list[clientIDType]
 
 
 class CreateOpenIDConnectProviderRequest(ServiceRequest):
     Url: OpenIDConnectProviderUrlType
-    ClientIDList: Optional[clientIDListType]
-    ThumbprintList: Optional[thumbprintListType]
-    Tags: Optional[tagListType]
+    ClientIDList: clientIDListType | None
+    ThumbprintList: thumbprintListType | None
+    Tags: tagListType | None
 
 
 class CreateOpenIDConnectProviderResponse(TypedDict, total=False):
-    OpenIDConnectProviderArn: Optional[arnType]
-    Tags: Optional[tagListType]
+    OpenIDConnectProviderArn: arnType | None
+    Tags: tagListType | None
 
 
 class CreatePolicyRequest(ServiceRequest):
     PolicyName: policyNameType
-    Path: Optional[policyPathType]
+    Path: policyPathType | None
     PolicyDocument: policyDocumentType
-    Description: Optional[policyDescriptionType]
-    Tags: Optional[tagListType]
+    Description: policyDescriptionType | None
+    Tags: tagListType | None
 
 
 class Policy(TypedDict, total=False):
-    PolicyName: Optional[policyNameType]
-    PolicyId: Optional[idType]
-    Arn: Optional[arnType]
-    Path: Optional[policyPathType]
-    DefaultVersionId: Optional[policyVersionIdType]
-    AttachmentCount: Optional[attachmentCountType]
-    PermissionsBoundaryUsageCount: Optional[attachmentCountType]
-    IsAttachable: Optional[booleanType]
-    Description: Optional[policyDescriptionType]
-    CreateDate: Optional[dateType]
-    UpdateDate: Optional[dateType]
-    Tags: Optional[tagListType]
+    PolicyName: policyNameType | None
+    PolicyId: idType | None
+    Arn: arnType | None
+    Path: policyPathType | None
+    DefaultVersionId: policyVersionIdType | None
+    AttachmentCount: attachmentCountType | None
+    PermissionsBoundaryUsageCount: attachmentCountType | None
+    IsAttachable: booleanType | None
+    Description: policyDescriptionType | None
+    CreateDate: dateType | None
+    UpdateDate: dateType | None
+    Tags: tagListType | None
 
 
 class CreatePolicyResponse(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
 class CreatePolicyVersionRequest(ServiceRequest):
     PolicyArn: arnType
     PolicyDocument: policyDocumentType
-    SetAsDefault: Optional[booleanType]
+    SetAsDefault: booleanType | None
 
 
 class PolicyVersion(TypedDict, total=False):
-    Document: Optional[policyDocumentType]
-    VersionId: Optional[policyVersionIdType]
-    IsDefaultVersion: Optional[booleanType]
-    CreateDate: Optional[dateType]
+    Document: policyDocumentType | None
+    VersionId: policyVersionIdType | None
+    IsDefaultVersion: booleanType | None
+    CreateDate: dateType | None
 
 
 class CreatePolicyVersionResponse(TypedDict, total=False):
-    PolicyVersion: Optional[PolicyVersion]
+    PolicyVersion: PolicyVersion | None
 
 
 class CreateRoleRequest(ServiceRequest):
-    Path: Optional[pathType]
+    Path: pathType | None
     RoleName: roleNameType
     AssumeRolePolicyDocument: policyDocumentType
-    Description: Optional[roleDescriptionType]
-    MaxSessionDuration: Optional[roleMaxSessionDurationType]
-    PermissionsBoundary: Optional[arnType]
-    Tags: Optional[tagListType]
+    Description: roleDescriptionType | None
+    MaxSessionDuration: roleMaxSessionDurationType | None
+    PermissionsBoundary: arnType | None
+    Tags: tagListType | None
 
 
 class CreateRoleResponse(TypedDict, total=False):
@@ -759,54 +759,54 @@ class CreateRoleResponse(TypedDict, total=False):
 class CreateSAMLProviderRequest(ServiceRequest):
     SAMLMetadataDocument: SAMLMetadataDocumentType
     Name: SAMLProviderNameType
-    Tags: Optional[tagListType]
-    AssertionEncryptionMode: Optional[assertionEncryptionModeType]
-    AddPrivateKey: Optional[privateKeyType]
+    Tags: tagListType | None
+    AssertionEncryptionMode: assertionEncryptionModeType | None
+    AddPrivateKey: privateKeyType | None
 
 
 class CreateSAMLProviderResponse(TypedDict, total=False):
-    SAMLProviderArn: Optional[arnType]
-    Tags: Optional[tagListType]
+    SAMLProviderArn: arnType | None
+    Tags: tagListType | None
 
 
 class CreateServiceLinkedRoleRequest(ServiceRequest):
     AWSServiceName: groupNameType
-    Description: Optional[roleDescriptionType]
-    CustomSuffix: Optional[customSuffixType]
+    Description: roleDescriptionType | None
+    CustomSuffix: customSuffixType | None
 
 
 class CreateServiceLinkedRoleResponse(TypedDict, total=False):
-    Role: Optional[Role]
+    Role: Role | None
 
 
 class CreateServiceSpecificCredentialRequest(ServiceRequest):
     UserName: userNameType
     ServiceName: serviceName
-    CredentialAgeDays: Optional[credentialAgeDays]
+    CredentialAgeDays: credentialAgeDays | None
 
 
 class ServiceSpecificCredential(TypedDict, total=False):
     CreateDate: dateType
-    ExpirationDate: Optional[dateType]
+    ExpirationDate: dateType | None
     ServiceName: serviceName
-    ServiceUserName: Optional[serviceUserName]
-    ServicePassword: Optional[servicePassword]
-    ServiceCredentialAlias: Optional[serviceCredentialAlias]
-    ServiceCredentialSecret: Optional[serviceCredentialSecret]
+    ServiceUserName: serviceUserName | None
+    ServicePassword: servicePassword | None
+    ServiceCredentialAlias: serviceCredentialAlias | None
+    ServiceCredentialSecret: serviceCredentialSecret | None
     ServiceSpecificCredentialId: serviceSpecificCredentialId
     UserName: userNameType
     Status: statusType
 
 
 class CreateServiceSpecificCredentialResponse(TypedDict, total=False):
-    ServiceSpecificCredential: Optional[ServiceSpecificCredential]
+    ServiceSpecificCredential: ServiceSpecificCredential | None
 
 
 class CreateUserRequest(ServiceRequest):
-    Path: Optional[pathType]
+    Path: pathType | None
     UserName: userNameType
-    PermissionsBoundary: Optional[arnType]
-    Tags: Optional[tagListType]
+    PermissionsBoundary: arnType | None
+    Tags: tagListType | None
 
 
 class User(TypedDict, total=False):
@@ -815,28 +815,28 @@ class User(TypedDict, total=False):
     UserId: idType
     Arn: arnType
     CreateDate: dateType
-    PasswordLastUsed: Optional[dateType]
-    PermissionsBoundary: Optional[AttachedPermissionsBoundary]
-    Tags: Optional[tagListType]
+    PasswordLastUsed: dateType | None
+    PermissionsBoundary: AttachedPermissionsBoundary | None
+    Tags: tagListType | None
 
 
 class CreateUserResponse(TypedDict, total=False):
-    User: Optional[User]
+    User: User | None
 
 
 class CreateVirtualMFADeviceRequest(ServiceRequest):
-    Path: Optional[pathType]
+    Path: pathType | None
     VirtualMFADeviceName: virtualMFADeviceName
-    Tags: Optional[tagListType]
+    Tags: tagListType | None
 
 
 class VirtualMFADevice(TypedDict, total=False):
     SerialNumber: serialNumberType
-    Base32StringSeed: Optional[BootstrapDatum]
-    QRCodePNG: Optional[BootstrapDatum]
-    User: Optional[User]
-    EnableDate: Optional[dateType]
-    Tags: Optional[tagListType]
+    Base32StringSeed: BootstrapDatum | None
+    QRCodePNG: BootstrapDatum | None
+    User: User | None
+    EnableDate: dateType | None
+    Tags: tagListType | None
 
 
 class CreateVirtualMFADeviceResponse(TypedDict, total=False):
@@ -844,12 +844,12 @@ class CreateVirtualMFADeviceResponse(TypedDict, total=False):
 
 
 class DeactivateMFADeviceRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
     SerialNumber: serialNumberType
 
 
 class DeleteAccessKeyRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
     AccessKeyId: accessKeyIdType
 
 
@@ -871,7 +871,7 @@ class DeleteInstanceProfileRequest(ServiceRequest):
 
 
 class DeleteLoginProfileRequest(ServiceRequest):
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
 
 
 class DeleteOpenIDConnectProviderRequest(ServiceRequest):
@@ -922,12 +922,12 @@ class DeleteServiceLinkedRoleResponse(TypedDict, total=False):
 
 
 class DeleteServiceSpecificCredentialRequest(ServiceRequest):
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
     ServiceSpecificCredentialId: serviceSpecificCredentialId
 
 
 class DeleteSigningCertificateRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
     CertificateId: certificateIdType
 
 
@@ -949,16 +949,16 @@ class DeleteVirtualMFADeviceRequest(ServiceRequest):
 
 
 class RoleUsageType(TypedDict, total=False):
-    Region: Optional[RegionNameType]
-    Resources: Optional[ArnListType]
+    Region: RegionNameType | None
+    Resources: ArnListType | None
 
 
-RoleUsageListType = List[RoleUsageType]
+RoleUsageListType = list[RoleUsageType]
 
 
 class DeletionTaskFailureReasonType(TypedDict, total=False):
-    Reason: Optional[ReasonType]
-    RoleUsageList: Optional[RoleUsageListType]
+    Reason: ReasonType | None
+    RoleUsageList: RoleUsageListType | None
 
 
 class DetachGroupPolicyRequest(ServiceRequest):
@@ -980,12 +980,12 @@ class DisableOrganizationsRootCredentialsManagementRequest(ServiceRequest):
     pass
 
 
-FeaturesListType = List[FeatureType]
+FeaturesListType = list[FeatureType]
 
 
 class DisableOrganizationsRootCredentialsManagementResponse(TypedDict, total=False):
-    OrganizationId: Optional[OrganizationIdType]
-    EnabledFeatures: Optional[FeaturesListType]
+    OrganizationId: OrganizationIdType | None
+    EnabledFeatures: FeaturesListType | None
 
 
 class DisableOrganizationsRootSessionsRequest(ServiceRequest):
@@ -993,8 +993,8 @@ class DisableOrganizationsRootSessionsRequest(ServiceRequest):
 
 
 class DisableOrganizationsRootSessionsResponse(TypedDict, total=False):
-    OrganizationId: Optional[OrganizationIdType]
-    EnabledFeatures: Optional[FeaturesListType]
+    OrganizationId: OrganizationIdType | None
+    EnabledFeatures: FeaturesListType | None
 
 
 class EnableMFADeviceRequest(ServiceRequest):
@@ -1009,8 +1009,8 @@ class EnableOrganizationsRootCredentialsManagementRequest(ServiceRequest):
 
 
 class EnableOrganizationsRootCredentialsManagementResponse(TypedDict, total=False):
-    OrganizationId: Optional[OrganizationIdType]
-    EnabledFeatures: Optional[FeaturesListType]
+    OrganizationId: OrganizationIdType | None
+    EnabledFeatures: FeaturesListType | None
 
 
 class EnableOrganizationsRootSessionsRequest(ServiceRequest):
@@ -1018,8 +1018,8 @@ class EnableOrganizationsRootSessionsRequest(ServiceRequest):
 
 
 class EnableOrganizationsRootSessionsResponse(TypedDict, total=False):
-    OrganizationId: Optional[OrganizationIdType]
-    EnabledFeatures: Optional[FeaturesListType]
+    OrganizationId: OrganizationIdType | None
+    EnabledFeatures: FeaturesListType | None
 
 
 class EntityInfo(TypedDict, total=False):
@@ -1027,12 +1027,12 @@ class EntityInfo(TypedDict, total=False):
     Name: userNameType
     Type: policyOwnerEntityType
     Id: idType
-    Path: Optional[pathType]
+    Path: pathType | None
 
 
 class EntityDetails(TypedDict, total=False):
     EntityInfo: EntityInfo
-    LastAuthenticated: Optional[dateType]
+    LastAuthenticated: dateType | None
 
 
 class ErrorDetails(TypedDict, total=False):
@@ -1040,80 +1040,80 @@ class ErrorDetails(TypedDict, total=False):
     Code: stringType
 
 
-EvalDecisionDetailsType = Dict[EvalDecisionSourceType, PolicyEvaluationDecisionType]
+EvalDecisionDetailsType = dict[EvalDecisionSourceType, PolicyEvaluationDecisionType]
 
 
 class PermissionsBoundaryDecisionDetail(TypedDict, total=False):
-    AllowedByPermissionsBoundary: Optional[booleanType]
+    AllowedByPermissionsBoundary: booleanType | None
 
 
 class Position(TypedDict, total=False):
-    Line: Optional[LineNumber]
-    Column: Optional[ColumnNumber]
+    Line: LineNumber | None
+    Column: ColumnNumber | None
 
 
 class Statement(TypedDict, total=False):
-    SourcePolicyId: Optional[PolicyIdentifierType]
-    SourcePolicyType: Optional[PolicySourceType]
-    StartPosition: Optional[Position]
-    EndPosition: Optional[Position]
+    SourcePolicyId: PolicyIdentifierType | None
+    SourcePolicyType: PolicySourceType | None
+    StartPosition: Position | None
+    EndPosition: Position | None
 
 
-StatementListType = List[Statement]
+StatementListType = list[Statement]
 
 
 class ResourceSpecificResult(TypedDict, total=False):
     EvalResourceName: ResourceNameType
     EvalResourceDecision: PolicyEvaluationDecisionType
-    MatchedStatements: Optional[StatementListType]
-    MissingContextValues: Optional[ContextKeyNamesResultListType]
-    EvalDecisionDetails: Optional[EvalDecisionDetailsType]
-    PermissionsBoundaryDecisionDetail: Optional[PermissionsBoundaryDecisionDetail]
+    MatchedStatements: StatementListType | None
+    MissingContextValues: ContextKeyNamesResultListType | None
+    EvalDecisionDetails: EvalDecisionDetailsType | None
+    PermissionsBoundaryDecisionDetail: PermissionsBoundaryDecisionDetail | None
 
 
-ResourceSpecificResultListType = List[ResourceSpecificResult]
+ResourceSpecificResultListType = list[ResourceSpecificResult]
 
 
 class OrganizationsDecisionDetail(TypedDict, total=False):
-    AllowedByOrganizations: Optional[booleanType]
+    AllowedByOrganizations: booleanType | None
 
 
 class EvaluationResult(TypedDict, total=False):
     EvalActionName: ActionNameType
-    EvalResourceName: Optional[ResourceNameType]
+    EvalResourceName: ResourceNameType | None
     EvalDecision: PolicyEvaluationDecisionType
-    MatchedStatements: Optional[StatementListType]
-    MissingContextValues: Optional[ContextKeyNamesResultListType]
-    OrganizationsDecisionDetail: Optional[OrganizationsDecisionDetail]
-    PermissionsBoundaryDecisionDetail: Optional[PermissionsBoundaryDecisionDetail]
-    EvalDecisionDetails: Optional[EvalDecisionDetailsType]
-    ResourceSpecificResults: Optional[ResourceSpecificResultListType]
+    MatchedStatements: StatementListType | None
+    MissingContextValues: ContextKeyNamesResultListType | None
+    OrganizationsDecisionDetail: OrganizationsDecisionDetail | None
+    PermissionsBoundaryDecisionDetail: PermissionsBoundaryDecisionDetail | None
+    EvalDecisionDetails: EvalDecisionDetailsType | None
+    ResourceSpecificResults: ResourceSpecificResultListType | None
 
 
-EvaluationResultsListType = List[EvaluationResult]
+EvaluationResultsListType = list[EvaluationResult]
 
 
 class GenerateCredentialReportResponse(TypedDict, total=False):
-    State: Optional[ReportStateType]
-    Description: Optional[ReportStateDescriptionType]
+    State: ReportStateType | None
+    Description: ReportStateDescriptionType | None
 
 
 class GenerateOrganizationsAccessReportRequest(ServiceRequest):
     EntityPath: organizationsEntityPathType
-    OrganizationsPolicyId: Optional[organizationsPolicyIdType]
+    OrganizationsPolicyId: organizationsPolicyIdType | None
 
 
 class GenerateOrganizationsAccessReportResponse(TypedDict, total=False):
-    JobId: Optional[jobIDType]
+    JobId: jobIDType | None
 
 
 class GenerateServiceLastAccessedDetailsRequest(ServiceRequest):
     Arn: arnType
-    Granularity: Optional[AccessAdvisorUsageGranularityType]
+    Granularity: AccessAdvisorUsageGranularityType | None
 
 
 class GenerateServiceLastAccessedDetailsResponse(TypedDict, total=False):
-    JobId: Optional[jobIDType]
+    JobId: jobIDType | None
 
 
 class GetAccessKeyLastUsedRequest(ServiceRequest):
@@ -1121,132 +1121,132 @@ class GetAccessKeyLastUsedRequest(ServiceRequest):
 
 
 class GetAccessKeyLastUsedResponse(TypedDict, total=False):
-    UserName: Optional[existingUserNameType]
-    AccessKeyLastUsed: Optional[AccessKeyLastUsed]
+    UserName: existingUserNameType | None
+    AccessKeyLastUsed: AccessKeyLastUsed | None
 
 
-entityListType = List[EntityType]
+entityListType = list[EntityType]
 
 
 class GetAccountAuthorizationDetailsRequest(ServiceRequest):
-    Filter: Optional[entityListType]
-    MaxItems: Optional[maxItemsType]
-    Marker: Optional[markerType]
+    Filter: entityListType | None
+    MaxItems: maxItemsType | None
+    Marker: markerType | None
 
 
-policyDocumentVersionListType = List[PolicyVersion]
+policyDocumentVersionListType = list[PolicyVersion]
 
 
 class ManagedPolicyDetail(TypedDict, total=False):
-    PolicyName: Optional[policyNameType]
-    PolicyId: Optional[idType]
-    Arn: Optional[arnType]
-    Path: Optional[policyPathType]
-    DefaultVersionId: Optional[policyVersionIdType]
-    AttachmentCount: Optional[attachmentCountType]
-    PermissionsBoundaryUsageCount: Optional[attachmentCountType]
-    IsAttachable: Optional[booleanType]
-    Description: Optional[policyDescriptionType]
-    CreateDate: Optional[dateType]
-    UpdateDate: Optional[dateType]
-    PolicyVersionList: Optional[policyDocumentVersionListType]
+    PolicyName: policyNameType | None
+    PolicyId: idType | None
+    Arn: arnType | None
+    Path: policyPathType | None
+    DefaultVersionId: policyVersionIdType | None
+    AttachmentCount: attachmentCountType | None
+    PermissionsBoundaryUsageCount: attachmentCountType | None
+    IsAttachable: booleanType | None
+    Description: policyDescriptionType | None
+    CreateDate: dateType | None
+    UpdateDate: dateType | None
+    PolicyVersionList: policyDocumentVersionListType | None
 
 
-ManagedPolicyDetailListType = List[ManagedPolicyDetail]
-attachedPoliciesListType = List[AttachedPolicy]
+ManagedPolicyDetailListType = list[ManagedPolicyDetail]
+attachedPoliciesListType = list[AttachedPolicy]
 
 
 class PolicyDetail(TypedDict, total=False):
-    PolicyName: Optional[policyNameType]
-    PolicyDocument: Optional[policyDocumentType]
+    PolicyName: policyNameType | None
+    PolicyDocument: policyDocumentType | None
 
 
-policyDetailListType = List[PolicyDetail]
-instanceProfileListType = List[InstanceProfile]
+policyDetailListType = list[PolicyDetail]
+instanceProfileListType = list[InstanceProfile]
 
 
 class RoleDetail(TypedDict, total=False):
-    Path: Optional[pathType]
-    RoleName: Optional[roleNameType]
-    RoleId: Optional[idType]
-    Arn: Optional[arnType]
-    CreateDate: Optional[dateType]
-    AssumeRolePolicyDocument: Optional[policyDocumentType]
-    InstanceProfileList: Optional[instanceProfileListType]
-    RolePolicyList: Optional[policyDetailListType]
-    AttachedManagedPolicies: Optional[attachedPoliciesListType]
-    PermissionsBoundary: Optional[AttachedPermissionsBoundary]
-    Tags: Optional[tagListType]
-    RoleLastUsed: Optional[RoleLastUsed]
+    Path: pathType | None
+    RoleName: roleNameType | None
+    RoleId: idType | None
+    Arn: arnType | None
+    CreateDate: dateType | None
+    AssumeRolePolicyDocument: policyDocumentType | None
+    InstanceProfileList: instanceProfileListType | None
+    RolePolicyList: policyDetailListType | None
+    AttachedManagedPolicies: attachedPoliciesListType | None
+    PermissionsBoundary: AttachedPermissionsBoundary | None
+    Tags: tagListType | None
+    RoleLastUsed: RoleLastUsed | None
 
 
-roleDetailListType = List[RoleDetail]
+roleDetailListType = list[RoleDetail]
 
 
 class GroupDetail(TypedDict, total=False):
-    Path: Optional[pathType]
-    GroupName: Optional[groupNameType]
-    GroupId: Optional[idType]
-    Arn: Optional[arnType]
-    CreateDate: Optional[dateType]
-    GroupPolicyList: Optional[policyDetailListType]
-    AttachedManagedPolicies: Optional[attachedPoliciesListType]
+    Path: pathType | None
+    GroupName: groupNameType | None
+    GroupId: idType | None
+    Arn: arnType | None
+    CreateDate: dateType | None
+    GroupPolicyList: policyDetailListType | None
+    AttachedManagedPolicies: attachedPoliciesListType | None
 
 
-groupDetailListType = List[GroupDetail]
-groupNameListType = List[groupNameType]
+groupDetailListType = list[GroupDetail]
+groupNameListType = list[groupNameType]
 
 
 class UserDetail(TypedDict, total=False):
-    Path: Optional[pathType]
-    UserName: Optional[userNameType]
-    UserId: Optional[idType]
-    Arn: Optional[arnType]
-    CreateDate: Optional[dateType]
-    UserPolicyList: Optional[policyDetailListType]
-    GroupList: Optional[groupNameListType]
-    AttachedManagedPolicies: Optional[attachedPoliciesListType]
-    PermissionsBoundary: Optional[AttachedPermissionsBoundary]
-    Tags: Optional[tagListType]
+    Path: pathType | None
+    UserName: userNameType | None
+    UserId: idType | None
+    Arn: arnType | None
+    CreateDate: dateType | None
+    UserPolicyList: policyDetailListType | None
+    GroupList: groupNameListType | None
+    AttachedManagedPolicies: attachedPoliciesListType | None
+    PermissionsBoundary: AttachedPermissionsBoundary | None
+    Tags: tagListType | None
 
 
-userDetailListType = List[UserDetail]
+userDetailListType = list[UserDetail]
 
 
 class GetAccountAuthorizationDetailsResponse(TypedDict, total=False):
-    UserDetailList: Optional[userDetailListType]
-    GroupDetailList: Optional[groupDetailListType]
-    RoleDetailList: Optional[roleDetailListType]
-    Policies: Optional[ManagedPolicyDetailListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    UserDetailList: userDetailListType | None
+    GroupDetailList: groupDetailListType | None
+    RoleDetailList: roleDetailListType | None
+    Policies: ManagedPolicyDetailListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class PasswordPolicy(TypedDict, total=False):
-    MinimumPasswordLength: Optional[minimumPasswordLengthType]
-    RequireSymbols: Optional[booleanType]
-    RequireNumbers: Optional[booleanType]
-    RequireUppercaseCharacters: Optional[booleanType]
-    RequireLowercaseCharacters: Optional[booleanType]
-    AllowUsersToChangePassword: Optional[booleanType]
-    ExpirePasswords: Optional[booleanType]
-    MaxPasswordAge: Optional[maxPasswordAgeType]
-    PasswordReusePrevention: Optional[passwordReusePreventionType]
-    HardExpiry: Optional[booleanObjectType]
+    MinimumPasswordLength: minimumPasswordLengthType | None
+    RequireSymbols: booleanType | None
+    RequireNumbers: booleanType | None
+    RequireUppercaseCharacters: booleanType | None
+    RequireLowercaseCharacters: booleanType | None
+    AllowUsersToChangePassword: booleanType | None
+    ExpirePasswords: booleanType | None
+    MaxPasswordAge: maxPasswordAgeType | None
+    PasswordReusePrevention: passwordReusePreventionType | None
+    HardExpiry: booleanObjectType | None
 
 
 class GetAccountPasswordPolicyResponse(TypedDict, total=False):
     PasswordPolicy: PasswordPolicy
 
 
-summaryMapType = Dict[summaryKeyType, summaryValueType]
+summaryMapType = dict[summaryKeyType, summaryValueType]
 
 
 class GetAccountSummaryResponse(TypedDict, total=False):
-    SummaryMap: Optional[summaryMapType]
+    SummaryMap: summaryMapType | None
 
 
-SimulationPolicyListType = List[policyDocumentType]
+SimulationPolicyListType = list[policyDocumentType]
 
 
 class GetContextKeysForCustomPolicyRequest(ServiceRequest):
@@ -1254,21 +1254,21 @@ class GetContextKeysForCustomPolicyRequest(ServiceRequest):
 
 
 class GetContextKeysForPolicyResponse(TypedDict, total=False):
-    ContextKeyNames: Optional[ContextKeyNamesResultListType]
+    ContextKeyNames: ContextKeyNamesResultListType | None
 
 
 class GetContextKeysForPrincipalPolicyRequest(ServiceRequest):
     PolicySourceArn: arnType
-    PolicyInputList: Optional[SimulationPolicyListType]
+    PolicyInputList: SimulationPolicyListType | None
 
 
 ReportContentType = bytes
 
 
 class GetCredentialReportResponse(TypedDict, total=False):
-    Content: Optional[ReportContentType]
-    ReportFormat: Optional[ReportFormatType]
-    GeneratedTime: Optional[dateType]
+    Content: ReportContentType | None
+    ReportFormat: ReportFormatType | None
+    GeneratedTime: dateType | None
 
 
 class GetGroupPolicyRequest(ServiceRequest):
@@ -1284,18 +1284,18 @@ class GetGroupPolicyResponse(TypedDict, total=False):
 
 class GetGroupRequest(ServiceRequest):
     GroupName: groupNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-userListType = List[User]
+userListType = list[User]
 
 
 class GetGroupResponse(TypedDict, total=False):
     Group: Group
     Users: userListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class GetInstanceProfileRequest(ServiceRequest):
@@ -1307,7 +1307,7 @@ class GetInstanceProfileResponse(TypedDict, total=False):
 
 
 class GetLoginProfileRequest(ServiceRequest):
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
 
 
 class GetLoginProfileResponse(TypedDict, total=False):
@@ -1316,14 +1316,14 @@ class GetLoginProfileResponse(TypedDict, total=False):
 
 class GetMFADeviceRequest(ServiceRequest):
     SerialNumber: serialNumberType
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
 
 
 class GetMFADeviceResponse(TypedDict, total=False):
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
     SerialNumber: serialNumberType
-    EnableDate: Optional[dateType]
-    Certifications: Optional[CertificationMapType]
+    EnableDate: dateType | None
+    Certifications: CertificationMapType | None
 
 
 class GetOpenIDConnectProviderRequest(ServiceRequest):
@@ -1331,30 +1331,30 @@ class GetOpenIDConnectProviderRequest(ServiceRequest):
 
 
 class GetOpenIDConnectProviderResponse(TypedDict, total=False):
-    Url: Optional[OpenIDConnectProviderUrlType]
-    ClientIDList: Optional[clientIDListType]
-    ThumbprintList: Optional[thumbprintListType]
-    CreateDate: Optional[dateType]
-    Tags: Optional[tagListType]
+    Url: OpenIDConnectProviderUrlType | None
+    ClientIDList: clientIDListType | None
+    ThumbprintList: thumbprintListType | None
+    CreateDate: dateType | None
+    Tags: tagListType | None
 
 
 class GetOrganizationsAccessReportRequest(ServiceRequest):
     JobId: jobIDType
-    MaxItems: Optional[maxItemsType]
-    Marker: Optional[markerType]
-    SortKey: Optional[sortKeyType]
+    MaxItems: maxItemsType | None
+    Marker: markerType | None
+    SortKey: sortKeyType | None
 
 
 class GetOrganizationsAccessReportResponse(TypedDict, total=False):
     JobStatus: jobStatusType
     JobCreationDate: dateType
-    JobCompletionDate: Optional[dateType]
-    NumberOfServicesAccessible: Optional[integerType]
-    NumberOfServicesNotAccessed: Optional[integerType]
-    AccessDetails: Optional[AccessDetails]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[markerType]
-    ErrorDetails: Optional[ErrorDetails]
+    JobCompletionDate: dateType | None
+    NumberOfServicesAccessible: integerType | None
+    NumberOfServicesNotAccessed: integerType | None
+    AccessDetails: AccessDetails | None
+    IsTruncated: booleanType | None
+    Marker: markerType | None
+    ErrorDetails: ErrorDetails | None
 
 
 class GetPolicyRequest(ServiceRequest):
@@ -1362,7 +1362,7 @@ class GetPolicyRequest(ServiceRequest):
 
 
 class GetPolicyResponse(TypedDict, total=False):
-    Policy: Optional[Policy]
+    Policy: Policy | None
 
 
 class GetPolicyVersionRequest(ServiceRequest):
@@ -1371,7 +1371,7 @@ class GetPolicyVersionRequest(ServiceRequest):
 
 
 class GetPolicyVersionResponse(TypedDict, total=False):
-    PolicyVersion: Optional[PolicyVersion]
+    PolicyVersion: PolicyVersion | None
 
 
 class GetRolePolicyRequest(ServiceRequest):
@@ -1398,21 +1398,21 @@ class GetSAMLProviderRequest(ServiceRequest):
 
 
 class SAMLPrivateKey(TypedDict, total=False):
-    KeyId: Optional[privateKeyIdType]
-    Timestamp: Optional[dateType]
+    KeyId: privateKeyIdType | None
+    Timestamp: dateType | None
 
 
-privateKeyList = List[SAMLPrivateKey]
+privateKeyList = list[SAMLPrivateKey]
 
 
 class GetSAMLProviderResponse(TypedDict, total=False):
-    SAMLProviderUUID: Optional[privateKeyIdType]
-    SAMLMetadataDocument: Optional[SAMLMetadataDocumentType]
-    CreateDate: Optional[dateType]
-    ValidUntil: Optional[dateType]
-    Tags: Optional[tagListType]
-    AssertionEncryptionMode: Optional[assertionEncryptionModeType]
-    PrivateKeyList: Optional[privateKeyList]
+    SAMLProviderUUID: privateKeyIdType | None
+    SAMLMetadataDocument: SAMLMetadataDocumentType | None
+    CreateDate: dateType | None
+    ValidUntil: dateType | None
+    Tags: tagListType | None
+    AssertionEncryptionMode: assertionEncryptionModeType | None
+    PrivateKeyList: privateKeyList | None
 
 
 class GetSSHPublicKeyRequest(ServiceRequest):
@@ -1427,11 +1427,11 @@ class SSHPublicKey(TypedDict, total=False):
     Fingerprint: publicKeyFingerprintType
     SSHPublicKeyBody: publicKeyMaterialType
     Status: statusType
-    UploadDate: Optional[dateType]
+    UploadDate: dateType | None
 
 
 class GetSSHPublicKeyResponse(TypedDict, total=False):
-    SSHPublicKey: Optional[SSHPublicKey]
+    SSHPublicKey: SSHPublicKey | None
 
 
 class GetServerCertificateRequest(ServiceRequest):
@@ -1443,15 +1443,15 @@ class ServerCertificateMetadata(TypedDict, total=False):
     ServerCertificateName: serverCertificateNameType
     ServerCertificateId: idType
     Arn: arnType
-    UploadDate: Optional[dateType]
-    Expiration: Optional[dateType]
+    UploadDate: dateType | None
+    Expiration: dateType | None
 
 
 class ServerCertificate(TypedDict, total=False):
     ServerCertificateMetadata: ServerCertificateMetadata
     CertificateBody: certificateBodyType
-    CertificateChain: Optional[certificateChainType]
-    Tags: Optional[tagListType]
+    CertificateChain: certificateChainType | None
+    Tags: tagListType | None
 
 
 class GetServerCertificateResponse(TypedDict, total=False):
@@ -1460,52 +1460,52 @@ class GetServerCertificateResponse(TypedDict, total=False):
 
 class GetServiceLastAccessedDetailsRequest(ServiceRequest):
     JobId: jobIDType
-    MaxItems: Optional[maxItemsType]
-    Marker: Optional[markerType]
+    MaxItems: maxItemsType | None
+    Marker: markerType | None
 
 
 class TrackedActionLastAccessed(TypedDict, total=False):
-    ActionName: Optional[stringType]
-    LastAccessedEntity: Optional[arnType]
-    LastAccessedTime: Optional[dateType]
-    LastAccessedRegion: Optional[stringType]
+    ActionName: stringType | None
+    LastAccessedEntity: arnType | None
+    LastAccessedTime: dateType | None
+    LastAccessedRegion: stringType | None
 
 
-TrackedActionsLastAccessed = List[TrackedActionLastAccessed]
+TrackedActionsLastAccessed = list[TrackedActionLastAccessed]
 
 
 class ServiceLastAccessed(TypedDict, total=False):
     ServiceName: serviceNameType
-    LastAuthenticated: Optional[dateType]
+    LastAuthenticated: dateType | None
     ServiceNamespace: serviceNamespaceType
-    LastAuthenticatedEntity: Optional[arnType]
-    LastAuthenticatedRegion: Optional[stringType]
-    TotalAuthenticatedEntities: Optional[integerType]
-    TrackedActionsLastAccessed: Optional[TrackedActionsLastAccessed]
+    LastAuthenticatedEntity: arnType | None
+    LastAuthenticatedRegion: stringType | None
+    TotalAuthenticatedEntities: integerType | None
+    TrackedActionsLastAccessed: TrackedActionsLastAccessed | None
 
 
-ServicesLastAccessed = List[ServiceLastAccessed]
+ServicesLastAccessed = list[ServiceLastAccessed]
 
 
 class GetServiceLastAccessedDetailsResponse(TypedDict, total=False):
     JobStatus: jobStatusType
-    JobType: Optional[AccessAdvisorUsageGranularityType]
+    JobType: AccessAdvisorUsageGranularityType | None
     JobCreationDate: dateType
     ServicesLastAccessed: ServicesLastAccessed
     JobCompletionDate: dateType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
-    Error: Optional[ErrorDetails]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
+    Error: ErrorDetails | None
 
 
 class GetServiceLastAccessedDetailsWithEntitiesRequest(ServiceRequest):
     JobId: jobIDType
     ServiceNamespace: serviceNamespaceType
-    MaxItems: Optional[maxItemsType]
-    Marker: Optional[markerType]
+    MaxItems: maxItemsType | None
+    Marker: markerType | None
 
 
-entityDetailsListType = List[EntityDetails]
+entityDetailsListType = list[EntityDetails]
 
 
 class GetServiceLastAccessedDetailsWithEntitiesResponse(TypedDict, total=False):
@@ -1513,9 +1513,9 @@ class GetServiceLastAccessedDetailsWithEntitiesResponse(TypedDict, total=False):
     JobCreationDate: dateType
     JobCompletionDate: dateType
     EntityDetailsList: entityDetailsListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
-    Error: Optional[ErrorDetails]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
+    Error: ErrorDetails | None
 
 
 class GetServiceLinkedRoleDeletionStatusRequest(ServiceRequest):
@@ -1524,7 +1524,7 @@ class GetServiceLinkedRoleDeletionStatusRequest(ServiceRequest):
 
 class GetServiceLinkedRoleDeletionStatusResponse(TypedDict, total=False):
     Status: DeletionTaskStatusType
-    Reason: Optional[DeletionTaskFailureReasonType]
+    Reason: DeletionTaskFailureReasonType | None
 
 
 class GetUserPolicyRequest(ServiceRequest):
@@ -1539,7 +1539,7 @@ class GetUserPolicyResponse(TypedDict, total=False):
 
 
 class GetUserRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
 
 
 class GetUserResponse(TypedDict, total=False):
@@ -1547,208 +1547,208 @@ class GetUserResponse(TypedDict, total=False):
 
 
 class ListAccessKeysRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    UserName: existingUserNameType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-accessKeyMetadataListType = List[AccessKeyMetadata]
+accessKeyMetadataListType = list[AccessKeyMetadata]
 
 
 class ListAccessKeysResponse(TypedDict, total=False):
     AccessKeyMetadata: accessKeyMetadataListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListAccountAliasesRequest(ServiceRequest):
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-accountAliasListType = List[accountAliasType]
+accountAliasListType = list[accountAliasType]
 
 
 class ListAccountAliasesResponse(TypedDict, total=False):
     AccountAliases: accountAliasListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListAttachedGroupPoliciesRequest(ServiceRequest):
     GroupName: groupNameType
-    PathPrefix: Optional[policyPathType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: policyPathType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListAttachedGroupPoliciesResponse(TypedDict, total=False):
-    AttachedPolicies: Optional[attachedPoliciesListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    AttachedPolicies: attachedPoliciesListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListAttachedRolePoliciesRequest(ServiceRequest):
     RoleName: roleNameType
-    PathPrefix: Optional[policyPathType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: policyPathType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListAttachedRolePoliciesResponse(TypedDict, total=False):
-    AttachedPolicies: Optional[attachedPoliciesListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    AttachedPolicies: attachedPoliciesListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListAttachedUserPoliciesRequest(ServiceRequest):
     UserName: userNameType
-    PathPrefix: Optional[policyPathType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: policyPathType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListAttachedUserPoliciesResponse(TypedDict, total=False):
-    AttachedPolicies: Optional[attachedPoliciesListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    AttachedPolicies: attachedPoliciesListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListEntitiesForPolicyRequest(ServiceRequest):
     PolicyArn: arnType
-    EntityFilter: Optional[EntityType]
-    PathPrefix: Optional[pathType]
-    PolicyUsageFilter: Optional[PolicyUsageType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    EntityFilter: EntityType | None
+    PathPrefix: pathType | None
+    PolicyUsageFilter: PolicyUsageType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class PolicyRole(TypedDict, total=False):
-    RoleName: Optional[roleNameType]
-    RoleId: Optional[idType]
+    RoleName: roleNameType | None
+    RoleId: idType | None
 
 
-PolicyRoleListType = List[PolicyRole]
+PolicyRoleListType = list[PolicyRole]
 
 
 class PolicyUser(TypedDict, total=False):
-    UserName: Optional[userNameType]
-    UserId: Optional[idType]
+    UserName: userNameType | None
+    UserId: idType | None
 
 
-PolicyUserListType = List[PolicyUser]
+PolicyUserListType = list[PolicyUser]
 
 
 class PolicyGroup(TypedDict, total=False):
-    GroupName: Optional[groupNameType]
-    GroupId: Optional[idType]
+    GroupName: groupNameType | None
+    GroupId: idType | None
 
 
-PolicyGroupListType = List[PolicyGroup]
+PolicyGroupListType = list[PolicyGroup]
 
 
 class ListEntitiesForPolicyResponse(TypedDict, total=False):
-    PolicyGroups: Optional[PolicyGroupListType]
-    PolicyUsers: Optional[PolicyUserListType]
-    PolicyRoles: Optional[PolicyRoleListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    PolicyGroups: PolicyGroupListType | None
+    PolicyUsers: PolicyUserListType | None
+    PolicyRoles: PolicyRoleListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListGroupPoliciesRequest(ServiceRequest):
     GroupName: groupNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-policyNameListType = List[policyNameType]
+policyNameListType = list[policyNameType]
 
 
 class ListGroupPoliciesResponse(TypedDict, total=False):
     PolicyNames: policyNameListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListGroupsForUserRequest(ServiceRequest):
     UserName: existingUserNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-groupListType = List[Group]
+groupListType = list[Group]
 
 
 class ListGroupsForUserResponse(TypedDict, total=False):
     Groups: groupListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListGroupsRequest(ServiceRequest):
-    PathPrefix: Optional[pathPrefixType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: pathPrefixType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListGroupsResponse(TypedDict, total=False):
     Groups: groupListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListInstanceProfileTagsRequest(ServiceRequest):
     InstanceProfileName: instanceProfileNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListInstanceProfileTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListInstanceProfilesForRoleRequest(ServiceRequest):
     RoleName: roleNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListInstanceProfilesForRoleResponse(TypedDict, total=False):
     InstanceProfiles: instanceProfileListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListInstanceProfilesRequest(ServiceRequest):
-    PathPrefix: Optional[pathPrefixType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: pathPrefixType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListInstanceProfilesResponse(TypedDict, total=False):
     InstanceProfiles: instanceProfileListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListMFADeviceTagsRequest(ServiceRequest):
     SerialNumber: serialNumberType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListMFADeviceTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListMFADevicesRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    UserName: existingUserNameType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class MFADevice(TypedDict, total=False):
@@ -1757,25 +1757,25 @@ class MFADevice(TypedDict, total=False):
     EnableDate: dateType
 
 
-mfaDeviceListType = List[MFADevice]
+mfaDeviceListType = list[MFADevice]
 
 
 class ListMFADevicesResponse(TypedDict, total=False):
     MFADevices: mfaDeviceListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListOpenIDConnectProviderTagsRequest(ServiceRequest):
     OpenIDConnectProviderArn: arnType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListOpenIDConnectProviderTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListOpenIDConnectProvidersRequest(ServiceRequest):
@@ -1783,14 +1783,14 @@ class ListOpenIDConnectProvidersRequest(ServiceRequest):
 
 
 class OpenIDConnectProviderListEntry(TypedDict, total=False):
-    Arn: Optional[arnType]
+    Arn: arnType | None
 
 
-OpenIDConnectProviderListType = List[OpenIDConnectProviderListEntry]
+OpenIDConnectProviderListType = list[OpenIDConnectProviderListEntry]
 
 
 class ListOpenIDConnectProvidersResponse(TypedDict, total=False):
-    OpenIDConnectProviderList: Optional[OpenIDConnectProviderListType]
+    OpenIDConnectProviderList: OpenIDConnectProviderListType | None
 
 
 class ListOrganizationsFeaturesRequest(ServiceRequest):
@@ -1798,132 +1798,132 @@ class ListOrganizationsFeaturesRequest(ServiceRequest):
 
 
 class ListOrganizationsFeaturesResponse(TypedDict, total=False):
-    OrganizationId: Optional[OrganizationIdType]
-    EnabledFeatures: Optional[FeaturesListType]
+    OrganizationId: OrganizationIdType | None
+    EnabledFeatures: FeaturesListType | None
 
 
 class PolicyGrantingServiceAccess(TypedDict, total=False):
     PolicyName: policyNameType
     PolicyType: policyType
-    PolicyArn: Optional[arnType]
-    EntityType: Optional[policyOwnerEntityType]
-    EntityName: Optional[entityNameType]
+    PolicyArn: arnType | None
+    EntityType: policyOwnerEntityType | None
+    EntityName: entityNameType | None
 
 
-policyGrantingServiceAccessListType = List[PolicyGrantingServiceAccess]
+policyGrantingServiceAccessListType = list[PolicyGrantingServiceAccess]
 
 
 class ListPoliciesGrantingServiceAccessEntry(TypedDict, total=False):
-    ServiceNamespace: Optional[serviceNamespaceType]
-    Policies: Optional[policyGrantingServiceAccessListType]
+    ServiceNamespace: serviceNamespaceType | None
+    Policies: policyGrantingServiceAccessListType | None
 
 
-serviceNamespaceListType = List[serviceNamespaceType]
+serviceNamespaceListType = list[serviceNamespaceType]
 
 
 class ListPoliciesGrantingServiceAccessRequest(ServiceRequest):
-    Marker: Optional[markerType]
+    Marker: markerType | None
     Arn: arnType
     ServiceNamespaces: serviceNamespaceListType
 
 
-listPolicyGrantingServiceAccessResponseListType = List[ListPoliciesGrantingServiceAccessEntry]
+listPolicyGrantingServiceAccessResponseListType = list[ListPoliciesGrantingServiceAccessEntry]
 
 
 class ListPoliciesGrantingServiceAccessResponse(TypedDict, total=False):
     PoliciesGrantingServiceAccess: listPolicyGrantingServiceAccessResponseListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListPoliciesRequest(ServiceRequest):
-    Scope: Optional[policyScopeType]
-    OnlyAttached: Optional[booleanType]
-    PathPrefix: Optional[policyPathType]
-    PolicyUsageFilter: Optional[PolicyUsageType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Scope: policyScopeType | None
+    OnlyAttached: booleanType | None
+    PathPrefix: policyPathType | None
+    PolicyUsageFilter: PolicyUsageType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-policyListType = List[Policy]
+policyListType = list[Policy]
 
 
 class ListPoliciesResponse(TypedDict, total=False):
-    Policies: Optional[policyListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    Policies: policyListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListPolicyTagsRequest(ServiceRequest):
     PolicyArn: arnType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListPolicyTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListPolicyVersionsRequest(ServiceRequest):
     PolicyArn: arnType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListPolicyVersionsResponse(TypedDict, total=False):
-    Versions: Optional[policyDocumentVersionListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    Versions: policyDocumentVersionListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListRolePoliciesRequest(ServiceRequest):
     RoleName: roleNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListRolePoliciesResponse(TypedDict, total=False):
     PolicyNames: policyNameListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListRoleTagsRequest(ServiceRequest):
     RoleName: roleNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListRoleTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListRolesRequest(ServiceRequest):
-    PathPrefix: Optional[pathPrefixType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: pathPrefixType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListRolesResponse(TypedDict, total=False):
     Roles: roleListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListSAMLProviderTagsRequest(ServiceRequest):
     SAMLProviderArn: arnType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListSAMLProviderTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListSAMLProvidersRequest(ServiceRequest):
@@ -1931,22 +1931,22 @@ class ListSAMLProvidersRequest(ServiceRequest):
 
 
 class SAMLProviderListEntry(TypedDict, total=False):
-    Arn: Optional[arnType]
-    ValidUntil: Optional[dateType]
-    CreateDate: Optional[dateType]
+    Arn: arnType | None
+    ValidUntil: dateType | None
+    CreateDate: dateType | None
 
 
-SAMLProviderListType = List[SAMLProviderListEntry]
+SAMLProviderListType = list[SAMLProviderListEntry]
 
 
 class ListSAMLProvidersResponse(TypedDict, total=False):
-    SAMLProviderList: Optional[SAMLProviderListType]
+    SAMLProviderList: SAMLProviderListType | None
 
 
 class ListSSHPublicKeysRequest(ServiceRequest):
-    UserName: Optional[userNameType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    UserName: userNameType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class SSHPublicKeyMetadata(TypedDict, total=False):
@@ -1956,74 +1956,74 @@ class SSHPublicKeyMetadata(TypedDict, total=False):
     UploadDate: dateType
 
 
-SSHPublicKeyListType = List[SSHPublicKeyMetadata]
+SSHPublicKeyListType = list[SSHPublicKeyMetadata]
 
 
 class ListSSHPublicKeysResponse(TypedDict, total=False):
-    SSHPublicKeys: Optional[SSHPublicKeyListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    SSHPublicKeys: SSHPublicKeyListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListServerCertificateTagsRequest(ServiceRequest):
     ServerCertificateName: serverCertificateNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListServerCertificateTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListServerCertificatesRequest(ServiceRequest):
-    PathPrefix: Optional[pathPrefixType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: pathPrefixType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-serverCertificateMetadataListType = List[ServerCertificateMetadata]
+serverCertificateMetadataListType = list[ServerCertificateMetadata]
 
 
 class ListServerCertificatesResponse(TypedDict, total=False):
     ServerCertificateMetadataList: serverCertificateMetadataListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListServiceSpecificCredentialsRequest(ServiceRequest):
-    UserName: Optional[userNameType]
-    ServiceName: Optional[serviceName]
-    AllUsers: Optional[allUsers]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    UserName: userNameType | None
+    ServiceName: serviceName | None
+    AllUsers: allUsers | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ServiceSpecificCredentialMetadata(TypedDict, total=False):
     UserName: userNameType
     Status: statusType
-    ServiceUserName: Optional[serviceUserName]
-    ServiceCredentialAlias: Optional[serviceCredentialAlias]
+    ServiceUserName: serviceUserName | None
+    ServiceCredentialAlias: serviceCredentialAlias | None
     CreateDate: dateType
-    ExpirationDate: Optional[dateType]
+    ExpirationDate: dateType | None
     ServiceSpecificCredentialId: serviceSpecificCredentialId
     ServiceName: serviceName
 
 
-ServiceSpecificCredentialsListType = List[ServiceSpecificCredentialMetadata]
+ServiceSpecificCredentialsListType = list[ServiceSpecificCredentialMetadata]
 
 
 class ListServiceSpecificCredentialsResponse(TypedDict, total=False):
-    ServiceSpecificCredentials: Optional[ServiceSpecificCredentialsListType]
-    Marker: Optional[responseMarkerType]
-    IsTruncated: Optional[booleanType]
+    ServiceSpecificCredentials: ServiceSpecificCredentialsListType | None
+    Marker: responseMarkerType | None
+    IsTruncated: booleanType | None
 
 
 class ListSigningCertificatesRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    UserName: existingUserNameType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class SigningCertificate(TypedDict, total=False):
@@ -2031,67 +2031,67 @@ class SigningCertificate(TypedDict, total=False):
     CertificateId: certificateIdType
     CertificateBody: certificateBodyType
     Status: statusType
-    UploadDate: Optional[dateType]
+    UploadDate: dateType | None
 
 
-certificateListType = List[SigningCertificate]
+certificateListType = list[SigningCertificate]
 
 
 class ListSigningCertificatesResponse(TypedDict, total=False):
     Certificates: certificateListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListUserPoliciesRequest(ServiceRequest):
     UserName: existingUserNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListUserPoliciesResponse(TypedDict, total=False):
     PolicyNames: policyNameListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListUserTagsRequest(ServiceRequest):
     UserName: existingUserNameType
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListUserTagsResponse(TypedDict, total=False):
     Tags: tagListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListUsersRequest(ServiceRequest):
-    PathPrefix: Optional[pathPrefixType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    PathPrefix: pathPrefixType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
 class ListUsersResponse(TypedDict, total=False):
     Users: userListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class ListVirtualMFADevicesRequest(ServiceRequest):
-    AssignmentStatus: Optional[assignmentStatusType]
-    Marker: Optional[markerType]
-    MaxItems: Optional[maxItemsType]
+    AssignmentStatus: assignmentStatusType | None
+    Marker: markerType | None
+    MaxItems: maxItemsType | None
 
 
-virtualMFADeviceListType = List[VirtualMFADevice]
+virtualMFADeviceListType = list[VirtualMFADevice]
 
 
 class ListVirtualMFADevicesResponse(TypedDict, total=False):
     VirtualMFADevices: virtualMFADeviceListType
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class PutGroupPolicyRequest(ServiceRequest):
@@ -2138,15 +2138,15 @@ class RemoveUserFromGroupRequest(ServiceRequest):
 
 
 class ResetServiceSpecificCredentialRequest(ServiceRequest):
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
     ServiceSpecificCredentialId: serviceSpecificCredentialId
 
 
 class ResetServiceSpecificCredentialResponse(TypedDict, total=False):
-    ServiceSpecificCredential: Optional[ServiceSpecificCredential]
+    ServiceSpecificCredential: ServiceSpecificCredential | None
 
 
-ResourceNameListType = List[ResourceNameType]
+ResourceNameListType = list[ResourceNameType]
 
 
 class ResyncMFADeviceRequest(ServiceRequest):
@@ -2167,37 +2167,37 @@ class SetSecurityTokenServicePreferencesRequest(ServiceRequest):
 
 class SimulateCustomPolicyRequest(ServiceRequest):
     PolicyInputList: SimulationPolicyListType
-    PermissionsBoundaryPolicyInputList: Optional[SimulationPolicyListType]
+    PermissionsBoundaryPolicyInputList: SimulationPolicyListType | None
     ActionNames: ActionNameListType
-    ResourceArns: Optional[ResourceNameListType]
-    ResourcePolicy: Optional[policyDocumentType]
-    ResourceOwner: Optional[ResourceNameType]
-    CallerArn: Optional[ResourceNameType]
-    ContextEntries: Optional[ContextEntryListType]
-    ResourceHandlingOption: Optional[ResourceHandlingOptionType]
-    MaxItems: Optional[maxItemsType]
-    Marker: Optional[markerType]
+    ResourceArns: ResourceNameListType | None
+    ResourcePolicy: policyDocumentType | None
+    ResourceOwner: ResourceNameType | None
+    CallerArn: ResourceNameType | None
+    ContextEntries: ContextEntryListType | None
+    ResourceHandlingOption: ResourceHandlingOptionType | None
+    MaxItems: maxItemsType | None
+    Marker: markerType | None
 
 
 class SimulatePolicyResponse(TypedDict, total=False):
-    EvaluationResults: Optional[EvaluationResultsListType]
-    IsTruncated: Optional[booleanType]
-    Marker: Optional[responseMarkerType]
+    EvaluationResults: EvaluationResultsListType | None
+    IsTruncated: booleanType | None
+    Marker: responseMarkerType | None
 
 
 class SimulatePrincipalPolicyRequest(ServiceRequest):
     PolicySourceArn: arnType
-    PolicyInputList: Optional[SimulationPolicyListType]
-    PermissionsBoundaryPolicyInputList: Optional[SimulationPolicyListType]
+    PolicyInputList: SimulationPolicyListType | None
+    PermissionsBoundaryPolicyInputList: SimulationPolicyListType | None
     ActionNames: ActionNameListType
-    ResourceArns: Optional[ResourceNameListType]
-    ResourcePolicy: Optional[policyDocumentType]
-    ResourceOwner: Optional[ResourceNameType]
-    CallerArn: Optional[ResourceNameType]
-    ContextEntries: Optional[ContextEntryListType]
-    ResourceHandlingOption: Optional[ResourceHandlingOptionType]
-    MaxItems: Optional[maxItemsType]
-    Marker: Optional[markerType]
+    ResourceArns: ResourceNameListType | None
+    ResourcePolicy: policyDocumentType | None
+    ResourceOwner: ResourceNameType | None
+    CallerArn: ResourceNameType | None
+    ContextEntries: ContextEntryListType | None
+    ResourceHandlingOption: ResourceHandlingOptionType | None
+    MaxItems: maxItemsType | None
+    Marker: markerType | None
 
 
 class TagInstanceProfileRequest(ServiceRequest):
@@ -2240,7 +2240,7 @@ class TagUserRequest(ServiceRequest):
     Tags: tagListType
 
 
-tagKeyListType = List[tagKeyType]
+tagKeyListType = list[tagKeyType]
 
 
 class UntagInstanceProfileRequest(ServiceRequest):
@@ -2284,21 +2284,21 @@ class UntagUserRequest(ServiceRequest):
 
 
 class UpdateAccessKeyRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
     AccessKeyId: accessKeyIdType
     Status: statusType
 
 
 class UpdateAccountPasswordPolicyRequest(ServiceRequest):
-    MinimumPasswordLength: Optional[minimumPasswordLengthType]
-    RequireSymbols: Optional[booleanType]
-    RequireNumbers: Optional[booleanType]
-    RequireUppercaseCharacters: Optional[booleanType]
-    RequireLowercaseCharacters: Optional[booleanType]
-    AllowUsersToChangePassword: Optional[booleanType]
-    MaxPasswordAge: Optional[maxPasswordAgeType]
-    PasswordReusePrevention: Optional[passwordReusePreventionType]
-    HardExpiry: Optional[booleanObjectType]
+    MinimumPasswordLength: minimumPasswordLengthType | None
+    RequireSymbols: booleanType | None
+    RequireNumbers: booleanType | None
+    RequireUppercaseCharacters: booleanType | None
+    RequireLowercaseCharacters: booleanType | None
+    AllowUsersToChangePassword: booleanType | None
+    MaxPasswordAge: maxPasswordAgeType | None
+    PasswordReusePrevention: passwordReusePreventionType | None
+    HardExpiry: booleanObjectType | None
 
 
 class UpdateAssumeRolePolicyRequest(ServiceRequest):
@@ -2308,14 +2308,14 @@ class UpdateAssumeRolePolicyRequest(ServiceRequest):
 
 class UpdateGroupRequest(ServiceRequest):
     GroupName: groupNameType
-    NewPath: Optional[pathType]
-    NewGroupName: Optional[groupNameType]
+    NewPath: pathType | None
+    NewGroupName: groupNameType | None
 
 
 class UpdateLoginProfileRequest(ServiceRequest):
     UserName: userNameType
-    Password: Optional[passwordType]
-    PasswordResetRequired: Optional[booleanObjectType]
+    Password: passwordType | None
+    PasswordResetRequired: booleanObjectType | None
 
 
 class UpdateOpenIDConnectProviderThumbprintRequest(ServiceRequest):
@@ -2329,13 +2329,13 @@ class UpdateRoleDescriptionRequest(ServiceRequest):
 
 
 class UpdateRoleDescriptionResponse(TypedDict, total=False):
-    Role: Optional[Role]
+    Role: Role | None
 
 
 class UpdateRoleRequest(ServiceRequest):
     RoleName: roleNameType
-    Description: Optional[roleDescriptionType]
-    MaxSessionDuration: Optional[roleMaxSessionDurationType]
+    Description: roleDescriptionType | None
+    MaxSessionDuration: roleMaxSessionDurationType | None
 
 
 class UpdateRoleResponse(TypedDict, total=False):
@@ -2343,15 +2343,15 @@ class UpdateRoleResponse(TypedDict, total=False):
 
 
 class UpdateSAMLProviderRequest(ServiceRequest):
-    SAMLMetadataDocument: Optional[SAMLMetadataDocumentType]
+    SAMLMetadataDocument: SAMLMetadataDocumentType | None
     SAMLProviderArn: arnType
-    AssertionEncryptionMode: Optional[assertionEncryptionModeType]
-    AddPrivateKey: Optional[privateKeyType]
-    RemovePrivateKey: Optional[privateKeyIdType]
+    AssertionEncryptionMode: assertionEncryptionModeType | None
+    AddPrivateKey: privateKeyType | None
+    RemovePrivateKey: privateKeyIdType | None
 
 
 class UpdateSAMLProviderResponse(TypedDict, total=False):
-    SAMLProviderArn: Optional[arnType]
+    SAMLProviderArn: arnType | None
 
 
 class UpdateSSHPublicKeyRequest(ServiceRequest):
@@ -2362,26 +2362,26 @@ class UpdateSSHPublicKeyRequest(ServiceRequest):
 
 class UpdateServerCertificateRequest(ServiceRequest):
     ServerCertificateName: serverCertificateNameType
-    NewPath: Optional[pathType]
-    NewServerCertificateName: Optional[serverCertificateNameType]
+    NewPath: pathType | None
+    NewServerCertificateName: serverCertificateNameType | None
 
 
 class UpdateServiceSpecificCredentialRequest(ServiceRequest):
-    UserName: Optional[userNameType]
+    UserName: userNameType | None
     ServiceSpecificCredentialId: serviceSpecificCredentialId
     Status: statusType
 
 
 class UpdateSigningCertificateRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
     CertificateId: certificateIdType
     Status: statusType
 
 
 class UpdateUserRequest(ServiceRequest):
     UserName: existingUserNameType
-    NewPath: Optional[pathType]
-    NewUserName: Optional[userNameType]
+    NewPath: pathType | None
+    NewUserName: userNameType | None
 
 
 class UploadSSHPublicKeyRequest(ServiceRequest):
@@ -2390,25 +2390,25 @@ class UploadSSHPublicKeyRequest(ServiceRequest):
 
 
 class UploadSSHPublicKeyResponse(TypedDict, total=False):
-    SSHPublicKey: Optional[SSHPublicKey]
+    SSHPublicKey: SSHPublicKey | None
 
 
 class UploadServerCertificateRequest(ServiceRequest):
-    Path: Optional[pathType]
+    Path: pathType | None
     ServerCertificateName: serverCertificateNameType
     CertificateBody: certificateBodyType
     PrivateKey: privateKeyType
-    CertificateChain: Optional[certificateChainType]
-    Tags: Optional[tagListType]
+    CertificateChain: certificateChainType | None
+    Tags: tagListType | None
 
 
 class UploadServerCertificateResponse(TypedDict, total=False):
-    ServerCertificateMetadata: Optional[ServerCertificateMetadata]
-    Tags: Optional[tagListType]
+    ServerCertificateMetadata: ServerCertificateMetadata | None
+    Tags: tagListType | None
 
 
 class UploadSigningCertificateRequest(ServiceRequest):
-    UserName: Optional[existingUserNameType]
+    UserName: existingUserNameType | None
     CertificateBody: certificateBodyType
 
 
@@ -2417,8 +2417,8 @@ class UploadSigningCertificateResponse(TypedDict, total=False):
 
 
 class IamApi:
-    service = "iam"
-    version = "2010-05-08"
+    service: str = "iam"
+    version: str = "2010-05-08"
 
     @handler("AddClientIDToOpenIDConnectProvider")
     def add_client_id_to_open_id_connect_provider(

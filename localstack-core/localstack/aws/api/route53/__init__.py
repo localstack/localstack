@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -496,14 +496,14 @@ class InvalidArgument(ServiceException):
     status_code: int = 400
 
 
-ErrorMessages = List[ErrorMessage]
+ErrorMessages = list[ErrorMessage]
 
 
 class InvalidChangeBatch(ServiceException):
     code: str = "InvalidChangeBatch"
     sender_fault: bool = False
     status_code: int = 400
-    messages: Optional[ErrorMessages]
+    messages: ErrorMessages | None
 
 
 class InvalidDomainName(ServiceException):
@@ -790,7 +790,7 @@ class ChangeInfo(TypedDict, total=False):
     Id: ResourceId
     Status: ChangeStatus
     SubmittedAt: TimeStamp
-    Comment: Optional[ResourceDescription]
+    Comment: ResourceDescription | None
 
 
 class ActivateKeySigningKeyResponse(TypedDict, total=False):
@@ -809,14 +809,14 @@ class AliasTarget(TypedDict, total=False):
 
 
 class VPC(TypedDict, total=False):
-    VPCRegion: Optional[VPCRegion]
-    VPCId: Optional[VPCId]
+    VPCRegion: VPCRegion | None
+    VPCId: VPCId | None
 
 
 class AssociateVPCWithHostedZoneRequest(ServiceRequest):
     HostedZoneId: ResourceId
     VPC: VPC
-    Comment: Optional[AssociateVPCComment]
+    Comment: AssociateVPCComment | None
 
 
 class AssociateVPCWithHostedZoneResponse(TypedDict, total=False):
@@ -829,10 +829,10 @@ class Coordinates(TypedDict, total=False):
 
 
 class GeoProximityLocation(TypedDict, total=False):
-    AWSRegion: Optional[AWSRegion]
-    LocalZoneGroup: Optional[LocalZoneGroup]
-    Coordinates: Optional[Coordinates]
-    Bias: Optional[Bias]
+    AWSRegion: AWSRegion | None
+    LocalZoneGroup: LocalZoneGroup | None
+    Coordinates: Coordinates | None
+    Bias: Bias | None
 
 
 class CidrRoutingConfig(TypedDict, total=False):
@@ -844,14 +844,14 @@ class ResourceRecord(TypedDict, total=False):
     Value: RData
 
 
-ResourceRecords = List[ResourceRecord]
+ResourceRecords = list[ResourceRecord]
 TTL = int
 
 
 class GeoLocation(TypedDict, total=False):
-    ContinentCode: Optional[GeoLocationContinentCode]
-    CountryCode: Optional[GeoLocationCountryCode]
-    SubdivisionCode: Optional[GeoLocationSubdivisionCode]
+    ContinentCode: GeoLocationContinentCode | None
+    CountryCode: GeoLocationCountryCode | None
+    SubdivisionCode: GeoLocationSubdivisionCode | None
 
 
 ResourceRecordSetWeight = int
@@ -860,19 +860,19 @@ ResourceRecordSetWeight = int
 class ResourceRecordSet(TypedDict, total=False):
     Name: DNSName
     Type: RRType
-    SetIdentifier: Optional[ResourceRecordSetIdentifier]
-    Weight: Optional[ResourceRecordSetWeight]
-    Region: Optional[ResourceRecordSetRegion]
-    GeoLocation: Optional[GeoLocation]
-    Failover: Optional[ResourceRecordSetFailover]
-    MultiValueAnswer: Optional[ResourceRecordSetMultiValueAnswer]
-    TTL: Optional[TTL]
-    ResourceRecords: Optional[ResourceRecords]
-    AliasTarget: Optional[AliasTarget]
-    HealthCheckId: Optional[HealthCheckId]
-    TrafficPolicyInstanceId: Optional[TrafficPolicyInstanceId]
-    CidrRoutingConfig: Optional[CidrRoutingConfig]
-    GeoProximityLocation: Optional[GeoProximityLocation]
+    SetIdentifier: ResourceRecordSetIdentifier | None
+    Weight: ResourceRecordSetWeight | None
+    Region: ResourceRecordSetRegion | None
+    GeoLocation: GeoLocation | None
+    Failover: ResourceRecordSetFailover | None
+    MultiValueAnswer: ResourceRecordSetMultiValueAnswer | None
+    TTL: TTL | None
+    ResourceRecords: ResourceRecords | None
+    AliasTarget: AliasTarget | None
+    HealthCheckId: HealthCheckId | None
+    TrafficPolicyInstanceId: TrafficPolicyInstanceId | None
+    CidrRoutingConfig: CidrRoutingConfig | None
+    GeoProximityLocation: GeoProximityLocation | None
 
 
 class Change(TypedDict, total=False):
@@ -880,15 +880,15 @@ class Change(TypedDict, total=False):
     ResourceRecordSet: ResourceRecordSet
 
 
-Changes = List[Change]
+Changes = list[Change]
 
 
 class ChangeBatch(TypedDict, total=False):
-    Comment: Optional[ResourceDescription]
+    Comment: ResourceDescription | None
     Changes: Changes
 
 
-CidrList = List[Cidr]
+CidrList = list[Cidr]
 
 
 class CidrCollectionChange(TypedDict, total=False):
@@ -897,13 +897,13 @@ class CidrCollectionChange(TypedDict, total=False):
     CidrList: CidrList
 
 
-CidrCollectionChanges = List[CidrCollectionChange]
+CidrCollectionChanges = list[CidrCollectionChange]
 CollectionVersion = int
 
 
 class ChangeCidrCollectionRequest(ServiceRequest):
     Id: UUID
-    CollectionVersion: Optional[CollectionVersion]
+    CollectionVersion: CollectionVersion | None
     Changes: CidrCollectionChanges
 
 
@@ -920,45 +920,45 @@ class ChangeResourceRecordSetsResponse(TypedDict, total=False):
     ChangeInfo: ChangeInfo
 
 
-TagKeyList = List[TagKey]
+TagKeyList = list[TagKey]
 
 
 class Tag(TypedDict, total=False):
-    Key: Optional[TagKey]
-    Value: Optional[TagValue]
+    Key: TagKey | None
+    Value: TagValue | None
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 
 
 class ChangeTagsForResourceRequest(ServiceRequest):
     ResourceType: TagResourceType
     ResourceId: TagResourceId
-    AddTags: Optional[TagList]
-    RemoveTagKeys: Optional[TagKeyList]
+    AddTags: TagList | None
+    RemoveTagKeys: TagKeyList | None
 
 
 class ChangeTagsForResourceResponse(TypedDict, total=False):
     pass
 
 
-CheckerIpRanges = List[IPAddressCidr]
-ChildHealthCheckList = List[HealthCheckId]
+CheckerIpRanges = list[IPAddressCidr]
+ChildHealthCheckList = list[HealthCheckId]
 
 
 class CidrBlockSummary(TypedDict, total=False):
-    CidrBlock: Optional[Cidr]
-    LocationName: Optional[CidrLocationNameDefaultNotAllowed]
+    CidrBlock: Cidr | None
+    LocationName: CidrLocationNameDefaultNotAllowed | None
 
 
-CidrBlockSummaries = List[CidrBlockSummary]
+CidrBlockSummaries = list[CidrBlockSummary]
 
 
 class CidrCollection(TypedDict, total=False):
-    Arn: Optional[ARN]
-    Id: Optional[UUID]
-    Name: Optional[CollectionName]
-    Version: Optional[CollectionVersion]
+    Arn: ARN | None
+    Id: UUID | None
+    Name: CollectionName | None
+    Version: CollectionVersion | None
 
 
 class Dimension(TypedDict, total=False):
@@ -966,7 +966,7 @@ class Dimension(TypedDict, total=False):
     Value: DimensionField
 
 
-DimensionList = List[Dimension]
+DimensionList = list[Dimension]
 
 
 class CloudWatchAlarmConfiguration(TypedDict, total=False):
@@ -977,17 +977,17 @@ class CloudWatchAlarmConfiguration(TypedDict, total=False):
     MetricName: MetricName
     Namespace: Namespace
     Statistic: Statistic
-    Dimensions: Optional[DimensionList]
+    Dimensions: DimensionList | None
 
 
 class CollectionSummary(TypedDict, total=False):
-    Arn: Optional[ARN]
-    Id: Optional[UUID]
-    Name: Optional[CollectionName]
-    Version: Optional[CollectionVersion]
+    Arn: ARN | None
+    Id: UUID | None
+    Name: CollectionName | None
+    Version: CollectionVersion | None
 
 
-CollectionSummaries = List[CollectionSummary]
+CollectionSummaries = list[CollectionSummary]
 
 
 class CreateCidrCollectionRequest(ServiceRequest):
@@ -996,32 +996,32 @@ class CreateCidrCollectionRequest(ServiceRequest):
 
 
 class CreateCidrCollectionResponse(TypedDict, total=False):
-    Collection: Optional[CidrCollection]
-    Location: Optional[ResourceURI]
+    Collection: CidrCollection | None
+    Location: ResourceURI | None
 
 
-HealthCheckRegionList = List[HealthCheckRegion]
+HealthCheckRegionList = list[HealthCheckRegion]
 
 
 class HealthCheckConfig(TypedDict, total=False):
-    IPAddress: Optional[IPAddress]
-    Port: Optional[Port]
+    IPAddress: IPAddress | None
+    Port: Port | None
     Type: HealthCheckType
-    ResourcePath: Optional[ResourcePath]
-    FullyQualifiedDomainName: Optional[FullyQualifiedDomainName]
-    SearchString: Optional[SearchString]
-    RequestInterval: Optional[RequestInterval]
-    FailureThreshold: Optional[FailureThreshold]
-    MeasureLatency: Optional[MeasureLatency]
-    Inverted: Optional[Inverted]
-    Disabled: Optional[Disabled]
-    HealthThreshold: Optional[HealthThreshold]
-    ChildHealthChecks: Optional[ChildHealthCheckList]
-    EnableSNI: Optional[EnableSNI]
-    Regions: Optional[HealthCheckRegionList]
-    AlarmIdentifier: Optional[AlarmIdentifier]
-    InsufficientDataHealthStatus: Optional[InsufficientDataHealthStatus]
-    RoutingControlArn: Optional[RoutingControlArn]
+    ResourcePath: ResourcePath | None
+    FullyQualifiedDomainName: FullyQualifiedDomainName | None
+    SearchString: SearchString | None
+    RequestInterval: RequestInterval | None
+    FailureThreshold: FailureThreshold | None
+    MeasureLatency: MeasureLatency | None
+    Inverted: Inverted | None
+    Disabled: Disabled | None
+    HealthThreshold: HealthThreshold | None
+    ChildHealthChecks: ChildHealthCheckList | None
+    EnableSNI: EnableSNI | None
+    Regions: HealthCheckRegionList | None
+    AlarmIdentifier: AlarmIdentifier | None
+    InsufficientDataHealthStatus: InsufficientDataHealthStatus | None
+    RoutingControlArn: RoutingControlArn | None
 
 
 class CreateHealthCheckRequest(ServiceRequest):
@@ -1033,17 +1033,17 @@ HealthCheckVersion = int
 
 
 class LinkedService(TypedDict, total=False):
-    ServicePrincipal: Optional[ServicePrincipal]
-    Description: Optional[ResourceDescription]
+    ServicePrincipal: ServicePrincipal | None
+    Description: ResourceDescription | None
 
 
 class HealthCheck(TypedDict, total=False):
     Id: HealthCheckId
     CallerReference: HealthCheckNonce
-    LinkedService: Optional[LinkedService]
+    LinkedService: LinkedService | None
     HealthCheckConfig: HealthCheckConfig
     HealthCheckVersion: HealthCheckVersion
-    CloudWatchAlarmConfiguration: Optional[CloudWatchAlarmConfiguration]
+    CloudWatchAlarmConfiguration: CloudWatchAlarmConfiguration | None
 
 
 class CreateHealthCheckResponse(TypedDict, total=False):
@@ -1052,24 +1052,24 @@ class CreateHealthCheckResponse(TypedDict, total=False):
 
 
 class HostedZoneConfig(TypedDict, total=False):
-    Comment: Optional[ResourceDescription]
-    PrivateZone: Optional[IsPrivateZone]
+    Comment: ResourceDescription | None
+    PrivateZone: IsPrivateZone | None
 
 
 class CreateHostedZoneRequest(ServiceRequest):
     Name: DNSName
-    VPC: Optional[VPC]
+    VPC: VPC | None
     CallerReference: Nonce
-    HostedZoneConfig: Optional[HostedZoneConfig]
-    DelegationSetId: Optional[ResourceId]
+    HostedZoneConfig: HostedZoneConfig | None
+    DelegationSetId: ResourceId | None
 
 
-DelegationSetNameServers = List[DNSName]
+DelegationSetNameServers = list[DNSName]
 
 
 class DelegationSet(TypedDict, total=False):
-    Id: Optional[ResourceId]
-    CallerReference: Optional[Nonce]
+    Id: ResourceId | None
+    CallerReference: Nonce | None
     NameServers: DelegationSetNameServers
 
 
@@ -1080,16 +1080,16 @@ class HostedZone(TypedDict, total=False):
     Id: ResourceId
     Name: DNSName
     CallerReference: Nonce
-    Config: Optional[HostedZoneConfig]
-    ResourceRecordSetCount: Optional[HostedZoneRRSetCount]
-    LinkedService: Optional[LinkedService]
+    Config: HostedZoneConfig | None
+    ResourceRecordSetCount: HostedZoneRRSetCount | None
+    LinkedService: LinkedService | None
 
 
 class CreateHostedZoneResponse(TypedDict, total=False):
     HostedZone: HostedZone
     ChangeInfo: ChangeInfo
     DelegationSet: DelegationSet
-    VPC: Optional[VPC]
+    VPC: VPC | None
     Location: ResourceURI
 
 
@@ -1102,22 +1102,22 @@ class CreateKeySigningKeyRequest(ServiceRequest):
 
 
 class KeySigningKey(TypedDict, total=False):
-    Name: Optional[SigningKeyName]
-    KmsArn: Optional[SigningKeyString]
-    Flag: Optional[SigningKeyInteger]
-    SigningAlgorithmMnemonic: Optional[SigningKeyString]
-    SigningAlgorithmType: Optional[SigningKeyInteger]
-    DigestAlgorithmMnemonic: Optional[SigningKeyString]
-    DigestAlgorithmType: Optional[SigningKeyInteger]
-    KeyTag: Optional[SigningKeyTag]
-    DigestValue: Optional[SigningKeyString]
-    PublicKey: Optional[SigningKeyString]
-    DSRecord: Optional[SigningKeyString]
-    DNSKEYRecord: Optional[SigningKeyString]
-    Status: Optional[SigningKeyStatus]
-    StatusMessage: Optional[SigningKeyStatusMessage]
-    CreatedDate: Optional[TimeStamp]
-    LastModifiedDate: Optional[TimeStamp]
+    Name: SigningKeyName | None
+    KmsArn: SigningKeyString | None
+    Flag: SigningKeyInteger | None
+    SigningAlgorithmMnemonic: SigningKeyString | None
+    SigningAlgorithmType: SigningKeyInteger | None
+    DigestAlgorithmMnemonic: SigningKeyString | None
+    DigestAlgorithmType: SigningKeyInteger | None
+    KeyTag: SigningKeyTag | None
+    DigestValue: SigningKeyString | None
+    PublicKey: SigningKeyString | None
+    DSRecord: SigningKeyString | None
+    DNSKEYRecord: SigningKeyString | None
+    Status: SigningKeyStatus | None
+    StatusMessage: SigningKeyStatusMessage | None
+    CreatedDate: TimeStamp | None
+    LastModifiedDate: TimeStamp | None
 
 
 class CreateKeySigningKeyResponse(TypedDict, total=False):
@@ -1144,7 +1144,7 @@ class CreateQueryLoggingConfigResponse(TypedDict, total=False):
 
 class CreateReusableDelegationSetRequest(ServiceRequest):
     CallerReference: Nonce
-    HostedZoneId: Optional[ResourceId]
+    HostedZoneId: ResourceId | None
 
 
 class CreateReusableDelegationSetResponse(TypedDict, total=False):
@@ -1180,7 +1180,7 @@ class CreateTrafficPolicyInstanceResponse(TypedDict, total=False):
 class CreateTrafficPolicyRequest(ServiceRequest):
     Name: TrafficPolicyName
     Document: TrafficPolicyDocument
-    Comment: Optional[TrafficPolicyComment]
+    Comment: TrafficPolicyComment | None
 
 
 class TrafficPolicy(TypedDict, total=False):
@@ -1189,7 +1189,7 @@ class TrafficPolicy(TypedDict, total=False):
     Name: TrafficPolicyName
     Type: RRType
     Document: TrafficPolicyDocument
-    Comment: Optional[TrafficPolicyComment]
+    Comment: TrafficPolicyComment | None
 
 
 class CreateTrafficPolicyResponse(TypedDict, total=False):
@@ -1200,7 +1200,7 @@ class CreateTrafficPolicyResponse(TypedDict, total=False):
 class CreateTrafficPolicyVersionRequest(ServiceRequest):
     Id: TrafficPolicyId
     Document: TrafficPolicyDocument
-    Comment: Optional[TrafficPolicyComment]
+    Comment: TrafficPolicyComment | None
 
 
 class CreateTrafficPolicyVersionResponse(TypedDict, total=False):
@@ -1219,8 +1219,8 @@ class CreateVPCAssociationAuthorizationResponse(TypedDict, total=False):
 
 
 class DNSSECStatus(TypedDict, total=False):
-    ServeSignature: Optional[ServeSignature]
-    StatusMessage: Optional[SigningKeyStatusMessage]
+    ServeSignature: ServeSignature | None
+    StatusMessage: SigningKeyStatusMessage | None
 
 
 class DeactivateKeySigningKeyRequest(ServiceRequest):
@@ -1232,7 +1232,7 @@ class DeactivateKeySigningKeyResponse(TypedDict, total=False):
     ChangeInfo: ChangeInfo
 
 
-DelegationSets = List[DelegationSet]
+DelegationSets = list[DelegationSet]
 
 
 class DeleteCidrCollectionRequest(ServiceRequest):
@@ -1321,7 +1321,7 @@ class DisableHostedZoneDNSSECResponse(TypedDict, total=False):
 class DisassociateVPCFromHostedZoneRequest(ServiceRequest):
     HostedZoneId: ResourceId
     VPC: VPC
-    Comment: Optional[DisassociateVPCComment]
+    Comment: DisassociateVPCComment | None
 
 
 class DisassociateVPCFromHostedZoneResponse(TypedDict, total=False):
@@ -1337,15 +1337,15 @@ class EnableHostedZoneDNSSECResponse(TypedDict, total=False):
 
 
 class GeoLocationDetails(TypedDict, total=False):
-    ContinentCode: Optional[GeoLocationContinentCode]
-    ContinentName: Optional[GeoLocationContinentName]
-    CountryCode: Optional[GeoLocationCountryCode]
-    CountryName: Optional[GeoLocationCountryName]
-    SubdivisionCode: Optional[GeoLocationSubdivisionCode]
-    SubdivisionName: Optional[GeoLocationSubdivisionName]
+    ContinentCode: GeoLocationContinentCode | None
+    ContinentName: GeoLocationContinentName | None
+    CountryCode: GeoLocationCountryCode | None
+    CountryName: GeoLocationCountryName | None
+    SubdivisionCode: GeoLocationSubdivisionCode | None
+    SubdivisionName: GeoLocationSubdivisionName | None
 
 
-GeoLocationDetailsList = List[GeoLocationDetails]
+GeoLocationDetailsList = list[GeoLocationDetails]
 
 
 class GetAccountLimitRequest(ServiceRequest):
@@ -1380,7 +1380,7 @@ class GetDNSSECRequest(ServiceRequest):
     HostedZoneId: ResourceId
 
 
-KeySigningKeys = List[KeySigningKey]
+KeySigningKeys = list[KeySigningKey]
 
 
 class GetDNSSECResponse(TypedDict, total=False):
@@ -1389,9 +1389,9 @@ class GetDNSSECResponse(TypedDict, total=False):
 
 
 class GetGeoLocationRequest(ServiceRequest):
-    ContinentCode: Optional[GeoLocationContinentCode]
-    CountryCode: Optional[GeoLocationCountryCode]
-    SubdivisionCode: Optional[GeoLocationSubdivisionCode]
+    ContinentCode: GeoLocationContinentCode | None
+    CountryCode: GeoLocationCountryCode | None
+    SubdivisionCode: GeoLocationSubdivisionCode | None
 
 
 class GetGeoLocationResponse(TypedDict, total=False):
@@ -1414,17 +1414,17 @@ class GetHealthCheckLastFailureReasonRequest(ServiceRequest):
 
 
 class StatusReport(TypedDict, total=False):
-    Status: Optional[Status]
-    CheckedTime: Optional[TimeStamp]
+    Status: Status | None
+    CheckedTime: TimeStamp | None
 
 
 class HealthCheckObservation(TypedDict, total=False):
-    Region: Optional[HealthCheckRegion]
-    IPAddress: Optional[IPAddress]
-    StatusReport: Optional[StatusReport]
+    Region: HealthCheckRegion | None
+    IPAddress: IPAddress | None
+    StatusReport: StatusReport | None
 
 
-HealthCheckObservations = List[HealthCheckObservation]
+HealthCheckObservations = list[HealthCheckObservation]
 
 
 class GetHealthCheckLastFailureReasonResponse(TypedDict, total=False):
@@ -1477,13 +1477,13 @@ class GetHostedZoneRequest(ServiceRequest):
     Id: ResourceId
 
 
-VPCs = List[VPC]
+VPCs = list[VPC]
 
 
 class GetHostedZoneResponse(TypedDict, total=False):
     HostedZone: HostedZone
-    DelegationSet: Optional[DelegationSet]
-    VPCs: Optional[VPCs]
+    DelegationSet: DelegationSet | None
+    VPCs: VPCs | None
 
 
 class GetQueryLoggingConfigRequest(ServiceRequest):
@@ -1542,12 +1542,12 @@ class GetTrafficPolicyResponse(TypedDict, total=False):
     TrafficPolicy: TrafficPolicy
 
 
-HealthChecks = List[HealthCheck]
+HealthChecks = list[HealthCheck]
 
 
 class HostedZoneOwner(TypedDict, total=False):
-    OwningAccount: Optional[AWSAccountID]
-    OwningService: Optional[HostedZoneOwningService]
+    OwningAccount: AWSAccountID | None
+    OwningService: HostedZoneOwningService | None
 
 
 class HostedZoneSummary(TypedDict, total=False):
@@ -1556,167 +1556,167 @@ class HostedZoneSummary(TypedDict, total=False):
     Owner: HostedZoneOwner
 
 
-HostedZoneSummaries = List[HostedZoneSummary]
-HostedZones = List[HostedZone]
+HostedZoneSummaries = list[HostedZoneSummary]
+HostedZones = list[HostedZone]
 
 
 class ListCidrBlocksRequest(ServiceRequest):
     CollectionId: UUID
-    LocationName: Optional[CidrLocationNameDefaultNotAllowed]
-    NextToken: Optional[PaginationToken]
-    MaxResults: Optional[MaxResults]
+    LocationName: CidrLocationNameDefaultNotAllowed | None
+    NextToken: PaginationToken | None
+    MaxResults: MaxResults | None
 
 
 class ListCidrBlocksResponse(TypedDict, total=False):
-    NextToken: Optional[PaginationToken]
-    CidrBlocks: Optional[CidrBlockSummaries]
+    NextToken: PaginationToken | None
+    CidrBlocks: CidrBlockSummaries | None
 
 
 class ListCidrCollectionsRequest(ServiceRequest):
-    NextToken: Optional[PaginationToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: PaginationToken | None
+    MaxResults: MaxResults | None
 
 
 class ListCidrCollectionsResponse(TypedDict, total=False):
-    NextToken: Optional[PaginationToken]
-    CidrCollections: Optional[CollectionSummaries]
+    NextToken: PaginationToken | None
+    CidrCollections: CollectionSummaries | None
 
 
 class ListCidrLocationsRequest(ServiceRequest):
     CollectionId: UUID
-    NextToken: Optional[PaginationToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: PaginationToken | None
+    MaxResults: MaxResults | None
 
 
 class LocationSummary(TypedDict, total=False):
-    LocationName: Optional[CidrLocationNameDefaultAllowed]
+    LocationName: CidrLocationNameDefaultAllowed | None
 
 
-LocationSummaries = List[LocationSummary]
+LocationSummaries = list[LocationSummary]
 
 
 class ListCidrLocationsResponse(TypedDict, total=False):
-    NextToken: Optional[PaginationToken]
-    CidrLocations: Optional[LocationSummaries]
+    NextToken: PaginationToken | None
+    CidrLocations: LocationSummaries | None
 
 
 class ListGeoLocationsRequest(ServiceRequest):
-    StartContinentCode: Optional[GeoLocationContinentCode]
-    StartCountryCode: Optional[GeoLocationCountryCode]
-    StartSubdivisionCode: Optional[GeoLocationSubdivisionCode]
-    MaxItems: Optional[PageMaxItems]
+    StartContinentCode: GeoLocationContinentCode | None
+    StartCountryCode: GeoLocationCountryCode | None
+    StartSubdivisionCode: GeoLocationSubdivisionCode | None
+    MaxItems: PageMaxItems | None
 
 
 class ListGeoLocationsResponse(TypedDict, total=False):
     GeoLocationDetailsList: GeoLocationDetailsList
     IsTruncated: PageTruncated
-    NextContinentCode: Optional[GeoLocationContinentCode]
-    NextCountryCode: Optional[GeoLocationCountryCode]
-    NextSubdivisionCode: Optional[GeoLocationSubdivisionCode]
+    NextContinentCode: GeoLocationContinentCode | None
+    NextCountryCode: GeoLocationCountryCode | None
+    NextSubdivisionCode: GeoLocationSubdivisionCode | None
     MaxItems: PageMaxItems
 
 
 class ListHealthChecksRequest(ServiceRequest):
-    Marker: Optional[PageMarker]
-    MaxItems: Optional[PageMaxItems]
+    Marker: PageMarker | None
+    MaxItems: PageMaxItems | None
 
 
 class ListHealthChecksResponse(TypedDict, total=False):
     HealthChecks: HealthChecks
     Marker: PageMarker
     IsTruncated: PageTruncated
-    NextMarker: Optional[PageMarker]
+    NextMarker: PageMarker | None
     MaxItems: PageMaxItems
 
 
 class ListHostedZonesByNameRequest(ServiceRequest):
-    DNSName: Optional[DNSName]
-    HostedZoneId: Optional[ResourceId]
-    MaxItems: Optional[PageMaxItems]
+    DNSName: DNSName | None
+    HostedZoneId: ResourceId | None
+    MaxItems: PageMaxItems | None
 
 
 class ListHostedZonesByNameResponse(TypedDict, total=False):
     HostedZones: HostedZones
-    DNSName: Optional[DNSName]
-    HostedZoneId: Optional[ResourceId]
+    DNSName: DNSName | None
+    HostedZoneId: ResourceId | None
     IsTruncated: PageTruncated
-    NextDNSName: Optional[DNSName]
-    NextHostedZoneId: Optional[ResourceId]
+    NextDNSName: DNSName | None
+    NextHostedZoneId: ResourceId | None
     MaxItems: PageMaxItems
 
 
 class ListHostedZonesByVPCRequest(ServiceRequest):
     VPCId: VPCId
     VPCRegion: VPCRegion
-    MaxItems: Optional[PageMaxItems]
-    NextToken: Optional[PaginationToken]
+    MaxItems: PageMaxItems | None
+    NextToken: PaginationToken | None
 
 
 class ListHostedZonesByVPCResponse(TypedDict, total=False):
     HostedZoneSummaries: HostedZoneSummaries
     MaxItems: PageMaxItems
-    NextToken: Optional[PaginationToken]
+    NextToken: PaginationToken | None
 
 
 class ListHostedZonesRequest(ServiceRequest):
-    Marker: Optional[PageMarker]
-    MaxItems: Optional[PageMaxItems]
-    DelegationSetId: Optional[ResourceId]
-    HostedZoneType: Optional[HostedZoneType]
+    Marker: PageMarker | None
+    MaxItems: PageMaxItems | None
+    DelegationSetId: ResourceId | None
+    HostedZoneType: HostedZoneType | None
 
 
 class ListHostedZonesResponse(TypedDict, total=False):
     HostedZones: HostedZones
     Marker: PageMarker
     IsTruncated: PageTruncated
-    NextMarker: Optional[PageMarker]
+    NextMarker: PageMarker | None
     MaxItems: PageMaxItems
 
 
 class ListQueryLoggingConfigsRequest(ServiceRequest):
-    HostedZoneId: Optional[ResourceId]
-    NextToken: Optional[PaginationToken]
-    MaxResults: Optional[MaxResults]
+    HostedZoneId: ResourceId | None
+    NextToken: PaginationToken | None
+    MaxResults: MaxResults | None
 
 
-QueryLoggingConfigs = List[QueryLoggingConfig]
+QueryLoggingConfigs = list[QueryLoggingConfig]
 
 
 class ListQueryLoggingConfigsResponse(TypedDict, total=False):
     QueryLoggingConfigs: QueryLoggingConfigs
-    NextToken: Optional[PaginationToken]
+    NextToken: PaginationToken | None
 
 
 class ListResourceRecordSetsRequest(ServiceRequest):
     HostedZoneId: ResourceId
-    StartRecordName: Optional[DNSName]
-    StartRecordType: Optional[RRType]
-    StartRecordIdentifier: Optional[ResourceRecordSetIdentifier]
-    MaxItems: Optional[PageMaxItems]
+    StartRecordName: DNSName | None
+    StartRecordType: RRType | None
+    StartRecordIdentifier: ResourceRecordSetIdentifier | None
+    MaxItems: PageMaxItems | None
 
 
-ResourceRecordSets = List[ResourceRecordSet]
+ResourceRecordSets = list[ResourceRecordSet]
 
 
 class ListResourceRecordSetsResponse(TypedDict, total=False):
     ResourceRecordSets: ResourceRecordSets
     IsTruncated: PageTruncated
-    NextRecordName: Optional[DNSName]
-    NextRecordType: Optional[RRType]
-    NextRecordIdentifier: Optional[ResourceRecordSetIdentifier]
+    NextRecordName: DNSName | None
+    NextRecordType: RRType | None
+    NextRecordIdentifier: ResourceRecordSetIdentifier | None
     MaxItems: PageMaxItems
 
 
 class ListReusableDelegationSetsRequest(ServiceRequest):
-    Marker: Optional[PageMarker]
-    MaxItems: Optional[PageMaxItems]
+    Marker: PageMarker | None
+    MaxItems: PageMaxItems | None
 
 
 class ListReusableDelegationSetsResponse(TypedDict, total=False):
     DelegationSets: DelegationSets
     Marker: PageMarker
     IsTruncated: PageTruncated
-    NextMarker: Optional[PageMarker]
+    NextMarker: PageMarker | None
     MaxItems: PageMaxItems
 
 
@@ -1726,16 +1726,16 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ResourceTagSet(TypedDict, total=False):
-    ResourceType: Optional[TagResourceType]
-    ResourceId: Optional[TagResourceId]
-    Tags: Optional[TagList]
+    ResourceType: TagResourceType | None
+    ResourceId: TagResourceId | None
+    Tags: TagList | None
 
 
 class ListTagsForResourceResponse(TypedDict, total=False):
     ResourceTagSet: ResourceTagSet
 
 
-TagResourceIdList = List[TagResourceId]
+TagResourceIdList = list[TagResourceId]
 
 
 class ListTagsForResourcesRequest(ServiceRequest):
@@ -1743,7 +1743,7 @@ class ListTagsForResourcesRequest(ServiceRequest):
     ResourceIds: TagResourceIdList
 
 
-ResourceTagSetList = List[ResourceTagSet]
+ResourceTagSetList = list[ResourceTagSet]
 
 
 class ListTagsForResourcesResponse(TypedDict, total=False):
@@ -1751,8 +1751,8 @@ class ListTagsForResourcesResponse(TypedDict, total=False):
 
 
 class ListTrafficPoliciesRequest(ServiceRequest):
-    TrafficPolicyIdMarker: Optional[TrafficPolicyId]
-    MaxItems: Optional[PageMaxItems]
+    TrafficPolicyIdMarker: TrafficPolicyId | None
+    MaxItems: PageMaxItems | None
 
 
 class TrafficPolicySummary(TypedDict, total=False):
@@ -1763,7 +1763,7 @@ class TrafficPolicySummary(TypedDict, total=False):
     TrafficPolicyCount: TrafficPolicyVersion
 
 
-TrafficPolicySummaries = List[TrafficPolicySummary]
+TrafficPolicySummaries = list[TrafficPolicySummary]
 
 
 class ListTrafficPoliciesResponse(TypedDict, total=False):
@@ -1775,18 +1775,18 @@ class ListTrafficPoliciesResponse(TypedDict, total=False):
 
 class ListTrafficPolicyInstancesByHostedZoneRequest(ServiceRequest):
     HostedZoneId: ResourceId
-    TrafficPolicyInstanceNameMarker: Optional[DNSName]
-    TrafficPolicyInstanceTypeMarker: Optional[RRType]
-    MaxItems: Optional[PageMaxItems]
+    TrafficPolicyInstanceNameMarker: DNSName | None
+    TrafficPolicyInstanceTypeMarker: RRType | None
+    MaxItems: PageMaxItems | None
 
 
-TrafficPolicyInstances = List[TrafficPolicyInstance]
+TrafficPolicyInstances = list[TrafficPolicyInstance]
 
 
 class ListTrafficPolicyInstancesByHostedZoneResponse(TypedDict, total=False):
     TrafficPolicyInstances: TrafficPolicyInstances
-    TrafficPolicyInstanceNameMarker: Optional[DNSName]
-    TrafficPolicyInstanceTypeMarker: Optional[RRType]
+    TrafficPolicyInstanceNameMarker: DNSName | None
+    TrafficPolicyInstanceTypeMarker: RRType | None
     IsTruncated: PageTruncated
     MaxItems: PageMaxItems
 
@@ -1794,44 +1794,44 @@ class ListTrafficPolicyInstancesByHostedZoneResponse(TypedDict, total=False):
 class ListTrafficPolicyInstancesByPolicyRequest(ServiceRequest):
     TrafficPolicyId: TrafficPolicyId
     TrafficPolicyVersion: TrafficPolicyVersion
-    HostedZoneIdMarker: Optional[ResourceId]
-    TrafficPolicyInstanceNameMarker: Optional[DNSName]
-    TrafficPolicyInstanceTypeMarker: Optional[RRType]
-    MaxItems: Optional[PageMaxItems]
+    HostedZoneIdMarker: ResourceId | None
+    TrafficPolicyInstanceNameMarker: DNSName | None
+    TrafficPolicyInstanceTypeMarker: RRType | None
+    MaxItems: PageMaxItems | None
 
 
 class ListTrafficPolicyInstancesByPolicyResponse(TypedDict, total=False):
     TrafficPolicyInstances: TrafficPolicyInstances
-    HostedZoneIdMarker: Optional[ResourceId]
-    TrafficPolicyInstanceNameMarker: Optional[DNSName]
-    TrafficPolicyInstanceTypeMarker: Optional[RRType]
+    HostedZoneIdMarker: ResourceId | None
+    TrafficPolicyInstanceNameMarker: DNSName | None
+    TrafficPolicyInstanceTypeMarker: RRType | None
     IsTruncated: PageTruncated
     MaxItems: PageMaxItems
 
 
 class ListTrafficPolicyInstancesRequest(ServiceRequest):
-    HostedZoneIdMarker: Optional[ResourceId]
-    TrafficPolicyInstanceNameMarker: Optional[DNSName]
-    TrafficPolicyInstanceTypeMarker: Optional[RRType]
-    MaxItems: Optional[PageMaxItems]
+    HostedZoneIdMarker: ResourceId | None
+    TrafficPolicyInstanceNameMarker: DNSName | None
+    TrafficPolicyInstanceTypeMarker: RRType | None
+    MaxItems: PageMaxItems | None
 
 
 class ListTrafficPolicyInstancesResponse(TypedDict, total=False):
     TrafficPolicyInstances: TrafficPolicyInstances
-    HostedZoneIdMarker: Optional[ResourceId]
-    TrafficPolicyInstanceNameMarker: Optional[DNSName]
-    TrafficPolicyInstanceTypeMarker: Optional[RRType]
+    HostedZoneIdMarker: ResourceId | None
+    TrafficPolicyInstanceNameMarker: DNSName | None
+    TrafficPolicyInstanceTypeMarker: RRType | None
     IsTruncated: PageTruncated
     MaxItems: PageMaxItems
 
 
 class ListTrafficPolicyVersionsRequest(ServiceRequest):
     Id: TrafficPolicyId
-    TrafficPolicyVersionMarker: Optional[TrafficPolicyVersionMarker]
-    MaxItems: Optional[PageMaxItems]
+    TrafficPolicyVersionMarker: TrafficPolicyVersionMarker | None
+    MaxItems: PageMaxItems | None
 
 
-TrafficPolicies = List[TrafficPolicy]
+TrafficPolicies = list[TrafficPolicy]
 
 
 class ListTrafficPolicyVersionsResponse(TypedDict, total=False):
@@ -1843,27 +1843,27 @@ class ListTrafficPolicyVersionsResponse(TypedDict, total=False):
 
 class ListVPCAssociationAuthorizationsRequest(ServiceRequest):
     HostedZoneId: ResourceId
-    NextToken: Optional[PaginationToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: PaginationToken | None
+    MaxResults: MaxResults | None
 
 
 class ListVPCAssociationAuthorizationsResponse(TypedDict, total=False):
     HostedZoneId: ResourceId
-    NextToken: Optional[PaginationToken]
+    NextToken: PaginationToken | None
     VPCs: VPCs
 
 
-RecordData = List[RecordDataEntry]
-ResettableElementNameList = List[ResettableElementName]
+RecordData = list[RecordDataEntry]
+ResettableElementNameList = list[ResettableElementName]
 
 
 class TestDNSAnswerRequest(ServiceRequest):
     HostedZoneId: ResourceId
     RecordName: DNSName
     RecordType: RRType
-    ResolverIP: Optional[IPAddress]
-    EDNS0ClientSubnetIP: Optional[IPAddress]
-    EDNS0ClientSubnetMask: Optional[SubnetMask]
+    ResolverIP: IPAddress | None
+    EDNS0ClientSubnetIP: IPAddress | None
+    EDNS0ClientSubnetMask: SubnetMask | None
 
 
 class TestDNSAnswerResponse(TypedDict, total=False):
@@ -1877,22 +1877,22 @@ class TestDNSAnswerResponse(TypedDict, total=False):
 
 class UpdateHealthCheckRequest(ServiceRequest):
     HealthCheckId: HealthCheckId
-    HealthCheckVersion: Optional[HealthCheckVersion]
-    IPAddress: Optional[IPAddress]
-    Port: Optional[Port]
-    ResourcePath: Optional[ResourcePath]
-    FullyQualifiedDomainName: Optional[FullyQualifiedDomainName]
-    SearchString: Optional[SearchString]
-    FailureThreshold: Optional[FailureThreshold]
-    Inverted: Optional[Inverted]
-    Disabled: Optional[Disabled]
-    HealthThreshold: Optional[HealthThreshold]
-    ChildHealthChecks: Optional[ChildHealthCheckList]
-    EnableSNI: Optional[EnableSNI]
-    Regions: Optional[HealthCheckRegionList]
-    AlarmIdentifier: Optional[AlarmIdentifier]
-    InsufficientDataHealthStatus: Optional[InsufficientDataHealthStatus]
-    ResetElements: Optional[ResettableElementNameList]
+    HealthCheckVersion: HealthCheckVersion | None
+    IPAddress: IPAddress | None
+    Port: Port | None
+    ResourcePath: ResourcePath | None
+    FullyQualifiedDomainName: FullyQualifiedDomainName | None
+    SearchString: SearchString | None
+    FailureThreshold: FailureThreshold | None
+    Inverted: Inverted | None
+    Disabled: Disabled | None
+    HealthThreshold: HealthThreshold | None
+    ChildHealthChecks: ChildHealthCheckList | None
+    EnableSNI: EnableSNI | None
+    Regions: HealthCheckRegionList | None
+    AlarmIdentifier: AlarmIdentifier | None
+    InsufficientDataHealthStatus: InsufficientDataHealthStatus | None
+    ResetElements: ResettableElementNameList | None
 
 
 class UpdateHealthCheckResponse(TypedDict, total=False):
@@ -1901,7 +1901,7 @@ class UpdateHealthCheckResponse(TypedDict, total=False):
 
 class UpdateHostedZoneCommentRequest(ServiceRequest):
     Id: ResourceId
-    Comment: Optional[ResourceDescription]
+    Comment: ResourceDescription | None
 
 
 class UpdateHostedZoneCommentResponse(TypedDict, total=False):
@@ -1930,8 +1930,8 @@ class UpdateTrafficPolicyInstanceResponse(TypedDict, total=False):
 
 
 class Route53Api:
-    service = "route53"
-    version = "2013-04-01"
+    service: str = "route53"
+    version: str = "2013-04-01"
 
     @handler("ActivateKeySigningKey")
     def activate_key_signing_key(

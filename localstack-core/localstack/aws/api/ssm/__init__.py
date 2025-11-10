@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import Dict, List, Optional, TypedDict
+from typing import TypedDict
 
 from localstack.aws.api import RequestContext, ServiceException, ServiceRequest, handler
 
@@ -1510,7 +1510,7 @@ class InvalidItemContentException(ServiceException):
     code: str = "InvalidItemContentException"
     sender_fault: bool = False
     status_code: int = 400
-    TypeName: Optional[InventoryItemTypeName]
+    TypeName: InventoryItemTypeName | None
 
 
 class InvalidKeyId(ServiceException):
@@ -1649,14 +1649,14 @@ class ItemContentMismatchException(ServiceException):
     code: str = "ItemContentMismatchException"
     sender_fault: bool = False
     status_code: int = 400
-    TypeName: Optional[InventoryItemTypeName]
+    TypeName: InventoryItemTypeName | None
 
 
 class ItemSizeLimitExceededException(ServiceException):
     code: str = "ItemSizeLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    TypeName: Optional[InventoryItemTypeName]
+    TypeName: InventoryItemTypeName | None
 
 
 class MalformedResourcePolicyDocumentException(ServiceException):
@@ -1671,6 +1671,12 @@ class MaxDocumentSizeExceeded(ServiceException):
     status_code: int = 400
 
 
+class NoLongerSupportedException(ServiceException):
+    code: str = "NoLongerSupportedException"
+    sender_fault: bool = False
+    status_code: int = 400
+
+
 class OpsItemAccessDeniedException(ServiceException):
     code: str = "OpsItemAccessDeniedException"
     sender_fault: bool = False
@@ -1681,7 +1687,7 @@ class OpsItemAlreadyExistsException(ServiceException):
     code: str = "OpsItemAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    OpsItemId: Optional[String]
+    OpsItemId: String | None
 
 
 class OpsItemConflictException(ServiceException):
@@ -1690,23 +1696,23 @@ class OpsItemConflictException(ServiceException):
     status_code: int = 400
 
 
-OpsItemParameterNamesList = List[String]
+OpsItemParameterNamesList = list[String]
 
 
 class OpsItemInvalidParameterException(ServiceException):
     code: str = "OpsItemInvalidParameterException"
     sender_fault: bool = False
     status_code: int = 400
-    ParameterNames: Optional[OpsItemParameterNamesList]
+    ParameterNames: OpsItemParameterNamesList | None
 
 
 class OpsItemLimitExceededException(ServiceException):
     code: str = "OpsItemLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceTypes: Optional[OpsItemParameterNamesList]
-    Limit: Optional[Integer]
-    LimitType: Optional[String]
+    ResourceTypes: OpsItemParameterNamesList | None
+    Limit: Integer | None
+    LimitType: String | None
 
 
 class OpsItemNotFoundException(ServiceException):
@@ -1719,8 +1725,8 @@ class OpsItemRelatedItemAlreadyExistsException(ServiceException):
     code: str = "OpsItemRelatedItemAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceUri: Optional[OpsItemRelatedItemAssociationResourceUri]
-    OpsItemId: Optional[OpsItemId]
+    ResourceUri: OpsItemRelatedItemAssociationResourceUri | None
+    OpsItemId: OpsItemId | None
 
 
 class OpsItemRelatedItemAssociationNotFoundException(ServiceException):
@@ -1817,7 +1823,7 @@ class ResourceDataSyncAlreadyExistsException(ServiceException):
     code: str = "ResourceDataSyncAlreadyExistsException"
     sender_fault: bool = False
     status_code: int = 400
-    SyncName: Optional[ResourceDataSyncName]
+    SyncName: ResourceDataSyncName | None
 
 
 class ResourceDataSyncConflictException(ServiceException):
@@ -1842,8 +1848,8 @@ class ResourceDataSyncNotFoundException(ServiceException):
     code: str = "ResourceDataSyncNotFoundException"
     sender_fault: bool = False
     status_code: int = 400
-    SyncName: Optional[ResourceDataSyncName]
-    SyncType: Optional[ResourceDataSyncType]
+    SyncName: ResourceDataSyncName | None
+    SyncType: ResourceDataSyncType | None
 
 
 class ResourceInUseException(ServiceException):
@@ -1870,22 +1876,22 @@ class ResourcePolicyConflictException(ServiceException):
     status_code: int = 400
 
 
-ResourcePolicyParameterNamesList = List[String]
+ResourcePolicyParameterNamesList = list[String]
 
 
 class ResourcePolicyInvalidParameterException(ServiceException):
     code: str = "ResourcePolicyInvalidParameterException"
     sender_fault: bool = False
     status_code: int = 400
-    ParameterNames: Optional[ResourcePolicyParameterNamesList]
+    ParameterNames: ResourcePolicyParameterNamesList | None
 
 
 class ResourcePolicyLimitExceededException(ServiceException):
     code: str = "ResourcePolicyLimitExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    Limit: Optional[Integer]
-    LimitType: Optional[String]
+    Limit: Integer | None
+    LimitType: String | None
 
 
 class ResourcePolicyNotFoundException(ServiceException):
@@ -1898,8 +1904,8 @@ class ServiceQuotaExceededException(ServiceException):
     code: str = "ServiceQuotaExceededException"
     sender_fault: bool = False
     status_code: int = 400
-    ResourceId: Optional[String]
-    ResourceType: Optional[String]
+    ResourceId: String | None
+    ResourceType: String | None
     QuotaCode: String
     ServiceCode: String
 
@@ -1938,8 +1944,8 @@ class ThrottlingException(ServiceException):
     code: str = "ThrottlingException"
     sender_fault: bool = False
     status_code: int = 400
-    QuotaCode: Optional[String]
-    ServiceCode: Optional[String]
+    QuotaCode: String | None
+    ServiceCode: String | None
 
 
 class TooManyTagsError(ServiceException):
@@ -1976,7 +1982,7 @@ class UnsupportedInventoryItemContextException(ServiceException):
     code: str = "UnsupportedInventoryItemContextException"
     sender_fault: bool = False
     status_code: int = 400
-    TypeName: Optional[InventoryItemTypeName]
+    TypeName: InventoryItemTypeName | None
 
 
 class UnsupportedInventorySchemaVersionException(ServiceException):
@@ -2013,19 +2019,19 @@ class ValidationException(ServiceException):
     code: str = "ValidationException"
     sender_fault: bool = False
     status_code: int = 400
-    ReasonCode: Optional[String]
+    ReasonCode: String | None
 
 
-AccountIdList = List[AccountId]
+AccountIdList = list[AccountId]
 
 
 class AccountSharingInfo(TypedDict, total=False):
-    AccountId: Optional[AccountId]
-    SharedDocumentVersion: Optional[SharedDocumentVersion]
+    AccountId: AccountId | None
+    SharedDocumentVersion: SharedDocumentVersion | None
 
 
-AccountSharingInfoList = List[AccountSharingInfo]
-Accounts = List[Account]
+AccountSharingInfoList = list[AccountSharingInfo]
+Accounts = list[Account]
 
 
 class Tag(TypedDict, total=False):
@@ -2033,25 +2039,25 @@ class Tag(TypedDict, total=False):
     Value: TagValue
 
 
-TagList = List[Tag]
+TagList = list[Tag]
 CreatedDate = datetime
 ExpirationDate = datetime
 
 
 class Activation(TypedDict, total=False):
-    ActivationId: Optional[ActivationId]
-    Description: Optional[ActivationDescription]
-    DefaultInstanceName: Optional[DefaultInstanceName]
-    IamRole: Optional[IamRole]
-    RegistrationLimit: Optional[RegistrationLimit]
-    RegistrationsCount: Optional[RegistrationsCount]
-    ExpirationDate: Optional[ExpirationDate]
-    Expired: Optional[Boolean]
-    CreatedDate: Optional[CreatedDate]
-    Tags: Optional[TagList]
+    ActivationId: ActivationId | None
+    Description: ActivationDescription | None
+    DefaultInstanceName: DefaultInstanceName | None
+    IamRole: IamRole | None
+    RegistrationLimit: RegistrationLimit | None
+    RegistrationsCount: RegistrationsCount | None
+    ExpirationDate: ExpirationDate | None
+    Expired: Boolean | None
+    CreatedDate: CreatedDate | None
+    Tags: TagList | None
 
 
-ActivationList = List[Activation]
+ActivationList = list[Activation]
 
 
 class AddTagsToResourceRequest(ServiceRequest):
@@ -2068,11 +2074,11 @@ class Alarm(TypedDict, total=False):
     Name: AlarmName
 
 
-AlarmList = List[Alarm]
+AlarmList = list[Alarm]
 
 
 class AlarmConfiguration(TypedDict, total=False):
-    IgnorePollAlarmFailure: Optional[Boolean]
+    IgnorePollAlarmFailure: Boolean | None
     Alarms: AlarmList
 
 
@@ -2081,7 +2087,7 @@ class AlarmStateInformation(TypedDict, total=False):
     State: ExternalAlarmState
 
 
-AlarmStateInformationList = List[AlarmStateInformation]
+AlarmStateInformationList = list[AlarmStateInformation]
 
 
 class AssociateOpsItemRelatedItemRequest(ServiceRequest):
@@ -2092,138 +2098,138 @@ class AssociateOpsItemRelatedItemRequest(ServiceRequest):
 
 
 class AssociateOpsItemRelatedItemResponse(TypedDict, total=False):
-    AssociationId: Optional[OpsItemRelatedItemAssociationId]
+    AssociationId: OpsItemRelatedItemAssociationId | None
 
 
-TargetMapValueList = List[TargetMapValue]
-TargetMap = Dict[TargetMapKey, TargetMapValueList]
-TargetMaps = List[TargetMap]
-AssociationStatusAggregatedCount = Dict[StatusName, InstanceCount]
+TargetMapValueList = list[TargetMapValue]
+TargetMap = dict[TargetMapKey, TargetMapValueList]
+TargetMaps = list[TargetMap]
+AssociationStatusAggregatedCount = dict[StatusName, InstanceCount]
 
 
 class AssociationOverview(TypedDict, total=False):
-    Status: Optional[StatusName]
-    DetailedStatus: Optional[StatusName]
-    AssociationStatusAggregatedCount: Optional[AssociationStatusAggregatedCount]
+    Status: StatusName | None
+    DetailedStatus: StatusName | None
+    AssociationStatusAggregatedCount: AssociationStatusAggregatedCount | None
 
 
 DateTime = datetime
-TargetValues = List[TargetValue]
+TargetValues = list[TargetValue]
 
 
 class Target(TypedDict, total=False):
-    Key: Optional[TargetKey]
-    Values: Optional[TargetValues]
+    Key: TargetKey | None
+    Values: TargetValues | None
 
 
-Targets = List[Target]
+Targets = list[Target]
 
 
 class Association(TypedDict, total=False):
-    Name: Optional[DocumentARN]
-    InstanceId: Optional[InstanceId]
-    AssociationId: Optional[AssociationId]
-    AssociationVersion: Optional[AssociationVersion]
-    DocumentVersion: Optional[DocumentVersion]
-    Targets: Optional[Targets]
-    LastExecutionDate: Optional[DateTime]
-    Overview: Optional[AssociationOverview]
-    ScheduleExpression: Optional[ScheduleExpression]
-    AssociationName: Optional[AssociationName]
-    ScheduleOffset: Optional[ScheduleOffset]
-    Duration: Optional[Duration]
-    TargetMaps: Optional[TargetMaps]
+    Name: DocumentARN | None
+    InstanceId: InstanceId | None
+    AssociationId: AssociationId | None
+    AssociationVersion: AssociationVersion | None
+    DocumentVersion: DocumentVersion | None
+    Targets: Targets | None
+    LastExecutionDate: DateTime | None
+    Overview: AssociationOverview | None
+    ScheduleExpression: ScheduleExpression | None
+    AssociationName: AssociationName | None
+    ScheduleOffset: ScheduleOffset | None
+    Duration: Duration | None
+    TargetMaps: TargetMaps | None
 
 
-ExcludeAccounts = List[ExcludeAccount]
-Regions = List[Region]
+ExcludeAccounts = list[ExcludeAccount]
+Regions = list[Region]
 
 
 class TargetLocation(TypedDict, total=False):
-    Accounts: Optional[Accounts]
-    Regions: Optional[Regions]
-    TargetLocationMaxConcurrency: Optional[MaxConcurrency]
-    TargetLocationMaxErrors: Optional[MaxErrors]
-    ExecutionRoleName: Optional[ExecutionRoleName]
-    TargetLocationAlarmConfiguration: Optional[AlarmConfiguration]
-    IncludeChildOrganizationUnits: Optional[Boolean]
-    ExcludeAccounts: Optional[ExcludeAccounts]
-    Targets: Optional[Targets]
-    TargetsMaxConcurrency: Optional[MaxConcurrency]
-    TargetsMaxErrors: Optional[MaxErrors]
+    Accounts: Accounts | None
+    Regions: Regions | None
+    TargetLocationMaxConcurrency: MaxConcurrency | None
+    TargetLocationMaxErrors: MaxErrors | None
+    ExecutionRoleName: ExecutionRoleName | None
+    TargetLocationAlarmConfiguration: AlarmConfiguration | None
+    IncludeChildOrganizationUnits: Boolean | None
+    ExcludeAccounts: ExcludeAccounts | None
+    Targets: Targets | None
+    TargetsMaxConcurrency: MaxConcurrency | None
+    TargetsMaxErrors: MaxErrors | None
 
 
-TargetLocations = List[TargetLocation]
-CalendarNameOrARNList = List[CalendarNameOrARN]
+TargetLocations = list[TargetLocation]
+CalendarNameOrARNList = list[CalendarNameOrARN]
 
 
 class S3OutputLocation(TypedDict, total=False):
-    OutputS3Region: Optional[S3Region]
-    OutputS3BucketName: Optional[S3BucketName]
-    OutputS3KeyPrefix: Optional[S3KeyPrefix]
+    OutputS3Region: S3Region | None
+    OutputS3BucketName: S3BucketName | None
+    OutputS3KeyPrefix: S3KeyPrefix | None
 
 
 class InstanceAssociationOutputLocation(TypedDict, total=False):
-    S3Location: Optional[S3OutputLocation]
+    S3Location: S3OutputLocation | None
 
 
-ParameterValueList = List[ParameterValue]
-Parameters = Dict[ParameterName, ParameterValueList]
+ParameterValueList = list[ParameterValue]
+Parameters = dict[ParameterName, ParameterValueList]
 
 
 class AssociationStatus(TypedDict, total=False):
     Date: DateTime
     Name: AssociationStatusName
     Message: StatusMessage
-    AdditionalInfo: Optional[StatusAdditionalInfo]
+    AdditionalInfo: StatusAdditionalInfo | None
 
 
 class AssociationDescription(TypedDict, total=False):
-    Name: Optional[DocumentARN]
-    InstanceId: Optional[InstanceId]
-    AssociationVersion: Optional[AssociationVersion]
-    Date: Optional[DateTime]
-    LastUpdateAssociationDate: Optional[DateTime]
-    Status: Optional[AssociationStatus]
-    Overview: Optional[AssociationOverview]
-    DocumentVersion: Optional[DocumentVersion]
-    AutomationTargetParameterName: Optional[AutomationTargetParameterName]
-    Parameters: Optional[Parameters]
-    AssociationId: Optional[AssociationId]
-    Targets: Optional[Targets]
-    ScheduleExpression: Optional[ScheduleExpression]
-    OutputLocation: Optional[InstanceAssociationOutputLocation]
-    LastExecutionDate: Optional[DateTime]
-    LastSuccessfulExecutionDate: Optional[DateTime]
-    AssociationName: Optional[AssociationName]
-    MaxErrors: Optional[MaxErrors]
-    MaxConcurrency: Optional[MaxConcurrency]
-    ComplianceSeverity: Optional[AssociationComplianceSeverity]
-    SyncCompliance: Optional[AssociationSyncCompliance]
-    ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
-    CalendarNames: Optional[CalendarNameOrARNList]
-    TargetLocations: Optional[TargetLocations]
-    ScheduleOffset: Optional[ScheduleOffset]
-    Duration: Optional[Duration]
-    TargetMaps: Optional[TargetMaps]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
+    Name: DocumentARN | None
+    InstanceId: InstanceId | None
+    AssociationVersion: AssociationVersion | None
+    Date: DateTime | None
+    LastUpdateAssociationDate: DateTime | None
+    Status: AssociationStatus | None
+    Overview: AssociationOverview | None
+    DocumentVersion: DocumentVersion | None
+    AutomationTargetParameterName: AutomationTargetParameterName | None
+    Parameters: Parameters | None
+    AssociationId: AssociationId | None
+    Targets: Targets | None
+    ScheduleExpression: ScheduleExpression | None
+    OutputLocation: InstanceAssociationOutputLocation | None
+    LastExecutionDate: DateTime | None
+    LastSuccessfulExecutionDate: DateTime | None
+    AssociationName: AssociationName | None
+    MaxErrors: MaxErrors | None
+    MaxConcurrency: MaxConcurrency | None
+    ComplianceSeverity: AssociationComplianceSeverity | None
+    SyncCompliance: AssociationSyncCompliance | None
+    ApplyOnlyAtCronInterval: ApplyOnlyAtCronInterval | None
+    CalendarNames: CalendarNameOrARNList | None
+    TargetLocations: TargetLocations | None
+    ScheduleOffset: ScheduleOffset | None
+    Duration: Duration | None
+    TargetMaps: TargetMaps | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
 
 
-AssociationDescriptionList = List[AssociationDescription]
+AssociationDescriptionList = list[AssociationDescription]
 
 
 class AssociationExecution(TypedDict, total=False):
-    AssociationId: Optional[AssociationId]
-    AssociationVersion: Optional[AssociationVersion]
-    ExecutionId: Optional[AssociationExecutionId]
-    Status: Optional[StatusName]
-    DetailedStatus: Optional[StatusName]
-    CreatedTime: Optional[DateTime]
-    LastExecutionDate: Optional[DateTime]
-    ResourceCountByStatus: Optional[ResourceCountByStatus]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
+    AssociationId: AssociationId | None
+    AssociationVersion: AssociationVersion | None
+    ExecutionId: AssociationExecutionId | None
+    Status: StatusName | None
+    DetailedStatus: StatusName | None
+    CreatedTime: DateTime | None
+    LastExecutionDate: DateTime | None
+    ResourceCountByStatus: ResourceCountByStatus | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
 
 
 class AssociationExecutionFilter(TypedDict, total=False):
@@ -2232,24 +2238,24 @@ class AssociationExecutionFilter(TypedDict, total=False):
     Type: AssociationFilterOperatorType
 
 
-AssociationExecutionFilterList = List[AssociationExecutionFilter]
+AssociationExecutionFilterList = list[AssociationExecutionFilter]
 
 
 class OutputSource(TypedDict, total=False):
-    OutputSourceId: Optional[OutputSourceId]
-    OutputSourceType: Optional[OutputSourceType]
+    OutputSourceId: OutputSourceId | None
+    OutputSourceType: OutputSourceType | None
 
 
 class AssociationExecutionTarget(TypedDict, total=False):
-    AssociationId: Optional[AssociationId]
-    AssociationVersion: Optional[AssociationVersion]
-    ExecutionId: Optional[AssociationExecutionId]
-    ResourceId: Optional[AssociationResourceId]
-    ResourceType: Optional[AssociationResourceType]
-    Status: Optional[StatusName]
-    DetailedStatus: Optional[StatusName]
-    LastExecutionDate: Optional[DateTime]
-    OutputSource: Optional[OutputSource]
+    AssociationId: AssociationId | None
+    AssociationVersion: AssociationVersion | None
+    ExecutionId: AssociationExecutionId | None
+    ResourceId: AssociationResourceId | None
+    ResourceType: AssociationResourceType | None
+    Status: StatusName | None
+    DetailedStatus: StatusName | None
+    LastExecutionDate: DateTime | None
+    OutputSource: OutputSource | None
 
 
 class AssociationExecutionTargetsFilter(TypedDict, total=False):
@@ -2257,9 +2263,9 @@ class AssociationExecutionTargetsFilter(TypedDict, total=False):
     Value: AssociationExecutionTargetsFilterValue
 
 
-AssociationExecutionTargetsFilterList = List[AssociationExecutionTargetsFilter]
-AssociationExecutionTargetsList = List[AssociationExecutionTarget]
-AssociationExecutionsList = List[AssociationExecution]
+AssociationExecutionTargetsFilterList = list[AssociationExecutionTargetsFilter]
+AssociationExecutionTargetsList = list[AssociationExecutionTarget]
+AssociationExecutionsList = list[AssociationExecution]
 
 
 class AssociationFilter(TypedDict, total=False):
@@ -2267,189 +2273,189 @@ class AssociationFilter(TypedDict, total=False):
     value: AssociationFilterValue
 
 
-AssociationFilterList = List[AssociationFilter]
-AssociationIdList = List[AssociationId]
-AssociationList = List[Association]
+AssociationFilterList = list[AssociationFilter]
+AssociationIdList = list[AssociationId]
+AssociationList = list[Association]
 
 
 class AssociationVersionInfo(TypedDict, total=False):
-    AssociationId: Optional[AssociationId]
-    AssociationVersion: Optional[AssociationVersion]
-    CreatedDate: Optional[DateTime]
-    Name: Optional[DocumentARN]
-    DocumentVersion: Optional[DocumentVersion]
-    Parameters: Optional[Parameters]
-    Targets: Optional[Targets]
-    ScheduleExpression: Optional[ScheduleExpression]
-    OutputLocation: Optional[InstanceAssociationOutputLocation]
-    AssociationName: Optional[AssociationName]
-    MaxErrors: Optional[MaxErrors]
-    MaxConcurrency: Optional[MaxConcurrency]
-    ComplianceSeverity: Optional[AssociationComplianceSeverity]
-    SyncCompliance: Optional[AssociationSyncCompliance]
-    ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
-    CalendarNames: Optional[CalendarNameOrARNList]
-    TargetLocations: Optional[TargetLocations]
-    ScheduleOffset: Optional[ScheduleOffset]
-    Duration: Optional[Duration]
-    TargetMaps: Optional[TargetMaps]
+    AssociationId: AssociationId | None
+    AssociationVersion: AssociationVersion | None
+    CreatedDate: DateTime | None
+    Name: DocumentARN | None
+    DocumentVersion: DocumentVersion | None
+    Parameters: Parameters | None
+    Targets: Targets | None
+    ScheduleExpression: ScheduleExpression | None
+    OutputLocation: InstanceAssociationOutputLocation | None
+    AssociationName: AssociationName | None
+    MaxErrors: MaxErrors | None
+    MaxConcurrency: MaxConcurrency | None
+    ComplianceSeverity: AssociationComplianceSeverity | None
+    SyncCompliance: AssociationSyncCompliance | None
+    ApplyOnlyAtCronInterval: ApplyOnlyAtCronInterval | None
+    CalendarNames: CalendarNameOrARNList | None
+    TargetLocations: TargetLocations | None
+    ScheduleOffset: ScheduleOffset | None
+    Duration: Duration | None
+    TargetMaps: TargetMaps | None
 
 
-AssociationVersionList = List[AssociationVersionInfo]
+AssociationVersionList = list[AssociationVersionInfo]
 ContentLength = int
 
 
 class AttachmentContent(TypedDict, total=False):
-    Name: Optional[AttachmentName]
-    Size: Optional[ContentLength]
-    Hash: Optional[AttachmentHash]
-    HashType: Optional[AttachmentHashType]
-    Url: Optional[AttachmentUrl]
+    Name: AttachmentName | None
+    Size: ContentLength | None
+    Hash: AttachmentHash | None
+    HashType: AttachmentHashType | None
+    Url: AttachmentUrl | None
 
 
-AttachmentContentList = List[AttachmentContent]
+AttachmentContentList = list[AttachmentContent]
 
 
 class AttachmentInformation(TypedDict, total=False):
-    Name: Optional[AttachmentName]
+    Name: AttachmentName | None
 
 
-AttachmentInformationList = List[AttachmentInformation]
-AttachmentsSourceValues = List[AttachmentsSourceValue]
+AttachmentInformationList = list[AttachmentInformation]
+AttachmentsSourceValues = list[AttachmentsSourceValue]
 
 
 class AttachmentsSource(TypedDict, total=False):
-    Key: Optional[AttachmentsSourceKey]
-    Values: Optional[AttachmentsSourceValues]
-    Name: Optional[AttachmentIdentifier]
+    Key: AttachmentsSourceKey | None
+    Values: AttachmentsSourceValues | None
+    Name: AttachmentIdentifier | None
 
 
-AttachmentsSourceList = List[AttachmentsSource]
-AutomationParameterValueList = List[AutomationParameterValue]
-AutomationParameterMap = Dict[AutomationParameterKey, AutomationParameterValueList]
+AttachmentsSourceList = list[AttachmentsSource]
+AutomationParameterValueList = list[AutomationParameterValue]
+AutomationParameterMap = dict[AutomationParameterKey, AutomationParameterValueList]
 
 
 class Runbook(TypedDict, total=False):
     DocumentName: DocumentARN
-    DocumentVersion: Optional[DocumentVersion]
-    Parameters: Optional[AutomationParameterMap]
-    TargetParameterName: Optional[AutomationParameterKey]
-    Targets: Optional[Targets]
-    TargetMaps: Optional[TargetMaps]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    TargetLocations: Optional[TargetLocations]
+    DocumentVersion: DocumentVersion | None
+    Parameters: AutomationParameterMap | None
+    TargetParameterName: AutomationParameterKey | None
+    Targets: Targets | None
+    TargetMaps: TargetMaps | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    TargetLocations: TargetLocations | None
 
 
-Runbooks = List[Runbook]
+Runbooks = list[Runbook]
 
 
 class ProgressCounters(TypedDict, total=False):
-    TotalSteps: Optional[Integer]
-    SuccessSteps: Optional[Integer]
-    FailedSteps: Optional[Integer]
-    CancelledSteps: Optional[Integer]
-    TimedOutSteps: Optional[Integer]
+    TotalSteps: Integer | None
+    SuccessSteps: Integer | None
+    FailedSteps: Integer | None
+    CancelledSteps: Integer | None
+    TimedOutSteps: Integer | None
 
 
-TargetParameterList = List[ParameterValue]
+TargetParameterList = list[ParameterValue]
 
 
 class ResolvedTargets(TypedDict, total=False):
-    ParameterValues: Optional[TargetParameterList]
-    Truncated: Optional[Boolean]
+    ParameterValues: TargetParameterList | None
+    Truncated: Boolean | None
 
 
 class ParentStepDetails(TypedDict, total=False):
-    StepExecutionId: Optional[String]
-    StepName: Optional[String]
-    Action: Optional[AutomationActionName]
-    Iteration: Optional[Integer]
-    IteratorValue: Optional[String]
+    StepExecutionId: String | None
+    StepName: String | None
+    Action: AutomationActionName | None
+    Iteration: Integer | None
+    IteratorValue: String | None
 
 
-ValidNextStepList = List[ValidNextStep]
+ValidNextStepList = list[ValidNextStep]
 
 
 class FailureDetails(TypedDict, total=False):
-    FailureStage: Optional[String]
-    FailureType: Optional[String]
-    Details: Optional[AutomationParameterMap]
+    FailureStage: String | None
+    FailureType: String | None
+    Details: AutomationParameterMap | None
 
 
-NormalStringMap = Dict[String, String]
+NormalStringMap = dict[String, String]
 Long = int
 
 
 class StepExecution(TypedDict, total=False):
-    StepName: Optional[String]
-    Action: Optional[AutomationActionName]
-    TimeoutSeconds: Optional[Long]
-    OnFailure: Optional[String]
-    MaxAttempts: Optional[Integer]
-    ExecutionStartTime: Optional[DateTime]
-    ExecutionEndTime: Optional[DateTime]
-    StepStatus: Optional[AutomationExecutionStatus]
-    ResponseCode: Optional[String]
-    Inputs: Optional[NormalStringMap]
-    Outputs: Optional[AutomationParameterMap]
-    Response: Optional[String]
-    FailureMessage: Optional[String]
-    FailureDetails: Optional[FailureDetails]
-    StepExecutionId: Optional[String]
-    OverriddenParameters: Optional[AutomationParameterMap]
-    IsEnd: Optional[Boolean]
-    NextStep: Optional[String]
-    IsCritical: Optional[Boolean]
-    ValidNextSteps: Optional[ValidNextStepList]
-    Targets: Optional[Targets]
-    TargetLocation: Optional[TargetLocation]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
-    ParentStepDetails: Optional[ParentStepDetails]
+    StepName: String | None
+    Action: AutomationActionName | None
+    TimeoutSeconds: Long | None
+    OnFailure: String | None
+    MaxAttempts: Integer | None
+    ExecutionStartTime: DateTime | None
+    ExecutionEndTime: DateTime | None
+    StepStatus: AutomationExecutionStatus | None
+    ResponseCode: String | None
+    Inputs: NormalStringMap | None
+    Outputs: AutomationParameterMap | None
+    Response: String | None
+    FailureMessage: String | None
+    FailureDetails: FailureDetails | None
+    StepExecutionId: String | None
+    OverriddenParameters: AutomationParameterMap | None
+    IsEnd: Boolean | None
+    NextStep: String | None
+    IsCritical: Boolean | None
+    ValidNextSteps: ValidNextStepList | None
+    Targets: Targets | None
+    TargetLocation: TargetLocation | None
+    TriggeredAlarms: AlarmStateInformationList | None
+    ParentStepDetails: ParentStepDetails | None
 
 
-StepExecutionList = List[StepExecution]
+StepExecutionList = list[StepExecution]
 
 
 class AutomationExecution(TypedDict, total=False):
-    AutomationExecutionId: Optional[AutomationExecutionId]
-    DocumentName: Optional[DocumentName]
-    DocumentVersion: Optional[DocumentVersion]
-    ExecutionStartTime: Optional[DateTime]
-    ExecutionEndTime: Optional[DateTime]
-    AutomationExecutionStatus: Optional[AutomationExecutionStatus]
-    StepExecutions: Optional[StepExecutionList]
-    StepExecutionsTruncated: Optional[Boolean]
-    Parameters: Optional[AutomationParameterMap]
-    Outputs: Optional[AutomationParameterMap]
-    FailureMessage: Optional[String]
-    Mode: Optional[ExecutionMode]
-    ParentAutomationExecutionId: Optional[AutomationExecutionId]
-    ExecutedBy: Optional[String]
-    CurrentStepName: Optional[String]
-    CurrentAction: Optional[String]
-    TargetParameterName: Optional[AutomationParameterKey]
-    Targets: Optional[Targets]
-    TargetMaps: Optional[TargetMaps]
-    ResolvedTargets: Optional[ResolvedTargets]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    Target: Optional[String]
-    TargetLocations: Optional[TargetLocations]
-    ProgressCounters: Optional[ProgressCounters]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
-    TargetLocationsURL: Optional[TargetLocationsURL]
-    AutomationSubtype: Optional[AutomationSubtype]
-    ScheduledTime: Optional[DateTime]
-    Runbooks: Optional[Runbooks]
-    OpsItemId: Optional[String]
-    AssociationId: Optional[String]
-    ChangeRequestName: Optional[ChangeRequestName]
-    Variables: Optional[AutomationParameterMap]
+    AutomationExecutionId: AutomationExecutionId | None
+    DocumentName: DocumentName | None
+    DocumentVersion: DocumentVersion | None
+    ExecutionStartTime: DateTime | None
+    ExecutionEndTime: DateTime | None
+    AutomationExecutionStatus: AutomationExecutionStatus | None
+    StepExecutions: StepExecutionList | None
+    StepExecutionsTruncated: Boolean | None
+    Parameters: AutomationParameterMap | None
+    Outputs: AutomationParameterMap | None
+    FailureMessage: String | None
+    Mode: ExecutionMode | None
+    ParentAutomationExecutionId: AutomationExecutionId | None
+    ExecutedBy: String | None
+    CurrentStepName: String | None
+    CurrentAction: String | None
+    TargetParameterName: AutomationParameterKey | None
+    Targets: Targets | None
+    TargetMaps: TargetMaps | None
+    ResolvedTargets: ResolvedTargets | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    Target: String | None
+    TargetLocations: TargetLocations | None
+    ProgressCounters: ProgressCounters | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
+    TargetLocationsURL: TargetLocationsURL | None
+    AutomationSubtype: AutomationSubtype | None
+    ScheduledTime: DateTime | None
+    Runbooks: Runbooks | None
+    OpsItemId: String | None
+    AssociationId: String | None
+    ChangeRequestName: ChangeRequestName | None
+    Variables: AutomationParameterMap | None
 
 
-AutomationExecutionFilterValueList = List[AutomationExecutionFilterValue]
+AutomationExecutionFilterValueList = list[AutomationExecutionFilterValue]
 
 
 class AutomationExecutionFilter(TypedDict, total=False):
@@ -2457,73 +2463,73 @@ class AutomationExecutionFilter(TypedDict, total=False):
     Values: AutomationExecutionFilterValueList
 
 
-AutomationExecutionFilterList = List[AutomationExecutionFilter]
+AutomationExecutionFilterList = list[AutomationExecutionFilter]
 
 
 class AutomationExecutionInputs(TypedDict, total=False):
-    Parameters: Optional[AutomationParameterMap]
-    TargetParameterName: Optional[AutomationParameterKey]
-    Targets: Optional[Targets]
-    TargetMaps: Optional[TargetMaps]
-    TargetLocations: Optional[TargetLocations]
-    TargetLocationsURL: Optional[TargetLocationsURL]
+    Parameters: AutomationParameterMap | None
+    TargetParameterName: AutomationParameterKey | None
+    Targets: Targets | None
+    TargetMaps: TargetMaps | None
+    TargetLocations: TargetLocations | None
+    TargetLocationsURL: TargetLocationsURL | None
 
 
 class AutomationExecutionMetadata(TypedDict, total=False):
-    AutomationExecutionId: Optional[AutomationExecutionId]
-    DocumentName: Optional[DocumentName]
-    DocumentVersion: Optional[DocumentVersion]
-    AutomationExecutionStatus: Optional[AutomationExecutionStatus]
-    ExecutionStartTime: Optional[DateTime]
-    ExecutionEndTime: Optional[DateTime]
-    ExecutedBy: Optional[String]
-    LogFile: Optional[String]
-    Outputs: Optional[AutomationParameterMap]
-    Mode: Optional[ExecutionMode]
-    ParentAutomationExecutionId: Optional[AutomationExecutionId]
-    CurrentStepName: Optional[String]
-    CurrentAction: Optional[String]
-    FailureMessage: Optional[String]
-    TargetParameterName: Optional[AutomationParameterKey]
-    Targets: Optional[Targets]
-    TargetMaps: Optional[TargetMaps]
-    ResolvedTargets: Optional[ResolvedTargets]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    Target: Optional[String]
-    AutomationType: Optional[AutomationType]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
-    TargetLocationsURL: Optional[TargetLocationsURL]
-    AutomationSubtype: Optional[AutomationSubtype]
-    ScheduledTime: Optional[DateTime]
-    Runbooks: Optional[Runbooks]
-    OpsItemId: Optional[String]
-    AssociationId: Optional[String]
-    ChangeRequestName: Optional[ChangeRequestName]
+    AutomationExecutionId: AutomationExecutionId | None
+    DocumentName: DocumentName | None
+    DocumentVersion: DocumentVersion | None
+    AutomationExecutionStatus: AutomationExecutionStatus | None
+    ExecutionStartTime: DateTime | None
+    ExecutionEndTime: DateTime | None
+    ExecutedBy: String | None
+    LogFile: String | None
+    Outputs: AutomationParameterMap | None
+    Mode: ExecutionMode | None
+    ParentAutomationExecutionId: AutomationExecutionId | None
+    CurrentStepName: String | None
+    CurrentAction: String | None
+    FailureMessage: String | None
+    TargetParameterName: AutomationParameterKey | None
+    Targets: Targets | None
+    TargetMaps: TargetMaps | None
+    ResolvedTargets: ResolvedTargets | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    Target: String | None
+    AutomationType: AutomationType | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
+    TargetLocationsURL: TargetLocationsURL | None
+    AutomationSubtype: AutomationSubtype | None
+    ScheduledTime: DateTime | None
+    Runbooks: Runbooks | None
+    OpsItemId: String | None
+    AssociationId: String | None
+    ChangeRequestName: ChangeRequestName | None
 
 
-AutomationExecutionMetadataList = List[AutomationExecutionMetadata]
+AutomationExecutionMetadataList = list[AutomationExecutionMetadata]
 
 
 class TargetPreview(TypedDict, total=False):
-    Count: Optional[Integer]
-    TargetType: Optional[String]
+    Count: Integer | None
+    TargetType: String | None
 
 
-TargetPreviewList = List[TargetPreview]
-RegionList = List[Region]
-StepPreviewMap = Dict[ImpactType, Integer]
+TargetPreviewList = list[TargetPreview]
+RegionList = list[Region]
+StepPreviewMap = dict[ImpactType, Integer]
 
 
 class AutomationExecutionPreview(TypedDict, total=False):
-    StepPreviews: Optional[StepPreviewMap]
-    Regions: Optional[RegionList]
-    TargetPreviews: Optional[TargetPreviewList]
-    TotalAccounts: Optional[Integer]
+    StepPreviews: StepPreviewMap | None
+    Regions: RegionList | None
+    TargetPreviews: TargetPreviewList | None
+    TotalAccounts: Integer | None
 
 
-PatchSourceProductList = List[PatchSourceProduct]
+PatchSourceProductList = list[PatchSourceProduct]
 
 
 class PatchSource(TypedDict, total=False):
@@ -2532,9 +2538,9 @@ class PatchSource(TypedDict, total=False):
     Configuration: PatchSourceConfiguration
 
 
-PatchSourceList = List[PatchSource]
-PatchIdList = List[PatchId]
-PatchFilterValueList = List[PatchFilterValue]
+PatchSourceList = list[PatchSource]
+PatchIdList = list[PatchId]
+PatchFilterValueList = list[PatchFilterValue]
 
 
 class PatchFilter(TypedDict, total=False):
@@ -2542,7 +2548,7 @@ class PatchFilter(TypedDict, total=False):
     Values: PatchFilterValueList
 
 
-PatchFilterList = List[PatchFilter]
+PatchFilterList = list[PatchFilter]
 
 
 class PatchFilterGroup(TypedDict, total=False):
@@ -2551,13 +2557,13 @@ class PatchFilterGroup(TypedDict, total=False):
 
 class PatchRule(TypedDict, total=False):
     PatchFilterGroup: PatchFilterGroup
-    ComplianceLevel: Optional[PatchComplianceLevel]
-    ApproveAfterDays: Optional[ApproveAfterDays]
-    ApproveUntilDate: Optional[PatchStringDateTime]
-    EnableNonSecurity: Optional[Boolean]
+    ComplianceLevel: PatchComplianceLevel | None
+    ApproveAfterDays: ApproveAfterDays | None
+    ApproveUntilDate: PatchStringDateTime | None
+    EnableNonSecurity: Boolean | None
 
 
-PatchRuleList = List[PatchRule]
+PatchRuleList = list[PatchRule]
 
 
 class PatchRuleGroup(TypedDict, total=False):
@@ -2565,24 +2571,24 @@ class PatchRuleGroup(TypedDict, total=False):
 
 
 class BaselineOverride(TypedDict, total=False):
-    OperatingSystem: Optional[OperatingSystem]
-    GlobalFilters: Optional[PatchFilterGroup]
-    ApprovalRules: Optional[PatchRuleGroup]
-    ApprovedPatches: Optional[PatchIdList]
-    ApprovedPatchesComplianceLevel: Optional[PatchComplianceLevel]
-    RejectedPatches: Optional[PatchIdList]
-    RejectedPatchesAction: Optional[PatchAction]
-    ApprovedPatchesEnableNonSecurity: Optional[Boolean]
-    Sources: Optional[PatchSourceList]
-    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
+    OperatingSystem: OperatingSystem | None
+    GlobalFilters: PatchFilterGroup | None
+    ApprovalRules: PatchRuleGroup | None
+    ApprovedPatches: PatchIdList | None
+    ApprovedPatchesComplianceLevel: PatchComplianceLevel | None
+    RejectedPatches: PatchIdList | None
+    RejectedPatchesAction: PatchAction | None
+    ApprovedPatchesEnableNonSecurity: Boolean | None
+    Sources: PatchSourceList | None
+    AvailableSecurityUpdatesComplianceStatus: PatchComplianceStatus | None
 
 
-InstanceIdList = List[InstanceId]
+InstanceIdList = list[InstanceId]
 
 
 class CancelCommandRequest(ServiceRequest):
     CommandId: CommandId
-    InstanceIds: Optional[InstanceIdList]
+    InstanceIds: InstanceIdList | None
 
 
 class CancelCommandResult(TypedDict, total=False):
@@ -2594,54 +2600,54 @@ class CancelMaintenanceWindowExecutionRequest(ServiceRequest):
 
 
 class CancelMaintenanceWindowExecutionResult(TypedDict, total=False):
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
+    WindowExecutionId: MaintenanceWindowExecutionId | None
 
 
-CategoryEnumList = List[Category]
-CategoryList = List[Category]
+CategoryEnumList = list[Category]
+CategoryList = list[Category]
 
 
 class CloudWatchOutputConfig(TypedDict, total=False):
-    CloudWatchLogGroupName: Optional[CloudWatchLogGroupName]
-    CloudWatchOutputEnabled: Optional[CloudWatchOutputEnabled]
+    CloudWatchLogGroupName: CloudWatchLogGroupName | None
+    CloudWatchOutputEnabled: CloudWatchOutputEnabled | None
 
 
-NotificationEventList = List[NotificationEvent]
+NotificationEventList = list[NotificationEvent]
 
 
 class NotificationConfig(TypedDict, total=False):
-    NotificationArn: Optional[NotificationArn]
-    NotificationEvents: Optional[NotificationEventList]
-    NotificationType: Optional[NotificationType]
+    NotificationArn: NotificationArn | None
+    NotificationEvents: NotificationEventList | None
+    NotificationType: NotificationType | None
 
 
 class Command(TypedDict, total=False):
-    CommandId: Optional[CommandId]
-    DocumentName: Optional[DocumentName]
-    DocumentVersion: Optional[DocumentVersion]
-    Comment: Optional[Comment]
-    ExpiresAfter: Optional[DateTime]
-    Parameters: Optional[Parameters]
-    InstanceIds: Optional[InstanceIdList]
-    Targets: Optional[Targets]
-    RequestedDateTime: Optional[DateTime]
-    Status: Optional[CommandStatus]
-    StatusDetails: Optional[StatusDetails]
-    OutputS3Region: Optional[S3Region]
-    OutputS3BucketName: Optional[S3BucketName]
-    OutputS3KeyPrefix: Optional[S3KeyPrefix]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    TargetCount: Optional[TargetCount]
-    CompletedCount: Optional[CompletedCount]
-    ErrorCount: Optional[ErrorCount]
-    DeliveryTimedOutCount: Optional[DeliveryTimedOutCount]
-    ServiceRole: Optional[ServiceRole]
-    NotificationConfig: Optional[NotificationConfig]
-    CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
-    TimeoutSeconds: Optional[TimeoutSeconds]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
+    CommandId: CommandId | None
+    DocumentName: DocumentName | None
+    DocumentVersion: DocumentVersion | None
+    Comment: Comment | None
+    ExpiresAfter: DateTime | None
+    Parameters: Parameters | None
+    InstanceIds: InstanceIdList | None
+    Targets: Targets | None
+    RequestedDateTime: DateTime | None
+    Status: CommandStatus | None
+    StatusDetails: StatusDetails | None
+    OutputS3Region: S3Region | None
+    OutputS3BucketName: S3BucketName | None
+    OutputS3KeyPrefix: S3KeyPrefix | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    TargetCount: TargetCount | None
+    CompletedCount: CompletedCount | None
+    ErrorCount: ErrorCount | None
+    DeliveryTimedOutCount: DeliveryTimedOutCount | None
+    ServiceRole: ServiceRole | None
+    NotificationConfig: NotificationConfig | None
+    CloudWatchOutputConfig: CloudWatchOutputConfig | None
+    TimeoutSeconds: TimeoutSeconds | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
 
 
 class CommandFilter(TypedDict, total=False):
@@ -2649,121 +2655,121 @@ class CommandFilter(TypedDict, total=False):
     value: CommandFilterValue
 
 
-CommandFilterList = List[CommandFilter]
+CommandFilterList = list[CommandFilter]
 
 
 class CommandPlugin(TypedDict, total=False):
-    Name: Optional[CommandPluginName]
-    Status: Optional[CommandPluginStatus]
-    StatusDetails: Optional[StatusDetails]
-    ResponseCode: Optional[ResponseCode]
-    ResponseStartDateTime: Optional[DateTime]
-    ResponseFinishDateTime: Optional[DateTime]
-    Output: Optional[CommandPluginOutput]
-    StandardOutputUrl: Optional[Url]
-    StandardErrorUrl: Optional[Url]
-    OutputS3Region: Optional[S3Region]
-    OutputS3BucketName: Optional[S3BucketName]
-    OutputS3KeyPrefix: Optional[S3KeyPrefix]
+    Name: CommandPluginName | None
+    Status: CommandPluginStatus | None
+    StatusDetails: StatusDetails | None
+    ResponseCode: ResponseCode | None
+    ResponseStartDateTime: DateTime | None
+    ResponseFinishDateTime: DateTime | None
+    Output: CommandPluginOutput | None
+    StandardOutputUrl: Url | None
+    StandardErrorUrl: Url | None
+    OutputS3Region: S3Region | None
+    OutputS3BucketName: S3BucketName | None
+    OutputS3KeyPrefix: S3KeyPrefix | None
 
 
-CommandPluginList = List[CommandPlugin]
+CommandPluginList = list[CommandPlugin]
 
 
 class CommandInvocation(TypedDict, total=False):
-    CommandId: Optional[CommandId]
-    InstanceId: Optional[InstanceId]
-    InstanceName: Optional[InstanceTagName]
-    Comment: Optional[Comment]
-    DocumentName: Optional[DocumentName]
-    DocumentVersion: Optional[DocumentVersion]
-    RequestedDateTime: Optional[DateTime]
-    Status: Optional[CommandInvocationStatus]
-    StatusDetails: Optional[StatusDetails]
-    TraceOutput: Optional[InvocationTraceOutput]
-    StandardOutputUrl: Optional[Url]
-    StandardErrorUrl: Optional[Url]
-    CommandPlugins: Optional[CommandPluginList]
-    ServiceRole: Optional[ServiceRole]
-    NotificationConfig: Optional[NotificationConfig]
-    CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
+    CommandId: CommandId | None
+    InstanceId: InstanceId | None
+    InstanceName: InstanceTagName | None
+    Comment: Comment | None
+    DocumentName: DocumentName | None
+    DocumentVersion: DocumentVersion | None
+    RequestedDateTime: DateTime | None
+    Status: CommandInvocationStatus | None
+    StatusDetails: StatusDetails | None
+    TraceOutput: InvocationTraceOutput | None
+    StandardOutputUrl: Url | None
+    StandardErrorUrl: Url | None
+    CommandPlugins: CommandPluginList | None
+    ServiceRole: ServiceRole | None
+    NotificationConfig: NotificationConfig | None
+    CloudWatchOutputConfig: CloudWatchOutputConfig | None
 
 
-CommandInvocationList = List[CommandInvocation]
-CommandList = List[Command]
+CommandInvocationList = list[CommandInvocation]
+CommandList = list[Command]
 
 
 class ComplianceExecutionSummary(TypedDict, total=False):
     ExecutionTime: DateTime
-    ExecutionId: Optional[ComplianceExecutionId]
-    ExecutionType: Optional[ComplianceExecutionType]
+    ExecutionId: ComplianceExecutionId | None
+    ExecutionType: ComplianceExecutionType | None
 
 
-ComplianceItemDetails = Dict[AttributeName, AttributeValue]
+ComplianceItemDetails = dict[AttributeName, AttributeValue]
 
 
 class ComplianceItem(TypedDict, total=False):
-    ComplianceType: Optional[ComplianceTypeName]
-    ResourceType: Optional[ComplianceResourceType]
-    ResourceId: Optional[ComplianceResourceId]
-    Id: Optional[ComplianceItemId]
-    Title: Optional[ComplianceItemTitle]
-    Status: Optional[ComplianceStatus]
-    Severity: Optional[ComplianceSeverity]
-    ExecutionSummary: Optional[ComplianceExecutionSummary]
-    Details: Optional[ComplianceItemDetails]
+    ComplianceType: ComplianceTypeName | None
+    ResourceType: ComplianceResourceType | None
+    ResourceId: ComplianceResourceId | None
+    Id: ComplianceItemId | None
+    Title: ComplianceItemTitle | None
+    Status: ComplianceStatus | None
+    Severity: ComplianceSeverity | None
+    ExecutionSummary: ComplianceExecutionSummary | None
+    Details: ComplianceItemDetails | None
 
 
 class ComplianceItemEntry(TypedDict, total=False):
-    Id: Optional[ComplianceItemId]
-    Title: Optional[ComplianceItemTitle]
+    Id: ComplianceItemId | None
+    Title: ComplianceItemTitle | None
     Severity: ComplianceSeverity
     Status: ComplianceStatus
-    Details: Optional[ComplianceItemDetails]
+    Details: ComplianceItemDetails | None
 
 
-ComplianceItemEntryList = List[ComplianceItemEntry]
-ComplianceItemList = List[ComplianceItem]
-ComplianceResourceIdList = List[ComplianceResourceId]
-ComplianceResourceTypeList = List[ComplianceResourceType]
-ComplianceStringFilterValueList = List[ComplianceFilterValue]
+ComplianceItemEntryList = list[ComplianceItemEntry]
+ComplianceItemList = list[ComplianceItem]
+ComplianceResourceIdList = list[ComplianceResourceId]
+ComplianceResourceTypeList = list[ComplianceResourceType]
+ComplianceStringFilterValueList = list[ComplianceFilterValue]
 
 
 class ComplianceStringFilter(TypedDict, total=False):
-    Key: Optional[ComplianceStringFilterKey]
-    Values: Optional[ComplianceStringFilterValueList]
-    Type: Optional[ComplianceQueryOperatorType]
+    Key: ComplianceStringFilterKey | None
+    Values: ComplianceStringFilterValueList | None
+    Type: ComplianceQueryOperatorType | None
 
 
-ComplianceStringFilterList = List[ComplianceStringFilter]
+ComplianceStringFilterList = list[ComplianceStringFilter]
 
 
 class SeveritySummary(TypedDict, total=False):
-    CriticalCount: Optional[ComplianceSummaryCount]
-    HighCount: Optional[ComplianceSummaryCount]
-    MediumCount: Optional[ComplianceSummaryCount]
-    LowCount: Optional[ComplianceSummaryCount]
-    InformationalCount: Optional[ComplianceSummaryCount]
-    UnspecifiedCount: Optional[ComplianceSummaryCount]
+    CriticalCount: ComplianceSummaryCount | None
+    HighCount: ComplianceSummaryCount | None
+    MediumCount: ComplianceSummaryCount | None
+    LowCount: ComplianceSummaryCount | None
+    InformationalCount: ComplianceSummaryCount | None
+    UnspecifiedCount: ComplianceSummaryCount | None
 
 
 class NonCompliantSummary(TypedDict, total=False):
-    NonCompliantCount: Optional[ComplianceSummaryCount]
-    SeveritySummary: Optional[SeveritySummary]
+    NonCompliantCount: ComplianceSummaryCount | None
+    SeveritySummary: SeveritySummary | None
 
 
 class CompliantSummary(TypedDict, total=False):
-    CompliantCount: Optional[ComplianceSummaryCount]
-    SeveritySummary: Optional[SeveritySummary]
+    CompliantCount: ComplianceSummaryCount | None
+    SeveritySummary: SeveritySummary | None
 
 
 class ComplianceSummaryItem(TypedDict, total=False):
-    ComplianceType: Optional[ComplianceTypeName]
-    CompliantSummary: Optional[CompliantSummary]
-    NonCompliantSummary: Optional[NonCompliantSummary]
+    ComplianceType: ComplianceTypeName | None
+    CompliantSummary: CompliantSummary | None
+    NonCompliantSummary: NonCompliantSummary | None
 
 
-ComplianceSummaryItemList = List[ComplianceSummaryItem]
+ComplianceSummaryItemList = list[ComplianceSummaryItem]
 
 
 class RegistrationMetadataItem(TypedDict, total=False):
@@ -2771,48 +2777,48 @@ class RegistrationMetadataItem(TypedDict, total=False):
     Value: RegistrationMetadataValue
 
 
-RegistrationMetadataList = List[RegistrationMetadataItem]
+RegistrationMetadataList = list[RegistrationMetadataItem]
 
 
 class CreateActivationRequest(ServiceRequest):
-    Description: Optional[ActivationDescription]
-    DefaultInstanceName: Optional[DefaultInstanceName]
+    Description: ActivationDescription | None
+    DefaultInstanceName: DefaultInstanceName | None
     IamRole: IamRole
-    RegistrationLimit: Optional[RegistrationLimit]
-    ExpirationDate: Optional[ExpirationDate]
-    Tags: Optional[TagList]
-    RegistrationMetadata: Optional[RegistrationMetadataList]
+    RegistrationLimit: RegistrationLimit | None
+    ExpirationDate: ExpirationDate | None
+    Tags: TagList | None
+    RegistrationMetadata: RegistrationMetadataList | None
 
 
 class CreateActivationResult(TypedDict, total=False):
-    ActivationId: Optional[ActivationId]
-    ActivationCode: Optional[ActivationCode]
+    ActivationId: ActivationId | None
+    ActivationCode: ActivationCode | None
 
 
 class CreateAssociationBatchRequestEntry(TypedDict, total=False):
     Name: DocumentARN
-    InstanceId: Optional[InstanceId]
-    Parameters: Optional[Parameters]
-    AutomationTargetParameterName: Optional[AutomationTargetParameterName]
-    DocumentVersion: Optional[DocumentVersion]
-    Targets: Optional[Targets]
-    ScheduleExpression: Optional[ScheduleExpression]
-    OutputLocation: Optional[InstanceAssociationOutputLocation]
-    AssociationName: Optional[AssociationName]
-    MaxErrors: Optional[MaxErrors]
-    MaxConcurrency: Optional[MaxConcurrency]
-    ComplianceSeverity: Optional[AssociationComplianceSeverity]
-    SyncCompliance: Optional[AssociationSyncCompliance]
-    ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
-    CalendarNames: Optional[CalendarNameOrARNList]
-    TargetLocations: Optional[TargetLocations]
-    ScheduleOffset: Optional[ScheduleOffset]
-    Duration: Optional[Duration]
-    TargetMaps: Optional[TargetMaps]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    InstanceId: InstanceId | None
+    Parameters: Parameters | None
+    AutomationTargetParameterName: AutomationTargetParameterName | None
+    DocumentVersion: DocumentVersion | None
+    Targets: Targets | None
+    ScheduleExpression: ScheduleExpression | None
+    OutputLocation: InstanceAssociationOutputLocation | None
+    AssociationName: AssociationName | None
+    MaxErrors: MaxErrors | None
+    MaxConcurrency: MaxConcurrency | None
+    ComplianceSeverity: AssociationComplianceSeverity | None
+    SyncCompliance: AssociationSyncCompliance | None
+    ApplyOnlyAtCronInterval: ApplyOnlyAtCronInterval | None
+    CalendarNames: CalendarNameOrARNList | None
+    TargetLocations: TargetLocations | None
+    ScheduleOffset: ScheduleOffset | None
+    Duration: Duration | None
+    TargetMaps: TargetMaps | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
-CreateAssociationBatchRequestEntries = List[CreateAssociationBatchRequestEntry]
+CreateAssociationBatchRequestEntries = list[CreateAssociationBatchRequestEntry]
 
 
 class CreateAssociationBatchRequest(ServiceRequest):
@@ -2820,271 +2826,271 @@ class CreateAssociationBatchRequest(ServiceRequest):
 
 
 class FailedCreateAssociation(TypedDict, total=False):
-    Entry: Optional[CreateAssociationBatchRequestEntry]
-    Message: Optional[BatchErrorMessage]
-    Fault: Optional[Fault]
+    Entry: CreateAssociationBatchRequestEntry | None
+    Message: BatchErrorMessage | None
+    Fault: Fault | None
 
 
-FailedCreateAssociationList = List[FailedCreateAssociation]
+FailedCreateAssociationList = list[FailedCreateAssociation]
 
 
 class CreateAssociationBatchResult(TypedDict, total=False):
-    Successful: Optional[AssociationDescriptionList]
-    Failed: Optional[FailedCreateAssociationList]
+    Successful: AssociationDescriptionList | None
+    Failed: FailedCreateAssociationList | None
 
 
 class CreateAssociationRequest(ServiceRequest):
     Name: DocumentARN
-    DocumentVersion: Optional[DocumentVersion]
-    InstanceId: Optional[InstanceId]
-    Parameters: Optional[Parameters]
-    Targets: Optional[Targets]
-    ScheduleExpression: Optional[ScheduleExpression]
-    OutputLocation: Optional[InstanceAssociationOutputLocation]
-    AssociationName: Optional[AssociationName]
-    AutomationTargetParameterName: Optional[AutomationTargetParameterName]
-    MaxErrors: Optional[MaxErrors]
-    MaxConcurrency: Optional[MaxConcurrency]
-    ComplianceSeverity: Optional[AssociationComplianceSeverity]
-    SyncCompliance: Optional[AssociationSyncCompliance]
-    ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
-    CalendarNames: Optional[CalendarNameOrARNList]
-    TargetLocations: Optional[TargetLocations]
-    ScheduleOffset: Optional[ScheduleOffset]
-    Duration: Optional[Duration]
-    TargetMaps: Optional[TargetMaps]
-    Tags: Optional[TagList]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    DocumentVersion: DocumentVersion | None
+    InstanceId: InstanceId | None
+    Parameters: Parameters | None
+    Targets: Targets | None
+    ScheduleExpression: ScheduleExpression | None
+    OutputLocation: InstanceAssociationOutputLocation | None
+    AssociationName: AssociationName | None
+    AutomationTargetParameterName: AutomationTargetParameterName | None
+    MaxErrors: MaxErrors | None
+    MaxConcurrency: MaxConcurrency | None
+    ComplianceSeverity: AssociationComplianceSeverity | None
+    SyncCompliance: AssociationSyncCompliance | None
+    ApplyOnlyAtCronInterval: ApplyOnlyAtCronInterval | None
+    CalendarNames: CalendarNameOrARNList | None
+    TargetLocations: TargetLocations | None
+    ScheduleOffset: ScheduleOffset | None
+    Duration: Duration | None
+    TargetMaps: TargetMaps | None
+    Tags: TagList | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class CreateAssociationResult(TypedDict, total=False):
-    AssociationDescription: Optional[AssociationDescription]
+    AssociationDescription: AssociationDescription | None
 
 
 class DocumentRequires(TypedDict, total=False):
     Name: DocumentARN
-    Version: Optional[DocumentVersion]
-    RequireType: Optional[RequireType]
-    VersionName: Optional[DocumentVersionName]
+    Version: DocumentVersion | None
+    RequireType: RequireType | None
+    VersionName: DocumentVersionName | None
 
 
-DocumentRequiresList = List[DocumentRequires]
+DocumentRequiresList = list[DocumentRequires]
 
 
 class CreateDocumentRequest(ServiceRequest):
     Content: DocumentContent
-    Requires: Optional[DocumentRequiresList]
-    Attachments: Optional[AttachmentsSourceList]
+    Requires: DocumentRequiresList | None
+    Attachments: AttachmentsSourceList | None
     Name: DocumentName
-    DisplayName: Optional[DocumentDisplayName]
-    VersionName: Optional[DocumentVersionName]
-    DocumentType: Optional[DocumentType]
-    DocumentFormat: Optional[DocumentFormat]
-    TargetType: Optional[TargetType]
-    Tags: Optional[TagList]
+    DisplayName: DocumentDisplayName | None
+    VersionName: DocumentVersionName | None
+    DocumentType: DocumentType | None
+    DocumentFormat: DocumentFormat | None
+    TargetType: TargetType | None
+    Tags: TagList | None
 
 
 class ReviewInformation(TypedDict, total=False):
-    ReviewedTime: Optional[DateTime]
-    Status: Optional[ReviewStatus]
-    Reviewer: Optional[Reviewer]
+    ReviewedTime: DateTime | None
+    Status: ReviewStatus | None
+    Reviewer: Reviewer | None
 
 
-ReviewInformationList = List[ReviewInformation]
-PlatformTypeList = List[PlatformType]
+ReviewInformationList = list[ReviewInformation]
+PlatformTypeList = list[PlatformType]
 
 
 class DocumentParameter(TypedDict, total=False):
-    Name: Optional[DocumentParameterName]
-    Type: Optional[DocumentParameterType]
-    Description: Optional[DocumentParameterDescrption]
-    DefaultValue: Optional[DocumentParameterDefaultValue]
+    Name: DocumentParameterName | None
+    Type: DocumentParameterType | None
+    Description: DocumentParameterDescrption | None
+    DefaultValue: DocumentParameterDefaultValue | None
 
 
-DocumentParameterList = List[DocumentParameter]
+DocumentParameterList = list[DocumentParameter]
 
 
 class DocumentDescription(TypedDict, total=False):
-    Sha1: Optional[DocumentSha1]
-    Hash: Optional[DocumentHash]
-    HashType: Optional[DocumentHashType]
-    Name: Optional[DocumentARN]
-    DisplayName: Optional[DocumentDisplayName]
-    VersionName: Optional[DocumentVersionName]
-    Owner: Optional[DocumentOwner]
-    CreatedDate: Optional[DateTime]
-    Status: Optional[DocumentStatus]
-    StatusInformation: Optional[DocumentStatusInformation]
-    DocumentVersion: Optional[DocumentVersion]
-    Description: Optional[DescriptionInDocument]
-    Parameters: Optional[DocumentParameterList]
-    PlatformTypes: Optional[PlatformTypeList]
-    DocumentType: Optional[DocumentType]
-    SchemaVersion: Optional[DocumentSchemaVersion]
-    LatestVersion: Optional[DocumentVersion]
-    DefaultVersion: Optional[DocumentVersion]
-    DocumentFormat: Optional[DocumentFormat]
-    TargetType: Optional[TargetType]
-    Tags: Optional[TagList]
-    AttachmentsInformation: Optional[AttachmentInformationList]
-    Requires: Optional[DocumentRequiresList]
-    Author: Optional[DocumentAuthor]
-    ReviewInformation: Optional[ReviewInformationList]
-    ApprovedVersion: Optional[DocumentVersion]
-    PendingReviewVersion: Optional[DocumentVersion]
-    ReviewStatus: Optional[ReviewStatus]
-    Category: Optional[CategoryList]
-    CategoryEnum: Optional[CategoryEnumList]
+    Sha1: DocumentSha1 | None
+    Hash: DocumentHash | None
+    HashType: DocumentHashType | None
+    Name: DocumentARN | None
+    DisplayName: DocumentDisplayName | None
+    VersionName: DocumentVersionName | None
+    Owner: DocumentOwner | None
+    CreatedDate: DateTime | None
+    Status: DocumentStatus | None
+    StatusInformation: DocumentStatusInformation | None
+    DocumentVersion: DocumentVersion | None
+    Description: DescriptionInDocument | None
+    Parameters: DocumentParameterList | None
+    PlatformTypes: PlatformTypeList | None
+    DocumentType: DocumentType | None
+    SchemaVersion: DocumentSchemaVersion | None
+    LatestVersion: DocumentVersion | None
+    DefaultVersion: DocumentVersion | None
+    DocumentFormat: DocumentFormat | None
+    TargetType: TargetType | None
+    Tags: TagList | None
+    AttachmentsInformation: AttachmentInformationList | None
+    Requires: DocumentRequiresList | None
+    Author: DocumentAuthor | None
+    ReviewInformation: ReviewInformationList | None
+    ApprovedVersion: DocumentVersion | None
+    PendingReviewVersion: DocumentVersion | None
+    ReviewStatus: ReviewStatus | None
+    Category: CategoryList | None
+    CategoryEnum: CategoryEnumList | None
 
 
 class CreateDocumentResult(TypedDict, total=False):
-    DocumentDescription: Optional[DocumentDescription]
+    DocumentDescription: DocumentDescription | None
 
 
 class CreateMaintenanceWindowRequest(ServiceRequest):
     Name: MaintenanceWindowName
-    Description: Optional[MaintenanceWindowDescription]
-    StartDate: Optional[MaintenanceWindowStringDateTime]
-    EndDate: Optional[MaintenanceWindowStringDateTime]
+    Description: MaintenanceWindowDescription | None
+    StartDate: MaintenanceWindowStringDateTime | None
+    EndDate: MaintenanceWindowStringDateTime | None
     Schedule: MaintenanceWindowSchedule
-    ScheduleTimezone: Optional[MaintenanceWindowTimezone]
-    ScheduleOffset: Optional[MaintenanceWindowOffset]
+    ScheduleTimezone: MaintenanceWindowTimezone | None
+    ScheduleOffset: MaintenanceWindowOffset | None
     Duration: MaintenanceWindowDurationHours
     Cutoff: MaintenanceWindowCutoff
     AllowUnassociatedTargets: MaintenanceWindowAllowUnassociatedTargets
-    ClientToken: Optional[ClientToken]
-    Tags: Optional[TagList]
+    ClientToken: ClientToken | None
+    Tags: TagList | None
 
 
 class CreateMaintenanceWindowResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
+    WindowId: MaintenanceWindowId | None
 
 
 class RelatedOpsItem(TypedDict, total=False):
     OpsItemId: String
 
 
-RelatedOpsItems = List[RelatedOpsItem]
+RelatedOpsItems = list[RelatedOpsItem]
 
 
 class OpsItemNotification(TypedDict, total=False):
-    Arn: Optional[String]
+    Arn: String | None
 
 
-OpsItemNotifications = List[OpsItemNotification]
+OpsItemNotifications = list[OpsItemNotification]
 
 
 class OpsItemDataValue(TypedDict, total=False):
-    Value: Optional[OpsItemDataValueString]
-    Type: Optional[OpsItemDataType]
+    Value: OpsItemDataValueString | None
+    Type: OpsItemDataType | None
 
 
-OpsItemOperationalData = Dict[OpsItemDataKey, OpsItemDataValue]
+OpsItemOperationalData = dict[OpsItemDataKey, OpsItemDataValue]
 
 
 class CreateOpsItemRequest(ServiceRequest):
     Description: OpsItemDescription
-    OpsItemType: Optional[OpsItemType]
-    OperationalData: Optional[OpsItemOperationalData]
-    Notifications: Optional[OpsItemNotifications]
-    Priority: Optional[OpsItemPriority]
-    RelatedOpsItems: Optional[RelatedOpsItems]
+    OpsItemType: OpsItemType | None
+    OperationalData: OpsItemOperationalData | None
+    Notifications: OpsItemNotifications | None
+    Priority: OpsItemPriority | None
+    RelatedOpsItems: RelatedOpsItems | None
     Source: OpsItemSource
     Title: OpsItemTitle
-    Tags: Optional[TagList]
-    Category: Optional[OpsItemCategory]
-    Severity: Optional[OpsItemSeverity]
-    ActualStartTime: Optional[DateTime]
-    ActualEndTime: Optional[DateTime]
-    PlannedStartTime: Optional[DateTime]
-    PlannedEndTime: Optional[DateTime]
-    AccountId: Optional[OpsItemAccountId]
+    Tags: TagList | None
+    Category: OpsItemCategory | None
+    Severity: OpsItemSeverity | None
+    ActualStartTime: DateTime | None
+    ActualEndTime: DateTime | None
+    PlannedStartTime: DateTime | None
+    PlannedEndTime: DateTime | None
+    AccountId: OpsItemAccountId | None
 
 
 class CreateOpsItemResponse(TypedDict, total=False):
-    OpsItemId: Optional[String]
-    OpsItemArn: Optional[OpsItemArn]
+    OpsItemId: String | None
+    OpsItemArn: OpsItemArn | None
 
 
 class MetadataValue(TypedDict, total=False):
-    Value: Optional[MetadataValueString]
+    Value: MetadataValueString | None
 
 
-MetadataMap = Dict[MetadataKey, MetadataValue]
+MetadataMap = dict[MetadataKey, MetadataValue]
 
 
 class CreateOpsMetadataRequest(ServiceRequest):
     ResourceId: OpsMetadataResourceId
-    Metadata: Optional[MetadataMap]
-    Tags: Optional[TagList]
+    Metadata: MetadataMap | None
+    Tags: TagList | None
 
 
 class CreateOpsMetadataResult(TypedDict, total=False):
-    OpsMetadataArn: Optional[OpsMetadataArn]
+    OpsMetadataArn: OpsMetadataArn | None
 
 
 class CreatePatchBaselineRequest(ServiceRequest):
-    OperatingSystem: Optional[OperatingSystem]
+    OperatingSystem: OperatingSystem | None
     Name: BaselineName
-    GlobalFilters: Optional[PatchFilterGroup]
-    ApprovalRules: Optional[PatchRuleGroup]
-    ApprovedPatches: Optional[PatchIdList]
-    ApprovedPatchesComplianceLevel: Optional[PatchComplianceLevel]
-    ApprovedPatchesEnableNonSecurity: Optional[Boolean]
-    RejectedPatches: Optional[PatchIdList]
-    RejectedPatchesAction: Optional[PatchAction]
-    Description: Optional[BaselineDescription]
-    Sources: Optional[PatchSourceList]
-    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
-    ClientToken: Optional[ClientToken]
-    Tags: Optional[TagList]
+    GlobalFilters: PatchFilterGroup | None
+    ApprovalRules: PatchRuleGroup | None
+    ApprovedPatches: PatchIdList | None
+    ApprovedPatchesComplianceLevel: PatchComplianceLevel | None
+    ApprovedPatchesEnableNonSecurity: Boolean | None
+    RejectedPatches: PatchIdList | None
+    RejectedPatchesAction: PatchAction | None
+    Description: BaselineDescription | None
+    Sources: PatchSourceList | None
+    AvailableSecurityUpdatesComplianceStatus: PatchComplianceStatus | None
+    ClientToken: ClientToken | None
+    Tags: TagList | None
 
 
 class CreatePatchBaselineResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
+    BaselineId: BaselineId | None
 
 
-ResourceDataSyncSourceRegionList = List[ResourceDataSyncSourceRegion]
+ResourceDataSyncSourceRegionList = list[ResourceDataSyncSourceRegion]
 
 
 class ResourceDataSyncOrganizationalUnit(TypedDict, total=False):
-    OrganizationalUnitId: Optional[ResourceDataSyncOrganizationalUnitId]
+    OrganizationalUnitId: ResourceDataSyncOrganizationalUnitId | None
 
 
-ResourceDataSyncOrganizationalUnitList = List[ResourceDataSyncOrganizationalUnit]
+ResourceDataSyncOrganizationalUnitList = list[ResourceDataSyncOrganizationalUnit]
 
 
 class ResourceDataSyncAwsOrganizationsSource(TypedDict, total=False):
     OrganizationSourceType: ResourceDataSyncOrganizationSourceType
-    OrganizationalUnits: Optional[ResourceDataSyncOrganizationalUnitList]
+    OrganizationalUnits: ResourceDataSyncOrganizationalUnitList | None
 
 
 class ResourceDataSyncSource(TypedDict, total=False):
     SourceType: ResourceDataSyncSourceType
-    AwsOrganizationsSource: Optional[ResourceDataSyncAwsOrganizationsSource]
+    AwsOrganizationsSource: ResourceDataSyncAwsOrganizationsSource | None
     SourceRegions: ResourceDataSyncSourceRegionList
-    IncludeFutureRegions: Optional[ResourceDataSyncIncludeFutureRegions]
-    EnableAllOpsDataSources: Optional[ResourceDataSyncEnableAllOpsDataSources]
+    IncludeFutureRegions: ResourceDataSyncIncludeFutureRegions | None
+    EnableAllOpsDataSources: ResourceDataSyncEnableAllOpsDataSources | None
 
 
 class ResourceDataSyncDestinationDataSharing(TypedDict, total=False):
-    DestinationDataSharingType: Optional[ResourceDataSyncDestinationDataSharingType]
+    DestinationDataSharingType: ResourceDataSyncDestinationDataSharingType | None
 
 
 class ResourceDataSyncS3Destination(TypedDict, total=False):
     BucketName: ResourceDataSyncS3BucketName
-    Prefix: Optional[ResourceDataSyncS3Prefix]
+    Prefix: ResourceDataSyncS3Prefix | None
     SyncFormat: ResourceDataSyncS3Format
     Region: ResourceDataSyncS3Region
-    AWSKMSKeyARN: Optional[ResourceDataSyncAWSKMSKeyARN]
-    DestinationDataSharing: Optional[ResourceDataSyncDestinationDataSharing]
+    AWSKMSKeyARN: ResourceDataSyncAWSKMSKeyARN | None
+    DestinationDataSharing: ResourceDataSyncDestinationDataSharing | None
 
 
 class CreateResourceDataSyncRequest(ServiceRequest):
     SyncName: ResourceDataSyncName
-    S3Destination: Optional[ResourceDataSyncS3Destination]
-    SyncType: Optional[ResourceDataSyncType]
-    SyncSource: Optional[ResourceDataSyncSource]
+    S3Destination: ResourceDataSyncS3Destination | None
+    SyncType: ResourceDataSyncType | None
+    SyncSource: ResourceDataSyncSource | None
 
 
 class CreateResourceDataSyncResult(TypedDict, total=False):
@@ -3107,9 +3113,9 @@ class DeleteActivationResult(TypedDict, total=False):
 
 
 class DeleteAssociationRequest(ServiceRequest):
-    Name: Optional[DocumentARN]
-    InstanceId: Optional[InstanceId]
-    AssociationId: Optional[AssociationId]
+    Name: DocumentARN | None
+    InstanceId: InstanceId | None
+    AssociationId: AssociationId | None
 
 
 class DeleteAssociationResult(TypedDict, total=False):
@@ -3118,9 +3124,9 @@ class DeleteAssociationResult(TypedDict, total=False):
 
 class DeleteDocumentRequest(ServiceRequest):
     Name: DocumentName
-    DocumentVersion: Optional[DocumentVersion]
-    VersionName: Optional[DocumentVersionName]
-    Force: Optional[Boolean]
+    DocumentVersion: DocumentVersion | None
+    VersionName: DocumentVersionName | None
+    Force: Boolean | None
 
 
 class DeleteDocumentResult(TypedDict, total=False):
@@ -3129,30 +3135,30 @@ class DeleteDocumentResult(TypedDict, total=False):
 
 class DeleteInventoryRequest(ServiceRequest):
     TypeName: InventoryItemTypeName
-    SchemaDeleteOption: Optional[InventorySchemaDeleteOption]
-    DryRun: Optional[DryRun]
-    ClientToken: Optional[UUID]
+    SchemaDeleteOption: InventorySchemaDeleteOption | None
+    DryRun: DryRun | None
+    ClientToken: UUID | None
 
 
 class InventoryDeletionSummaryItem(TypedDict, total=False):
-    Version: Optional[InventoryItemSchemaVersion]
-    Count: Optional[ResourceCount]
-    RemainingCount: Optional[RemainingCount]
+    Version: InventoryItemSchemaVersion | None
+    Count: ResourceCount | None
+    RemainingCount: RemainingCount | None
 
 
-InventoryDeletionSummaryItems = List[InventoryDeletionSummaryItem]
+InventoryDeletionSummaryItems = list[InventoryDeletionSummaryItem]
 
 
 class InventoryDeletionSummary(TypedDict, total=False):
-    TotalCount: Optional[TotalCount]
-    RemainingCount: Optional[RemainingCount]
-    SummaryItems: Optional[InventoryDeletionSummaryItems]
+    TotalCount: TotalCount | None
+    RemainingCount: RemainingCount | None
+    SummaryItems: InventoryDeletionSummaryItems | None
 
 
 class DeleteInventoryResult(TypedDict, total=False):
-    DeletionId: Optional[UUID]
-    TypeName: Optional[InventoryItemTypeName]
-    DeletionSummary: Optional[InventoryDeletionSummary]
+    DeletionId: UUID | None
+    TypeName: InventoryItemTypeName | None
+    DeletionSummary: InventoryDeletionSummary | None
 
 
 class DeleteMaintenanceWindowRequest(ServiceRequest):
@@ -3160,7 +3166,7 @@ class DeleteMaintenanceWindowRequest(ServiceRequest):
 
 
 class DeleteMaintenanceWindowResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
+    WindowId: MaintenanceWindowId | None
 
 
 class DeleteOpsItemRequest(ServiceRequest):
@@ -3187,7 +3193,7 @@ class DeleteParameterResult(TypedDict, total=False):
     pass
 
 
-ParameterNameList = List[PSParameterName]
+ParameterNameList = list[PSParameterName]
 
 
 class DeleteParametersRequest(ServiceRequest):
@@ -3195,8 +3201,8 @@ class DeleteParametersRequest(ServiceRequest):
 
 
 class DeleteParametersResult(TypedDict, total=False):
-    DeletedParameters: Optional[ParameterNameList]
-    InvalidParameters: Optional[ParameterNameList]
+    DeletedParameters: ParameterNameList | None
+    InvalidParameters: ParameterNameList | None
 
 
 class DeletePatchBaselineRequest(ServiceRequest):
@@ -3204,12 +3210,12 @@ class DeletePatchBaselineRequest(ServiceRequest):
 
 
 class DeletePatchBaselineResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
+    BaselineId: BaselineId | None
 
 
 class DeleteResourceDataSyncRequest(ServiceRequest):
     SyncName: ResourceDataSyncName
-    SyncType: Optional[ResourceDataSyncType]
+    SyncType: ResourceDataSyncType | None
 
 
 class DeleteResourceDataSyncResult(TypedDict, total=False):
@@ -3240,19 +3246,19 @@ class DeregisterPatchBaselineForPatchGroupRequest(ServiceRequest):
 
 
 class DeregisterPatchBaselineForPatchGroupResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    PatchGroup: Optional[PatchGroup]
+    BaselineId: BaselineId | None
+    PatchGroup: PatchGroup | None
 
 
 class DeregisterTargetFromMaintenanceWindowRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
     WindowTargetId: MaintenanceWindowTargetId
-    Safe: Optional[Boolean]
+    Safe: Boolean | None
 
 
 class DeregisterTargetFromMaintenanceWindowResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTargetId: Optional[MaintenanceWindowTargetId]
+    WindowId: MaintenanceWindowId | None
+    WindowTargetId: MaintenanceWindowTargetId | None
 
 
 class DeregisterTaskFromMaintenanceWindowRequest(ServiceRequest):
@@ -3261,80 +3267,80 @@ class DeregisterTaskFromMaintenanceWindowRequest(ServiceRequest):
 
 
 class DeregisterTaskFromMaintenanceWindowResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTaskId: Optional[MaintenanceWindowTaskId]
+    WindowId: MaintenanceWindowId | None
+    WindowTaskId: MaintenanceWindowTaskId | None
 
 
-StringList = List[String]
+StringList = list[String]
 
 
 class DescribeActivationsFilter(TypedDict, total=False):
-    FilterKey: Optional[DescribeActivationsFilterKeys]
-    FilterValues: Optional[StringList]
+    FilterKey: DescribeActivationsFilterKeys | None
+    FilterValues: StringList | None
 
 
-DescribeActivationsFilterList = List[DescribeActivationsFilter]
+DescribeActivationsFilterList = list[DescribeActivationsFilter]
 
 
 class DescribeActivationsRequest(ServiceRequest):
-    Filters: Optional[DescribeActivationsFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: DescribeActivationsFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeActivationsResult(TypedDict, total=False):
-    ActivationList: Optional[ActivationList]
-    NextToken: Optional[NextToken]
+    ActivationList: ActivationList | None
+    NextToken: NextToken | None
 
 
 class DescribeAssociationExecutionTargetsRequest(ServiceRequest):
     AssociationId: AssociationId
     ExecutionId: AssociationExecutionId
-    Filters: Optional[AssociationExecutionTargetsFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: AssociationExecutionTargetsFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeAssociationExecutionTargetsResult(TypedDict, total=False):
-    AssociationExecutionTargets: Optional[AssociationExecutionTargetsList]
-    NextToken: Optional[NextToken]
+    AssociationExecutionTargets: AssociationExecutionTargetsList | None
+    NextToken: NextToken | None
 
 
 class DescribeAssociationExecutionsRequest(ServiceRequest):
     AssociationId: AssociationId
-    Filters: Optional[AssociationExecutionFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: AssociationExecutionFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeAssociationExecutionsResult(TypedDict, total=False):
-    AssociationExecutions: Optional[AssociationExecutionsList]
-    NextToken: Optional[NextToken]
+    AssociationExecutions: AssociationExecutionsList | None
+    NextToken: NextToken | None
 
 
 class DescribeAssociationRequest(ServiceRequest):
-    Name: Optional[DocumentARN]
-    InstanceId: Optional[InstanceId]
-    AssociationId: Optional[AssociationId]
-    AssociationVersion: Optional[AssociationVersion]
+    Name: DocumentARN | None
+    InstanceId: InstanceId | None
+    AssociationId: AssociationId | None
+    AssociationVersion: AssociationVersion | None
 
 
 class DescribeAssociationResult(TypedDict, total=False):
-    AssociationDescription: Optional[AssociationDescription]
+    AssociationDescription: AssociationDescription | None
 
 
 class DescribeAutomationExecutionsRequest(ServiceRequest):
-    Filters: Optional[AutomationExecutionFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    Filters: AutomationExecutionFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeAutomationExecutionsResult(TypedDict, total=False):
-    AutomationExecutionMetadataList: Optional[AutomationExecutionMetadataList]
-    NextToken: Optional[NextToken]
+    AutomationExecutionMetadataList: AutomationExecutionMetadataList | None
+    NextToken: NextToken | None
 
 
-StepExecutionFilterValueList = List[StepExecutionFilterValue]
+StepExecutionFilterValueList = list[StepExecutionFilterValue]
 
 
 class StepExecutionFilter(TypedDict, total=False):
@@ -3342,185 +3348,185 @@ class StepExecutionFilter(TypedDict, total=False):
     Values: StepExecutionFilterValueList
 
 
-StepExecutionFilterList = List[StepExecutionFilter]
+StepExecutionFilterList = list[StepExecutionFilter]
 
 
 class DescribeAutomationStepExecutionsRequest(ServiceRequest):
     AutomationExecutionId: AutomationExecutionId
-    Filters: Optional[StepExecutionFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
-    ReverseOrder: Optional[Boolean]
+    Filters: StepExecutionFilterList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
+    ReverseOrder: Boolean | None
 
 
 class DescribeAutomationStepExecutionsResult(TypedDict, total=False):
-    StepExecutions: Optional[StepExecutionList]
-    NextToken: Optional[NextToken]
+    StepExecutions: StepExecutionList | None
+    NextToken: NextToken | None
 
 
-PatchOrchestratorFilterValues = List[PatchOrchestratorFilterValue]
+PatchOrchestratorFilterValues = list[PatchOrchestratorFilterValue]
 
 
 class PatchOrchestratorFilter(TypedDict, total=False):
-    Key: Optional[PatchOrchestratorFilterKey]
-    Values: Optional[PatchOrchestratorFilterValues]
+    Key: PatchOrchestratorFilterKey | None
+    Values: PatchOrchestratorFilterValues | None
 
 
-PatchOrchestratorFilterList = List[PatchOrchestratorFilter]
+PatchOrchestratorFilterList = list[PatchOrchestratorFilter]
 
 
 class DescribeAvailablePatchesRequest(ServiceRequest):
-    Filters: Optional[PatchOrchestratorFilterList]
-    MaxResults: Optional[PatchBaselineMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: PatchOrchestratorFilterList | None
+    MaxResults: PatchBaselineMaxResults | None
+    NextToken: NextToken | None
 
 
-PatchCVEIdList = List[PatchCVEId]
-PatchBugzillaIdList = List[PatchBugzillaId]
-PatchAdvisoryIdList = List[PatchAdvisoryId]
+PatchCVEIdList = list[PatchCVEId]
+PatchBugzillaIdList = list[PatchBugzillaId]
+PatchAdvisoryIdList = list[PatchAdvisoryId]
 
 
 class Patch(TypedDict, total=False):
-    Id: Optional[PatchId]
-    ReleaseDate: Optional[DateTime]
-    Title: Optional[PatchTitle]
-    Description: Optional[PatchDescription]
-    ContentUrl: Optional[PatchContentUrl]
-    Vendor: Optional[PatchVendor]
-    ProductFamily: Optional[PatchProductFamily]
-    Product: Optional[PatchProduct]
-    Classification: Optional[PatchClassification]
-    MsrcSeverity: Optional[PatchMsrcSeverity]
-    KbNumber: Optional[PatchKbNumber]
-    MsrcNumber: Optional[PatchMsrcNumber]
-    Language: Optional[PatchLanguage]
-    AdvisoryIds: Optional[PatchAdvisoryIdList]
-    BugzillaIds: Optional[PatchBugzillaIdList]
-    CVEIds: Optional[PatchCVEIdList]
-    Name: Optional[PatchName]
-    Epoch: Optional[PatchEpoch]
-    Version: Optional[PatchVersion]
-    Release: Optional[PatchRelease]
-    Arch: Optional[PatchArch]
-    Severity: Optional[PatchSeverity]
-    Repository: Optional[PatchRepository]
+    Id: PatchId | None
+    ReleaseDate: DateTime | None
+    Title: PatchTitle | None
+    Description: PatchDescription | None
+    ContentUrl: PatchContentUrl | None
+    Vendor: PatchVendor | None
+    ProductFamily: PatchProductFamily | None
+    Product: PatchProduct | None
+    Classification: PatchClassification | None
+    MsrcSeverity: PatchMsrcSeverity | None
+    KbNumber: PatchKbNumber | None
+    MsrcNumber: PatchMsrcNumber | None
+    Language: PatchLanguage | None
+    AdvisoryIds: PatchAdvisoryIdList | None
+    BugzillaIds: PatchBugzillaIdList | None
+    CVEIds: PatchCVEIdList | None
+    Name: PatchName | None
+    Epoch: PatchEpoch | None
+    Version: PatchVersion | None
+    Release: PatchRelease | None
+    Arch: PatchArch | None
+    Severity: PatchSeverity | None
+    Repository: PatchRepository | None
 
 
-PatchList = List[Patch]
+PatchList = list[Patch]
 
 
 class DescribeAvailablePatchesResult(TypedDict, total=False):
-    Patches: Optional[PatchList]
-    NextToken: Optional[NextToken]
+    Patches: PatchList | None
+    NextToken: NextToken | None
 
 
 class DescribeDocumentPermissionRequest(ServiceRequest):
     Name: DocumentName
     PermissionType: DocumentPermissionType
-    MaxResults: Optional[DocumentPermissionMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: DocumentPermissionMaxResults | None
+    NextToken: NextToken | None
 
 
 class DescribeDocumentPermissionResponse(TypedDict, total=False):
-    AccountIds: Optional[AccountIdList]
-    AccountSharingInfoList: Optional[AccountSharingInfoList]
-    NextToken: Optional[NextToken]
+    AccountIds: AccountIdList | None
+    AccountSharingInfoList: AccountSharingInfoList | None
+    NextToken: NextToken | None
 
 
 class DescribeDocumentRequest(ServiceRequest):
     Name: DocumentARN
-    DocumentVersion: Optional[DocumentVersion]
-    VersionName: Optional[DocumentVersionName]
+    DocumentVersion: DocumentVersion | None
+    VersionName: DocumentVersionName | None
 
 
 class DescribeDocumentResult(TypedDict, total=False):
-    Document: Optional[DocumentDescription]
+    Document: DocumentDescription | None
 
 
 class DescribeEffectiveInstanceAssociationsRequest(ServiceRequest):
     InstanceId: InstanceId
-    MaxResults: Optional[EffectiveInstanceAssociationMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: EffectiveInstanceAssociationMaxResults | None
+    NextToken: NextToken | None
 
 
 class InstanceAssociation(TypedDict, total=False):
-    AssociationId: Optional[AssociationId]
-    InstanceId: Optional[InstanceId]
-    Content: Optional[DocumentContent]
-    AssociationVersion: Optional[AssociationVersion]
+    AssociationId: AssociationId | None
+    InstanceId: InstanceId | None
+    Content: DocumentContent | None
+    AssociationVersion: AssociationVersion | None
 
 
-InstanceAssociationList = List[InstanceAssociation]
+InstanceAssociationList = list[InstanceAssociation]
 
 
 class DescribeEffectiveInstanceAssociationsResult(TypedDict, total=False):
-    Associations: Optional[InstanceAssociationList]
-    NextToken: Optional[NextToken]
+    Associations: InstanceAssociationList | None
+    NextToken: NextToken | None
 
 
 class DescribeEffectivePatchesForPatchBaselineRequest(ServiceRequest):
     BaselineId: BaselineId
-    MaxResults: Optional[PatchBaselineMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: PatchBaselineMaxResults | None
+    NextToken: NextToken | None
 
 
 class PatchStatus(TypedDict, total=False):
-    DeploymentStatus: Optional[PatchDeploymentStatus]
-    ComplianceLevel: Optional[PatchComplianceLevel]
-    ApprovalDate: Optional[DateTime]
+    DeploymentStatus: PatchDeploymentStatus | None
+    ComplianceLevel: PatchComplianceLevel | None
+    ApprovalDate: DateTime | None
 
 
 class EffectivePatch(TypedDict, total=False):
-    Patch: Optional[Patch]
-    PatchStatus: Optional[PatchStatus]
+    Patch: Patch | None
+    PatchStatus: PatchStatus | None
 
 
-EffectivePatchList = List[EffectivePatch]
+EffectivePatchList = list[EffectivePatch]
 
 
 class DescribeEffectivePatchesForPatchBaselineResult(TypedDict, total=False):
-    EffectivePatches: Optional[EffectivePatchList]
-    NextToken: Optional[NextToken]
+    EffectivePatches: EffectivePatchList | None
+    NextToken: NextToken | None
 
 
 class DescribeInstanceAssociationsStatusRequest(ServiceRequest):
     InstanceId: InstanceId
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class S3OutputUrl(TypedDict, total=False):
-    OutputUrl: Optional[Url]
+    OutputUrl: Url | None
 
 
 class InstanceAssociationOutputUrl(TypedDict, total=False):
-    S3OutputUrl: Optional[S3OutputUrl]
+    S3OutputUrl: S3OutputUrl | None
 
 
 class InstanceAssociationStatusInfo(TypedDict, total=False):
-    AssociationId: Optional[AssociationId]
-    Name: Optional[DocumentARN]
-    DocumentVersion: Optional[DocumentVersion]
-    AssociationVersion: Optional[AssociationVersion]
-    InstanceId: Optional[InstanceId]
-    ExecutionDate: Optional[DateTime]
-    Status: Optional[StatusName]
-    DetailedStatus: Optional[StatusName]
-    ExecutionSummary: Optional[InstanceAssociationExecutionSummary]
-    ErrorCode: Optional[AgentErrorCode]
-    OutputUrl: Optional[InstanceAssociationOutputUrl]
-    AssociationName: Optional[AssociationName]
+    AssociationId: AssociationId | None
+    Name: DocumentARN | None
+    DocumentVersion: DocumentVersion | None
+    AssociationVersion: AssociationVersion | None
+    InstanceId: InstanceId | None
+    ExecutionDate: DateTime | None
+    Status: StatusName | None
+    DetailedStatus: StatusName | None
+    ExecutionSummary: InstanceAssociationExecutionSummary | None
+    ErrorCode: AgentErrorCode | None
+    OutputUrl: InstanceAssociationOutputUrl | None
+    AssociationName: AssociationName | None
 
 
-InstanceAssociationStatusInfos = List[InstanceAssociationStatusInfo]
+InstanceAssociationStatusInfos = list[InstanceAssociationStatusInfo]
 
 
 class DescribeInstanceAssociationsStatusResult(TypedDict, total=False):
-    InstanceAssociationStatusInfos: Optional[InstanceAssociationStatusInfos]
-    NextToken: Optional[NextToken]
+    InstanceAssociationStatusInfos: InstanceAssociationStatusInfos | None
+    NextToken: NextToken | None
 
 
-InstanceInformationFilterValueSet = List[InstanceInformationFilterValue]
+InstanceInformationFilterValueSet = list[InstanceInformationFilterValue]
 
 
 class InstanceInformationStringFilter(TypedDict, total=False):
@@ -3528,7 +3534,7 @@ class InstanceInformationStringFilter(TypedDict, total=False):
     Values: InstanceInformationFilterValueSet
 
 
-InstanceInformationStringFilterList = List[InstanceInformationStringFilter]
+InstanceInformationStringFilterList = list[InstanceInformationStringFilter]
 
 
 class InstanceInformationFilter(TypedDict, total=False):
@@ -3536,57 +3542,57 @@ class InstanceInformationFilter(TypedDict, total=False):
     valueSet: InstanceInformationFilterValueSet
 
 
-InstanceInformationFilterList = List[InstanceInformationFilter]
+InstanceInformationFilterList = list[InstanceInformationFilter]
 
 
 class DescribeInstanceInformationRequest(ServiceRequest):
-    InstanceInformationFilterList: Optional[InstanceInformationFilterList]
-    Filters: Optional[InstanceInformationStringFilterList]
-    MaxResults: Optional[MaxResultsEC2Compatible]
-    NextToken: Optional[NextToken]
+    InstanceInformationFilterList: InstanceInformationFilterList | None
+    Filters: InstanceInformationStringFilterList | None
+    MaxResults: MaxResultsEC2Compatible | None
+    NextToken: NextToken | None
 
 
-InstanceAssociationStatusAggregatedCount = Dict[StatusName, InstanceCount]
+InstanceAssociationStatusAggregatedCount = dict[StatusName, InstanceCount]
 
 
 class InstanceAggregatedAssociationOverview(TypedDict, total=False):
-    DetailedStatus: Optional[StatusName]
-    InstanceAssociationStatusAggregatedCount: Optional[InstanceAssociationStatusAggregatedCount]
+    DetailedStatus: StatusName | None
+    InstanceAssociationStatusAggregatedCount: InstanceAssociationStatusAggregatedCount | None
 
 
 class InstanceInformation(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    PingStatus: Optional[PingStatus]
-    LastPingDateTime: Optional[DateTime]
-    AgentVersion: Optional[Version]
-    IsLatestVersion: Optional[Boolean]
-    PlatformType: Optional[PlatformType]
-    PlatformName: Optional[String]
-    PlatformVersion: Optional[String]
-    ActivationId: Optional[ActivationId]
-    IamRole: Optional[IamRole]
-    RegistrationDate: Optional[DateTime]
-    ResourceType: Optional[ResourceType]
-    Name: Optional[String]
-    IPAddress: Optional[IPAddress]
-    ComputerName: Optional[ComputerName]
-    AssociationStatus: Optional[StatusName]
-    LastAssociationExecutionDate: Optional[DateTime]
-    LastSuccessfulAssociationExecutionDate: Optional[DateTime]
-    AssociationOverview: Optional[InstanceAggregatedAssociationOverview]
-    SourceId: Optional[SourceId]
-    SourceType: Optional[SourceType]
+    InstanceId: InstanceId | None
+    PingStatus: PingStatus | None
+    LastPingDateTime: DateTime | None
+    AgentVersion: Version | None
+    IsLatestVersion: Boolean | None
+    PlatformType: PlatformType | None
+    PlatformName: String | None
+    PlatformVersion: String | None
+    ActivationId: ActivationId | None
+    IamRole: IamRole | None
+    RegistrationDate: DateTime | None
+    ResourceType: ResourceType | None
+    Name: String | None
+    IPAddress: IPAddress | None
+    ComputerName: ComputerName | None
+    AssociationStatus: StatusName | None
+    LastAssociationExecutionDate: DateTime | None
+    LastSuccessfulAssociationExecutionDate: DateTime | None
+    AssociationOverview: InstanceAggregatedAssociationOverview | None
+    SourceId: SourceId | None
+    SourceType: SourceType | None
 
 
-InstanceInformationList = List[InstanceInformation]
+InstanceInformationList = list[InstanceInformation]
 
 
 class DescribeInstanceInformationResult(TypedDict, total=False):
-    InstanceInformationList: Optional[InstanceInformationList]
-    NextToken: Optional[NextToken]
+    InstanceInformationList: InstanceInformationList | None
+    NextToken: NextToken | None
 
 
-InstancePatchStateFilterValues = List[InstancePatchStateFilterValue]
+InstancePatchStateFilterValues = list[InstancePatchStateFilterValue]
 
 
 class InstancePatchStateFilter(TypedDict, total=False):
@@ -3595,69 +3601,69 @@ class InstancePatchStateFilter(TypedDict, total=False):
     Type: InstancePatchStateOperatorType
 
 
-InstancePatchStateFilterList = List[InstancePatchStateFilter]
+InstancePatchStateFilterList = list[InstancePatchStateFilter]
 
 
 class DescribeInstancePatchStatesForPatchGroupRequest(ServiceRequest):
     PatchGroup: PatchGroup
-    Filters: Optional[InstancePatchStateFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[PatchComplianceMaxResults]
+    Filters: InstancePatchStateFilterList | None
+    NextToken: NextToken | None
+    MaxResults: PatchComplianceMaxResults | None
 
 
 class InstancePatchState(TypedDict, total=False):
     InstanceId: InstanceId
     PatchGroup: PatchGroup
     BaselineId: BaselineId
-    SnapshotId: Optional[SnapshotId]
-    InstallOverrideList: Optional[InstallOverrideList]
-    OwnerInformation: Optional[OwnerInformation]
-    InstalledCount: Optional[PatchInstalledCount]
-    InstalledOtherCount: Optional[PatchInstalledOtherCount]
-    InstalledPendingRebootCount: Optional[PatchInstalledPendingRebootCount]
-    InstalledRejectedCount: Optional[PatchInstalledRejectedCount]
-    MissingCount: Optional[PatchMissingCount]
-    FailedCount: Optional[PatchFailedCount]
-    UnreportedNotApplicableCount: Optional[PatchUnreportedNotApplicableCount]
-    NotApplicableCount: Optional[PatchNotApplicableCount]
-    AvailableSecurityUpdateCount: Optional[PatchAvailableSecurityUpdateCount]
+    SnapshotId: SnapshotId | None
+    InstallOverrideList: InstallOverrideList | None
+    OwnerInformation: OwnerInformation | None
+    InstalledCount: PatchInstalledCount | None
+    InstalledOtherCount: PatchInstalledOtherCount | None
+    InstalledPendingRebootCount: PatchInstalledPendingRebootCount | None
+    InstalledRejectedCount: PatchInstalledRejectedCount | None
+    MissingCount: PatchMissingCount | None
+    FailedCount: PatchFailedCount | None
+    UnreportedNotApplicableCount: PatchUnreportedNotApplicableCount | None
+    NotApplicableCount: PatchNotApplicableCount | None
+    AvailableSecurityUpdateCount: PatchAvailableSecurityUpdateCount | None
     OperationStartTime: DateTime
     OperationEndTime: DateTime
     Operation: PatchOperationType
-    LastNoRebootInstallOperationTime: Optional[DateTime]
-    RebootOption: Optional[RebootOption]
-    CriticalNonCompliantCount: Optional[PatchCriticalNonCompliantCount]
-    SecurityNonCompliantCount: Optional[PatchSecurityNonCompliantCount]
-    OtherNonCompliantCount: Optional[PatchOtherNonCompliantCount]
+    LastNoRebootInstallOperationTime: DateTime | None
+    RebootOption: RebootOption | None
+    CriticalNonCompliantCount: PatchCriticalNonCompliantCount | None
+    SecurityNonCompliantCount: PatchSecurityNonCompliantCount | None
+    OtherNonCompliantCount: PatchOtherNonCompliantCount | None
 
 
-InstancePatchStatesList = List[InstancePatchState]
+InstancePatchStatesList = list[InstancePatchState]
 
 
 class DescribeInstancePatchStatesForPatchGroupResult(TypedDict, total=False):
-    InstancePatchStates: Optional[InstancePatchStatesList]
-    NextToken: Optional[NextToken]
+    InstancePatchStates: InstancePatchStatesList | None
+    NextToken: NextToken | None
 
 
 class DescribeInstancePatchStatesRequest(ServiceRequest):
     InstanceIds: InstanceIdList
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[PatchComplianceMaxResults]
+    NextToken: NextToken | None
+    MaxResults: PatchComplianceMaxResults | None
 
 
-InstancePatchStateList = List[InstancePatchState]
+InstancePatchStateList = list[InstancePatchState]
 
 
 class DescribeInstancePatchStatesResult(TypedDict, total=False):
-    InstancePatchStates: Optional[InstancePatchStateList]
-    NextToken: Optional[NextToken]
+    InstancePatchStates: InstancePatchStateList | None
+    NextToken: NextToken | None
 
 
 class DescribeInstancePatchesRequest(ServiceRequest):
     InstanceId: InstanceId
-    Filters: Optional[PatchOrchestratorFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[PatchComplianceMaxResults]
+    Filters: PatchOrchestratorFilterList | None
+    NextToken: NextToken | None
+    MaxResults: PatchComplianceMaxResults | None
 
 
 class PatchComplianceData(TypedDict, total=False):
@@ -3667,27 +3673,27 @@ class PatchComplianceData(TypedDict, total=False):
     Severity: PatchSeverity
     State: PatchComplianceDataState
     InstalledTime: DateTime
-    CVEIds: Optional[PatchCVEIds]
+    CVEIds: PatchCVEIds | None
 
 
-PatchComplianceDataList = List[PatchComplianceData]
+PatchComplianceDataList = list[PatchComplianceData]
 
 
 class DescribeInstancePatchesResult(TypedDict, total=False):
-    Patches: Optional[PatchComplianceDataList]
-    NextToken: Optional[NextToken]
+    Patches: PatchComplianceDataList | None
+    NextToken: NextToken | None
 
 
-InstancePropertyFilterValueSet = List[InstancePropertyFilterValue]
+InstancePropertyFilterValueSet = list[InstancePropertyFilterValue]
 
 
 class InstancePropertyStringFilter(TypedDict, total=False):
     Key: InstancePropertyStringFilterKey
     Values: InstancePropertyFilterValueSet
-    Operator: Optional[InstancePropertyFilterOperator]
+    Operator: InstancePropertyFilterOperator | None
 
 
-InstancePropertyStringFilterList = List[InstancePropertyStringFilter]
+InstancePropertyStringFilterList = list[InstancePropertyStringFilter]
 
 
 class InstancePropertyFilter(TypedDict, total=False):
@@ -3695,57 +3701,57 @@ class InstancePropertyFilter(TypedDict, total=False):
     valueSet: InstancePropertyFilterValueSet
 
 
-InstancePropertyFilterList = List[InstancePropertyFilter]
+InstancePropertyFilterList = list[InstancePropertyFilter]
 
 
 class DescribeInstancePropertiesRequest(ServiceRequest):
-    InstancePropertyFilterList: Optional[InstancePropertyFilterList]
-    FiltersWithOperator: Optional[InstancePropertyStringFilterList]
-    MaxResults: Optional[DescribeInstancePropertiesMaxResults]
-    NextToken: Optional[NextToken]
+    InstancePropertyFilterList: InstancePropertyFilterList | None
+    FiltersWithOperator: InstancePropertyStringFilterList | None
+    MaxResults: DescribeInstancePropertiesMaxResults | None
+    NextToken: NextToken | None
 
 
 class InstanceProperty(TypedDict, total=False):
-    Name: Optional[InstanceName]
-    InstanceId: Optional[InstanceId]
-    InstanceType: Optional[InstanceType]
-    InstanceRole: Optional[InstanceRole]
-    KeyName: Optional[KeyName]
-    InstanceState: Optional[InstanceState]
-    Architecture: Optional[Architecture]
-    IPAddress: Optional[IPAddress]
-    LaunchTime: Optional[DateTime]
-    PingStatus: Optional[PingStatus]
-    LastPingDateTime: Optional[DateTime]
-    AgentVersion: Optional[Version]
-    PlatformType: Optional[PlatformType]
-    PlatformName: Optional[PlatformName]
-    PlatformVersion: Optional[PlatformVersion]
-    ActivationId: Optional[ActivationId]
-    IamRole: Optional[IamRole]
-    RegistrationDate: Optional[DateTime]
-    ResourceType: Optional[String]
-    ComputerName: Optional[ComputerName]
-    AssociationStatus: Optional[StatusName]
-    LastAssociationExecutionDate: Optional[DateTime]
-    LastSuccessfulAssociationExecutionDate: Optional[DateTime]
-    AssociationOverview: Optional[InstanceAggregatedAssociationOverview]
-    SourceId: Optional[SourceId]
-    SourceType: Optional[SourceType]
+    Name: InstanceName | None
+    InstanceId: InstanceId | None
+    InstanceType: InstanceType | None
+    InstanceRole: InstanceRole | None
+    KeyName: KeyName | None
+    InstanceState: InstanceState | None
+    Architecture: Architecture | None
+    IPAddress: IPAddress | None
+    LaunchTime: DateTime | None
+    PingStatus: PingStatus | None
+    LastPingDateTime: DateTime | None
+    AgentVersion: Version | None
+    PlatformType: PlatformType | None
+    PlatformName: PlatformName | None
+    PlatformVersion: PlatformVersion | None
+    ActivationId: ActivationId | None
+    IamRole: IamRole | None
+    RegistrationDate: DateTime | None
+    ResourceType: String | None
+    ComputerName: ComputerName | None
+    AssociationStatus: StatusName | None
+    LastAssociationExecutionDate: DateTime | None
+    LastSuccessfulAssociationExecutionDate: DateTime | None
+    AssociationOverview: InstanceAggregatedAssociationOverview | None
+    SourceId: SourceId | None
+    SourceType: SourceType | None
 
 
-InstanceProperties = List[InstanceProperty]
+InstanceProperties = list[InstanceProperty]
 
 
 class DescribeInstancePropertiesResult(TypedDict, total=False):
-    InstanceProperties: Optional[InstanceProperties]
-    NextToken: Optional[NextToken]
+    InstanceProperties: InstanceProperties | None
+    NextToken: NextToken | None
 
 
 class DescribeInventoryDeletionsRequest(ServiceRequest):
-    DeletionId: Optional[UUID]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    DeletionId: UUID | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 InventoryDeletionLastStatusUpdateTime = datetime
@@ -3753,270 +3759,270 @@ InventoryDeletionStartTime = datetime
 
 
 class InventoryDeletionStatusItem(TypedDict, total=False):
-    DeletionId: Optional[UUID]
-    TypeName: Optional[InventoryItemTypeName]
-    DeletionStartTime: Optional[InventoryDeletionStartTime]
-    LastStatus: Optional[InventoryDeletionStatus]
-    LastStatusMessage: Optional[InventoryDeletionLastStatusMessage]
-    DeletionSummary: Optional[InventoryDeletionSummary]
-    LastStatusUpdateTime: Optional[InventoryDeletionLastStatusUpdateTime]
+    DeletionId: UUID | None
+    TypeName: InventoryItemTypeName | None
+    DeletionStartTime: InventoryDeletionStartTime | None
+    LastStatus: InventoryDeletionStatus | None
+    LastStatusMessage: InventoryDeletionLastStatusMessage | None
+    DeletionSummary: InventoryDeletionSummary | None
+    LastStatusUpdateTime: InventoryDeletionLastStatusUpdateTime | None
 
 
-InventoryDeletionsList = List[InventoryDeletionStatusItem]
+InventoryDeletionsList = list[InventoryDeletionStatusItem]
 
 
 class DescribeInventoryDeletionsResult(TypedDict, total=False):
-    InventoryDeletions: Optional[InventoryDeletionsList]
-    NextToken: Optional[NextToken]
+    InventoryDeletions: InventoryDeletionsList | None
+    NextToken: NextToken | None
 
 
-MaintenanceWindowFilterValues = List[MaintenanceWindowFilterValue]
+MaintenanceWindowFilterValues = list[MaintenanceWindowFilterValue]
 
 
 class MaintenanceWindowFilter(TypedDict, total=False):
-    Key: Optional[MaintenanceWindowFilterKey]
-    Values: Optional[MaintenanceWindowFilterValues]
+    Key: MaintenanceWindowFilterKey | None
+    Values: MaintenanceWindowFilterValues | None
 
 
-MaintenanceWindowFilterList = List[MaintenanceWindowFilter]
+MaintenanceWindowFilterList = list[MaintenanceWindowFilter]
 
 
 class DescribeMaintenanceWindowExecutionTaskInvocationsRequest(ServiceRequest):
     WindowExecutionId: MaintenanceWindowExecutionId
     TaskId: MaintenanceWindowExecutionTaskId
-    Filters: Optional[MaintenanceWindowFilterList]
-    MaxResults: Optional[MaintenanceWindowMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: MaintenanceWindowFilterList | None
+    MaxResults: MaintenanceWindowMaxResults | None
+    NextToken: NextToken | None
 
 
 class MaintenanceWindowExecutionTaskInvocationIdentity(TypedDict, total=False):
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
-    TaskExecutionId: Optional[MaintenanceWindowExecutionTaskId]
-    InvocationId: Optional[MaintenanceWindowExecutionTaskInvocationId]
-    ExecutionId: Optional[MaintenanceWindowExecutionTaskExecutionId]
-    TaskType: Optional[MaintenanceWindowTaskType]
-    Parameters: Optional[MaintenanceWindowExecutionTaskInvocationParameters]
-    Status: Optional[MaintenanceWindowExecutionStatus]
-    StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
-    OwnerInformation: Optional[OwnerInformation]
-    WindowTargetId: Optional[MaintenanceWindowTaskTargetId]
+    WindowExecutionId: MaintenanceWindowExecutionId | None
+    TaskExecutionId: MaintenanceWindowExecutionTaskId | None
+    InvocationId: MaintenanceWindowExecutionTaskInvocationId | None
+    ExecutionId: MaintenanceWindowExecutionTaskExecutionId | None
+    TaskType: MaintenanceWindowTaskType | None
+    Parameters: MaintenanceWindowExecutionTaskInvocationParameters | None
+    Status: MaintenanceWindowExecutionStatus | None
+    StatusDetails: MaintenanceWindowExecutionStatusDetails | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
+    OwnerInformation: OwnerInformation | None
+    WindowTargetId: MaintenanceWindowTaskTargetId | None
 
 
-MaintenanceWindowExecutionTaskInvocationIdentityList = List[
+MaintenanceWindowExecutionTaskInvocationIdentityList = list[
     MaintenanceWindowExecutionTaskInvocationIdentity
 ]
 
 
 class DescribeMaintenanceWindowExecutionTaskInvocationsResult(TypedDict, total=False):
-    WindowExecutionTaskInvocationIdentities: Optional[
-        MaintenanceWindowExecutionTaskInvocationIdentityList
-    ]
-    NextToken: Optional[NextToken]
+    WindowExecutionTaskInvocationIdentities: (
+        MaintenanceWindowExecutionTaskInvocationIdentityList | None
+    )
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowExecutionTasksRequest(ServiceRequest):
     WindowExecutionId: MaintenanceWindowExecutionId
-    Filters: Optional[MaintenanceWindowFilterList]
-    MaxResults: Optional[MaintenanceWindowMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: MaintenanceWindowFilterList | None
+    MaxResults: MaintenanceWindowMaxResults | None
+    NextToken: NextToken | None
 
 
 class MaintenanceWindowExecutionTaskIdentity(TypedDict, total=False):
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
-    TaskExecutionId: Optional[MaintenanceWindowExecutionTaskId]
-    Status: Optional[MaintenanceWindowExecutionStatus]
-    StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
-    TaskArn: Optional[MaintenanceWindowTaskArn]
-    TaskType: Optional[MaintenanceWindowTaskType]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
+    WindowExecutionId: MaintenanceWindowExecutionId | None
+    TaskExecutionId: MaintenanceWindowExecutionTaskId | None
+    Status: MaintenanceWindowExecutionStatus | None
+    StatusDetails: MaintenanceWindowExecutionStatusDetails | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
+    TaskArn: MaintenanceWindowTaskArn | None
+    TaskType: MaintenanceWindowTaskType | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
 
 
-MaintenanceWindowExecutionTaskIdentityList = List[MaintenanceWindowExecutionTaskIdentity]
+MaintenanceWindowExecutionTaskIdentityList = list[MaintenanceWindowExecutionTaskIdentity]
 
 
 class DescribeMaintenanceWindowExecutionTasksResult(TypedDict, total=False):
-    WindowExecutionTaskIdentities: Optional[MaintenanceWindowExecutionTaskIdentityList]
-    NextToken: Optional[NextToken]
+    WindowExecutionTaskIdentities: MaintenanceWindowExecutionTaskIdentityList | None
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowExecutionsRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
-    Filters: Optional[MaintenanceWindowFilterList]
-    MaxResults: Optional[MaintenanceWindowMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: MaintenanceWindowFilterList | None
+    MaxResults: MaintenanceWindowMaxResults | None
+    NextToken: NextToken | None
 
 
 class MaintenanceWindowExecution(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
-    Status: Optional[MaintenanceWindowExecutionStatus]
-    StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
+    WindowId: MaintenanceWindowId | None
+    WindowExecutionId: MaintenanceWindowExecutionId | None
+    Status: MaintenanceWindowExecutionStatus | None
+    StatusDetails: MaintenanceWindowExecutionStatusDetails | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
 
 
-MaintenanceWindowExecutionList = List[MaintenanceWindowExecution]
+MaintenanceWindowExecutionList = list[MaintenanceWindowExecution]
 
 
 class DescribeMaintenanceWindowExecutionsResult(TypedDict, total=False):
-    WindowExecutions: Optional[MaintenanceWindowExecutionList]
-    NextToken: Optional[NextToken]
+    WindowExecutions: MaintenanceWindowExecutionList | None
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowScheduleRequest(ServiceRequest):
-    WindowId: Optional[MaintenanceWindowId]
-    Targets: Optional[Targets]
-    ResourceType: Optional[MaintenanceWindowResourceType]
-    Filters: Optional[PatchOrchestratorFilterList]
-    MaxResults: Optional[MaintenanceWindowSearchMaxResults]
-    NextToken: Optional[NextToken]
+    WindowId: MaintenanceWindowId | None
+    Targets: Targets | None
+    ResourceType: MaintenanceWindowResourceType | None
+    Filters: PatchOrchestratorFilterList | None
+    MaxResults: MaintenanceWindowSearchMaxResults | None
+    NextToken: NextToken | None
 
 
 class ScheduledWindowExecution(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    Name: Optional[MaintenanceWindowName]
-    ExecutionTime: Optional[MaintenanceWindowStringDateTime]
+    WindowId: MaintenanceWindowId | None
+    Name: MaintenanceWindowName | None
+    ExecutionTime: MaintenanceWindowStringDateTime | None
 
 
-ScheduledWindowExecutionList = List[ScheduledWindowExecution]
+ScheduledWindowExecutionList = list[ScheduledWindowExecution]
 
 
 class DescribeMaintenanceWindowScheduleResult(TypedDict, total=False):
-    ScheduledWindowExecutions: Optional[ScheduledWindowExecutionList]
-    NextToken: Optional[NextToken]
+    ScheduledWindowExecutions: ScheduledWindowExecutionList | None
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowTargetsRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
-    Filters: Optional[MaintenanceWindowFilterList]
-    MaxResults: Optional[MaintenanceWindowMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: MaintenanceWindowFilterList | None
+    MaxResults: MaintenanceWindowMaxResults | None
+    NextToken: NextToken | None
 
 
 class MaintenanceWindowTarget(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTargetId: Optional[MaintenanceWindowTargetId]
-    ResourceType: Optional[MaintenanceWindowResourceType]
-    Targets: Optional[Targets]
-    OwnerInformation: Optional[OwnerInformation]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
+    WindowId: MaintenanceWindowId | None
+    WindowTargetId: MaintenanceWindowTargetId | None
+    ResourceType: MaintenanceWindowResourceType | None
+    Targets: Targets | None
+    OwnerInformation: OwnerInformation | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
 
 
-MaintenanceWindowTargetList = List[MaintenanceWindowTarget]
+MaintenanceWindowTargetList = list[MaintenanceWindowTarget]
 
 
 class DescribeMaintenanceWindowTargetsResult(TypedDict, total=False):
-    Targets: Optional[MaintenanceWindowTargetList]
-    NextToken: Optional[NextToken]
+    Targets: MaintenanceWindowTargetList | None
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowTasksRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
-    Filters: Optional[MaintenanceWindowFilterList]
-    MaxResults: Optional[MaintenanceWindowMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: MaintenanceWindowFilterList | None
+    MaxResults: MaintenanceWindowMaxResults | None
+    NextToken: NextToken | None
 
 
 class LoggingInfo(TypedDict, total=False):
     S3BucketName: S3BucketName
-    S3KeyPrefix: Optional[S3KeyPrefix]
+    S3KeyPrefix: S3KeyPrefix | None
     S3Region: S3Region
 
 
-MaintenanceWindowTaskParameterValueList = List[MaintenanceWindowTaskParameterValue]
+MaintenanceWindowTaskParameterValueList = list[MaintenanceWindowTaskParameterValue]
 
 
 class MaintenanceWindowTaskParameterValueExpression(TypedDict, total=False):
-    Values: Optional[MaintenanceWindowTaskParameterValueList]
+    Values: MaintenanceWindowTaskParameterValueList | None
 
 
-MaintenanceWindowTaskParameters = Dict[
+MaintenanceWindowTaskParameters = dict[
     MaintenanceWindowTaskParameterName, MaintenanceWindowTaskParameterValueExpression
 ]
 
 
 class MaintenanceWindowTask(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTaskId: Optional[MaintenanceWindowTaskId]
-    TaskArn: Optional[MaintenanceWindowTaskArn]
-    Type: Optional[MaintenanceWindowTaskType]
-    Targets: Optional[Targets]
-    TaskParameters: Optional[MaintenanceWindowTaskParameters]
-    Priority: Optional[MaintenanceWindowTaskPriority]
-    LoggingInfo: Optional[LoggingInfo]
-    ServiceRoleArn: Optional[ServiceRole]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    WindowId: MaintenanceWindowId | None
+    WindowTaskId: MaintenanceWindowTaskId | None
+    TaskArn: MaintenanceWindowTaskArn | None
+    Type: MaintenanceWindowTaskType | None
+    Targets: Targets | None
+    TaskParameters: MaintenanceWindowTaskParameters | None
+    Priority: MaintenanceWindowTaskPriority | None
+    LoggingInfo: LoggingInfo | None
+    ServiceRoleArn: ServiceRole | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    CutoffBehavior: MaintenanceWindowTaskCutoffBehavior | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
-MaintenanceWindowTaskList = List[MaintenanceWindowTask]
+MaintenanceWindowTaskList = list[MaintenanceWindowTask]
 
 
 class DescribeMaintenanceWindowTasksResult(TypedDict, total=False):
-    Tasks: Optional[MaintenanceWindowTaskList]
-    NextToken: Optional[NextToken]
+    Tasks: MaintenanceWindowTaskList | None
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowsForTargetRequest(ServiceRequest):
     Targets: Targets
     ResourceType: MaintenanceWindowResourceType
-    MaxResults: Optional[MaintenanceWindowSearchMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaintenanceWindowSearchMaxResults | None
+    NextToken: NextToken | None
 
 
 class MaintenanceWindowIdentityForTarget(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    Name: Optional[MaintenanceWindowName]
+    WindowId: MaintenanceWindowId | None
+    Name: MaintenanceWindowName | None
 
 
-MaintenanceWindowsForTargetList = List[MaintenanceWindowIdentityForTarget]
+MaintenanceWindowsForTargetList = list[MaintenanceWindowIdentityForTarget]
 
 
 class DescribeMaintenanceWindowsForTargetResult(TypedDict, total=False):
-    WindowIdentities: Optional[MaintenanceWindowsForTargetList]
-    NextToken: Optional[NextToken]
+    WindowIdentities: MaintenanceWindowsForTargetList | None
+    NextToken: NextToken | None
 
 
 class DescribeMaintenanceWindowsRequest(ServiceRequest):
-    Filters: Optional[MaintenanceWindowFilterList]
-    MaxResults: Optional[MaintenanceWindowMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: MaintenanceWindowFilterList | None
+    MaxResults: MaintenanceWindowMaxResults | None
+    NextToken: NextToken | None
 
 
 class MaintenanceWindowIdentity(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    Enabled: Optional[MaintenanceWindowEnabled]
-    Duration: Optional[MaintenanceWindowDurationHours]
-    Cutoff: Optional[MaintenanceWindowCutoff]
-    Schedule: Optional[MaintenanceWindowSchedule]
-    ScheduleTimezone: Optional[MaintenanceWindowTimezone]
-    ScheduleOffset: Optional[MaintenanceWindowOffset]
-    EndDate: Optional[MaintenanceWindowStringDateTime]
-    StartDate: Optional[MaintenanceWindowStringDateTime]
-    NextExecutionTime: Optional[MaintenanceWindowStringDateTime]
+    WindowId: MaintenanceWindowId | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    Enabled: MaintenanceWindowEnabled | None
+    Duration: MaintenanceWindowDurationHours | None
+    Cutoff: MaintenanceWindowCutoff | None
+    Schedule: MaintenanceWindowSchedule | None
+    ScheduleTimezone: MaintenanceWindowTimezone | None
+    ScheduleOffset: MaintenanceWindowOffset | None
+    EndDate: MaintenanceWindowStringDateTime | None
+    StartDate: MaintenanceWindowStringDateTime | None
+    NextExecutionTime: MaintenanceWindowStringDateTime | None
 
 
-MaintenanceWindowIdentityList = List[MaintenanceWindowIdentity]
+MaintenanceWindowIdentityList = list[MaintenanceWindowIdentity]
 
 
 class DescribeMaintenanceWindowsResult(TypedDict, total=False):
-    WindowIdentities: Optional[MaintenanceWindowIdentityList]
-    NextToken: Optional[NextToken]
+    WindowIdentities: MaintenanceWindowIdentityList | None
+    NextToken: NextToken | None
 
 
-OpsItemFilterValues = List[OpsItemFilterValue]
+OpsItemFilterValues = list[OpsItemFilterValue]
 
 
 class OpsItemFilter(TypedDict, total=False):
@@ -4025,54 +4031,54 @@ class OpsItemFilter(TypedDict, total=False):
     Operator: OpsItemFilterOperator
 
 
-OpsItemFilters = List[OpsItemFilter]
+OpsItemFilters = list[OpsItemFilter]
 
 
 class DescribeOpsItemsRequest(ServiceRequest):
-    OpsItemFilters: Optional[OpsItemFilters]
-    MaxResults: Optional[OpsItemMaxResults]
-    NextToken: Optional[String]
+    OpsItemFilters: OpsItemFilters | None
+    MaxResults: OpsItemMaxResults | None
+    NextToken: String | None
 
 
 class OpsItemSummary(TypedDict, total=False):
-    CreatedBy: Optional[String]
-    CreatedTime: Optional[DateTime]
-    LastModifiedBy: Optional[String]
-    LastModifiedTime: Optional[DateTime]
-    Priority: Optional[OpsItemPriority]
-    Source: Optional[OpsItemSource]
-    Status: Optional[OpsItemStatus]
-    OpsItemId: Optional[OpsItemId]
-    Title: Optional[OpsItemTitle]
-    OperationalData: Optional[OpsItemOperationalData]
-    Category: Optional[OpsItemCategory]
-    Severity: Optional[OpsItemSeverity]
-    OpsItemType: Optional[OpsItemType]
-    ActualStartTime: Optional[DateTime]
-    ActualEndTime: Optional[DateTime]
-    PlannedStartTime: Optional[DateTime]
-    PlannedEndTime: Optional[DateTime]
+    CreatedBy: String | None
+    CreatedTime: DateTime | None
+    LastModifiedBy: String | None
+    LastModifiedTime: DateTime | None
+    Priority: OpsItemPriority | None
+    Source: OpsItemSource | None
+    Status: OpsItemStatus | None
+    OpsItemId: OpsItemId | None
+    Title: OpsItemTitle | None
+    OperationalData: OpsItemOperationalData | None
+    Category: OpsItemCategory | None
+    Severity: OpsItemSeverity | None
+    OpsItemType: OpsItemType | None
+    ActualStartTime: DateTime | None
+    ActualEndTime: DateTime | None
+    PlannedStartTime: DateTime | None
+    PlannedEndTime: DateTime | None
 
 
-OpsItemSummaries = List[OpsItemSummary]
+OpsItemSummaries = list[OpsItemSummary]
 
 
 class DescribeOpsItemsResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    OpsItemSummaries: Optional[OpsItemSummaries]
+    NextToken: String | None
+    OpsItemSummaries: OpsItemSummaries | None
 
 
-ParameterStringFilterValueList = List[ParameterStringFilterValue]
+ParameterStringFilterValueList = list[ParameterStringFilterValue]
 
 
 class ParameterStringFilter(TypedDict, total=False):
     Key: ParameterStringFilterKey
-    Option: Optional[ParameterStringQueryOption]
-    Values: Optional[ParameterStringFilterValueList]
+    Option: ParameterStringQueryOption | None
+    Values: ParameterStringFilterValueList | None
 
 
-ParameterStringFilterList = List[ParameterStringFilter]
-ParametersFilterValueList = List[ParametersFilterValue]
+ParameterStringFilterList = list[ParameterStringFilter]
+ParametersFilterValueList = list[ParametersFilterValue]
 
 
 class ParametersFilter(TypedDict, total=False):
@@ -4080,70 +4086,70 @@ class ParametersFilter(TypedDict, total=False):
     Values: ParametersFilterValueList
 
 
-ParametersFilterList = List[ParametersFilter]
+ParametersFilterList = list[ParametersFilter]
 
 
 class DescribeParametersRequest(ServiceRequest):
-    Filters: Optional[ParametersFilterList]
-    ParameterFilters: Optional[ParameterStringFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
-    Shared: Optional[Boolean]
+    Filters: ParametersFilterList | None
+    ParameterFilters: ParameterStringFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
+    Shared: Boolean | None
 
 
 class ParameterInlinePolicy(TypedDict, total=False):
-    PolicyText: Optional[String]
-    PolicyType: Optional[String]
-    PolicyStatus: Optional[String]
+    PolicyText: String | None
+    PolicyType: String | None
+    PolicyStatus: String | None
 
 
-ParameterPolicyList = List[ParameterInlinePolicy]
+ParameterPolicyList = list[ParameterInlinePolicy]
 PSParameterVersion = int
 
 
 class ParameterMetadata(TypedDict, total=False):
-    Name: Optional[PSParameterName]
-    ARN: Optional[String]
-    Type: Optional[ParameterType]
-    KeyId: Optional[ParameterKeyId]
-    LastModifiedDate: Optional[DateTime]
-    LastModifiedUser: Optional[String]
-    Description: Optional[ParameterDescription]
-    AllowedPattern: Optional[AllowedPattern]
-    Version: Optional[PSParameterVersion]
-    Tier: Optional[ParameterTier]
-    Policies: Optional[ParameterPolicyList]
-    DataType: Optional[ParameterDataType]
+    Name: PSParameterName | None
+    ARN: String | None
+    Type: ParameterType | None
+    KeyId: ParameterKeyId | None
+    LastModifiedDate: DateTime | None
+    LastModifiedUser: String | None
+    Description: ParameterDescription | None
+    AllowedPattern: AllowedPattern | None
+    Version: PSParameterVersion | None
+    Tier: ParameterTier | None
+    Policies: ParameterPolicyList | None
+    DataType: ParameterDataType | None
 
 
-ParameterMetadataList = List[ParameterMetadata]
+ParameterMetadataList = list[ParameterMetadata]
 
 
 class DescribeParametersResult(TypedDict, total=False):
-    Parameters: Optional[ParameterMetadataList]
-    NextToken: Optional[NextToken]
+    Parameters: ParameterMetadataList | None
+    NextToken: NextToken | None
 
 
 class DescribePatchBaselinesRequest(ServiceRequest):
-    Filters: Optional[PatchOrchestratorFilterList]
-    MaxResults: Optional[PatchBaselineMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: PatchOrchestratorFilterList | None
+    MaxResults: PatchBaselineMaxResults | None
+    NextToken: NextToken | None
 
 
 class PatchBaselineIdentity(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    BaselineName: Optional[BaselineName]
-    OperatingSystem: Optional[OperatingSystem]
-    BaselineDescription: Optional[BaselineDescription]
-    DefaultBaseline: Optional[DefaultBaseline]
+    BaselineId: BaselineId | None
+    BaselineName: BaselineName | None
+    OperatingSystem: OperatingSystem | None
+    BaselineDescription: BaselineDescription | None
+    DefaultBaseline: DefaultBaseline | None
 
 
-PatchBaselineIdentityList = List[PatchBaselineIdentity]
+PatchBaselineIdentityList = list[PatchBaselineIdentity]
 
 
 class DescribePatchBaselinesResult(TypedDict, total=False):
-    BaselineIdentities: Optional[PatchBaselineIdentityList]
-    NextToken: Optional[NextToken]
+    BaselineIdentities: PatchBaselineIdentityList | None
+    NextToken: NextToken | None
 
 
 class DescribePatchGroupStateRequest(ServiceRequest):
@@ -4151,55 +4157,55 @@ class DescribePatchGroupStateRequest(ServiceRequest):
 
 
 class DescribePatchGroupStateResult(TypedDict, total=False):
-    Instances: Optional[Integer]
-    InstancesWithInstalledPatches: Optional[Integer]
-    InstancesWithInstalledOtherPatches: Optional[Integer]
-    InstancesWithInstalledPendingRebootPatches: Optional[InstancesCount]
-    InstancesWithInstalledRejectedPatches: Optional[InstancesCount]
-    InstancesWithMissingPatches: Optional[Integer]
-    InstancesWithFailedPatches: Optional[Integer]
-    InstancesWithNotApplicablePatches: Optional[Integer]
-    InstancesWithUnreportedNotApplicablePatches: Optional[Integer]
-    InstancesWithCriticalNonCompliantPatches: Optional[InstancesCount]
-    InstancesWithSecurityNonCompliantPatches: Optional[InstancesCount]
-    InstancesWithOtherNonCompliantPatches: Optional[InstancesCount]
-    InstancesWithAvailableSecurityUpdates: Optional[Integer]
+    Instances: Integer | None
+    InstancesWithInstalledPatches: Integer | None
+    InstancesWithInstalledOtherPatches: Integer | None
+    InstancesWithInstalledPendingRebootPatches: InstancesCount | None
+    InstancesWithInstalledRejectedPatches: InstancesCount | None
+    InstancesWithMissingPatches: Integer | None
+    InstancesWithFailedPatches: Integer | None
+    InstancesWithNotApplicablePatches: Integer | None
+    InstancesWithUnreportedNotApplicablePatches: Integer | None
+    InstancesWithCriticalNonCompliantPatches: InstancesCount | None
+    InstancesWithSecurityNonCompliantPatches: InstancesCount | None
+    InstancesWithOtherNonCompliantPatches: InstancesCount | None
+    InstancesWithAvailableSecurityUpdates: Integer | None
 
 
 class DescribePatchGroupsRequest(ServiceRequest):
-    MaxResults: Optional[PatchBaselineMaxResults]
-    Filters: Optional[PatchOrchestratorFilterList]
-    NextToken: Optional[NextToken]
+    MaxResults: PatchBaselineMaxResults | None
+    Filters: PatchOrchestratorFilterList | None
+    NextToken: NextToken | None
 
 
 class PatchGroupPatchBaselineMapping(TypedDict, total=False):
-    PatchGroup: Optional[PatchGroup]
-    BaselineIdentity: Optional[PatchBaselineIdentity]
+    PatchGroup: PatchGroup | None
+    BaselineIdentity: PatchBaselineIdentity | None
 
 
-PatchGroupPatchBaselineMappingList = List[PatchGroupPatchBaselineMapping]
+PatchGroupPatchBaselineMappingList = list[PatchGroupPatchBaselineMapping]
 
 
 class DescribePatchGroupsResult(TypedDict, total=False):
-    Mappings: Optional[PatchGroupPatchBaselineMappingList]
-    NextToken: Optional[NextToken]
+    Mappings: PatchGroupPatchBaselineMappingList | None
+    NextToken: NextToken | None
 
 
 class DescribePatchPropertiesRequest(ServiceRequest):
     OperatingSystem: OperatingSystem
     Property: PatchProperty
-    PatchSet: Optional[PatchSet]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    PatchSet: PatchSet | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-PatchPropertyEntry = Dict[AttributeName, AttributeValue]
-PatchPropertiesList = List[PatchPropertyEntry]
+PatchPropertyEntry = dict[AttributeName, AttributeValue]
+PatchPropertiesList = list[PatchPropertyEntry]
 
 
 class DescribePatchPropertiesResult(TypedDict, total=False):
-    Properties: Optional[PatchPropertiesList]
-    NextToken: Optional[NextToken]
+    Properties: PatchPropertiesList | None
+    NextToken: NextToken | None
 
 
 class SessionFilter(TypedDict, total=False):
@@ -4207,42 +4213,42 @@ class SessionFilter(TypedDict, total=False):
     value: SessionFilterValue
 
 
-SessionFilterList = List[SessionFilter]
+SessionFilterList = list[SessionFilter]
 
 
 class DescribeSessionsRequest(ServiceRequest):
     State: SessionState
-    MaxResults: Optional[SessionMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[SessionFilterList]
+    MaxResults: SessionMaxResults | None
+    NextToken: NextToken | None
+    Filters: SessionFilterList | None
 
 
 class SessionManagerOutputUrl(TypedDict, total=False):
-    S3OutputUrl: Optional[SessionManagerS3OutputUrl]
-    CloudWatchOutputUrl: Optional[SessionManagerCloudWatchOutputUrl]
+    S3OutputUrl: SessionManagerS3OutputUrl | None
+    CloudWatchOutputUrl: SessionManagerCloudWatchOutputUrl | None
 
 
 class Session(TypedDict, total=False):
-    SessionId: Optional[SessionId]
-    Target: Optional[SessionTarget]
-    Status: Optional[SessionStatus]
-    StartDate: Optional[DateTime]
-    EndDate: Optional[DateTime]
-    DocumentName: Optional[DocumentName]
-    Owner: Optional[SessionOwner]
-    Reason: Optional[SessionReason]
-    Details: Optional[SessionDetails]
-    OutputUrl: Optional[SessionManagerOutputUrl]
-    MaxSessionDuration: Optional[MaxSessionDuration]
-    AccessType: Optional[AccessType]
+    SessionId: SessionId | None
+    Target: SessionTarget | None
+    Status: SessionStatus | None
+    StartDate: DateTime | None
+    EndDate: DateTime | None
+    DocumentName: DocumentName | None
+    Owner: SessionOwner | None
+    Reason: SessionReason | None
+    Details: SessionDetails | None
+    OutputUrl: SessionManagerOutputUrl | None
+    MaxSessionDuration: MaxSessionDuration | None
+    AccessType: AccessType | None
 
 
-SessionList = List[Session]
+SessionList = list[Session]
 
 
 class DescribeSessionsResponse(TypedDict, total=False):
-    Sessions: Optional[SessionList]
-    NextToken: Optional[NextToken]
+    Sessions: SessionList | None
+    NextToken: NextToken | None
 
 
 class DisassociateOpsItemRelatedItemRequest(ServiceRequest):
@@ -4255,9 +4261,9 @@ class DisassociateOpsItemRelatedItemResponse(TypedDict, total=False):
 
 
 class DocumentDefaultVersionDescription(TypedDict, total=False):
-    Name: Optional[DocumentName]
-    DefaultVersion: Optional[DocumentVersion]
-    DefaultVersionName: Optional[DocumentVersionName]
+    Name: DocumentName | None
+    DefaultVersion: DocumentVersion | None
+    DefaultVersionName: DocumentVersionName | None
 
 
 class DocumentFilter(TypedDict, total=False):
@@ -4265,89 +4271,89 @@ class DocumentFilter(TypedDict, total=False):
     value: DocumentFilterValue
 
 
-DocumentFilterList = List[DocumentFilter]
+DocumentFilterList = list[DocumentFilter]
 
 
 class DocumentIdentifier(TypedDict, total=False):
-    Name: Optional[DocumentARN]
-    CreatedDate: Optional[DateTime]
-    DisplayName: Optional[DocumentDisplayName]
-    Owner: Optional[DocumentOwner]
-    VersionName: Optional[DocumentVersionName]
-    PlatformTypes: Optional[PlatformTypeList]
-    DocumentVersion: Optional[DocumentVersion]
-    DocumentType: Optional[DocumentType]
-    SchemaVersion: Optional[DocumentSchemaVersion]
-    DocumentFormat: Optional[DocumentFormat]
-    TargetType: Optional[TargetType]
-    Tags: Optional[TagList]
-    Requires: Optional[DocumentRequiresList]
-    ReviewStatus: Optional[ReviewStatus]
-    Author: Optional[DocumentAuthor]
+    Name: DocumentARN | None
+    CreatedDate: DateTime | None
+    DisplayName: DocumentDisplayName | None
+    Owner: DocumentOwner | None
+    VersionName: DocumentVersionName | None
+    PlatformTypes: PlatformTypeList | None
+    DocumentVersion: DocumentVersion | None
+    DocumentType: DocumentType | None
+    SchemaVersion: DocumentSchemaVersion | None
+    DocumentFormat: DocumentFormat | None
+    TargetType: TargetType | None
+    Tags: TagList | None
+    Requires: DocumentRequiresList | None
+    ReviewStatus: ReviewStatus | None
+    Author: DocumentAuthor | None
 
 
-DocumentIdentifierList = List[DocumentIdentifier]
-DocumentKeyValuesFilterValues = List[DocumentKeyValuesFilterValue]
+DocumentIdentifierList = list[DocumentIdentifier]
+DocumentKeyValuesFilterValues = list[DocumentKeyValuesFilterValue]
 
 
 class DocumentKeyValuesFilter(TypedDict, total=False):
-    Key: Optional[DocumentKeyValuesFilterKey]
-    Values: Optional[DocumentKeyValuesFilterValues]
+    Key: DocumentKeyValuesFilterKey | None
+    Values: DocumentKeyValuesFilterValues | None
 
 
-DocumentKeyValuesFilterList = List[DocumentKeyValuesFilter]
+DocumentKeyValuesFilterList = list[DocumentKeyValuesFilter]
 
 
 class DocumentReviewCommentSource(TypedDict, total=False):
-    Type: Optional[DocumentReviewCommentType]
-    Content: Optional[DocumentReviewComment]
+    Type: DocumentReviewCommentType | None
+    Content: DocumentReviewComment | None
 
 
-DocumentReviewCommentList = List[DocumentReviewCommentSource]
+DocumentReviewCommentList = list[DocumentReviewCommentSource]
 
 
 class DocumentReviewerResponseSource(TypedDict, total=False):
-    CreateTime: Optional[DateTime]
-    UpdatedTime: Optional[DateTime]
-    ReviewStatus: Optional[ReviewStatus]
-    Comment: Optional[DocumentReviewCommentList]
-    Reviewer: Optional[Reviewer]
+    CreateTime: DateTime | None
+    UpdatedTime: DateTime | None
+    ReviewStatus: ReviewStatus | None
+    Comment: DocumentReviewCommentList | None
+    Reviewer: Reviewer | None
 
 
-DocumentReviewerResponseList = List[DocumentReviewerResponseSource]
+DocumentReviewerResponseList = list[DocumentReviewerResponseSource]
 
 
 class DocumentMetadataResponseInfo(TypedDict, total=False):
-    ReviewerResponse: Optional[DocumentReviewerResponseList]
+    ReviewerResponse: DocumentReviewerResponseList | None
 
 
 class DocumentReviews(TypedDict, total=False):
     Action: DocumentReviewAction
-    Comment: Optional[DocumentReviewCommentList]
+    Comment: DocumentReviewCommentList | None
 
 
 class DocumentVersionInfo(TypedDict, total=False):
-    Name: Optional[DocumentName]
-    DisplayName: Optional[DocumentDisplayName]
-    DocumentVersion: Optional[DocumentVersion]
-    VersionName: Optional[DocumentVersionName]
-    CreatedDate: Optional[DateTime]
-    IsDefaultVersion: Optional[Boolean]
-    DocumentFormat: Optional[DocumentFormat]
-    Status: Optional[DocumentStatus]
-    StatusInformation: Optional[DocumentStatusInformation]
-    ReviewStatus: Optional[ReviewStatus]
+    Name: DocumentName | None
+    DisplayName: DocumentDisplayName | None
+    DocumentVersion: DocumentVersion | None
+    VersionName: DocumentVersionName | None
+    CreatedDate: DateTime | None
+    IsDefaultVersion: Boolean | None
+    DocumentFormat: DocumentFormat | None
+    Status: DocumentStatus | None
+    StatusInformation: DocumentStatusInformation | None
+    ReviewStatus: ReviewStatus | None
 
 
-DocumentVersionList = List[DocumentVersionInfo]
+DocumentVersionList = list[DocumentVersionInfo]
 
 
 class ExecutionInputs(TypedDict, total=False):
-    Automation: Optional[AutomationExecutionInputs]
+    Automation: AutomationExecutionInputs | None
 
 
 class ExecutionPreview(TypedDict, total=False):
-    Automation: Optional[AutomationExecutionPreview]
+    Automation: AutomationExecutionPreview | None
 
 
 class GetAccessTokenRequest(ServiceRequest):
@@ -4355,8 +4361,8 @@ class GetAccessTokenRequest(ServiceRequest):
 
 
 class GetAccessTokenResponse(TypedDict, total=False):
-    Credentials: Optional[Credentials]
-    AccessRequestStatus: Optional[AccessRequestStatus]
+    Credentials: Credentials | None
+    AccessRequestStatus: AccessRequestStatus | None
 
 
 class GetAutomationExecutionRequest(ServiceRequest):
@@ -4364,44 +4370,44 @@ class GetAutomationExecutionRequest(ServiceRequest):
 
 
 class GetAutomationExecutionResult(TypedDict, total=False):
-    AutomationExecution: Optional[AutomationExecution]
+    AutomationExecution: AutomationExecution | None
 
 
 class GetCalendarStateRequest(ServiceRequest):
     CalendarNames: CalendarNameOrARNList
-    AtTime: Optional[ISO8601String]
+    AtTime: ISO8601String | None
 
 
 class GetCalendarStateResponse(TypedDict, total=False):
-    State: Optional[CalendarState]
-    AtTime: Optional[ISO8601String]
-    NextTransitionTime: Optional[ISO8601String]
+    State: CalendarState | None
+    AtTime: ISO8601String | None
+    NextTransitionTime: ISO8601String | None
 
 
 class GetCommandInvocationRequest(ServiceRequest):
     CommandId: CommandId
     InstanceId: InstanceId
-    PluginName: Optional[CommandPluginName]
+    PluginName: CommandPluginName | None
 
 
 class GetCommandInvocationResult(TypedDict, total=False):
-    CommandId: Optional[CommandId]
-    InstanceId: Optional[InstanceId]
-    Comment: Optional[Comment]
-    DocumentName: Optional[DocumentName]
-    DocumentVersion: Optional[DocumentVersion]
-    PluginName: Optional[CommandPluginName]
-    ResponseCode: Optional[ResponseCode]
-    ExecutionStartDateTime: Optional[StringDateTime]
-    ExecutionElapsedTime: Optional[StringDateTime]
-    ExecutionEndDateTime: Optional[StringDateTime]
-    Status: Optional[CommandInvocationStatus]
-    StatusDetails: Optional[StatusDetails]
-    StandardOutputContent: Optional[StandardOutputContent]
-    StandardOutputUrl: Optional[Url]
-    StandardErrorContent: Optional[StandardErrorContent]
-    StandardErrorUrl: Optional[Url]
-    CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
+    CommandId: CommandId | None
+    InstanceId: InstanceId | None
+    Comment: Comment | None
+    DocumentName: DocumentName | None
+    DocumentVersion: DocumentVersion | None
+    PluginName: CommandPluginName | None
+    ResponseCode: ResponseCode | None
+    ExecutionStartDateTime: StringDateTime | None
+    ExecutionElapsedTime: StringDateTime | None
+    ExecutionEndDateTime: StringDateTime | None
+    Status: CommandInvocationStatus | None
+    StatusDetails: StatusDetails | None
+    StandardOutputContent: StandardOutputContent | None
+    StandardOutputUrl: Url | None
+    StandardErrorContent: StandardErrorContent | None
+    StandardErrorUrl: Url | None
+    CloudWatchOutputConfig: CloudWatchOutputConfig | None
 
 
 class GetConnectionStatusRequest(ServiceRequest):
@@ -4409,54 +4415,54 @@ class GetConnectionStatusRequest(ServiceRequest):
 
 
 class GetConnectionStatusResponse(TypedDict, total=False):
-    Target: Optional[SessionTarget]
-    Status: Optional[ConnectionStatus]
+    Target: SessionTarget | None
+    Status: ConnectionStatus | None
 
 
 class GetDefaultPatchBaselineRequest(ServiceRequest):
-    OperatingSystem: Optional[OperatingSystem]
+    OperatingSystem: OperatingSystem | None
 
 
 class GetDefaultPatchBaselineResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    OperatingSystem: Optional[OperatingSystem]
+    BaselineId: BaselineId | None
+    OperatingSystem: OperatingSystem | None
 
 
 class GetDeployablePatchSnapshotForInstanceRequest(ServiceRequest):
     InstanceId: InstanceId
     SnapshotId: SnapshotId
-    BaselineOverride: Optional[BaselineOverride]
-    UseS3DualStackEndpoint: Optional[Boolean]
+    BaselineOverride: BaselineOverride | None
+    UseS3DualStackEndpoint: Boolean | None
 
 
 class GetDeployablePatchSnapshotForInstanceResult(TypedDict, total=False):
-    InstanceId: Optional[InstanceId]
-    SnapshotId: Optional[SnapshotId]
-    SnapshotDownloadUrl: Optional[SnapshotDownloadUrl]
-    Product: Optional[Product]
+    InstanceId: InstanceId | None
+    SnapshotId: SnapshotId | None
+    SnapshotDownloadUrl: SnapshotDownloadUrl | None
+    Product: Product | None
 
 
 class GetDocumentRequest(ServiceRequest):
     Name: DocumentARN
-    VersionName: Optional[DocumentVersionName]
-    DocumentVersion: Optional[DocumentVersion]
-    DocumentFormat: Optional[DocumentFormat]
+    VersionName: DocumentVersionName | None
+    DocumentVersion: DocumentVersion | None
+    DocumentFormat: DocumentFormat | None
 
 
 class GetDocumentResult(TypedDict, total=False):
-    Name: Optional[DocumentARN]
-    CreatedDate: Optional[DateTime]
-    DisplayName: Optional[DocumentDisplayName]
-    VersionName: Optional[DocumentVersionName]
-    DocumentVersion: Optional[DocumentVersion]
-    Status: Optional[DocumentStatus]
-    StatusInformation: Optional[DocumentStatusInformation]
-    Content: Optional[DocumentContent]
-    DocumentType: Optional[DocumentType]
-    DocumentFormat: Optional[DocumentFormat]
-    Requires: Optional[DocumentRequiresList]
-    AttachmentsContent: Optional[AttachmentContentList]
-    ReviewStatus: Optional[ReviewStatus]
+    Name: DocumentARN | None
+    CreatedDate: DateTime | None
+    DisplayName: DocumentDisplayName | None
+    VersionName: DocumentVersionName | None
+    DocumentVersion: DocumentVersion | None
+    Status: DocumentStatus | None
+    StatusInformation: DocumentStatusInformation | None
+    Content: DocumentContent | None
+    DocumentType: DocumentType | None
+    DocumentFormat: DocumentFormat | None
+    Requires: DocumentRequiresList | None
+    AttachmentsContent: AttachmentContentList | None
+    ReviewStatus: ReviewStatus | None
 
 
 class GetExecutionPreviewRequest(ServiceRequest):
@@ -4464,28 +4470,28 @@ class GetExecutionPreviewRequest(ServiceRequest):
 
 
 class GetExecutionPreviewResponse(TypedDict, total=False):
-    ExecutionPreviewId: Optional[ExecutionPreviewId]
-    EndedAt: Optional[DateTime]
-    Status: Optional[ExecutionPreviewStatus]
-    StatusMessage: Optional[String]
-    ExecutionPreview: Optional[ExecutionPreview]
+    ExecutionPreviewId: ExecutionPreviewId | None
+    EndedAt: DateTime | None
+    Status: ExecutionPreviewStatus | None
+    StatusMessage: String | None
+    ExecutionPreview: ExecutionPreview | None
 
 
 class ResultAttribute(TypedDict, total=False):
     TypeName: InventoryItemTypeName
 
 
-ResultAttributeList = List[ResultAttribute]
-InventoryFilterValueList = List[InventoryFilterValue]
+ResultAttributeList = list[ResultAttribute]
+InventoryFilterValueList = list[InventoryFilterValue]
 
 
 class InventoryFilter(TypedDict, total=False):
     Key: InventoryFilterKey
     Values: InventoryFilterValueList
-    Type: Optional[InventoryQueryOperatorType]
+    Type: InventoryQueryOperatorType | None
 
 
-InventoryFilterList = List[InventoryFilter]
+InventoryFilterList = list[InventoryFilter]
 
 
 class InventoryGroup(TypedDict, total=False):
@@ -4493,58 +4499,58 @@ class InventoryGroup(TypedDict, total=False):
     Filters: InventoryFilterList
 
 
-InventoryGroupList = List[InventoryGroup]
-InventoryAggregatorList = List["InventoryAggregator"]
+InventoryGroupList = list[InventoryGroup]
+InventoryAggregatorList = list["InventoryAggregator"]
 
 
 class InventoryAggregator(TypedDict, total=False):
-    Expression: Optional[InventoryAggregatorExpression]
-    Aggregators: Optional[InventoryAggregatorList]
-    Groups: Optional[InventoryGroupList]
+    Expression: InventoryAggregatorExpression | None
+    Aggregators: InventoryAggregatorList | None
+    Groups: InventoryGroupList | None
 
 
 class GetInventoryRequest(ServiceRequest):
-    Filters: Optional[InventoryFilterList]
-    Aggregators: Optional[InventoryAggregatorList]
-    ResultAttributes: Optional[ResultAttributeList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Filters: InventoryFilterList | None
+    Aggregators: InventoryAggregatorList | None
+    ResultAttributes: ResultAttributeList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
-InventoryItemEntry = Dict[AttributeName, AttributeValue]
-InventoryItemEntryList = List[InventoryItemEntry]
+InventoryItemEntry = dict[AttributeName, AttributeValue]
+InventoryItemEntryList = list[InventoryItemEntry]
 
 
 class InventoryResultItem(TypedDict, total=False):
     TypeName: InventoryItemTypeName
     SchemaVersion: InventoryItemSchemaVersion
-    CaptureTime: Optional[InventoryItemCaptureTime]
-    ContentHash: Optional[InventoryItemContentHash]
+    CaptureTime: InventoryItemCaptureTime | None
+    ContentHash: InventoryItemContentHash | None
     Content: InventoryItemEntryList
 
 
-InventoryResultItemMap = Dict[InventoryResultItemKey, InventoryResultItem]
+InventoryResultItemMap = dict[InventoryResultItemKey, InventoryResultItem]
 
 
 class InventoryResultEntity(TypedDict, total=False):
-    Id: Optional[InventoryResultEntityId]
-    Data: Optional[InventoryResultItemMap]
+    Id: InventoryResultEntityId | None
+    Data: InventoryResultItemMap | None
 
 
-InventoryResultEntityList = List[InventoryResultEntity]
+InventoryResultEntityList = list[InventoryResultEntity]
 
 
 class GetInventoryResult(TypedDict, total=False):
-    Entities: Optional[InventoryResultEntityList]
-    NextToken: Optional[NextToken]
+    Entities: InventoryResultEntityList | None
+    NextToken: NextToken | None
 
 
 class GetInventorySchemaRequest(ServiceRequest):
-    TypeName: Optional[InventoryItemTypeNameFilter]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[GetInventorySchemaMaxResults]
-    Aggregator: Optional[AggregatorSchemaOnly]
-    SubType: Optional[IsSubTypeSchema]
+    TypeName: InventoryItemTypeNameFilter | None
+    NextToken: NextToken | None
+    MaxResults: GetInventorySchemaMaxResults | None
+    Aggregator: AggregatorSchemaOnly | None
+    SubType: IsSubTypeSchema | None
 
 
 class InventoryItemAttribute(TypedDict, total=False):
@@ -4552,38 +4558,38 @@ class InventoryItemAttribute(TypedDict, total=False):
     DataType: InventoryAttributeDataType
 
 
-InventoryItemAttributeList = List[InventoryItemAttribute]
+InventoryItemAttributeList = list[InventoryItemAttribute]
 
 
 class InventoryItemSchema(TypedDict, total=False):
     TypeName: InventoryItemTypeName
-    Version: Optional[InventoryItemSchemaVersion]
+    Version: InventoryItemSchemaVersion | None
     Attributes: InventoryItemAttributeList
-    DisplayName: Optional[InventoryTypeDisplayName]
+    DisplayName: InventoryTypeDisplayName | None
 
 
-InventoryItemSchemaResultList = List[InventoryItemSchema]
+InventoryItemSchemaResultList = list[InventoryItemSchema]
 
 
 class GetInventorySchemaResult(TypedDict, total=False):
-    Schemas: Optional[InventoryItemSchemaResultList]
-    NextToken: Optional[NextToken]
+    Schemas: InventoryItemSchemaResultList | None
+    NextToken: NextToken | None
 
 
 class GetMaintenanceWindowExecutionRequest(ServiceRequest):
     WindowExecutionId: MaintenanceWindowExecutionId
 
 
-MaintenanceWindowExecutionTaskIdList = List[MaintenanceWindowExecutionTaskId]
+MaintenanceWindowExecutionTaskIdList = list[MaintenanceWindowExecutionTaskId]
 
 
 class GetMaintenanceWindowExecutionResult(TypedDict, total=False):
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
-    TaskIds: Optional[MaintenanceWindowExecutionTaskIdList]
-    Status: Optional[MaintenanceWindowExecutionStatus]
-    StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
+    WindowExecutionId: MaintenanceWindowExecutionId | None
+    TaskIds: MaintenanceWindowExecutionTaskIdList | None
+    Status: MaintenanceWindowExecutionStatus | None
+    StatusDetails: MaintenanceWindowExecutionStatusDetails | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
 
 
 class GetMaintenanceWindowExecutionTaskInvocationRequest(ServiceRequest):
@@ -4593,18 +4599,18 @@ class GetMaintenanceWindowExecutionTaskInvocationRequest(ServiceRequest):
 
 
 class GetMaintenanceWindowExecutionTaskInvocationResult(TypedDict, total=False):
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
-    TaskExecutionId: Optional[MaintenanceWindowExecutionTaskId]
-    InvocationId: Optional[MaintenanceWindowExecutionTaskInvocationId]
-    ExecutionId: Optional[MaintenanceWindowExecutionTaskExecutionId]
-    TaskType: Optional[MaintenanceWindowTaskType]
-    Parameters: Optional[MaintenanceWindowExecutionTaskInvocationParameters]
-    Status: Optional[MaintenanceWindowExecutionStatus]
-    StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
-    OwnerInformation: Optional[OwnerInformation]
-    WindowTargetId: Optional[MaintenanceWindowTaskTargetId]
+    WindowExecutionId: MaintenanceWindowExecutionId | None
+    TaskExecutionId: MaintenanceWindowExecutionTaskId | None
+    InvocationId: MaintenanceWindowExecutionTaskInvocationId | None
+    ExecutionId: MaintenanceWindowExecutionTaskExecutionId | None
+    TaskType: MaintenanceWindowTaskType | None
+    Parameters: MaintenanceWindowExecutionTaskInvocationParameters | None
+    Status: MaintenanceWindowExecutionStatus | None
+    StatusDetails: MaintenanceWindowExecutionStatusDetails | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
+    OwnerInformation: OwnerInformation | None
+    WindowTargetId: MaintenanceWindowTaskTargetId | None
 
 
 class GetMaintenanceWindowExecutionTaskRequest(ServiceRequest):
@@ -4612,25 +4618,25 @@ class GetMaintenanceWindowExecutionTaskRequest(ServiceRequest):
     TaskId: MaintenanceWindowExecutionTaskId
 
 
-MaintenanceWindowTaskParametersList = List[MaintenanceWindowTaskParameters]
+MaintenanceWindowTaskParametersList = list[MaintenanceWindowTaskParameters]
 
 
 class GetMaintenanceWindowExecutionTaskResult(TypedDict, total=False):
-    WindowExecutionId: Optional[MaintenanceWindowExecutionId]
-    TaskExecutionId: Optional[MaintenanceWindowExecutionTaskId]
-    TaskArn: Optional[MaintenanceWindowTaskArn]
-    ServiceRole: Optional[ServiceRole]
-    Type: Optional[MaintenanceWindowTaskType]
-    TaskParameters: Optional[MaintenanceWindowTaskParametersList]
-    Priority: Optional[MaintenanceWindowTaskPriority]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    Status: Optional[MaintenanceWindowExecutionStatus]
-    StatusDetails: Optional[MaintenanceWindowExecutionStatusDetails]
-    StartTime: Optional[DateTime]
-    EndTime: Optional[DateTime]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TriggeredAlarms: Optional[AlarmStateInformationList]
+    WindowExecutionId: MaintenanceWindowExecutionId | None
+    TaskExecutionId: MaintenanceWindowExecutionTaskId | None
+    TaskArn: MaintenanceWindowTaskArn | None
+    ServiceRole: ServiceRole | None
+    Type: MaintenanceWindowTaskType | None
+    TaskParameters: MaintenanceWindowTaskParametersList | None
+    Priority: MaintenanceWindowTaskPriority | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    Status: MaintenanceWindowExecutionStatus | None
+    StatusDetails: MaintenanceWindowExecutionStatusDetails | None
+    StartTime: DateTime | None
+    EndTime: DateTime | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TriggeredAlarms: AlarmStateInformationList | None
 
 
 class GetMaintenanceWindowRequest(ServiceRequest):
@@ -4638,21 +4644,21 @@ class GetMaintenanceWindowRequest(ServiceRequest):
 
 
 class GetMaintenanceWindowResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    StartDate: Optional[MaintenanceWindowStringDateTime]
-    EndDate: Optional[MaintenanceWindowStringDateTime]
-    Schedule: Optional[MaintenanceWindowSchedule]
-    ScheduleTimezone: Optional[MaintenanceWindowTimezone]
-    ScheduleOffset: Optional[MaintenanceWindowOffset]
-    NextExecutionTime: Optional[MaintenanceWindowStringDateTime]
-    Duration: Optional[MaintenanceWindowDurationHours]
-    Cutoff: Optional[MaintenanceWindowCutoff]
-    AllowUnassociatedTargets: Optional[MaintenanceWindowAllowUnassociatedTargets]
-    Enabled: Optional[MaintenanceWindowEnabled]
-    CreatedDate: Optional[DateTime]
-    ModifiedDate: Optional[DateTime]
+    WindowId: MaintenanceWindowId | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    StartDate: MaintenanceWindowStringDateTime | None
+    EndDate: MaintenanceWindowStringDateTime | None
+    Schedule: MaintenanceWindowSchedule | None
+    ScheduleTimezone: MaintenanceWindowTimezone | None
+    ScheduleOffset: MaintenanceWindowOffset | None
+    NextExecutionTime: MaintenanceWindowStringDateTime | None
+    Duration: MaintenanceWindowDurationHours | None
+    Cutoff: MaintenanceWindowCutoff | None
+    AllowUnassociatedTargets: MaintenanceWindowAllowUnassociatedTargets | None
+    Enabled: MaintenanceWindowEnabled | None
+    CreatedDate: DateTime | None
+    ModifiedDate: DateTime | None
 
 
 class GetMaintenanceWindowTaskRequest(ServiceRequest):
@@ -4664,306 +4670,306 @@ MaintenanceWindowLambdaPayload = bytes
 
 
 class MaintenanceWindowLambdaParameters(TypedDict, total=False):
-    ClientContext: Optional[MaintenanceWindowLambdaClientContext]
-    Qualifier: Optional[MaintenanceWindowLambdaQualifier]
-    Payload: Optional[MaintenanceWindowLambdaPayload]
+    ClientContext: MaintenanceWindowLambdaClientContext | None
+    Qualifier: MaintenanceWindowLambdaQualifier | None
+    Payload: MaintenanceWindowLambdaPayload | None
 
 
 class MaintenanceWindowStepFunctionsParameters(TypedDict, total=False):
-    Input: Optional[MaintenanceWindowStepFunctionsInput]
-    Name: Optional[MaintenanceWindowStepFunctionsName]
+    Input: MaintenanceWindowStepFunctionsInput | None
+    Name: MaintenanceWindowStepFunctionsName | None
 
 
 class MaintenanceWindowAutomationParameters(TypedDict, total=False):
-    DocumentVersion: Optional[DocumentVersion]
-    Parameters: Optional[AutomationParameterMap]
+    DocumentVersion: DocumentVersion | None
+    Parameters: AutomationParameterMap | None
 
 
 class MaintenanceWindowRunCommandParameters(TypedDict, total=False):
-    Comment: Optional[Comment]
-    CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
-    DocumentHash: Optional[DocumentHash]
-    DocumentHashType: Optional[DocumentHashType]
-    DocumentVersion: Optional[DocumentVersion]
-    NotificationConfig: Optional[NotificationConfig]
-    OutputS3BucketName: Optional[S3BucketName]
-    OutputS3KeyPrefix: Optional[S3KeyPrefix]
-    Parameters: Optional[Parameters]
-    ServiceRoleArn: Optional[ServiceRole]
-    TimeoutSeconds: Optional[TimeoutSeconds]
+    Comment: Comment | None
+    CloudWatchOutputConfig: CloudWatchOutputConfig | None
+    DocumentHash: DocumentHash | None
+    DocumentHashType: DocumentHashType | None
+    DocumentVersion: DocumentVersion | None
+    NotificationConfig: NotificationConfig | None
+    OutputS3BucketName: S3BucketName | None
+    OutputS3KeyPrefix: S3KeyPrefix | None
+    Parameters: Parameters | None
+    ServiceRoleArn: ServiceRole | None
+    TimeoutSeconds: TimeoutSeconds | None
 
 
 class MaintenanceWindowTaskInvocationParameters(TypedDict, total=False):
-    RunCommand: Optional[MaintenanceWindowRunCommandParameters]
-    Automation: Optional[MaintenanceWindowAutomationParameters]
-    StepFunctions: Optional[MaintenanceWindowStepFunctionsParameters]
-    Lambda: Optional[MaintenanceWindowLambdaParameters]
+    RunCommand: MaintenanceWindowRunCommandParameters | None
+    Automation: MaintenanceWindowAutomationParameters | None
+    StepFunctions: MaintenanceWindowStepFunctionsParameters | None
+    Lambda: MaintenanceWindowLambdaParameters | None
 
 
 class GetMaintenanceWindowTaskResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTaskId: Optional[MaintenanceWindowTaskId]
-    Targets: Optional[Targets]
-    TaskArn: Optional[MaintenanceWindowTaskArn]
-    ServiceRoleArn: Optional[ServiceRole]
-    TaskType: Optional[MaintenanceWindowTaskType]
-    TaskParameters: Optional[MaintenanceWindowTaskParameters]
-    TaskInvocationParameters: Optional[MaintenanceWindowTaskInvocationParameters]
-    Priority: Optional[MaintenanceWindowTaskPriority]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    LoggingInfo: Optional[LoggingInfo]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    WindowId: MaintenanceWindowId | None
+    WindowTaskId: MaintenanceWindowTaskId | None
+    Targets: Targets | None
+    TaskArn: MaintenanceWindowTaskArn | None
+    ServiceRoleArn: ServiceRole | None
+    TaskType: MaintenanceWindowTaskType | None
+    TaskParameters: MaintenanceWindowTaskParameters | None
+    TaskInvocationParameters: MaintenanceWindowTaskInvocationParameters | None
+    Priority: MaintenanceWindowTaskPriority | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    LoggingInfo: LoggingInfo | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    CutoffBehavior: MaintenanceWindowTaskCutoffBehavior | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class GetOpsItemRequest(ServiceRequest):
     OpsItemId: OpsItemId
-    OpsItemArn: Optional[OpsItemArn]
+    OpsItemArn: OpsItemArn | None
 
 
 class OpsItem(TypedDict, total=False):
-    CreatedBy: Optional[String]
-    OpsItemType: Optional[OpsItemType]
-    CreatedTime: Optional[DateTime]
-    Description: Optional[OpsItemDescription]
-    LastModifiedBy: Optional[String]
-    LastModifiedTime: Optional[DateTime]
-    Notifications: Optional[OpsItemNotifications]
-    Priority: Optional[OpsItemPriority]
-    RelatedOpsItems: Optional[RelatedOpsItems]
-    Status: Optional[OpsItemStatus]
-    OpsItemId: Optional[OpsItemId]
-    Version: Optional[String]
-    Title: Optional[OpsItemTitle]
-    Source: Optional[OpsItemSource]
-    OperationalData: Optional[OpsItemOperationalData]
-    Category: Optional[OpsItemCategory]
-    Severity: Optional[OpsItemSeverity]
-    ActualStartTime: Optional[DateTime]
-    ActualEndTime: Optional[DateTime]
-    PlannedStartTime: Optional[DateTime]
-    PlannedEndTime: Optional[DateTime]
-    OpsItemArn: Optional[OpsItemArn]
+    CreatedBy: String | None
+    OpsItemType: OpsItemType | None
+    CreatedTime: DateTime | None
+    Description: OpsItemDescription | None
+    LastModifiedBy: String | None
+    LastModifiedTime: DateTime | None
+    Notifications: OpsItemNotifications | None
+    Priority: OpsItemPriority | None
+    RelatedOpsItems: RelatedOpsItems | None
+    Status: OpsItemStatus | None
+    OpsItemId: OpsItemId | None
+    Version: String | None
+    Title: OpsItemTitle | None
+    Source: OpsItemSource | None
+    OperationalData: OpsItemOperationalData | None
+    Category: OpsItemCategory | None
+    Severity: OpsItemSeverity | None
+    ActualStartTime: DateTime | None
+    ActualEndTime: DateTime | None
+    PlannedStartTime: DateTime | None
+    PlannedEndTime: DateTime | None
+    OpsItemArn: OpsItemArn | None
 
 
 class GetOpsItemResponse(TypedDict, total=False):
-    OpsItem: Optional[OpsItem]
+    OpsItem: OpsItem | None
 
 
 class GetOpsMetadataRequest(ServiceRequest):
     OpsMetadataArn: OpsMetadataArn
-    MaxResults: Optional[GetOpsMetadataMaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: GetOpsMetadataMaxResults | None
+    NextToken: NextToken | None
 
 
 class GetOpsMetadataResult(TypedDict, total=False):
-    ResourceId: Optional[OpsMetadataResourceId]
-    Metadata: Optional[MetadataMap]
-    NextToken: Optional[NextToken]
+    ResourceId: OpsMetadataResourceId | None
+    Metadata: MetadataMap | None
+    NextToken: NextToken | None
 
 
 class OpsResultAttribute(TypedDict, total=False):
     TypeName: OpsDataTypeName
 
 
-OpsResultAttributeList = List[OpsResultAttribute]
-OpsAggregatorList = List["OpsAggregator"]
-OpsFilterValueList = List[OpsFilterValue]
+OpsResultAttributeList = list[OpsResultAttribute]
+OpsAggregatorList = list["OpsAggregator"]
+OpsFilterValueList = list[OpsFilterValue]
 
 
 class OpsFilter(TypedDict, total=False):
     Key: OpsFilterKey
     Values: OpsFilterValueList
-    Type: Optional[OpsFilterOperatorType]
+    Type: OpsFilterOperatorType | None
 
 
-OpsFilterList = List[OpsFilter]
-OpsAggregatorValueMap = Dict[OpsAggregatorValueKey, OpsAggregatorValue]
+OpsFilterList = list[OpsFilter]
+OpsAggregatorValueMap = dict[OpsAggregatorValueKey, OpsAggregatorValue]
 
 
 class OpsAggregator(TypedDict, total=False):
-    AggregatorType: Optional[OpsAggregatorType]
-    TypeName: Optional[OpsDataTypeName]
-    AttributeName: Optional[OpsDataAttributeName]
-    Values: Optional[OpsAggregatorValueMap]
-    Filters: Optional[OpsFilterList]
-    Aggregators: Optional[OpsAggregatorList]
+    AggregatorType: OpsAggregatorType | None
+    TypeName: OpsDataTypeName | None
+    AttributeName: OpsDataAttributeName | None
+    Values: OpsAggregatorValueMap | None
+    Filters: OpsFilterList | None
+    Aggregators: OpsAggregatorList | None
 
 
 class GetOpsSummaryRequest(ServiceRequest):
-    SyncName: Optional[ResourceDataSyncName]
-    Filters: Optional[OpsFilterList]
-    Aggregators: Optional[OpsAggregatorList]
-    ResultAttributes: Optional[OpsResultAttributeList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    SyncName: ResourceDataSyncName | None
+    Filters: OpsFilterList | None
+    Aggregators: OpsAggregatorList | None
+    ResultAttributes: OpsResultAttributeList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
-OpsEntityItemEntry = Dict[AttributeName, AttributeValue]
-OpsEntityItemEntryList = List[OpsEntityItemEntry]
+OpsEntityItemEntry = dict[AttributeName, AttributeValue]
+OpsEntityItemEntryList = list[OpsEntityItemEntry]
 
 
 class OpsEntityItem(TypedDict, total=False):
-    CaptureTime: Optional[OpsEntityItemCaptureTime]
-    Content: Optional[OpsEntityItemEntryList]
+    CaptureTime: OpsEntityItemCaptureTime | None
+    Content: OpsEntityItemEntryList | None
 
 
-OpsEntityItemMap = Dict[OpsEntityItemKey, OpsEntityItem]
+OpsEntityItemMap = dict[OpsEntityItemKey, OpsEntityItem]
 
 
 class OpsEntity(TypedDict, total=False):
-    Id: Optional[OpsEntityId]
-    Data: Optional[OpsEntityItemMap]
+    Id: OpsEntityId | None
+    Data: OpsEntityItemMap | None
 
 
-OpsEntityList = List[OpsEntity]
+OpsEntityList = list[OpsEntity]
 
 
 class GetOpsSummaryResult(TypedDict, total=False):
-    Entities: Optional[OpsEntityList]
-    NextToken: Optional[NextToken]
+    Entities: OpsEntityList | None
+    NextToken: NextToken | None
 
 
 class GetParameterHistoryRequest(ServiceRequest):
     Name: PSParameterName
-    WithDecryption: Optional[Boolean]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    WithDecryption: Boolean | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
-ParameterLabelList = List[ParameterLabel]
+ParameterLabelList = list[ParameterLabel]
 
 
 class ParameterHistory(TypedDict, total=False):
-    Name: Optional[PSParameterName]
-    Type: Optional[ParameterType]
-    KeyId: Optional[ParameterKeyId]
-    LastModifiedDate: Optional[DateTime]
-    LastModifiedUser: Optional[String]
-    Description: Optional[ParameterDescription]
-    Value: Optional[PSParameterValue]
-    AllowedPattern: Optional[AllowedPattern]
-    Version: Optional[PSParameterVersion]
-    Labels: Optional[ParameterLabelList]
-    Tier: Optional[ParameterTier]
-    Policies: Optional[ParameterPolicyList]
-    DataType: Optional[ParameterDataType]
+    Name: PSParameterName | None
+    Type: ParameterType | None
+    KeyId: ParameterKeyId | None
+    LastModifiedDate: DateTime | None
+    LastModifiedUser: String | None
+    Description: ParameterDescription | None
+    Value: PSParameterValue | None
+    AllowedPattern: AllowedPattern | None
+    Version: PSParameterVersion | None
+    Labels: ParameterLabelList | None
+    Tier: ParameterTier | None
+    Policies: ParameterPolicyList | None
+    DataType: ParameterDataType | None
 
 
-ParameterHistoryList = List[ParameterHistory]
+ParameterHistoryList = list[ParameterHistory]
 
 
 class GetParameterHistoryResult(TypedDict, total=False):
-    Parameters: Optional[ParameterHistoryList]
-    NextToken: Optional[NextToken]
+    Parameters: ParameterHistoryList | None
+    NextToken: NextToken | None
 
 
 class GetParameterRequest(ServiceRequest):
     Name: PSParameterName
-    WithDecryption: Optional[Boolean]
+    WithDecryption: Boolean | None
 
 
 class Parameter(TypedDict, total=False):
-    Name: Optional[PSParameterName]
-    Type: Optional[ParameterType]
-    Value: Optional[PSParameterValue]
-    Version: Optional[PSParameterVersion]
-    Selector: Optional[PSParameterSelector]
-    SourceResult: Optional[String]
-    LastModifiedDate: Optional[DateTime]
-    ARN: Optional[String]
-    DataType: Optional[ParameterDataType]
+    Name: PSParameterName | None
+    Type: ParameterType | None
+    Value: PSParameterValue | None
+    Version: PSParameterVersion | None
+    Selector: PSParameterSelector | None
+    SourceResult: String | None
+    LastModifiedDate: DateTime | None
+    ARN: String | None
+    DataType: ParameterDataType | None
 
 
 class GetParameterResult(TypedDict, total=False):
-    Parameter: Optional[Parameter]
+    Parameter: Parameter | None
 
 
 class GetParametersByPathRequest(ServiceRequest):
     Path: PSParameterName
-    Recursive: Optional[Boolean]
-    ParameterFilters: Optional[ParameterStringFilterList]
-    WithDecryption: Optional[Boolean]
-    MaxResults: Optional[GetParametersByPathMaxResults]
-    NextToken: Optional[NextToken]
+    Recursive: Boolean | None
+    ParameterFilters: ParameterStringFilterList | None
+    WithDecryption: Boolean | None
+    MaxResults: GetParametersByPathMaxResults | None
+    NextToken: NextToken | None
 
 
-ParameterList = List[Parameter]
+ParameterList = list[Parameter]
 
 
 class GetParametersByPathResult(TypedDict, total=False):
-    Parameters: Optional[ParameterList]
-    NextToken: Optional[NextToken]
+    Parameters: ParameterList | None
+    NextToken: NextToken | None
 
 
 class GetParametersRequest(ServiceRequest):
     Names: ParameterNameList
-    WithDecryption: Optional[Boolean]
+    WithDecryption: Boolean | None
 
 
 class GetParametersResult(TypedDict, total=False):
-    Parameters: Optional[ParameterList]
-    InvalidParameters: Optional[ParameterNameList]
+    Parameters: ParameterList | None
+    InvalidParameters: ParameterNameList | None
 
 
 class GetPatchBaselineForPatchGroupRequest(ServiceRequest):
     PatchGroup: PatchGroup
-    OperatingSystem: Optional[OperatingSystem]
+    OperatingSystem: OperatingSystem | None
 
 
 class GetPatchBaselineForPatchGroupResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    PatchGroup: Optional[PatchGroup]
-    OperatingSystem: Optional[OperatingSystem]
+    BaselineId: BaselineId | None
+    PatchGroup: PatchGroup | None
+    OperatingSystem: OperatingSystem | None
 
 
 class GetPatchBaselineRequest(ServiceRequest):
     BaselineId: BaselineId
 
 
-PatchGroupList = List[PatchGroup]
+PatchGroupList = list[PatchGroup]
 
 
 class GetPatchBaselineResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    Name: Optional[BaselineName]
-    OperatingSystem: Optional[OperatingSystem]
-    GlobalFilters: Optional[PatchFilterGroup]
-    ApprovalRules: Optional[PatchRuleGroup]
-    ApprovedPatches: Optional[PatchIdList]
-    ApprovedPatchesComplianceLevel: Optional[PatchComplianceLevel]
-    ApprovedPatchesEnableNonSecurity: Optional[Boolean]
-    RejectedPatches: Optional[PatchIdList]
-    RejectedPatchesAction: Optional[PatchAction]
-    PatchGroups: Optional[PatchGroupList]
-    CreatedDate: Optional[DateTime]
-    ModifiedDate: Optional[DateTime]
-    Description: Optional[BaselineDescription]
-    Sources: Optional[PatchSourceList]
-    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
+    BaselineId: BaselineId | None
+    Name: BaselineName | None
+    OperatingSystem: OperatingSystem | None
+    GlobalFilters: PatchFilterGroup | None
+    ApprovalRules: PatchRuleGroup | None
+    ApprovedPatches: PatchIdList | None
+    ApprovedPatchesComplianceLevel: PatchComplianceLevel | None
+    ApprovedPatchesEnableNonSecurity: Boolean | None
+    RejectedPatches: PatchIdList | None
+    RejectedPatchesAction: PatchAction | None
+    PatchGroups: PatchGroupList | None
+    CreatedDate: DateTime | None
+    ModifiedDate: DateTime | None
+    Description: BaselineDescription | None
+    Sources: PatchSourceList | None
+    AvailableSecurityUpdatesComplianceStatus: PatchComplianceStatus | None
 
 
 class GetResourcePoliciesRequest(ServiceRequest):
     ResourceArn: ResourceArnString
-    NextToken: Optional[String]
-    MaxResults: Optional[ResourcePolicyMaxResults]
+    NextToken: String | None
+    MaxResults: ResourcePolicyMaxResults | None
 
 
 class GetResourcePoliciesResponseEntry(TypedDict, total=False):
-    PolicyId: Optional[PolicyId]
-    PolicyHash: Optional[PolicyHash]
-    Policy: Optional[Policy]
+    PolicyId: PolicyId | None
+    PolicyHash: PolicyHash | None
+    Policy: Policy | None
 
 
-GetResourcePoliciesResponseEntries = List[GetResourcePoliciesResponseEntry]
+GetResourcePoliciesResponseEntries = list[GetResourcePoliciesResponseEntry]
 
 
 class GetResourcePoliciesResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    Policies: Optional[GetResourcePoliciesResponseEntries]
+    NextToken: String | None
+    Policies: GetResourcePoliciesResponseEntries | None
 
 
 class GetServiceSettingRequest(ServiceRequest):
@@ -4971,56 +4977,56 @@ class GetServiceSettingRequest(ServiceRequest):
 
 
 class ServiceSetting(TypedDict, total=False):
-    SettingId: Optional[ServiceSettingId]
-    SettingValue: Optional[ServiceSettingValue]
-    LastModifiedDate: Optional[DateTime]
-    LastModifiedUser: Optional[String]
-    ARN: Optional[String]
-    Status: Optional[String]
+    SettingId: ServiceSettingId | None
+    SettingValue: ServiceSettingValue | None
+    LastModifiedDate: DateTime | None
+    LastModifiedUser: String | None
+    ARN: String | None
+    Status: String | None
 
 
 class GetServiceSettingResult(TypedDict, total=False):
-    ServiceSetting: Optional[ServiceSetting]
+    ServiceSetting: ServiceSetting | None
 
 
 class InstanceInfo(TypedDict, total=False):
-    AgentType: Optional[AgentType]
-    AgentVersion: Optional[AgentVersion]
-    ComputerName: Optional[ComputerName]
-    InstanceStatus: Optional[InstanceStatus]
-    IpAddress: Optional[IpAddress]
-    ManagedStatus: Optional[ManagedStatus]
-    PlatformType: Optional[PlatformType]
-    PlatformName: Optional[PlatformName]
-    PlatformVersion: Optional[PlatformVersion]
-    ResourceType: Optional[ResourceType]
+    AgentType: AgentType | None
+    AgentVersion: AgentVersion | None
+    ComputerName: ComputerName | None
+    InstanceStatus: InstanceStatus | None
+    IpAddress: IpAddress | None
+    ManagedStatus: ManagedStatus | None
+    PlatformType: PlatformType | None
+    PlatformName: PlatformName | None
+    PlatformVersion: PlatformVersion | None
+    ResourceType: ResourceType | None
 
 
-InventoryItemContentContext = Dict[AttributeName, AttributeValue]
+InventoryItemContentContext = dict[AttributeName, AttributeValue]
 
 
 class InventoryItem(TypedDict, total=False):
     TypeName: InventoryItemTypeName
     SchemaVersion: InventoryItemSchemaVersion
     CaptureTime: InventoryItemCaptureTime
-    ContentHash: Optional[InventoryItemContentHash]
-    Content: Optional[InventoryItemEntryList]
-    Context: Optional[InventoryItemContentContext]
+    ContentHash: InventoryItemContentHash | None
+    Content: InventoryItemEntryList | None
+    Context: InventoryItemContentContext | None
 
 
-InventoryItemList = List[InventoryItem]
-KeyList = List[TagKey]
+InventoryItemList = list[InventoryItem]
+KeyList = list[TagKey]
 
 
 class LabelParameterVersionRequest(ServiceRequest):
     Name: PSParameterName
-    ParameterVersion: Optional[PSParameterVersion]
+    ParameterVersion: PSParameterVersion | None
     Labels: ParameterLabelList
 
 
 class LabelParameterVersionResult(TypedDict, total=False):
-    InvalidLabels: Optional[ParameterLabelList]
-    ParameterVersion: Optional[PSParameterVersion]
+    InvalidLabels: ParameterLabelList | None
+    ParameterVersion: PSParameterVersion | None
 
 
 LastResourceDataSyncTime = datetime
@@ -5029,209 +5035,209 @@ LastSuccessfulResourceDataSyncTime = datetime
 
 class ListAssociationVersionsRequest(ServiceRequest):
     AssociationId: AssociationId
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListAssociationVersionsResult(TypedDict, total=False):
-    AssociationVersions: Optional[AssociationVersionList]
-    NextToken: Optional[NextToken]
+    AssociationVersions: AssociationVersionList | None
+    NextToken: NextToken | None
 
 
 class ListAssociationsRequest(ServiceRequest):
-    AssociationFilterList: Optional[AssociationFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    AssociationFilterList: AssociationFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListAssociationsResult(TypedDict, total=False):
-    Associations: Optional[AssociationList]
-    NextToken: Optional[NextToken]
+    Associations: AssociationList | None
+    NextToken: NextToken | None
 
 
 class ListCommandInvocationsRequest(ServiceRequest):
-    CommandId: Optional[CommandId]
-    InstanceId: Optional[InstanceId]
-    MaxResults: Optional[CommandMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[CommandFilterList]
-    Details: Optional[Boolean]
+    CommandId: CommandId | None
+    InstanceId: InstanceId | None
+    MaxResults: CommandMaxResults | None
+    NextToken: NextToken | None
+    Filters: CommandFilterList | None
+    Details: Boolean | None
 
 
 class ListCommandInvocationsResult(TypedDict, total=False):
-    CommandInvocations: Optional[CommandInvocationList]
-    NextToken: Optional[NextToken]
+    CommandInvocations: CommandInvocationList | None
+    NextToken: NextToken | None
 
 
 class ListCommandsRequest(ServiceRequest):
-    CommandId: Optional[CommandId]
-    InstanceId: Optional[InstanceId]
-    MaxResults: Optional[CommandMaxResults]
-    NextToken: Optional[NextToken]
-    Filters: Optional[CommandFilterList]
+    CommandId: CommandId | None
+    InstanceId: InstanceId | None
+    MaxResults: CommandMaxResults | None
+    NextToken: NextToken | None
+    Filters: CommandFilterList | None
 
 
 class ListCommandsResult(TypedDict, total=False):
-    Commands: Optional[CommandList]
-    NextToken: Optional[NextToken]
+    Commands: CommandList | None
+    NextToken: NextToken | None
 
 
 class ListComplianceItemsRequest(ServiceRequest):
-    Filters: Optional[ComplianceStringFilterList]
-    ResourceIds: Optional[ComplianceResourceIdList]
-    ResourceTypes: Optional[ComplianceResourceTypeList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Filters: ComplianceStringFilterList | None
+    ResourceIds: ComplianceResourceIdList | None
+    ResourceTypes: ComplianceResourceTypeList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListComplianceItemsResult(TypedDict, total=False):
-    ComplianceItems: Optional[ComplianceItemList]
-    NextToken: Optional[NextToken]
+    ComplianceItems: ComplianceItemList | None
+    NextToken: NextToken | None
 
 
 class ListComplianceSummariesRequest(ServiceRequest):
-    Filters: Optional[ComplianceStringFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Filters: ComplianceStringFilterList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListComplianceSummariesResult(TypedDict, total=False):
-    ComplianceSummaryItems: Optional[ComplianceSummaryItemList]
-    NextToken: Optional[NextToken]
+    ComplianceSummaryItems: ComplianceSummaryItemList | None
+    NextToken: NextToken | None
 
 
 class ListDocumentMetadataHistoryRequest(ServiceRequest):
     Name: DocumentName
-    DocumentVersion: Optional[DocumentVersion]
+    DocumentVersion: DocumentVersion | None
     Metadata: DocumentMetadataEnum
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListDocumentMetadataHistoryResponse(TypedDict, total=False):
-    Name: Optional[DocumentName]
-    DocumentVersion: Optional[DocumentVersion]
-    Author: Optional[DocumentAuthor]
-    Metadata: Optional[DocumentMetadataResponseInfo]
-    NextToken: Optional[NextToken]
+    Name: DocumentName | None
+    DocumentVersion: DocumentVersion | None
+    Author: DocumentAuthor | None
+    Metadata: DocumentMetadataResponseInfo | None
+    NextToken: NextToken | None
 
 
 class ListDocumentVersionsRequest(ServiceRequest):
     Name: DocumentARN
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListDocumentVersionsResult(TypedDict, total=False):
-    DocumentVersions: Optional[DocumentVersionList]
-    NextToken: Optional[NextToken]
+    DocumentVersions: DocumentVersionList | None
+    NextToken: NextToken | None
 
 
 class ListDocumentsRequest(ServiceRequest):
-    DocumentFilterList: Optional[DocumentFilterList]
-    Filters: Optional[DocumentKeyValuesFilterList]
-    MaxResults: Optional[MaxResults]
-    NextToken: Optional[NextToken]
+    DocumentFilterList: DocumentFilterList | None
+    Filters: DocumentKeyValuesFilterList | None
+    MaxResults: MaxResults | None
+    NextToken: NextToken | None
 
 
 class ListDocumentsResult(TypedDict, total=False):
-    DocumentIdentifiers: Optional[DocumentIdentifierList]
-    NextToken: Optional[NextToken]
+    DocumentIdentifiers: DocumentIdentifierList | None
+    NextToken: NextToken | None
 
 
 class ListInventoryEntriesRequest(ServiceRequest):
     InstanceId: InstanceId
     TypeName: InventoryItemTypeName
-    Filters: Optional[InventoryFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Filters: InventoryFilterList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ListInventoryEntriesResult(TypedDict, total=False):
-    TypeName: Optional[InventoryItemTypeName]
-    InstanceId: Optional[InstanceId]
-    SchemaVersion: Optional[InventoryItemSchemaVersion]
-    CaptureTime: Optional[InventoryItemCaptureTime]
-    Entries: Optional[InventoryItemEntryList]
-    NextToken: Optional[NextToken]
+    TypeName: InventoryItemTypeName | None
+    InstanceId: InstanceId | None
+    SchemaVersion: InventoryItemSchemaVersion | None
+    CaptureTime: InventoryItemCaptureTime | None
+    Entries: InventoryItemEntryList | None
+    NextToken: NextToken | None
 
 
-NodeFilterValueList = List[NodeFilterValue]
+NodeFilterValueList = list[NodeFilterValue]
 
 
 class NodeFilter(TypedDict, total=False):
     Key: NodeFilterKey
     Values: NodeFilterValueList
-    Type: Optional[NodeFilterOperatorType]
+    Type: NodeFilterOperatorType | None
 
 
-NodeFilterList = List[NodeFilter]
+NodeFilterList = list[NodeFilter]
 
 
 class ListNodesRequest(ServiceRequest):
-    SyncName: Optional[ResourceDataSyncName]
-    Filters: Optional[NodeFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    SyncName: ResourceDataSyncName | None
+    Filters: NodeFilterList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class NodeType(TypedDict, total=False):
-    Instance: Optional[InstanceInfo]
+    Instance: InstanceInfo | None
 
 
 class NodeOwnerInfo(TypedDict, total=False):
-    AccountId: Optional[NodeAccountId]
-    OrganizationalUnitId: Optional[NodeOrganizationalUnitId]
-    OrganizationalUnitPath: Optional[NodeOrganizationalUnitPath]
+    AccountId: NodeAccountId | None
+    OrganizationalUnitId: NodeOrganizationalUnitId | None
+    OrganizationalUnitPath: NodeOrganizationalUnitPath | None
 
 
 NodeCaptureTime = datetime
 
 
 class Node(TypedDict, total=False):
-    CaptureTime: Optional[NodeCaptureTime]
-    Id: Optional[NodeId]
-    Owner: Optional[NodeOwnerInfo]
-    Region: Optional[NodeRegion]
-    NodeType: Optional[NodeType]
+    CaptureTime: NodeCaptureTime | None
+    Id: NodeId | None
+    Owner: NodeOwnerInfo | None
+    Region: NodeRegion | None
+    NodeType: NodeType | None
 
 
-NodeList = List[Node]
+NodeList = list[Node]
 
 
 class ListNodesResult(TypedDict, total=False):
-    Nodes: Optional[NodeList]
-    NextToken: Optional[NextToken]
+    Nodes: NodeList | None
+    NextToken: NextToken | None
 
 
-NodeAggregatorList = List["NodeAggregator"]
+NodeAggregatorList = list["NodeAggregator"]
 
 
 class NodeAggregator(TypedDict, total=False):
     AggregatorType: NodeAggregatorType
     TypeName: NodeTypeName
     AttributeName: NodeAttributeName
-    Aggregators: Optional[NodeAggregatorList]
+    Aggregators: NodeAggregatorList | None
 
 
 class ListNodesSummaryRequest(ServiceRequest):
-    SyncName: Optional[ResourceDataSyncName]
-    Filters: Optional[NodeFilterList]
+    SyncName: ResourceDataSyncName | None
+    Filters: NodeFilterList | None
     Aggregators: NodeAggregatorList
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
-NodeSummary = Dict[AttributeName, AttributeValue]
-NodeSummaryList = List[NodeSummary]
+NodeSummary = dict[AttributeName, AttributeValue]
+NodeSummaryList = list[NodeSummary]
 
 
 class ListNodesSummaryResult(TypedDict, total=False):
-    Summary: Optional[NodeSummaryList]
-    NextToken: Optional[NextToken]
+    Summary: NodeSummaryList | None
+    NextToken: NextToken | None
 
 
-OpsItemEventFilterValues = List[OpsItemEventFilterValue]
+OpsItemEventFilterValues = list[OpsItemEventFilterValue]
 
 
 class OpsItemEventFilter(TypedDict, total=False):
@@ -5240,38 +5246,38 @@ class OpsItemEventFilter(TypedDict, total=False):
     Operator: OpsItemEventFilterOperator
 
 
-OpsItemEventFilters = List[OpsItemEventFilter]
+OpsItemEventFilters = list[OpsItemEventFilter]
 
 
 class ListOpsItemEventsRequest(ServiceRequest):
-    Filters: Optional[OpsItemEventFilters]
-    MaxResults: Optional[OpsItemEventMaxResults]
-    NextToken: Optional[String]
+    Filters: OpsItemEventFilters | None
+    MaxResults: OpsItemEventMaxResults | None
+    NextToken: String | None
 
 
 class OpsItemIdentity(TypedDict, total=False):
-    Arn: Optional[String]
+    Arn: String | None
 
 
 class OpsItemEventSummary(TypedDict, total=False):
-    OpsItemId: Optional[String]
-    EventId: Optional[String]
-    Source: Optional[String]
-    DetailType: Optional[String]
-    Detail: Optional[String]
-    CreatedBy: Optional[OpsItemIdentity]
-    CreatedTime: Optional[DateTime]
+    OpsItemId: String | None
+    EventId: String | None
+    Source: String | None
+    DetailType: String | None
+    Detail: String | None
+    CreatedBy: OpsItemIdentity | None
+    CreatedTime: DateTime | None
 
 
-OpsItemEventSummaries = List[OpsItemEventSummary]
+OpsItemEventSummaries = list[OpsItemEventSummary]
 
 
 class ListOpsItemEventsResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    Summaries: Optional[OpsItemEventSummaries]
+    NextToken: String | None
+    Summaries: OpsItemEventSummaries | None
 
 
-OpsItemRelatedItemsFilterValues = List[OpsItemRelatedItemsFilterValue]
+OpsItemRelatedItemsFilterValues = list[OpsItemRelatedItemsFilterValue]
 
 
 class OpsItemRelatedItemsFilter(TypedDict, total=False):
@@ -5280,37 +5286,37 @@ class OpsItemRelatedItemsFilter(TypedDict, total=False):
     Operator: OpsItemRelatedItemsFilterOperator
 
 
-OpsItemRelatedItemsFilters = List[OpsItemRelatedItemsFilter]
+OpsItemRelatedItemsFilters = list[OpsItemRelatedItemsFilter]
 
 
 class ListOpsItemRelatedItemsRequest(ServiceRequest):
-    OpsItemId: Optional[OpsItemId]
-    Filters: Optional[OpsItemRelatedItemsFilters]
-    MaxResults: Optional[OpsItemRelatedItemsMaxResults]
-    NextToken: Optional[String]
+    OpsItemId: OpsItemId | None
+    Filters: OpsItemRelatedItemsFilters | None
+    MaxResults: OpsItemRelatedItemsMaxResults | None
+    NextToken: String | None
 
 
 class OpsItemRelatedItemSummary(TypedDict, total=False):
-    OpsItemId: Optional[OpsItemId]
-    AssociationId: Optional[OpsItemRelatedItemAssociationId]
-    ResourceType: Optional[OpsItemRelatedItemAssociationResourceType]
-    AssociationType: Optional[OpsItemRelatedItemAssociationType]
-    ResourceUri: Optional[OpsItemRelatedItemAssociationResourceUri]
-    CreatedBy: Optional[OpsItemIdentity]
-    CreatedTime: Optional[DateTime]
-    LastModifiedBy: Optional[OpsItemIdentity]
-    LastModifiedTime: Optional[DateTime]
+    OpsItemId: OpsItemId | None
+    AssociationId: OpsItemRelatedItemAssociationId | None
+    ResourceType: OpsItemRelatedItemAssociationResourceType | None
+    AssociationType: OpsItemRelatedItemAssociationType | None
+    ResourceUri: OpsItemRelatedItemAssociationResourceUri | None
+    CreatedBy: OpsItemIdentity | None
+    CreatedTime: DateTime | None
+    LastModifiedBy: OpsItemIdentity | None
+    LastModifiedTime: DateTime | None
 
 
-OpsItemRelatedItemSummaries = List[OpsItemRelatedItemSummary]
+OpsItemRelatedItemSummaries = list[OpsItemRelatedItemSummary]
 
 
 class ListOpsItemRelatedItemsResponse(TypedDict, total=False):
-    NextToken: Optional[String]
-    Summaries: Optional[OpsItemRelatedItemSummaries]
+    NextToken: String | None
+    Summaries: OpsItemRelatedItemSummaries | None
 
 
-OpsMetadataFilterValueList = List[OpsMetadataFilterValue]
+OpsMetadataFilterValueList = list[OpsMetadataFilterValue]
 
 
 class OpsMetadataFilter(TypedDict, total=False):
@@ -5318,60 +5324,60 @@ class OpsMetadataFilter(TypedDict, total=False):
     Values: OpsMetadataFilterValueList
 
 
-OpsMetadataFilterList = List[OpsMetadataFilter]
+OpsMetadataFilterList = list[OpsMetadataFilter]
 
 
 class ListOpsMetadataRequest(ServiceRequest):
-    Filters: Optional[OpsMetadataFilterList]
-    MaxResults: Optional[ListOpsMetadataMaxResults]
-    NextToken: Optional[NextToken]
+    Filters: OpsMetadataFilterList | None
+    MaxResults: ListOpsMetadataMaxResults | None
+    NextToken: NextToken | None
 
 
 class OpsMetadata(TypedDict, total=False):
-    ResourceId: Optional[OpsMetadataResourceId]
-    OpsMetadataArn: Optional[OpsMetadataArn]
-    LastModifiedDate: Optional[DateTime]
-    LastModifiedUser: Optional[String]
-    CreationDate: Optional[DateTime]
+    ResourceId: OpsMetadataResourceId | None
+    OpsMetadataArn: OpsMetadataArn | None
+    LastModifiedDate: DateTime | None
+    LastModifiedUser: String | None
+    CreationDate: DateTime | None
 
 
-OpsMetadataList = List[OpsMetadata]
+OpsMetadataList = list[OpsMetadata]
 
 
 class ListOpsMetadataResult(TypedDict, total=False):
-    OpsMetadataList: Optional[OpsMetadataList]
-    NextToken: Optional[NextToken]
+    OpsMetadataList: OpsMetadataList | None
+    NextToken: NextToken | None
 
 
 class ListResourceComplianceSummariesRequest(ServiceRequest):
-    Filters: Optional[ComplianceStringFilterList]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    Filters: ComplianceStringFilterList | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 class ResourceComplianceSummaryItem(TypedDict, total=False):
-    ComplianceType: Optional[ComplianceTypeName]
-    ResourceType: Optional[ComplianceResourceType]
-    ResourceId: Optional[ComplianceResourceId]
-    Status: Optional[ComplianceStatus]
-    OverallSeverity: Optional[ComplianceSeverity]
-    ExecutionSummary: Optional[ComplianceExecutionSummary]
-    CompliantSummary: Optional[CompliantSummary]
-    NonCompliantSummary: Optional[NonCompliantSummary]
+    ComplianceType: ComplianceTypeName | None
+    ResourceType: ComplianceResourceType | None
+    ResourceId: ComplianceResourceId | None
+    Status: ComplianceStatus | None
+    OverallSeverity: ComplianceSeverity | None
+    ExecutionSummary: ComplianceExecutionSummary | None
+    CompliantSummary: CompliantSummary | None
+    NonCompliantSummary: NonCompliantSummary | None
 
 
-ResourceComplianceSummaryItemList = List[ResourceComplianceSummaryItem]
+ResourceComplianceSummaryItemList = list[ResourceComplianceSummaryItem]
 
 
 class ListResourceComplianceSummariesResult(TypedDict, total=False):
-    ResourceComplianceSummaryItems: Optional[ResourceComplianceSummaryItemList]
-    NextToken: Optional[NextToken]
+    ResourceComplianceSummaryItems: ResourceComplianceSummaryItemList | None
+    NextToken: NextToken | None
 
 
 class ListResourceDataSyncRequest(ServiceRequest):
-    SyncType: Optional[ResourceDataSyncType]
-    NextToken: Optional[NextToken]
-    MaxResults: Optional[MaxResults]
+    SyncType: ResourceDataSyncType | None
+    NextToken: NextToken | None
+    MaxResults: MaxResults | None
 
 
 ResourceDataSyncCreatedTime = datetime
@@ -5379,33 +5385,33 @@ ResourceDataSyncLastModifiedTime = datetime
 
 
 class ResourceDataSyncSourceWithState(TypedDict, total=False):
-    SourceType: Optional[ResourceDataSyncSourceType]
-    AwsOrganizationsSource: Optional[ResourceDataSyncAwsOrganizationsSource]
-    SourceRegions: Optional[ResourceDataSyncSourceRegionList]
-    IncludeFutureRegions: Optional[ResourceDataSyncIncludeFutureRegions]
-    State: Optional[ResourceDataSyncState]
-    EnableAllOpsDataSources: Optional[ResourceDataSyncEnableAllOpsDataSources]
+    SourceType: ResourceDataSyncSourceType | None
+    AwsOrganizationsSource: ResourceDataSyncAwsOrganizationsSource | None
+    SourceRegions: ResourceDataSyncSourceRegionList | None
+    IncludeFutureRegions: ResourceDataSyncIncludeFutureRegions | None
+    State: ResourceDataSyncState | None
+    EnableAllOpsDataSources: ResourceDataSyncEnableAllOpsDataSources | None
 
 
 class ResourceDataSyncItem(TypedDict, total=False):
-    SyncName: Optional[ResourceDataSyncName]
-    SyncType: Optional[ResourceDataSyncType]
-    SyncSource: Optional[ResourceDataSyncSourceWithState]
-    S3Destination: Optional[ResourceDataSyncS3Destination]
-    LastSyncTime: Optional[LastResourceDataSyncTime]
-    LastSuccessfulSyncTime: Optional[LastSuccessfulResourceDataSyncTime]
-    SyncLastModifiedTime: Optional[ResourceDataSyncLastModifiedTime]
-    LastStatus: Optional[LastResourceDataSyncStatus]
-    SyncCreatedTime: Optional[ResourceDataSyncCreatedTime]
-    LastSyncStatusMessage: Optional[LastResourceDataSyncMessage]
+    SyncName: ResourceDataSyncName | None
+    SyncType: ResourceDataSyncType | None
+    SyncSource: ResourceDataSyncSourceWithState | None
+    S3Destination: ResourceDataSyncS3Destination | None
+    LastSyncTime: LastResourceDataSyncTime | None
+    LastSuccessfulSyncTime: LastSuccessfulResourceDataSyncTime | None
+    SyncLastModifiedTime: ResourceDataSyncLastModifiedTime | None
+    LastStatus: LastResourceDataSyncStatus | None
+    SyncCreatedTime: ResourceDataSyncCreatedTime | None
+    LastSyncStatusMessage: LastResourceDataSyncMessage | None
 
 
-ResourceDataSyncItemList = List[ResourceDataSyncItem]
+ResourceDataSyncItemList = list[ResourceDataSyncItem]
 
 
 class ListResourceDataSyncResult(TypedDict, total=False):
-    ResourceDataSyncItems: Optional[ResourceDataSyncItemList]
-    NextToken: Optional[NextToken]
+    ResourceDataSyncItems: ResourceDataSyncItemList | None
+    NextToken: NextToken | None
 
 
 class ListTagsForResourceRequest(ServiceRequest):
@@ -5414,25 +5420,25 @@ class ListTagsForResourceRequest(ServiceRequest):
 
 
 class ListTagsForResourceResult(TypedDict, total=False):
-    TagList: Optional[TagList]
+    TagList: TagList | None
 
 
-MetadataKeysToDeleteList = List[MetadataKey]
+MetadataKeysToDeleteList = list[MetadataKey]
 
 
 class ModifyDocumentPermissionRequest(ServiceRequest):
     Name: DocumentName
     PermissionType: DocumentPermissionType
-    AccountIdsToAdd: Optional[AccountIdList]
-    AccountIdsToRemove: Optional[AccountIdList]
-    SharedDocumentVersion: Optional[SharedDocumentVersion]
+    AccountIdsToAdd: AccountIdList | None
+    AccountIdsToRemove: AccountIdList | None
+    SharedDocumentVersion: SharedDocumentVersion | None
 
 
 class ModifyDocumentPermissionResponse(TypedDict, total=False):
     pass
 
 
-OpsItemOpsDataKeysList = List[String]
+OpsItemOpsDataKeysList = list[String]
 
 
 class PutComplianceItemsRequest(ServiceRequest):
@@ -5441,8 +5447,8 @@ class PutComplianceItemsRequest(ServiceRequest):
     ComplianceType: ComplianceTypeName
     ExecutionSummary: ComplianceExecutionSummary
     Items: ComplianceItemEntryList
-    ItemContentHash: Optional[ComplianceItemContentHash]
-    UploadType: Optional[ComplianceUploadType]
+    ItemContentHash: ComplianceItemContentHash | None
+    UploadType: ComplianceUploadType | None
 
 
 class PutComplianceItemsResult(TypedDict, total=False):
@@ -5455,38 +5461,38 @@ class PutInventoryRequest(ServiceRequest):
 
 
 class PutInventoryResult(TypedDict, total=False):
-    Message: Optional[PutInventoryMessage]
+    Message: PutInventoryMessage | None
 
 
 class PutParameterRequest(ServiceRequest):
     Name: PSParameterName
-    Description: Optional[ParameterDescription]
+    Description: ParameterDescription | None
     Value: PSParameterValue
-    Type: Optional[ParameterType]
-    KeyId: Optional[ParameterKeyId]
-    Overwrite: Optional[Boolean]
-    AllowedPattern: Optional[AllowedPattern]
-    Tags: Optional[TagList]
-    Tier: Optional[ParameterTier]
-    Policies: Optional[ParameterPolicies]
-    DataType: Optional[ParameterDataType]
+    Type: ParameterType | None
+    KeyId: ParameterKeyId | None
+    Overwrite: Boolean | None
+    AllowedPattern: AllowedPattern | None
+    Tags: TagList | None
+    Tier: ParameterTier | None
+    Policies: ParameterPolicies | None
+    DataType: ParameterDataType | None
 
 
 class PutParameterResult(TypedDict, total=False):
-    Version: Optional[PSParameterVersion]
-    Tier: Optional[ParameterTier]
+    Version: PSParameterVersion | None
+    Tier: ParameterTier | None
 
 
 class PutResourcePolicyRequest(ServiceRequest):
     ResourceArn: ResourceArnString
     Policy: Policy
-    PolicyId: Optional[PolicyId]
-    PolicyHash: Optional[PolicyHash]
+    PolicyId: PolicyId | None
+    PolicyHash: PolicyHash | None
 
 
 class PutResourcePolicyResponse(TypedDict, total=False):
-    PolicyId: Optional[PolicyId]
-    PolicyHash: Optional[PolicyHash]
+    PolicyId: PolicyId | None
+    PolicyHash: PolicyHash | None
 
 
 class RegisterDefaultPatchBaselineRequest(ServiceRequest):
@@ -5494,7 +5500,7 @@ class RegisterDefaultPatchBaselineRequest(ServiceRequest):
 
 
 class RegisterDefaultPatchBaselineResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
+    BaselineId: BaselineId | None
 
 
 class RegisterPatchBaselineForPatchGroupRequest(ServiceRequest):
@@ -5503,45 +5509,45 @@ class RegisterPatchBaselineForPatchGroupRequest(ServiceRequest):
 
 
 class RegisterPatchBaselineForPatchGroupResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    PatchGroup: Optional[PatchGroup]
+    BaselineId: BaselineId | None
+    PatchGroup: PatchGroup | None
 
 
 class RegisterTargetWithMaintenanceWindowRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
     ResourceType: MaintenanceWindowResourceType
     Targets: Targets
-    OwnerInformation: Optional[OwnerInformation]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    ClientToken: Optional[ClientToken]
+    OwnerInformation: OwnerInformation | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    ClientToken: ClientToken | None
 
 
 class RegisterTargetWithMaintenanceWindowResult(TypedDict, total=False):
-    WindowTargetId: Optional[MaintenanceWindowTargetId]
+    WindowTargetId: MaintenanceWindowTargetId | None
 
 
 class RegisterTaskWithMaintenanceWindowRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
-    Targets: Optional[Targets]
+    Targets: Targets | None
     TaskArn: MaintenanceWindowTaskArn
-    ServiceRoleArn: Optional[ServiceRole]
+    ServiceRoleArn: ServiceRole | None
     TaskType: MaintenanceWindowTaskType
-    TaskParameters: Optional[MaintenanceWindowTaskParameters]
-    TaskInvocationParameters: Optional[MaintenanceWindowTaskInvocationParameters]
-    Priority: Optional[MaintenanceWindowTaskPriority]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    LoggingInfo: Optional[LoggingInfo]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    ClientToken: Optional[ClientToken]
-    CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    TaskParameters: MaintenanceWindowTaskParameters | None
+    TaskInvocationParameters: MaintenanceWindowTaskInvocationParameters | None
+    Priority: MaintenanceWindowTaskPriority | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    LoggingInfo: LoggingInfo | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    ClientToken: ClientToken | None
+    CutoffBehavior: MaintenanceWindowTaskCutoffBehavior | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class RegisterTaskWithMaintenanceWindowResult(TypedDict, total=False):
-    WindowTaskId: Optional[MaintenanceWindowTaskId]
+    WindowTaskId: MaintenanceWindowTaskId | None
 
 
 class RemoveTagsFromResourceRequest(ServiceRequest):
@@ -5559,7 +5565,7 @@ class ResetServiceSettingRequest(ServiceRequest):
 
 
 class ResetServiceSettingResult(TypedDict, total=False):
-    ServiceSetting: Optional[ServiceSetting]
+    ServiceSetting: ServiceSetting | None
 
 
 class ResumeSessionRequest(ServiceRequest):
@@ -5567,15 +5573,15 @@ class ResumeSessionRequest(ServiceRequest):
 
 
 class ResumeSessionResponse(TypedDict, total=False):
-    SessionId: Optional[SessionId]
-    TokenValue: Optional[TokenValue]
-    StreamUrl: Optional[StreamUrl]
+    SessionId: SessionId | None
+    TokenValue: TokenValue | None
+    StreamUrl: StreamUrl | None
 
 
 class SendAutomationSignalRequest(ServiceRequest):
     AutomationExecutionId: AutomationExecutionId
     SignalType: SignalType
-    Payload: Optional[AutomationParameterMap]
+    Payload: AutomationParameterMap | None
 
 
 class SendAutomationSignalResult(TypedDict, total=False):
@@ -5583,42 +5589,42 @@ class SendAutomationSignalResult(TypedDict, total=False):
 
 
 class SendCommandRequest(ServiceRequest):
-    InstanceIds: Optional[InstanceIdList]
-    Targets: Optional[Targets]
+    InstanceIds: InstanceIdList | None
+    Targets: Targets | None
     DocumentName: DocumentARN
-    DocumentVersion: Optional[DocumentVersion]
-    DocumentHash: Optional[DocumentHash]
-    DocumentHashType: Optional[DocumentHashType]
-    TimeoutSeconds: Optional[TimeoutSeconds]
-    Comment: Optional[Comment]
-    Parameters: Optional[Parameters]
-    OutputS3Region: Optional[S3Region]
-    OutputS3BucketName: Optional[S3BucketName]
-    OutputS3KeyPrefix: Optional[S3KeyPrefix]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    ServiceRoleArn: Optional[ServiceRole]
-    NotificationConfig: Optional[NotificationConfig]
-    CloudWatchOutputConfig: Optional[CloudWatchOutputConfig]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    DocumentVersion: DocumentVersion | None
+    DocumentHash: DocumentHash | None
+    DocumentHashType: DocumentHashType | None
+    TimeoutSeconds: TimeoutSeconds | None
+    Comment: Comment | None
+    Parameters: Parameters | None
+    OutputS3Region: S3Region | None
+    OutputS3BucketName: S3BucketName | None
+    OutputS3KeyPrefix: S3KeyPrefix | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    ServiceRoleArn: ServiceRole | None
+    NotificationConfig: NotificationConfig | None
+    CloudWatchOutputConfig: CloudWatchOutputConfig | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class SendCommandResult(TypedDict, total=False):
-    Command: Optional[Command]
+    Command: Command | None
 
 
-SessionManagerParameterValueList = List[SessionManagerParameterValue]
-SessionManagerParameters = Dict[SessionManagerParameterName, SessionManagerParameterValueList]
+SessionManagerParameterValueList = list[SessionManagerParameterValue]
+SessionManagerParameters = dict[SessionManagerParameterName, SessionManagerParameterValueList]
 
 
 class StartAccessRequestRequest(ServiceRequest):
     Reason: String1to256
     Targets: Targets
-    Tags: Optional[TagList]
+    Tags: TagList | None
 
 
 class StartAccessRequestResponse(TypedDict, total=False):
-    AccessRequestId: Optional[AccessRequestId]
+    AccessRequestId: AccessRequestId | None
 
 
 class StartAssociationsOnceRequest(ServiceRequest):
@@ -5631,69 +5637,69 @@ class StartAssociationsOnceResult(TypedDict, total=False):
 
 class StartAutomationExecutionRequest(ServiceRequest):
     DocumentName: DocumentARN
-    DocumentVersion: Optional[DocumentVersion]
-    Parameters: Optional[AutomationParameterMap]
-    ClientToken: Optional[IdempotencyToken]
-    Mode: Optional[ExecutionMode]
-    TargetParameterName: Optional[AutomationParameterKey]
-    Targets: Optional[Targets]
-    TargetMaps: Optional[TargetMaps]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    TargetLocations: Optional[TargetLocations]
-    Tags: Optional[TagList]
-    AlarmConfiguration: Optional[AlarmConfiguration]
-    TargetLocationsURL: Optional[TargetLocationsURL]
+    DocumentVersion: DocumentVersion | None
+    Parameters: AutomationParameterMap | None
+    ClientToken: IdempotencyToken | None
+    Mode: ExecutionMode | None
+    TargetParameterName: AutomationParameterKey | None
+    Targets: Targets | None
+    TargetMaps: TargetMaps | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    TargetLocations: TargetLocations | None
+    Tags: TagList | None
+    AlarmConfiguration: AlarmConfiguration | None
+    TargetLocationsURL: TargetLocationsURL | None
 
 
 class StartAutomationExecutionResult(TypedDict, total=False):
-    AutomationExecutionId: Optional[AutomationExecutionId]
+    AutomationExecutionId: AutomationExecutionId | None
 
 
 class StartChangeRequestExecutionRequest(ServiceRequest):
-    ScheduledTime: Optional[DateTime]
+    ScheduledTime: DateTime | None
     DocumentName: DocumentARN
-    DocumentVersion: Optional[DocumentVersion]
-    Parameters: Optional[AutomationParameterMap]
-    ChangeRequestName: Optional[ChangeRequestName]
-    ClientToken: Optional[IdempotencyToken]
-    AutoApprove: Optional[Boolean]
+    DocumentVersion: DocumentVersion | None
+    Parameters: AutomationParameterMap | None
+    ChangeRequestName: ChangeRequestName | None
+    ClientToken: IdempotencyToken | None
+    AutoApprove: Boolean | None
     Runbooks: Runbooks
-    Tags: Optional[TagList]
-    ScheduledEndTime: Optional[DateTime]
-    ChangeDetails: Optional[ChangeDetailsValue]
+    Tags: TagList | None
+    ScheduledEndTime: DateTime | None
+    ChangeDetails: ChangeDetailsValue | None
 
 
 class StartChangeRequestExecutionResult(TypedDict, total=False):
-    AutomationExecutionId: Optional[AutomationExecutionId]
+    AutomationExecutionId: AutomationExecutionId | None
 
 
 class StartExecutionPreviewRequest(ServiceRequest):
     DocumentName: DocumentName
-    DocumentVersion: Optional[DocumentVersion]
-    ExecutionInputs: Optional[ExecutionInputs]
+    DocumentVersion: DocumentVersion | None
+    ExecutionInputs: ExecutionInputs | None
 
 
 class StartExecutionPreviewResponse(TypedDict, total=False):
-    ExecutionPreviewId: Optional[ExecutionPreviewId]
+    ExecutionPreviewId: ExecutionPreviewId | None
 
 
 class StartSessionRequest(ServiceRequest):
     Target: SessionTarget
-    DocumentName: Optional[DocumentARN]
-    Reason: Optional[SessionReason]
-    Parameters: Optional[SessionManagerParameters]
+    DocumentName: DocumentARN | None
+    Reason: SessionReason | None
+    Parameters: SessionManagerParameters | None
 
 
 class StartSessionResponse(TypedDict, total=False):
-    SessionId: Optional[SessionId]
-    TokenValue: Optional[TokenValue]
-    StreamUrl: Optional[StreamUrl]
+    SessionId: SessionId | None
+    TokenValue: TokenValue | None
+    StreamUrl: StreamUrl | None
 
 
 class StopAutomationExecutionRequest(ServiceRequest):
     AutomationExecutionId: AutomationExecutionId
-    Type: Optional[StopType]
+    Type: StopType | None
 
 
 class StopAutomationExecutionResult(TypedDict, total=False):
@@ -5705,7 +5711,7 @@ class TerminateSessionRequest(ServiceRequest):
 
 
 class TerminateSessionResponse(TypedDict, total=False):
-    SessionId: Optional[SessionId]
+    SessionId: SessionId | None
 
 
 class UnlabelParameterVersionRequest(ServiceRequest):
@@ -5715,36 +5721,36 @@ class UnlabelParameterVersionRequest(ServiceRequest):
 
 
 class UnlabelParameterVersionResult(TypedDict, total=False):
-    RemovedLabels: Optional[ParameterLabelList]
-    InvalidLabels: Optional[ParameterLabelList]
+    RemovedLabels: ParameterLabelList | None
+    InvalidLabels: ParameterLabelList | None
 
 
 class UpdateAssociationRequest(ServiceRequest):
     AssociationId: AssociationId
-    Parameters: Optional[Parameters]
-    DocumentVersion: Optional[DocumentVersion]
-    ScheduleExpression: Optional[ScheduleExpression]
-    OutputLocation: Optional[InstanceAssociationOutputLocation]
-    Name: Optional[DocumentARN]
-    Targets: Optional[Targets]
-    AssociationName: Optional[AssociationName]
-    AssociationVersion: Optional[AssociationVersion]
-    AutomationTargetParameterName: Optional[AutomationTargetParameterName]
-    MaxErrors: Optional[MaxErrors]
-    MaxConcurrency: Optional[MaxConcurrency]
-    ComplianceSeverity: Optional[AssociationComplianceSeverity]
-    SyncCompliance: Optional[AssociationSyncCompliance]
-    ApplyOnlyAtCronInterval: Optional[ApplyOnlyAtCronInterval]
-    CalendarNames: Optional[CalendarNameOrARNList]
-    TargetLocations: Optional[TargetLocations]
-    ScheduleOffset: Optional[ScheduleOffset]
-    Duration: Optional[Duration]
-    TargetMaps: Optional[TargetMaps]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    Parameters: Parameters | None
+    DocumentVersion: DocumentVersion | None
+    ScheduleExpression: ScheduleExpression | None
+    OutputLocation: InstanceAssociationOutputLocation | None
+    Name: DocumentARN | None
+    Targets: Targets | None
+    AssociationName: AssociationName | None
+    AssociationVersion: AssociationVersion | None
+    AutomationTargetParameterName: AutomationTargetParameterName | None
+    MaxErrors: MaxErrors | None
+    MaxConcurrency: MaxConcurrency | None
+    ComplianceSeverity: AssociationComplianceSeverity | None
+    SyncCompliance: AssociationSyncCompliance | None
+    ApplyOnlyAtCronInterval: ApplyOnlyAtCronInterval | None
+    CalendarNames: CalendarNameOrARNList | None
+    TargetLocations: TargetLocations | None
+    ScheduleOffset: ScheduleOffset | None
+    Duration: Duration | None
+    TargetMaps: TargetMaps | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class UpdateAssociationResult(TypedDict, total=False):
-    AssociationDescription: Optional[AssociationDescription]
+    AssociationDescription: AssociationDescription | None
 
 
 class UpdateAssociationStatusRequest(ServiceRequest):
@@ -5754,7 +5760,7 @@ class UpdateAssociationStatusRequest(ServiceRequest):
 
 
 class UpdateAssociationStatusResult(TypedDict, total=False):
-    AssociationDescription: Optional[AssociationDescription]
+    AssociationDescription: AssociationDescription | None
 
 
 class UpdateDocumentDefaultVersionRequest(ServiceRequest):
@@ -5763,12 +5769,12 @@ class UpdateDocumentDefaultVersionRequest(ServiceRequest):
 
 
 class UpdateDocumentDefaultVersionResult(TypedDict, total=False):
-    Description: Optional[DocumentDefaultVersionDescription]
+    Description: DocumentDefaultVersionDescription | None
 
 
 class UpdateDocumentMetadataRequest(ServiceRequest):
     Name: DocumentName
-    DocumentVersion: Optional[DocumentVersion]
+    DocumentVersion: DocumentVersion | None
     DocumentReviews: DocumentReviews
 
 
@@ -5778,104 +5784,104 @@ class UpdateDocumentMetadataResponse(TypedDict, total=False):
 
 class UpdateDocumentRequest(ServiceRequest):
     Content: DocumentContent
-    Attachments: Optional[AttachmentsSourceList]
+    Attachments: AttachmentsSourceList | None
     Name: DocumentName
-    DisplayName: Optional[DocumentDisplayName]
-    VersionName: Optional[DocumentVersionName]
-    DocumentVersion: Optional[DocumentVersion]
-    DocumentFormat: Optional[DocumentFormat]
-    TargetType: Optional[TargetType]
+    DisplayName: DocumentDisplayName | None
+    VersionName: DocumentVersionName | None
+    DocumentVersion: DocumentVersion | None
+    DocumentFormat: DocumentFormat | None
+    TargetType: TargetType | None
 
 
 class UpdateDocumentResult(TypedDict, total=False):
-    DocumentDescription: Optional[DocumentDescription]
+    DocumentDescription: DocumentDescription | None
 
 
 class UpdateMaintenanceWindowRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    StartDate: Optional[MaintenanceWindowStringDateTime]
-    EndDate: Optional[MaintenanceWindowStringDateTime]
-    Schedule: Optional[MaintenanceWindowSchedule]
-    ScheduleTimezone: Optional[MaintenanceWindowTimezone]
-    ScheduleOffset: Optional[MaintenanceWindowOffset]
-    Duration: Optional[MaintenanceWindowDurationHours]
-    Cutoff: Optional[MaintenanceWindowCutoff]
-    AllowUnassociatedTargets: Optional[MaintenanceWindowAllowUnassociatedTargets]
-    Enabled: Optional[MaintenanceWindowEnabled]
-    Replace: Optional[Boolean]
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    StartDate: MaintenanceWindowStringDateTime | None
+    EndDate: MaintenanceWindowStringDateTime | None
+    Schedule: MaintenanceWindowSchedule | None
+    ScheduleTimezone: MaintenanceWindowTimezone | None
+    ScheduleOffset: MaintenanceWindowOffset | None
+    Duration: MaintenanceWindowDurationHours | None
+    Cutoff: MaintenanceWindowCutoff | None
+    AllowUnassociatedTargets: MaintenanceWindowAllowUnassociatedTargets | None
+    Enabled: MaintenanceWindowEnabled | None
+    Replace: Boolean | None
 
 
 class UpdateMaintenanceWindowResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    StartDate: Optional[MaintenanceWindowStringDateTime]
-    EndDate: Optional[MaintenanceWindowStringDateTime]
-    Schedule: Optional[MaintenanceWindowSchedule]
-    ScheduleTimezone: Optional[MaintenanceWindowTimezone]
-    ScheduleOffset: Optional[MaintenanceWindowOffset]
-    Duration: Optional[MaintenanceWindowDurationHours]
-    Cutoff: Optional[MaintenanceWindowCutoff]
-    AllowUnassociatedTargets: Optional[MaintenanceWindowAllowUnassociatedTargets]
-    Enabled: Optional[MaintenanceWindowEnabled]
+    WindowId: MaintenanceWindowId | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    StartDate: MaintenanceWindowStringDateTime | None
+    EndDate: MaintenanceWindowStringDateTime | None
+    Schedule: MaintenanceWindowSchedule | None
+    ScheduleTimezone: MaintenanceWindowTimezone | None
+    ScheduleOffset: MaintenanceWindowOffset | None
+    Duration: MaintenanceWindowDurationHours | None
+    Cutoff: MaintenanceWindowCutoff | None
+    AllowUnassociatedTargets: MaintenanceWindowAllowUnassociatedTargets | None
+    Enabled: MaintenanceWindowEnabled | None
 
 
 class UpdateMaintenanceWindowTargetRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
     WindowTargetId: MaintenanceWindowTargetId
-    Targets: Optional[Targets]
-    OwnerInformation: Optional[OwnerInformation]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    Replace: Optional[Boolean]
+    Targets: Targets | None
+    OwnerInformation: OwnerInformation | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    Replace: Boolean | None
 
 
 class UpdateMaintenanceWindowTargetResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTargetId: Optional[MaintenanceWindowTargetId]
-    Targets: Optional[Targets]
-    OwnerInformation: Optional[OwnerInformation]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
+    WindowId: MaintenanceWindowId | None
+    WindowTargetId: MaintenanceWindowTargetId | None
+    Targets: Targets | None
+    OwnerInformation: OwnerInformation | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
 
 
 class UpdateMaintenanceWindowTaskRequest(ServiceRequest):
     WindowId: MaintenanceWindowId
     WindowTaskId: MaintenanceWindowTaskId
-    Targets: Optional[Targets]
-    TaskArn: Optional[MaintenanceWindowTaskArn]
-    ServiceRoleArn: Optional[ServiceRole]
-    TaskParameters: Optional[MaintenanceWindowTaskParameters]
-    TaskInvocationParameters: Optional[MaintenanceWindowTaskInvocationParameters]
-    Priority: Optional[MaintenanceWindowTaskPriority]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    LoggingInfo: Optional[LoggingInfo]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    Replace: Optional[Boolean]
-    CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    Targets: Targets | None
+    TaskArn: MaintenanceWindowTaskArn | None
+    ServiceRoleArn: ServiceRole | None
+    TaskParameters: MaintenanceWindowTaskParameters | None
+    TaskInvocationParameters: MaintenanceWindowTaskInvocationParameters | None
+    Priority: MaintenanceWindowTaskPriority | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    LoggingInfo: LoggingInfo | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    Replace: Boolean | None
+    CutoffBehavior: MaintenanceWindowTaskCutoffBehavior | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class UpdateMaintenanceWindowTaskResult(TypedDict, total=False):
-    WindowId: Optional[MaintenanceWindowId]
-    WindowTaskId: Optional[MaintenanceWindowTaskId]
-    Targets: Optional[Targets]
-    TaskArn: Optional[MaintenanceWindowTaskArn]
-    ServiceRoleArn: Optional[ServiceRole]
-    TaskParameters: Optional[MaintenanceWindowTaskParameters]
-    TaskInvocationParameters: Optional[MaintenanceWindowTaskInvocationParameters]
-    Priority: Optional[MaintenanceWindowTaskPriority]
-    MaxConcurrency: Optional[MaxConcurrency]
-    MaxErrors: Optional[MaxErrors]
-    LoggingInfo: Optional[LoggingInfo]
-    Name: Optional[MaintenanceWindowName]
-    Description: Optional[MaintenanceWindowDescription]
-    CutoffBehavior: Optional[MaintenanceWindowTaskCutoffBehavior]
-    AlarmConfiguration: Optional[AlarmConfiguration]
+    WindowId: MaintenanceWindowId | None
+    WindowTaskId: MaintenanceWindowTaskId | None
+    Targets: Targets | None
+    TaskArn: MaintenanceWindowTaskArn | None
+    ServiceRoleArn: ServiceRole | None
+    TaskParameters: MaintenanceWindowTaskParameters | None
+    TaskInvocationParameters: MaintenanceWindowTaskInvocationParameters | None
+    Priority: MaintenanceWindowTaskPriority | None
+    MaxConcurrency: MaxConcurrency | None
+    MaxErrors: MaxErrors | None
+    LoggingInfo: LoggingInfo | None
+    Name: MaintenanceWindowName | None
+    Description: MaintenanceWindowDescription | None
+    CutoffBehavior: MaintenanceWindowTaskCutoffBehavior | None
+    AlarmConfiguration: AlarmConfiguration | None
 
 
 class UpdateManagedInstanceRoleRequest(ServiceRequest):
@@ -5888,22 +5894,22 @@ class UpdateManagedInstanceRoleResult(TypedDict, total=False):
 
 
 class UpdateOpsItemRequest(ServiceRequest):
-    Description: Optional[OpsItemDescription]
-    OperationalData: Optional[OpsItemOperationalData]
-    OperationalDataToDelete: Optional[OpsItemOpsDataKeysList]
-    Notifications: Optional[OpsItemNotifications]
-    Priority: Optional[OpsItemPriority]
-    RelatedOpsItems: Optional[RelatedOpsItems]
-    Status: Optional[OpsItemStatus]
+    Description: OpsItemDescription | None
+    OperationalData: OpsItemOperationalData | None
+    OperationalDataToDelete: OpsItemOpsDataKeysList | None
+    Notifications: OpsItemNotifications | None
+    Priority: OpsItemPriority | None
+    RelatedOpsItems: RelatedOpsItems | None
+    Status: OpsItemStatus | None
     OpsItemId: OpsItemId
-    Title: Optional[OpsItemTitle]
-    Category: Optional[OpsItemCategory]
-    Severity: Optional[OpsItemSeverity]
-    ActualStartTime: Optional[DateTime]
-    ActualEndTime: Optional[DateTime]
-    PlannedStartTime: Optional[DateTime]
-    PlannedEndTime: Optional[DateTime]
-    OpsItemArn: Optional[OpsItemArn]
+    Title: OpsItemTitle | None
+    Category: OpsItemCategory | None
+    Severity: OpsItemSeverity | None
+    ActualStartTime: DateTime | None
+    ActualEndTime: DateTime | None
+    PlannedStartTime: DateTime | None
+    PlannedEndTime: DateTime | None
+    OpsItemArn: OpsItemArn | None
 
 
 class UpdateOpsItemResponse(TypedDict, total=False):
@@ -5912,46 +5918,46 @@ class UpdateOpsItemResponse(TypedDict, total=False):
 
 class UpdateOpsMetadataRequest(ServiceRequest):
     OpsMetadataArn: OpsMetadataArn
-    MetadataToUpdate: Optional[MetadataMap]
-    KeysToDelete: Optional[MetadataKeysToDeleteList]
+    MetadataToUpdate: MetadataMap | None
+    KeysToDelete: MetadataKeysToDeleteList | None
 
 
 class UpdateOpsMetadataResult(TypedDict, total=False):
-    OpsMetadataArn: Optional[OpsMetadataArn]
+    OpsMetadataArn: OpsMetadataArn | None
 
 
 class UpdatePatchBaselineRequest(ServiceRequest):
     BaselineId: BaselineId
-    Name: Optional[BaselineName]
-    GlobalFilters: Optional[PatchFilterGroup]
-    ApprovalRules: Optional[PatchRuleGroup]
-    ApprovedPatches: Optional[PatchIdList]
-    ApprovedPatchesComplianceLevel: Optional[PatchComplianceLevel]
-    ApprovedPatchesEnableNonSecurity: Optional[Boolean]
-    RejectedPatches: Optional[PatchIdList]
-    RejectedPatchesAction: Optional[PatchAction]
-    Description: Optional[BaselineDescription]
-    Sources: Optional[PatchSourceList]
-    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
-    Replace: Optional[Boolean]
+    Name: BaselineName | None
+    GlobalFilters: PatchFilterGroup | None
+    ApprovalRules: PatchRuleGroup | None
+    ApprovedPatches: PatchIdList | None
+    ApprovedPatchesComplianceLevel: PatchComplianceLevel | None
+    ApprovedPatchesEnableNonSecurity: Boolean | None
+    RejectedPatches: PatchIdList | None
+    RejectedPatchesAction: PatchAction | None
+    Description: BaselineDescription | None
+    Sources: PatchSourceList | None
+    AvailableSecurityUpdatesComplianceStatus: PatchComplianceStatus | None
+    Replace: Boolean | None
 
 
 class UpdatePatchBaselineResult(TypedDict, total=False):
-    BaselineId: Optional[BaselineId]
-    Name: Optional[BaselineName]
-    OperatingSystem: Optional[OperatingSystem]
-    GlobalFilters: Optional[PatchFilterGroup]
-    ApprovalRules: Optional[PatchRuleGroup]
-    ApprovedPatches: Optional[PatchIdList]
-    ApprovedPatchesComplianceLevel: Optional[PatchComplianceLevel]
-    ApprovedPatchesEnableNonSecurity: Optional[Boolean]
-    RejectedPatches: Optional[PatchIdList]
-    RejectedPatchesAction: Optional[PatchAction]
-    CreatedDate: Optional[DateTime]
-    ModifiedDate: Optional[DateTime]
-    Description: Optional[BaselineDescription]
-    Sources: Optional[PatchSourceList]
-    AvailableSecurityUpdatesComplianceStatus: Optional[PatchComplianceStatus]
+    BaselineId: BaselineId | None
+    Name: BaselineName | None
+    OperatingSystem: OperatingSystem | None
+    GlobalFilters: PatchFilterGroup | None
+    ApprovalRules: PatchRuleGroup | None
+    ApprovedPatches: PatchIdList | None
+    ApprovedPatchesComplianceLevel: PatchComplianceLevel | None
+    ApprovedPatchesEnableNonSecurity: Boolean | None
+    RejectedPatches: PatchIdList | None
+    RejectedPatchesAction: PatchAction | None
+    CreatedDate: DateTime | None
+    ModifiedDate: DateTime | None
+    Description: BaselineDescription | None
+    Sources: PatchSourceList | None
+    AvailableSecurityUpdatesComplianceStatus: PatchComplianceStatus | None
 
 
 class UpdateResourceDataSyncRequest(ServiceRequest):
@@ -5974,8 +5980,8 @@ class UpdateServiceSettingResult(TypedDict, total=False):
 
 
 class SsmApi:
-    service = "ssm"
-    version = "2014-11-06"
+    service: str = "ssm"
+    version: str = "2014-11-06"
 
     @handler("AddTagsToResource")
     def add_tags_to_resource(
