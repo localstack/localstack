@@ -1273,6 +1273,11 @@ class TestKMS:
         response = us_east_1_kms_client.describe_key(KeyId=key_id)
         snapshot.match("describe-key-from-region", response)
 
+        # ensure the key has completed replicating.
+        def _replicated_key_creation_is_complete():
+            return us_west_1_kms_client.describe_key(KeyId=key_id)["KeyMetadata"]["KeyState"] == "Enabled"
+        assert poll_condition(condition=_replicated_key_creation_is_complete, timeout=120, interval=5 if is_aws_cloud() else 0.5)
+
         # describe replicated key
         response = us_west_1_kms_client.describe_key(KeyId=key_id)
         snapshot.match("describe-replicated-key", response)
