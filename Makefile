@@ -140,6 +140,12 @@ format-modified:          ## Run ruff to format only modified code
 	  python -m ruff check --output-format=full --fix `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`; \
 	  python -m ruff format `git diff --diff-filter=d --name-only HEAD | grep '\.py$$' | xargs`)
 
+asf-regenerate:                   ## Regenerate ASF APIs
+	$(VENV_RUN); python -m localstack.aws.scaffold upgrade
+	@echo 'Removing unused imports from generated modules'
+	$(VENV_RUN); python -m ruff check --select F401 --unsafe-fixes --fix localstack-core/localstack/aws/api/ --config "lint.preview = true"
+	$(VENV_RUN); python -m ruff format localstack-core/localstack/aws/api/
+
 init-precommit:    		  ## install te pre-commit hook into your local git repository
 	($(VENV_RUN); pre-commit install)
 
@@ -158,4 +164,4 @@ clean-dist:				  ## Clean up python distribution directories
 	rm -rf dist/ build/
 	rm -rf localstack-core/*.egg-info
 
-.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-run-tests docker-cp-coverage test test-coverage lint lint-modified format format-modified init-precommit clean clean-dist upgrade-pinned-dependencies
+.PHONY: usage freeze install-basic install-runtime install-test install-dev install entrypoints dist publish coveralls start docker-run-tests docker-cp-coverage test test-coverage lint lint-modified format format-modified asf-regenerate init-precommit clean clean-dist upgrade-pinned-dependencies
