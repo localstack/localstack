@@ -2444,7 +2444,7 @@ class TestKMS:
                 WrappingAlgorithm="RSAES_OAEP_SHA_256",
                 WrappingKeySpec="RSA_2048",
             )
-            snapshot.match("get-import-parameters-error", e.value.response)
+        snapshot.match("get-import-parameters-error", e.value.response)
 
     @markers.aws.validated
     def test_derive_shared_secret(self, kms_create_key, aws_client, snapshot):
