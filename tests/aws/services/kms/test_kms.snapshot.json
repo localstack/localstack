@@ -3476,5 +3476,9 @@
         }
       }
     }
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import_raises_for_non_external_kms_keys": {
+    "recorded-date": "10-11-2025, 22:37:15",
+    "recorded-content": {}
   }
 }
