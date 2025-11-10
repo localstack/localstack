@@ -1311,7 +1311,8 @@ class TemplateDeployer:
             if action in ("Modify", "Remove"):
                 previous_state = self.resources[resource_id].get("_last_deployed_state")
                 if not previous_state:
-                    # TODO: can this happen?
+                    # Fallback to current Properties if no previous state exists
+                    # This can occur if the resource was created before state tracking was implemented
                     previous_state = self.resources[resource_id]["Properties"]
                 physical_resource_id = executor.extract_physical_resource_id_from_model_with_schema(
                     resource_model=previous_state,
