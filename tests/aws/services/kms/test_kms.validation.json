@@ -21,7 +21,13 @@
     "last_validated_date": "2024-04-11T15:52:40+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key": {
-    "last_validated_date": "2024-04-11T15:26:14+00:00"
+    "last_validated_date": "2025-11-10T14:51:11+00:00",
+    "durations_in_seconds": {
+      "setup": 1.51,
+      "call": 0.36,
+      "teardown": 0.05,
+      "total": 1.92
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_key_with_invalid_tag_key[lowercase_prefix]": {
     "last_validated_date": "2025-01-22T13:37:31+00:00"
@@ -42,7 +48,13 @@
     "last_validated_date": "2024-04-11T15:53:50+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_create_multi_region_key": {
-    "last_validated_date": "2024-04-11T15:53:40+00:00"
+    "last_validated_date": "2025-11-10T16:02:52+00:00",
+    "durations_in_seconds": {
+      "setup": 1.19,
+      "call": 0.35,
+      "teardown": 0.05,
+      "total": 1.59
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_derive_shared_secret": {
     "last_validated_date": "2024-12-25T14:45:00+00:00"
@@ -144,7 +156,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_in_different_region": {
-    "last_validated_date": "2024-06-14T13:35:20+00:00"
+    "last_validated_date": "2025-11-10T14:57:15+00:00",
+    "durations_in_seconds": {
+      "setup": 0.93,
+      "call": 1.45,
+      "teardown": 0.2,
+      "total": 2.58
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_key_invalid_uuid": {
     "last_validated_date": "2024-04-11T15:52:33+00:00"
@@ -159,13 +177,25 @@
     "last_validated_date": "2024-04-11T15:53:55+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key": {
-    "last_validated_date": "2024-04-10T20:40:13+00:00"
+    "last_validated_date": "2025-11-10T17:24:11+00:00",
+    "durations_in_seconds": {
+      "setup": 1.02,
+      "call": 0.36,
+      "teardown": 0.05,
+      "total": 1.43
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_hmac_create_key_invalid_operations": {
     "last_validated_date": "2023-04-13T09:31:06+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_asymmetric": {
-    "last_validated_date": "2024-04-11T15:53:35+00:00"
+    "last_validated_date": "2025-11-10T16:00:07+00:00",
+    "durations_in_seconds": {
+      "setup": 1.59,
+      "call": 0.64,
+      "teardown": 0.05,
+      "total": 2.28
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_ecc_keys[ECC_NIST_P256]": {
     "last_validated_date": "2025-08-04T08:10:22+00:00",
@@ -249,7 +279,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_symmetric": {
-    "last_validated_date": "2024-04-11T15:53:31+00:00"
+    "last_validated_date": "2025-11-10T14:57:58+00:00",
+    "durations_in_seconds": {
+      "setup": 0.86,
+      "call": 0.68,
+      "teardown": 0.05,
+      "total": 1.59
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_invalid_generate_mac[HMAC_224-HMAC_SHA_256]": {
     "last_validated_date": "2024-04-11T15:54:11+00:00"
@@ -297,7 +333,13 @@
     "last_validated_date": "2024-04-11T15:52:34+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_non_multi_region_keys_should_not_have_multi_region_properties": {
-    "last_validated_date": "2024-04-11T15:53:41+00:00"
+    "last_validated_date": "2025-11-10T16:04:38+00:00",
+    "durations_in_seconds": {
+      "setup": 1.22,
+      "call": 0.3,
+      "teardown": 0.05,
+      "total": 1.57
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_plaintext_size_for_encrypt": {
     "last_validated_date": "2024-04-11T15:54:20+00:00"
@@ -312,7 +354,13 @@
     "last_validated_date": "2025-06-09T12:53:24+00:00"
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_key": {
-    "last_validated_date": "2024-04-11T15:53:44+00:00"
+    "last_validated_date": "2025-11-10T16:44:08+00:00",
+    "durations_in_seconds": {
+      "setup": 1.01,
+      "call": 64.64,
+      "teardown": 0.34,
+      "total": 65.99
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_replicate_replica_key_should_fail": {
     "last_validated_date": "2025-09-08T16:34:57+00:00",
@@ -372,7 +420,13 @@
     }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_disabled": {
-    "last_validated_date": "2025-03-12T19:05:50+00:00"
+    "last_validated_date": "2025-11-10T17:37:46+00:00",
+    "durations_in_seconds": {
+      "setup": 1.18,
+      "call": 6.38,
+      "teardown": 0.05,
+      "total": 7.61
+    }
   },
   "tests/aws/services/kms/test_kms.py::TestKMS::test_rotate_key_on_demand_with_symmetric_key_and_automatic_rotation_enabled": {
     "last_validated_date": "2025-03-12T19:07:01+00:00"
