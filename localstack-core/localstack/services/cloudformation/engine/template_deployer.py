@@ -568,9 +568,13 @@ def _resolve_refs_recursively(
             return result
 
         if stripped_fn_lower == "condition":
-            # FIXME: this should only allow strings, no evaluation should be performed here
-            #   see https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
+            # Fn::Condition only accepts a string (condition name), no evaluation should be performed
+            # See: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/intrinsic-function-reference-condition.html
             key = value[keys_list[0]]
+            if not isinstance(key, str):
+                raise TypeError(
+                    f"Fn::Condition requires a string condition name, got {type(key).__name__}: {key}"
+                )
             result = conditions.get(key)
             if result is None:
                 LOG.warning("Cannot find key '%s' in conditions: '%s'", key, conditions.keys())
