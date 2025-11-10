@@ -318,7 +318,7 @@ class StreamPoller(Poller):
             except BatchFailureError as ex:
                 error_payload = ex.error
 
-                # FIXME partner_resource_arn is not defined in ESM
+                # partner_resource_arn is None in ESM context, fall back to source_arn
                 LOG.debug(
                     "Attempt %d failed while processing %s with events: %s",
                     attempts,
@@ -327,7 +327,7 @@ class StreamPoller(Poller):
                     exc_info=LOG.isEnabledFor(logging.DEBUG),
                 )
             except Exception:
-                # FIXME partner_resource_arn is not defined in ESM
+                # partner_resource_arn is None in ESM context, fall back to source_arn
                 LOG.error(
                     "Attempt %d failed with unexpected error while processing %s with events: %s",
                     attempts,
