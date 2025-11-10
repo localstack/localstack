@@ -1211,13 +1211,10 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
         # TODO check if there was already a key imported for this kms key
         # if so, it has to be identical. We cannot change keys by reimporting after deletion/expiry
         key_material = self._decrypt_wrapped_key_material(import_state, encrypted_key_material)
-
-        if expiration_model:
-            key_to_import_material_to.metadata["ExpirationModel"] = expiration_model
-        else:
-            key_to_import_material_to.metadata["ExpirationModel"] = (
-                ExpirationModelType.KEY_MATERIAL_EXPIRES
-            )
+        key_material_id = key_to_import_material_to.generate_key_material_id(key_material)
+        key_to_import_material_to.metadata["ExpirationModel"] = (
+            expiration_model or ExpirationModelType.KEY_MATERIAL_EXPIRES
+        )
         if (
             key_to_import_material_to.metadata["ExpirationModel"]
             == ExpirationModelType.KEY_MATERIAL_EXPIRES
@@ -1226,25 +1223,41 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
             raise ValidationException(
                 "A validTo date must be set if the ExpirationModel is KEY_MATERIAL_EXPIRES"
             )
+        if existing_pending_material := key_to_import_material_to.crypto_key.pending_key_material:
+            pending_key_material_id = key_to_import_material_to.generate_key_material_id(
+                existing_pending_material
+            )
+            raise KMSInvalidStateException(
+                f"New key material (id: {key_material_id}) cannot be imported into KMS key "
+                f"{key_to_import_material_to.metadata['Arn']}, because another key material "
+                f"(id: {pending_key_material_id}) is pending rotation."
+            )
+
         # TODO actually set validTo and make the key expire
         key_to_import_material_to.metadata["Enabled"] = True
         key_to_import_material_to.metadata["KeyState"] = KeyState.Enabled
         key_to_import_material_to.crypto_key.load_key_material(key_material)
 
-        # KeyMaterialId / CurrentKeyMaterialId is only exposed for symmetric keys used for encryption.
-        imported_key_material_id = None
+        # KeyMaterialId / CurrentKeyMaterialId is only exposed for symmetric encryption keys.
+        key_material_id_response = None
         if key_to_import_material_to.metadata["KeySpec"] == KeySpec.SYMMETRIC_DEFAULT:
-            imported_key_material_id = key_to_import_material_to.generate_key_material_id(
+            key_material_id_response = key_to_import_material_to.generate_key_material_id(
                 key_material
             )
+
+            # If there is no CurrentKeyMaterialId, instantly promote the pending key material to the current.
             if key_to_import_material_to.metadata.get("CurrentKeyMaterialId") is None:
                 key_to_import_material_to.metadata["CurrentKeyMaterialId"] = (
-                    imported_key_material_id
+                    key_material_id_response
                 )
+                key_to_import_material_to.crypto_key.key_material = (
+                    key_to_import_material_to.crypto_key.pending_key_material
+                )
+                key_to_import_material_to.crypto_key.pending_key_material = None
 
         return ImportKeyMaterialResponse(
             KeyId=key_to_import_material_to.metadata["Arn"],
-            KeyMaterialId=imported_key_material_id,
+            KeyMaterialId=key_material_id_response,
         )
 
     def delete_imported_key_material(
