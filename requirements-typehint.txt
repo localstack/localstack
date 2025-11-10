@@ -554,10 +554,6 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pycryptodome==3.23.0
-    # via
-    #   localstack-core
-    #   localstack-core (pyproject.toml)
 pydantic==2.12.3
     # via
     #   aws-sam-translator

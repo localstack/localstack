@@ -4,11 +4,12 @@ import datetime
 import logging
 import os
 
-from cbor2._decoder import loads as cbor2_loads
+from cbor2 import loads as cbor2_loads
 from cryptography.exceptions import InvalidTag
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, keywrap
 from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
 from localstack.aws.api import CommonServiceException, RequestContext, handler
@@ -1588,7 +1589,7 @@ class KmsProvider(KmsApi, ServiceLifecycleHook):
                     f" constraint: [Member must satisfy enum value set: {VALID_OPERATIONS}]"
                 )
 
-    def _extract_attestation_pubkey(self, attestation_document: bytes):
+    def _extract_attestation_pubkey(self, attestation_document: bytes) -> RSAPublicKey:
         # The attestation document comes as a COSE (CBOR Object Signing and Encryption) object: the CBOR
         # attestation is signed and then the attestation and signature are again CBOR-encoded.  For now
         # we don't bother validating the signature, though in the future we could.

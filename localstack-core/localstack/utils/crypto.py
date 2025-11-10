@@ -6,13 +6,11 @@ import threading
 
 from asn1crypto import algos, cms, core
 from asn1crypto import x509 as asn1_x509
-from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA as CryptoRSA
-from Crypto.Random import get_random_bytes
-from Crypto.Util.Padding import pad as crypto_pad
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives import padding as sym_padding
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.asymmetric.rsa import RSAPublicKey
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from .files import TMP_FILES, file_exists_not_empty, load_file, new_tmp_file, save_file
@@ -198,35 +196,30 @@ def decrypt(
     return decrypted
 
 
-def pkcs7_envelope_encrypt(plaintext: bytes, recipient_pubkey) -> bytes:
+def pkcs7_envelope_encrypt(plaintext: bytes, recipient_pubkey: RSAPublicKey) -> bytes:
     """
     Create a PKCS7 wrapper of some plaintext decryptable by recipient_pubkey.  Uses RSA-OAEP with SHA-256
     to encrypt the AES-256-CBC content key.  Hazmat's PKCS7EnvelopeBuilder doesn't support RSA-OAEP with SHA-256,
-    so we need to build the envelope manually with asn1crypto and PyCryptoDome.
+    so we need to build the pieces manually and then put them together in an envelope with asn1crypto.
     """
 
-    # Get the public key to PyCryptoDome's object
-    pem_bytes = recipient_pubkey.public_bytes(
-        encoding=serialization.Encoding.PEM, format=serialization.PublicFormat.SubjectPublicKeyInfo
+    # Encrypt the plaintext with an AES session key, then encrypt the session key to the recipient_pubkey
+    session_key = os.urandom(32)
+    iv = os.urandom(16)
+    encrypted_session_key = recipient_pubkey.encrypt(
+        session_key,
+        padding.OAEP(
+            mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+        ),
     )
-    crypto_pubkey = CryptoRSA.import_key(pem_bytes)
+    cipher = Cipher(algorithms.AES(session_key), modes.CBC(iv), backend=default_backend())
+    encryptor = cipher.encryptor()
+    padder = sym_padding.PKCS7(algorithms.AES.block_size).padder()
+    padded_plaintext = padder.update(plaintext) + padder.finalize()
+    encrypted_content = encryptor.update(padded_plaintext) + encryptor.finalize()
 
-    # Generate the AES session key
-    session_key = get_random_bytes(32)
-
-    # Encrypt the sesssion key with RSA-OAEP-SHA256 to recipient_pubkey
-    cipher_rsa = PKCS1_OAEP.new(crypto_pubkey, hashAlgo=SHA256)
-    encrypted_session_key = cipher_rsa.encrypt(session_key)
-
-    # Encrypt the context with the session key
-    iv = get_random_bytes(16)
-    cipher_aes = AES.new(session_key, AES.MODE_CBC, iv)
-    padded_plaintext = crypto_pad(plaintext, AES.block_size)
-    encrypted_content = cipher_aes.encrypt(padded_plaintext)
-
-    # Finally, build the envelope
-
-    # Add the recipient
+    # Now put together the envelope.
+    # Add the recipient with their copy of the session key
     recipient_identifier = cms.RecipientIdentifier(
         name="issuer_and_serial_number",
         value=cms.IssuerAndSerialNumber(

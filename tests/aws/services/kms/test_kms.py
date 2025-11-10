@@ -11,13 +11,10 @@ import pytest
 from asn1crypto import cms
 from botocore.config import Config
 from botocore.exceptions import ClientError
-from Crypto.Cipher import AES, PKCS1_OAEP
-from Crypto.Hash import SHA256
-from Crypto.PublicKey import RSA as CryptoRSA
-from Crypto.Util.Padding import unpad as crypto_unpad
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes, hmac, serialization
 from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa, utils
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives.keywrap import aes_key_wrap_with_padding
 from cryptography.hazmat.primitives.serialization import load_der_public_key
 
@@ -2103,7 +2100,7 @@ class TestKMS:
         snapshot.match("decrypt_response_with_invalid_ciphertext", e.value.response)
 
     @markers.aws.only_localstack
-    def test_decrypt_recipient(self, kms_create_key, snapshot, aws_client):
+    def test_decrypt_recipient(self, kms_create_key, aws_client):
         """
         Test that decryption to a Nitro recipient creates a correct PKCS7 envelope to that recipient.  This is done
         as an only-Localstack test because of the difficulty of spinning up a true Nitro enclave to generate a real
@@ -2143,7 +2140,8 @@ class TestKMS:
         )["CiphertextForRecipient"]
 
         # Decrypt the PKCS7 envelope to recover the plaintext.  Hazmat's pkcs7_decrypt_pem() doesn't support the RSA-OAEP
-        # with SHA-256 that AWS uses, so we have to do it manually.
+        # with SHA-256 that AWS uses, so we use as1ncrypto to unpack the envelope and then Hazmat to decrypt
+        # the session key and then the plaintext.
 
         # Parse the PKCS7 envelope
         content_info = cms.ContentInfo.load(ciphertext_for_recipient)
@@ -2158,28 +2156,24 @@ class TestKMS:
         # Get the IV from the content encryption algorithm parameters
         iv = encrypted_content_info["content_encryption_algorithm"]["parameters"].native
 
-        # Convert the private key to PyCryptoDome format
-        pem_bytes = rsa_key.private_bytes(
-            encoding=serialization.Encoding.PEM,
-            format=serialization.PrivateFormat.PKCS8,
-            encryption_algorithm=serialization.NoEncryption(),
+        # Decrypt the session key
+        session_key = rsa_key.decrypt(
+            encrypted_session_key,
+            padding.OAEP(
+                mgf=padding.MGF1(algorithm=hashes.SHA256()), algorithm=hashes.SHA256(), label=None
+            ),
         )
-        crypto_privkey = CryptoRSA.import_key(pem_bytes)
 
-        # Decrypt the session key using RSA-OAEP with SHA-256
-        cipher_rsa = PKCS1_OAEP.new(crypto_privkey, hashAlgo=SHA256)
-        session_key = cipher_rsa.decrypt(encrypted_session_key)
-
-        # Decrypt the content using the session key and AES-256-CBC
-        cipher_aes = AES.new(session_key, AES.MODE_CBC, iv)
-        padded_plaintext = cipher_aes.decrypt(encrypted_content)
-        plaintext = crypto_unpad(padded_plaintext, AES.block_size)
+        # Decrypt the content using the session key and iv
+        cipher = Cipher(algorithms.AES(session_key), modes.CBC(iv), backend=default_backend())
+        decryptor = cipher.decryptor()
+        plaintext = decryptor.update(encrypted_content) + decryptor.finalize()
 
         # Make sure we did the decryption correctly
         assert base64.b64decode(plaintext) == message
 
     @markers.aws.only_localstack
-    def test_decrypt_recipient_invalid_attestation(self, kms_create_key, snapshot, aws_client):
+    def test_decrypt_recipient_invalid_attestation(self, kms_create_key, aws_client):
         """
         Test that if we are unable to extract the public key from the attestation, we ignore the recipient
         and provide the plaintext in the response.
