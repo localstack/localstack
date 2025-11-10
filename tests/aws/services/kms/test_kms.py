@@ -57,6 +57,7 @@ def get_signature_kwargs(signing_algorithm, message_type):
         kwargs["algorithm"] = algorithm
     return kwargs
 
+
 def generate_encrypted_symmetric_key_material(public_key: bytes) -> bytes:
     symmetric_key_material = bytes(getrandbits(8) for _ in range(32))
     public_key = load_der_public_key(public_key)
@@ -67,6 +68,7 @@ def generate_encrypted_symmetric_key_material(public_key: bytes) -> bytes:
         ),
     )
     return encrypted_key
+
 
 @pytest.fixture(scope="class")
 def kms_client_for_region(aws_client_factory):
@@ -1362,7 +1364,9 @@ class TestKMS:
     @markers.aws.validated
     def test_rotate_on_demand_returns_arn_for_key_id(self, kms_create_key, aws_client, snapshot):
         aws_kms_key = kms_create_key(KeyUsage="ENCRYPT_DECRYPT", KeySpec="SYMMETRIC_DEFAULT")
-        aws_key_rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(KeyId=aws_kms_key["KeyId"])
+        aws_key_rotate_on_demand_response = aws_client.kms.rotate_key_on_demand(
+            KeyId=aws_kms_key["KeyId"]
+        )
         snapshot.match("rotate-on-demand-aws-key", aws_key_rotate_on_demand_response)
         assert aws_key_rotate_on_demand_response["KeyId"] == aws_kms_key["Arn"]
 
@@ -1566,7 +1570,9 @@ class TestKMS:
             return response["KeyMetadata"]["CurrentKeyMaterialId"] != current_key_material_id
 
         assert poll_condition(
-            condition=_assert_on_demand_rotation_updates_material, timeout=90, interval=5 if is_aws_cloud() else 0.5
+            condition=_assert_on_demand_rotation_updates_material,
+            timeout=90,
+            interval=5 if is_aws_cloud() else 0.5,
         )
 
         describe_key_after_rotate_response = aws_client.kms.describe_key(KeyId=key_id)
