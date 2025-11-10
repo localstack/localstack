@@ -173,6 +173,7 @@ class KmsCryptoKey:
     public_key: bytes | None
     private_key: bytes | None
     key_material: bytes
+    pending_key_material: bytes | None
     key_spec: str
 
     @staticmethod
@@ -217,6 +218,7 @@ class KmsCryptoKey:
     def __init__(self, key_spec: str, key_material: bytes | None = None):
         self.private_key = None
         self.public_key = None
+        self.pending_key_material = None
         # Technically, key_material, being a symmetric encryption key, is only relevant for
         #   key_spec == SYMMETRIC_DEFAULT.
         # But LocalStack uses symmetric encryption with this key_material even for other specs. Asymmetric keys are
@@ -255,7 +257,7 @@ class KmsCryptoKey:
             KeySpec.HMAC_384,
             KeySpec.HMAC_512,
         ]:
-            self.key_material = material
+            self.pending_key_material = material
         else:
             key = crypto_serialization.load_der_private_key(material, password=None)
             self._serialize_key(key)
@@ -772,11 +774,16 @@ class KmsKey:
                 f"The on-demand rotations limit has been reached for the given keyId. "
                 f"No more on-demand rotations can be performed for this key: {self.metadata['Arn']}"
             )
-        self.previous_keys.append(self.crypto_key.key_material)
-        self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
-            self.crypto_key.key_material
-        )
-        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT)
+        current_key_material = self.crypto_key.key_material
+        pending_key_material = self.crypto_key.pending_key_material
+
+        self.previous_keys.append(current_key_material)
+
+        if pending_key_material is not None:
+            self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
+                pending_key_material
+            )
+        self.crypto_key = KmsCryptoKey(KeySpec.SYMMETRIC_DEFAULT, pending_key_material)
 
 
 class KmsGrant:
