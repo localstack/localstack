@@ -327,7 +327,10 @@ class KmsKey:
         # The KMS Crypto Key implementation always provides a crypto key with key material which doesn't suit scenarios
         # where a KMS Key may have no key material i.e. with external keys, and hence no key material ID.
         # In the scenarios where we do want to expose a CurrentKeyMaterialId we should update it in the key metadata.
-        if custom_key_material or self.metadata["Origin"] == "AWS_KMS":
+        if custom_key_material or (
+            self.metadata["Origin"] == "AWS_KMS"
+            and self.metadata["KeySpec"] == KeySpec.SYMMETRIC_DEFAULT
+        ):
             self.metadata["CurrentKeyMaterialId"] = self.generate_key_material_id(
                 self.crypto_key.key_material
             )
