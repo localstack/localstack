@@ -3480,5 +3480,37 @@
   "tests/aws/services/kms/test_kms.py::TestKMS::test_get_parameters_for_import_raises_for_non_external_kms_keys": {
     "recorded-date": "10-11-2025, 22:37:15",
     "recorded-content": {}
+  },
+  "tests/aws/services/kms/test_kms.py::TestKMS::test_import_key_material_raises_if_there_is_already_key_material_pending": {
+    "recorded-date": "10-11-2025, 23:15:45",
+    "recorded-content": {
+      "import-initial-material-response": {
+        "KeyId": "<key-id:1>",
+        "KeyMaterialId": "<key-material-id:1>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "import-pending-material-response": {
+        "KeyId": "<key-id:1>",
+        "KeyMaterialId": "<key-material-id:2>",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 200
+        }
+      },
+      "existing-pending-material-error": {
+        "Error": {
+          "Code": "KMSInvalidStateException",
+          "Message": "New key material (id: <key-material-id>) cannot be imported into KMS key <key-id:1>, because another key material (id: <key-material-id:2>) is pending rotation."
+        },
+        "message": "New key material (id: <key-material-id>) cannot be imported into KMS key <key-id:1>, because another key material (id: <key-material-id:2>) is pending rotation.",
+        "ResponseMetadata": {
+          "HTTPHeaders": {},
+          "HTTPStatusCode": 400
+        }
+      }
+    }
   }
 }
