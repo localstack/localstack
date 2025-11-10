@@ -630,7 +630,7 @@ class ChangeSetModelExecutor(ChangeSetModelPreproc):
             "stackId": self._change_set.stack.stack_name,
             "resourceType": resource_type,
             "resourceTypeVersion": "000000",
-            # TODO: not actually a UUID
+            # Note: Using a generated UUID for bearerToken. AWS uses this for idempotency.
             "bearerToken": str(uuid.uuid4()),
             "region": self._change_set.stack.region_name,
             "action": str(action),
