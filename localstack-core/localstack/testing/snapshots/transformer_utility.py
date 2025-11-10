@@ -566,6 +566,8 @@ class TransformerUtility:
         """
         return [
             TransformerUtility.key_value("KeyId"),
+            TransformerUtility.key_value("KeyMaterialId"),
+            TransformerUtility.key_value("CurrentKeyMaterialId"),
             TransformerUtility.jsonpath(
                 jsonpath="$..Signature",
                 value_replacement="<signature>",
