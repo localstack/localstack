@@ -1,26 +1,110 @@
 {
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[EMPTY_DICT]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.11,
+      "teardown": 0.0,
+      "total": 0.11
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[EMPTY_STRING]": {
-    "last_validated_date": "2024-10-09T08:51:57+00:00"
+    "last_validated_date": "2025-10-19T02:38:10+00:00",
+    "durations_in_seconds": {
+      "setup": 1.14,
+      "call": 0.58,
+      "teardown": 0.0,
+      "total": 1.72
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_not_a_definition[NOT_A_DEF]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:10+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.0,
+      "total": 0.13
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[ILLEGAL_WFTT]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:12+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.11,
+      "teardown": 0.0,
+      "total": 0.11
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[INVALID_BASE_NO_STARTAT]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.13,
+      "teardown": 0.0,
+      "total": 0.13
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[INVALID_DOWNGRADE_QUERY_LANGUAGE]": {
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.1,
+      "teardown": 0.0,
+      "total": 0.1
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[VALID_BASE_PASS]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.1,
+      "teardown": 0.0,
+      "total": 0.1
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_express[VALID_QUERY_LANGUAGE_PASS]": {
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.1,
+      "teardown": 0.0,
+      "total": 0.1
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[INVALID_BASE_NO_STARTAT]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.12,
+      "teardown": 0.0,
+      "total": 0.12
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[INVALID_DOWNGRADE_QUERY_LANGUAGE]": {
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.1,
+      "teardown": 0.0,
+      "total": 0.1
+    }
   },
   "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[VALID_BASE_PASS]": {
-    "last_validated_date": "2024-10-09T08:51:58+00:00"
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.11,
+      "teardown": 0.0,
+      "total": 0.11
+    }
+  },
+  "tests/aws/services/stepfunctions/v2/test_sfn_api_validation.py::TestSfnApiValidation::test_validate_state_machine_definition_type_standard[VALID_QUERY_LANGUAGE_PASS]": {
+    "last_validated_date": "2025-10-19T02:38:11+00:00",
+    "durations_in_seconds": {
+      "setup": 0.0,
+      "call": 0.11,
+      "teardown": 0.0,
+      "total": 0.11
+    }
   }
 }
