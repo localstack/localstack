@@ -1492,7 +1492,7 @@
     }
   },
   "tests/aws/services/s3/test_s3_api.py::TestS3BucketEncryption::test_s3_bucket_encryption_sse_kms_aws_managed_key": {
-    "recorded-date": "21-01-2025, 18:10:55",
+    "recorded-date": "11-11-2025, 11:17:47",
     "recorded-content": {
       "put-bucket-enc": {
         "ResponseMetadata": {
@@ -1520,7 +1520,7 @@
         "BucketKeyEnabled": true,
         "ChecksumCRC32": "J1mCHA==",
         "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"08d16e16e9b2006587e811c5d81ea74f\"",
+        "ETag": "\"69e1edd35a04ba6a5a6038de9f7fa8a5\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -1533,6 +1533,7 @@
           "AWSAccountId": "111111111111",
           "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
           "CreationDate": "datetime",
+          "CurrentKeyMaterialId": "<current-key-material-id:1>",
           "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
           "Description": "Default key that protects my S3 objects when no other key is defined",
           "Enabled": true,
@@ -1557,7 +1558,7 @@
         "BucketKeyEnabled": true,
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"08d16e16e9b2006587e811c5d81ea74f\"",
+        "ETag": "\"69e1edd35a04ba6a5a6038de9f7fa8a5\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
@@ -1575,7 +1576,7 @@
         "ChecksumType": "FULL_OBJECT",
         "ContentLength": 14,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"08d16e16e9b2006587e811c5d81ea74f\"",
+        "ETag": "\"69e1edd35a04ba6a5a6038de9f7fa8a5\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",

@@ -4589,12 +4589,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
-    "recorded-date": "21-01-2025, 18:39:28",
+    "recorded-date": "11-11-2025, 11:12:33",
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region_2>:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
         "Enabled": true,
@@ -5319,12 +5320,13 @@
     }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key_state": {
-    "recorded-date": "21-01-2025, 18:39:38",
+    "recorded-date": "11-11-2025, 11:14:44",
     "recorded-content": {
       "create-kms-key": {
         "AWSAccountId": "111111111111",
         "Arn": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "CreationDate": "datetime",
+        "CurrentKeyMaterialId": "<current-key-material-id:1>",
         "CustomerMasterKeySpec": "SYMMETRIC_DEFAULT",
         "Description": "<description:1>",
         "Enabled": true,
@@ -5342,7 +5344,7 @@
       "success-put-object-sse": {
         "ChecksumCRC32": "KHcEKQ==",
         "ChecksumType": "FULL_OBJECT",
-        "ETag": "\"e1ae6a8d27c2b77e7dcd9b4c8a3b579d\"",
+        "ETag": "\"805149e24234f08e83e3a23326ddcc67\"",
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
         "ServerSideEncryption": "aws:kms",
         "ResponseMetadata": {
@@ -5357,7 +5359,7 @@
         "ChecksumType": "FULL_OBJECT",
         "ContentLength": 8,
         "ContentType": "binary/octet-stream",
-        "ETag": "\"e1ae6a8d27c2b77e7dcd9b4c8a3b579d\"",
+        "ETag": "\"805149e24234f08e83e3a23326ddcc67\"",
         "LastModified": "datetime",
         "Metadata": {},
         "SSEKMSKeyId": "arn:<partition>:kms:<region>:111111111111:key/<uuid:1>",
