@@ -558,10 +558,22 @@
     "last_validated_date": "2023-04-03T20:16:19+00:00"
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key": {
-    "last_validated_date": "2025-01-21T18:39:28+00:00"
+    "last_validated_date": "2025-11-11T11:12:34+00:00",
+    "durations_in_seconds": {
+      "setup": 1.46,
+      "call": 4.07,
+      "teardown": 1.63,
+      "total": 7.16
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_sse_validate_kms_key_state": {
-    "last_validated_date": "2025-01-21T18:39:38+00:00"
+    "last_validated_date": "2025-11-11T11:14:44+00:00",
+    "durations_in_seconds": {
+      "setup": 1.75,
+      "call": 6.03,
+      "teardown": 0.73,
+      "total": 8.51
+    }
   },
   "tests/aws/services/s3/test_s3.py::TestS3::test_s3_timestamp_precision": {
     "last_validated_date": "2025-01-21T18:41:40+00:00"

@@ -4771,6 +4771,7 @@ class TestS3:
         region_us_west_2 = "us-west-2"
         snapshot.add_transformers_list(
             [
+                snapshot.transform.key_value("CurrentKeyMaterialId"),
                 snapshot.transform.key_value("Description"),
                 snapshot.transform.regex(region_us_east_2, "<region_1>"),
                 snapshot.transform.regex(region_us_west_2, "<region_2>"),
@@ -4914,7 +4915,12 @@ class TestS3:
     def test_s3_sse_validate_kms_key_state(
         self, s3_bucket, kms_create_key, monkeypatch, snapshot, aws_client
     ):
-        snapshot.add_transformer(snapshot.transform.key_value("Description"))
+        snapshot.add_transformer(
+            [
+                snapshot.transform.key_value("Description"),
+                snapshot.transform.key_value("CurrentKeyMaterialId"),
+            ]
+        )
         data = b"test-sse"
 
         # create key in the same region as the bucket
