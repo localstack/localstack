@@ -9,7 +9,7 @@ attrs==25.4.0
     #   jsonschema
     #   localstack-twisted
     #   referencing
-awscrt==0.28.3
+awscrt==0.28.4
     # via localstack-core (pyproject.toml)
 boto3==1.40.69
     # via localstack-core (pyproject.toml)
@@ -54,7 +54,7 @@ h2==4.3.0
     #   localstack-twisted
 hpack==4.1.0
     # via h2
-hypercorn==0.17.3
+hypercorn==0.18.0
     # via localstack-core (pyproject.toml)
 hyperframe==6.1.0
     # via h2
@@ -197,7 +197,7 @@ wsproto==1.2.0
     # via hypercorn
 xmltodict==1.0.2
     # via localstack-core (pyproject.toml)
-zope-interface==8.0.1
+zope-interface==8.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:

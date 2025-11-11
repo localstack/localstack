@@ -29,7 +29,7 @@ aws-xray-sdk==2.15.0
     # via moto-ext
 awscli==1.42.69
     # via localstack-core (pyproject.toml)
-awscrt==0.28.3
+awscrt==0.28.4
     # via localstack-core
 boto3==1.40.69
     # via
@@ -114,7 +114,7 @@ h2==4.3.0
     #   localstack-twisted
 hpack==4.1.0
     # via h2
-hypercorn==0.17.3
+hypercorn==0.18.0
     # via localstack-core
 hyperframe==6.1.0
     # via h2
@@ -137,7 +137,7 @@ jmespath==1.0.1
     # via
     #   boto3
     #   botocore
-joserfc==1.4.0
+joserfc==1.4.1
     # via moto-ext
 jpype1==1.6.0
     # via localstack-core (pyproject.toml)
@@ -187,7 +187,7 @@ mdurl==0.1.2
     # via markdown-it-py
 more-itertools==10.8.0
     # via openapi-core
-moto-ext==5.1.15.post30
+moto-ext==5.1.16.post15
     # via localstack-core (pyproject.toml)
 mpmath==1.3.0
     # via sympy
@@ -237,11 +237,11 @@ pyasn1==0.6.1
     # via rsa
 pycparser==2.23
     # via cffi
-pydantic==2.12.3
+pydantic==2.12.4
     # via
     #   aws-sam-translator
     #   localstack-core (pyproject.toml)
-pydantic-core==2.41.4
+pydantic-core==2.41.5
     # via pydantic
 pygments==2.19.2
     # via rich
@@ -355,7 +355,7 @@ werkzeug==3.1.3
     #   moto-ext
     #   openapi-core
     #   rolo
-wrapt==2.0.0
+wrapt==2.0.1
     # via aws-xray-sdk
 wsproto==1.2.0
     # via hypercorn
@@ -363,7 +363,7 @@ xmltodict==1.0.2
     # via
     #   localstack-core
     #   moto-ext
-zope-interface==8.0.1
+zope-interface==8.1
     # via localstack-twisted
 
 # The following packages are considered to be unsafe in a requirements file:
